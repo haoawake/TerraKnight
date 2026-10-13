@@ -77,7 +77,7 @@ namespace TerraKnight
                     for (int c = 0; c < 3; c++)
                     {
                         var lives = records.Where(r => EnemyDrops.StageOf(r) == s && Bestiary.CategoryOf(r) == c)
-                            .Select(r => Mathf.CeilToInt(EnemyDrops.HpOf(r) * Areas.HealthScale * Areas.LevelHealth(s, c == 2))).OrderBy(x => x).ToList();
+                            .Select(r => Bestiary.StatsOf(r).Life).OrderBy(x => x).ToList();
                         if (lives.Count == 0) continue;
                         int median = lives[lives.Count / 2], max = lives[lives.Count - 1];
                         float factor = c == 2 ? Areas.BossDamage : c == 1 ? Areas.EliteDamage : 1f;
@@ -87,6 +87,17 @@ namespace TerraKnight
                     }
                     Plugin.Log.LogInfo($"[平衡] 阶段 {s} {GameDifficulty.NameOf(lv)}：{line}");
                 }
+            }
+
+            // Each boss as its Terraria stand-in: life on each difficulty, defense, how long the best weapon by then takes on Master.
+            foreach (var kv in BossStats.DevAll.OrderBy(k => k.Value.Stage))
+            {
+                var r = kv.Value;
+                var have = weapons.Where(d => d.Stage <= r.Stage).OrderByDescending(d => DpsOf(d, r.Boss.Defense, r.Stage)).ToList();
+                float dps = have.Count > 0 ? DpsOf(have[0], r.Boss.Defense, r.Stage) : 1f;
+                var lives = levels.Select(lv => BossStats.LifeOf(r, null, lv)).ToList();
+                Plugin.Log.LogInfo($"[平衡] 首领 {Bestiary.NameOf(kv.Key)}（{kv.Key}，阶段 {r.Stage}）= 泰拉 {r.Boss.Name}：生命 {string.Join("/", lives)}（普通/困难/专家/大师），防御 {r.Boss.Defense}；" +
+                                   $"最强武器 {(have.Count > 0 ? have[0].Name : "无")} {dps:F0}/秒，大师 {lives[3] / dps:F0} 秒；神居重打 大师 {BossStats.LifeOf(r, "GG_", DifficultyLevel.Master)}");
             }
 
             // Things on offer earlier than their Terraria tier (rarity 4+ is hardmode, 7+ after Plantera, 10+ lunar):

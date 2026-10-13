@@ -1017,8 +1017,9 @@ namespace TerraKnight.Items
                 if (npcById.ContainsKey(id)) continue;
                 var info = EnemyStats.Of(hm);
                 if (info == null || EnemyStats.LifeMax(info) <= 5) continue;
-                // CanBeChasedBy (dontTakeDamage): not while nothing can hurt it (curled up, burrowed, asleep in the moss).
-                if (hm.IsInvincible && hm.InvincibleFromDirection == 0) continue;
+                // CanBeChasedBy (dontTakeDamage): not while nothing can hurt it (burrowed, asleep in the moss); a
+                // shell only spells get through (a curled-up Elder Baldur) is fair game, Terraria's hits get through it.
+                if (EnemyStats.Untouchable(hm)) continue;
                 var main = hm.GetComponent<Collider2D>();
                 var use = main != null && main.enabled ? main : col;
                 var b = use.bounds;

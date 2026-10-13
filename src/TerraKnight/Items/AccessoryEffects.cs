@@ -224,7 +224,7 @@ namespace TerraKnight.Items
             foreach (var hm in Enemies(TerraParticles.ToWorld(fromPx), range, near))
             {
                 if (skip.Contains(hm)) continue;
-                if (hm.IsInvincible && hm.InvincibleFromDirection == 0) continue;
+                if (EnemyStats.Untouchable(hm)) continue;
                 if (EnemyStats.LifeMax(EnemyStats.Of(hm)) <= 5) continue;
                 var e = TerraParticles.ToPx(Centre(hm));
                 float d = Vector2.Distance(e, fromPx);

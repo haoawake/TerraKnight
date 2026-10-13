@@ -26,17 +26,21 @@ namespace TerraKnight
             "npc", "shop", "tram", "switch", "gate", "breakable", "geo rock", "shiny", "relic", "egg", "mask", "vessel", "chain", "sign", "statue",
         };
 
-        IEnumerator LayoutSurvey()
+        /// <param name="missingOnly">Only the scenes the world map has no place for yet (suite "layoutmissing").</param>
+        IEnumerator LayoutSurvey(bool missingOnly = false)
         {
             PlayerData.instance.isInvincible = true;
             var names = new List<string>();
+            var placed = new HashSet<string>(UI.WorldMap.DevSceneNames());
             for (int i = 0; i < USM.sceneCountInBuildSettings; i++)
             {
                 string name = Path.GetFileNameWithoutExtension(SceneUtility.GetScenePathByBuildIndex(i));
                 bool skip = string.IsNullOrEmpty(name) || !name.Contains("_") && name != "Town";
                 foreach (var p in skipScenePrefixes) if (name.StartsWith(p) && p != "Tutorial_01") skip = true;
+                if (missingOnly && placed.Contains(name)) skip = true;
                 if (!skip) names.Add(name);
             }
+            if (missingOnly) Plugin.Log.LogInfo($"[AutoTest] 布局 只看地图上没有的 {names.Count} 个场景：{string.Join(" ", names)}");
             var wordCounts = new Dictionary<string, Dictionary<string, int>>();
             float until = Time.realtimeSinceStartup + 780f;
             int done = 0;
@@ -71,7 +75,8 @@ namespace TerraKnight
                     while (!gc.isDone) yield return null;
                 }
             }
-            Plugin.Log.LogInfo($"[AutoTest] 布局 看了 {done} 个场景；世界图集 {UI.WorldMap.WriteAtlas()}");
+            // The atlas is every scene's: a survey of a few leaves the one there.
+            Plugin.Log.LogInfo($"[AutoTest] 布局 看了 {done} 个场景；世界图集 {(missingOnly ? "没动" : UI.WorldMap.WriteAtlas())}");
             foreach (var kv in wordCounts)
             {
                 var top = new List<KeyValuePair<string, int>>(kv.Value);
@@ -84,17 +89,15 @@ namespace TerraKnight
 
         static void LayoutOf(Scene scene, Dictionary<string, Dictionary<string, int>> wordCounts)
         {
-            tk2dTileMap map = null;
+            tk2dTileMap map = TerrainSystem.SceneTileMap(scene);
             SceneManager sm = null;
             var roots = scene.GetRootGameObjects();
             foreach (var go in roots)
-            {
-                if (map == null && go.CompareTag("TileMap")) map = go.GetComponent<tk2dTileMap>();
                 if (sm == null) sm = go.GetComponentInChildren<SceneManager>(true);
-            }
             if (map == null || map.data == null || sm == null || sm.sceneType != SceneType.GAMEPLAY)
             {
-                Plugin.Log.LogInfo($"[AutoTest] 布局 {scene.name} 不是有地形的游戏场景");
+                string why = map == null ? "没有地形图" : map.data == null ? "地形图没数据" : sm == null ? "没有场景管理器" : $"场景类型 {sm.sceneType}";
+                Plugin.Log.LogInfo($"[AutoTest] 布局 {scene.name} 不是有地形的游戏场景（{why}）");
                 return;
             }
             var grid = TerrainSystem.BuildGrid(map, TerrainSystem.TerrainOutlines(map), TerrainSystem.HandPlacedTerrain(map), scene.name, out _, out _);

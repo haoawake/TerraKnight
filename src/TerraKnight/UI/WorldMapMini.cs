@@ -144,7 +144,7 @@ namespace TerraKnight.UI
             float now = Time.unscaledTime;
             foreach (var room in rooms.Values)
             {
-                if (!room.Captured || !room.AnySeen) continue;
+                if (!room.Captured || !room.AnySeen || !Shown(room)) continue;
                 var rect = new Rect(cx + (room.At.x - centre.x) * z, cy - (room.At.y + room.H - centre.y) * z, room.W * z, room.H * z);
                 float left = inGroup ? 0f : area.x, top = inGroup ? 0f : area.y;
                 if (rect.xMax < left || rect.yMax < top || rect.xMin > left + w || rect.yMin > top + h) continue;

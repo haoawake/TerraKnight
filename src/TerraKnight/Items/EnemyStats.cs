@@ -30,8 +30,20 @@ namespace TerraKnight.Items
             public float Carry;
             /// <summary>Time of the last Terraria hit it took.</summary>
             public float LastHit = -100f;
-            /// <summary>Terraria life per point of the enemy's own health (the level's toughness, <see cref="World.Areas.LevelHealth"/>, included).</summary>
-            public float Scale => World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss);
+            /// <summary>A boss's Terraria stand-in (<see cref="BossStats"/>), or null.</summary>
+            public BossStats.Ref Ref;
+            public string Scene;
+            /// <summary>Godhome's Ascended extra health over Attuned (1 elsewhere).</summary>
+            public float GodhomeTier = 1f;
+            /// <summary>
+            /// Terraria life per point of the enemy's own health: a boss's, its stand-in's life over its
+            /// health; any other, the level's (its toughness, <see cref="World.Areas.LevelHealth"/>, included).
+            /// </summary>
+            public float Scale => Ref != null
+                ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) / (float)Mathf.Max(1, MaxHp)
+                : World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss);
+            /// <summary>Terraria defense: a boss's stand-in's, else the level's.</summary>
+            public int Defense => Ref != null ? BossStats.DefenseOf(Ref) : World.Areas.Defense(Level);
         }
 
         // By instance id: destroyed Unity objects compare equal to each other.
@@ -92,13 +104,56 @@ namespace TerraKnight.Items
                 string kind = EnemyDrops.KindOf(record);
                 info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp);
                 info.Elite = !info.Boss && EliteKind(record, info.MaxHp);
+                if (info.Boss)
+                {
+                    info.Scene = hm.gameObject.scene.name;
+                    info.Ref = BossStats.Of(record, EnemyDrops.VariantLevel(info.Scene));
+                    info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
+                }
                 var touch = hm.GetComponentInChildren<DamageHero>(true);
                 info.Harmful = kind != "passive" && touch != null && touch.damageDealt > 0;
                 known[hm.GetInstanceID()] = info;
             }
             // More health later (Godhome's scaling at Start) raises its life, never its kind.
-            else if (hm.hp > info.MaxHp) info.MaxHp = hm.hp;
+            else if (hm.hp > info.MaxHp)
+            {
+                info.MaxHp = hm.hp;
+                if (info.Ref != null) info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
+            }
             return info;
+        }
+
+        /// <summary>
+        /// Behind a shield only spells get past (the game's "Spell Vulnerable" ones: the shielded husks,
+        /// the God Tamer's beast): Terraria's attacks get through as a spell does, so arrows and minions hurt it too.
+        /// </summary>
+        public static bool ShellOnlySpells(HealthManager hm) =>
+            hm != null && hm.IsInvincible && hm.gameObject.CompareTag("Spell Vulnerable");
+
+        /// <summary>NPC.CanBeChasedBy's dontTakeDamage: nothing can hurt it now (invincible all round, and not to spells either, nor a shell Terraria's attacks get through).</summary>
+        public static bool Untouchable(HealthManager hm) =>
+            hm.IsInvincible && hm.InvincibleFromDirection == 0 && !hm.gameObject.CompareTag("Spell Vulnerable") && !Shelled(hm);
+
+        /// <summary>
+        /// An Elder Baldur shut in its shell: its own FSM ("Blocker Control") makes it invincible all
+        /// round while the player is near, and only its open mouth or a spell hurts it in the game.
+        /// Terraria has no shells: its arrows, bullets, magic and minions hurt it as they would any
+        /// enemy (<see cref="MeleeHits"/> lifts the shell for the hit).
+        /// </summary>
+        public static bool Shelled(HealthManager hm) => hm != null && hm.IsInvincible && IsElderBaldur(hm);
+
+        static readonly Dictionary<int, bool> baldurs = new Dictionary<int, bool>();
+
+        static bool IsElderBaldur(HealthManager hm)
+        {
+            int id = hm.GetInstanceID();
+            if (!baldurs.TryGetValue(id, out bool yes))
+            {
+                foreach (var fsm in hm.GetComponents<PlayMakerFSM>())
+                    if (fsm.FsmName == "Blocker Control") yes = true;
+                baldurs[id] = yes;
+            }
+            return yes;
         }
 
         /// <summary>Bosses and elites: no stagger and no knockback (Terraria's bosses are never interrupted).</summary>
@@ -115,6 +170,14 @@ namespace TerraKnight.Items
             if (scale == null) return false;
             if (level1Field == null) level1Field = AccessTools.Field(scale.GetType(), "level1");
             return level1Field != null && (int)level1Field.GetValue(scale) > 0;
+        }
+
+        /// <summary>Godhome's health for the boss over its Attuned health (Ascended has more), 1 without a Godhome scale.</summary>
+        static float GodhomeTier(HealthManager hm, int hp)
+        {
+            if (hpScaleField == null || !HasBossScale(hm)) return 1f;
+            int attuned = (int)level1Field.GetValue(hpScaleField.GetValue(hm));
+            return attuned > 0 ? Mathf.Max(1f, hp / (float)attuned) : 1f;
         }
 
         static string DisplayName(string objectName)
@@ -135,7 +198,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static int Strike(Info info, int damage, bool crit, int armorPen = 0)
         {
-            int defense = World.Areas.Defense(info.Level);
+            int defense = info.Defense;
             // Armour penetration (the Shark Tooth Necklace's 5, Ichor's 15): half of it, at most half the defense, back.
             float d = damage + EnemyDebuffs.ArmorBonus(info.Hm, defense, armorPen) - defense * 0.5f;
             if (crit) d *= 2f;

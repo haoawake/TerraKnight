@@ -305,13 +305,17 @@ namespace TerraKnight.Items
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;
             }
+            // An Elder Baldur's shell keeps out everything but spells: Terraria's hits get through it.
+            bool shell = EnemyStats.Shelled(hm);
+            if (shell) hm.IsInvincible = false;
             try
             {
                 if (dealtHk > 0 || hm == null)
                     HitTaker.Hit(target, new HitInstance
                     {
                         Source = source,
-                        AttackType = AttackTypes.Generic,
+                        // A shell only spells get through (a curled-up Elder Baldur): Terraria's weapons and minions do too.
+                        AttackType = EnemyStats.ShellOnlySpells(hm) ? AttackTypes.Spell : AttackTypes.Generic,
                         DamageDealt = Mathf.Max(1, dealtHk),
                         Direction = facing > 0f ? 0f : 180f,
                         Multiplier = 1f,
@@ -322,6 +326,7 @@ namespace TerraKnight.Items
             finally
             {
                 if (heldStun != null) stunFsm(hm) = heldStun;
+                if (shell && hm != null && !hm.isDead) hm.IsInvincible = true;
             }
 
             var mod = TerraMod.Instance;

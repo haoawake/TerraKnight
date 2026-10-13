@@ -57,6 +57,22 @@ namespace TerraKnight.World
             return existing;
         }
 
+        /// <summary>
+        /// A loaded scene's tilemap, as the game finds it (GameManager.RefreshTilemapInfo: the object
+        /// tagged TileMap): a root object usually, deeper in some rooms (Crossroads_11_alt, Greenpath's
+        /// door from the Crossroads).
+        /// </summary>
+        public static tk2dTileMap SceneTileMap(UnityEngine.SceneManagement.Scene scene)
+        {
+            var roots = scene.GetRootGameObjects();
+            foreach (var go in roots)
+                if (go.CompareTag("TileMap") && go.TryGetComponent<tk2dTileMap>(out var map)) return map;
+            foreach (var go in roots)
+                foreach (var map in go.GetComponentsInChildren<tk2dTileMap>(true))
+                    if (map.CompareTag("TileMap")) return map;
+            return null;
+        }
+
         /// <summary>The scene's terrain outlines: the tilemap's chunk edge colliders on the terrain layer.</summary>
         public static List<EdgeCollider2D> TerrainOutlines(tk2dTileMap map)
         {

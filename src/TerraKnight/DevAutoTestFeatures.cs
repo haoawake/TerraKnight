@@ -148,7 +148,7 @@ namespace TerraKnight
                 if (hm.isDead || !hm.gameObject.activeInHierarchy || hurt == null || !hurt.enabled || hm.gameObject.layer != 11) continue;
                 if (hm.gameObject.scene != UnityEngine.SceneManagement.SceneManager.GetActiveScene()) continue;
                 var seen = EnemyStats.Of(hm);
-                Plugin.Log.LogInfo($"[AutoTest] 场景里的敌人 {seen.Name}（{UI.EnemyHover.NameOf(hm)}）：HK 血量 {seen.MaxHp} → 泰拉血量 {EnemyStats.LifeMax(seen)}，防御 {Areas.Defense(seen.Level)}");
+                Plugin.Log.LogInfo($"[AutoTest] 场景里的敌人 {seen.Name}（{UI.EnemyHover.NameOf(hm)}）：HK 血量 {seen.MaxHp} → 泰拉血量 {EnemyStats.LifeMax(seen)}，防御 {seen.Defense}");
                 float d = Vector2.Distance(hm.transform.position, hero.transform.position);
                 if (d < best) { best = d; target = hm; }
             }
@@ -157,7 +157,7 @@ namespace TerraKnight
             {
                 var info = EnemyStats.Of(target);
                 Plugin.Log.LogInfo($"[AutoTest] 敌人 {target.name}：层级 {info.Level}，HK 血量 {target.hp}（最多 {info.MaxHp}），泰拉血量 {EnemyStats.Life(target, info)}/{EnemyStats.LifeMax(info)}，" +
-                                   $"防御 {Areas.Defense(info.Level)}，Boss={info.Boss}");
+                                   $"防御 {info.Defense}，Boss={info.Boss}{(info.Ref != null ? "（泰拉 " + info.Ref.Boss.Name + "）" : "")}");
                 // The cursor over it, held in front of the player: its name and life follow the cursor.
                 var front = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center + Vector2.right * 2.5f;
                 target.transform.position = new Vector3(front.x, front.y, target.transform.position.z);

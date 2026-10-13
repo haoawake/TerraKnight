@@ -55,9 +55,19 @@ namespace TerraKnight.Items
             return EnemyStats.EliteKind(record, hp) ? 1 : 0;
         }
 
+        /// <summary>The dreams' returns, which keep their waking self's journal record: the game's own name for each (its Hall of Gods statue's).</summary>
+        static readonly Dictionary<string, (string Key, string Zh)> dreamNames = new Dictionary<string, (string, string)>
+        {
+            ["FalseKnight@5"] = ("NAME_FAILED_CHAMPION", "失败冠军"),
+            ["MageLord@5"] = ("NAME_SOUL_TYRANT", "灵魂暴君"),
+            ["InfectedKnight@5"] = ("NAME_LOST_KIN", "失落近亲"),
+        };
+
         public static string NameOf(string record)
         {
             if (record == null) return "";
+            if (dreamNames.TryGetValue(record, out var dream))
+                return TeamCherry.Localization.Language.Has(dream.Key, "CP3") ? TeamCherry.Localization.Language.Get(dream.Key, "CP3") : dream.Zh;
             string live = UI.EnemyHover.NameOfRecord(record);
             if (!string.IsNullOrEmpty(live)) Names[record] = live;
             if (Names.TryGetValue(record, out var n)) return n;
@@ -76,9 +86,12 @@ namespace TerraKnight.Items
             bool boss = EnemyStats.IsBossKind(record, hp);
             bool elite = !boss && EnemyStats.EliteKind(record, hp);
             float factor = boss ? World.Areas.BossDamage : elite ? World.Areas.EliteDamage : 1f;
+            // A boss as its Terraria stand-in has it, where it is first fought (not a Godhome rematch).
+            var stand = boss ? BossStats.Of(record, level) : null;
             return new Seen
             {
-                Life = Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)), Defense = World.Areas.Defense(level), Level = level,
+                Life = stand != null ? BossStats.LifeOf(stand, null, World.GameDifficulty.Current) : Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)),
+                Defense = stand != null ? BossStats.DefenseOf(stand) : World.Areas.Defense(level), Level = level,
                 Damage = kind == "passive" ? 0 : Mathf.RoundToInt(World.Areas.DamagePerMask(level) * factor),
                 Knockback = boss || elite ? 0f : World.Areas.KnockbackTaken(level), Boss = boss, Elite = elite, Scene = EnemyDrops.SceneOf(record),
             };
@@ -90,7 +103,7 @@ namespace TerraKnight.Items
             string rec = UI.EnemyHover.RecordOf(hm);
             if (rec == null || rec == "Dummy" || !EnemyDrops.Known(rec)) return null;
             if (EnemyDrops.KindOf(rec) == "non_enemy") return null;
-            return EnemyDrops.KeyFor(rec, World.Areas.LevelOf(hm.gameObject.scene.name));
+            return EnemyDrops.KeyFor(rec, EnemyDrops.VariantLevel(hm.gameObject.scene.name));
         }
 
         /// <summary>The Terraria stats of a live enemy (its contact damage from its DamageHero's masks).</summary>
@@ -102,7 +115,7 @@ namespace TerraKnight.Items
             if (masks <= 0 && info.Harmful) masks = 1;
             return new Seen
             {
-                Life = EnemyStats.LifeMax(info), Defense = World.Areas.Defense(info.Level), Level = info.Level,
+                Life = EnemyStats.LifeMax(info), Defense = info.Defense, Level = info.Level,
                 Damage = info.Harmful ? masks * Mathf.RoundToInt(World.Areas.DamagePerMask(info.Level) * EnemyStats.DamageFactor(info)) : 0,
                 Knockback = EnemyStats.Unstoppable(info) || TerraKnockback.Immune(hm) ? 0f : World.Areas.KnockbackTaken(info.Level),
                 Boss = info.Boss, Elite = info.Elite, Scene = hm.gameObject.scene.name,
@@ -155,7 +168,7 @@ namespace TerraKnight.Items
             string rec = UI.EnemyHover.RecordOf(__instance);
             if (rec == null || rec == "Dummy" || !EnemyDrops.Known(rec)) return;
             // The book keeps a stage's own table apart (Hornet in Greenpath and in Kingdom's Edge).
-            string record = EnemyDrops.KeyFor(rec, World.Areas.LevelOf(__instance.gameObject.scene.name));
+            string record = EnemyDrops.KeyFor(rec, EnemyDrops.VariantLevel(__instance.gameObject.scene.name));
             // Killed before it was ever on screen (a minion's, a shot from afar): it is seen now.
             if (!Stats.ContainsKey(record) && EnemyDrops.KindOf(rec) != "non_enemy")
             {

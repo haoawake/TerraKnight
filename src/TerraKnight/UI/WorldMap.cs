@@ -578,7 +578,7 @@ namespace TerraKnight.UI
             var visible = new List<(Room room, Rect rect)>();
             foreach (var room in rooms.Values)
             {
-                if (!room.Captured || !room.AnySeen) continue;
+                if (!room.Captured || !room.AnySeen || !Shown(room)) continue;
                 var a = ToScreen(new Vector2(room.At.x, room.At.y + room.H));
                 var b = ToScreen(new Vector2(room.At.x + room.W, room.At.y));
                 var rect = Rect.MinMaxRect(a.x, a.y, b.x, b.y);
@@ -635,10 +635,17 @@ namespace TerraKnight.UI
             GUI.color = prev;
         }
 
+        /// <summary>
+        /// A room behind a door (a shop, a house, the Troupe's tent) sits beside its door on the map but
+        /// nowhere in the world outside it: it is drawn only while the player is in it.
+        /// </summary>
+        static bool Shown(Room room) => !doorRooms.Contains(room.Name) || room.Name == TerraWorld.Live?.SceneName;
+
         static bool Seen(Vector2 cell)
         {
             foreach (var room in rooms.Values)
             {
+                if (!Shown(room)) continue;
                 int x = Mathf.FloorToInt(cell.x) - room.At.x, y = Mathf.FloorToInt(cell.y) - room.At.y;
                 if (room.Captured && x >= 0 && y >= 0 && x < room.W && y < room.H && room.IsSeen(x, y)) return true;
             }
@@ -687,7 +694,7 @@ namespace TerraKnight.UI
             string solidName = null;
             foreach (var room in rooms.Values)
             {
-                if (!room.Captured || !room.AnySeen) continue;
+                if (!room.Captured || !room.AnySeen || !Shown(room)) continue;
                 int x = gx - room.At.x, y = gy - room.At.y;
                 if (x < 0 || y < 0 || x >= room.W || y >= room.H || !room.IsSeen(x, y)) continue;
                 foreach (var o in room.Things)
@@ -954,6 +961,11 @@ namespace TerraKnight.UI
         }
 
         public static void DevZoom(float z) => zoom = z;
+
+        public static bool DevDoorRoom(string scene) => doorRooms.Contains(scene);
+
+        /// <summary>Whether the map draws a room now (a room behind a door only while the player is in it).</summary>
+        public static bool DevShown(string scene) => rooms.TryGetValue(scene, out var room) && Shown(room);
 
         public static void DevSetOpen(bool open)
         {

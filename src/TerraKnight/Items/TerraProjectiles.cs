@@ -1055,6 +1055,9 @@ namespace TerraKnight.Items
             {
                 var col = solidHits[i];
                 if (col.isTrigger || col.usedByEffector || col.GetComponentInParent<TerraOwned>() != null) continue;
+                // An enemy's own solid part (an Elder Baldur's shell, which bars the way like a wall): the
+                // shot reaches it and hits it, it isn't stopped by it as by the ground.
+                if (col.GetComponentInParent<HealthManager>() != null) continue;
                 return true;
             }
             const float c = CellGrid.CellSize;

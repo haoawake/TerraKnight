@@ -45,6 +45,12 @@ namespace TerraKnight.Items
             return table.ContainsKey(v) ? v : record;
         }
 
+        /// <summary>The Hall of Gods' rooms of a waking boss whose dream return has a table of its own (record@5): the waking one's.</summary>
+        static readonly HashSet<string> wakingRematches = new HashSet<string> { "GG_False_Knight", "GG_Soul_Master", "GG_Broken_Vessel" };
+
+        /// <summary>The level whose own table a kill in this scene uses (<see cref="KeyFor"/>): the scene's, but a waking boss's Godhome rematch none (its usual table).</summary>
+        public static int VariantLevel(string scene) => wakingRematches.Contains(scene) ? -1 : World.Areas.LevelOf(scene);
+
         public static bool Known(string record) => record != null && table.ContainsKey(record);
 
         /// <summary>Dev: every table key.</summary>

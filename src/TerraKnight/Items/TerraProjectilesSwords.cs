@@ -126,7 +126,7 @@ namespace TerraKnight.Items
         static bool Chaseable(HealthManager hm)
         {
             if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy) return false;
-            if (hm.IsInvincible && hm.InvincibleFromDirection == 0) return false;
+            if (EnemyStats.Untouchable(hm)) return false;
             var info = EnemyStats.Of(hm);
             return info != null && EnemyStats.LifeMax(info) > 5;
         }

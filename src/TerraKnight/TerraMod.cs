@@ -255,6 +255,7 @@ namespace TerraKnight
                 InfoAccessories.Tick(Inventory, hero);
                 Town.TownNpcs.Tick(hero);
                 Town.TownNpcs.Draw();
+                if (Creative) Shop.KeepCreativeGeo(hero);
                 GrantAbilityAccessories(dt);
                 HoldFrameRate();
             }

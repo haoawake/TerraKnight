@@ -316,7 +316,7 @@ namespace TerraKnight
             if (target != null)
             {
                 var info = EnemyStats.Of(target);
-                int def = Areas.Defense(info.Level);
+                int def = info.Defense;
                 Plugin.Log.LogInfo($"[AutoTest] 鲨牙项链：敌人防御 {def}，20 点的一击 {EnemyStats.Strike(info, 20, false, 0)} -> {EnemyStats.Strike(info, 20, false, Equipment.Current.ArmorPen)}（多 min(5,防御)/2 = {Mathf.Min(5, def) / 2}）");
                 // The Magma Stone: a sword hit sets the enemy on Hellfire.
                 var trb = target.GetComponent<Rigidbody2D>();

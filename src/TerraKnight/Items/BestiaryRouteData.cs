@@ -34,7 +34,7 @@ namespace TerraKnight.Items
             new[] { "AbyssTendril", "Sibling" },
             new[] { "PalaceFly", "RoyalGuard", "WhiteRoyal" },
             new[] { "HollowKnight" },
-            new[] { "WhiteDefender", "GreyPrince", "ZotelingBuzzer", "ZotelingBalloon", "FinalBoss" },
+            new[] { "FalseKnight@5", "MageLord@5", "InfectedKnight@5", "WhiteDefender", "GreyPrince", "ZotelingBuzzer", "ZotelingBalloon", "FinalBoss" },
             new[] { "FlameBearerSmall", "FlameBearerMed", "Grimm", "FlameBearerLarge", "NightmareGrimm" },
             new[] { "NailBros", "Paintmaster", "Nailsage", "HollowKnightPrime", "ZotelingHopper" },
         };

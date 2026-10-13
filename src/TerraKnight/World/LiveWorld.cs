@@ -203,6 +203,7 @@ namespace TerraKnight.World
             }
             if (loadingBusy) worstLoadFrame = Mathf.Max(worstLoadFrame, Time.unscaledDeltaTime);
             DeferredFsms.Pump();
+            WatchLoad();
             if (current == null || current.Terrain == null || waitingToTransition) return;
             PumpLoads(gm);
             CheckCrossing(gm);
@@ -351,15 +352,16 @@ namespace TerraKnight.World
             foreach (var tp in TransitionPoint.TransitionPoints)
             {
                 if (tp == null || tp.gameObject.scene != cur.Scene || !tp.isActiveAndEnabled || tp.isADoor) continue;
-                if (string.IsNullOrEmpty(tp.targetScene) || string.IsNullOrEmpty(tp.entryPoint) || tp.targetScene == cur.Name) continue;
+                string target = SceneName(tp.targetScene);
+                if (string.IsNullOrEmpty(target) || string.IsNullOrEmpty(tp.entryPoint) || target == cur.Name) continue;
                 var side = SideOf(tp.name);
                 if (side == GatePosition.door || side == GatePosition.unknown) continue;
                 // Only an edge gate facing back at this one continues the space: a side exit into a
                 // door in the middle of a bigger scene (an interior like Sheo's hut) would lay that
                 // whole scene over this one, with its hazards invisible behind this scene's art.
                 if (SideOf(tp.entryPoint) != Opposite(side)) continue;
-                if (KeptApart(cur.Name, tp.targetScene)) continue;
-                links.Add(new Link { Key = cur.Name + ":" + tp.name, Gate = tp, Target = tp.targetScene, Entry = tp.entryPoint, Side = side });
+                if (KeptApart(cur.Name, target)) continue;
+                links.Add(new Link { Key = cur.Name + ":" + tp.name, Gate = tp, Target = target, Entry = tp.entryPoint, Side = side });
             }
 
             // Scenes already loaded join where they already are, if that really is behind the gate
@@ -1042,6 +1044,42 @@ namespace TerraKnight.World
 
         // --- Loading neighbours, one at a time, in the background. ---
 
+        static Dictionary<string, string> buildScenes;
+
+        /// <summary>
+        /// A gate's target as the build names the scene. A few gates spell it in another case
+        /// (Kingdom's Edge's Deepnest_East_03 leads to "Deepnest_east_07"): Unity loads it all the
+        /// same, but it appears under its own name, and a load waiting for the other one never ended.
+        /// </summary>
+        static string SceneName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+            if (buildScenes == null)
+            {
+                buildScenes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < USceneManager.sceneCountInBuildSettings; i++)
+                {
+                    string n = System.IO.Path.GetFileNameWithoutExtension(SceneUtility.GetScenePathByBuildIndex(i));
+                    if (!string.IsNullOrEmpty(n) && !buildScenes.ContainsKey(n)) buildScenes[n] = n;
+                }
+            }
+            return buildScenes.TryGetValue(name, out var real) ? real : name;
+        }
+
+        /// <summary>Loads given up on (never showed up in time): when one shows up after all, it goes again.</summary>
+        readonly HashSet<string> abandoned = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        const float LoadGiveUp = 15f;
+
+        /// <summary>A neighbour's load that never ends must not hold every transition back for good.</summary>
+        void WatchLoad()
+        {
+            if (!loadingBusy || loading == null || Time.realtimeSinceStartup - loadStarted < LoadGiveUp) return;
+            Plugin.Log.LogWarning($"[无缝] {loading} {LoadGiveUp:F0} 秒还没载入出来，不等了");
+            abandoned.Add(loading);
+            refused.Add(loading);
+            FinishLoad();
+        }
+
         void PumpLoads(GameManager gm)
         {
             if (loadingBusy || toLoad.Count == 0 || Time.unscaledTime < nextLoadTime) return;
@@ -1082,7 +1120,12 @@ namespace TerraKnight.World
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (!loadingBusy || scene.name != loading || mode != LoadSceneMode.Additive) return;
+            if (mode == LoadSceneMode.Additive && abandoned.Remove(scene.name) && scene.name != loading)
+            {
+                Refuse(scene, true);
+                return;
+            }
+            if (!loadingBusy || !string.Equals(scene.name, loading, StringComparison.OrdinalIgnoreCase) || mode != LoadSceneMode.Additive) return;
             loadedAt = Time.realtimeSinceStartup;
             traced = scene.name;
             try
@@ -1106,12 +1149,11 @@ namespace TerraKnight.World
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var roots = scene.GetRootGameObjects();
-            tk2dTileMap map = null;
+            tk2dTileMap map = TerrainSystem.SceneTileMap(scene);
             SceneManager sm = null;
             bool bossLoads = false;
             foreach (var go in roots)
             {
-                if (map == null && go.CompareTag("TileMap")) map = go.GetComponent<tk2dTileMap>();
                 if (sm == null) sm = go.GetComponentInChildren<SceneManager>(true);
                 if (go.GetComponentInChildren<SceneAdditiveLoadConditional>(true) != null) bossLoads = true;
             }
@@ -1124,7 +1166,8 @@ namespace TerraKnight.World
             // Scenes that pull in more scenes (boss arenas) or aren't ordinary gameplay stay behind ordinary transitions.
             if (map == null || sm == null || sm.sceneType != SceneType.GAMEPLAY || bossLoads || map.data == null)
             {
-                Plugin.Log.LogInfo($"[无缝] {scene.name} 不能接（{(bossLoads ? "带额外场景" : "不是普通场景")}），{link.Gate.name} 保持原版切换");
+                string why = bossLoads ? "带额外场景" : map == null ? "没有地形图" : map.data == null ? "地形图没数据" : sm == null ? "没有场景管理器" : $"场景类型 {sm.sceneType}";
+                Plugin.Log.LogInfo($"[无缝] {scene.name} 不能接（{why}），{link.Gate.name} 保持原版切换");
                 Refuse(scene, true);
                 return;
             }

@@ -167,8 +167,8 @@ namespace TerraKnight.World
         /// (forest and surface), 1 Greenpath and the cliffs (the first caves), 2 the Fungal Wastes,
         /// Fog Canyon, Queen's Gardens, City entrance, waterways and Crystal Peak (underground,
         /// dungeon), 3 the City's upper levels, Deepnest, the Ancient Basin, the Hive and the
-        /// Resting Grounds (the underworld, early hardmode), 4 Kingdom's Edge and the Abyss
-        /// (hardmode), 5 the White Palace, Godhome, dreams and the Grimm Troupe (endgame).
+        /// Resting Grounds (the underworld, the Wall of Flesh), 4 Kingdom's Edge with its Colosseum and
+        /// the Abyss (hardmode), 5 the White Palace, Godhome, dreams and the Grimm Troupe (endgame).
         /// </summary>
         public static int LevelOf(string scene)
         {
@@ -178,9 +178,9 @@ namespace TerraKnight.World
             if (Starts(scene, "GG_Lurker")) return 4;
             if (Starts(scene, "Abyss_17", "Abyss_18", "Abyss_19")) return 3;
             if (Starts(scene, "White_Palace", "GG_", "Dream_", "Grimm_", "Room_Final", "Abyss_15")) return 5;
-            if (Starts(scene, "Deepnest_East", "Room_Wyrm", "Room_Mask_Maker", "Abyss_06", "Abyss_08", "Abyss_09", "Abyss_1", "Abyss_Lighthouse")) return 4;
+            if (Starts(scene, "Deepnest_East", "Room_Wyrm", "Room_Mask_Maker", "Room_Colosseum", "Abyss_06", "Abyss_08", "Abyss_09", "Abyss_1", "Abyss_Lighthouse")) return 4;
             if (Starts(scene, "Ruins2", "Ruins_Elevator", "Ruins_Bathhouse", "Deepnest", "Room_spider", "Abyss", "Hive", "RestingGrounds", "Room_Mansion",
-                    "Room_Colosseum", "Room_Queen", "Room_Tram")) return 3;
+                    "Room_Queen", "Room_Tram")) return 3;
             if (Starts(scene, "Fungus2", "Fungus3", "Ruins", "Waterways", "Mines", "Room_Fungus_Shaman", "Room_GG_Shortcut")) return 2;
             if (Starts(scene, "Fungus1", "Cliffs", "Room_nailmaster_02", "Room_Slug_Shrine")) return 1;
             return 0;

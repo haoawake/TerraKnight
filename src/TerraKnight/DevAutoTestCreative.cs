@@ -21,6 +21,12 @@ namespace TerraKnight
             mod.DevNoFallDamage = true;
             yield return new WaitForSeconds(0.6f);
             Plugin.Log.LogInfo($"[AutoTest] 创造模式 开局：创造 {mod.Creative}，无限物品 {mod.Inventory.Infinite}，难度 {GameDifficulty.NameOf(GameDifficulty.Current)}（应为专家），开始次数 {UI.CreativeMenu.DevStarted}");
+            // Endless money: spending it leaves it as it was.
+            int geo0 = PlayerData.instance.geo;
+            hero.TakeGeo(12345);
+            yield return null;
+            yield return null;
+            Plugin.Log.LogInfo($"[AutoTest] 创造模式 钱：{geo0}（应为 {Items.Shop.CreativeGeo}），花掉 12345 后 {PlayerData.instance.geo}");
             Items.InventoryGui.Open = true;
             yield return new WaitForSeconds(0.4f);
             Shot(scene, "creative_4_inventory");

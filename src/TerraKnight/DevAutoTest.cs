@@ -57,6 +57,40 @@ namespace TerraKnight
             yield return null;
 
             string save = Path.Combine(Application.persistentDataPath, $"user{slot}.dat");
+            // dev-run.ps1 found the test slot empty before starting the game: a save there older than
+            // that is Steam Cloud bringing back one deleted outside the game. Cleared with the game
+            // running, it goes from the cloud too.
+            string emptyMark = Path.Combine(outDir, "slot_was_empty.txt");
+            if (File.Exists(emptyMark))
+            {
+                var markedAt = File.GetLastWriteTimeUtc(emptyMark);
+                File.Delete(emptyMark);
+                bool stale = false;
+                foreach (var f in Directory.GetFiles(Application.persistentDataPath, $"user{slot}*"))
+                {
+                    string n = Path.GetFileName(f);
+                    if ((n.StartsWith($"user{slot}.") || n.StartsWith($"user{slot}_")) && File.GetLastWriteTimeUtc(f) < markedAt) stale = true;
+                }
+                if (stale)
+                {
+                    Plugin.Log.LogInfo($"[AutoTest] 存档位 {slot} 是 Steam 云同步回来的旧存档（开测前是空的），在游戏里删掉它");
+                    bool cleared = false;
+                    gm.ClearSaveFile(slot, ok => cleared = true);
+                    float until = Time.realtimeSinceStartup + 10f;
+                    while (!cleared && Time.realtimeSinceStartup < until) yield return null;
+                    // The game's own copies of it (user2_1.5.12620.dat, its .bak files) go too.
+                    foreach (var f in Directory.GetFiles(Application.persistentDataPath, $"user{slot}*"))
+                    {
+                        string n = Path.GetFileName(f);
+                        if ((n.StartsWith($"user{slot}.") || n.StartsWith($"user{slot}_")) && File.GetLastWriteTimeUtc(f) < markedAt) File.Delete(f);
+                    }
+                    foreach (var ext in new[] { "json", "map" })
+                    {
+                        var modFile = Path.Combine(Application.persistentDataPath, $"TerraKnight_slot{slot}.{ext}");
+                        if (File.Exists(modFile) && File.GetLastWriteTimeUtc(modFile) < markedAt) File.Delete(modFile);
+                    }
+                }
+            }
             if (suite == "promoA")
             {
                 // The trailer's opening: the profiles, the creative panel, the difficulty, recorded (DevAutoTestPromo2).
@@ -323,7 +357,7 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
-            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade")
+            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade")
             {
                 if (suite == "fsmdump") yield return FsmDumpTest();
                 else if (suite == "holdpose") yield return HoldPoseTest(hero);
@@ -349,6 +383,8 @@ namespace TerraKnight
                 else if (suite == "showcase") yield return ShowcaseTest(hero);
                 else if (suite == "worldmap") yield return WorldMapTest(hero);
                 else if (suite == "layout") yield return LayoutSurvey();
+                else if (suite == "layoutmissing") yield return LayoutSurvey(missingOnly: true);
+                else if (suite == "v10") yield return V10Test(hero);
                 else if (suite == "tunnel") yield return TunnelTest(hero);
                 else if (suite == "route") yield return RouteTest(hero);
                 else if (suite == "blockers") yield return BlockerSurvey();

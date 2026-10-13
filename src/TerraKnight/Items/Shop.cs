@@ -120,6 +120,25 @@ namespace TerraKnight.Items
             else if (geo < had) hero.TakeGeo(had - geo);
         }
 
+        /// <summary>A creative save's geo: never short of it.</summary>
+        public const int CreativeGeo = 99999999;
+
+        /// <summary>
+        /// A creative save keeps its geo at 99,999,999: whatever takes some (a toll, a bench) is made up
+        /// again at once, and the shade left at a death carries none (its geo would come back on top).
+        /// Set as it is, past the game's own cap (PlayerData.AddGeo stops at 9,999,999), and the
+        /// counter in the corner shown it without counting up.
+        /// </summary>
+        public static void KeepCreativeGeo(HeroController hero)
+        {
+            var pd = PlayerData.instance;
+            if (pd == null || hero == null) return;
+            if (pd.geoPool != 0) pd.geoPool = 0;
+            if (pd.geo == CreativeGeo) return;
+            pd.geo = CreativeGeo;
+            if (hero.geoCounter != null) hero.geoCounter.NewSceneRefresh();
+        }
+
         /// <summary>A price in copper as geo: "12 吉欧", "0.07 吉欧", "12.5 吉欧".</summary>
         public static string Money(long copper)
         {
