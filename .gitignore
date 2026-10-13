@@ -1,0 +1,21 @@
+bin/
+obj/
+.vs/
+*.user
+
+# 每台电脑自己的游戏路径
+LocalPaths.props
+
+# 反编译出来的游戏代码和解包的游戏素材绝不能进仓库
+decomp/
+*.xnb
+
+# 宣传片：录的素材、渲染出来的视频和配乐都很大，也都能用 promo/ 里的脚本重新生成（成片放在 Releases）
+promo/clips/
+promo/sheets/
+promo/*.mp4
+promo/music.wav
+promo/ffmpeg_path.txt
+__pycache__/
+# 打包出来的发布文件
+release/

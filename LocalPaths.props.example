@@ -1,0 +1,6 @@
+<Project>
+  <!-- 复制成 LocalPaths.props 并改成你电脑上的空洞骑士路径（需要先装好 BepInEx 5） -->
+  <PropertyGroup>
+    <HollowKnightDir>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight</HollowKnightDir>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\LocalPaths.props" Condition="Exists('..\..\LocalPaths.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>TerraKnight</AssemblyName>
+    <RootNamespace>TerraKnight</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <DebugType>portable</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <HollowKnightDir Condition="'$(HollowKnightDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight</HollowKnightDir>
+    <ManagedDir>$(HollowKnightDir)\hollow_knight_Data\Managed</ManagedDir>
+    <BepInExDir>$(HollowKnightDir)\BepInEx</BepInExDir>
+    <PluginInstallDir>$(BepInExDir)\plugins\TerraKnight</PluginInstallDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="$(BepInExDir)\core\BepInEx.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\0Harmony.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\Mono.Cecil.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Assembly-CSharp-firstpass.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\PlayMaker.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\TeamCherry.TK2D.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\TeamCherry.Localization.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\UnityEngine*Module.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\UnityEngine.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- 标题画面的“泰拉圣巢”标题图（scratchpad 的 logo/make_logo.py 从原版标题图改出来的） -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.png" LogicalName="TerraKnight.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources\lang.json" LogicalName="TerraKnight.lang.json" />
+  </ItemGroup>
+
+  <!-- 编译后直接放进游戏的 BepInEx 插件目录 -->
+  <Target Name="InstallPlugin" AfterTargets="Build" Condition="Exists('$(BepInExDir)')">
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" />
+    <!-- 启动器放在游戏根目录：双击进 mod 版，Steam 里启动仍是原版 -->
+    <Copy SourceFiles="..\..\launcher\泰拉圣巢.bat;..\..\launcher\terraknight-launch.ps1" DestinationFolder="$(HollowKnightDir)" />
+    <Message Importance="high" Text="TerraKnight -> $(PluginInstallDir)" />
+  </Target>
+
+</Project>

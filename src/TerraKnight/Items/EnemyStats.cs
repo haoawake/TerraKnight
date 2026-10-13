@@ -1,0 +1,174 @@
+using System.Collections.Generic;
+using HarmonyLib;
+using UnityEngine;
+
+namespace TerraKnight.Items
+{
+    /// <summary>
+    /// Every enemy as a Terraria NPC: life in Terraria points (the enemy's own health times
+    /// <see cref="World.Areas.HealthScale"/>), the level's defense and knockback
+    /// resistance, and whether it is a boss. The game's health stays the real store, so its
+    /// scripts (phase changes at set health, deaths) work as before; Terraria damage that doesn't
+    /// add up to a whole point of it yet is carried over to the next hit.
+    /// </summary>
+    [HarmonyPatch]
+    internal static class EnemyStats
+    {
+        internal sealed class Info
+        {
+            public HealthManager Hm;
+            public int Level;
+            /// <summary>The most health the enemy has had: the game keeps no maximum.</summary>
+            public int MaxHp;
+            public bool Boss;
+            /// <summary>Not a boss, but one of the strong ones (Vengefly King, Soul Warrior, a Great Husk Sentry...): no stagger, no knockback, harder hits.</summary>
+            public bool Elite;
+            /// <summary>Hurts on touch (npc.damage > 0, for the Radar): has a DamageHero dealing damage.</summary>
+            public bool Harmful;
+            public string Name;
+            /// <summary>Terraria damage dealt that didn't make a whole point of the enemy's own health yet.</summary>
+            public float Carry;
+            /// <summary>Time of the last Terraria hit it took.</summary>
+            public float LastHit = -100f;
+            /// <summary>Terraria life per point of the enemy's own health (the level's toughness, <see cref="World.Areas.LevelHealth"/>, included).</summary>
+            public float Scale => World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss);
+        }
+
+        // By instance id: destroyed Unity objects compare equal to each other.
+        static readonly Dictionary<int, Info> known = new Dictionary<int, Info>();
+        static readonly System.Reflection.FieldInfo hpScaleField = AccessTools.Field(typeof(HealthManager), "hpScale");
+        static System.Reflection.FieldInfo level1Field;
+
+        /// <summary>A kind with this much health of its own counts as a boss even without a Godhome scale (the game marks bosses that way).</summary>
+        const int BossHp = 300;
+        /// <summary>A common kind this tough of its own counts as an elite (a Husk Guard's 70, a Hive Guardian's 100, a Great Husk Sentry's 170).</summary>
+        const int EliteHp = 70;
+        static readonly HashSet<string> bossKinds = new HashSet<string> { "boss", "arena_boss", "dream_boss", "warrior_dream", "godhome_boss" };
+
+        /// <summary>
+        /// Whether an enemy of this kind is one of the strong ones, by the kind itself (the roster,
+        /// from the game's own data), never by what its health happens to be now: one of the
+        /// journal's mini-bosses (Vengefly King, Soul Warrior, Pale Lurker), or a kind with 70 or
+        /// more health of its own (Husk Guard, Hive Guardian, Stalking Devout, Mawlurk, Great Husk
+        /// Sentry, Kingsmould, the Colosseum's heavy fools...). The roster's "unique" ones aren't
+        /// elites for that alone (the Siblings, egg sacs, Grub Mimics are weak). A kind the roster
+        /// doesn't know goes by the health it was first seen with.
+        /// </summary>
+        public static bool EliteKind(string record, int firstSeenHp)
+        {
+            string kind = EnemyDrops.KindOf(record);
+            if (kind == "passive" || IsBossKind(record, firstSeenHp)) return false;
+            if (kind == "miniboss") return true;
+            int hp = EnemyDrops.HpOf(record);
+            return (hp > 0 ? hp : firstSeenHp) >= EliteHp;
+        }
+
+        /// <summary>
+        /// A boss by its kind: the roster's bosses (and dream, Godhome and Colosseum ones), or a
+        /// kind with 300+ health of its own. Never one of the journal's mini-bosses, which the
+        /// roster also marks as bosses: they are the elites.
+        /// </summary>
+        public static bool IsBossKind(string record, int firstSeenHp)
+        {
+            string kind = EnemyDrops.KindOf(record);
+            if (kind == "miniboss") return false;
+            if (EnemyDrops.IsBoss(record) || (kind != null && bossKinds.Contains(kind))) return true;
+            int hp = EnemyDrops.HpOf(record);
+            return (hp > 0 ? hp : firstSeenHp) >= BossHp;
+        }
+
+        public static Info Of(HealthManager hm)
+        {
+            if (!known.TryGetValue(hm.GetInstanceID(), out var info))
+            {
+                info = new Info
+                {
+                    Hm = hm,
+                    Level = World.Areas.LevelOf(hm.gameObject.scene.name),
+                    MaxHp = Mathf.Max(1, hm.hp),
+                    Name = DisplayName(hm.gameObject.name),
+                };
+                string record = UI.EnemyHover.RecordOf(hm);
+                string kind = EnemyDrops.KindOf(record);
+                info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp);
+                info.Elite = !info.Boss && EliteKind(record, info.MaxHp);
+                var touch = hm.GetComponentInChildren<DamageHero>(true);
+                info.Harmful = kind != "passive" && touch != null && touch.damageDealt > 0;
+                known[hm.GetInstanceID()] = info;
+            }
+            // More health later (Godhome's scaling at Start) raises its life, never its kind.
+            else if (hm.hp > info.MaxHp) info.MaxHp = hm.hp;
+            return info;
+        }
+
+        /// <summary>Bosses and elites: no stagger and no knockback (Terraria's bosses are never interrupted).</summary>
+        public static bool Unstoppable(Info info) => info != null && (info.Boss || info.Elite);
+
+        /// <summary>How much harder than the area's common enemies this one hits.</summary>
+        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage : info.Elite ? World.Areas.EliteDamage : 1f;
+
+        /// <summary>Godhome gives its bosses (and only them) health per difficulty.</summary>
+        static bool HasBossScale(HealthManager hm)
+        {
+            if (hpScaleField == null) return false;
+            var scale = hpScaleField.GetValue(hm);
+            if (scale == null) return false;
+            if (level1Field == null) level1Field = AccessTools.Field(scale.GetType(), "level1");
+            return level1Field != null && (int)level1Field.GetValue(scale) > 0;
+        }
+
+        static string DisplayName(string objectName)
+        {
+            int cut = objectName.IndexOf('(');
+            return (cut > 0 ? objectName.Substring(0, cut) : objectName).Trim();
+        }
+
+        /// <summary>Life in Terraria points.</summary>
+        public static int Life(HealthManager hm, Info info) =>
+            hm.isDead ? 0 : Mathf.Max(0, Mathf.CeilToInt((hm.hp - info.Carry) * info.Scale));
+
+        public static int LifeMax(Info info) => Mathf.CeilToInt(info.MaxHp * info.Scale);
+
+        /// <summary>
+        /// NPC.StrikeNPC: the defense takes half its value off the hit (Main.CalculateDamageNPCsTake),
+        /// a crit doubles what's left, and a hit always does at least 1.
+        /// </summary>
+        public static int Strike(Info info, int damage, bool crit, int armorPen = 0)
+        {
+            int defense = World.Areas.Defense(info.Level);
+            // Armour penetration (the Shark Tooth Necklace's 5, Ichor's 15): half of it, at most half the defense, back.
+            float d = damage + EnemyDebuffs.ArmorBonus(info.Hm, defense, armorPen) - defense * 0.5f;
+            if (crit) d *= 2f;
+            return Mathf.Max(1, Mathf.RoundToInt(d));
+        }
+
+        /// <summary>Turns Terraria damage into the enemy's own health points, carrying the remainder.</summary>
+        public static int ToGameDamage(Info info, int damage)
+        {
+            float total = info.Carry + damage / info.Scale;
+            int whole = Mathf.FloorToInt(total);
+            info.Carry = total - whole;
+            return whole;
+        }
+
+        /// <summary>Enemies seen so far (some may be gone; check <see cref="Info.Hm"/>).</summary>
+        public static IEnumerable<Info> All => known.Values;
+
+        /// <summary>Records the starting health, which Start sets (Godhome scales it there).</summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HealthManager), "Start")]
+        static void AfterStart(HealthManager __instance)
+        {
+            if (TerraMod.Instance != null) Of(__instance);
+        }
+
+        /// <summary>Drops enemies that are gone (scene unloaded).</summary>
+        public static void Prune()
+        {
+            if (known.Count == 0) return;
+            var gone = new List<int>();
+            foreach (var kv in known) if (kv.Value.Hm == null) gone.Add(kv.Key);
+            foreach (var k in gone) known.Remove(k);
+        }
+    }
+}
