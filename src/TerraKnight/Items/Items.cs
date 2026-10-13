@@ -1788,13 +1788,32 @@ namespace TerraKnight.Items
         public const int Rows = 5;
         public const int Size = Columns * Rows;
         public const int HotbarSize = Columns;
+        /// <summary>
+        /// Terraria's four ammo slots (inventory 54-57, beside the coins'), kept after the bag in
+        /// <see cref="Slots"/>: Size to Total - 1, top to bottom.
+        /// </summary>
+        public const int AmmoSlots = 4;
+        public const int Total = Size + AmmoSlots;
+        public static bool IsAmmoSlot(int i) => i >= Size && i < Total;
+
+        /// <summary>Item.FitsAmmoSlot: what an ammo slot takes (ammo of any kind, the Ale too).</summary>
+        public static bool FitsAmmoSlot(ItemDef d) => d != null && d.Ammo != AmmoKind.None;
+
+        /// <summary>
+        /// Item.CanFillEmptyAmmoSlot: a pickup goes into an empty ammo slot by itself when it is ammo
+        /// first of all; sand, Fallen Stars, gel and Ale (mostly something else) only top up a stack
+        /// already there.
+        /// </summary>
+        public static bool FillsEmptyAmmoSlot(ItemDef d) => FitsAmmoSlot(d) && d.Type != ItemType.SandBlock && d.Type != ItemType.FallenStar &&
+            d.Type != ItemType.Gel && d.Type != ItemType.PearlsandBlock && d.Type != ItemType.EbonsandBlock && d.Type != ItemType.CrimsandBlock && d.Type != ItemType.Ale;
         /// <summary>Five accessory slots and the Demon Heart's sixth (Player.extraAccessory; locked until it is eaten).</summary>
         public const int AccessorySlots = 6;
         /// <summary>The slots in use: the sixth once the Demon Heart is eaten (Player.IsItemSlotUnlockedAndUsable).</summary>
         public static int OpenAccessories => TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.DemonHeart) ? AccessorySlots : AccessorySlots - 1;
         public const int ArmorSlots = 3;
 
-        public readonly ItemStack[] Slots = new ItemStack[Size];
+        /// <summary>The bag (0 to Size - 1, the hotbar first) and the ammo slots after it.</summary>
+        public readonly ItemStack[] Slots = new ItemStack[Total];
         /// <summary>The worn set (Player.armor): what the equipment column shows and changes.</summary>
         public readonly ItemStack[] Accessories = new ItemStack[AccessorySlots];
         /// <summary>Head, body, legs.</summary>
@@ -1809,7 +1828,7 @@ namespace TerraKnight.Items
             public readonly ItemStack[] Armor = new ItemStack[ArmorSlots];
             public readonly ItemStack[] Accessories = new ItemStack[AccessorySlots];
             /// <summary>Creative (BagPerLoadout): the loadout's own bag and hotbar pick, kept here while another is worn.</summary>
-            public readonly ItemStack[] Bag = new ItemStack[Size];
+            public readonly ItemStack[] Bag = new ItemStack[Total];
             public int Selected;
         }
 
@@ -1851,7 +1870,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < ArmorSlots; i++) (Armor[i], l.Armor[i]) = (l.Armor[i], Armor[i]);
             for (int i = 0; i < AccessorySlots; i++) (Accessories[i], l.Accessories[i]) = (l.Accessories[i], Accessories[i]);
             if (!BagPerLoadout) return;
-            for (int i = 0; i < Size; i++) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
+            for (int i = 0; i < Total; i++) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
             (Selected, l.Selected) = (l.Selected, Selected);
         }
 
@@ -1927,14 +1946,14 @@ namespace TerraKnight.Items
 
         public void Clear()
         {
-            for (int i = 0; i < Size; i++) Slots[i] = default;
+            for (int i = 0; i < Total; i++) Slots[i] = default;
             for (int i = 0; i < AccessorySlots; i++) Accessories[i] = default;
             for (int i = 0; i < ArmorSlots; i++) Armor[i] = default;
             foreach (var l in Loadouts)
             {
                 for (int i = 0; i < ArmorSlots; i++) l.Armor[i] = default;
                 for (int i = 0; i < AccessorySlots; i++) l.Accessories[i] = default;
-                for (int i = 0; i < Size; i++) l.Bag[i] = default;
+                for (int i = 0; i < Total; i++) l.Bag[i] = default;
                 l.Selected = 0;
             }
             CurrentLoadout = 0;
@@ -1959,6 +1978,7 @@ namespace TerraKnight.Items
         public int AddSome(ItemType type, int count)
         {
             var def = ItemDb.Get(type);
+            count = FillAmmo(def, count);
             for (int i = 0; i < Size && count > 0; i++)
             {
                 if (Slots[i].Type != type || Slots[i].Count >= def.MaxStack) continue;
@@ -1986,6 +2006,7 @@ namespace TerraKnight.Items
         public int Pickup(ItemType type, int count, bool favorite = false)
         {
             var def = ItemDb.Get(type);
+            count = FillAmmo(def, count);
             for (int i = 0; i < Size && count > 0; i++)
             {
                 if (Slots[i].IsEmpty || Slots[i].Type != type || Slots[i].Count >= def.MaxStack) continue;
@@ -2011,14 +2032,43 @@ namespace TerraKnight.Items
             return count;
         }
 
-        /// <summary>Room for this many more of an item.</summary>
+        /// <summary>
+        /// Player.FillAmmo: ammo picked up tops up the ammo slots' stacks of it, top to bottom, then
+        /// takes an empty one (<see cref="FillsEmptyAmmoSlot"/>). Returns how many are left.
+        /// </summary>
+        int FillAmmo(ItemDef def, int count)
+        {
+            if (!FitsAmmoSlot(def)) return count;
+            for (int i = Size; i < Total && count > 0; i++)
+            {
+                if (Slots[i].IsEmpty || Slots[i].Type != def.Type || Slots[i].Count >= def.MaxStack) continue;
+                int moved = System.Math.Min(count, def.MaxStack - Slots[i].Count);
+                Slots[i].Count += moved;
+                count -= moved;
+            }
+            if (!FillsEmptyAmmoSlot(def)) return count;
+            for (int i = Size; i < Total && count > 0; i++)
+            {
+                if (!Slots[i].IsEmpty) continue;
+                int moved = System.Math.Min(count, def.MaxStack);
+                Slots[i] = ItemStack.Of(def.Type, moved);
+                count -= moved;
+            }
+            return count;
+        }
+
+        /// <summary>Room for this many more of an item: the bag, and the ammo slots as far as they take it.</summary>
         public int Room(ItemType type)
         {
             var def = ItemDb.Get(type);
             int room = 0;
-            foreach (var s in Slots)
-                if (s.IsEmpty) room += def.MaxStack;
-                else if (s.Type == type) room += def.MaxStack - s.Count;
+            for (int i = 0; i < Total; i++)
+            {
+                var s = Slots[i];
+                bool ammoSlot = IsAmmoSlot(i);
+                if (s.IsEmpty) { if (!ammoSlot || FillsEmptyAmmoSlot(def)) room += def.MaxStack; }
+                else if (s.Type == type && (!ammoSlot || FitsAmmoSlot(def))) room += def.MaxStack - s.Count;
+            }
             return room;
         }
 
@@ -2037,12 +2087,12 @@ namespace TerraKnight.Items
         }
 
         /// <summary>
-        /// Terraria's ammo pick (Player.ChooseAmmo): the ammo slots first, then the inventory in
-        /// order. Here the last row of the inventory plays the ammo slots. -1 when there is none.
+        /// Terraria's ammo pick (Player.AmmoSlotOrder_Default, PickAmmo_IterateRange): the ammo slots
+        /// top to bottom, then the inventory from its first slot on. -1 when there is none.
         /// </summary>
         public int FindAmmo(AmmoKind kind)
         {
-            for (int i = Size - 1; i >= Size - Columns; i--)
+            for (int i = Size; i < Total; i++)
                 if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) return i;
             for (int i = 0; i < Size; i++)
                 if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) return i;
@@ -2053,21 +2103,21 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// The Chaos Cylinders' pick (PickAmmo_PickAmmoItem, Pl:54329-54393): the offset-th stack
-        /// of the ammo row (the plain pick when the row holds none), or of every stack in the plain
-        /// order (full inventory, random); the plain pick for the simple one or none worn.
+        /// of the ammo slots (the plain pick when they hold none: AmmoSlotOrder_AmmoOnly), or of every
+        /// stack in the plain order (full inventory, random); the plain pick for the simple one or none worn.
         /// </summary>
         public int FindAmmo(AmmoKind kind, AmmoCycleMode mode, int offset)
         {
             if (mode == AmmoCycleMode.Off || mode == AmmoCycleMode.Simple) return FindAmmo(kind);
             cycle.Clear();
-            for (int i = Size - 1; i >= Size - Columns; i--)
+            for (int i = Size; i < Total; i++)
                 if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) cycle.Add(i);
             if (mode == AmmoCycleMode.AmmoSlots)
             {
                 if (cycle.Count == 0) return FindAmmo(kind);
             }
             else
-                for (int i = 0; i < Size - Columns; i++)
+                for (int i = 0; i < Size; i++)
                     if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) cycle.Add(i);
             return cycle.Count == 0 ? -1 : cycle[(int)((uint)offset % (uint)cycle.Count)];
         }

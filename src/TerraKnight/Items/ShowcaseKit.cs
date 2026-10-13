@@ -71,7 +71,8 @@ namespace TerraKnight.Items
             var items = bags[loadout];
             for (int i = 0; i < items.Length && i < slots.Length; i++) slots[i] = Stack(items[i]);
             if (loadout == 1)
-                for (int i = 0; i < ammo.Length; i++) slots[slots.Length - 1 - i] = Stack(ammo[i].Type, ammo[i].Count);
+                for (int i = 0; i < ammo.Length; i++)
+                    slots[i < Inventory.AmmoSlots ? Inventory.Size + i : Inventory.Size - 1 - (i - Inventory.AmmoSlots)] = Stack(ammo[i].Type, ammo[i].Count);
         }
 
         public static int DevMissing;

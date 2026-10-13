@@ -21,6 +21,10 @@ namespace TerraKnight.Items
     internal static partial class InventoryGui
     {
         const float SlotSize = 44f;   // Terraria's 52 px slot at inventoryScale 0.85
+        /// <summary>The ammo slots are drawn smaller, as Terraria's coin and ammo columns are (inventoryScale 0.6 of 0.85).</summary>
+        const float AmmoSlotSize = SlotSize * 0.8f;
+        /// <summary>Right of the bag: the ammo column, then the Geo line's notes and the book's button beyond it.</summary>
+        internal static float RightOfAmmo(float ui) => Margin * ui + Inventory.Columns * SlotStep * ui + 8f * ui + AmmoSlotSize * ui + 14f * ui;
         const float SlotStep = 47.6f; // 56 px spacing at the same scale
         const float Margin = 20f;
         const float RecipeStep = 65f;
@@ -309,6 +313,8 @@ namespace TerraKnight.Items
                 return;
             }
             if (inv.Mouse.IsEmpty && slot.IsEmpty) return;
+            // An ammo slot takes ammo only (ItemSlot.PickItemMovementAction, context 2: FitsAmmoSlot).
+            if (Inventory.IsAmmoSlot(i) && !inv.Mouse.IsEmpty && !Inventory.FitsAmmoSlot(inv.Mouse.Def)) return;
             // MouseItemSwap, then top the slot up from the cursor when they stack.
             if (CanStack(inv.Mouse, slot) && slot.Count < slot.Def.MaxStack && inv.Mouse.Count < inv.Mouse.Def.MaxStack)
             {
@@ -717,10 +723,31 @@ namespace TerraKnight.Items
                 }
 
                 // Geo, where Terraria keeps the coin slots.
-                Outlined(new Rect(x0 + Inventory.Columns * step + 8f * ui, y0, 200f * ui, 22f * ui), Lang.F("吉欧：{0}", Shop.Geo), labelStyle, new Color(1f, 0.9f, 0.55f));
+                float rx = x0 + Inventory.Columns * step + 8f * ui;
+                Outlined(new Rect(rx, y0, 200f * ui, 22f * ui), Lang.F("吉欧：{0}", Shop.Geo), labelStyle, new Color(1f, 0.9f, 0.55f));
                 var stats = TerraMod.Instance.Stats;
                 if (stats.PotionSickness > 0f)
-                    Outlined(new Rect(x0 + Inventory.Columns * step + 8f * ui, y0 + 22f * ui, 220f * ui, 22f * ui), Lang.F("药水病：{0} 秒", Mathf.CeilToInt(stats.PotionSickness)), labelStyle, new Color(1f, 0.6f, 0.6f));
+                    Outlined(new Rect(view.x + RightOfAmmo(ui), y0 + 22f * ui, 220f * ui, 22f * ui), Lang.F("药水病：{0} 秒", Mathf.CeilToInt(stats.PotionSickness)), labelStyle, new Color(1f, 0.6f, 0.6f));
+
+                // The ammo slots (Main.DrawInventory's ammo column, inventory 54-57), right of the bag
+                // level with its four lower rows: what a bow or a gun takes first, top to bottom.
+                float ammoS = AmmoSlotSize * ui;
+                Outlined(new Rect(rx - 4f * ui, y0 + step - 18f * ui, ammoS + 8f * ui, 18f * ui), Lang.T("弹药"), labelStyle, Color.white);
+                for (int k = 0; k < Inventory.AmmoSlots; k++)
+                {
+                    int i = Inventory.Size + k;
+                    var rect = new Rect(rx, y0 + (k + 1) * step + (slot - ammoS) / 2f, ammoS, ammoS);
+                    Add(rect, Kind.Slot, i);
+                    var st = inv.Slots[i];
+                    DrawSlot(rect, st, st.Favorite && !st.IsEmpty ? "Inventory_Back10" : "Inventory_Back", inv.Infinite);
+                    if (rect.Contains(mouse))
+                    {
+                        hovered = st;
+                        hoveredKind = Kind.Slot;
+                        if (Town.TownNpcs.ShopOpen && !st.IsEmpty) hoveredExtra = SellLine(st);
+                        if (st.IsEmpty) DrawLines(mouse, new List<string> { Lang.T("弹药") }, Color.white);
+                    }
+                }
 
                 // Equipment column on the right, under the life and mana display: armor, then accessories.
                 float ax = view.xMax - 120f * ui, ay = view.y + 230f * ui;

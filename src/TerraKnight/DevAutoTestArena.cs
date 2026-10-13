@@ -16,6 +16,21 @@ namespace TerraKnight
         {
             mod.DevNoFallDamage = true;
             var pd = PlayerData.instance;
+            // The book's button, creative: "传送并召唤" on a boss (the longest name), "生成" on any other.
+            bool wasCreative = mod.Creative;
+            mod.ApplyCreative(true);
+            InventoryGui.Open = true;
+            foreach (var rec in new[] { "NailBros", "Crawler" })
+            {
+                InventoryGui.DevBestiaryShow(rec);
+                yield return new WaitForSeconds(0.6f);
+                Plugin.Log.LogInfo($"[AutoTest] 挑战 图鉴按钮 {Bestiary.NameOf(rec)}：{(BossArena.Has(rec) ? "传送并召唤" : "生成")}，按钮 {InventoryGui.DevSpawnRect}");
+                Shot(GameManager.instance.sceneName, "arena_0_button_" + rec);
+                yield return null;
+            }
+            InventoryGui.DevBestiary(false);
+            InventoryGui.Open = false;
+            mod.ApplyCreative(wasCreative);
             // Beaten already, as in a save that has been through them.
             pd.SetBool("falseKnightDefeated", true);
             SceneData.instance.SaveMyState(new PersistentBoolData { sceneName = "Crossroads_10", id = "Battle Scene", activated = true });

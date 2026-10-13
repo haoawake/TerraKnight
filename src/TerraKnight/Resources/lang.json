@@ -2638,5 +2638,29 @@
   "it-IT": "Maestro",
   "pt-BR": "Mestre",
   "ru-RU": "Мастер"
+ },
+ "传送并召唤": {
+  "en-US": "Teleport & Summon",
+  "zh-Hant": "傳送並召喚",
+  "ja-JP": "テレポートして召喚",
+  "ko-KR": "순간이동 후 소환",
+  "de-DE": "Teleportieren & Beschwören",
+  "fr-FR": "Se téléporter et invoquer",
+  "es-ES": "Teletransportar e invocar",
+  "it-IT": "Teletrasporta ed evoca",
+  "pt-BR": "Teleportar e invocar",
+  "ru-RU": "Телепорт и призыв"
+ },
+ "弹药": {
+  "en-US": "Ammo",
+  "zh-Hant": "彈藥",
+  "ja-JP": "弾薬",
+  "ko-KR": "탄약",
+  "de-DE": "Munition",
+  "fr-FR": "Munitions",
+  "es-ES": "Munición",
+  "it-IT": "Munizioni",
+  "pt-BR": "Munição",
+  "ru-RU": "Боеприпасы"
  }
 }

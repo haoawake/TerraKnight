@@ -152,10 +152,10 @@ namespace TerraKnight
             Inventory.Clear();
             Inventory.Slots[0] = ItemStack.Of(ItemType.CopperShortsword);
             Inventory.Slots[1] = ItemStack.Of(ItemType.CopperPickaxe);
-            // A bow with a hundred arrows (in the ammo row, the last slot first) and ten torches to light the way.
+            // A bow with a hundred arrows (in the first ammo slot) and ten torches to light the way.
             Inventory.Slots[2] = ItemStack.Of(ItemType.WoodenBow);
             Inventory.Slots[3] = ItemStack.Of(ItemType.Torch, 10);
-            Inventory.Slots[Inventory.Size - 1] = ItemStack.Of(ItemType.WoodenArrow, 100);
+            Inventory.Slots[Inventory.Size] = ItemStack.Of(ItemType.WoodenArrow, 100);
             // A start to get about with: the grappling hook (E) in the bag, the Climbing Claws and the Cloud in a
             // Bottle worn. They are marked shared (favourite), so every loadout keeps them; the Mantis Claw and the
             // Monarch Wings give nothing more later (GrantAbilityAccessories skips what is already owned).

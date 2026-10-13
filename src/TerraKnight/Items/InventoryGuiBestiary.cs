@@ -219,7 +219,7 @@ namespace TerraKnight.Items
 
         static void DrawBestiaryButton(Rect view, float ui, Vector2 mouse)
         {
-            float x = view.x + Margin * ui + Inventory.Columns * SlotStep * ui + 8f * ui, y = view.y + (Margin + 18f) * ui + 70f * ui;
+            float x = view.x + RightOfAmmo(ui), y = view.y + (Margin + 18f) * ui + 70f * ui;
             var r = new Rect(x, y, 90f * ui, 24f * ui);
             bool over = r.Contains(mouse);
             Outlined(r, Lang.T("怪物图鉴"), labelStyle, over || bestiaryOpen ? new Color(1f, 0.85f, 0.3f) : Color.white);
@@ -497,18 +497,6 @@ namespace TerraKnight.Items
             float cx = port.xMax + 18f * ui, cw = d.xMax - cx;
             var nameColor = !seen ? new Color(0.75f, 0.75f, 0.85f) : cat > 0 ? CategoryColor(cat) : new Color(1f, 0.95f, 0.7f);
             Outlined(new Rect(cx, d.y, cw, 34f * ui), seen ? Bestiary.NameOf(rec) : "？？？", bookName, nameColor);
-            // Creative: the spawn button by the name (a copy ten tiles in front of the player).
-            if (TerraMod.Instance != null && TerraMod.Instance.Creative)
-            {
-                var spawn = new Rect(d.xMax - 76f * ui, d.y + 4f * ui, 72f * ui, 26f * ui);
-                DevSpawnRect = spawn;
-                bool over = spawn.Contains(mouse);
-                Fill(spawn, over ? new Color(0.32f, 0.55f, 0.28f, 0.95f) : new Color(0.18f, 0.32f, 0.16f, 0.9f));
-                Rim(spawn, new Color(0.7f, 1f, 0.6f), 1.5f * ui);
-                Outlined(spawn, Lang.T("生成"), bookCentre, Color.white);
-                var m = UnityEngine.InputSystem.Mouse.current;
-                if (over && Event.current.type == EventType.Repaint && UI.TerraCursor.LeftPressed(m)) BookSpawner.Spawn(rec);
-            }
             float chipX = cx;
             void Chip(string text, Color c)
             {
@@ -525,6 +513,23 @@ namespace TerraKnight.Items
                 Chip(area, new Color(0.6f, 0.9f, 0.7f));
             }
             else Chip(Lang.T("未知"), new Color(0.7f, 0.7f, 0.8f));
+            // Creative: the spawn button, at the right of the kind and area tags (on the danger row
+            // when the tags reach it): a copy ten tiles in front of the player, or for a boss, the
+            // player taken to its arena to fight it there (BossArena).
+            if (TerraMod.Instance != null && TerraMod.Instance.Creative)
+            {
+                string label = Lang.T(BossArena.Has(rec) ? "传送并召唤" : "生成");
+                float bw = Mathf.Max(72f * ui, bookCentre.CalcSize(new GUIContent(label)).x + 16f * ui);
+                float bx = d.xMax - bw - 4f * ui;
+                var spawn = new Rect(bx, bx >= chipX + 4f * ui ? d.y + 38f * ui : d.y + 68f * ui, bw, 26f * ui);
+                DevSpawnRect = spawn;
+                bool over = spawn.Contains(mouse);
+                Fill(spawn, over ? new Color(0.32f, 0.55f, 0.28f, 0.95f) : new Color(0.18f, 0.32f, 0.16f, 0.9f));
+                Rim(spawn, new Color(0.7f, 1f, 0.6f), 1.5f * ui);
+                Outlined(spawn, label, bookCentre, Color.white);
+                var m = UnityEngine.InputSystem.Mouse.current;
+                if (over && Event.current.type == EventType.Repaint && UI.TerraCursor.LeftPressed(m)) BookSpawner.Spawn(rec);
+            }
             Outlined(new Rect(cx, d.y + 70f * ui, 80f * ui, 20f * ui), Lang.T("危险度"), bookSmall, new Color(0.8f, 0.85f, 1f));
             int danger = seen ? Mathf.Clamp(st.Level + 1 + (cat == 2 ? 1 : 0), 1, 6) : 0;
             for (int s = 0; s < 6; s++)
