@@ -106,7 +106,13 @@ namespace TerraKnight.Items
         /// a body slides along the ground (<see cref="KnockSlide"/>). Those that go round the
         /// terrain on their own track, not after the player (<see cref="Immune"/>), aren't moved.
         /// </summary>
-        public static void Push(HealthManager hm, float speed, float facing)
+        /// <param name="bigHit">
+        /// StrikeNPC's test: the hit's damage ×10 (×15 in Expert and Master) over the enemy's life.
+        /// A big hit adds the push to the speed the enemy has, no further than the push itself (one
+        /// already flying back and up that fast goes on as it was); a small one sets the speed, the
+        /// push taken by the enemy's resistance a second time.
+        /// </param>
+        public static void Push(HealthManager hm, float speed, float facing, bool bigHit = true, float resist = 1f)
         {
             DevPushCalls++;
             DevPushSpeed = speed;
@@ -122,12 +128,12 @@ namespace TerraKnight.Items
             if (body != null && body.bodyType == RigidbodyType2D.Dynamic)
             {
                 var flight = hm.GetComponent<KnockFlight>() ?? hm.gameObject.AddComponent<KnockFlight>();
-                flight.Begin(body, col, speed, facing >= 0f ? 1f : -1f, body.gravityScale <= 0.01f);
+                flight.Begin(body, col, speed, facing >= 0f ? 1f : -1f, body.gravityScale <= 0.01f, bigHit, resist);
                 DevLaunches++;
                 DevLastLaunch = speed;
                 return;
             }
-            float distance = Distance(speed) * Effects.TerraParticles.Px;
+            float distance = Distance(bigHit ? speed : speed * resist) * Effects.TerraParticles.Px;
             if (distance <= 0.01f) return;
             int cardinal = facing >= 0f ? 0 : 2;
             var slide = hm.GetComponent<KnockSlide>() ?? hm.gameObject.AddComponent<KnockSlide>();
@@ -165,7 +171,7 @@ namespace TerraKnight.Items
 
         public bool Active => active;
 
-        public void Begin(Rigidbody2D rb, Collider2D c, float speed, float dir, bool fly)
+        public void Begin(Rigidbody2D rb, Collider2D c, float speed, float dir, bool fly, bool bigHit = true, float resist = 1f)
         {
             body = rb;
             col = c;
@@ -176,12 +182,29 @@ namespace TerraKnight.Items
             }
             // Terraria's gravity alone carries it: the body's own would pull it down a second time each step.
             rb.gravityScale = 0f;
-            var cur = rb.linearVelocity / PxT;
-            // StrikeNPC: the push takes the place of the sideways speed (more already that way stays),
-            // and lifts it at 0.75 of it (0.5 flying).
-            float vx = dir * speed;
-            if (Mathf.Sign(cur.x) == dir && Mathf.Abs(cur.x) > speed) vx = cur.x;
-            v = new Vector2(vx, speed * (fly ? 0.5f : 0.75f));
+            // The speed it has now (Terraria's px a tick, up positive): its own, or the last launch's.
+            var cur = active ? v : rb.linearVelocity / PxT;
+            float lift = speed * (fly ? 0.5f : 0.75f);
+            if (bigHit)
+            {
+                // NPC.StrikeNPC: the push added toward the hit (twice against a speed the other way),
+                // no faster than the push; the lift added to a fall or a slower rise, no faster than
+                // the lift. An enemy already thrown back and up is thrown no further by more hits.
+                if (dir < 0f && cur.x > -speed)
+                {
+                    if (cur.x > 0f) cur.x -= speed;
+                    cur.x = Mathf.Max(cur.x - speed, -speed);
+                }
+                else if (dir > 0f && cur.x < speed)
+                {
+                    if (cur.x < 0f) cur.x += speed;
+                    cur.x = Mathf.Min(cur.x + speed, speed);
+                }
+                if (cur.y < lift) cur.y = Mathf.Min(cur.y + lift, lift);
+                v = cur;
+            }
+            // A small hit for its life: the speed set, the resistance taken a second time.
+            else v = new Vector2(dir * speed * resist, lift * resist);
             flying = fly;
             grounded = false;
             active = true;

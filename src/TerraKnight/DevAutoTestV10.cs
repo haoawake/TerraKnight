@@ -18,11 +18,86 @@ namespace TerraKnight
         IEnumerator V10Test(HeroController hero)
         {
             mod.DevNoFallDamage = true;
+            yield return JuggleTest(hero);
             yield return BorderTest();
             yield return BaldurTest();
             yield return MapIslandTest();
             BossStatsReport();
             mod.DevNoFallDamage = false;
+        }
+
+        /// <summary>
+        /// NPC.StrikeNPC: hits on an enemy already thrown up throw it no faster than one hit does (a
+        /// big hit adds the push up to the push; a small one sets a smaller speed), and a hit on one
+        /// falling only slows its fall by the lift. Three runs for a small hit and a big one: one hit;
+        /// five a tenth of a second apart (the fastest rise seen, against one hit's); one hit, then
+        /// one more once it falls (how fast it goes after).
+        /// </summary>
+        IEnumerator JuggleTest(HeroController hero)
+        {
+            var col = hero.GetComponent<BoxCollider2D>();
+            HealthManager target = null;
+            foreach (var hm in Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
+            {
+                if (hm.isDead || !hm.gameObject.activeInHierarchy || EnemyStats.Unstoppable(EnemyStats.Of(hm)) || TerraKnockback.Immune(hm)) continue;
+                var body = hm.GetComponent<Rigidbody2D>();
+                if (body == null || body.bodyType != RigidbodyType2D.Dynamic || body.gravityScale <= 0.01f) continue;
+                target = hm;
+                break;
+            }
+            if (target == null) { Plugin.Log.LogInfo("[AutoTest] 击飞叠加：这里没有能打飞的敌人"); yield break; }
+            var ecol = target.GetComponent<Collider2D>();
+            var trb = target.GetComponent<Rigidbody2D>();
+            var info = EnemyStats.Of(target);
+            float kb = ItemDb.Get(ItemType.CopperBroadsword).Knockback;
+            foreach (int dmg in new[] { 5, 100000 })
+            {
+                var peak = new float[3];
+                var rise = new float[3];
+                float afterFall = 0f, fallSpeed = 0f;
+                for (int run = 0; run < 3; run++)
+                {
+                    if (target == null || target.isDead) break;
+                    target.hp = Mathf.Max(target.hp, 9999);
+                    // Landed and settled first.
+                    float settle = Time.time + 3f;
+                    while (Time.time < settle && (target.GetComponent<KnockFlight>()?.Active ?? false)) yield return null;
+                    yield return new WaitForSeconds(0.3f);
+                    var eb = ecol.bounds;
+                    hero.transform.position += (Vector3)(new Vector2(eb.min.x - col.bounds.extents.x - 0.35f, eb.min.y + col.bounds.extents.y + 0.05f) - (Vector2)col.bounds.center);
+                    yield return null;
+                    float start = target.transform.position.y;
+                    int total = run == 1 ? 5 : 1, done = 0;
+                    bool second = false;
+                    for (float t = 0f; t < 1.5f && target != null; t += Time.deltaTime)
+                    {
+                        while (done < total && done <= (int)(t / 0.1f))
+                        {
+                            target.hp = Mathf.Max(target.hp, 9999);
+                            mod.Melee.HitWith(ecol, dmg, kb, 0f, 1f, col.bounds.center);
+                            done++;
+                        }
+                        // The third run: hit again once it has been falling a while.
+                        if (run == 2 && !second && t > 0.15f && trb.linearVelocity.y < -2f)
+                        {
+                            second = true;
+                            fallSpeed = trb.linearVelocity.y;
+                            target.hp = Mathf.Max(target.hp, 9999);
+                            mod.Melee.HitWith(ecol, dmg, kb, 0f, 1f, col.bounds.center);
+                            yield return new WaitForFixedUpdate();
+                            yield return new WaitForFixedUpdate();
+                            afterFall = trb.linearVelocity.y;
+                        }
+                        peak[run] = Mathf.Max(peak[run], target.transform.position.y - start);
+                        rise[run] = Mathf.Max(rise[run], trb.linearVelocity.y);
+                        yield return null;
+                    }
+                }
+                bool big = dmg * (GameDifficulty.Current >= DifficultyLevel.Expert ? 15 : 10) > EnemyStats.LifeMax(info);
+                Plugin.Log.LogInfo($"[AutoTest] 击飞叠加 {info.Name}（{(big ? "大伤害" : "小伤害")} {dmg}）：挨一下 上升最快 {rise[0]:F2} 最高 {peak[0]:F2}；" +
+                                   $"上升中连挨五下 上升最快 {rise[1]:F2}（不应超过挨一下的） 最高 {peak[1]:F2}；" +
+                                   $"下落中（{fallSpeed:F2}）再挨一下后 {afterFall:F2}（应是下落速度加上抬升，低于 {rise[0]:F2}，不应重新抛到满速）");
+            }
         }
 
         static TerrainRegion RegionOfHero(HeroController hero)

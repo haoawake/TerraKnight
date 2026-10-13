@@ -194,6 +194,7 @@ namespace TerraKnight
         {
             LiveWorld.Instance?.OnSceneReady();
             Pylons.OnSceneReady();
+            BossArena.OnSceneReady(gm);
             // The minions follow the player into the new room; a crack in progress ends.
             Minions.Instance?.OnSceneReady();
             Whips.Instance?.Clear();
@@ -256,6 +257,7 @@ namespace TerraKnight
                 Town.TownNpcs.Tick(hero);
                 Town.TownNpcs.Draw();
                 if (Creative) Shop.KeepCreativeGeo(hero);
+                BossArena.Tick();
                 GrantAbilityAccessories(dt);
                 HoldFrameRate();
             }

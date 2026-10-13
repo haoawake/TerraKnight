@@ -6,8 +6,8 @@ using USM = UnityEngine.SceneManagement.SceneManager;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// Creative: the monster book's spawn button. A copy of the enemy is put ten tiles in front of
-    /// the player. Enemies live in their scenes, so one is copied from a scene that has it: one
+    /// Creative: the monster book's spawn button. A boss is fought in its own arena, all of it
+    /// (<see cref="BossArena"/>). Any other enemy: a copy of it is put ten tiles in front of the player. Enemies live in their scenes, so one is copied from a scene that has it: one
     /// already loaded if there is one, else its scene (the roster's) loaded beside the one played
     /// and switched off the moment it loads, before anything in it starts (no music, colours or
     /// lights of its own), the enemy copied out, the scene let go. Bosses may need their arenas and
@@ -24,6 +24,7 @@ namespace TerraKnight.Items
         {
             var mod = TerraMod.Instance;
             if (busy || mod == null || string.IsNullOrEmpty(key) || HeroController.SilentInstance == null) return;
+            if (BossArena.Fight(key)) return;
             string record = key.Split('@')[0];
             mod.StartCoroutine(Run(record, EnemyDrops.SceneOf(record)));
         }

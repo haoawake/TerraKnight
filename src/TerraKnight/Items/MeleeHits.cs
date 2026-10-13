@@ -334,7 +334,13 @@ namespace TerraKnight.Items
             int dealt = hpBefore - Mathf.Max(0, hm.hp);
             if (dealtHk > 0 && dealt <= 0 && !hm.isDead) return 0; // blocked (a shell, a shield)
             // Terraria's knockback: launched back and up (bosses and elites have no push speed).
-            if (pushSpeed > 0f && !hm.isDead) TerraKnockback.Push(hm, pushSpeed, facing);
+            if (pushSpeed > 0f && !hm.isDead)
+            {
+                // StrikeNPC's big hit: damage ×10 (×15 in Expert and Master) over the enemy's life.
+                int scale = World.GameDifficulty.Current >= World.DifficultyLevel.Expert ? 15 : 10;
+                bool bigHit = damage * scale > EnemyStats.LifeMax(info);
+                TerraKnockback.Push(hm, pushSpeed, facing, bigHit, World.Areas.KnockbackTaken(info.Level));
+            }
             info.LastHit = Time.time;
             var top = col.bounds.center + Vector3.up * col.bounds.extents.y;
             CombatText.Show(top, damage.ToString(), crit ? CombatText.EnemyCrit : CombatText.EnemyHurt, crit);
