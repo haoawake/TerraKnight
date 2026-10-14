@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "2.0.1";
+        public const string Version = "2.1.0";
 
         internal static ManualLogSource Log;
 
@@ -77,9 +77,10 @@ namespace TerraKnight
             var multiplier = Config.Bind("Gameplay", "EnemyMultiplier", 2,
                 "普通敌人的数量倍数：2 = 每个原版敌人旁边再多一只。1 = 原版数量。首领、竞技场、苦痛之路等特殊敌人不受影响。");
             World.EnemyRespawn.Multiplier = Mathf.Clamp(multiplier.Value, 1, 4);
-            var respawnSeconds = Config.Bind("Gameplay", "EnemyRespawnSeconds", 5f,
-                "普通敌人死后多少秒重新出现：时间一到立刻刷出，出生点在镜头里时从镜头外的同一行刷进来。0 = 不刷新（原版：重新进入房间才复活）。");
-            World.EnemyRespawn.RespawnSeconds = Mathf.Max(0f, respawnSeconds.Value);
+            var respawnScale = Config.Bind("Gameplay", "EnemyRespawnScale", 1f,
+                "普通敌人死后多久重新刷出：按强弱分档的时间（原版血量 10 以下 30 秒、25 以下 45 秒、50 以下 70 秒、更结实的 100 秒、精英 4 分钟）乘以这个倍数，0 为不刷新。刷出来前 3 秒，出生点会先出现它的半透明虚影；主角站在出生点旁时等主角走开。");
+            var respawnSeconds = Config.Bind("Gameplay", "EnemyRespawnSeconds", 5f, "旧设置，已改用 EnemyRespawnScale：只有填 0（不刷新）还有效。");
+            World.EnemyRespawn.Scale = respawnSeconds.Value <= 0f ? 0f : Mathf.Max(0f, respawnScale.Value);
             var bossDamage = Config.Bind("Gameplay", "BossDamage", 2f,
                 "首领的伤害是同区域普通敌人的几倍（每面具换算的伤害乘这个数，首领的弹幕也算）。");
             World.Areas.BossDamage = Mathf.Clamp(bossDamage.Value, 0.5f, 5f);

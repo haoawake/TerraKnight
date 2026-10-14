@@ -60,6 +60,9 @@ namespace TerraKnight.Save
             public List<ChestSave> Chests;
             /// <summary>The crafting stations set down (World.Stations).</summary>
             public List<StationSave> Stations;
+            /// <summary>The Life Crystals lying in the early areas (World.LifeCrystals): the save's seed, then each one's scene, spot and whether it was taken.</summary>
+            public int CrystalSeed;
+            public List<CrystalSave> Crystals;
             /// <summary>Scene name -> packed cell edits (index &lt;&lt; 8 | value, see <see cref="World.WorldEdits"/>).</summary>
             public Dictionary<string, List<long>> Scenes = new Dictionary<string, List<long>>();
         }
@@ -88,6 +91,13 @@ namespace TerraKnight.Save
         sealed class StationSave
         {
             public string Scene, Kind;
+            public float X, Y;
+        }
+
+        sealed class CrystalSave
+        {
+            public string Scene;
+            public bool Placed, Taken;
             public float X, Y;
         }
 
@@ -159,11 +169,27 @@ namespace TerraKnight.Save
 
         static string PathFor(int slot) => Path.Combine(TerraMod.SaveDir, $"TerraKnight_slot{slot}.json");
 
+        /// <summary>
+        /// The slot whose save the mod's state now is (read from it, or begun there as a new game);
+        /// -1 before any. A save of another slot never gets this state written into it.
+        /// </summary>
+        static int stateOf = -1;
+
+        /// <summary>A new game begins in a slot: the mod's fresh state is that slot's.</summary>
+        public static void BeganNewGame(int slot) => stateOf = slot;
+
         public static void Write(int slot, TerraMod mod)
         {
             if (slot < 0) return;
+            if (slot != stateOf)
+            {
+                Plugin.Log.LogWarning($"[存档] 游戏在存存档 {slot}，但 mod 现在的内容属于存档 {stateOf}：不写，存档 {slot} 原来的 mod 存档保持不变。调用：{Caller()}");
+                return;
+            }
             var inv = mod.Inventory;
             mod.ReturnOrDropMouseItem();
+            // The Guide's slot too: an item shown to him belongs to the bag.
+            Town.TownNpcs.ReturnGuideItem();
             var file = new SaveFile { Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
             foreach (var s in inv.Slots) file.Inventory.Add(Pack(s));
             foreach (var s in inv.Accessories) file.Accessories.Add(Pack(s));
@@ -208,6 +234,9 @@ namespace TerraKnight.Save
                 foreach (var it in c.Items) cs.Items.Add(Pack(it));
                 file.Chests.Add(cs);
             }
+            file.CrystalSeed = World.LifeCrystals.Seed;
+            file.Crystals = new List<CrystalSave>();
+            foreach (var c in World.LifeCrystals.Save()) file.Crystals.Add(new CrystalSave { Scene = c.Scene, Placed = c.Placed, Taken = c.Taken, X = c.Local.x, Y = c.Local.y });
             foreach (var d in WorldItems.Save())
                 file.Dropped.Add(new DroppedSave { Scene = d.Scene, Type = d.Type.ToString(), Count = d.Count, X = d.Local.x, Y = d.Local.y });
             foreach (var kv in World.WorldEdits.All)
@@ -219,9 +248,13 @@ namespace TerraKnight.Save
             try
             {
                 string path = PathFor(slot);
-                File.WriteAllText(path + ".new", JsonConvert.SerializeObject(file));
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(path + ".new", path);
+                string json = JsonConvert.SerializeObject(file);
+                // Written whole to the side first, then swapped in, the last one kept as .bak: a
+                // crash or a full disk mid-write leaves the old save, never half a new one.
+                File.WriteAllText(path + ".new", json);
+                if (File.ReadAllText(path + ".new").Length != json.Length) throw new IOException("写入后读回的长度不对");
+                if (File.Exists(path)) File.Replace(path + ".new", path, path + ".bak", true);
+                else File.Move(path + ".new", path);
                 UI.WorldMap.Save(slot);
                 Plugin.Log.LogInfo($"已保存 mod 存档：{path}（{file.Scenes.Count} 个场景有改动），调用：{Caller()}");
             }
@@ -231,22 +264,59 @@ namespace TerraKnight.Save
             }
         }
 
+        /// <summary>
+        /// The slot's save as written last: its file, else (unreadable or gone mid-swap) the one
+        /// before it (.bak) or one fully written but not yet swapped in (.new). An unreadable file
+        /// is kept aside (.broken-time) before anything can overwrite it.
+        /// </summary>
+        static SaveFile ParseSave(string path, out string from)
+        {
+            from = null;
+            string broken = null;
+            foreach (var p in new[] { path, path + ".new", path + ".bak" })
+            {
+                if (!File.Exists(p)) continue;
+                try
+                {
+                    var file = JsonConvert.DeserializeObject<SaveFile>(File.ReadAllText(p));
+                    if (file == null) throw new InvalidDataException("空文件");
+                    from = p;
+                    if (broken != null) Plugin.Log.LogWarning($"[存档] {Path.GetFileName(broken)} 读不了，改用 {Path.GetFileName(p)}");
+                    return file;
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogError($"[存档] {Path.GetFileName(p)} 读不了：{e.Message}");
+                    if (p == path)
+                    {
+                        broken = p;
+                        try { File.Copy(p, p + ".broken-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"), true); }
+                        catch (Exception) { }
+                    }
+                }
+            }
+            return null;
+        }
+
         public static void Read(int slot, TerraMod mod)
         {
             World.WorldEdits.Clear();
             mod.ResetPlayer();
+            stateOf = slot;
             string path = PathFor(slot);
+            bool any = slot >= 0 && (File.Exists(path) || File.Exists(path + ".new") || File.Exists(path + ".bak"));
             // The map belongs with the mod's save: a slot without one starts a fresh map.
-            UI.WorldMap.Load(slot >= 0 && File.Exists(path) ? slot : -1);
-            if (slot < 0 || !File.Exists(path))
+            UI.WorldMap.Load(any ? slot : -1);
+            var file = any ? ParseSave(path, out _) : null;
+            if (file == null)
             {
+                if (any) Plugin.Log.LogError($"[存档] 存档 {slot} 的 mod 存档全都读不了，按新档开始（原文件留在 .broken-* 里）");
                 mod.ApplyCreative(false);
                 World.GameDifficulty.Current = World.DifficultyLevel.Master;
                 return;
             }
             try
             {
-                var file = JsonConvert.DeserializeObject<SaveFile>(File.ReadAllText(path));
                 var inv = mod.Inventory;
                 inv.Clear();
                 mod.ApplyCreative(file.Creative);
@@ -341,6 +411,13 @@ namespace TerraKnight.Save
                         if (Enum.TryParse(s.Kind, out World.StationKind kind)) stations.Add(new World.Stations.Saved { Scene = s.Scene, Kind = kind, Local = new Vector2(s.X, s.Y) });
                     World.Stations.Load(stations);
                 }
+                {
+                    // A save from before the crystals gets its own set now.
+                    var crystals = new List<World.LifeCrystals.Saved>();
+                    if (file.Crystals != null)
+                        foreach (var c in file.Crystals) crystals.Add(new World.LifeCrystals.Saved { Scene = c.Scene, Placed = c.Placed, Taken = c.Taken, Local = new Vector2(c.X, c.Y) });
+                    World.LifeCrystals.Load(file.CrystalSeed, file.Crystals != null ? crystals : null);
+                }
                 if (file.Chests != null)
                 {
                     var chests = new List<World.Chests.Saved>();
@@ -362,7 +439,10 @@ namespace TerraKnight.Save
             }
             catch (Exception e)
             {
-                Plugin.Log.LogError($"mod 存档读取失败，按新档处理：{e}");
+                // Whatever came back so far stays; the file itself is kept aside, as the next save writes over it.
+                Plugin.Log.LogError($"mod 存档读到一半出错，没读完的部分按新档处理（原文件另存为 .broken-*）：{e}");
+                try { File.Copy(path, path + ".broken-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"), true); }
+                catch (Exception) { }
             }
         }
 

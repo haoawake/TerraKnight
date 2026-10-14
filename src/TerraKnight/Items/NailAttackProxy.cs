@@ -18,6 +18,9 @@ namespace TerraKnight.Items
         /// <summary>The weapons' slash objects (the swing's, the shortswords' stab), so geo deposits can tell them apart from a pickaxe.</summary>
         static readonly HashSet<GameObject> slashes = new HashSet<GameObject>();
 
+        /// <summary>One of the stand-in slashes (a hit of the player's).</summary>
+        public static bool IsProxy(GameObject go) => go != null && slashes.Contains(go);
+
         /// <summary>
         /// Geo deposits react to anything dealing damage that touches them (ReceivedDamage); a
         /// sword's slash shouldn't get geo out of one, only a pickaxe aimed at it.

@@ -106,6 +106,7 @@ namespace TerraKnight
             WorldItems.Create(transform);
             Chests.Create(transform);
             Stations.Create(transform);
+            LifeCrystals.Create(transform);
             SwordFx.Create(transform);
             TerraProjectiles.Create(transform);
             Minions.Create(transform);
@@ -177,6 +178,7 @@ namespace TerraKnight
             Stats.Boosts.Clear();
             Chests.Clear();
             Stations.Clear();
+            LifeCrystals.Clear();
             Stats.UpdateMaximums(PlayerData.instance, 0);
             Stats.FullHeal();
             Stats.PotionSickness = 0f;
@@ -723,7 +725,7 @@ namespace TerraKnight
                 melee.Strike(rock, def, UseDirection);
                 PlaySound("Tink_" + Random.Range(0, 3));
             }
-            else if (def.PickPower > 0 && (Chests.TryMine(def, DevAim ?? mouse, hero) || Stations.TryMine(def, DevAim ?? mouse, hero)))
+            else if (def.PickPower > 0 && (Chests.TryMine(def, DevAim ?? mouse, hero) || Stations.TryMine(def, DevAim ?? mouse, hero) || LifeCrystals.TryMine(def, DevAim ?? mouse, hero)))
                 useCooldown *= Equipment.PickTime;
             else if (def.PickPower > 0 && usable)
             {
@@ -1369,6 +1371,29 @@ namespace TerraKnight
                 if (hero != null) PopupText.Show(ItemDb.Get(item), 1, hero.GetComponent<BoxCollider2D>().bounds.center);
                 PlaySound("Grab");
                 Plugin.Log.LogInfo($"{flag} -> {ItemDb.Get(item).Name}");
+            }
+            GrantMaskCrystals(pd);
+        }
+
+        /// <summary>
+        /// Each mask the Knight completes beyond the first five (four shards) also gives a Life
+        /// Crystal, once: masks got before this counted too, the first time a save is played.
+        /// </summary>
+        void GrantMaskCrystals(PlayerData pd)
+        {
+            for (int mask = 6; mask <= pd.maxHealthBase; mask++)
+            {
+                string key = "Mask" + mask;
+                if (GrantedAbilities.Contains(key)) continue;
+                GrantedAbilities.Add(key);
+                // Creative has every crystal used already.
+                if (Creative) continue;
+                var hero = HeroController.SilentInstance;
+                int left = Inventory.Pickup(ItemType.LifeCrystal, 1);
+                if (left > 0 && hero != null) WorldItems.Drop(ItemStack.Of(ItemType.LifeCrystal, left), hero.GetComponent<BoxCollider2D>().bounds.center);
+                if (hero != null) PopupText.Show(ItemDb.Get(ItemType.LifeCrystal), 1, hero.GetComponent<BoxCollider2D>().bounds.center);
+                PlaySound("Grab");
+                Plugin.Log.LogInfo($"[生命水晶] 第 {mask} 个面具 -> 生命水晶");
             }
         }
 

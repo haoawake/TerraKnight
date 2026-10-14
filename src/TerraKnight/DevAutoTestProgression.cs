@@ -124,8 +124,7 @@ namespace TerraKnight
 
             // Respawn, due at once. A kill in view (the player standing beside it) comes back from
             // just past the edge of the screen: a walker on a floor, a flyer in the air.
-            float savedSeconds = EnemyRespawn.RespawnSeconds;
-            EnemyRespawn.RespawnSeconds = 1f;
+            EnemyRespawn.DevFixedSeconds = 1f;
             yield return new WaitForSeconds(1.2f);
             var home = hero.transform.position;
             HealthManager Nearest(string record)
@@ -183,7 +182,7 @@ namespace TerraKnight
                 yield return new WaitForSeconds(3f);
                 Plugin.Log.LogInfo($"[AutoTest] 刷新：打死后走开 40 格，3 秒内重生 {EnemyRespawn.DevRespawned - r0} 只（原地刷出，屏幕外挪位 {EnemyRespawn.DevOffScreen - o0} 次）");
             }
-            EnemyRespawn.RespawnSeconds = savedSeconds;
+            EnemyRespawn.DevFixedSeconds = -1f;
             hero.transform.position = home;
             yield return new WaitForSeconds(0.5f);
 

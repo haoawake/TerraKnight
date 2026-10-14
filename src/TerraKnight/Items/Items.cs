@@ -1407,6 +1407,8 @@ namespace TerraKnight.Items
                 d.Value = value;
                 d.Price = UnityEngine.Mathf.Max(1, UnityEngine.Mathf.CeilToInt(value / 100f));
             }
+            // 1.4.4: everything that stacks at all stacks to 9999 (Item.CommonMaxStack): blocks, torches, bombs, potions, crystals.
+            foreach (var d in arr) if (d != null && d.MaxStack > 1) d.MaxStack = 9999;
             // The Chaos Cylinder's other modes come only from toggling it: its stage, source and value.
             foreach (var t in new[] { ItemType.ChaosCylinderFull, ItemType.ChaosCylinderRandom, ItemType.ChaosCylinderSimple })
             {
@@ -1809,10 +1811,15 @@ namespace TerraKnight.Items
         /// </summary>
         public static bool FillsEmptyAmmoSlot(ItemDef d) => FitsAmmoSlot(d) && d.Type != ItemType.SandBlock && d.Type != ItemType.FallenStar &&
             d.Type != ItemType.Gel && d.Type != ItemType.PearlsandBlock && d.Type != ItemType.EbonsandBlock && d.Type != ItemType.CrimsandBlock && d.Type != ItemType.Ale;
-        /// <summary>Five accessory slots and the Demon Heart's sixth (Player.extraAccessory; locked until it is eaten).</summary>
-        public const int AccessorySlots = 6;
+        /// <summary>
+        /// Five accessory slots, Master Mode's own one more (Player.IsItemSlotUnlockedAndUsable: slot 9,
+        /// Main.masterMode) and the Demon Heart's (Player.extraAccessory; locked until it is eaten).
+        /// </summary>
+        public const int AccessorySlots = 7;
         /// <summary>The slots in use: the sixth once the Demon Heart is eaten (Player.IsItemSlotUnlockedAndUsable).</summary>
-        public static int OpenAccessories => TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.DemonHeart) ? AccessorySlots : AccessorySlots - 1;
+        public static int OpenAccessories =>
+            5 + (World.GameDifficulty.Current == World.DifficultyLevel.Master ? 1 : 0)
+              + (TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.DemonHeart) ? 1 : 0);
         public const int ArmorSlots = 3;
 
         /// <summary>The bag (0 to Size - 1, the hotbar first) and the ammo slots after it.</summary>

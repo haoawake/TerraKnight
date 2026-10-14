@@ -3046,5 +3046,77 @@
   "it-IT": "Salvataggi {0}-{1}",
   "pt-BR": "Saves {0}-{1}",
   "ru-RU": "Сохранения {0}-{1}"
+ },
+ "想让更多人搬来德特茅斯、商店上新货、工作站能做更多东西，就去打败{0}吧。": {
+  "en-US": "If you want more folk to move into %TOWN%, new wares in the shops and more for your stations to make, go and defeat {0}.",
+  "zh-Hant": "想讓更多人搬來%TOWN%、商店上新貨、工作站能做更多東西，就去打敗{0}吧。",
+  "ja-JP": "%TOWN%にもっと人を呼び、店に新しい品を並べ、作業台でもっと色々作りたいなら、{0}を倒しに行くといい。",
+  "ko-KR": "%TOWN%에 더 많은 사람이 오고, 상점에 새 물건이 들어오고, 작업대에서 더 많은 것을 만들고 싶다면 {0}을(를) 쓰러뜨리러 가.",
+  "de-DE": "Wenn mehr Leute nach %TOWN% ziehen, die Läden neue Waren führen und deine Stationen mehr herstellen sollen, dann besiege {0}.",
+  "fr-FR": "Si tu veux que plus de monde s'installe à %TOWN%, que les boutiques aient de nouvelles marchandises et que tes stations fabriquent davantage, va vaincre {0}.",
+  "es-ES": "Si quieres que más gente se mude a %TOWN%, que las tiendas tengan género nuevo y que tus estaciones puedan fabricar más, ve a derrotar a {0}.",
+  "it-IT": "Se vuoi che più gente si trasferisca a %TOWN%, che i negozi abbiano merce nuova e che le tue stazioni possano creare di più, vai a sconfiggere {0}.",
+  "pt-BR": "Se quiser que mais gente se mude para %TOWN%, que as lojas tenham mercadorias novas e que suas estações possam criar mais, vá derrotar {0}.",
+  "ru-RU": "Если хочешь, чтобы в Грязьмут переехало больше народу, в лавках появились новые товары, а на станциях можно было делать больше, — иди и победи: {0}."
+ },
+ "假骑士": {
+  "en-US": "False Knight",
+  "zh-Hant": "假騎士",
+  "ja-JP": "偽りの騎士",
+  "ko-KR": "거짓 기사",
+  "de-DE": "Falscher Ritter",
+  "fr-FR": "Faux Chevalier",
+  "es-ES": "Falso Caballero",
+  "it-IT": "Falso Cavaliere",
+  "pt-BR": "Falso Cavaleiro",
+  "ru-RU": "Ложный рыцарь"
+ },
+ "大黄蜂（苍绿之径）": {
+  "en-US": "Hornet (Greenpath)",
+  "zh-Hant": "大黃蜂（蒼綠之徑）",
+  "ja-JP": "ホーネット（緑の道）",
+  "ko-KR": "호넷 (푸른 길)",
+  "de-DE": "Hornet (Grünpfad)",
+  "fr-FR": "Hornet (Vertchemin)",
+  "es-ES": "Hornet (Sendero Verde)",
+  "it-IT": "Hornet (Sentiero Verde)",
+  "pt-BR": "Hornet (Caminho Verde)",
+  "ru-RU": "Хорнет (Зелёная тропа)"
+ },
+ "灵魂大师": {
+  "en-US": "Soul Master",
+  "zh-Hant": "靈魂大師",
+  "ja-JP": "ソウルマスター",
+  "ko-KR": "영혼의 대가",
+  "de-DE": "Seelenmeister",
+  "fr-FR": "Maître des âmes",
+  "es-ES": "Maestro de Almas",
+  "it-IT": "Maestro delle Anime",
+  "pt-BR": "Mestre das Almas",
+  "ru-RU": "Мастер душ"
+ },
+ "守望者骑士": {
+  "en-US": "Watcher Knights",
+  "zh-Hant": "守望者騎士",
+  "ja-JP": "ウォッチャーナイト",
+  "ko-KR": "감시자 기사",
+  "de-DE": "Wächterritter",
+  "fr-FR": "Chevaliers Veilleurs",
+  "es-ES": "Caballeros Vigilantes",
+  "it-IT": "Cavalieri Guardiani",
+  "pt-BR": "Cavaleiros Vigias",
+  "ru-RU": "Рыцари-стражи"
+ },
+ "残破容器": {
+  "en-US": "Broken Vessel",
+  "zh-Hant": "殘破容器",
+  "ja-JP": "壊れた器",
+  "ko-KR": "부서진 그릇",
+  "de-DE": "Zerbrochenes Gefäß",
+  "fr-FR": "Vaisseau brisé",
+  "es-ES": "Recipiente Roto",
+  "it-IT": "Vaso Rotto",
+  "pt-BR": "Receptáculo Quebrado",
+  "ru-RU": "Сломанный сосуд"
  }
 }

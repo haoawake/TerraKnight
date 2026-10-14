@@ -153,6 +153,7 @@ namespace TerraKnight
                 string start = resp.DevReport(s, out int alive0, out _, out int wall0);
                 var live = resp.DevLive(s);
                 int sched0 = CorpseCleanup.DevScheduled, gone0 = CorpseCleanup.DevRemoved, back0 = EnemyRespawn.DevRespawned;
+                EnemyRespawn.DevFixedSeconds = 5f;
                 foreach (var hm in live)
                 {
                     var col = hm.GetComponent<Collider2D>() ?? hm.GetComponentInChildren<Collider2D>();
@@ -163,11 +164,12 @@ namespace TerraKnight
                 yield return null;
                 yield return new WaitForSeconds(4.2f);
                 int faded = CorpseCleanup.DevRemoved - gone0;
-                yield return new WaitForSeconds(Mathf.Max(0f, EnemyRespawn.RespawnSeconds + 3f - 4.7f));
+                yield return new WaitForSeconds(Mathf.Max(0f, 5f + 3f - 4.7f));
                 string after = resp.DevReport(s, out int alive1, out int waiting1, out int wall1);
                 Plugin.Log.LogInfo($"[AutoTest] 刷新 {s}：开始 {start}（活着 {alive0}，在墙里 {wall0}）；打死 {live.Count} 只，尸体待清 {CorpseCleanup.DevScheduled - sched0} 具、4.7 秒内清掉 {faded} 具；" +
-                                   $"{EnemyRespawn.RespawnSeconds + 3f:F0} 秒后：{after}（活着 {alive1}，没回来 {waiting1}，在墙里 {wall1}），这期间重生 {EnemyRespawn.DevRespawned - back0} 次");
+                                   $"{5f + 3f:F0} 秒后：{after}（活着 {alive1}，没回来 {waiting1}，在墙里 {wall1}），这期间重生 {EnemyRespawn.DevRespawned - back0} 次");
                 Shot(s, "t_respawn_back_" + s);
+                EnemyRespawn.DevFixedSeconds = -1f;
                 yield return null;
                 yield return null;
             }

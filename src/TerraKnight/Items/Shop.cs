@@ -73,15 +73,40 @@ namespace TerraKnight.Items
         }
 
         /// <summary>The deepest stage among the scenes the player has been to (World.Areas levels, 0-5).</summary>
+        /// <summary>
+        /// The progress reached, as Terraria's comes with its bosses: each stage opens with the last
+        /// stage's final boss beaten, not on walking into its areas: the False Knight (King Slime)
+        /// for 1, Greenpath's Hornet (the Eye of Cthulhu) for 2, the Soul Master (the Brain of
+        /// Cthulhu) for 3, the Watcher Knights (the Wall of Flesh: hardmode) for 4, the Broken
+        /// Vessel (Plantera) for 5. Who moves into Dirtmouth, what the townsfolk sell and which
+        /// stations' recipes are open go by it; the enemies' strength and drops still go by where
+        /// they live.
+        /// </summary>
         public static int UnlockedStage()
         {
             if (Free) return World.Areas.MaxLevel;
             var pd = PlayerData.instance;
-            int stage = 0;
-            if (pd?.scenesVisited != null)
-                foreach (var s in pd.scenesVisited) stage = Mathf.Max(stage, World.Areas.LevelOf(s));
-            return stage;
+            if (pd == null) return 0;
+            if (pd.killedInfectedKnight) return 5;
+            if (WatcherKnightsBeaten()) return 4;
+            if (pd.mageLordDefeated) return 3;
+            if (pd.hornet1Defeated) return 2;
+            if (pd.falseKnightDefeated) return 1;
+            return 0;
         }
+
+        /// <summary>The Watcher Knights' fight is won: its battle's own record in the scene's data (the game keeps no flag of it).</summary>
+        static bool WatcherKnightsBeaten()
+        {
+            var sd = SceneData.instance;
+            if (sd == null) return false;
+            var state = sd.FindMyState(new PersistentBoolData { id = "Battle Control", sceneName = "Ruins2_03" });
+            return state != null && state.activated;
+        }
+
+        /// <summary>The boss whose fall opens a stage, for the townsfolk's word on it.</summary>
+        public static string GateBoss(int stage) =>
+            stage == 1 ? "假骑士" : stage == 2 ? "大黄蜂（苍绿之径）" : stage == 3 ? "灵魂大师" : stage == 4 ? "守望者骑士" : stage == 5 ? "残破容器" : "";
 
         public static int Geo => PlayerData.instance != null ? PlayerData.instance.geo : 0;
 

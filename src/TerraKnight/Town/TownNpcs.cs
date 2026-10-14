@@ -144,7 +144,9 @@ namespace TerraKnight.Town
         {
             npcs.Clear();
             placedFor = null;
-            ReturnGuideItem();
+            // Another save is coming in: what the Guide held is in the last save's bag already
+            // (ModSave.Write put it back), so it goes, rather than into the next save's bag.
+            GuideItem = default;
             talk = null;
             shop = false;
             guideCraft = false;
@@ -217,7 +219,8 @@ namespace TerraKnight.Town
             int i = 0;
             foreach (var def in roster)
             {
-                if (def.Stage > stage) continue;
+                // Once moved in, a townsperson stays (as in Terraria), even if the progress reads lower than when it came.
+                if (def.Stage > stage && !Arrived.Contains(def.Internal)) continue;
                 if (npcs.Exists(n => n.Def == def))
                 {
                     i++;
@@ -505,8 +508,11 @@ namespace TerraKnight.Town
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
         }
 
-        /// <summary>Player.dropItemCheck for the Guide's slot: back into the bag, or dropped at the player's feet if it won't fit.</summary>
-        static void ReturnGuideItem()
+        /// <summary>
+        /// Player.dropItemCheck for the Guide's slot: back into the bag, or dropped at the player's
+        /// feet if it won't fit. Also before every save (ModSave.Write), so a save never misses it.
+        /// </summary>
+        internal static void ReturnGuideItem()
         {
             if (GuideItem.IsEmpty) return;
             var stack = GuideItem;
@@ -622,8 +628,12 @@ namespace TerraKnight.Town
         static string Chat(Npc n)
         {
             var lines = Dialog(n.Def.Internal);
-            string line = lines[Random.Range(0, lines.Length)];
-            return Lang.T(line).Replace("{PlayerName}", Lang.T("小骑士"));
+            string line = Lang.T(lines[Random.Range(0, lines.Length)]).Replace("{PlayerName}", Lang.T("小骑士"));
+            // The Guide's advice on what comes next (Main.HelpText): the boss whose fall opens the next stage.
+            int next = Shop.UnlockedStage() + 1;
+            if (n.Def.Internal == "Guide" && next <= World.Areas.MaxLevel)
+                line += "\n" + Lang.F("想让更多人搬来德特茅斯、商店上新货、工作站能做更多东西，就去打败{0}吧。", Lang.T(Shop.GateBoss(next)));
+            return line;
         }
 
         static string[] Dialog(string npc)

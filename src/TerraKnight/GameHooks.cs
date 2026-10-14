@@ -67,12 +67,15 @@ namespace TerraKnight
             // Creative if the creative mode button asked for this slot, else an ordinary game; at
             // the difficulty chosen for it (Master when none was, as for the autotests' games).
             var gm = GameManager.instance;
+            if (gm != null) Save.ModSave.BeganNewGame(gm.profileID);
             TerraMod.Instance?.ApplyCreative(gm != null && UI.CreativeMenu.TakePending(gm.profileID));
             World.GameDifficulty.Current = UI.CreativeMenu.TakeDifficulty();
             // A creative save starts with the showcase kit: every class's best, worn and in the bag.
             if (TerraMod.Instance != null && TerraMod.Instance.Creative) Items.ShowcaseKit.Give(TerraMod.Instance);
             // A new game's map starts empty (the last save's mustn't stay); a creative one shows everything.
             UI.WorldMap.Reset();
+            // Its own Life Crystals in the early areas.
+            World.LifeCrystals.NewWorld();
             TerraMod.Instance?.ApplyCreativeWorld();
         }
 

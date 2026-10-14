@@ -11,8 +11,10 @@ namespace TerraKnight.World
     /// scene appears, before any enemy starts, each eligible enemy gets an inactive template
     /// copy kept in that scene (so it never wakes), and a second one is set down beside it at
     /// once. Whenever one of them is gone (killed, or kept dead by the game until a bench), a new
-    /// one is made from the template as soon as its time is up, out of sight: where the original
-    /// stood when that is off screen, else just past the edge of the view along the same row.
+    /// one is made from the template when its time is up, where the original stood. The time goes
+    /// by how tough the enemy is (its own health in the game, elites longest), and for its last
+    /// seconds a faint ghost of the enemy shows on the spot, so the player sees it coming; none
+    /// comes back with the player standing right there.
     /// Bosses, arena and gauntlet waves, scripted and one-time enemies, the Path of Pain's and
     /// other pogo platforms, pooled spawner children and everything in Godhome, dreams, the
     /// Colosseum and the White Palace are left alone.
@@ -20,9 +22,15 @@ namespace TerraKnight.World
     internal sealed class EnemyRespawn : MonoBehaviour
     {
         public static EnemyRespawn Instance { get; private set; }
-        /// <summary>Gameplay settings: enemies per original (2 = doubled), seconds before a dead one returns.</summary>
+        /// <summary>Gameplay settings: enemies per original (2 = doubled); how many times its own wait (<see cref="DelayFor"/>) a dead one takes to return (0: never).</summary>
         public static int Multiplier = 2;
-        public static float RespawnSeconds = 5f;
+        public static float Scale = 1f;
+        /// <summary>Dev: every slot's wait in seconds instead of its own (negative: off).</summary>
+        public static float DevFixedSeconds = -1f;
+        /// <summary>How long before a respawn its spot shows the enemy's ghost.</summary>
+        const float TelegraphSeconds = 3f;
+        /// <summary>None comes back with the player nearer its spot than this (units): the ghost waits.</summary>
+        const float KeepClear = 4f;
         /// <summary>At most this many slots per scene (each copy brings its own pools and FSMs).</summary>
         const int MaxSlotsPerScene = 70;
         /// <summary>The name mark of templates and the enemies made from them.</summary>
@@ -50,6 +58,10 @@ namespace TerraKnight.World
             public int Nth;
             /// <summary>No room was found for this extra copy: it goes.</summary>
             public bool NoRoom;
+            /// <summary>Its own wait before coming back, seconds; and the ghost on its spot while that runs out.</summary>
+            public float Delay;
+            public GameObject Ghost;
+            public Renderer GhostRenderer;
         }
 
         /// <summary>Every enemy the slots have put down (and the originals): whose corpses go (<see cref="CorpseCleanup"/>).</summary>
@@ -105,7 +117,7 @@ namespace TerraKnight.World
         /// <summary>Templates (and the extra copies) for every eligible enemy of a scene that has just appeared.</summary>
         public void Capture(Scene scene)
         {
-            if (Multiplier < 1 && RespawnSeconds <= 0f) return;
+            if (Multiplier < 1 && Scale <= 0f && DevFixedSeconds < 0f) return;
             string name = scene.name;
             DevRejected.Clear();
             if (!SceneAllowed(name))
@@ -149,6 +161,7 @@ namespace TerraKnight.World
                     }
                     holders[name] = holder;
                 }
+                float delay = DelayFor(hm);
                 var template = MakeTemplate(hm, holder.transform);
                 var tr = hm.transform;
                 Body(hm, out var size, out var offset);
@@ -156,7 +169,7 @@ namespace TerraKnight.World
                 {
                     Scene = name, Template = template, Parent = tr.parent, HadParent = tr.parent != null,
                     LocalPos = tr.localPosition, LocalRot = tr.localRotation, LocalScale = tr.localScale, Live = hm.gameObject,
-                    Size = size, Offset = offset,
+                    Size = size, Offset = offset, Delay = delay,
                 };
                 slots.Add(slot);
                 ours.Add(hm.gameObject.GetInstanceID());
@@ -179,7 +192,7 @@ namespace TerraKnight.World
                     {
                         Scene = name, Template = template, Parent = slot.Parent, HadParent = slot.HadParent,
                         LocalPos = slot.LocalPos + shift, LocalRot = slot.LocalRot, LocalScale = slot.LocalScale, Pending = true,
-                        Size = size, Offset = offset, BesideOf = gridReady ? null : slot, Nth = k,
+                        Size = size, Offset = offset, BesideOf = gridReady ? null : slot, Nth = k, Delay = delay,
                     };
                     slots.Add(extra);
                     count++;
@@ -194,6 +207,17 @@ namespace TerraKnight.World
         }
 
         static void Reject(string why) => DevRejected[why] = DevRejected.TryGetValue(why, out int n) ? n + 1 : 1;
+
+        /// <summary>
+        /// How long a dead enemy of this kind takes to come back, seconds: by its own health in the
+        /// game (a crawlid or a vengefly 8, a husk 15-20, a husk guard 65), elites longest.
+        /// </summary>
+        static float DelayFor(HealthManager hm)
+        {
+            if (Items.EnemyStats.Unstoppable(Items.EnemyStats.Of(hm))) return 240f;
+            int hp = hm.hp;
+            return hp <= 10 ? 30f : hp <= 25 ? 45f : hp <= 50 ? 70f : 100f;
+        }
 
         static string DescribeRejects()
         {
@@ -422,11 +446,14 @@ namespace TerraKnight.World
 
         void Update()
         {
+            AnimateGhosts();
             if (Time.time < nextCheck) return;
             nextCheck = Time.time + 0.5f;
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
             if (gm == null || hero == null || gm.isPaused || !GameHooks.IsGameplay(gm)) return;
+            foreach (var s in slots)
+                if (s.Ghost != null && (s.Template == null || s.NoRoom || (s.HadParent && s.Parent == null))) HideGhost(s);
             slots.RemoveAll(s => s.Template == null || s.NoRoom || (s.HadParent && s.Parent == null));
             var view = ViewRect();
             Vector2 heroPos = hero.transform.position;
@@ -481,32 +508,119 @@ namespace TerraKnight.World
             if (!gone)
             {
                 s.FreeSince = -1f;
+                if (s.Ghost != null) HideGhost(s);
                 return;
             }
             if (s.FreeSince < 0f) s.FreeSince = Time.time;
+            if (DevFixedSeconds < 0f && Scale <= 0f) { s.Why = "不刷新"; return; }
             // The Battle potion halves the wait, Calming and Invisibility lengthen it (spawn rates ×0.5, ×1.3, ×1.2).
-            if (RespawnSeconds <= 0f || Time.time - s.FreeSince < RespawnSeconds * Player.PotionBuffs.RespawnFactor) { s.Why = "等时间"; return; }
-            // Due: back at once, out of sight. Where it stood when that is off screen; else
-            // just past the edge of the view along its own row, so it walks or flies in.
+            float wait = (DevFixedSeconds >= 0f ? DevFixedSeconds : s.Delay * Scale) * Player.PotionBuffs.RespawnFactor;
+            float left = wait - (Time.time - s.FreeSince);
+            if (left > TelegraphSeconds) { s.Why = "等时间"; return; }
+            // Its last seconds: its ghost where it will stand, then the enemy there (not on top of the player).
             var home = SpawnPoint(s);
-            if (!view.Contains(home) && Vector2.Distance(home, heroPos) >= 8f)
-            {
-                Spawn(s);
-                DevRespawned++;
-                return;
-            }
-            var off = OffScreen(s, home, view);
-            if (off.HasValue)
-            {
-                Spawn(s, off.Value);
-                DevRespawned++;
-                DevOffScreen++;
-                return;
-            }
-            // The room is all in view (or nowhere past the edge to stand): where it stood, unless on top of the player.
-            if (Vector2.Distance(home, heroPos) < 5f) { s.Why = "离主角太近、屏幕外又没地方"; return; }
+            ShowGhost(s, home);
+            if (left > 0f) { s.Why = "快刷出来了"; return; }
+            if (Vector2.Distance(home + s.Offset, heroPos) < KeepClear) { s.Why = "主角站在出生点旁"; return; }
+            HideGhost(s);
             Spawn(s);
             DevRespawned++;
+        }
+
+        // ------------------------------------------------------------------ the ghost before a respawn
+
+        /// <summary>
+        /// The enemy's own sprite, faint and pulsing, on the spot it will come back at: the
+        /// template's tk2d sprite (or plain sprite) as it stands, in its scene (so it goes with it).
+        /// </summary>
+        void ShowGhost(Slot s, Vector2 home)
+        {
+            if (s.Ghost != null) return;
+            var go = new GameObject("TK Respawn Ghost");
+            try
+            {
+                USceneManager.MoveGameObjectToScene(go, s.Template.scene);
+            }
+            catch (System.ArgumentException)
+            {
+                Destroy(go);
+                return;
+            }
+            var rootT = s.Template.transform;
+            var parentRot = s.HadParent && s.Parent != null ? s.Parent.rotation : Quaternion.identity;
+            var parentScale = s.HadParent && s.Parent != null ? s.Parent.lossyScale : Vector3.one;
+            var rootScale = Vector3.Scale(parentScale, s.LocalScale);
+            Renderer made = null;
+            var tk = s.Template.GetComponentInChildren<tk2dSprite>(true);
+            if (tk != null && tk.Collection != null)
+            {
+                Place(go.transform, tk.transform, rootT, home, parentRot * s.LocalRot, rootScale);
+                var g = go.AddComponent<tk2dSprite>();
+                g.SetSprite(tk.Collection, tk.spriteId);
+                made = g.GetComponent<Renderer>();
+                CopySorting(tk.GetComponent<Renderer>(), made);
+            }
+            else if (s.Template.GetComponentInChildren<SpriteRenderer>(true) is SpriteRenderer sr && sr.sprite != null)
+            {
+                Place(go.transform, sr.transform, rootT, home, parentRot * s.LocalRot, rootScale);
+                var g = go.AddComponent<SpriteRenderer>();
+                g.sprite = sr.sprite;
+                g.flipX = sr.flipX;
+                made = g;
+                CopySorting(sr, made);
+            }
+            else go.transform.position = new Vector3(home.x, home.y, rootT.position.z);
+            s.Ghost = go;
+            s.GhostRenderer = made;
+            SetGhostAlpha(s, 0.3f);
+        }
+
+        /// <summary>The ghost where the sprite will be: the sprite's place under the template, put at the spawn point.</summary>
+        static void Place(Transform ghost, Transform sprite, Transform root, Vector2 home, Quaternion rot, Vector3 rootScale)
+        {
+            var local = sprite == root ? Vector3.zero : root.InverseTransformPoint(sprite.position);
+            var spriteScale = sprite == root ? Vector3.one : sprite.localScale;
+            ghost.position = new Vector3(home.x, home.y, root.position.z) + rot * Vector3.Scale(local, rootScale);
+            ghost.rotation = rot * (sprite == root ? Quaternion.identity : sprite.localRotation);
+            ghost.localScale = Vector3.Scale(rootScale, spriteScale);
+        }
+
+        static void CopySorting(Renderer from, Renderer to)
+        {
+            if (from == null || to == null) return;
+            to.sortingLayerID = from.sortingLayerID;
+            to.sortingOrder = from.sortingOrder;
+        }
+
+        static void SetGhostAlpha(Slot s, float a)
+        {
+            if (s.GhostRenderer is SpriteRenderer sr) sr.color = new Color(1f, 1f, 1f, a);
+            else if (s.Ghost != null && s.Ghost.GetComponent<tk2dSprite>() is tk2dSprite tk) tk.color = new Color(1f, 1f, 1f, a);
+        }
+
+        float nextDust;
+
+        /// <summary>Every frame: the ghosts pulse between faint and half seen, with a sparkle now and then.</summary>
+        void AnimateGhosts()
+        {
+            bool dust = Time.time >= nextDust;
+            if (dust) nextDust = Time.time + 0.15f;
+            float a = 0.2f + 0.25f * (0.5f + 0.5f * Mathf.Sin(Time.time * 7f));
+            foreach (var s in slots)
+            {
+                if (s.Ghost == null) continue;
+                SetGhostAlpha(s, a);
+                if (!dust || Effects.TerraParticles.Instance == null) continue;
+                var c = (Vector2)s.Ghost.transform.position + new Vector2(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f)) * Mathf.Max(1f, s.Size.x);
+                Effects.TerraParticles.Instance.NewDust(Effects.TerraParticles.ToPx(c) - new Vector2(4f, 4f), 8, 8, 15, 0f, -0.5f, 150, 0.8f);
+            }
+        }
+
+        static void HideGhost(Slot s)
+        {
+            if (s.Ghost != null) Destroy(s.Ghost);
+            s.Ghost = null;
+            s.GhostRenderer = null;
         }
 
         /// <summary>Dev: the slots of a scene by state ("活着", "等时间", ...), and how many of the live ones stand in a block.</summary>
@@ -533,6 +647,48 @@ namespace TerraKnight.World
             return sb.ToString().Trim();
         }
 
+        /// <summary>Dev: ghosts showing now; each slot of a scene with its own wait.</summary>
+        public int DevGhosts
+        {
+            get
+            {
+                int n = 0;
+                foreach (var s in slots) if (s.Ghost != null) n++;
+                return n;
+            }
+        }
+
+        /// <summary>Dev: the slot whose spot is nearest a point: its state, its spot and its ghost.</summary>
+        public string DevSlotAt(Vector2 p)
+        {
+            Slot best = null;
+            float bestD = float.MaxValue;
+            foreach (var s in slots)
+            {
+                float d = Vector2.Distance(SpawnPoint(s) + s.Offset, p);
+                if (d < bestD) { best = s; bestD = d; }
+            }
+            if (best == null) return "无";
+            bool live = best.Live != null && best.Live.activeInHierarchy && !(best.Live.GetComponent<HealthManager>() is HealthManager h && h.isDead);
+            return $"{BaseName(best.Template != null ? best.Template.name : "?")} 出生点 {SpawnPoint(best) + best.Offset:F1}（离那里 {bestD:F1}），{(live ? "活着" : best.Why ?? "刚死")}，空了 {(best.FreeSince < 0f ? -1f : Time.time - best.FreeSince):F1} 秒，虚影 {best.Ghost != null}";
+        }
+
+        /// <summary>Dev: where the slot of a live enemy puts it when it comes back (its body's middle).</summary>
+        public Vector2? DevHome(HealthManager hm)
+        {
+            foreach (var s in slots)
+                if (s.Live == hm.gameObject) return SpawnPoint(s) + s.Offset;
+            return null;
+        }
+
+        public string DevDelays(string scene)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var s in slots)
+                if (s.Scene == scene && s.Template != null) sb.Append($" {BaseName(s.Template.name)}={s.Delay:F0}s");
+            return sb.Length == 0 ? " 无" : sb.ToString();
+        }
+
         /// <summary>Dev: the live enemies the slots of a scene put down (originals and copies).</summary>
         public List<HealthManager> DevLive(string scene)
         {
@@ -540,42 +696,6 @@ namespace TerraKnight.World
             foreach (var s in slots)
                 if (s.Scene == scene && s.Live != null && s.Live.activeInHierarchy && s.Live.GetComponent<HealthManager>() is HealthManager h && !h.isDead) list.Add(h);
             return list;
-        }
-
-        /// <summary>
-        /// A place just out of view on the enemy's own row, in its own scene, the nearer side
-        /// first: one that stood on a floor gets a floor at about the same height with room
-        /// above it, one in the air open air. Not for one clinging to a wall or ceiling.
-        /// </summary>
-        static Vector2? OffScreen(Slot s, Vector2 home, Rect view)
-        {
-            var rot = s.HadParent && s.Parent != null ? s.Parent.rotation * s.LocalRot : s.LocalRot;
-            if (Mathf.Abs(Mathf.DeltaAngle(0f, rot.eulerAngles.z)) > 10f) return null;
-            float? floor = FloorBelow(home + s.Offset, s.Size.y * 0.5f + 1.5f);
-            bool walker = floor.HasValue || TerraWorld.IsSolidAt(home + s.Offset);
-            float lift = floor.HasValue ? home.y - floor.Value : 0.3f;
-            bool leftFirst = home.x - view.xMin < view.xMax - home.x;
-            for (int k = 0; k < 24; k++)
-                for (int side = 0; side < 2; side++)
-                {
-                    bool left = (side == 0) == leftFirst;
-                    var at = new Vector2(left ? view.xMin - 1f - k : view.xMax + 1f + k, home.y);
-                    var p = Place(s, at, walker, lift);
-                    if (p.HasValue) return p;
-                }
-            return null;
-        }
-
-        static Vector2? Place(Slot s, Vector2 at, bool walker, float lift)
-        {
-            var c = at + s.Offset;
-            if (!walker) return Room(s.Scene, c, c.y - s.Size.y * 0.5f, c.y + s.Size.y * 0.5f, s.Size.x) ? at : (Vector2?)null;
-            // A floor a step or two up or down from its own.
-            float? floor = FloorBelow(c + Vector2.up * 1.5f, 4f + s.Size.y * 0.5f);
-            if (!floor.HasValue) return null;
-            var p = new Vector2(at.x, floor.Value + lift);
-            float top = p.y + s.Offset.y + s.Size.y * 0.5f;
-            return Room(s.Scene, p + s.Offset, floor.Value + s.Size.y * 0.25f, top, s.Size.x) ? p : (Vector2?)null;
         }
 
         /// <summary>The top of the first block below an open point, within range.</summary>
@@ -630,6 +750,7 @@ namespace TerraKnight.World
             s.Live = go;
             s.Pending = false;
             s.FreeSince = -1f;
+            HideGhost(s);
         }
 
         /// <summary>The camera's view on the gameplay plane (z = 0), a little enlarged.</summary>
@@ -686,6 +807,7 @@ namespace TerraKnight.World
 
         public void Clear()
         {
+            foreach (var s in slots) HideGhost(s);
             slots.Clear();
             holders.Clear();
             ours.Clear();

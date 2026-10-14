@@ -717,6 +717,16 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 向导 制作菜单 {Town.TownNpcs.GuideCraftOpen}，槽里 {Town.TownNpcs.GuideItem.Def?.Name}×{Town.TownNpcs.GuideItem.Count}，光标 {(mod.Inventory.Mouse.IsEmpty ? "空" : mod.Inventory.Mouse.Def.Name)}；用到木材的配方：{Items.InventoryGui.DevRecipeNames(12)}");
             Shot("Town", "guide_craft");
             yield return null;
+            // A save while the wood is in his slot: it goes back into the bag first, and nothing is lost.
+            Save.ModSave.Write(2, mod);
+            int woodSaved = Items.Recipes.Count(mod.Inventory, Items.ItemType.Wood);
+            Plugin.Log.LogInfo($"[AutoTest] 向导 槽里有木材时存档：槽 {(Town.TownNpcs.GuideItem.IsEmpty ? "空了" : "还有")}，背包木材 {woodBefore} → {woodSaved}{(woodSaved == woodBefore + 10 && Town.TownNpcs.GuideItem.IsEmpty ? " 通过" : " 不通过")}");
+            mod.Inventory.Mouse = default;
+            int taken = Items.Recipes.Count(mod.Inventory, Items.ItemType.Wood);
+            // Back into the slot for the rest.
+            for (int i = 0; i < mod.Inventory.Slots.Length; i++)
+                if (mod.Inventory.Slots[i].Type == Items.ItemType.Wood) { mod.Inventory.Mouse = mod.Inventory.Slots[i]; mod.Inventory.Slots[i] = default; break; }
+            Items.InventoryGui.DevGuideSlot();
             bool made = Items.InventoryGui.DevCraft(Items.ItemType.WorkBench);
             Plugin.Log.LogInfo($"[AutoTest] 向导 在向导的列表里点工作台：{(made ? "做出来了（不通过）" : "没做（对，只能看）")}");
             Town.TownNpcs.Close(true);

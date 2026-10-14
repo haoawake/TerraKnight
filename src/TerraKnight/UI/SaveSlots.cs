@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +27,42 @@ namespace TerraKnight.UI
 
         /// <summary>The slot a button stands for now (page included).</summary>
         public static int IndexOf(SaveSlotButton b) => b == null ? 0 : (int)indexGetter.Invoke(b, null);
+
+        /// <summary>
+        /// The game takes only slots 0-4 as valid (Platform.IsSaveSlotIndexValid) when it reads a
+        /// save's stats for its button, loads it or clears it, though it writes any. Without this a
+        /// save past the fourth was written fine and then shown as corrupted on the menu, with
+        /// nothing loadable (the file itself untouched). All fifty are valid here.
+        /// </summary>
+        public static bool Valid(int slot) => slot >= 0 && slot <= Max;
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(global::Platform), nameof(global::Platform.IsSaveSlotIndexValid))]
+        static void AllValid(int slotIndex, ref bool __result) => __result = Valid(slotIndex);
+
+        // The callers' own check too: the vanilla one is small enough to be inlined into them.
+        [HarmonyTranspiler]
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.LoadGame))]
+        static IEnumerable<CodeInstruction> ValidToLoad(IEnumerable<CodeInstruction> code) => ValidInCaller(code);
+
+        [HarmonyTranspiler]
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.ClearSaveFile))]
+        static IEnumerable<CodeInstruction> ValidToClear(IEnumerable<CodeInstruction> code) => ValidInCaller(code);
+
+        [HarmonyTranspiler]
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.GetSaveStatsForSlot))]
+        static IEnumerable<CodeInstruction> ValidForStats(IEnumerable<CodeInstruction> code) => ValidInCaller(code);
+
+        static IEnumerable<CodeInstruction> ValidInCaller(IEnumerable<CodeInstruction> code)
+        {
+            var vanilla = AccessTools.Method(typeof(global::Platform), nameof(global::Platform.IsSaveSlotIndexValid));
+            var ours = AccessTools.Method(typeof(SaveSlots), nameof(Valid));
+            foreach (var ins in code)
+            {
+                if (ins.Calls(vanilla)) ins.operand = ours;
+                yield return ins;
+            }
+        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(SaveSlotButton), "get_SaveSlotIndex")]
