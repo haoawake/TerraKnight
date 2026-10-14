@@ -186,6 +186,15 @@ namespace TerraKnight.Items
         // Crafting stations set down, and the wood gear made at the first of them (ItemsStations.cs).
         WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Chain,
         WoodHelmet, WoodBreastplate, WoodGreaves,
+        // The Knight's own (DreamNailItem.cs).
+        DreamNail,
+        // Ores and the metal sets made of their bars (ItemsOres.cs).
+        CopperOre, TinOre, LeadOre, SilverOre, TungstenOre, PlatinumOre, DemoniteOre, Meteorite,
+        CobaltOre, PalladiumOre, MythrilOre, OrichalcumOre, AdamantiteOre, TitaniumOre, ChlorophyteOre,
+        TinHelmet, TinChainmail, TinGreaves, LeadHelmet, LeadChainmail, LeadGreaves, SilverHelmet, SilverChainmail, SilverGreaves,
+        TungstenHelmet, TungstenChainmail, TungstenGreaves, PlatinumHelmet, PlatinumChainmail, PlatinumGreaves,
+        // Money as an item and the bank it is kept in (ItemsMoney.cs).
+        Geo, PiggyBank,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -236,6 +245,7 @@ namespace TerraKnight.Items
         CobaltCaster, CobaltMelee, CobaltRanged, MythrilCaster, MythrilMelee, MythrilRanged, AdamantiteCaster, AdamantiteMelee, AdamantiteRanged,
         HallowedSummoner, ChlorophyteMelee, ChlorophyteSummon, SpectreHealing, SpectreDamage, BeetleDamage, BeetleDefense,
         Wood,
+        Tin, Lead, Silver, Tungsten, Platinum,
     }
 
     /// <summary>What a summon staff calls (Terraria projectile ids noted).</summary>
@@ -913,6 +923,10 @@ namespace TerraKnight.Items
         public bool Consumable;
         public int HealLife, HealMana;
         public bool LifeCrystal, ManaCrystal;
+        /// <summary>Kept for good: never sold, thrown, dropped or trashed (the Dream Nail).</summary>
+        public bool Permanent;
+        /// <summary>Used by the game's own controls, not the Terraria item use (the Dream Nail's FSM).</summary>
+        public bool GameTool;
         /// <summary>Item.buffType / buffTime (ticks): the buff a drink gives; potion (potion sickness on drinking).</summary>
         public int BuffType, BuffTime;
         public bool PotionSick;
@@ -962,7 +976,7 @@ namespace TerraKnight.Items
         public bool IsAmmo => Ammo != AmmoKind.None;
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
-        public bool IsUsable => !IsPlainAmmo && (IsWeapon || PickPower > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
+        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || PickPower > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
             || BuffType > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion);
 
         /// <summary>
@@ -1374,6 +1388,9 @@ namespace TerraKnight.Items
             AddGuns(list);
             AddR7(list);
             AddStations(list);
+            list.Add(DreamNailItem.Def());
+            AddOres(list);
+            AddMoney(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
             // Held-out items not given one by hand: Terraria's own hold (Main.DrawPlayerItemPos).
@@ -1399,7 +1416,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in Sources())
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1409,6 +1426,8 @@ namespace TerraKnight.Items
             }
             // 1.4.4: everything that stacks at all stacks to 9999 (Item.CommonMaxStack): blocks, torches, bombs, potions, crystals.
             foreach (var d in arr) if (d != null && d.MaxStack > 1) d.MaxStack = 9999;
+            // Money stacks as far as a count goes.
+            arr[(int)ItemType.Geo].MaxStack = int.MaxValue;
             // The Chaos Cylinder's other modes come only from toggling it: its stage, source and value.
             foreach (var t in new[] { ItemType.ChaosCylinderFull, ItemType.ChaosCylinderRandom, ItemType.ChaosCylinderSimple })
             {
@@ -1762,6 +1781,8 @@ namespace TerraKnight.Items
                 case 8: return new UnityEngine.Color(1f, 1f, 10 / 255f);
                 case 9: return new UnityEngine.Color(5 / 255f, 200 / 255f, 1f);
                 case 10: return new UnityEngine.Color(1f, 40 / 255f, 100 / 255f);
+                // Quest items (rare -11): Colors.RarityAmber.
+                case -11: return new UnityEngine.Color(1f, 175 / 255f, 0f);
                 // Expert (rare -12): Main.DiscoColor, cycling through the rainbow.
                 case -12: return UnityEngine.Color.HSVToRGB(UnityEngine.Time.unscaledTime * 0.2f % 1f, 1f, 1f);
                 default: return UnityEngine.Color.white;
@@ -1828,6 +1849,17 @@ namespace TerraKnight.Items
         public readonly ItemStack[] Accessories = new ItemStack[AccessorySlots];
         /// <summary>Head, body, legs.</summary>
         public readonly ItemStack[] Armor = new ItemStack[ArmorSlots];
+
+        /// <summary>Player.miscEquips: pet, light pet, minecart, mount, hook (the equipment's second page). Shared by every loadout.</summary>
+        public const int MiscSlots = 5, HookSlot = 4;
+        public readonly ItemStack[] Misc = new ItemStack[MiscSlots];
+
+        /// <summary>Player.bank: the Piggy Bank's 40 slots, the same in every one set down.</summary>
+        public const int BankSlots = 40;
+        public readonly ItemStack[] Bank = new ItemStack[BankSlots];
+
+        /// <summary>ItemSlot.AccCheck for the misc slots (contexts 19, 20, 18, 17, 16): only the hook's has items here yet.</summary>
+        public static bool FitsMisc(ItemDef d, int slot) => d != null && slot == HookSlot && Player.GrapplingHook.Hooks.ContainsKey(d.Type);
 
         /// <summary>Four loadouts, one per class (Melee, Ranged, Magic, Summon); vanilla has three.</summary>
         public const int LoadoutCount = 4;
@@ -1959,6 +1991,8 @@ namespace TerraKnight.Items
             for (int i = 0; i < Total; i++) Slots[i] = default;
             for (int i = 0; i < AccessorySlots; i++) Accessories[i] = default;
             for (int i = 0; i < ArmorSlots; i++) Armor[i] = default;
+            for (int i = 0; i < MiscSlots; i++) Misc[i] = default;
+            for (int i = 0; i < BankSlots; i++) Bank[i] = default;
             foreach (var l in Loadouts)
             {
                 for (int i = 0; i < ArmorSlots; i++) l.Armor[i] = default;
@@ -2162,6 +2196,7 @@ namespace TerraKnight.Items
             foreach (var s in Slots) if (s.Type == type && !s.IsEmpty) return true;
             foreach (var a in Accessories) if (a.Type == type && !a.IsEmpty) return true;
             foreach (var a in Armor) if (a.Type == type && !a.IsEmpty) return true;
+            foreach (var a in Misc) if (a.Type == type && !a.IsEmpty) return true;
             foreach (var l in Loadouts)
             {
                 foreach (var a in l.Accessories) if (a.Type == type && !a.IsEmpty) return true;

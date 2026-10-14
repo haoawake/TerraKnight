@@ -276,6 +276,86 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "dreamentry")
+            {
+                yield return DreamEntryTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "rope")
+            {
+                yield return RopeTest(scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "fkdeath")
+            {
+                yield return FalseKnightDeathTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "batch5")
+            {
+                yield return Batch5Test();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "hornetenc")
+            {
+                // Hornet's encounter over the False Knight's room after Greenpath: what it waits for.
+                PlayerData.instance.SetBool("hornet1Defeated", true);
+                PlayerData.instance.SetBool("killedHornet", true);
+                PlayerData.instance.isInvincible = true;
+                TransitionPoint.lastEntered = "left1";
+                yield return GoTo("Crossroads_10", "left1");
+                for (int i = 0; i < 6; i++)
+                {
+                    yield return new WaitForSeconds(i == 0 ? 2f : 4f);
+                    foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                        if (f.gameObject.name.Contains("Encounter"))
+                        {
+                            Plugin.Log.LogInfo($"[AutoTest] 遭遇 {i}：{f.gameObject.scene.name}/{f.gameObject.name}/{f.FsmName}:{f.ActiveStateName}（开 {f.gameObject.activeInHierarchy}），位置 {(Vector2)f.transform.position:F1}，主角 {(Vector2)HeroController.instance.transform.position:F1}，可操作 {GameHooks.PlayerHasControl()}");
+                            if (i == 0 || i == 5) DumpFsm(f);
+                        }
+                    Shot("Crossroads_10", $"hornetenc_{i}");
+                }
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "arenabk")
+            {
+                // The creative challenge of the Watcher Knights: their arena loaded, the knights there.
+                yield return ArenaVisit("BlackKnight", "Ruins2_03", "BlackKnight", () => "");
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "water")
+            {
+                yield return WaterTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "bossrun" || suite.StartsWith("bossrun_"))
+            {
+                yield return BossRunTest(suite.Length > 8 ? suite.Substring(8).Split('+') : null);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "quit1")
+            {
+                yield return QuitTest(1);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "ui")
             {
                 yield return UiTest(scene, hero);
@@ -370,7 +450,7 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
-            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "quit" || suite == "suicide")
+            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "quit" || suite == "suicide" || suite == "dreamnail")
             {
                 if (suite == "fsmdump") yield return FsmDumpTest();
                 else if (suite == "stag") yield return StagTest(hero);
@@ -381,6 +461,7 @@ namespace TerraKnight
                 else if (suite == "respawn") yield return RespawnTest();
                 else if (suite == "quit") yield return QuitTest();
                 else if (suite == "suicide") yield return SuicideTest();
+                else if (suite == "dreamnail") yield return DreamNailTest();
                 else if (suite == "holdpose") yield return HoldPoseTest(hero);
                 else if (suite == "pylonall") yield return PylonAllTest(hero);
                 else if (suite == "bags") yield return BagsTest(hero);
@@ -1238,11 +1319,17 @@ namespace TerraKnight
                                         : e is HutongGames.PlayMaker.FsmEvent eev ? eev.Name : e?.ToString());
                                 v = "[" + string.Join(",", items) + "]";
                             }
-                            string text = v is HutongGames.PlayMaker.NamedVariable nv ? (nv.UsesVariable ? "$" + nv.Name : nv.ToString())
-                                : v is HutongGames.PlayMaker.FsmEvent ev ? "ev:" + ev.Name
-                                : v is string str ? str
-                                : v is HutongGames.PlayMaker.FsmOwnerDefault od ? (od.OwnerOption == HutongGames.PlayMaker.OwnerDefaultOption.UseOwner ? "owner" : od.GameObject?.Value?.name)
-                                : null;
+                            string text;
+                            // A setting naming an object that is gone (destroyed with its scene) reads as such.
+                            try
+                            {
+                                text = v is HutongGames.PlayMaker.NamedVariable nv ? (nv.UsesVariable ? "$" + nv.Name : nv.ToString())
+                                    : v is HutongGames.PlayMaker.FsmEvent ev ? "ev:" + ev.Name
+                                    : v is string str ? str
+                                    : v is HutongGames.PlayMaker.FsmOwnerDefault od ? (od.OwnerOption == HutongGames.PlayMaker.OwnerDefaultOption.UseOwner ? "owner" : od.GameObject?.Value?.name)
+                                    : null;
+                            }
+                            catch (System.Exception) { text = "（没了）"; }
                             if (!string.IsNullOrEmpty(text)) actions.Append(field.Name).Append('=').Append(text).Append(' ');
                         }
                         actions.Append(") ");

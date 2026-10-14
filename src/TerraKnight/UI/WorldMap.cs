@@ -30,7 +30,7 @@ namespace TerraKnight.UI
 
         enum Tile : byte { None, Air, Terrain, Structure, Platform, Dirt, Stone, Wood, Sand, Ice, Torch, Rope, Dug }
         enum Wet : byte { None, Water, Spikes, Acid, Lava }
-        enum Obj : byte { Bench, Lamp, Door, Lever, Lift, Chest, Stag, Toll, Grub, GeoRock, Totem, Item, BreakableWall, Spring, Npc, Pylon, TerraChest }
+        enum Obj : byte { Bench, Lamp, Door, Lever, Lift, Chest, Stag, Toll, Grub, GeoRock, Totem, Item, BreakableWall, Spring, Npc, Pylon, TerraChest, LifeCrystal }
 
         sealed class Thing
         {
@@ -423,6 +423,8 @@ namespace TerraKnight.UI
                 case Obj.Npc: return Rgb(255, 150, 205);
                 case Obj.Pylon: return Rgb(100, 235, 205);
                 case Obj.TerraChest: return Rgb(174, 129, 92);
+                // MapHelper's colour for tile 12.
+                case Obj.LifeCrystal: return Rgb(174, 24, 69);
                 default: return Color.magenta;
             }
         }
@@ -466,6 +468,16 @@ namespace TerraKnight.UI
                 for (int y = Mathf.Max(0, o.Cells.yMin); y < Mathf.Min(room.H, o.Cells.yMax); y++)
                     for (int x = Mathf.Max(0, o.Cells.xMin); x < Mathf.Min(room.W, o.Cells.xMax); x++)
                         if (room.IsSeen(x, y)) open[y * room.W + x] = c;
+            }
+            // The Life Crystals lying here (two cells on two, their bottom middle at the spot), once their cells are seen.
+            Color32 crystal = ObjColor(Obj.LifeCrystal);
+            foreach (var (scene, local) in LifeCrystals.Standing())
+            {
+                if (scene != room.Name) continue;
+                int x0 = Mathf.FloorToInt(local.x / C + 0.5f) - 1, y0 = Mathf.FloorToInt(local.y / C + 0.5f);
+                for (int y = Mathf.Max(0, y0); y < Mathf.Min(room.H, y0 + 2); y++)
+                    for (int x = Mathf.Max(0, x0); x < Mathf.Min(room.W, x0 + 2); x++)
+                        if (room.IsSeen(x, y)) open[y * room.W + x] = crystal;
             }
             room.Solid.SetPixels32(solid);
             room.Solid.Apply(false);
@@ -732,6 +744,9 @@ namespace TerraKnight.UI
             foreach (var c in Chests.Save())
                 if (ScenePoint(c.Scene, c.Local, out var at) && gx >= Mathf.FloorToInt(at.x) && gx < Mathf.FloorToInt(at.x) + 2 && gy >= Mathf.FloorToInt(at.y) && gy < Mathf.FloorToInt(at.y) + 2)
                     return "箱子";
+            foreach (var (scene, local) in LifeCrystals.Standing())
+                if (ScenePoint(scene, local, out var at) && gx >= Mathf.FloorToInt(at.x) - 1 && gx < Mathf.FloorToInt(at.x) + 1 && gy >= Mathf.FloorToInt(at.y) && gy < Mathf.FloorToInt(at.y) + 2 && Seen(at + new Vector2(0f, 0.5f)))
+                    return "生命水晶";
             return solidName;
         }
 
@@ -912,6 +927,12 @@ namespace TerraKnight.UI
 
         /// <summary>Dev: every scene placed on the world map.</summary>
         public static List<string> DevSceneNames() => new List<string>(layout.Keys);
+
+        /// <summary>A room's picture made again (a Life Crystal placed or taken in it).</summary>
+        public static void Refresh(string scene)
+        {
+            if (scene != null && rooms.TryGetValue(scene, out var room)) room.Dirty = true;
+        }
 
         public static string DevReport()
         {

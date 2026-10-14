@@ -68,6 +68,8 @@ namespace TerraKnight
             // the difficulty chosen for it (Master when none was, as for the autotests' games).
             var gm = GameManager.instance;
             if (gm != null) Save.ModSave.BeganNewGame(gm.profileID);
+            // A new game's geo is the item from the start.
+            Items.GeoWallet.Reset(true);
             TerraMod.Instance?.ApplyCreative(gm != null && UI.CreativeMenu.TakePending(gm.profileID));
             World.GameDifficulty.Current = UI.CreativeMenu.TakeDifficulty();
             // A creative save starts with the showcase kit: every class's best, worn and in the bag.

@@ -45,7 +45,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage }
 
         struct Hit
         {
@@ -280,6 +280,25 @@ namespace TerraKnight.Items
                 case Kind.ChestButton:
                     if (leftPress) ActChestButton(hit.Index);
                     return;
+                case Kind.InvButton:
+                    if (leftPress) ActInventoryButton(hit.Index);
+                    return;
+                case Kind.EquipPage:
+                    if (leftPress)
+                    {
+                        equipPage = equipPage == 2 ? 0 : 2;
+                        Sound("Menu_Open");
+                    }
+                    return;
+                case Kind.Misc:
+                    if (leftPress) LeftClickMisc(hit.Index);
+                    else if (rightPress && inv.Mouse.IsEmpty && !inv.Misc[hit.Index].IsEmpty)
+                    {
+                        inv.Mouse = inv.Misc[hit.Index];
+                        inv.Misc[hit.Index] = default;
+                        Sound("Menu_Tick");
+                    }
+                    return;
                 case Kind.Pvp:
                 case Kind.Team:
                     if (leftPress) ClickPvp(hit.Index, hit.Kind == Kind.Team);
@@ -301,7 +320,7 @@ namespace TerraKnight.Items
                 Sound("Menu_Tick");
                 return;
             }
-            if (Ctrl && !slot.IsEmpty && !slot.Favorite)
+            if (Ctrl && !slot.IsEmpty && !slot.Favorite && !slot.Def.Permanent)
             {
                 if (Town.TownNpcs.ShopOpen)
                 {
@@ -347,6 +366,17 @@ namespace TerraKnight.Items
             if ((inv.Mouse.IsEmpty || !CanStack(slot, inv.Mouse)) && slot.Count == 1 && (slot.Def.IsArmor || slot.Def.IsAccessory))
             {
                 if (press) SwapEquip(i);
+                return;
+            }
+            // A hook (the misc equipment's): right click puts it in the hook slot.
+            if ((inv.Mouse.IsEmpty || !CanStack(slot, inv.Mouse)) && slot.Count == 1 && Inventory.FitsMisc(slot.Def, Inventory.HookSlot))
+            {
+                if (press)
+                {
+                    (inv.Misc[Inventory.HookSlot], slot) = (slot, inv.Misc[Inventory.HookSlot]);
+                    inv.Misc[Inventory.HookSlot].Favorite = false;
+                    Sound("Grab");
+                }
                 return;
             }
             if (stackSplit > 1) return;
@@ -521,6 +551,8 @@ namespace TerraKnight.Items
             }
             if (!inv.Mouse.IsEmpty)
             {
+                // Kept for good (the Dream Nail): the trash won't take it.
+                if (inv.Mouse.Def.Permanent) return;
                 // The old trash is destroyed and the cursor's item takes its place.
                 inv.Trash = inv.Mouse;
                 inv.Trash.Favorite = false;
@@ -740,6 +772,7 @@ namespace TerraKnight.Items
                     hoveredKind = Kind.Trash;
                     if (inv.Trash.IsEmpty) DrawLines(mouse, new List<string> { Lang.T("垃圾桶") }, Color.white);
                 }
+                DrawInventoryButtons(new Vector2(x0 + Inventory.Columns * step + 8f * ui, y0 + Inventory.Rows * step + 4f * ui), ui, mouse);
 
                 // Geo, where Terraria keeps the coin slots.
                 float rx = x0 + Inventory.Columns * step + 8f * ui;
@@ -770,6 +803,9 @@ namespace TerraKnight.Items
 
                 // Equipment column on the right, under the life and mana display: armor, then accessories.
                 float ax = view.xMax - 120f * ui, ay = view.y + 230f * ui;
+                DrawEquipPageIcon(new Vector2(ax + 52f * ui, ay - 46f * ui), ui, mouse);
+                if (equipPage == 2) DrawMiscEquips(ax, ay, slot, step, ui, mouse, ref hovered, ref hoveredKind);
+                else {
                 Outlined(new Rect(ax - 40f * ui, ay - 24f * ui, slot + 80f * ui, 20f * ui), Lang.T("装备"), labelStyle, Color.white);
                 for (int i = 0; i < Inventory.ArmorSlots; i++)
                 {
@@ -804,6 +840,7 @@ namespace TerraKnight.Items
                 if (overLoadout >= 0 && overLoadout != loadoutHover) Sound("Menu_Tick");
                 loadoutHover = overLoadout;
                 if (overLoadout >= 0 && hovered.IsEmpty) DrawLines(mouse, new List<string> { Lang.F("配装{0}（{1}）", overLoadout + 1, Lang.T(loadoutClass[overLoadout])) + (inv.BagPerLoadout ? Lang.T("：盔甲、饰品和背包") : "") }, Color.white);
+                }
 
                 // The crafting column gives way to an open shop.
                 if (Town.TownNpcs.ShopOpen) DrawShopPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);

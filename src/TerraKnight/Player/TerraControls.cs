@@ -15,6 +15,8 @@ namespace TerraKnight.Player
         static int boundVersion = -1;
         /// <summary>The keys this mod added to each of the Knight's actions (so a new binding can take the old one's place).</summary>
         static readonly System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource> added = new System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource>();
+        /// <summary>The Terraria key each action should answer to, ours or the game's own.</summary>
+        static readonly System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource> wanted = new System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource>();
 
         public static void Apply(InputHandler input, bool inPlay)
         {
@@ -22,9 +24,11 @@ namespace TerraKnight.Player
             if (a == null) return;
 
             // The game rebuilds its action set when bindings change; add ours to each new one, and again when they are rebound.
-            if (boundFor != a || boundVersion != TerraKeys.Version)
+            // Its own keyboard menu clears and refills the same actions (InputHandler.MapKeyboardLayoutFromGameSettings):
+            // a key of ours gone from its action puts them all back too.
+            if (boundFor != a || boundVersion != TerraKeys.Version || Lost())
             {
-                if (boundFor != a) added.Clear();
+                if (boundFor != a) { added.Clear(); wanted.Clear(); }
                 boundFor = a;
                 boundVersion = TerraKeys.Version;
                 Bind(a.left, TerraKeys.Action.Left);
@@ -57,6 +61,12 @@ namespace TerraKnight.Player
             return action.HasBinding(source) && !(added.TryGetValue(action, out var mine) && mine == source);
         }
 
+        static bool Lost()
+        {
+            foreach (var kv in wanted) if (!kv.Key.HasBinding(kv.Value)) return true;
+            return false;
+        }
+
         static void Bind(PlayerAction action, TerraKeys.Action which)
         {
             if (added.TryGetValue(action, out var old))
@@ -64,8 +74,9 @@ namespace TerraKnight.Player
                 action.RemoveBinding(old);
                 added.Remove(action);
             }
-            if (!TerraKeys.ToInControl(TerraKeys.Get(which), out var key)) return;
+            if (!TerraKeys.ToInControl(TerraKeys.Get(which), out var key)) { wanted.Remove(action); return; }
             var source = new KeyBindingSource(key);
+            wanted[action] = source;
             if (action.HasBinding(source)) return;
             action.AddBinding(source);
             added[action] = source;

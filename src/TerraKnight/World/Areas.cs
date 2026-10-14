@@ -162,13 +162,18 @@ namespace TerraKnight.World
         public const int MaxLevel = 5;
 
         /// <summary>
-        /// How dangerous a scene's enemies are, 0 to 5, roughly in the order Hallownest is explored
-        /// and matched to Terraria's progression: 0 King's Pass, Dirtmouth and the Crossroads
-        /// (forest and surface), 1 Greenpath and the cliffs (the first caves), 2 the Fungal Wastes,
-        /// Fog Canyon, Queen's Gardens, City entrance, waterways and Crystal Peak (underground,
-        /// dungeon), 3 the City's upper levels, Deepnest, the Ancient Basin, the Hive and the
-        /// Resting Grounds (the underworld, the Wall of Flesh), 4 Kingdom's Edge with its Colosseum and
-        /// the Abyss (hardmode), 5 the White Palace, Godhome, dreams and the Grimm Troupe (endgame).
+        /// How dangerous a scene's enemies are, 0 to 5, by the Knight's own road through Hallownest:
+        /// each stage is where he goes with the ability that opened it, matched to Terraria's
+        /// progression. 0 King's Pass, Dirtmouth, the Crossroads and Greenpath, up to Hornet and the
+        /// Mothwing Cloak (the Eye of Cthulhu and its shield); 1 with the cloak, the Fungal Wastes
+        /// and the Mantis Village (the Mantis Claw), Fog Canyon and the Howling Cliffs; 2 with the
+        /// claw, the City of Tears, the Royal Waterways, Crystal Peak (the Crystal Heart) and the
+        /// Resting Grounds (the Eater of Worlds or the Brain, the dungeon); 3 with the heart,
+        /// Deepnest, the Beasts' Den, the Ancient Basin (the Broken Vessel: the Wall of Flesh and
+        /// the Monarch Wings), the Queen's Gardens and the tram; 4 with the wings, Kingdom's Edge,
+        /// the Hive, the Colosseum and the Abyss (hardmode, to the Shade Cloak); 5 the White Palace,
+        /// Godhome, dreams, the Grimm Troupe and the end. What the townsfolk sell and which
+        /// recipes open goes by the abilities got (Items.Shop.UnlockedStage).
         /// </summary>
         public static int LevelOf(string scene)
         {
@@ -176,14 +181,18 @@ namespace TerraKnight.World
             // Godhome-named rooms that are ordinary parts of the world (spec-hkenemies 1.4).
             if (Starts(scene, "GG_Pipeway", "GG_Waterways")) return 2;
             if (Starts(scene, "GG_Lurker")) return 4;
-            if (Starts(scene, "Abyss_17", "Abyss_18", "Abyss_19")) return 3;
             if (Starts(scene, "White_Palace", "GG_", "Dream_", "Grimm_", "Room_Final", "Abyss_15")) return 5;
-            if (Starts(scene, "Deepnest_East", "Room_Wyrm", "Room_Mask_Maker", "Room_Colosseum", "Abyss_06", "Abyss_08", "Abyss_09", "Abyss_1", "Abyss_Lighthouse")) return 4;
-            if (Starts(scene, "Ruins2", "Ruins_Elevator", "Ruins_Bathhouse", "Deepnest", "Room_spider", "Abyss", "Hive", "RestingGrounds", "Room_Mansion",
-                    "Room_Queen", "Room_Tram")) return 3;
-            if (Starts(scene, "Fungus2", "Fungus3", "Ruins", "Waterways", "Mines", "Room_Fungus_Shaman", "Room_GG_Shortcut")) return 2;
-            if (Starts(scene, "Fungus1", "Cliffs", "Room_nailmaster_02", "Room_Slug_Shrine")) return 1;
-            return 0;
+            if (Starts(scene, "Room_Tram")) return 3;
+            switch (AreaName(scene))
+            {
+                case "国王山道": case "德特茅斯": case "遗忘十字路": case "苍绿之径": case "黑卵神殿": return 0;
+                case "真菌荒地": case "雾之峡谷": case "呼啸悬崖": return 1;
+                case "泪水之城": case "皇家水道": case "水晶山峰": case "安息之地": return 2;
+                case "深巢": case "野兽巢穴": case "远古盆地": case "王后花园": return 3;
+                case "王国边缘": case "蜂巢": case "愚人斗兽场": case "深渊": return 4;
+                case "白色宫殿": case "神居": case "梦境": case "格林剧团": return 5;
+                default: return 0;
+            }
         }
 
         /// <summary>A Master Mode blue slime's life: 25 (NPC.SetDefaults, type 1) times Master Mode's 3 (GameDifficultyData.EnemyMaxLifeMultiplier).</summary>

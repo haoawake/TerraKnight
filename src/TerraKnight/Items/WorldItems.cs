@@ -415,6 +415,13 @@ namespace TerraKnight.Items
             UI.PopupText.Clear();
         }
 
+        /// <summary>Whether an item of this kind lies in the world.</summary>
+        public static bool Lying(ItemType type)
+        {
+            foreach (var it in items) if (!it.Stack.IsEmpty && it.Stack.Type == type) return true;
+            return false;
+        }
+
         public static List<Saved> Save()
         {
             var list = new List<Saved>(items.Count);

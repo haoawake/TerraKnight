@@ -290,6 +290,7 @@ namespace TerraKnight.World
             WorldItems.Drop(ItemStack.Of(ItemType.LifeCrystal), box.center);
             c.Taken = true;
             if (c.Renderer != null) c.Renderer.enabled = false;
+            UI.WorldMap.Refresh(c.Scene);
             DevBroken++;
             Plugin.Log.LogInfo($"[生命水晶] {c.Scene} 的生命水晶打下来了（这个存档还剩 {Left} 个）");
         }
@@ -301,6 +302,13 @@ namespace TerraKnight.World
             var px = Effects.TerraParticles.ToPx(box.center);
             // KillTile_MakeTileDust: tile 12's dust is 12.
             for (int k = 0; k < n; k++) p.NewDust(px - new Vector2(16f, 16f), 32, 32, 12);
+        }
+
+        /// <summary>The crystals placed and not yet taken: their scene and spot (bottom middle, scene coordinates), for the map.</summary>
+        public static IEnumerable<(string Scene, Vector2 Local)> Standing()
+        {
+            foreach (var c in crystals)
+                if (!c.Taken && c.Local.HasValue) yield return (c.Scene, c.Local.Value);
         }
 
         public static int Left
@@ -340,6 +348,7 @@ namespace TerraKnight.World
                     if (FindSpot(region, Seed, out var local))
                     {
                         c.Local = local;
+                        UI.WorldMap.Refresh(c.Scene);
                         Plugin.Log.LogInfo($"[生命水晶] {c.Scene} 的生命水晶放在 {local:F1}（场景坐标）");
                     }
                     else

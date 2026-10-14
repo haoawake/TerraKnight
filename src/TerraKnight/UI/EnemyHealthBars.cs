@@ -37,7 +37,7 @@ namespace TerraKnight.UI
             foreach (var info in EnemyStats.All)
             {
                 var hm = info.Hm;
-                if (hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy) continue;
+                if (hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy || EnemyStats.Defeated(hm)) continue;
                 int life = EnemyStats.Life(hm, info), max = EnemyStats.LifeMax(info);
                 if (info.Boss)
                 {

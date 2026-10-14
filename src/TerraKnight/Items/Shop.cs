@@ -72,63 +72,78 @@ namespace TerraKnight.Items
             return false;
         }
 
-        /// <summary>The deepest stage among the scenes the player has been to (World.Areas levels, 0-5).</summary>
+        /// <summary>Dev: the progress as a test sets it (-1: the save's own).</summary>
+        public static int DevStage = -1;
+
         /// <summary>
-        /// The progress reached, as Terraria's comes with its bosses: each stage opens with the last
-        /// stage's final boss beaten, not on walking into its areas: the False Knight (King Slime)
-        /// for 1, Greenpath's Hornet (the Eye of Cthulhu) for 2, the Soul Master (the Brain of
-        /// Cthulhu) for 3, the Watcher Knights (the Wall of Flesh: hardmode) for 4, the Broken
-        /// Vessel (Plantera) for 5. Who moves into Dirtmouth, what the townsfolk sell and which
-        /// stations' recipes are open go by it; the enemies' strength and drops still go by where
-        /// they live.
+        /// The progress reached, by the Knight's own abilities, each opening the next stretch of
+        /// Hallownest as Terraria's bosses open its next stretch: the Mothwing Cloak (Hornet's, the
+        /// Eye of Cthulhu's shield) for 1, the Mantis Claw for 2, the Crystal Heart for 3, the
+        /// Monarch Wings (the Broken Vessel's: the Wall of Flesh, hardmode) for 4, the Shade Cloak for
+        /// 5; one stage for each of them got. Who moves into Dirtmouth, what the townsfolk sell and
+        /// which recipes open go by it; the enemies' strength and drops by where they live
+        /// (World.Areas.LevelOf, laid out along the same road).
         /// </summary>
         public static int UnlockedStage()
         {
+            if (DevStage >= 0) return DevStage;
             if (Free) return World.Areas.MaxLevel;
             var pd = PlayerData.instance;
             if (pd == null) return 0;
-            if (pd.killedInfectedKnight) return 5;
-            if (WatcherKnightsBeaten()) return 4;
-            if (pd.mageLordDefeated) return 3;
-            if (pd.hornet1Defeated) return 2;
-            if (pd.falseKnightDefeated) return 1;
-            return 0;
+            int n = 0;
+            foreach (var flag in StageAbilities) if (pd.GetBool(flag)) n++;
+            return n;
         }
 
-        /// <summary>The Watcher Knights' fight is won: its battle's own record in the scene's data (the game keeps no flag of it).</summary>
-        static bool WatcherKnightsBeaten()
-        {
-            var sd = SceneData.instance;
-            if (sd == null) return false;
-            var state = sd.FindMyState(new PersistentBoolData { id = "Battle Control", sceneName = "Ruins2_03" });
-            return state != null && state.activated;
-        }
+        /// <summary>The abilities that open the stages 1 to 5, in the order the Knight gets them.</summary>
+        static readonly string[] StageAbilities = { "hasDash", "hasWalljump", "hasSuperDash", "hasDoubleJump", "hasShadowDash" };
 
-        /// <summary>The boss whose fall opens a stage, for the townsfolk's word on it.</summary>
-        public static string GateBoss(int stage) =>
-            stage == 1 ? "假骑士" : stage == 2 ? "大黄蜂（苍绿之径）" : stage == 3 ? "灵魂大师" : stage == 4 ? "守望者骑士" : stage == 5 ? "残破容器" : "";
+        /// <summary>The ability that opens a stage, for the townsfolk's word on it.</summary>
+        public static string GateAbility(int stage) =>
+            stage == 1 ? "蛾翼披风" : stage == 2 ? "螳螂爪" : stage == 3 ? "水晶之心" : stage == 4 ? "帝王之翼" : stage == 5 ? "暗影披风" : "";
 
         public static int Geo => PlayerData.instance != null ? PlayerData.instance.geo : 0;
 
         /// <summary>Copper held beyond whole geo (0-99).</summary>
         public static int SpareCopper;
 
-        /// <summary>All the money, in copper.</summary>
-        public static long Purse => Geo * 100L + SpareCopper;
+        /// <summary>The money items stand for: a creative save keeps the game's geo as it always did.</summary>
+        static bool GeoItems => TerraMod.Instance != null && !TerraMod.Instance.Creative;
+
+        /// <summary>All the money, in copper: the Geo carried and in the Piggy Bank (GeoWallet), and the spare copper.</summary>
+        public static long Purse => GeoItems
+            ? (GeoWallet.Held(TerraMod.Instance.Inventory) + GeoWallet.Banked(TerraMod.Instance.Inventory)) * 100L + SpareCopper
+            : Geo * 100L + SpareCopper;
 
         /// <summary>Pays a price in copper out of the geo (and spare copper); false when short.</summary>
         public static bool Spend(long copper)
         {
             if (copper <= 0) return true;
             if (Purse < copper) return false;
-            SetPurse(Purse - copper);
+            if (!GeoItems)
+            {
+                SetPurse(Purse - copper);
+                return true;
+            }
+            var inv = TerraMod.Instance.Inventory;
+            long after = Purse - copper;
+            GeoWallet.Pay(inv, GeoWallet.Held(inv) + GeoWallet.Banked(inv) - after / 100);
+            SpareCopper = (int)(after % 100);
             return true;
         }
 
-        /// <summary>Takes money in, in copper.</summary>
+        /// <summary>Takes money in, in copper: whole geo into the bag as the item.</summary>
         public static void Earn(long copper)
         {
-            if (copper > 0) SetPurse(Purse + copper);
+            if (copper <= 0) return;
+            if (!GeoItems)
+            {
+                SetPurse(Purse + copper);
+                return;
+            }
+            long total = SpareCopper + copper;
+            GeoWallet.Give(TerraMod.Instance, total / 100);
+            SpareCopper = (int)(total % 100);
         }
 
         static void SetPurse(long copper)
@@ -172,6 +187,20 @@ namespace TerraKnight.Items
         }
 
         /// <summary>What a stack sells for, in copper: a fifth of the value apiece (Player.GetItemExpectedPrice).</summary>
-        public static long SellValue(ItemStack s) => s.IsEmpty || s.Def.Value <= 0 ? 0 : Mathf.Max(1, s.Def.Value / 5) * (long)s.Count;
+        public static long SellValue(ItemStack s) => s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type) ? 0 : System.Math.Max(1L, PriceOf(s.Def) / 5) * s.Count;
+
+        /// <summary>
+        /// What an item costs at the townsfolk's, in copper (a geo is 100): Terraria's value up to a
+        /// silver, past it growing as the value's 0.8th power, so the dear end of Terraria's money
+        /// (gold and platinum) stays within reach of Hallownest's geo and selling the drops of
+        /// strong enemies doesn't pay out fortunes. A gold's worth costs 40 geo, ten gold 250, a
+        /// platinum about 1600. Selling gives a fifth of it, as in Terraria.
+        /// </summary>
+        public static long PriceOf(ItemDef d)
+        {
+            if (d == null || d.Value <= 0) return 0;
+            if (d.Value <= 100) return d.Value;
+            return (long)System.Math.Round(100.0 * System.Math.Pow(d.Value / 100.0, 0.8));
+        }
     }
 }

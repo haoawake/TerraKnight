@@ -50,6 +50,7 @@ namespace TerraKnight.Items
         static bool CanFreeze(int x, int y)
         {
             if (!TerraWorld.InWorld(x, y) || TerraWorld.Get(x, y) != CellKind.Empty) return false;
+            if (BossRooms.Locked(x, y)) return false;
             return Physics2D.OverlapBox(CellGrid.CellCenter(x, y), Vector2.one * (CellGrid.CellSize * 0.9f), 0f, (1 << 9) | (1 << 11)) == null;
         }
 

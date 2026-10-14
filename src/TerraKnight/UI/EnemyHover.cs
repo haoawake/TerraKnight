@@ -106,7 +106,7 @@ namespace TerraKnight.UI
             foreach (var info in EnemyStats.All)
             {
                 var hm = info.Hm;
-                if (hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy) continue;
+                if (hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy || EnemyStats.Defeated(hm)) continue;
                 // NPC.frame: the picture's own rectangle, or the hurt box where it has none.
                 var rend = hm.GetComponent<Renderer>();
                 Bounds b;

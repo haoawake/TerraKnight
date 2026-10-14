@@ -133,6 +133,9 @@ namespace TerraKnight.Player
         public static ItemType HookItem(Inventory inv)
         {
             if (inv == null) return ItemType.None;
+            // Player.QuickGrapple: the hook slot's first, else the first hook in the inventory.
+            var worn = inv.Misc[Inventory.HookSlot];
+            if (!worn.IsEmpty && Hooks.ContainsKey(worn.Type)) return worn.Type;
             foreach (var s in inv.Slots)
                 if (!s.IsEmpty && Hooks.ContainsKey(s.Type)) return s.Type;
             return ItemType.None;

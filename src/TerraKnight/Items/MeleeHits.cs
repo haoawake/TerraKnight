@@ -252,9 +252,37 @@ namespace TerraKnight.Items
             if (hm == null) PropHits.Pulse(col, from, facing, damage);
             GameObject target = hm != null ? hm.gameObject : FindResponder(col);
             if (target == null || (hm != null && hm.isDead)) return false;
+            // Still in its frames after the last hit: the shot goes through, as past an immune NPC.
+            if (Immune(hm)) return false;
             source.transform.position = new Vector3(from.x, from.y, 0f);
             Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation);
             return hm != null;
+        }
+
+        static readonly System.Collections.Generic.Dictionary<int, float> immuneUntil = new System.Collections.Generic.Dictionary<int, float>();
+        static float nextImmunePrune;
+
+        /// <summary>
+        /// An enemy's frames after a hit (in place of the Knight's own dodge, zeroed below for being a
+        /// nail's): a boss 10 ticks, an elite 8, anything else 4, from any weapon, shot or minion.
+        /// Terraria's single-hit shots leave none, so a swarm of minions or a fast gun would take a
+        /// boss apart; here a boss takes at most six hits a second, whatever they are. Debuffs'
+        /// damage over time isn't held back (it isn't a hit).
+        /// </summary>
+        public static bool Immune(HealthManager hm) => hm != null && immuneUntil.TryGetValue(hm.GetInstanceID(), out float t) && Time.time < t;
+
+        static void StartImmunity(HealthManager hm, EnemyStats.Info info)
+        {
+            if (hm == null) return;
+            int ticks = info != null && info.Boss ? 10 : info != null && info.Elite ? 8 : 4;
+            immuneUntil[hm.GetInstanceID()] = Time.time + ticks / 60f;
+            if (Time.time > nextImmunePrune && immuneUntil.Count > 256)
+            {
+                nextImmunePrune = Time.time + 5f;
+                var gone = new System.Collections.Generic.List<int>();
+                foreach (var kv in immuneUntil) if (kv.Value < Time.time) gone.Add(kv.Key);
+                foreach (int k in gone) immuneUntil.Remove(k);
+            }
         }
 
         /// <summary>Returns the hit's rolled damage (crit doubled), 0 when nothing took it.</summary>
@@ -262,6 +290,7 @@ namespace TerraKnight.Items
 
         int Deal(Collider2D col, HealthManager hm, GameObject target, int baseDamage, float knockback, float critChance, float facing, int armorPen, int addAfterVariation = 0)
         {
+            if (Immune(hm)) return 0;
             // Who dealt it, for the armor sets' on-hit effects (cleared whatever happens).
             var armorCtx = ArmorEffects.Context;
             ArmorEffects.Context = default;
@@ -348,6 +377,7 @@ namespace TerraKnight.Items
             if (hm == null) return rolled;
             int dealt = hpBefore - Mathf.Max(0, hm.hp);
             if (dealtHk > 0 && dealt <= 0 && !hm.isDead && !puppet) return 0; // blocked (a shell, a shield)
+            StartImmunity(hm, info);
             // Terraria's knockback: launched back and up (bosses and elites have no push speed).
             if (pushSpeed > 0f && !hm.isDead && !puppet)
             {

@@ -126,6 +126,10 @@ namespace TerraKnight.Items
                 case ArmorSet.Copper: return new Bonuses { Defense = 2 };
                 case ArmorSet.Iron: return new Bonuses { Defense = 2 };
                 case ArmorSet.Gold: return new Bonuses { Defense = 3 };
+                // ArmorSetBonuses: MetalTier1 (copper, tin, iron) +2, MetalTier2 (silver, gold, lead, tungsten) +3, platinum +4.
+                case ArmorSet.Tin: return new Bonuses { Defense = 2 };
+                case ArmorSet.Lead: case ArmorSet.Silver: case ArmorSet.Tungsten: return new Bonuses { Defense = 3 };
+                case ArmorSet.Platinum: return new Bonuses { Defense = 4 };
                 case ArmorSet.Shadow: return new Bonuses { MoveSpeed = 0.15f };
                 case ArmorSet.Necro: return new Bonuses { AmmoSave = 0.2f };
                 case ArmorSet.Jungle: return new Bonuses { ManaCost = 0.16f };
@@ -182,6 +186,9 @@ namespace TerraKnight.Items
                 case ArmorSet.Copper: return "防御力 +2";
                 case ArmorSet.Iron: return "防御力 +2";
                 case ArmorSet.Gold: return "防御力 +3";
+                case ArmorSet.Tin: return "防御力 +2";
+                case ArmorSet.Lead: case ArmorSet.Silver: case ArmorSet.Tungsten: return "防御力 +3";
+                case ArmorSet.Platinum: return "防御力 +4";
                 case ArmorSet.Shadow: return "移动速度提高15%";
                 case ArmorSet.Necro: return "20%几率不消耗弹药";
                 case ArmorSet.Jungle: return "魔力消耗降低16%";

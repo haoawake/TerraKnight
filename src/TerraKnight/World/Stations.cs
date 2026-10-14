@@ -9,6 +9,8 @@ namespace TerraKnight.World
     internal enum StationKind : byte
     {
         None, WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Bottle,
+        /// <summary>Not a crafting station: the Piggy Bank, opened with a right click (Items.GeoWallet).</summary>
+        PiggyBank,
     }
 
     /// <summary>
@@ -52,6 +54,8 @@ namespace TerraKnight.World
             [StationKind.TinkerersWorkshop] = new Spec { Texture = "Tiles_114", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.TinkerersWorkshop, Counts = new[] { "工匠作坊" } },
             // A placed bottle (tile 13 style 0) is the alchemy station.
             [StationKind.Bottle] = new Spec { Texture = "Tiles_13", W = 1, H = 1, Heights = new[] { 16 }, Item = ItemType.Bottle, Counts = new[] { "玻璃瓶" } },
+            // Tile 29: Style2x1 with CoordinateHeights {18}; it counts as no station.
+            [StationKind.PiggyBank] = new Spec { Texture = "Tiles_29", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.PiggyBank, Counts = new string[0] },
         };
 
         sealed class Station
@@ -142,6 +146,7 @@ namespace TerraKnight.World
         {
             if (hero == null || !specs.ContainsKey(kind)) return false;
             if (!FindSpot(kind, hero, aim, out var bottom)) return false;
+            if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
             var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
@@ -179,6 +184,21 @@ namespace TerraKnight.World
             if (!Reach(hero).Overlaps(box)) return false;
             bottom = new Vector2(x, y);
             return true;
+        }
+
+        /// <summary>A right click on a Piggy Bank in reach: the bank opens (or shuts) with the inventory. True when the click was on one.</summary>
+        public static bool TryRightClick(Vector2 mouse)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return false;
+            var reach = Reach(hero);
+            foreach (var s in stations)
+            {
+                if (s.Kind != StationKind.PiggyBank || s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
+                Chests.ToggleBank(s.Scene, s.Region, s.Local);
+                return true;
+            }
+            return false;
         }
 
         // ------------------------------------------------------------------ breaking

@@ -595,7 +595,8 @@ namespace TerraKnight.Town
             var item = ShopItems[slot];
             if (item.IsEmpty) return 0;
             // The Discount Card (GetItemExpectedPrice, Pl:35648-35657): four fifths, as worn when the shop opened.
-            return BuyBack[slot] ? Mathf.Max(1, item.Def.Value / 5) : DiscountLatched ? (long)(item.Def.Value * 0.8f) : item.Def.Value;
+            long price = Shop.PriceOf(item.Def);
+            return BuyBack[slot] ? System.Math.Max(1L, price / 5) : DiscountLatched ? (long)(price * 0.8f) : price;
         }
 
         /// <summary>discountAvailable: whether the Discount Card was worn as the shop opened.</summary>
@@ -604,7 +605,8 @@ namespace TerraKnight.Town
         /// <summary>Player.SellItem: the stack for a fifth of its value apiece, into the shop's buy-back slots (Chest.AddItemToShop).</summary>
         public static void Sell(ref ItemStack stack)
         {
-            if (!ShopOpen || stack.IsEmpty || stack.Favorite) return;
+            // Money isn't sold.
+            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.Permanent || stack.Type == ItemType.Geo) return;
             long money = Shop.SellValue(stack);
             Shop.Earn(money);
             int at = -1;
@@ -629,10 +631,10 @@ namespace TerraKnight.Town
         {
             var lines = Dialog(n.Def.Internal);
             string line = Lang.T(lines[Random.Range(0, lines.Length)]).Replace("{PlayerName}", Lang.T("小骑士"));
-            // The Guide's advice on what comes next (Main.HelpText): the boss whose fall opens the next stage.
+            // The Guide's advice on what comes next (Main.HelpText): the ability that opens the next stage.
             int next = Shop.UnlockedStage() + 1;
             if (n.Def.Internal == "Guide" && next <= World.Areas.MaxLevel)
-                line += "\n" + Lang.F("想让更多人搬来德特茅斯、商店上新货、工作站能做更多东西，就去打败{0}吧。", Lang.T(Shop.GateBoss(next)));
+                line += "\n" + Lang.F("想让更多人搬来德特茅斯、商店上新货、工作站能做更多东西，就去找到{0}吧。", Lang.T(Shop.GateAbility(next)));
             return line;
         }
 

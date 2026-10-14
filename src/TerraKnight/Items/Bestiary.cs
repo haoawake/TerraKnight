@@ -161,8 +161,21 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
         static void AfterDie(HealthManager __instance)
         {
-            // A special death (False Knight, Grimm, the Radiance...) never sets isDead: it is at 0 hp.
+            // A special death (Grimm, the Radiance...) never sets isDead: it is at 0 hp.
             if (TerraMod.Instance == null || __instance == null || !(__instance.isDead || __instance.hp <= 0)) return;
+            Credit(__instance);
+        }
+
+        /// <summary>Whether this enemy's kill has been counted (its book entry, its drops).</summary>
+        public static bool Credited(HealthManager hm) => hm != null && counted.Contains(hm.GetInstanceID());
+
+        /// <summary>
+        /// A kill: the book's count and first-kill note, and the drops. Once for each enemy, whichever
+        /// way it went down (HealthManager.Die, or a boss's own death in its FSM: SpecialDeaths).
+        /// </summary>
+        public static void Credit(HealthManager __instance)
+        {
+            if (TerraMod.Instance == null || __instance == null) return;
             if (!counted.Add(__instance.GetInstanceID())) return;
             if (counted.Count > 4096) counted.Clear();
             string rec = UI.EnemyHover.RecordOf(__instance);

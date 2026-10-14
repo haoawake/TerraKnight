@@ -160,10 +160,10 @@ namespace TerraKnight
             Inventory.Slots[2] = ItemStack.Of(ItemType.WoodenBow);
             Inventory.Slots[3] = ItemStack.Of(ItemType.Torch, 10);
             Inventory.Slots[Inventory.Size] = ItemStack.Of(ItemType.WoodenArrow, 100);
-            // A start to get about with: the grappling hook (E) in the bag, the Climbing Claws and the Cloud in a
-            // Bottle worn. They are marked shared (favourite), so every loadout keeps them; the Mantis Claw and the
-            // Monarch Wings give nothing more later (GrantAbilityAccessories skips what is already owned).
-            Inventory.Slots[Inventory.HotbarSize] = ItemStack.Of(ItemType.GrapplingHook);
+            // A start to get about with: the grappling hook (E) in its slot of the misc equipment, the Climbing Claws
+            // and the Cloud in a Bottle worn. They are marked shared (favourite), so every loadout keeps them; the Mantis
+            // Claw and the Monarch Wings give nothing more later (GrantAbilityAccessories skips what is already owned).
+            Inventory.Misc[Inventory.HookSlot] = ItemStack.Of(ItemType.GrapplingHook);
             Inventory.Accessories[0] = ItemStack.Of(ItemType.ClimbingClaws);
             Inventory.Accessories[0].Favorite = true;
             Inventory.Accessories[1] = ItemStack.Of(ItemType.CloudinaBottle);
@@ -267,7 +267,11 @@ namespace TerraKnight
                 Town.TownNpcs.Draw();
                 if (Creative) Shop.KeepCreativeGeo(hero);
                 BossArena.Tick();
+                RoarRelease.Tick(hero);
                 GrantAbilityAccessories(dt);
+                DreamNailItem.Tick(this, HeroController.SilentInstance);
+                GeoWallet.Tick(this);
+                GeoItem.EnsureIcon();
                 HoldFrameRate();
             }
 
@@ -286,6 +290,8 @@ namespace TerraKnight
                 return;
             }
             if (gameplay && terrain != null && !gm.isPaused && !Net.NetChat.BlocksKeys && !UI.IngameOptions.Open) HandleEscape();
+            // The Dream Nail item's button (the game's FSM reads it, in control or not).
+            DreamNailItem.Sample();
             if (terrain == null || !GameHooks.PlayerHasControl() || Mouse.current == null)
             {
                 highlight.gameObject.SetActive(false);
@@ -301,7 +307,9 @@ namespace TerraKnight
             talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Minions.Instance != null && Minions.Instance.TryDespawnSentry(mouse));
             // A right click on a chest in reach opens it (Player.TileInteractionsUse); on the pet Pal, a pat (Player.PetAnimal).
             talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Chests.TryRightClick(mouse));
+            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Stations.TryRightClick(mouse));
             talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Minions.Instance != null && Minions.Instance.TryPet(hero, mouse));
+            if (talked) DreamNailItem.Cancel();
             GrapplingHook.Instance?.ReadKey(hero, GrapplingHook.HookItem(Inventory), mouse);
 
             AutoSelect(hero, DevAim ?? mouse);
@@ -328,6 +336,9 @@ namespace TerraKnight
                 highlight.transform.position = new Vector3(c.x, c.y, CellVisuals.BlockZ - 0.001f);
             }
 
+            if (!overUi && !talked && !usable && rock == null && !DevNoRealMouse && Mouse.current.leftButton.isPressed
+                && (def.PickPower > 0 || def.Places != CellKind.Empty || def.PlacesChest || def.PlacesStation != StationKind.None) && BossRooms.Locked(mouse))
+                BossRooms.Notice(mouse);
             // Potions and crystals take a click each; everything else keeps going while held.
             bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def);
             bool pressed = !DevNoRealMouse && (once ? Mouse.current.leftButton.wasPressedThisFrame : Mouse.current.leftButton.isPressed);
@@ -1128,21 +1139,24 @@ namespace TerraKnight
         /// <summary>
         /// Terraria's placement rules. A plain block: the cell is free and either touches a tile
         /// on one of its four sides or has a wall behind it (here: was dug out of the scene's
-        /// terrain). A torch: a block under it or beside it, or a wall. Rope: hangs from a block
-        /// or rope above, or continues rope below. Platforms: also beside anything diagonally, and,
+        /// terrain). A torch: a block under it or beside it, or a wall. Rope: attaches above or below
+        /// a block, continues rope vertically, or attaches to a dug background wall. Platforms: also beside anything diagonally, and,
         /// like blocks (Collision.EmptyTile), never inside the player or an enemy.
         /// </summary>
         public static bool CanPlace(Vector2Int cell, CellKind kind = CellKind.Stone)
         {
             int x = cell.x, y = cell.y;
             if (!TerraWorld.InWorld(x, y) || TerraWorld.Get(x, y) != CellKind.Empty) return false;
+            if (BossRooms.Locked(x, y)) return false;
             switch (kind)
             {
                 case CellKind.Torch:
                     if (!(TerraWorld.IsSolid(x, y - 1) || TerraWorld.IsSolid(x - 1, y) || TerraWorld.IsSolid(x + 1, y) || TerraWorld.IsDug(x, y))) return false;
                     return true; // nothing collides with a torch
                 case CellKind.Rope:
-                    return TerraWorld.IsSolid(x, y + 1) || TerraWorld.Get(x, y + 1) == CellKind.Rope || TerraWorld.Get(x, y - 1) == CellKind.Rope;
+                    return TerraWorld.IsSolid(x, y + 1) || TerraWorld.IsSolid(x, y - 1)
+                        || TerraWorld.Get(x, y + 1) == CellKind.Rope || TerraWorld.Get(x, y - 1) == CellKind.Rope
+                        || TerraWorld.IsDug(x, y);
             }
             bool anchored = TerraWorld.IsOccupied(x - 1, y) || TerraWorld.IsOccupied(x + 1, y)
                             || TerraWorld.IsOccupied(x, y - 1) || TerraWorld.IsOccupied(x, y + 1)
@@ -1296,6 +1310,16 @@ namespace TerraKnight
             if (rightClick && !fromMouse) return;
             ref var stack = ref fromMouse ? ref Inventory.Mouse : ref Inventory.Slots[Inventory.Held];
             if (stack.IsEmpty) return;
+            // Kept for good (the Dream Nail): never thrown; a right click only puts it back in the bag.
+            if (stack.Def.Permanent)
+            {
+                if (rightClick && fromMouse && Inventory.Pickup(stack.Type, stack.Count, stack.Favorite) <= 0)
+                {
+                    stack = default;
+                    PlaySound("Grab", 0.7f);
+                }
+                return;
+            }
             if (stack.Favorite)
             {
                 if (!rightClick) return;
@@ -1321,6 +1345,23 @@ namespace TerraKnight
         {
             var m = Inventory.Mouse;
             if (m.IsEmpty) return;
+            // Kept for good with no room for it: it takes the place of the bag's last plain item, which drops instead.
+            if (m.Def.Permanent && Inventory.Room(m.Type) <= 0)
+            {
+                // The bag's own slots only (not the coins' or the ammo's).
+                var slots = Inventory.Slots;
+                for (int i = Inventory.Size - 1; i >= 0; i--)
+                {
+                    if (slots[i].IsEmpty || slots[i].Favorite || slots[i].Def.Permanent) continue;
+                    var out_ = slots[i];
+                    slots[i] = m;
+                    Inventory.Mouse = default;
+                    var h = HeroController.SilentInstance;
+                    if (h != null) WorldItems.Drop(out_, h.GetComponent<BoxCollider2D>().bounds.center);
+                    else Inventory.Mouse = out_;
+                    return;
+                }
+            }
             int left = Inventory.Pickup(m.Type, m.Count, m.Favorite);
             if (left < m.Count) PlaySound("Grab", 0.7f);
             Inventory.Mouse = default;

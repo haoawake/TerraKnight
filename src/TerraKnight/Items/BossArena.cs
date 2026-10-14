@@ -98,6 +98,17 @@ namespace TerraKnight.Items
             return a;
         }
 
+        /// <summary>Dev: a world arena's way in by the book's key ("Hornet@4"), and the flags its fight needs of the player.</summary>
+        internal static bool DevWorldArena(string key, out string gate, out (string Name, bool Value)[] needs)
+        {
+            gate = null;
+            needs = null;
+            if (!arenas.TryGetValue(key, out var a) || a.Kind != Kind.World) return false;
+            gate = a.Gate;
+            needs = a.Needs;
+            return true;
+        }
+
         /// <summary>The fight being visited: what was there before, to put back.</summary>
         sealed class Visit
         {
@@ -113,6 +124,9 @@ namespace TerraKnight.Items
         }
 
         static Visit visit;
+
+        /// <summary>A creative challenge is on: its records are being set back and forth (SpecialDeaths leaves them be).</summary>
+        public static bool Visiting => visit != null;
         /// <summary>Where a dream's or Godhome's fight sends the player back to: the scene and the spot they left from.</summary>
         static string returnScene;
         static Vector2 returnSpot;
@@ -164,6 +178,9 @@ namespace TerraKnight.Items
             InventoryGui.Open = false;
             DevLast = $"{key} → {a.Scene}（{a.Gate}）";
             Plugin.Log.LogInfo($"[图鉴] 挑战 {DevLast}：开打前的记录 {string.Join("，", Describe(v))}");
+            // An arena laid over its room only for one who came in by its door (the Watcher Knights':
+            // SceneAdditiveLoadConditional.doorTrigger against the last gate walked through) has it walked.
+            if (a.Kind == Kind.World) TransitionPoint.lastEntered = a.Gate;
             gm.BeginSceneTransition(new GameManager.SceneLoadInfo
             {
                 SceneName = a.Scene, EntryGateName = a.Gate, HeroLeaveDirection = GatePosition.unknown, EntryDelay = 0f,

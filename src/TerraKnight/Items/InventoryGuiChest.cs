@@ -8,14 +8,111 @@ namespace TerraKnight.Items
     /// <summary>
     /// An open chest's panel (Main.DrawInventory's chest, context 3; ChestUI.DrawButtons): its 40
     /// slots at 0.755 scale under the inventory, "箱子" beside them with the buttons Loot All,
-    /// Deposit All and Quick Stack. Its slots take clicks as the inventory's do (a left click
+    /// Deposit All, Quick Stack, Restock and Sort Items. Its slots take clicks as the inventory's do (a left click
     /// swaps with the cursor, a right click held takes one at a time, Shift sends the stack
     /// across); Shift on an inventory slot sends that stack into the chest.
     /// </summary>
     internal static partial class InventoryGui
     {
-        static readonly string[] chestButtons = { "全部拿取", "全部存放", "快速堆叠" };
-        static int chestButtonHover = -1;
+        static readonly string[] chestButtons = { "全部拿取", "全部存放", "快速堆叠", "补货", "排序物品" };
+        static int chestButtonHover = -1, inventoryButtonHover = -1;
+
+        /// <summary>
+        /// Main.DrawInventory's two buttons beside the bag while no chest or shop is open: Quick
+        /// Stack to Nearby Chests (ChestStack_0, gold when hovered) and Sort Inventory (Sort_0).
+        /// Here under the ammo column, level with the trash.
+        /// </summary>
+        static void DrawInventoryButtons(Vector2 at, float ui, Vector2 mouse)
+        {
+            if (Chests.IsOpen || Town.TownNpcs.ShopOpen) return;
+            int over = -1;
+            for (int i = 0; i < 2; i++)
+            {
+                var tex = TerrariaAssets.Texture((i == 0 ? "UI/ChestStack_" : "UI/Sort_") + "0");
+                var r = new Rect(at.x + i * 36f * ui, at.y, tex.width * ui, tex.height * ui);
+                Add(r, Kind.InvButton, i);
+                bool hover = r.Contains(mouse);
+                if (hover) over = i;
+                GUI.DrawTexture(r, TerrariaAssets.Texture((i == 0 ? "UI/ChestStack_" : "UI/Sort_") + (hover ? "1" : "0")));
+                if (hover)
+                    DrawLines(mouse, new List<string> { TerrariaText.Get(Lang.Culture, i == 0 ? "GameUI.QuickStackToNearby" : "GameUI.SortInventory") ?? Lang.T(i == 0 ? "快速堆叠至附近的箱子" : "排序物品") }, Color.white);
+            }
+            if (over != inventoryButtonHover && over >= 0) Sound("Menu_Tick");
+            inventoryButtonHover = over;
+        }
+
+        /// <summary>Main.EquipPage: 0 the armor and accessories, 2 the misc equipment.</summary>
+        static int equipPage;
+        static readonly string[] miscNames = { "宠物", "照明宠物", "矿车", "坐骑", "钩爪" };
+        /// <summary>ItemSlot.Draw's empty-slot icons (Extra_54 frames) for contexts 19, 20, 18, 17, 16.</summary>
+        static readonly int[] miscIcons = { 10, 17, 7, 13, 4 };
+
+        /// <summary>Main.DrawPageIcons' misc equipment button (EquipPage 2: DisplaySlots_2, _3 while on it, _6 behind it hovered).</summary>
+        static void DrawEquipPageIcon(Vector2 at, float ui, Vector2 mouse)
+        {
+            var tex = TerrariaAssets.Texture(equipPage == 2 ? "UI/DisplaySlots_3" : "UI/DisplaySlots_2");
+            var r = new Rect(at.x, at.y, tex.width * 0.9f * ui, tex.height * 0.9f * ui);
+            Add(r, Kind.EquipPage, 0);
+            if (r.Contains(mouse))
+            {
+                var glow = TerrariaAssets.Texture("UI/DisplaySlots_6");
+                var prev = GUI.color;
+                GUI.color = new Color(1f, 0.85f, 0.3f);
+                GUI.DrawTexture(new Rect(r.x - 2f * ui, r.y - 2f * ui, glow.width * 0.9f * ui, glow.height * 0.9f * ui), glow);
+                GUI.color = prev;
+                DrawLines(mouse, new List<string> { Lang.T(equipPage == 2 ? "装备" : "其他装备") }, Color.white);
+            }
+            GUI.DrawTexture(r, tex);
+        }
+
+        /// <summary>The misc page (Main.DrawInventory, EquipPage 2): pet, light pet, minecart, mount and hook, one under another.</summary>
+        static void DrawMiscEquips(float ax, float ay, float slot, float step, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind)
+        {
+            Outlined(new Rect(ax - 40f * ui, ay - 24f * ui, slot + 80f * ui, 20f * ui), Lang.T("其他装备"), labelStyle, Color.white);
+            for (int i = 0; i < Inventory.MiscSlots; i++)
+            {
+                var rect = new Rect(ax, ay + i * step, slot, slot);
+                Add(rect, Kind.Misc, i);
+                DrawEquipSlot(rect, inv.Misc[i], miscIcons[i], !inv.Mouse.IsEmpty && Inventory.FitsMisc(inv.Mouse.Def, i), default, -1);
+                if (!rect.Contains(mouse)) continue;
+                hovered = inv.Misc[i];
+                hoveredKind = Kind.Misc;
+                if (inv.Misc[i].IsEmpty) DrawLines(mouse, new List<string> { Lang.T(miscNames[i]) }, Color.white);
+            }
+        }
+
+        /// <summary>A left click on a misc slot: the cursor's item goes in if it is that slot's kind (swapping), else the slot's comes onto the cursor.</summary>
+        static void LeftClickMisc(int i)
+        {
+            ref var s = ref inv.Misc[i];
+            if (!inv.Mouse.IsEmpty)
+            {
+                if (!Inventory.FitsMisc(inv.Mouse.Def, i) || inv.Mouse.Count != 1) return;
+                (s, inv.Mouse) = (inv.Mouse, s);
+                s.Favorite = false;
+                Sound("Grab");
+                return;
+            }
+            if (s.IsEmpty) return;
+            inv.Mouse = s;
+            s = default;
+            Sound("Grab");
+        }
+
+        static void ActInventoryButton(int index)
+        {
+            if (index == 0)
+            {
+                var hero = HeroController.SilentInstance;
+                if (hero == null) return;
+                int moved = Chests.QuickStackNearby(inv, hero.GetComponent<BoxCollider2D>().bounds.center);
+                Sound(moved > 0 ? "Grab" : "Menu_Tick");
+                return;
+            }
+            // ItemSorting.SortInventory: the bag below the hotbar, favourites left where they are.
+            ItemSorting.Sort(inv.Slots, Inventory.HotbarSize, Inventory.Size, true);
+            Sound("Grab");
+        }
 
         static void DrawChestPanel(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string hoveredExtra, ref Kind hoveredKind)
         {
@@ -23,7 +120,7 @@ namespace TerraKnight.Items
             if (items == null) return;
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
             float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f) * ui;
-            Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T("箱子"), nameStyleLeft(ui), Color.white);
+            Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T(Chests.BankOpen ? "猪猪存钱罐" : "箱子"), nameStyleLeft(ui), Color.white);
             panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 224f * 0.755f * ui));
             var prev = GUI.color;
             for (int i = 0; i < Chests.Capacity; i++)
@@ -105,7 +202,9 @@ namespace TerraKnight.Items
         {
             if (index == 0) Chests.LootAll(inv);
             else if (index == 1) Chests.DepositAll(inv);
-            else Chests.QuickStack(inv);
+            else if (index == 2) Chests.QuickStack(inv);
+            else if (index == 3) Chests.Restock(inv);
+            else Chests.SortOpen();
             Sound("Grab");
         }
 

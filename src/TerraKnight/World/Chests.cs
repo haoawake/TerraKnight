@@ -28,7 +28,11 @@ namespace TerraKnight.World
             public string Scene;
             /// <summary>Bottom middle, in the scene's own coordinates.</summary>
             public Vector2 Local;
-            public readonly ItemStack[] Items = new ItemStack[Capacity];
+            public readonly ItemStack[] Items;
+            /// <summary>The Piggy Bank's (the player's bank, opened at one), not a chest of the world.</summary>
+            public bool Bank;
+            public Chest() : this(new ItemStack[Capacity]) { }
+            public Chest(ItemStack[] items) { Items = items; }
             public int FrameCounter, Damage;
             public SpriteRenderer Renderer;
             TerrainRegion region;
@@ -95,6 +99,7 @@ namespace TerraKnight.World
         {
             if (hero == null) return false;
             if (!FindSpot(hero, aim, out var bottom)) return false;
+            if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var region = TerraWorld.RegionAt(CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).x, CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).y)
                          ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
@@ -158,6 +163,18 @@ namespace TerraKnight.World
             }
             return false;
         }
+
+        /// <summary>A Piggy Bank's right click (Stations): the player's bank opens there, or shuts if it was open at that one.</summary>
+        public static void ToggleBank(string scene, TerrainRegion region, Vector2 local)
+        {
+            var inv = TerraMod.Instance?.Inventory;
+            if (inv == null) return;
+            if (open != null && open.Bank && open.Scene == scene && open.Local == local) { Close(true); return; }
+            Open(new Chest(inv.Bank) { Bank = true, Scene = scene, Local = local, Region = region });
+        }
+
+        /// <summary>The open storage is the Piggy Bank (the panel's name).</summary>
+        public static bool BankOpen => IsOpen && open.Bank;
 
         static void Open(Chest c)
         {
@@ -245,18 +262,80 @@ namespace TerraKnight.World
             }
         }
 
+        /// <summary>ChestUI.Sort (ItemSorting.SortChest): the open chest's slots sorted and their stacks merged.</summary>
+        public static void SortOpen()
+        {
+            if (IsOpen) ItemSorting.Sort(open.Items, 0, Capacity, false);
+        }
+
+        /// <summary>ChestUI.Restock: the inventory's stacks not yet full topped up from the chest's of the same item.</summary>
+        public static void Restock(Inventory inv)
+        {
+            if (!IsOpen) return;
+            for (int i = 0; i < inv.Slots.Length; i++)
+            {
+                ref var s = ref inv.Slots[i];
+                if (s.IsEmpty || s.Count >= s.Def.MaxStack) continue;
+                for (int k = 0; k < Capacity && s.Count < s.Def.MaxStack; k++)
+                {
+                    ref var c = ref open.Items[k];
+                    if (c.IsEmpty || c.Type != s.Type) continue;
+                    int moved = Mathf.Min(c.Count, s.Def.MaxStack - s.Count);
+                    s.Count += moved;
+                    c.Count -= moved;
+                    if (c.Count <= 0) c = default;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Quick Stack to Nearby Chests (QuickStacking.QuickStackToNearbyChests): the bag below the
+        /// hotbar, not its favourites, onto every chest within 600 px (NearbyChests.GetChestsInRangeOf)
+        /// that already holds that item. How many stacks moved.
+        /// </summary>
+        public static int QuickStackNearby(Inventory inv, Vector2 from)
+        {
+            int moved = 0;
+            float range = 600f * Effects.TerraParticles.Px;
+            foreach (var c in chests)
+            {
+                if (c.Region == null || Vector2.Distance(c.Box.center, from) > range) continue;
+                for (int i = Inventory.HotbarSize; i < Inventory.Size; i++)
+                {
+                    ref var s = ref inv.Slots[i];
+                    if (s.IsEmpty || s.Favorite) continue;
+                    bool held = false;
+                    foreach (var it in c.Items) held |= !it.IsEmpty && it.Type == s.Type;
+                    if (!held) continue;
+                    int before = s.Count;
+                    PutIn(c, ref s);
+                    if (s.IsEmpty || s.Count != before) moved++;
+                }
+            }
+            return moved;
+        }
+
         /// <summary>
         /// ItemSlot.ShiftClick from the inventory (Chest.PutItemInChest... TryPlacingInChest): onto
         /// the chest's stacks of it first, then its first empty slot. False when nothing moved.
         /// </summary>
         public static bool Put(ref ItemStack s, bool sound = true)
         {
-            if (!IsOpen || s.IsEmpty) return false;
+            if (!IsOpen) return false;
+            bool moved = PutIn(open, ref s);
+            if (moved && sound) TerraMod.Instance?.PlaySound("Grab");
+            return moved;
+        }
+
+        /// <summary>A stack into a chest: onto its stacks of the item first, then its first empty slot. False when nothing moved.</summary>
+        static bool PutIn(Chest chest, ref ItemStack s)
+        {
+            if (s.IsEmpty) return false;
             int before = s.Count;
             int max = s.Def.MaxStack;
             for (int i = 0; i < Capacity && s.Count > 0; i++)
             {
-                ref var c = ref open.Items[i];
+                ref var c = ref chest.Items[i];
                 if (c.IsEmpty || c.Type != s.Type || c.Count >= max) continue;
                 int moved = Mathf.Min(s.Count, max - c.Count);
                 c.Count += moved;
@@ -264,7 +343,7 @@ namespace TerraKnight.World
             }
             for (int i = 0; i < Capacity && s.Count > 0; i++)
             {
-                ref var c = ref open.Items[i];
+                ref var c = ref chest.Items[i];
                 if (!c.IsEmpty) continue;
                 c = s;
                 c.Favorite = false;
@@ -272,7 +351,6 @@ namespace TerraKnight.World
             }
             bool moved2 = s.Count != before;
             if (s.Count <= 0) s = default;
-            if (moved2 && sound) TerraMod.Instance?.PlaySound("Grab");
             return moved2;
         }
 
@@ -327,6 +405,7 @@ namespace TerraKnight.World
             var hero = HeroController.SilentInstance;
             if (hero == null || TerrainSystem.Current == null) return;
             foreach (var c in chests) c.Region = RegionNamed(c.Scene);
+            if (open != null && open.Bank) open.Region = RegionNamed(open.Scene);
             // Shut when out of reach, its scene gone, the inventory closed, or a townsperson talked to.
             if (open != null && (open.Region == null || !InventoryGui.Open || hero.cState.dead || !InReach(hero, open.Box) || Town.TownNpcs.ChatOpen))
                 Close(open.Region != null);
@@ -412,6 +491,14 @@ namespace TerraKnight.World
         {
             for (int i = chests.Count - 1; i >= 0; i--) Remove(i);
             open = null;
+        }
+
+        /// <summary>Whether any chest set down holds an item of this kind.</summary>
+        public static bool Holds(ItemType type)
+        {
+            foreach (var c in chests)
+                foreach (var s in c.Items) if (!s.IsEmpty && s.Type == type) return true;
+            return false;
         }
 
         public static List<Saved> Save()

@@ -55,12 +55,21 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanCast))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanFocus))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanSuperDash))]
-        [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanDreamNail))]
-        [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanDreamGate))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanBackDash))]
         static bool Disabled(ref bool __result)
         {
             if (!Active) return true;
+            __result = false;
+            return false;
+        }
+
+        /// <summary>The Dream Nail and its gate: only with the Dream Nail item in hand (Items.DreamNailItem), then as the game decides.</summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanDreamNail))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanDreamGate))]
+        static bool DreamNailInHand(ref bool __result)
+        {
+            if (!Active || Items.DreamNailItem.Holding()) return true;
             __result = false;
             return false;
         }

@@ -38,7 +38,7 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A basic item bought for its value (or, while testing, anything for free).</summary>
-        public static Recipe Bought(ItemDef d, bool free) => new Recipe(d.Type, free ? 0 : d.Value);
+        public static Recipe Bought(ItemDef d, bool free) => new Recipe(d.Type, free ? 0 : (int)Shop.PriceOf(d));
 
         public ItemDef Def => ItemDb.Get(Result);
         public bool IsBought => Ingredients.Length == 0;
@@ -72,8 +72,37 @@ namespace TerraKnight.Items
                 if (every != null) return every;
                 every = new List<Recipe>(all);
                 every.AddRange(StationRecipes());
+                every.AddRange(OreRecipes());
                 return every;
             }
+        }
+
+        static HashSet<ItemType> worthless;
+
+        /// <summary>
+        /// Worth nothing when sold: no value of its own, or made of nothing but such things (wood
+        /// into a Work Bench, the Work Bench's wood into a Loom...), up through every recipe, so
+        /// free materials can't be crafted into money.
+        /// </summary>
+        public static bool Worthless(ItemType t)
+        {
+            if (worthless == null)
+            {
+                worthless = new HashSet<ItemType>();
+                foreach (var d in ItemDb.All) if (d != null && d.Type != ItemType.None && d.Value <= 0) worthless.Add(d.Type);
+                for (bool more = true; more;)
+                {
+                    more = false;
+                    foreach (var r in Every)
+                    {
+                        if (r.IsBought || worthless.Contains(r.Result)) continue;
+                        bool free = true;
+                        foreach (var (ing, _) in r.Ingredients) if (!worthless.Contains(ing)) { free = false; break; }
+                        if (free) { worthless.Add(r.Result); more = true; }
+                    }
+                }
+            }
+            return worthless.Contains(t);
         }
 
         static Dictionary<ItemType, Recipe> byResult;

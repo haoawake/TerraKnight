@@ -133,6 +133,8 @@ namespace TerraKnight.World
             if (r == null) return false;
             int lx = gx - r.CellOffset.x, ly = gy - r.CellOffset.y;
             if (r.Grid.Get(lx, ly) == CellKind.Empty) return false;
+            // A boss room stays as it is (mining, explosions).
+            if (BossRooms.Locked(gx, gy)) return false;
             // Within BorderCells of where this region stops, the world must carry on in another region.
             for (int k = 1; k <= TerrainSystem.BorderCells; k++)
             {

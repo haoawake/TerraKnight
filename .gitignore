@@ -19,3 +19,4 @@ promo/ffmpeg_path.txt
 __pycache__/
 # 打包出来的发布文件
 release/
+artifacts/

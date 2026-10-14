@@ -10,6 +10,7 @@ namespace TerraKnight.Items
     /// the inventory in a fight the game ends by taking the player away). The deeper an enemy
     /// lives, the later the stage its drops belong to.
     /// </summary>
+    [HarmonyLib.HarmonyPatch]
     internal static partial class EnemyDrops
     {
         public struct Drop
@@ -56,6 +57,12 @@ namespace TerraKnight.Items
         /// <summary>Dev: every table key.</summary>
         public static IEnumerable<string> DevRecords => table.Keys;
 
+        /// <summary>Every boss's scene (its arena) and kind (World.BossRooms).</summary>
+        public static IEnumerable<(string Scene, string Kind)> BossScenes()
+        {
+            foreach (var e in table.Values) if (e.Boss) yield return (e.Scene, e.Kind);
+        }
+
         public static int StageOf(string record) => record != null && table.TryGetValue(record, out var e) ? e.Stage : 0;
 
         public static bool IsBoss(string record) => record != null && table.TryGetValue(record, out var e) && e.Boss;
@@ -74,26 +81,51 @@ namespace TerraKnight.Items
             record != null && table.TryGetValue(record, out var e) ? (!string.IsNullOrEmpty(e.Zh) ? e.Zh : !string.IsNullOrEmpty(e.En) ? e.En : record) : record ?? "";
 
         /// <summary>
-        /// The harder the save, the richer the kill: a drop that isn't certain comes up more often
-        /// (Hard 4/3 as often, Expert 5/3, Master twice, never past certain), and a stack's count
-        /// reaches higher (its spread widened upward by half, all, one and a half again). What drops
-        /// is the same item, at the same numbers.
+        /// The harder the save, the richer the kill, a little: a drop that isn't certain comes up more
+        /// often (Hard 1.1 times, Expert 1.2, Master 1.3, never past certain), and a stack's count
+        /// reaches higher (its spread widened upward by 15%, 30%, 50%); the geo more (GeoScale).
+        /// What drops is the same item, at the same numbers.
         /// </summary>
         public static float ChanceScale => World.GameDifficulty.Current switch
         {
-            World.DifficultyLevel.Hard => 4f / 3f,
-            World.DifficultyLevel.Expert => 5f / 3f,
-            World.DifficultyLevel.Master => 2f,
+            World.DifficultyLevel.Hard => 1.1f,
+            World.DifficultyLevel.Expert => 1.2f,
+            World.DifficultyLevel.Master => 1.3f,
             _ => 1f,
         };
 
         public static float AmountBonus => World.GameDifficulty.Current switch
         {
-            World.DifficultyLevel.Hard => 0.5f,
-            World.DifficultyLevel.Expert => 1f,
-            World.DifficultyLevel.Master => 1.5f,
+            World.DifficultyLevel.Hard => 0.15f,
+            World.DifficultyLevel.Expert => 0.3f,
+            World.DifficultyLevel.Master => 0.5f,
             _ => 0f,
         };
+
+        /// <summary>The geo an enemy drops (the game's own, HealthManager's geo drops) on the current difficulty: money goes up more than items.</summary>
+        public static float GeoScale => World.GameDifficulty.Current switch
+        {
+            World.DifficultyLevel.Hard => 1.25f,
+            World.DifficultyLevel.Expert => 1.5f,
+            World.DifficultyLevel.Master => 2f,
+            _ => 1f,
+        };
+
+        static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> smallGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("smallGeoDrops");
+        static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> mediumGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("mediumGeoDrops");
+        static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> largeGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("largeGeoDrops");
+
+        /// <summary>A death's geo scaled by the difficulty (each size of piece in turn, rounded, never below what it was).</summary>
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
+        static void MoreGeo(HealthManager __instance)
+        {
+            float k = GeoScale;
+            if (__instance == null || __instance.isDead || k <= 1f || TerraMod.Instance == null) return;
+            smallGeo(__instance) = Mathf.RoundToInt(smallGeo(__instance) * k);
+            mediumGeo(__instance) = Mathf.RoundToInt(mediumGeo(__instance) * k);
+            largeGeo(__instance) = Mathf.RoundToInt(largeGeo(__instance) * k);
+        }
 
         /// <summary>A drop's chance on the current difficulty.</summary>
         public static float EffectiveChance(Drop d) => d.Chance >= 1f ? 1f : Mathf.Min(1f, d.Chance * ChanceScale);

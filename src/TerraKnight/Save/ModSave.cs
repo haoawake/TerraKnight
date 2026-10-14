@@ -25,6 +25,11 @@ namespace TerraKnight.Save
             /// <summary>The worn set (the current loadout's).</summary>
             public List<SlotItem> Accessories = new List<SlotItem>();
             public List<SlotItem> Armor = new List<SlotItem>();
+            /// <summary>The misc equipment: pet, light pet, minecart, mount, hook.</summary>
+            public List<SlotItem> Misc;
+            /// <summary>The Piggy Bank's slots; GeoItems: the save's geo is the Geo item already (Items.GeoWallet).</summary>
+            public List<SlotItem> Bank;
+            public bool GeoItems;
             /// <summary>Version 4: the worn loadout and the four loadouts' stored sets (the worn one's is empty). Fav marks a shared item.</summary>
             public int CurrentLoadout;
             public List<LoadoutSave> Loadouts;
@@ -33,7 +38,7 @@ namespace TerraKnight.Save
             public SlotItem Trash;
             /// <summary>Pylons unlocked by resting on their benches.</summary>
             public List<PylonSave> Pylons = new List<PylonSave>();
-            /// <summary>Items lying in the world, by the scene they lie in (its own coordinates).</summary>
+            /// <summary>Items lying in the world, by the scene they lie in (its own coordinates): no longer written or read (2.1.1), kept so old files still parse.</summary>
             public List<DroppedSave> Dropped = new List<DroppedSave>();
             /// <summary>Version 1 files only had the hotbar.</summary>
             public List<SlotItem> Hotbar;
@@ -194,6 +199,11 @@ namespace TerraKnight.Save
             foreach (var s in inv.Slots) file.Inventory.Add(Pack(s));
             foreach (var s in inv.Accessories) file.Accessories.Add(Pack(s));
             foreach (var s in inv.Armor) file.Armor.Add(Pack(s));
+            file.Misc = new List<SlotItem>();
+            foreach (var s in inv.Misc) file.Misc.Add(Pack(s));
+            file.Bank = new List<SlotItem>();
+            foreach (var s in inv.Bank) file.Bank.Add(Pack(s));
+            file.GeoItems = GeoWallet.Migrated;
             file.CurrentLoadout = inv.CurrentLoadout;
             file.Loadouts = new List<LoadoutSave>();
             foreach (var l in inv.Loadouts)
@@ -237,8 +247,8 @@ namespace TerraKnight.Save
             file.CrystalSeed = World.LifeCrystals.Seed;
             file.Crystals = new List<CrystalSave>();
             foreach (var c in World.LifeCrystals.Save()) file.Crystals.Add(new CrystalSave { Scene = c.Scene, Placed = c.Placed, Taken = c.Taken, X = c.Local.x, Y = c.Local.y });
-            foreach (var d in WorldItems.Save())
-                file.Dropped.Add(new DroppedSave { Scene = d.Scene, Type = d.Type.ToString(), Count = d.Count, X = d.Local.x, Y = d.Local.y });
+            // Items lying in the world aren't kept (Terraria saves none with the world): quitting clears them,
+            // so they never pile up from one session to the next.
             foreach (var kv in World.WorldEdits.All)
             {
                 var cells = new List<long>(kv.Value.Count);
@@ -310,6 +320,8 @@ namespace TerraKnight.Save
             var file = any ? ParseSave(path, out _) : null;
             if (file == null)
             {
+                // No mod save of this slot yet: its geo becomes the item now.
+                GeoWallet.Reset(false);
                 if (any) Plugin.Log.LogError($"[存档] 存档 {slot} 的 mod 存档全都读不了，按新档开始（原文件留在 .broken-* 里）");
                 mod.ApplyCreative(false);
                 World.GameDifficulty.Current = World.DifficultyLevel.Master;
@@ -329,6 +341,9 @@ namespace TerraKnight.Save
                 Load(file.Inventory.Count > 0 ? file.Inventory : file.Hotbar, inv.Slots);
                 Load(file.Accessories, inv.Accessories);
                 Load(file.Armor, inv.Armor);
+                Load(file.Misc, inv.Misc);
+                Load(file.Bank, inv.Bank);
+                GeoWallet.Reset(file.GeoItems);
                 if (file.Version >= 4 && file.Loadouts != null)
                 {
                     bool bags = false;
@@ -396,14 +411,8 @@ namespace TerraKnight.Save
                 if (file.Pylons != null)
                     foreach (var p in file.Pylons)
                         World.Pylons.Unlocked.Add(new World.Pylons.Pylon { Scene = p.Scene, Bench = p.Bench, Local = new Vector2(p.X, p.Y), SceneSize = new Vector2(p.W, p.H), Style = p.Style });
-                if (file.Dropped != null)
-                {
-                    var dropped = new List<WorldItems.Saved>();
-                    foreach (var d in file.Dropped)
-                        if (Enum.TryParse(d.Type, out ItemType t))
-                            dropped.Add(new WorldItems.Saved { Scene = d.Scene, Type = t, Count = d.Count, Local = new Vector2(d.X, d.Y) });
-                    WorldItems.Load(dropped);
-                }
+                // Items a save from before 2.1.1 kept lying in the world are let go (see Write).
+                if (file.Dropped != null && file.Dropped.Count > 0) Plugin.Log.LogInfo($"[存档] 地上的 {file.Dropped.Count} 堆掉落物不再读回（退出游戏就清掉）");
                 if (file.Stations != null)
                 {
                     var stations = new List<World.Stations.Saved>();
