@@ -454,6 +454,8 @@ namespace TerraKnight.World
         {
             s.Why = null;
             if (DeferredFsms.HoldScene == s.Scene) { s.Why = "场景还在初始化"; return; }
+            // A LAN game where another player's game runs this scene's enemies: that game respawns them (Net.Enemies).
+            if (Net.Enemies.RemoteOwned(s.Scene)) { s.Why = "联机：由别的玩家负责"; return; }
             if (!ParentActive(s)) { s.Why = "所在的组没激活"; return; }
             if (s.Pending)
             {
@@ -645,6 +647,41 @@ namespace TerraKnight.World
             var b = Corner(1f, 1f);
             var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
             return new Rect(r.x - 2f, r.y - 2f, r.width + 4f, r.height + 4f);
+        }
+
+        /// <summary>
+        /// A LAN game: a copy the scene's owner has (made from its template there) that this game hasn't made: one
+        /// from this game's template of that name, in a free slot of it if there is one, where the owner's is.
+        /// </summary>
+        public GameObject NetSpawn(string scene, string name, Transform parent, Vector2 at)
+        {
+            Slot free = null, any = null;
+            foreach (var s in slots)
+            {
+                if (s.Scene != scene || s.Template == null || s.Template.name != name) continue;
+                any = any ?? s;
+                bool gone = s.Live == null || (s.Live.GetComponent<HealthManager>() is HealthManager h && h.isDead) || (!s.Live.activeInHierarchy && Dead(s.Live));
+                if (gone && !s.Pending)
+                {
+                    free = s;
+                    break;
+                }
+            }
+            if (free != null)
+            {
+                Spawn(free, at);
+                return free.Live;
+            }
+            if (any == null) return null;
+            var go = Instantiate(any.Template, any.Template.transform.parent, false);
+            go.name = any.Template.name;
+            go.transform.SetParent(parent != null ? parent : any.HadParent ? any.Parent : null, false);
+            go.transform.localPosition = any.LocalPos;
+            go.transform.localRotation = any.LocalRot;
+            go.transform.localScale = any.LocalScale;
+            go.transform.position = new Vector3(at.x, at.y, go.transform.position.z);
+            ours.Add(go.GetInstanceID());
+            return go;
         }
 
         public void Clear()

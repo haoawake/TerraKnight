@@ -157,7 +157,7 @@ namespace TerraKnight.Save
             catch (Exception e) { Plugin.Log.LogWarning($"删除 mod 存档失败：{e.Message}"); }
         }
 
-        static string PathFor(int slot) => Path.Combine(Application.persistentDataPath, $"TerraKnight_slot{slot}.json");
+        static string PathFor(int slot) => Path.Combine(TerraMod.SaveDir, $"TerraKnight_slot{slot}.json");
 
         public static void Write(int slot, TerraMod mod)
         {

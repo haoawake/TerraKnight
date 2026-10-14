@@ -1,0 +1,114 @@
+using System.Collections.Generic;
+using System.IO;
+using TerraKnight.World;
+using UnityEngine;
+
+namespace TerraKnight.Net
+{
+    /// <summary>
+    /// Terraria's TileManipulation (17): a block dug, placed or turned by anyone is changed for
+    /// everyone. Each player's change to a scene's grid (mining, placing, explosions, falling sand,
+    /// stairs) goes out once a frame as the scene, the cell (its index in that scene's own grid) and
+    /// what it is now; the others make the same change, with its dust where they can see it. A
+    /// change to a scene not loaded here is kept in the save's edits, so the hole is there when they
+    /// get to it: Hallownest is one world for the players in it.
+    /// </summary>
+    internal static class TileSync
+    {
+        static bool hooked, applying;
+        static readonly Dictionary<string, List<(int Index, byte Packed)>> pending = new Dictionary<string, List<(int, byte)>>();
+
+        public static int DevSent, DevApplied;
+
+        public static void Reset() => pending.Clear();
+
+        static void Hook()
+        {
+            if (hooked) return;
+            hooked = true;
+            TerrainRegion.Edited += OnEdited;
+        }
+
+        static void OnEdited(TerrainRegion region, int x, int y)
+        {
+            if (applying || !NetSession.Active || region == null || string.IsNullOrEmpty(region.SceneName)) return;
+            int i = y * region.Grid.Width + x;
+            if (!pending.TryGetValue(region.SceneName, out var list)) pending[region.SceneName] = list = new List<(int, byte)>();
+            list.Add((i, WorldEdits.Pack(region.Grid.GetAt(i), region.Grid.IsDugAt(i), region.Grid.SlopeAt(i))));
+        }
+
+        /// <summary>Once a frame: this frame's changes, a message per scene.</summary>
+        public static void Flush()
+        {
+            Hook();
+            if (pending.Count == 0) return;
+            foreach (var kv in pending)
+            {
+                var list = kv.Value;
+                for (int start = 0; start < list.Count; start += 8000)
+                {
+                    int n = Mathf.Min(8000, list.Count - start);
+                    var p = NetSession.Mine(Msg.TileChange);
+                    p.W.Write(kv.Key);
+                    p.W.Write((ushort)n);
+                    for (int k = start; k < start + n; k++)
+                    {
+                        p.W.Write(list[k].Index);
+                        p.W.Write(list[k].Packed);
+                    }
+                    NetSession.Send(p.Done());
+                    DevSent += n;
+                }
+            }
+            pending.Clear();
+        }
+
+        public static void Receive(BinaryReader r)
+        {
+            Hook();
+            string scene = r.ReadString();
+            int n = r.ReadUInt16();
+            var region = TerrainSystem.Find(scene);
+            var hero = HeroController.SilentInstance;
+            Vector2 heroAt = hero != null ? (Vector2)hero.transform.position : Vector2.zero;
+            int dust = 0;
+            for (int k = 0; k < n; k++)
+            {
+                int i = r.ReadInt32();
+                byte packed = r.ReadByte();
+                WorldEdits.Unpack(packed, out var kind, out bool dug, out int slope);
+                if (region == null || i < 0 || i >= region.Grid.Width * region.Grid.Height)
+                {
+                    // Not loaded here: kept with the save's edits of that scene, replayed when it loads.
+                    if (i >= 0) WorldEdits.For(scene)[i] = packed;
+                    continue;
+                }
+                int x = i % region.Grid.Width, y = i / region.Grid.Width;
+                var before = region.Grid.GetAt(i);
+                applying = true;
+                try
+                {
+                    region.Grid.Set(x, y, kind);
+                    if (kind == CellKind.Platform) region.Grid.SetSlope(x, y, slope);
+                }
+                finally
+                {
+                    applying = false;
+                }
+                DevApplied++;
+                // WorldGen.KillTile / PlaceTile on every client: the block's dust where it changed, a sound if near.
+                if (dust < 24)
+                {
+                    var cell = new Vector2Int(x + region.CellOffset.x, y + region.CellOffset.y);
+                    var at = CellGrid.CellCenter(cell.x, cell.y);
+                    if ((at - heroAt).sqrMagnitude < 30f * 30f)
+                    {
+                        TerraMod.MineDust(cell, kind == CellKind.Empty ? before : kind, kind == CellKind.Empty ? 6 : 2);
+                        if (dust == 0) TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3), 0.6f);
+                        dust++;
+                    }
+                }
+            }
+        }
+    }
+}

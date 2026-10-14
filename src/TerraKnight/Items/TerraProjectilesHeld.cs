@@ -60,6 +60,12 @@ namespace TerraKnight.Items
         /// <summary>The player's centre (Terraria px), or false when there's no one to hold it.</summary>
         static bool Holder(out Vector2 centre)
         {
+            // Another player's ghost being drawn: held by them.
+            if (ghostHolder.HasValue)
+            {
+                centre = ghostHolder.Value;
+                return true;
+            }
             var hero = HeroController.SilentInstance;
             centre = default;
             if (hero == null || hero.cState.dead) return false;

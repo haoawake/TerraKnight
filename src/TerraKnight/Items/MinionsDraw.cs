@@ -20,11 +20,24 @@ namespace TerraKnight.Items
         void Draw()
         {
             var fx = FxBatch.Instance;
-            if (fx == null || live.Count == 0 && Target == null) return;
-            RefreshOwner();
-            if (!hasOwner) return;
+            if (fx == null) return;
+            if (live.Count > 0 || Target != null)
+            {
+                RefreshOwner();
+                if (hasOwner)
+                {
+                    DrawMinions(fx, false);
+                    DrawReticle(fx);
+                }
+            }
+            DrawGhosts(fx);
+        }
+
+        /// <summary>The minions of the list being drawn (the player's own, or another player's ghosts: no petting for those).</summary>
+        void DrawMinions(FxBatch fx, bool ghosts)
+        {
             DrawDragon(fx);
-            DrawPetting(fx);
+            if (!ghosts) DrawPetting(fx);
             foreach (var m in live)
             {
                 if (m.Dead) continue;
@@ -127,7 +140,6 @@ namespace TerraKnight.Items
                         break;
                 }
             }
-            DrawReticle(fx);
         }
 
         /// <summary>The generic multi-frame branch: the frame's last row skipped, offsets num151 (origin y) and num152 (x).</summary>

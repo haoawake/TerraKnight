@@ -104,6 +104,9 @@ namespace TerraKnight.World
         /// <summary>The whole grid in global cells (cut areas included).</summary>
         public RectInt CellRect => new RectInt(CellOffset.x, CellOffset.y, Grid.Width, Grid.Height);
 
+        /// <summary>Any region's cell changed and was recorded in the save's edits (local cells): what a LAN game passes on.</summary>
+        public static event System.Action<TerrainRegion, int, int> Edited;
+
         void OnCellChanged(int x, int y)
         {
             int i = y * Grid.Width + x;
@@ -112,6 +115,7 @@ namespace TerraKnight.World
             visuals.MarkDirty(x, y);
             handPlaced?.CellChanged(x, y);
             TerraWorld.RaiseChanged(x + CellOffset.x, y + CellOffset.y, Grid.GetAt(i));
+            Edited?.Invoke(this, x, y);
         }
 
         public void Tick()

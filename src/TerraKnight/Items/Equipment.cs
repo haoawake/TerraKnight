@@ -276,10 +276,18 @@ namespace TerraKnight.Items
             return false;
         }
 
+        /// <summary>
+        /// Terraria's "Autoswing" setting (Main.SettingsEnabled_AutoReuseAllItems, Player.autoReuseAllWeapons): every weapon
+        /// goes on while the button is held (TryAllowingItemReuse).
+        /// </summary>
+        public static bool AutoReuseAll;
+
         /// <summary>Whether an item goes on being used while the button is held: its own autoReuse, or melee with the auto-reuse glove.</summary>
         public static bool AutoReuses(ItemDef item) => item.AutoReuse || (Current.AutoReuseGlove && (item.Class == DamageClass.Melee || item.IsWhip))
             // The Stress Ball (Pl:14447-14466, 53546-53558): standing still, with the inventory shut, any weapon goes on.
-            || (Current.StressBall && StandingStill && !InventoryGui.Open && item.Damage > 0 && !item.Channel);
+            || (Current.StressBall && StandingStill && !InventoryGui.Open && item.Damage > 0 && !item.Channel)
+            // TryAllowingItemReuse (Pl:53553): (stressBall || autoReuseAllWeapons) && damage > 0 && !channel.
+            || (AutoReuseAll && item.Damage > 0 && !item.Channel);
 
         /// <summary>Crit chance in percent: base 4, the item's own, the worn bonuses.</summary>
         public static float Crit(ItemDef item)

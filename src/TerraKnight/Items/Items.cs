@@ -1705,6 +1705,9 @@ namespace TerraKnight.Items
 
         public static ItemDef Get(ItemType type) => defs[(int)type];
 
+        /// <summary>A known item (one from another player's game is checked before it is looked up).</summary>
+        public static bool Has(ItemType type) => (int)type > 0 && (int)type < defs.Length && defs[(int)type] != null;
+
         public static System.Collections.Generic.IEnumerable<ItemDef> All
         {
             get { foreach (var d in defs) if (d.Type != ItemType.None) yield return d; }

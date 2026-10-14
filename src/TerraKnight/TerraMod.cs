@@ -22,6 +22,9 @@ namespace TerraKnight
 
         public static TerraMod Instance { get; private set; }
 
+        /// <summary>Where the saves are: the game's own folder, or (a second copy of the game run for a LAN test) its own.</summary>
+        public static string SaveDir => DevCopy.SaveDir ?? Application.persistentDataPath;
+
         public readonly Inventory Inventory = new Inventory();
         public readonly TerraStats Stats = new TerraStats();
         /// <summary>Knight ability flags already turned into their accessory, for this save.</summary>
@@ -204,6 +207,8 @@ namespace TerraKnight
         void Update()
         {
             Lang.Tick();
+            TerraKeys.Tick();
+            Net.NetSession.Tick();
             float dt = Time.deltaTime;
             useCooldown -= dt;
             if (PanicTicks > 0f) PanicTicks -= dt * 60f;
@@ -222,6 +227,7 @@ namespace TerraKnight
             var hero = HeroController.SilentInstance;
             bool gameplay = hero != null && GameHooks.IsGameplay(gm);
             if (gm != null) TerraControls.Apply(InputHandler.Instance, gameplay && !gm.isPaused && TerrainSystem.Current != null);
+            Net.NetChat.Tick(gameplay && !gm.isPaused);
             // A new game's summoning out of the portal (no fall down King's Pass).
             if (hero != null && gm != null && !gm.isPaused) OpeningPortal.Tick(hero);
             if (gm != null && gm.isPaused) lastPausedFrame = Time.frameCount;
@@ -276,14 +282,15 @@ namespace TerraKnight
                 highlight.gameObject.SetActive(false);
                 return;
             }
-            if (gameplay && terrain != null && !gm.isPaused) HandleEscape();
+            if (gameplay && terrain != null && !gm.isPaused && !Net.NetChat.BlocksKeys && !UI.IngameOptions.Open) HandleEscape();
             if (terrain == null || !GameHooks.PlayerHasControl() || Mouse.current == null)
             {
                 highlight.gameObject.SetActive(false);
                 return;
             }
 
-            ReadKeys();
+            // While the chat line is open the keys type into it.
+            if (!Net.NetChat.BlocksKeys) ReadKeys();
             if (!MouseWorld(out var mouse)) return;
             // A right click on a townsperson in reach starts talking to it (Main.HoverOverNPCs).
             bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Town.TownNpcs.TryRightClick(mouse);
@@ -300,7 +307,7 @@ namespace TerraKnight
             Inventory.UseMouse = InventoryGui.Open && !Inventory.Mouse.IsEmpty;
             var def = Inventory.Current.Def;
             // Over the hotbar (closed) or any panel (open), a click is the interface's, not a use.
-            bool overUi = InventoryGui.MouseOverUi;
+            bool overUi = InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver;
             if (!DevNoRealMouse && !overUi && !talked && Mouse.current.rightButton.wasPressedThisFrame) MeleeSpecials.RightLatch = true;
             bool usable = false, smart = false;
             var cell = CellGrid.WorldToCell(mouse);
@@ -364,7 +371,15 @@ namespace TerraKnight
         {
             if (TerrainSystem.Current != null) ResourceHud.HideGameHud();
             PosePlayer();
+            // The other players of a LAN game, drawn after this one (the player sprite's per-frame statics are this one's first).
+            Net.NetSession.PosePlayers();
         }
+
+        /// <summary>How the player was drawn this frame, for the other players of a LAN game.</summary>
+        public Net.PoseRecord NetPose;
+
+        /// <summary>Counts the uses (each swing's start): a PvP swing hits a player once.</summary>
+        public int UseSerial { get; private set; }
 
         /// <summary>
         /// Escape opens Terraria's inventory, as in Terraria, even at a bench or in a conversation.
@@ -373,7 +388,7 @@ namespace TerraKnight
         void HandleEscape()
         {
             var kb = Keyboard.current;
-            if (kb == null || !kb.escapeKey.wasPressedThisFrame || Time.frameCount - lastPausedFrame <= 2) return;
+            if (kb == null || !TerraKeys.Pressed(TerraKeys.Action.Inventory) || Time.frameCount - lastPausedFrame <= 2) return;
             // Talking (not shopping): Esc ends the conversation.
             if (Town.TownNpcs.ChatOpen)
             {
@@ -389,17 +404,17 @@ namespace TerraKnight
         {
             var kb = Keyboard.current;
             if (kb == null) return;
-            Key[] keys = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0 };
-            for (int i = 0; i < keys.Length; i++)
-                if (kb[keys[i]].wasPressedThisFrame) Inventory.Selected = i;
+            // The keys are Terraria's Controls (TerraKeys, rebindable in the Terraria settings).
+            for (int i = 0; i < 10; i++)
+                if (TerraKeys.Pressed(TerraKeys.Action.Hotbar1 + i)) Inventory.Selected = i;
             // The wheel picks a hotbar slot; with the inventory open it scrolls the crafting column instead.
             float scroll = InventoryGui.Open ? 0f : Mouse.current.scroll.ReadValue().y;
             if (scroll > 0.1f) Inventory.Selected = (Inventory.Selected + Inventory.HotbarSize - 1) % Inventory.HotbarSize;
             else if (scroll < -0.1f) Inventory.Selected = (Inventory.Selected + 1) % Inventory.HotbarSize;
 
             // Shield of Cthulhu: double-tap a direction to dash, as in Terraria.
-            int tap = kb.aKey.wasPressedThisFrame || kb.leftArrowKey.wasPressedThisFrame ? -1
-                    : kb.dKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame ? 1 : 0;
+            int tap = TerraKeys.Pressed(TerraKeys.Action.Left) || kb.leftArrowKey.wasPressedThisFrame ? -1
+                    : TerraKeys.Pressed(TerraKeys.Action.Right) || kb.rightArrowKey.wasPressedThisFrame ? 1 : 0;
             if (tap != 0)
             {
                 if (tap == lastTapDirection && Time.unscaledTime - lastTapTime < DoubleTapWindow) TerraMovement.RequestDash(tap);
@@ -407,27 +422,26 @@ namespace TerraKnight
                 lastTapTime = Time.unscaledTime;
             }
             // The armor set key: double-tapping down (KeyDoubleTap, Pl:25245-25254), the Vortex stealth and the Forbidden storm.
-            if (kb.sKey.wasPressedThisFrame || kb.downArrowKey.wasPressedThisFrame)
+            if (TerraKeys.Pressed(TerraKeys.Action.Down) || kb.downArrowKey.wasPressedThisFrame)
             {
                 if (Time.unscaledTime - lastDownTap < DoubleTapWindow) ArmorEffects.KeyDoubleTapDown();
                 lastDownTap = Time.unscaledTime;
             }
-            // Ctrl toggles Terraria's smart cursor.
-            if (kb.leftCtrlKey.wasPressedThisFrame || kb.rightCtrlKey.wasPressedThisFrame)
+            // Ctrl toggles Terraria's smart cursor (either Ctrl while it is left at Ctrl).
+            if (TerraKeys.Pressed(TerraKeys.Action.SmartCursor)
+                || (TerraKeys.Get(TerraKeys.Action.SmartCursor) == Key.LeftCtrl && kb.rightCtrlKey.wasPressedThisFrame && !TerraKeys.Listening.HasValue))
             {
                 SmartCursor = !SmartCursor;
                 PlaySound("Menu_Tick", 0.7f);
             }
             // Terraria's quick heal and quick mana: the best potion for the job.
-            if (kb.hKey.wasPressedThisFrame) QuickUse(d => d.HealLife > 0);
+            if (TerraKeys.Pressed(TerraKeys.Action.QuickHeal)) QuickUse(d => d.HealLife > 0);
             // Throw (T, the old default and the usual binding): the held stack, or the cursor's.
-            if (kb.tKey.wasPressedThisFrame) ThrowHeld(false);
-            if (kb.jKey.wasPressedThisFrame) QuickUse(d => d.HealMana > 0);
+            if (TerraKeys.Pressed(TerraKeys.Action.Throw)) ThrowHeld(false);
+            if (TerraKeys.Pressed(TerraKeys.Action.QuickMana)) QuickUse(d => d.HealMana > 0);
             // Loadouts 1-4 (vanilla F1-F3; F4 for the fourth), with the inventory open or not.
-            if (kb.f1Key.wasPressedThisFrame) TrySwitchLoadout(0);
-            if (kb.f2Key.wasPressedThisFrame) TrySwitchLoadout(1);
-            if (kb.f3Key.wasPressedThisFrame) TrySwitchLoadout(2);
-            if (kb.f4Key.wasPressedThisFrame) TrySwitchLoadout(3);
+            for (int i = 0; i < 4; i++)
+                if (TerraKeys.Pressed(TerraKeys.Action.Loadout1 + i)) TrySwitchLoadout(i);
         }
 
         /// <summary>
@@ -1312,8 +1326,16 @@ namespace TerraKnight
             else if (left > 0) Inventory.Mouse = ItemStack.Of(m.Type, left);
         }
 
-        /// <summary>The inventory's Settings button: the game's real pause and options menu.</summary>
+        /// <summary>The inventory's Settings button: Terraria's in-game settings (UI.IngameOptions).</summary>
         public void OpenSettings()
+        {
+            InventoryGui.Open = false;
+            ReturnOrDropMouseItem();
+            UI.IngameOptions.Show();
+        }
+
+        /// <summary>The game's real pause and options menu (the in-game settings' "游戏菜单").</summary>
+        public void OpenGameMenu()
         {
             InventoryGui.Open = false;
             ReturnOrDropMouseItem();
@@ -1457,6 +1479,7 @@ namespace TerraKnight
         /// <summary>The start of each use, the first or a repeat while the button is held.</summary>
         void BeginUse(ItemDef def)
         {
+            UseSerial++;
             if (def.UseSound != null) PlaySound(def.UseSound, 0.6f * def.UseSoundVolume);
             if (!def.NoMelee) melee.Begin(def, UseDirection);
             finalFractalShots = 0;
@@ -1487,7 +1510,7 @@ namespace TerraKnight
         {
             if (IsUsingItem) return;
             var kb = Keyboard.current;
-            bool held = DevAutoSelect || (!DevNoRealMouse && kb != null && kb.leftShiftKey.isPressed);
+            bool held = DevAutoSelect || (!DevNoRealMouse && kb != null && TerraKeys.Held(TerraKeys.Action.AutoSelect) && !Net.NetChat.Typing);
             if (!held || InventoryGui.MouseOverUi || (InventoryGui.Open && !Inventory.Mouse.IsEmpty))
             {
                 Inventory.Override = -1;
@@ -1640,7 +1663,12 @@ namespace TerraKnight
             bool show = hero != null && !hero.cState.dead && TerrainSystem.Current != null && GameHooks.IsGameplay(GameManager.UnsafeInstance)
                         && (knight == null || knight.enabled) && !OpeningPortal.HideHero;
             if (playerSprite.gameObject.activeSelf != show) playerSprite.gameObject.SetActive(show);
-            if (!show) return;
+            if (!show)
+            {
+                NetPose.Shown = false;
+                if (hero != null) NetPose.Box = hero.GetComponent<BoxCollider2D>().bounds;
+                return;
+            }
 
             var col = hero.GetComponent<BoxCollider2D>();
             var rb = hero.GetComponent<Rigidbody2D>();
@@ -1757,10 +1785,22 @@ namespace TerraKnight
             hold.ShieldUp = MeleeSpecials.ShieldRaised;
             var glowDef = swingItem ?? (hold.Idle ? heldDef : null);
             playerSprite.HeldGlow = glowDef != null && glowDef.Glow != null ? GlowSprite(glowDef) : null;
-            playerSprite.Pose(feet, GravityGlobe.Flipped ? new Vector2(rb.linearVelocity.x, -rb.linearVelocity.y) : rb.linearVelocity, grounded, facing,
-                IsUsingItem ? (swingItem != null && swingItem.HoldUp ? 0.5f : SwingProgress) : -1f, shown,
-                swingItem != null ? Equipment.ItemScale(swingItem) : hold.Idle ? Equipment.ItemScale(heldDef) : 1f, opacity, bodyOverride, equips, TerraMovement.ShadowCount, hold,
-                TerraMovement.OnCarpet || spinning || standing ? 0 : -1, PlayerData.instance != null && PlayerData.instance.atBench);
+            var poseVel = GravityGlobe.Flipped ? new Vector2(rb.linearVelocity.x, -rb.linearVelocity.y) : rb.linearVelocity;
+            float poseSwing = IsUsingItem ? (swingItem != null && swingItem.HoldUp ? 0.5f : SwingProgress) : -1f;
+            float poseScale = swingItem != null ? Equipment.ItemScale(swingItem) : hold.Idle ? Equipment.ItemScale(heldDef) : 1f;
+            int poseLeg = TerraMovement.OnCarpet || spinning || standing ? 0 : -1;
+            bool poseSeated = PlayerData.instance != null && PlayerData.instance.atBench;
+            playerSprite.Pose(feet, poseVel, grounded, facing, poseSwing, shown, poseScale, opacity, bodyOverride, equips, TerraMovement.ShadowCount, hold, poseLeg, poseSeated);
+            NetPose = new Net.PoseRecord
+            {
+                Shown = true, Feet = feet, Velocity = poseVel, Grounded = grounded, Upside = GravityGlobe.Flipped, Seated = poseSeated,
+                WingAir = !grounded && !GrapplingHook.IsLatched, Glow = playerSprite.HeldGlow != null, Facing = facing, Swing = poseSwing,
+                ItemScale = poseScale, Opacity = opacity,
+                Item = shown == null ? ItemType.None : hold.Idle ? heldDef.Type : swingItem != null ? swingItem.Type : ItemType.None,
+                BodyOverride = bodyOverride, LegOverride = poseLeg, Shadows = TerraMovement.ShadowCount,
+                Wing = TerraMovement.Wing != null ? TerraMovement.Wing.Slot : 0, WingFrame = TerraWings.Frame,
+                Equips = equips, Hold = hold, Box = col.bounds,
+            };
             // DrawPlayer_09_Wings: drawn behind the player through the effect batch (their frames, glowmasks and copies differ by slot).
             if (playerSprite.gameObject.activeInHierarchy && TerraMovement.Wing != null && Effects.FxBatch.Instance != null)
             {
@@ -1978,7 +2018,7 @@ namespace TerraKnight
         static readonly Dictionary<ItemType, Sprite> glowSprites = new Dictionary<ItemType, Sprite>();
 
         /// <summary>An item's glowmask as a sprite pivoting like the held item (its bottom-left corner).</summary>
-        static Sprite GlowSprite(ItemDef def)
+        internal static Sprite GlowSprite(ItemDef def)
         {
             if (glowSprites.TryGetValue(def.Type, out var s)) return s;
             try
@@ -1995,7 +2035,7 @@ namespace TerraKnight
             return s;
         }
 
-        static Sprite ItemSprite(ItemType type)
+        internal static Sprite ItemSprite(ItemType type)
         {
             if (itemSprites.TryGetValue(type, out var s)) return s;
             string name = ItemDb.Get(type).Texture;
@@ -2027,8 +2067,11 @@ namespace TerraKnight
         {
             // Labels never cut their text: the Chinese fallback font is taller than the boxes at some screen sizes.
             GUI.skin.label.clipping = TextClipping.Overflow;
-            // The save profiles screen's creative mode button (main menu only).
+            // The save profiles screen's creative mode and multiplayer buttons (main menu only).
             CreativeMenu.Draw();
+            Net.NetMenu.Draw();
+            // Fifty save slots: the profiles screen's pages.
+            SaveSlots.Draw(CreativeMenu.IsOpen || Net.NetMenu.IsOpen);
             if (TerrainSystem.Current == null || !GameHooks.IsGameplay(GameManager.UnsafeInstance)) return;
             if (FullMap.Open)
             {
@@ -2041,12 +2084,15 @@ namespace TerraKnight
             CombatText.Draw();
             PopupText.Draw();
             EnemyHover.Draw();
+            Net.NetSession.DrawGui();
             DrawPylonHover();
             TerraHurt.DrawDeathText();
             ResourceHud.Draw(Stats);
             InfoAccessories.Draw(Inventory, Stats);
             InventoryGui.Draw(Inventory, SmartCursor);
             BestiaryToast.Draw();
+            Net.NetChat.Draw();
+            UI.IngameOptions.Draw();
         }
     }
 }

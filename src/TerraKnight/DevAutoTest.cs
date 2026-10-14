@@ -34,6 +34,8 @@ namespace TerraKnight
                 this.suite = this.suite.Substring(0, this.suite.Length - 3);
             }
             outDir = Path.Combine(Paths.BepInExRootPath, "TerraKnight", "dev");
+            // A second copy of the game (DevCopy) keeps its pictures apart.
+            if (DevCopy.Name != null) outDir = Path.Combine(outDir, DevCopy.Name);
             Directory.CreateDirectory(outDir);
             // Keep running when the window loses focus; an unfocused game also stops reading the
             // keyboard, so whoever is at the computer can't nudge the test.
@@ -50,13 +52,20 @@ namespace TerraKnight
                 yield return null;
             yield return new WaitForSeconds(4f);
             if (zh) PromoChinese(gm);
+            // A second copy of the game (DevCopy) never starts a game unless its saves go to its own folder.
+            if (DevCopy.Name != null && !DevCopy.Verified)
+            {
+                Plugin.Log.LogError($"[AutoTest] 测试副本的存档目录没改成功（{(global::Platform.Current != null ? global::Platform.Current.GetType().Name : "无平台")}），不开游戏，退出");
+                Application.Quit();
+                yield break;
+            }
             // The title screen: its logo (the mod's 泰拉圣巢 for Chinese) and the pictures behind it.
             UI.MenuLogo.DevDump(outDir);
             Shot("Menu_Title", "menu");
             yield return null;
             yield return null;
 
-            string save = Path.Combine(Application.persistentDataPath, $"user{slot}.dat");
+            string save = Path.Combine(TerraMod.SaveDir, $"user{slot}.dat");
             // dev-run.ps1 found the test slot empty before starting the game: a save there older than
             // that is Steam Cloud bringing back one deleted outside the game. Cleared with the game
             // running, it goes from the cloud too.
@@ -66,7 +75,7 @@ namespace TerraKnight
                 var markedAt = File.GetLastWriteTimeUtc(emptyMark);
                 File.Delete(emptyMark);
                 bool stale = false;
-                foreach (var f in Directory.GetFiles(Application.persistentDataPath, $"user{slot}*"))
+                foreach (var f in Directory.GetFiles(TerraMod.SaveDir, $"user{slot}*"))
                 {
                     string n = Path.GetFileName(f);
                     if ((n.StartsWith($"user{slot}.") || n.StartsWith($"user{slot}_")) && File.GetLastWriteTimeUtc(f) < markedAt) stale = true;
@@ -79,18 +88,22 @@ namespace TerraKnight
                     float until = Time.realtimeSinceStartup + 10f;
                     while (!cleared && Time.realtimeSinceStartup < until) yield return null;
                     // The game's own copies of it (user2_1.5.12620.dat, its .bak files) go too.
-                    foreach (var f in Directory.GetFiles(Application.persistentDataPath, $"user{slot}*"))
+                    foreach (var f in Directory.GetFiles(TerraMod.SaveDir, $"user{slot}*"))
                     {
                         string n = Path.GetFileName(f);
                         if ((n.StartsWith($"user{slot}.") || n.StartsWith($"user{slot}_")) && File.GetLastWriteTimeUtc(f) < markedAt) File.Delete(f);
                     }
                     foreach (var ext in new[] { "json", "map" })
                     {
-                        var modFile = Path.Combine(Application.persistentDataPath, $"TerraKnight_slot{slot}.{ext}");
+                        var modFile = Path.Combine(TerraMod.SaveDir, $"TerraKnight_slot{slot}.{ext}");
                         if (File.Exists(modFile) && File.GetLastWriteTimeUtc(modFile) < markedAt) File.Delete(modFile);
                     }
                 }
             }
+            // The LAN game's menu and server, before the game starts (DevAutoTestNet).
+            if (suite == "net") yield return NetBoot();
+            if (suite == "net2host" || suite == "net2client") yield return Net2Boot();
+            if (suite == "slots") yield return SlotsBoot();
             if (suite == "promoA")
             {
                 // The trailer's opening: the profiles, the creative panel, the difficulty, recorded (DevAutoTestPromo2).
@@ -413,6 +426,28 @@ namespace TerraKnight
             if (suite == "r6")
             {
                 yield return R6Test(scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "slots")
+            {
+                yield return SlotsTest(scene);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "net2host" || suite == "net2client")
+            {
+                if (suite == "net2host") yield return Net2Host(scene, hero);
+                else yield return Net2Client(scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "net")
+            {
+                yield return NetTest(scene, hero);
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;

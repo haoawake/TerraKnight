@@ -34,6 +34,10 @@ namespace TerraKnight.World
             else offsets[scene.handle] = offset;
         }
 
+        /// <summary>Where a loaded scene's origin now is (zero for one at its own coordinates).</summary>
+        public static Vector3 OfScene(Scene scene) =>
+            offsets.Count == 0 || !scene.IsValid() ? Vector3.zero : offsets.TryGetValue(scene.handle, out var o) ? o : Vector3.zero;
+
         public static Vector3 Of(GameObject go)
         {
             if (offsets.Count == 0 || go == null) return Vector3.zero;

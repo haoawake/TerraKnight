@@ -509,9 +509,9 @@ namespace TerraKnight.UI
         /// <summary>Input while open; call every frame.</summary>
         public static void Update()
         {
-            var kb = Keyboard.current;
+            var kb = Net.NetChat.BlocksKeys ? null : Keyboard.current;
             // Tests open and close the map themselves: keys pressed in their window don't count.
-            if (kb != null && kb.mKey.wasPressedThisFrame && TerraMod.Instance?.AutoTest == null) Toggle();
+            if (kb != null && Player.TerraKeys.Pressed(Player.TerraKeys.Action.FullMap) && TerraMod.Instance?.AutoTest == null) Toggle();
             if (!Open) return;
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
@@ -615,6 +615,8 @@ namespace TerraKnight.UI
                 GUI.DrawTexture(new Rect(s.x - tex.width * ui / 2f, s.y - tex.height * ui / 2f, tex.width * ui, tex.height * ui), tex);
             }
             FullMap.DrawHead(ToScreen(HeadCell(out _)), ui);
+            // The other players of a LAN game where they are, their names under them.
+            DrawOthers(ToScreen, ui, true, null);
 
             // What is under the cursor, as Terraria names it.
             string label = hoveredPylon != null ? Lang.T(hoveredPylon.Name) + "（" + Areas.Display(Areas.AreaName(hoveredPylon.Scene)) + "）　" + Lang.T("点击传送") : Show(NameAt(ToCell(mp)));
@@ -623,6 +625,28 @@ namespace TerraKnight.UI
             var close = FullMap.CloseButton();
             GUI.DrawTexture(close, TerrariaAssets.Texture(close.Contains(mp) ? "Map_4" : "Map_0"));
             FullMap.Outlined(new Rect(close.xMax + 10f * ui, close.y + 4f * ui, 700f * ui, 24f * ui), Lang.T("滚轮缩放，拖动平移，鼠标指着看是什么，M 关闭"), new Color(1f, 1f, 1f, 0.7f));
+        }
+
+        static GUIStyle otherStyle;
+
+        /// <summary>The other players' heads (Main.DrawPlayerHeads on the map): their look, a team's colour round them, the name on the big map.</summary>
+        static void DrawOthers(System.Func<Vector2, Vector2> cellToScreen, float scale, bool names, Rect? clip)
+        {
+            if (Net.NetSession.State == Net.NetSession.Phase.Off) return;
+            foreach (var p in Net.NetSession.Players.Values)
+            {
+                if (!p.HasState || !p.Latest.Shown || !ScenePoint(p.Latest.Scene, p.Latest.BoxCenter, out var cell)) continue;
+                var at = cellToScreen(cell);
+                if (clip.HasValue && !clip.Value.Contains(at)) continue;
+                var s = p.Latest;
+                var look = Player.TerraPlayerSprite.Looks[Mathf.Clamp(p.Look, 0, Player.TerraPlayerSprite.Looks.Length - 1)];
+                bool hair = s.Eq.Head == 0 || s.Eq.HairUnderHead;
+                FullMap.DrawHead(at, scale, s.Eq.Head, hair, look.Skin, look.Hair, look.Eye, p.Team == 0 ? Color.black : (Color)p.TeamColor);
+                if (!names) continue;
+                if (otherStyle == null) otherStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold };
+                otherStyle.fontSize = Mathf.RoundToInt(16 * scale);
+                Net.RemotePlayer.Outlined(new Rect(at.x - 100f * scale, at.y + 22f * scale, 200f * scale, 22f * scale), p.Name, otherStyle, p.Team == 0 ? Color.white : (Color)p.TeamColor);
+            }
         }
 
         static void Block(Vector2 cell, int w, int h, Color c)
@@ -713,7 +737,7 @@ namespace TerraKnight.UI
 
         // ---------------------------------------------------------------- the save
 
-        static string PathFor(int slot) => Path.Combine(Application.persistentDataPath, $"TerraKnight_slot{slot}.map");
+        static string PathFor(int slot) => Path.Combine(TerraMod.SaveDir, $"TerraKnight_slot{slot}.map");
 
         public static void Delete(int slot)
         {

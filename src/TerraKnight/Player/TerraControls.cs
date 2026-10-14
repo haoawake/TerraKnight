@@ -12,23 +12,32 @@ namespace TerraKnight.Player
     internal static class TerraControls
     {
         static HeroActions boundFor;
+        static int boundVersion = -1;
+        /// <summary>The keys this mod added to each of the Knight's actions (so a new binding can take the old one's place).</summary>
+        static readonly System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource> added = new System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource>();
 
         public static void Apply(InputHandler input, bool inPlay)
         {
             var a = input != null ? input.inputActions : null;
             if (a == null) return;
 
-            // The game rebuilds its action set when bindings change; add ours to each new one.
-            if (boundFor != a)
+            // The game rebuilds its action set when bindings change; add ours to each new one, and again when they are rebound.
+            if (boundFor != a || boundVersion != TerraKeys.Version)
             {
+                if (boundFor != a) added.Clear();
                 boundFor = a;
-                Bind(a.left, Key.A);
-                Bind(a.right, Key.D);
-                Bind(a.up, Key.W);
-                Bind(a.down, Key.S);
-                Bind(a.jump, Key.Space);
+                boundVersion = TerraKeys.Version;
+                Bind(a.left, TerraKeys.Action.Left);
+                Bind(a.right, TerraKeys.Action.Right);
+                Bind(a.up, TerraKeys.Action.Up);
+                Bind(a.down, TerraKeys.Action.Down);
+                Bind(a.jump, TerraKeys.Action.Jump);
                 // M is Terraria's fullscreen map (UI.FullMap); Tab keeps the game's quick map.
             }
+
+            // Typing (the LAN chat, a name or an address in the multiplayer menu): no key moves the Knight or the menus.
+            bool typing = Net.NetChat.Typing || Net.NetMenu.TextFocused;
+            if (a.Enabled == typing) a.Enabled = !typing;
 
             a.attack.Enabled = false;
             a.cast.Enabled = false;
@@ -41,10 +50,25 @@ namespace TerraKnight.Player
             a.pause.Enabled = !inPlay;
         }
 
-        static void Bind(PlayerAction action, Key key)
+        /// <summary>Dev: a key on one of the Knight's actions that the game's own bindings put there (not this mod).</summary>
+        public static bool DevGameOwns(PlayerAction action, Key key)
         {
             var source = new KeyBindingSource(key);
-            if (!action.HasBinding(source)) action.AddBinding(source);
+            return action.HasBinding(source) && !(added.TryGetValue(action, out var mine) && mine == source);
+        }
+
+        static void Bind(PlayerAction action, TerraKeys.Action which)
+        {
+            if (added.TryGetValue(action, out var old))
+            {
+                action.RemoveBinding(old);
+                added.Remove(action);
+            }
+            if (!TerraKeys.ToInControl(TerraKeys.Get(which), out var key)) return;
+            var source = new KeyBindingSource(key);
+            if (action.HasBinding(source)) return;
+            action.AddBinding(source);
+            added[action] = source;
         }
     }
 }

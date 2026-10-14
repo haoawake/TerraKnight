@@ -791,6 +791,8 @@ namespace TerraKnight.Player
                 cancelWallsliding(__instance);
                 return;
             }
+            // WallslideMovement (Pl:21891, 21964): a slide starts the fall again where the player is, every tick of it.
+            TerraMod.Instance?.ResetFall();
             // spikedBoots 2 (the claws and the spikes): a dead stop on the wall, without dust, until down is held.
             bool down = input.down.IsPressed || DevDown;
             bool cling = SpikedBoots >= 2 && !down;

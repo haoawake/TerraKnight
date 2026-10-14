@@ -1,0 +1,102 @@
+using System.Collections.Generic;
+using TerraKnight.World;
+using UnityEngine;
+using USceneManager = UnityEngine.SceneManagement.SceneManager;
+
+namespace TerraKnight.Net
+{
+    /// <summary>
+    /// Where things are, the same for everyone. Each player's continuous world puts the scenes
+    /// beside the one they entered by a door wherever that world needs them, so world positions
+    /// differ from player to player; a scene's own coordinates (where it is as it loads, unmoved)
+    /// don't. Everything sent is a scene and a point in that scene's own frame, put back where
+    /// that scene is in the reader's world, if they have it loaded.
+    /// </summary>
+    internal static class NetScenes
+    {
+        /// <summary>The scene the player is in.</summary>
+        public static string Current
+        {
+            get
+            {
+                var live = LiveWorld.Instance?.CurrentName;
+                if (!string.IsNullOrEmpty(live)) return live;
+                return GameManager.UnsafeInstance?.sceneName;
+            }
+        }
+
+        public static UnityEngine.SceneManagement.Scene FindScene(string name) => Find(name);
+
+        static UnityEngine.SceneManagement.Scene Find(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return default;
+            var s = LiveWorld.Instance != null ? LiveWorld.Instance.SceneOf(name) : default;
+            if (s.IsValid() && s.isLoaded) return s;
+            s = USceneManager.GetSceneByName(name);
+            return s.IsValid() && s.isLoaded ? s : default;
+        }
+
+        /// <summary>How far a loaded scene is moved from its own coordinates in this world; false when it isn't loaded.</summary>
+        public static bool Shift(string scene, out Vector2 shift)
+        {
+            shift = default;
+            var s = Find(scene);
+            if (!s.IsValid()) return false;
+            shift = SceneFrames.OfScene(s);
+            return true;
+        }
+
+        public static bool IsLoaded(string scene) => Find(scene).IsValid();
+
+        /// <summary>A world point as a point of a scene's own frame.</summary>
+        public static Vector2 ToLocal(string scene, Vector2 world) => Shift(scene, out var s) ? world - s : world;
+
+        /// <summary>A point of a scene's own frame in this world; false when that scene isn't loaded here.</summary>
+        public static bool ToWorld(string scene, Vector2 local, out Vector2 world)
+        {
+            world = local;
+            if (!Shift(scene, out var s)) return false;
+            world = local + s;
+            return true;
+        }
+
+        /// <summary>
+        /// The scenes the player is in (the current one and any loaded with it, as a boss room is,
+        /// that aren't neighbours of the continuous world) and every other gameplay scene loaded
+        /// (the neighbours, kept running beside them).
+        /// </summary>
+        public static void Collect(List<string> inScenes, List<string> loaded)
+        {
+            inScenes.Clear();
+            loaded.Clear();
+            var cur = Current;
+            if (!string.IsNullOrEmpty(cur)) inScenes.Add(cur);
+            var live = LiveWorld.Instance;
+            for (int i = 0; i < USceneManager.sceneCount; i++)
+            {
+                var s = USceneManager.GetSceneAt(i);
+                if (!s.isLoaded || s.name == cur || s.name == "DontDestroyOnLoad" || s.name.StartsWith("Menu_") || s.name == "Quit_To_Menu") continue;
+                if (!Gameplay(s)) continue;
+                if (live != null && live.IsNeighbour(s.name)) loaded.Add(s.name);
+                else inScenes.Add(s.name);
+            }
+        }
+
+        static readonly Dictionary<int, bool> gameplay = new Dictionary<int, bool>();
+
+        static bool Gameplay(UnityEngine.SceneManagement.Scene s)
+        {
+            if (gameplay.TryGetValue(s.handle, out bool yes)) return yes;
+            if (gameplay.Count > 64) gameplay.Clear();
+            // A scene of the game's (its SceneManager, or enemies in it): not an empty helper scene.
+            foreach (var root in s.GetRootGameObjects())
+                if (root.GetComponentInChildren<global::SceneManager>(true) != null || root.GetComponentInChildren<HealthManager>(true) != null)
+                {
+                    yes = true;
+                    break;
+                }
+            gameplay[s.handle] = yes;
+            return yes;
+        }
+    }
+}

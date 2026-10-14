@@ -301,6 +301,8 @@ namespace TerraKnight.Items
             /// <summary>A flail wielded with its partner (Blue Moon and Sunfury), and the off-hand one of the pair; a second timer.</summary>
             public bool Dual, OffHand;
             public float Timer2;
+            /// <summary>Its number in a LAN game's snapshots (0 until first sent).</summary>
+            public int NetId;
         }
 
         sealed class Pending
@@ -558,6 +560,7 @@ namespace TerraKnight.Items
             SpawnClass = DamageClass.None;
             for (int i = live.Count - 1; i >= 0; i--)
                 if (live[i].Dead) Remove(i);
+            TickGhosts();
         }
 
         void Remove(int i)
@@ -1777,71 +1780,75 @@ namespace TerraKnight.Items
             var fx = FxBatch.Instance;
             if (fx == null) return;
             FxParticles.Draw(fx);
-            foreach (var p in live)
+            foreach (var p in live) DrawOne(fx, p);
+            DrawGhosts(fx);
+        }
+
+        /// <summary>One projectile as Main.DrawProj draws it (the player's own, or another player's ghost).</summary>
+        void DrawOne(FxBatch fx, Proj p)
+        {
+            // Main.DoUpdate updates projectiles after the players, so a shot is moved (all its updates
+            // for the tick) before it is first drawn: never seen at the player's middle it starts from.
+            if (p.Dead || p.Ticks == 0) return;
+            if (p.ShownAt == null && p.Delay <= 0) p.ShownAt = p.Pos;
+            var s = p.Spec;
+            var px = TerraParticles.ToPx(p.Pos);
+            var light = p.Kind == ProjKind.CrystalShard ? s.Light * (p.Scale * 0.5f) : s.Light;
+            if (light.r + light.g + light.b > 0f && p.Delay <= 0) fx.Light(px, light, s.Ai == Ai.Thrown ? 3f : 2.5f);
+            // A projectile drawn its own way draws its own trail.
+            if (s.TrailLength > 0 && p.Delay <= 0 && s.Ai != Ai.Missile && s.Draw == null) DrawTrail(fx, p);
+            if (s.Ai == Ai.GemBolt)
             {
-                // Main.DoUpdate updates projectiles after the players, so a shot is moved (all its updates
-                // for the tick) before it is first drawn: never seen at the player's middle it starts from.
-                if (p.Dead || p.Ticks == 0) continue;
-                if (p.ShownAt == null && p.Delay <= 0) p.ShownAt = p.Pos;
-                var s = p.Spec;
-                var px = TerraParticles.ToPx(p.Pos);
-                var light = p.Kind == ProjKind.CrystalShard ? s.Light * (p.Scale * 0.5f) : s.Light;
-                if (light.r + light.g + light.b > 0f && p.Delay <= 0) fx.Light(px, light, s.Ai == Ai.Thrown ? 3f : 2.5f);
-                // A projectile drawn its own way draws its own trail.
-                if (s.TrailLength > 0 && p.Delay <= 0 && s.Ai != Ai.Missile && s.Draw == null) DrawTrail(fx, p);
-                if (s.Ai == Ai.GemBolt)
-                {
-                    DrawGem(fx, p, px);
-                    continue;
-                }
-                if (s.Draw != null)
-                {
-                    if (p.Delay <= 0) s.Draw(this, fx, p, px);
-                    continue;
-                }
-                switch (s.Ai)
-                {
-                    case Ai.Starfury: DrawStarfury(fx, p, px); continue;
-                    case Ai.Beam: DrawBeam(fx, p, px); continue;
-                    case Ai.Spear: DrawSpear(fx, p, px); continue;
-                    case Ai.Missile: DrawMissile(fx, p, px); continue;
-                    case Ai.CloakStar: DrawCloakStar(fx, p, px); continue;
-                }
-                if (s.Look == Look.Invisible || string.IsNullOrEmpty(s.Texture)) continue;
-                float o = 1f - p.Alpha;
-                if (s.Look == Look.AdditiveFade && p.Alpha >= 200f / 255f) continue;
-                if (p.Kind == ProjKind.HighVelocityBullet && p.Alpha >= 140f / 255f) continue;
-                Color c = s.Look switch
-                {
-                    Look.Bright => Color.white * o,
-                    Look.Additive => new Color(1f, 1f, 1f, 0f) * o,
-                    Look.NearlyAdded => FxBatch.C(200, 200, 200, 25) * o,
-                    Look.AdditiveFade => new Color(1f, 1f, 1f, 0f) * o,
-                    Look.WhiteA100 => FxBatch.C(255, 255, 255, 100) * (p.Kind == ProjKind.LuminiteBullet ? o : 1f),
-                    Look.HolyAdd => FxBatch.C(200, 200, 200, 0),
-                    Look.ShardAdd => FxBatch.C(205, 205, 205, 0),
-                    _ => new Color(L, L, L, 1f) * o,
-                };
-                // A Phoenix-quivered or Seraph-necklaced arrow is drawn white (P:80606-80612), the Phoenix's with its flames behind.
-                if ((p.Harpy & 12) != 0)
-                {
-                    c = Color.white * o;
-                    if ((p.Harpy & 4) != 0) DrawPhoenixFlames(fx, p, px);
-                }
-                if (s.Origin.x >= 0f)
-                {
-                    // Main.DrawProj's generic rule: the texture's own origin, a little off the hitbox centre.
-                    var whole = Sprite(s.Texture).rect;
-                    int fh = (int)whole.height / s.Frames;
-                    var framed = FxBatch.Frame(s.Texture, 0, p.Frame * fh, (int)whole.width, fh, s.Origin.x, s.Origin.y);
-                    fx.Draw(framed, px + s.DrawOffset, c, -p.Rot * Mathf.Deg2Rad, p.Scale, flipX: s.Ai == Ai.Bee && p.Vel.x < 0f);
-                    continue;
-                }
-                // The pivot sits near the head of the sprite: its centre trails behind along the flight.
-                var rot = p.Rot * Mathf.Deg2Rad;
-                var back = new Vector2(Mathf.Sin(rot), Mathf.Cos(rot)) * s.PivotBack * p.Scale;
-                fx.Draw(Sprite(s.Texture), px + back, c, -rot, p.Scale);
+                DrawGem(fx, p, px);
+                return;
             }
+            if (s.Draw != null)
+            {
+                if (p.Delay <= 0) s.Draw(this, fx, p, px);
+                return;
+            }
+            switch (s.Ai)
+            {
+                case Ai.Starfury: DrawStarfury(fx, p, px); return;
+                case Ai.Beam: DrawBeam(fx, p, px); return;
+                case Ai.Spear: DrawSpear(fx, p, px); return;
+                case Ai.Missile: DrawMissile(fx, p, px); return;
+                case Ai.CloakStar: DrawCloakStar(fx, p, px); return;
+            }
+            if (s.Look == Look.Invisible || string.IsNullOrEmpty(s.Texture)) return;
+            float o = 1f - p.Alpha;
+            if (s.Look == Look.AdditiveFade && p.Alpha >= 200f / 255f) return;
+            if (p.Kind == ProjKind.HighVelocityBullet && p.Alpha >= 140f / 255f) return;
+            Color c = s.Look switch
+            {
+                Look.Bright => Color.white * o,
+                Look.Additive => new Color(1f, 1f, 1f, 0f) * o,
+                Look.NearlyAdded => FxBatch.C(200, 200, 200, 25) * o,
+                Look.AdditiveFade => new Color(1f, 1f, 1f, 0f) * o,
+                Look.WhiteA100 => FxBatch.C(255, 255, 255, 100) * (p.Kind == ProjKind.LuminiteBullet ? o : 1f),
+                Look.HolyAdd => FxBatch.C(200, 200, 200, 0),
+                Look.ShardAdd => FxBatch.C(205, 205, 205, 0),
+                _ => new Color(L, L, L, 1f) * o,
+            };
+            // A Phoenix-quivered or Seraph-necklaced arrow is drawn white (P:80606-80612), the Phoenix's with its flames behind.
+            if ((p.Harpy & 12) != 0)
+            {
+                c = Color.white * o;
+                if ((p.Harpy & 4) != 0) DrawPhoenixFlames(fx, p, px);
+            }
+            if (s.Origin.x >= 0f)
+            {
+                // Main.DrawProj's generic rule: the texture's own origin, a little off the hitbox centre.
+                var whole = Sprite(s.Texture).rect;
+                int fh = (int)whole.height / s.Frames;
+                var framed = FxBatch.Frame(s.Texture, 0, p.Frame * fh, (int)whole.width, fh, s.Origin.x, s.Origin.y);
+                fx.Draw(framed, px + s.DrawOffset, c, -p.Rot * Mathf.Deg2Rad, p.Scale, flipX: s.Ai == Ai.Bee && p.Vel.x < 0f);
+                return;
+            }
+            // The pivot sits near the head of the sprite: its centre trails behind along the flight.
+            var rot = p.Rot * Mathf.Deg2Rad;
+            var back = new Vector2(Mathf.Sin(rot), Mathf.Cos(rot)) * s.PivotBack * p.Scale;
+            fx.Draw(Sprite(s.Texture), px + back, c, -rot, p.Scale);
         }
 
         /// <summary>The 1.4.5 gem bolts: a fading trail behind four added glows that breathe once a second.</summary>

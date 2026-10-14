@@ -45,7 +45,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team }
 
         struct Hit
         {
@@ -165,7 +165,7 @@ namespace TerraKnight.Items
 
         static void RefreshStackSplitCooldown() => stackSplit = stackSplit == 0 ? 30 : stackDelay;
 
-        static bool Shift => DevShift || Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+        static bool Shift => DevShift || Keyboard.current != null && !Net.NetChat.Typing && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
         static bool Ctrl => DevCtrl || Keyboard.current != null && (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed);
         static bool Alt => DevAlt || Keyboard.current != null && Keyboard.current.leftAltKey.isPressed;
 
@@ -237,7 +237,9 @@ namespace TerraKnight.Items
                     }
                     return;
                 case Kind.Settings:
-                    if (leftPress) TerraMod.Instance?.OpenSettings();
+                    if (!leftPress) return;
+                    if (hit.Index == 0) TerraMod.Instance?.OpenGameMenu();
+                    else TerraMod.Instance?.OpenSettings();
                     return;
                 case Kind.Loadout:
                     // Main.DrawLoadoutButtons: a fresh click switches (the cursor's item doesn't matter).
@@ -273,6 +275,10 @@ namespace TerraKnight.Items
                     return;
                 case Kind.ChestButton:
                     if (leftPress) ActChestButton(hit.Index);
+                    return;
+                case Kind.Pvp:
+                case Kind.Team:
+                    if (leftPress) ClickPvp(hit.Index, hit.Kind == Kind.Team);
                     return;
             }
         }
@@ -760,6 +766,8 @@ namespace TerraKnight.Items
                     if (rect.Contains(mouse)) HoverEquip(inv.Armor[i], inv.EffectiveArmor[i], inv.ArmorSharedFrom[i], Kind.Armor, ref hovered, ref hoveredExtra, ref hoveredKind);
                 }
                 DrawDefense(new Vector2(ax - 40f * ui, ay + step), inv, ui, e);
+                // A LAN game: PvP and the teams, left of the equipment (Main.DrawPVPIcons).
+                DrawPvpIcons(ax, ay, step, ui, mouse);
                 float accY = ay + Inventory.ArmorSlots * step + 4f * ui;
                 for (int i = 0; i < Inventory.OpenAccessories; i++)
                 {
@@ -790,12 +798,16 @@ namespace TerraKnight.Items
                 else DrawCrafting(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
                 DrawBestiaryButton(view, ui, mouse);
 
-                // Terraria's Settings button in the bottom-right corner opens the game's own menu.
-                var settings = new Rect(view.xMax - 330f * ui, view.yMax - 50f * ui, 310f * ui, 36f * ui);
-                Add(settings, Kind.Settings, 0);
-                bool hover = settings.Contains(mouse);
-                buttonStyle.fontSize = Mathf.RoundToInt((hover ? 30 : 26) * ui);
-                Outlined(settings, Lang.T("设置"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
+                // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
+                // Terraria's (the autoswing switch, the key bindings).
+                for (int k = 0; k < 2; k++)
+                {
+                    var settings = new Rect(view.xMax - 330f * ui, view.yMax - (k == 0 ? 50f : 92f) * ui, 310f * ui, 36f * ui);
+                    Add(settings, Kind.Settings, k);
+                    bool hover = settings.Contains(mouse);
+                    buttonStyle.fontSize = Mathf.RoundToInt((hover ? 30 : 26) * ui);
+                    Outlined(settings, Lang.T(k == 0 ? "设置" : "泰拉瑞亚设置"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
+                }
             }
 
             DrawChat(view, ui, mouse);

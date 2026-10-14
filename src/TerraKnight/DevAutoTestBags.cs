@@ -65,7 +65,7 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 四背包 存档读回：一样 {Signature() == before}，当前配装{inv.CurrentLoadout + 1}，{Bag()}，背包各自 {inv.BagPerLoadout}");
 
             // An old creative save: no bags kept for the loadouts.
-            string path = System.IO.Path.Combine(Application.persistentDataPath, $"TerraKnight_slot{slot}.json");
+            string path = System.IO.Path.Combine(TerraMod.SaveDir, $"TerraKnight_slot{slot}.json");
             string text = System.IO.File.ReadAllText(path);
             text = System.Text.RegularExpressions.Regex.Replace(text, "\"Bag\":\\[[^\\]]*\\],?", "");
             text = text.Replace("\"Version\":6", "\"Version\":5");

@@ -343,6 +343,7 @@ namespace TerraKnight.Player
         static void Die(HeroController hero, TerraPlayerSprite sprite)
         {
             TerraMod.Instance.PlaySound("Player_Killed");
+            Net.PvpHits.OnLocalDeath();
             Blood(hero, 100, 2f * lastHitDir, -2f);
             sprite.FallApart(lastHitDir);
             slainAt = Time.time;

@@ -620,8 +620,8 @@ namespace TerraKnight.Player
         public void ReadKey(HeroController hero, ItemType hook, Vector2 mouse)
         {
             var kb = Keyboard.current;
-            if (kb == null || hook == ItemType.None || !Playing(hero)) return;
-            if (kb.eKey.wasPressedThisFrame) Throw(hero, hook, mouse);
+            if (kb == null || hook == ItemType.None || !Playing(hero) || Net.NetChat.BlocksKeys) return;
+            if (TerraKeys.Pressed(TerraKeys.Action.Grapple)) Throw(hero, hook, mouse);
         }
     }
 }

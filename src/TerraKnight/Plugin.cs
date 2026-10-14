@@ -13,20 +13,47 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "1.0.1";
+        public const string Version = "1.1.0";
 
         internal static ManualLogSource Log;
 
         void Awake()
         {
             Log = Logger;
+            // Before anything of the mod's runs (Mono sets up the classes a method touches when it compiles it, and some
+            // look up the game's methods as they do): this build is for Hollow Knight 1.5.12620 on Unity 6.
+            if (!GameVersionOk()) return;
+            Load();
+        }
+
+        /// <summary>
+        /// The game this build is for: Hollow Knight 1.5.12620 (Steam's current version, Unity 6000). An older one (1.5.78
+        /// on Unity 2020, the branch the old Modding API mods want) lacks what the mod hooks: said in the log, nothing loaded.
+        /// </summary>
+        static bool GameVersionOk()
+        {
+            string unity = Application.unityVersion ?? "";
+            bool hook = typeof(HeroController).GetMethod("SendHeroInPosition", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic) != null;
+            if (unity.StartsWith("6000") && hook) return true;
+            Log.LogError($"泰拉圣巢 {Version} 需要空洞骑士 1.5.12620（Steam 当前正式版，Unity 6000），这台电脑上的游戏是 Unity {unity}" +
+                         $"（{(unity.StartsWith("2020") ? "1.5.78 旧版本" : "版本不对")}），mod 没有加载。请在 Steam 库里右键空洞骑士 → 属性 → 测试版，选“无”，等它更新到当前版本后再启动。");
+            Log.LogError($"TerraKnight {Version} needs Hollow Knight 1.5.12620 (Steam's current version, Unity 6000); this game runs Unity {unity}. " +
+                         "Nothing was loaded. In Steam: Hollow Knight > Properties > Betas > None, let it update, then start it again.");
+            return false;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        void Load()
+        {
+            // Dev: a second copy of the game for a LAN test keeps its own saves and runs its own suite.
+            DevCopy.Read();
             var terrariaDirSetting = Config.Bind("Paths", "TerrariaDir", "",
                 "泰拉瑞亚安装目录。留空时自动在空洞骑士所在的 Steam 库里找。");
             // The old Dev.InfiniteItems (on by default) made every save endless; creative mode is a save's own now.
             var infiniteItems = Config.Bind("Dev", "InfiniteItemsAllSaves", false,
                 "开发用：所有存档都像创造模式一样（物品用不完，制作栏全部解锁、不要吉欧）。平时请用存档界面的“创造模式”按钮创建创造模式存档。");
             var autoTestSlot = Config.Bind("Dev", "AutoTestSlot", 0,
-                "开发用：填 1-4 时启动后自动进入这个存档位（空的就开新游戏）并跑一遍地形测试、截图。0 = 关闭。");
+                "开发用：填 1-50 时启动后自动进入这个存档位（空的就开新游戏）并跑一遍地形测试、截图。0 = 关闭。");
             var quitAfterTest = Config.Bind("Dev", "QuitAfterAutoTest", true,
                 "开发用：自动测试跑完后退出游戏。");
             var testSuite = Config.Bind("Dev", "AutoTestSuite", "all",
@@ -42,7 +69,11 @@ namespace TerraKnight
             World.LiveWorld.Enabled = seamless.Value;
             var barsAlways = Config.Bind("Gameplay", "EnemyHealthBarsAlways", false,
                 "敌人的泰拉瑞亚血条一直显示。关掉则和泰拉瑞亚一样，敌人掉血后才显示。");
-            UI.EnemyHealthBars.Always = barsAlways.Value;
+            var autoReuse = Config.Bind("Gameplay", "AutoReuseAllItems", false,
+                "泰拉瑞亚设置里的“自动开火”（自动挥舞）：开着时所有武器按住鼠标就一直挥舞、射击，不用一下一下点。游戏里物品栏右下角的“设置”里也能切换。");
+            UI.IngameOptions.Bind(autoReuse, barsAlways);
+            Net.NetSettings.Bind(Config);
+            Player.TerraKeys.Bind(Config);
             var multiplier = Config.Bind("Gameplay", "EnemyMultiplier", 2,
                 "普通敌人的数量倍数：2 = 每个原版敌人旁边再多一只。1 = 原版数量。首领、竞技场、苦痛之路等特殊敌人不受影响。");
             World.EnemyRespawn.Multiplier = Mathf.Clamp(multiplier.Value, 1, 4);
@@ -85,11 +116,13 @@ namespace TerraKnight
             DontDestroyOnLoad(host);
             var mod = host.AddComponent<TerraMod>();
             // The autotests keep their endless items.
-            TerraMod.DevAllInfinite = infiniteItems.Value || autoTestSlot.Value > 0;
+            int testSlot = DevCopy.Name != null ? DevCopy.Slot : autoTestSlot.Value;
+            string suite = DevCopy.Name != null && DevCopy.Suite != null ? DevCopy.Suite : testSuite.Value;
+            TerraMod.DevAllInfinite = infiniteItems.Value || testSlot > 0;
             mod.SetInfiniteItems(TerraMod.DevAllInfinite);
             mod.TargetFrameRate = frameRate.Value;
-            if (autoTestSlot.Value >= 1 && autoTestSlot.Value <= 4)
-                mod.AutoTest = new DevAutoTest(mod, autoTestSlot.Value, quitAfterTest.Value, testSuite.Value);
+            if (testSlot >= 1 && testSlot <= UI.SaveSlots.Max)
+                mod.AutoTest = new DevAutoTest(mod, testSlot, quitAfterTest.Value, suite);
 
             var harmony = new Harmony(Guid);
             harmony.PatchAll();

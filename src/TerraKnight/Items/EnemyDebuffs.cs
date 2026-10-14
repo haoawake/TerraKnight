@@ -195,6 +195,8 @@ namespace TerraKnight.Items
             var top = col != null ? col.bounds.center + Vector3.up * col.bounds.extents.y : hm.transform.position;
             UI.CombatText.Show(top, amount.ToString(), new Color(1f, 140 / 255f, 40 / 255f));
             if (dealt <= 0) return;
+            // Another player's game runs this enemy (a LAN game): the damage is taken off there.
+            if (Net.Enemies.ForwardDot(hm, dealt, amount)) return;
             if (hm.hp - dealt > 0)
             {
                 hm.hp -= dealt;

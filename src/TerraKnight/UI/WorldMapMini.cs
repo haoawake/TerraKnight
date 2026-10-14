@@ -32,8 +32,8 @@ namespace TerraKnight.UI
             if (!Enabled || Open) return;
             var kb = Keyboard.current;
             // Tests set the style and zoom themselves: keys and clicks in their window don't count.
-            if (kb == null || TerraMod.Instance?.AutoTest != null) return;
-            if (kb.tabKey.wasPressedThisFrame)
+            if (kb == null || TerraMod.Instance?.AutoTest != null || Net.NetChat.BlocksKeys) return;
+            if (Player.TerraKeys.Pressed(Player.TerraKeys.Action.MapStyle))
             {
                 if (StyleSetting != null) StyleSetting.Value = (Style + 1) % 3;
                 TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
@@ -171,6 +171,8 @@ namespace TerraKnight.UI
             var centre = HeadCell(out _);
             GUI.BeginGroup(area);
             DrawRooms(area, centre, miniScale * ui, miniAlpha, true);
+            float mz = miniScale * ui;
+            DrawOthers(c => new Vector2(area.width / 2f + (c.x - centre.x) * mz, area.height / 2f - (c.y - centre.y) * mz), ui * 0.5f, false, new Rect(0f, 0f, area.width, area.height));
             FullMap.DrawHead(new Vector2(area.width / 2f, area.height / 2f), ui * 0.5f);
             GUI.EndGroup();
             var frameTex = TerrariaAssets.Texture(FrameDir + "MinimapFrame");
@@ -194,6 +196,8 @@ namespace TerraKnight.UI
             DrawRooms(screen, centre, overlayScale * ui, overlayAlpha, false);
             var prev = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, Mathf.Max(overlayAlpha, 0.5f));
+            float oz = overlayScale * ui;
+            DrawOthers(c => new Vector2(Screen.width / 2f + (c.x - centre.x) * oz, Screen.height / 2f - (c.y - centre.y) * oz), ui * 0.6f, false, screen);
             FullMap.DrawHead(new Vector2(Screen.width / 2f, Screen.height / 2f), ui * 0.6f);
             GUI.color = prev;
         }

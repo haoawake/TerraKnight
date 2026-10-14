@@ -190,7 +190,8 @@ namespace TerraKnight.Items
             public int Id;
         }
 
-        readonly List<M> live = new List<M>();
+        /// <summary>The player's minions (swapped for another player's ghosts while those are drawn).</summary>
+        List<M> live = new List<M>();
         readonly List<Npc> npcs = new List<Npc>();
         readonly Dictionary<int, Npc> npcById = new Dictionary<int, Npc>();
         /// <summary>perIDStaticNPCImmunity: an enemy immune to a whole minion type for a while.</summary>
@@ -315,6 +316,7 @@ namespace TerraKnight.Items
                 {
                     tickAccumulator -= 1f;
                     Tick();
+                    TickGhosts();
                 }
             }
             Draw();

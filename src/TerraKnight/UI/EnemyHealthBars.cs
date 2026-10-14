@@ -74,7 +74,7 @@ namespace TerraKnight.UI
         }
 
         /// <summary>Main.DrawHealthBar: x is the centre, y the top, in world space.</summary>
-        static void SmallBar(Camera cam, Vector3 world, int life, int max, float scale)
+        internal static void SmallBar(Camera cam, Vector3 world, int life, int max, float scale)
         {
             if (life <= 0) return;
             var hb1 = TerrariaAssets.Texture("HealthBar1");

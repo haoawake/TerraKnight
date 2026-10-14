@@ -86,7 +86,7 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 存档往返：{(before == after ? "一致" : "不一致")}\n  存前 {before}\n  读后 {after}");
 
             // An old one-set save (version 3) becomes the melee loadout, the ability accessories shared.
-            string path = Path.Combine(Application.persistentDataPath, "TerraKnight_slot2.json");
+            string path = Path.Combine(TerraMod.SaveDir, "TerraKnight_slot2.json");
             File.WriteAllText(path, "{\"Version\":3,\"Inventory\":[],\"Accessories\":[{\"Type\":\"ClimbingClaws\",\"Count\":1},{\"Type\":\"WarriorEmblem\",\"Count\":1},{\"Type\":\"Flipper\",\"Count\":1}],\"Armor\":[{\"Type\":\"IronHelmet\",\"Count\":1}],\"Scenes\":{}}");
             Save.ModSave.Read(2, mod);
             yield return null;

@@ -13,8 +13,11 @@ namespace TerraKnight.World
         /// <summary>Dev: forces day (true) or night (false).</summary>
         public static bool? DevForceDay;
 
+        /// <summary>In a LAN game, how far the host's clock is ahead of this save's (SetTime): everyone has the host's day.</summary>
+        public static float NetOffset;
+
         /// <summary>Seconds into the current Terraria day.</summary>
-        public static float Now => PlayerData.instance == null ? 0f : PlayerData.instance.playTime % FullDaySeconds;
+        public static float Now => PlayerData.instance == null ? 0f : ((PlayerData.instance.playTime + NetOffset) % FullDaySeconds + FullDaySeconds) % FullDaySeconds;
 
         /// <summary>Main.dayTime.</summary>
         public static bool IsDay => DevForceDay ?? Now < DaySeconds;

@@ -27,12 +27,55 @@ namespace TerraKnight.Player
 
         enum Sheet { Vertical, Composite, Hair, Eyelid, Shield, Wing, Balloon, FrontBack, FrontFront, IceBarrier }
 
+        /// <summary>Which of the character's colours a layer takes (none: drawn white).</summary>
+        enum Part { None, Hair, Skin, Eye, Shirt, UnderShirt, Pants, Shoe }
+
+        /// <summary>A character's colours (Player.hairColor, skinColor, eyeColor, shirtColor, underShirtColor, pantsColor, shoeColor).</summary>
+        public struct Palette
+        {
+            public Color Hair, Skin, Eye, Shirt, UnderShirt, Pants, Shoe;
+
+            public Color Of(int part) => part switch
+            {
+                1 => Hair, 2 => Skin, 3 => Eye, 4 => Shirt, 5 => UnderShirt, 6 => Pants, 7 => Shoe, _ => Color.white,
+            };
+        }
+
+        static Palette P(Color hair, Color skin, Color eye, Color shirt, Color under, Color pants, Color shoe) =>
+            new Palette { Hair = hair, Skin = skin, Eye = eye, Shirt = shirt, UnderShirt = under, Pants = pants, Shoe = shoe };
+
+        /// <summary>The looks to choose from in multiplayer: Terraria's default character first.</summary>
+        public static readonly Palette[] Looks =
+        {
+            P(HairColor, SkinColor, EyeColor, ShirtColor, UnderShirtColor, PantsColor, ShoeColor),
+            P(C(60, 40, 30), C(220, 160, 120), C(60, 90, 160), C(60, 110, 200), C(230, 230, 230), C(50, 50, 70), C(40, 30, 30)),
+            P(C(240, 220, 120), C(255, 190, 150), C(60, 140, 80), C(200, 60, 60), C(250, 240, 220), C(90, 70, 50), C(60, 40, 30)),
+            P(C(30, 30, 35), C(190, 120, 80), C(120, 70, 40), C(70, 160, 90), C(220, 210, 160), C(80, 90, 110), C(50, 50, 50)),
+            P(C(200, 200, 210), C(255, 210, 180), C(150, 60, 200), C(130, 70, 180), C(200, 180, 230), C(60, 40, 90), C(90, 60, 120)),
+            P(C(230, 110, 170), C(255, 175, 140), C(200, 80, 120), C(250, 200, 80), C(255, 250, 230), C(150, 90, 60), C(110, 70, 40)),
+            P(C(70, 170, 220), C(240, 170, 130), C(40, 120, 180), C(30, 40, 60), C(90, 200, 220), C(40, 50, 70), C(20, 20, 30)),
+            P(C(150, 40, 40), C(170, 110, 80), C(180, 140, 40), C(240, 140, 40), C(90, 60, 40), C(110, 80, 60), C(70, 50, 40)),
+        };
+
+        /// <summary>Dresses the character in a look (its layers' colours).</summary>
+        public void SetPalette(Palette p)
+        {
+            void Apply(Layer l)
+            {
+                if (l.Part != Part.None) l.Tint = p.Of((int)l.Part);
+            }
+            foreach (var l in backLayers) Apply(l);
+            foreach (var l in frontArmLayers) Apply(l);
+            foreach (var l in frontShoulderLayers) Apply(l);
+        }
+
         sealed class Layer
         {
             public SpriteRenderer Renderer;
             public string Texture;
             public Sheet Kind;
             public Color Tint;
+            public Part Part;
             /// <summary>Leg layers: the two upper strips of the seated legs (k = 0, 1); the layer's own renderer draws the third.</summary>
             public SpriteRenderer[] Strips;
             /// <summary>Rows down the sheet its frames start (a lunar body's glow, the composite sheet's lower half: 4).</summary>
@@ -350,7 +393,10 @@ namespace TerraKnight.Player
             var sr = new GameObject(tex).AddComponent<SpriteRenderer>();
             sr.transform.SetParent(parent, false);
             sr.color = tint;
-            return new Layer { Renderer = sr, Texture = tex, Kind = kind, Tint = tint };
+            // The default character's colours are all different: the colour a layer is made with says which it takes.
+            var part = tint == HairColor ? Part.Hair : tint == SkinColor ? Part.Skin : tint == EyeColor ? Part.Eye : tint == ShirtColor ? Part.Shirt
+                     : tint == UnderShirtColor ? Part.UnderShirt : tint == PantsColor ? Part.Pants : tint == ShoeColor ? Part.Shoe : Part.None;
+            return new Layer { Renderer = sr, Texture = tex, Kind = kind, Tint = tint, Part = part };
         }
 
         // Later layers sit nearer the camera; the game sorts transparent sprites by depth.

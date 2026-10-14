@@ -22,7 +22,7 @@ namespace TerraKnight.Player
         {
             if (hero == null) return;
             var kb = Keyboard.current;
-            if (kb != null && kb.f8Key.wasPressedThisFrame) Report(hero, mouse);
+            if (kb != null && kb.f8Key.wasPressedThisFrame && !Net.NetChat.BlocksKeys) Report(hero, mouse);
             if (Time.unscaledTime < next) return;
             next = Time.unscaledTime + 3f;
             Vector2 p = hero.transform.position;

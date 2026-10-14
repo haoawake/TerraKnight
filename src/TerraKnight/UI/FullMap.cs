@@ -398,8 +398,8 @@ namespace TerraKnight.UI
         public static void Update()
         {
             if (WorldMap.Enabled) { WorldMap.Update(); return; }
-            var kb = Keyboard.current;
-            if (kb != null && kb.mKey.wasPressedThisFrame) Toggle();
+            var kb = Net.NetChat.BlocksKeys ? null : Keyboard.current;
+            if (kb != null && Player.TerraKeys.Pressed(Player.TerraKeys.Action.FullMap)) Toggle();
             if (!Open) return;
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
@@ -531,19 +531,28 @@ namespace TerraKnight.UI
         /// <summary>The player's head (Terraria draws the real head layers, outlined, at a constant size).</summary>
         internal static void DrawHead(Vector2 at, float ui)
         {
-            float s = 1.6f * ui;
-            var rect = new Rect(at.x - 20f * s, at.y - 14f * s, 40f * s, 28f * s);
             var inv = TerraMod.Instance?.Inventory;
             var head = inv != null ? inv.EffectiveArmor[0] : default;
             int headArmor = !head.IsEmpty ? head.Def.ArmorSheet : 0;
             bool hairShows = headArmor == 0 || head.Type == Items.ItemType.MiningHelmet || head.Type == Items.ItemType.JungleHat;
+            // In a LAN game the player's chosen look, as the others see them.
+            var look = Net.NetSession.State != Net.NetSession.Phase.Off ? Player.TerraPlayerSprite.Looks[Mathf.Clamp(Net.NetSettings.Look.Value, 0, Player.TerraPlayerSprite.Looks.Length - 1)] : default;
+            bool own = Net.NetSession.State != Net.NetSession.Phase.Off;
+            DrawHead(at, ui, headArmor, hairShows, own ? look.Skin : Skin, own ? look.Hair : Hair, own ? look.Eye : Eye, Color.black);
+        }
+
+        /// <summary>A player's head on the map (Main.DrawPlayerHead): its rim (a team's colour for another player), skin, eyes, hair, helmet.</summary>
+        internal static void DrawHead(Vector2 at, float ui, int headArmor, bool hairShows, Color skin, Color hair, Color eye, Color rim)
+        {
+            float s = 1.6f * ui;
+            var rect = new Rect(at.x - 20f * s, at.y - 14f * s, 40f * s, 28f * s);
             // A dark rim first, then the parts.
             foreach (var off in new[] { new Vector2(-2, 0), new Vector2(2, 0), new Vector2(0, -2), new Vector2(0, 2) })
-                Part(new Rect(rect.x + off.x * ui, rect.y + off.y * ui, rect.width, rect.height), "Player_0_0", Color.black);
-            Part(rect, "Player_0_0", Skin);
+                Part(new Rect(rect.x + off.x * ui, rect.y + off.y * ui, rect.width, rect.height), "Player_0_0", rim);
+            Part(rect, "Player_0_0", skin);
             Part(rect, "Player_0_1", Color.white);
-            Part(rect, "Player_0_2", Eye);
-            if (hairShows) Part(rect, "Player_Hair_1", Hair, hair: true);
+            Part(rect, "Player_0_2", eye);
+            if (hairShows) Part(rect, "Player_Hair_1", hair, hair: true);
             if (headArmor > 0) Part(rect, "Armor_Head_" + headArmor, Color.white);
         }
 

@@ -1649,5 +1649,8 @@ namespace TerraKnight.World
         public bool IsNeighbour(string scene) => scene != null && scenes.TryGetValue(scene, out var ls) && ls != current;
 
         public Scene SceneOf(string name) => scenes.TryGetValue(name, out var ls) ? ls.Scene : default;
+
+        /// <summary>Every scene of the continuous world now loaded (the current one and its neighbours).</summary>
+        public IEnumerable<string> LoadedNames => scenes.Keys;
     }
 }

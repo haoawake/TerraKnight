@@ -29,8 +29,11 @@ namespace TerraKnight.UI
         static bool forCreative, askPermaDeath, askBossRush;
         static DifficultyLevel pendingDifficulty;
         static float pendingAt;
-        static GUIStyle button, title, text, small, big;
-        static readonly bool[] hasSave = new bool[5], creative = new bool[5];
+        internal static GUIStyle button, title, text, small, big;
+        static readonly bool[] hasSave = new bool[SaveSlots.Max + 1], creative = new bool[SaveSlots.Max + 1];
+
+        /// <summary>A panel of this menu is open (the save pager hides under it).</summary>
+        public static bool IsOpen => step != Step.Closed;
 
         public static int DevStarted, DevAsked;
 
@@ -48,7 +51,7 @@ namespace TerraKnight.UI
             if (what == "creative") return new Rect(Screen.width - 300f * ui, Screen.height - 120f * ui, 240f * ui, 58f * ui);
             float w = 760f * ui, h = 560f * ui;
             var p = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
-            if (what == "slot") return new Rect(p.x + 80f * ui, p.y + (180f + (i - 1) * 72f) * ui, w - 160f * ui, 58f * ui);
+            if (what == "slot") return new Rect(p.x + 80f * ui, p.y + (180f + (i - SaveSlots.FirstOfPage) * 72f) * ui, w - 160f * ui, 58f * ui);
             if (what == "confirm") return new Rect(p.x + w / 2f - 230f * ui, p.y + 330f * ui, 210f * ui, 56f * ui);
             return new Rect(p.x + 70f * ui, p.y + (178f + (i - 1) * 74f) * ui, p.width - 140f * ui, 64f * ui);
         }
@@ -76,19 +79,19 @@ namespace TerraKnight.UI
             return d;
         }
 
-        static bool InMainMenu()
+        internal static bool InMainMenu()
         {
             var gm = GameManager.UnsafeInstance;
             return UIManager.instance != null && gm != null && gm.gameState == GlobalEnums.GameState.MAIN_MENU;
         }
 
-        static bool ProfilesShown()
+        internal static bool ProfilesShown()
         {
             var ui = UIManager.instance;
             return InMainMenu() && ui.menuState == GlobalEnums.MainMenuState.SAVE_PROFILES && ui.saveProfileScreen != null && ui.saveProfileScreen.alpha > 0.95f;
         }
 
-        static void Styles(float ui)
+        internal static void Styles(float ui)
         {
             if (button == null)
             {
@@ -105,7 +108,7 @@ namespace TerraKnight.UI
             big.fontSize = Mathf.RoundToInt(26 * ui);
         }
 
-        static void Fill(Rect r, Color c)
+        internal static void Fill(Rect r, Color c)
         {
             var prev = GUI.color;
             GUI.color = c;
@@ -113,7 +116,7 @@ namespace TerraKnight.UI
             GUI.color = prev;
         }
 
-        static void Rim(Rect r, Color c, float t)
+        internal static void Rim(Rect r, Color c, float t)
         {
             Fill(new Rect(r.x, r.y, r.width, t), c);
             Fill(new Rect(r.x, r.yMax - t, r.width, t), c);
@@ -121,7 +124,7 @@ namespace TerraKnight.UI
             Fill(new Rect(r.xMax - t, r.y, t, r.height), c);
         }
 
-        static void Shadowed(Rect r, string s, GUIStyle st, Color c)
+        internal static void Shadowed(Rect r, string s, GUIStyle st, Color c)
         {
             float ui = Screen.height / 1080f;
             st.normal.textColor = new Color(0f, 0f, 0f, 0.85f * c.a);
@@ -130,10 +133,10 @@ namespace TerraKnight.UI
             GUI.Label(r, s, st);
         }
 
-        static readonly Color Gold = new Color(1f, 0.86f, 0.45f), Back = new Color(0.04f, 0.04f, 0.07f, 0.92f), Line = new Color(0.82f, 0.74f, 0.55f, 0.9f);
+        internal static readonly Color Gold = new Color(1f, 0.86f, 0.45f), Back = new Color(0.04f, 0.04f, 0.07f, 0.92f), Line = new Color(0.82f, 0.74f, 0.55f, 0.9f);
 
         /// <summary>A click on this rect now (with the menu's tick).</summary>
-        static bool Clicked(Rect r)
+        internal static bool Clicked(Rect r)
         {
             var e = Event.current;
             if (e.type != EventType.MouseDown || e.button != 0 || !r.Contains(e.mousePosition)) return false;
@@ -143,7 +146,7 @@ namespace TerraKnight.UI
         }
 
         /// <summary>A menu button in the game's own look: plain text in a thin frame, brighter when hovered.</summary>
-        static bool Button(Rect r, string label, float ui, Color? tint = null)
+        internal static bool Button(Rect r, string label, float ui, Color? tint = null)
         {
             bool over = r.Contains(TerraCursor.GuiMouse());
             Fill(r, over ? new Color(1f, 1f, 1f, 0.12f) : new Color(0f, 0f, 0f, 0.55f));
@@ -187,9 +190,10 @@ namespace TerraKnight.UI
             if (step == Step.Choose)
             {
                 Shadowed(new Rect(p.x + 48f * ui, p.y + 140f * ui, w - 96f * ui, 30f * ui), Lang.T("选择一个存档位来创建创造模式存档（已有的存档会被覆盖）："), text, new Color(0.8f, 0.8f, 0.85f));
-                for (int s = 1; s <= 4; s++)
+                // The save screen's page: its four slots.
+                for (int s = SaveSlots.FirstOfPage; s < SaveSlots.FirstOfPage + 4 && s <= SaveSlots.Max; s++)
                 {
-                    var r = new Rect(p.x + 80f * ui, p.y + (180f + (s - 1) * 72f) * ui, w - 160f * ui, 58f * ui);
+                    var r = new Rect(p.x + 80f * ui, p.y + (180f + (s - SaveSlots.FirstOfPage) * 72f) * ui, w - 160f * ui, 58f * ui);
                     string state = Lang.T(!hasSave[s] ? "空" : creative[s] ? "创造模式存档（将被覆盖）" : "已有存档（将被覆盖）");
                     if (Button(r, Lang.F("存档 {0}", s) + "　·　" + state, ui, hasSave[s] ? new Color(1f, 0.75f, 0.6f) : Color.white)) Choose(s);
                 }
@@ -247,9 +251,9 @@ namespace TerraKnight.UI
 
         static void Open()
         {
-            for (int s = 1; s <= 4; s++)
+            for (int s = 1; s <= SaveSlots.Max; s++)
             {
-                hasSave[s] = File.Exists(Path.Combine(Application.persistentDataPath, $"user{s}.dat"));
+                hasSave[s] = File.Exists(Path.Combine(TerraMod.SaveDir, $"user{s}.dat"));
                 creative[s] = hasSave[s] && Save.ModSave.IsCreative(s);
             }
             forCreative = true;
@@ -281,7 +285,7 @@ namespace TerraKnight.UI
         /// takes clicks again only once the button is up and a couple of frames have gone (else the
         /// release of "返回" lands on the save slot under it and starts that game).
         /// </summary>
-        static void Block(bool on)
+        internal static void Block(bool on)
         {
             if (!on)
             {
@@ -382,15 +386,9 @@ namespace TerraKnight.UI
         static void MarkMode(SaveSlotButton __instance)
         {
             if (__instance == null || __instance.locationText == null) return;
-            int slot = __instance.saveSlot switch
-            {
-                SaveSlotButton.SaveSlot.SLOT_1 => 1,
-                SaveSlotButton.SaveSlot.SLOT_2 => 2,
-                SaveSlotButton.SaveSlot.SLOT_3 => 3,
-                SaveSlotButton.SaveSlot.SLOT_4 => 4,
-                _ => 0,
-            };
-            if (slot == 0) return;
+            // Its slot on the page shown (SaveSlots: fifty slots on pages of four).
+            int slot = SaveSlots.IndexOf(__instance);
+            if (slot <= 0 || slot > SaveSlots.Max) return;
             var mode = Save.ModSave.ModeOf(slot);
             string shown = __instance.locationText.text ?? "";
             if (!mode.Known || shown.StartsWith("<color=#")) return;

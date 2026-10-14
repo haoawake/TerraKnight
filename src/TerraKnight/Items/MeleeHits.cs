@@ -169,8 +169,9 @@ namespace TerraKnight.Items
             HeroInRange(col);
             // Geo deposits are mined, not cut: only a pickaxe gets geo out of them.
             if (weapon.PickPower <= 0 && col.GetComponentInParent<GeoRock>() != null) return;
-            // DamageEnemies tells the collider's object it was hit; geo rocks and many props listen for this.
-            if (struckThisSwing.Add(col.gameObject)) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
+            // DamageEnemies tells the collider's object it was hit; geo rocks and many props listen for this (not another game's
+            // enemy in a LAN game: its scripts are off here, and the hit goes to the game that runs it).
+            if (struckThisSwing.Add(col.gameObject) && !Net.Enemies.IsPuppet(col.GetComponentInParent<HealthManager>())) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
             if (!col.isTrigger) TouchOwnersBox(col);
 
             var hm = col.GetComponentInParent<HealthManager>();
@@ -297,6 +298,17 @@ namespace TerraKnight.Items
             else if (crit) damage *= 2;
 
             int hpBefore = hm != null ? hm.hp : 0;
+            // Another player's game runs this enemy (a LAN game): the hit, its knockback and its numbers go there with it
+            // (Net.Enemies' HealthManager.Hit prefix sends it); here it is only shown.
+            bool puppet = Net.Enemies.IsPuppet(hm);
+            if (puppet)
+            {
+                int bigScale = World.GameDifficulty.Current >= World.DifficultyLevel.Expert ? 15 : 10;
+                Net.Enemies.Context = new Net.Enemies.HitContext
+                {
+                    Push = pushSpeed, TerraDamage = damage, Crit = crit, BigHit = damage * bigScale > EnemyStats.LifeMax(info), Set = true,
+                };
+            }
             // A boss or elite isn't staggered: the game counts every hit towards stunning it (the
             // Stun Control FSM's STUN DAMAGE), meant for a nail's few slashes, not a hail of shots.
             PlayMakerFSM heldStun = null;
@@ -310,7 +322,8 @@ namespace TerraKnight.Items
             if (shell) hm.IsInvincible = false;
             try
             {
-                if (dealtHk > 0 || hm == null)
+                // A puppet's hit always goes to its owner, who turns the Terraria damage into health with its own carry.
+                if (dealtHk > 0 || hm == null || puppet)
                     HitTaker.Hit(target, new HitInstance
                     {
                         Source = source,
@@ -332,9 +345,9 @@ namespace TerraKnight.Items
             var mod = TerraMod.Instance;
             if (hm == null) return rolled;
             int dealt = hpBefore - Mathf.Max(0, hm.hp);
-            if (dealtHk > 0 && dealt <= 0 && !hm.isDead) return 0; // blocked (a shell, a shield)
+            if (dealtHk > 0 && dealt <= 0 && !hm.isDead && !puppet) return 0; // blocked (a shell, a shield)
             // Terraria's knockback: launched back and up (bosses and elites have no push speed).
-            if (pushSpeed > 0f && !hm.isDead)
+            if (pushSpeed > 0f && !hm.isDead && !puppet)
             {
                 // StrikeNPC's big hit: damage ×10 (×15 in Expert and Master) over the enemy's life.
                 int scale = World.GameDifficulty.Current >= World.DifficultyLevel.Expert ? 15 : 10;
@@ -375,6 +388,84 @@ namespace TerraKnight.Items
         }
 
         public static int DevBoxTouches;
+
+        static GameObject netSource;
+
+        /// <summary>
+        /// A LAN game: another player's hit on an enemy this game runs (DamageNPC), dealt as theirs was rolled: the
+        /// game's hit for its damage (no stagger for a boss or elite, through an Elder Baldur's shell), Terraria's
+        /// knockback, the number, the blood and the sound.
+        /// </summary>
+        public static void ApplyNetHit(HealthManager hm, int dealtHk, float direction, AttackTypes type, float push, int terra, bool crit, bool bigHit, bool dot, Vector2 from)
+        {
+            if (hm == null || hm.isDead) return;
+            var info = EnemyStats.Of(hm);
+            // A Terraria hit: its damage made the enemy's health here, the remainder carried as for a hit of this game's.
+            if (!dot && terra > 0)
+            {
+                dealtHk = EnemyStats.ToGameDamage(info, terra);
+                if (dealtHk <= 0)
+                {
+                    var c0 = hm.GetComponent<Collider2D>();
+                    var b0 = c0 != null ? c0.bounds : new Bounds(hm.transform.position, Vector3.one);
+                    CombatText.Show(b0.center + Vector3.up * b0.extents.y, terra.ToString(), crit ? CombatText.EnemyCrit : CombatText.EnemyHurt, crit);
+                    info.LastHit = Time.time;
+                    return;
+                }
+            }
+            if (dot)
+            {
+                // NPC.GetHurtByDebuff: off its life, the kill through the game's own hit.
+                if (hm.hp - dealtHk > 0)
+                {
+                    hm.hp -= dealtHk;
+                    return;
+                }
+                dealtHk = Mathf.Max(1, hm.hp);
+            }
+            if (netSource == null)
+            {
+                netSource = new GameObject("Terra Net Hit");
+                Object.DontDestroyOnLoad(netSource);
+            }
+            netSource.transform.position = new Vector3(from.x, from.y, 0f);
+            evasion(hm) = 0f;
+            PlayMakerFSM heldStun = null;
+            if (EnemyStats.Unstoppable(info))
+            {
+                heldStun = stunFsm(hm);
+                stunFsm(hm) = null;
+            }
+            bool shell = EnemyStats.Shelled(hm);
+            if (shell) hm.IsInvincible = false;
+            try
+            {
+                HitTaker.Hit(hm.gameObject, new HitInstance
+                {
+                    Source = netSource,
+                    AttackType = type == AttackTypes.Nail ? AttackTypes.Generic : type,
+                    DamageDealt = Mathf.Max(1, dealtHk),
+                    Direction = direction,
+                    Multiplier = 1f,
+                    MagnitudeMultiplier = 0f,
+                    IgnoreInvulnerable = dot,
+                });
+            }
+            finally
+            {
+                if (heldStun != null) stunFsm(hm) = heldStun;
+                if (shell && !hm.isDead) hm.IsInvincible = true;
+            }
+            float facing = Mathf.Abs(Mathf.DeltaAngle(direction, 180f)) < 90f ? -1f : 1f;
+            if (push > 0f && !hm.isDead) TerraKnockback.Push(hm, push, facing, bigHit, World.Areas.KnockbackTaken(info.Level));
+            info.LastHit = Time.time;
+            if (dot) return;
+            var col = hm.GetComponent<Collider2D>();
+            var b = col != null ? col.bounds : new Bounds(hm.transform.position, Vector3.one);
+            if (terra > 0) CombatText.Show(b.center + Vector3.up * b.extents.y, terra.ToString(), crit ? CombatText.EnemyCrit : CombatText.EnemyHurt, crit);
+            TerraHitFx.Bleed(hm, b, Mathf.Max(1, terra), facing, EnemyStats.LifeMax(info));
+            TerraMod.Instance?.PlaySound(hm.isDead ? "NPC_Killed_1" : "NPC_Hit_1");
+        }
 
         static GameObject FindResponder(Collider2D col)
         {
