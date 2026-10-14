@@ -1409,6 +1409,7 @@ namespace TerraKnight.Items
             {
                 if (m.Dead) return;
                 var hm = col.GetComponentInParent<HealthManager>();
+                if (hm == null && m.Damage > 0) PropHits.Pulse(col, TerraParticles.ToWorld(m.Center), m.SpriteDir >= 0 ? 1f : -1f, m.Damage);
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (!hitNow.Add(id)) continue;

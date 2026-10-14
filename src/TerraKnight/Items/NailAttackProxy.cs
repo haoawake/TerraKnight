@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HutongGames.PlayMaker;
 using UnityEngine;
 
@@ -14,8 +15,8 @@ namespace TerraKnight.Items
     {
         const int HeroAttackLayer = 17;
 
-        /// <summary>The slash object, so geo deposits can tell it apart from a pickaxe.</summary>
-        static GameObject slash;
+        /// <summary>The weapons' slash objects (the swing's, the shortswords' stab), so geo deposits can tell them apart from a pickaxe.</summary>
+        static readonly HashSet<GameObject> slashes = new HashSet<GameObject>();
 
         /// <summary>
         /// Geo deposits react to anything dealing damage that touches them (ReceivedDamage); a
@@ -25,11 +26,14 @@ namespace TerraKnight.Items
         [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ReceivedDamage), nameof(HutongGames.PlayMaker.Actions.ReceivedDamage.DoTriggerEnter2D))]
         [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ReceivedDamage), nameof(HutongGames.PlayMaker.Actions.ReceivedDamage.DoTriggerStay2D))]
         static bool NotOnGeoRocks(HutongGames.PlayMaker.Actions.ReceivedDamage __instance, Collider2D collisionInfo) =>
-            slash == null || collisionInfo == null || collisionInfo.gameObject != slash
+            collisionInfo == null || !slashes.Contains(collisionInfo.gameObject)
             || __instance.Owner == null || __instance.Owner.GetComponentInParent<GeoRock>() == null;
 
         readonly GameObject go;
         readonly BoxCollider2D box;
+
+        /// <summary>The slash's own object.</summary>
+        public GameObject Object => go;
 
         /// <summary>The slash's trigger while it is out (null otherwise).</summary>
         public Collider2D Live => go.activeInHierarchy ? box : null;
@@ -41,7 +45,7 @@ namespace TerraKnight.Items
         {
             go = new GameObject(isSwing ? "Terra Nail Attack" : "Terra Blast Attack") { layer = HeroAttackLayer, tag = "Nail Attack" };
             go.transform.SetParent(parent, false);
-            if (isSwing) slash = go;
+            if (isSwing) slashes.Add(go);
             var rb = go.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Kinematic;
             box = go.AddComponent<BoxCollider2D>();

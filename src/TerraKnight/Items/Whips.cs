@@ -368,6 +368,7 @@ namespace TerraKnight.Items
                 foreach (var col in overlaps)
                 {
                     var hm = col.GetComponentInParent<HealthManager>();
+                    if (hm == null && c.Damage > 0) PropHits.Pulse(col, TerraParticles.ToWorld(now), c.Vel.x < 0f ? -1f : 1f, c.Damage);
                     if (hm == null || hm.isDead) continue;
                     int id = hm.GetInstanceID();
                     if (c.Hit.Contains(id)) continue;

@@ -232,6 +232,7 @@ namespace TerraKnight
             if (hero != null && gm != null && !gm.isPaused) OpeningPortal.Tick(hero);
             if (gm != null && gm.isPaused) lastPausedFrame = Time.frameCount;
             if (gameplay && !gm.isPaused && TerrainSystem.Current != null) InventoryGui.Tick();
+            if (gameplay) World.BossPlatforms.Tick();
             if (gameplay)
             {
                 var rb = hero.GetComponent<Rigidbody2D>();

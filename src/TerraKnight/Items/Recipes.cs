@@ -48,6 +48,20 @@ namespace TerraKnight.Items
     {
         public static IReadOnlyList<Recipe> All => Every;
 
+        static HashSet<ItemType> materials;
+
+        /// <summary>Item.material: an ingredient of some recipe (what the Guide's slot takes).</summary>
+        public static bool IsMaterial(ItemType type)
+        {
+            if (materials == null)
+            {
+                materials = new HashSet<ItemType>();
+                foreach (var r in Every)
+                    foreach (var (t, _) in r.Ingredients) materials.Add(t);
+            }
+            return materials.Contains(type);
+        }
+
         static List<Recipe> every;
 
         /// <summary>The generated recipes and the stations' (ItemsStations.cs).</summary>

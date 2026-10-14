@@ -1254,6 +1254,7 @@ namespace TerraKnight.Items
             {
                 if (p.Dead) return;
                 var hm = col.GetComponentInParent<HealthManager>();
+                if (hm == null && p.Damage > 0) PropHits.Pulse(col, p.Pos - p.Vel.normalized * 0.3f, p.Vel.x >= 0f ? 1f : -1f, p.Damage);
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (!hitNow.Add(id)) continue;
@@ -2253,6 +2254,7 @@ namespace TerraKnight.Items
             foreach (var col in overlaps)
             {
                 var hm = col.GetComponentInParent<HealthManager>();
+                if (hm == null && damage > 0) PropHits.Pulse(col, p.Pos, col.bounds.center.x >= p.Pos.x ? 1f : -1f, damage);
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (id == p.LastHit || npcImmune.ContainsKey(id) || p.Immune.ContainsKey(id) || typeImmune.ContainsKey((p.Kind, id)) || !done.Add(id)) continue;

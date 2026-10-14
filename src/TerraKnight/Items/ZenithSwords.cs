@@ -315,6 +315,7 @@ namespace TerraKnight.Items
             {
                 var col = overlaps[i];
                 var hm = col.GetComponentInParent<HealthManager>();
+                if (hm == null) PropHits.Pulse(col, world, s.Spin >= 0f ? 1f : -1f, Mathf.Max(1, Equipment.Damage(s.Item)));
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (s.Cooldowns.ContainsKey(id)) continue;

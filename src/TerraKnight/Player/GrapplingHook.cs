@@ -266,7 +266,7 @@ namespace TerraKnight.Player
                     break;
                 case State.Latched:
                     // The block it holds was dug away: it lets go and comes back.
-                    bool held = k.IsCell ? TerraWorld.IsSolid(k.Cell.x, k.Cell.y) : k.Col != null && k.Col.enabled && k.Col.gameObject.activeInHierarchy;
+                    bool held = k.IsCell ? Holds(k.Cell.x, k.Cell.y) : k.Col != null && k.Col.enabled && k.Col.gameObject.activeInHierarchy;
                     if (!held)
                     {
                         Note($"钩住的格 {k.Cell} 没了");
@@ -276,7 +276,10 @@ namespace TerraKnight.Player
             }
         }
 
-        /// <summary>A 10 px box round the hook against solid blocks, then the game's own solid terrain.</summary>
+        /// <summary>A cell a hook takes hold of: a solid block, or a platform (Main.tileSolidTop, as Projectile.AI_007_GrapplingHooks lets it).</summary>
+        static bool Holds(int x, int y) => TerraWorld.IsSolid(x, y) || TerraWorld.IsPlatform(x, y);
+
+        /// <summary>A 10 px box round the hook against solid blocks and platforms, then the game's own solid terrain.</summary>
         bool TryLatch(HeroController hero, Hook k)
         {
             float half = LatchBox / 2f * Px;
@@ -285,7 +288,7 @@ namespace TerraKnight.Player
             for (int x = lo.x; x <= hi.x; x++)
                 for (int y = lo.y; y <= hi.y; y++)
                 {
-                    if (!TerraWorld.IsSolid(x, y)) continue;
+                    if (!Holds(x, y)) continue;
                     k.IsCell = true;
                     k.Cell = new Vector2Int(x, y);
                     Latch(hero, k, CellGrid.CellCenter(x, y), TerraWorld.Get(x, y), new Vector2Int(x, y));

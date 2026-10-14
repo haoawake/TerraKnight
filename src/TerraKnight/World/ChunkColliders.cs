@@ -161,6 +161,9 @@ namespace TerraKnight.World
             return chunk;
         }
 
+        /// <summary>Every platform composite built, in every scene (for the bosses that go through them, BossPlatforms).</summary>
+        internal static readonly List<CompositeCollider2D> AllPlatforms = new List<CompositeCollider2D>();
+
         void CreatePlatforms(Chunk chunk)
         {
             var go = new GameObject("Terra Platforms") { layer = TerrainLayer };
@@ -179,6 +182,7 @@ namespace TerraKnight.World
             effector.useSideBounce = false;
             chunk.PlatformGo = go;
             chunk.Platforms = composite;
+            AllPlatforms.Add(composite);
         }
 
         static BoxCollider2D AddBox(GameObject go, List<BoxCollider2D> list, bool platform = false)

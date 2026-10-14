@@ -169,6 +169,7 @@ namespace TerraKnight.World
             current = null;
             lastLeft = null;
             gradeTarget = null;
+            EnemyBlockers.Refresh();
         }
 
         /// <summary>The hero has finished entering a scene, the game's way or by crossing a gate line.</summary>
@@ -802,6 +803,8 @@ namespace TerraKnight.World
                 ApplyArt(ls, art[ls]);
             }
             ApplyShafts();
+            // Gate blockers come off where the gate now has a scene beyond it, and go back where it hasn't.
+            EnemyBlockers.Refresh();
         }
 
         /// <summary>
@@ -1533,6 +1536,7 @@ namespace TerraKnight.World
         {
             var w = Instance;
             if (!Enabled || w == null) return true;
+            Plugin.Log.LogInfo($"[切换] 去 {info.SceneName}（入口 {(string.IsNullOrEmpty(info.EntryGateName) ? "无" : info.EntryGateName)}），发起：{Caller()}");
             if (w.loadingBusy)
             {
                 w.deferred = info;
@@ -1575,6 +1579,7 @@ namespace TerraKnight.World
             w.lastLeft = null;
             // The game drops the blend (factor 0) when it unloads a level.
             w.gradeTarget = null;
+            EnemyBlockers.Refresh();
             return true;
         }
 
@@ -1644,6 +1649,9 @@ namespace TerraKnight.World
         }
 
         public bool IsLoaded(string scene) => scenes.ContainsKey(scene);
+
+        /// <summary>Whether a gate is joined to the scene beyond it (crossing its line goes there), either of the pair.</summary>
+        public bool IsJoined(TransitionPoint gate) => gate != null && joinedGates.Contains(gate);
 
         /// <summary>Loaded beside the current scene, behind the player.</summary>
         public bool IsNeighbour(string scene) => scene != null && scenes.TryGetValue(scene, out var ls) && ls != current;

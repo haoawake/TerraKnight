@@ -55,7 +55,7 @@ namespace TerraKnight
             yield return Visit(hero, new Vector2(20f, 15f), new Vector2(60f, 15f), new Vector2(100f, 15f), new Vector2(140f, 15f), new Vector2(180f, 15f), new Vector2(220f, 15f), new Vector2(250f, 15f), new Vector2(120f, 15f));
             yield return new WaitForSeconds(1f);
             var camNow = GameCameras.instance.mainCamera.transform.position;
-            Plugin.Log.LogInfo($"[AutoTest] 镜头 德特茅斯：锁定区 {Player.TerraCamera.DevLock}，推高 {Player.TerraCamera.DevFloor:F2}，镜头 y {camNow.y:F2}，主角 y {hero.transform.position.y:F2}");
+            Plugin.Log.LogInfo($"[AutoTest] 镜头 德特茅斯：镜头偏离主角 {Player.TerraCamera.DevOffset:F2}，镜头 y {camNow.y:F2}，主角 y {hero.transform.position.y:F2}");
             Shot("Town", "camera_town");
             yield return null;
             Plugin.Log.LogInfo($"[AutoTest] 世界地图 走完德特茅斯：{UI.WorldMap.DevReport()}；德特茅斯的东西：{UI.WorldMap.DevThings("Town")}");

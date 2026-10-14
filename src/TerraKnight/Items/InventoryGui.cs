@@ -45,7 +45,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot }
 
         struct Hit
         {
@@ -257,7 +257,11 @@ namespace TerraKnight.Items
                         // Main.OpenShop: the click that opened it can't buy.
                         stackSplit = 9999;
                     }
+                    else if (hit.Index == 2) Town.TownNpcs.OpenGuideCraft();
                     else Town.TownNpcs.Close(true);
+                    return;
+                case Kind.GuideSlot:
+                    ActGuideSlot(leftPress);
                     return;
                 case Kind.ShopSlot:
                     ActShop(hit.Index, leftPress, rightPress, leftHeld, rightHeld);
@@ -548,7 +552,14 @@ namespace TerraKnight.Items
             recipes.Clear();
             var kit = inv.LoadoutKit;
             bool Fits(ItemDef d) => d.Kit == Kit.General || d.Kit == kit;
-            if (Shop.Free)
+            var guide = Town.TownNpcs.GuideCraftOpen ? Town.TownNpcs.GuideItem : default;
+            if (!guide.IsEmpty)
+            {
+                // Recipe.CollectGuideRecipes: every recipe the Guide's item goes into, whatever can be made now.
+                foreach (var r in Recipes.All)
+                    if (!r.IsBought && System.Array.Exists(r.Ingredients, g => g.Type == guide.Type)) recipes.Add(r);
+            }
+            else if (Shop.Free)
             {
                 foreach (var d in Shop.Everything)
                     if (Fits(d)) recipes.Add(Recipe.Bought(d, true));
@@ -607,6 +618,8 @@ namespace TerraKnight.Items
                 Sound("Menu_Tick");
                 return;
             }
+            // The Guide's list is to look at: nothing is made from it (focusRecipe == recipeIndex && guideItem.IsAir).
+            if (Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty) return;
             var r = recipes[i];
             var d = r.Def;
             // Unstackable results never repeat while held.
@@ -936,7 +949,9 @@ namespace TerraKnight.Items
             Vector2 P(float x, float y) => new Vector2(view.x + x * ui, view.y + y * ui);
 
             var label = P(76f, 414f + adjY);
-            if (!CraftingHere && recipes.Count == 0)
+            DrawGuideSlot(P(73f, 331f + adjY), ui, mouse, ref hovered, ref hoveredKind);
+            bool guideShown = Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty;
+            if (!CraftingHere && recipes.Count == 0 && !Town.TownNpcs.GuideCraftOpen)
             {
                 Outlined(new Rect(label.x, label.y, 400f * ui, 24f * ui), Lang.T("制作（徒手、附近的工作站，或靠近长椅、在德特茅斯）"), labelStyle, new Color(1f, 1f, 1f, 0.6f));
                 return;
@@ -944,7 +959,7 @@ namespace TerraKnight.Items
             if (recipes.Count == 0) return;
             Outlined(new Rect(label.x, label.y, 200f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
             // Only the by-hand ones out here: say where the rest are.
-            if (!CraftingHere) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手和附近的工作站；其余要靠近长椅或在德特茅斯）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
+            if (!CraftingHere && !guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手和附近的工作站；其余要靠近长椅或在德特茅斯）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
 
             if (grid) DrawRecipeGrid(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             else

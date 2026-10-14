@@ -874,6 +874,11 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
         static void PlatformsAndRope(HeroController __instance, Rigidbody2D ___rb2d)
         {
+            // Terraria falls up to 10 px a tick: discrete steps sink the player more than half a
+            // platform deep in one, and a one-way platform takes that for coming up through it (the
+            // fall goes on through). Swept collision meets the platform's top as it is reached.
+            if (Active && ___rb2d != null && ___rb2d.collisionDetectionMode != CollisionDetectionMode2D.Continuous)
+                ___rb2d.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             if (!Active || !__instance.acceptingInput || __instance.cState.dead || __instance.cState.transitioning) { OnRope = false; return; }
             var cs = __instance.cState;
             var b = __instance.GetComponent<BoxCollider2D>().bounds;

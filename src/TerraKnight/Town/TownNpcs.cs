@@ -82,6 +82,15 @@ namespace TerraKnight.Town
         static float tickAccumulator;
         static Npc talk;
         static bool shop;
+        /// <summary>The Guide's crafting menu is open (Main.InGuideCraftMenu).</summary>
+        static bool guideCraft;
+
+        /// <summary>
+        /// Main.guideItem: what the Guide is shown. The crafting column lists every recipe it goes
+        /// into (Recipe.CollectGuideRecipes) whatever the stations and the bag, to look at only; it
+        /// goes back into the bag when the talk ends (Player.dropItemCheck).
+        /// </summary>
+        public static ItemStack GuideItem;
         static int lastStage = -1;
 
         /// <summary>Given names chosen so far (saved), and who has been announced as moved in.</summary>
@@ -91,7 +100,11 @@ namespace TerraKnight.Town
         /// <summary>The chat box's text (empty while the shop is open, as Main.npcChatText).</summary>
         public static string ChatText { get; private set; } = "";
         public static string TalkingName => talk?.Name;
-        public static bool ChatOpen => talk != null && !shop;
+        public static bool ChatOpen => talk != null && !shop && !guideCraft;
+        /// <summary>Talking to the Guide, whose chat has the crafting button.</summary>
+        public static bool TalkingIsGuide => talk != null && talk.Def.Internal == "Guide";
+        /// <summary>The Guide's crafting menu: talking to him with the inventory open after his crafting button.</summary>
+        public static bool GuideCraftOpen => talk != null && guideCraft && InventoryGui.Open;
         /// <summary>A shop is open: talking with the inventory open (Main.npcShop).</summary>
         public static bool ShopOpen => talk != null && shop && InventoryGui.Open;
         public static bool TalkingHasShop => talk != null && talk.Def.Items.Length > 0;
@@ -131,8 +144,10 @@ namespace TerraKnight.Town
         {
             npcs.Clear();
             placedFor = null;
+            ReturnGuideItem();
             talk = null;
             shop = false;
+            guideCraft = false;
             Names.Clear();
             Arrived.Clear();
             lastStage = -1;
@@ -161,7 +176,7 @@ namespace TerraKnight.Town
             }
             // Main.HoverOverNPCs's reach: leaving it closes the chat (and the shop).
             if (talk != null && !InReach(talk, hero)) Close(true);
-            if (shop && talk != null && !InventoryGui.Open) Close(true);
+            if ((shop || guideCraft) && talk != null && !InventoryGui.Open) Close(true);
         }
 
         /// <summary>Puts every townsperson who has moved in on the street round Dirtmouth's bench.</summary>
@@ -458,8 +473,10 @@ namespace TerraKnight.Town
             {
                 if (!FrameRect(n).Contains(mouseWorld) || !InReach(n, hero)) continue;
                 if (talk == n) return true;
+                ReturnGuideItem();
                 talk = n;
                 shop = false;
+                guideCraft = false;
                 ChatText = Chat(n);
                 TerraMod.Instance?.PlaySound("Chat", 0.8f);
                 return true;
@@ -478,12 +495,37 @@ namespace TerraKnight.Town
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
         }
 
+        /// <summary>Main.NPCChatText_GuideReverseCrafting: the inventory opens, the chat text goes, the Guide's slot shows.</summary>
+        public static void OpenGuideCraft()
+        {
+            if (!TalkingIsGuide) return;
+            guideCraft = true;
+            ChatText = "";
+            InventoryGui.Open = true;
+            TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+        }
+
+        /// <summary>Player.dropItemCheck for the Guide's slot: back into the bag, or dropped at the player's feet if it won't fit.</summary>
+        static void ReturnGuideItem()
+        {
+            if (GuideItem.IsEmpty) return;
+            var stack = GuideItem;
+            GuideItem = default;
+            var inv = TerraMod.Instance?.Inventory;
+            int left = inv != null ? inv.AddSome(stack.Type, stack.Count) : stack.Count;
+            if (left <= 0) return;
+            var hero = HeroController.SilentInstance;
+            if (hero != null) WorldItems.Drop(ItemStack.Of(stack.Type, left), hero.GetComponent<BoxCollider2D>().bounds.center);
+        }
+
         /// <summary>Main.CloseNPCChatOrSign (sound Menu_Close).</summary>
         public static void Close(bool sound)
         {
             if (talk == null) return;
+            ReturnGuideItem();
             talk = null;
             shop = false;
+            guideCraft = false;
             ChatText = "";
             for (int i = 0; i < ShopItems.Length; i++)
             {

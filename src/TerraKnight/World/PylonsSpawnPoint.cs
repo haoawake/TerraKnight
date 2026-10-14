@@ -116,6 +116,28 @@ namespace TerraKnight.World
             return spare;
         }
 
+        /// <summary>
+        /// Hollow Knight's respawn before the player has rested on any bench is a Death Respawn
+        /// Marker: high on Dirtmouth's entrance ledge, with no bench and no pylon there (players took
+        /// it for a broken stag station). Terraria brings a player without a bed back at the world's
+        /// spawn, where the town is; here that is Dirtmouth's bench, which from then on is the respawn
+        /// point as resting on it would make it (the player comes back sat on it, so its pylon unlocks).
+        /// </summary>
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.ReadyForRespawn))]
+        static class RespawnAtTownBench
+        {
+            static void Prefix()
+            {
+                var pd = PlayerData.instance;
+                if (pd == null || TerraMod.Instance == null || pd.respawnType == 1 || pd.respawnMarkerName != "Death Respawn Marker") return;
+                if (pd.respawnScene != "Town" && pd.respawnScene != "Tutorial_01") return;
+                Plugin.Log.LogInfo($"[复活点] 还没在长椅上休息过：从 {pd.respawnScene} 的 {pd.respawnMarkerName} 改到德特茅斯的长椅");
+                pd.respawnScene = "Town";
+                pd.respawnMarkerName = "RestBench";
+                pd.respawnType = 1;
+            }
+        }
+
         public static int DevSpawnFallbacks;
         public static string DevLastFallback = "";
 

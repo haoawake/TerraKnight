@@ -31,6 +31,8 @@ namespace TerraKnight.Items
             var lines = Wrap(TownNpcs.ChatText, 460f * ui, chatStyle, 10);
             var buttons = new List<(string Text, int Index)>();
             if (TownNpcs.TalkingHasShop) buttons.Add((Lang.T("商店"), 0));
+            // The Guide's crafting (Lang.inter[25]).
+            if (TownNpcs.TalkingIsGuide) buttons.Add((TT("LegacyInterface.25", "制作"), 2));
             buttons.Add((Lang.T("关闭"), 1));
             float w = 500f * ui, h = (30f + 30f * lines.Count + 30f) * ui;
             var panel = new Rect(view.center.x - w / 2f, view.y + 100f * ui, w, h);
@@ -64,6 +66,68 @@ namespace TerraKnight.Items
             }
             if (over != chatHover && over >= 0) Sound("Menu_Tick");
             chatHover = over;
+        }
+
+        static string TT(string key, string zh) => TerrariaText.Get(Lang.Culture, key) ?? Lang.T(zh);
+
+        /// <summary>
+        /// The Guide's slot (Main.DrawInventory, InGuideCraftMenu: ItemSlot context 7 at 73, 331)
+        /// above the crafting column, and Main.DrawGuideCraftText beside it: "place a material here",
+        /// or which item the recipes shown use and what the focused one needs to be made at.
+        /// </summary>
+        static void DrawGuideSlot(Vector2 at, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind)
+        {
+            if (!TownNpcs.GuideCraftOpen) return;
+            float s = 52f * 0.85f * ui;
+            var rect = new Rect(at.x, at.y, s, s);
+            GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back4"));
+            panels.Add(rect);
+            Add(rect, Kind.GuideSlot, 0);
+            var item = TownNpcs.GuideItem;
+            if (!item.IsEmpty) DrawIcon(rect, item, false);
+            if (rect.Contains(mouse) && !item.IsEmpty)
+            {
+                hovered = item;
+                hoveredKind = Kind.GuideSlot;
+            }
+            var text = new Rect(at.x + 50f * ui, at.y + 12f * ui, 420f * ui, 24f * ui);
+            float n = ChatPulse / 255f;
+            var color = new Color(n, n, n, 1f);
+            if (item.IsEmpty)
+            {
+                Outlined(text, TT("LegacyInterface.24", "在此放置材料"), labelStyle, color);
+                return;
+            }
+            text.y -= 14f * ui;
+            Outlined(text, TT("LegacyInterface.21", "所显示的配方使用此物品:") + " " + item.Def.Name, labelStyle, color);
+            if (focus < 0 || focus >= recipes.Count) return;
+            // Main.GetRecipeRequirementsText: the station, or "none" for one made by hand.
+            var r = recipes[focus];
+            string station = string.IsNullOrEmpty(r.Station) || r.Station == "徒手" ? TT("LegacyInterface.23", "无") : Lang.T(r.Station);
+            Outlined(new Rect(text.x, text.y + 26f * ui, 420f * ui, 24f * ui), TT("LegacyInterface.22", "需要物件:") + " " + station, labelStyle, color);
+        }
+
+        /// <summary>ItemSlot.Handle for context 7: a click swaps the cursor's item with the slot's; only a material (an ingredient of some recipe) goes in.</summary>
+        static void ActGuideSlot(bool leftPress)
+        {
+            if (!leftPress || !TownNpcs.GuideCraftOpen) return;
+            if (!inv.Mouse.IsEmpty && !Recipes.IsMaterial(inv.Mouse.Type)) return;
+            var held = inv.Mouse;
+            inv.Mouse = TownNpcs.GuideItem;
+            TownNpcs.GuideItem = held;
+            focus = 0;
+            focusY = 0f;
+            Sound("Grab");
+        }
+
+        /// <summary>Dev: a click on the Guide's slot; the crafting column's results, in order.</summary>
+        public static void DevGuideSlot() => ActGuideSlot(true);
+        public static string DevRecipeNames(int max)
+        {
+            RefreshRecipes();
+            var names = new List<string>();
+            for (int i = 0; i < recipes.Count && i < max; i++) names.Add(recipes[i].Def.Name);
+            return string.Join("、", names) + (recipes.Count > max ? $"……（共 {recipes.Count} 个）" : $"（共 {recipes.Count} 个）");
         }
 
         /// <summary>Utils.WordwrapString for Chinese: characters until the width runs out (at most maxLines).</summary>

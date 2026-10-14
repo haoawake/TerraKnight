@@ -248,6 +248,8 @@ namespace TerraKnight.Items
         public bool HitWith(Collider2D col, int damage, float knockback, float critChance, float facing, Vector2 from, int armorPen = -1, int addAfterVariation = 0)
         {
             var hm = col.GetComponentInParent<HealthManager>();
+            // A prop that answers the nail (a bell, a lever) is set off as by a slash.
+            if (hm == null) PropHits.Pulse(col, from, facing, damage);
             GameObject target = hm != null ? hm.gameObject : FindResponder(col);
             if (target == null || (hm != null && hm.isDead)) return false;
             source.transform.position = new Vector3(from.x, from.y, 0f);
