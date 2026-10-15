@@ -20,6 +20,8 @@ namespace TerraKnight
         readonly string outDir;
         readonly string suite;
         bool running, done;
+        readonly bool suspendInputInBackground;
+        readonly UnityEngine.InputSystem.InputSettings.BackgroundBehavior inputBackgroundBehavior;
 
         public DevAutoTest(TerraMod mod, int slot, bool quitAfter, string suite)
         {
@@ -37,9 +39,15 @@ namespace TerraKnight
             // A second copy of the game (DevCopy) keeps its pictures apart.
             if (DevCopy.Name != null) outDir = Path.Combine(outDir, DevCopy.Name);
             Directory.CreateDirectory(outDir);
-            // Keep running when the window loses focus; an unfocused game also stops reading the
-            // keyboard, so whoever is at the computer can't nudge the test.
+            // Background suites inject keyboard events too. Unity keeps simulating, but
+            // InControl otherwise stops updating its actions when the test window loses focus.
             Application.runInBackground = true;
+            suspendInputInBackground = InControl.InputManager.SuspendInBackground;
+            InControl.InputManager.SuspendInBackground = false;
+            inputBackgroundBehavior = UnityEngine.InputSystem.InputSystem.settings.backgroundBehavior;
+            UnityEngine.InputSystem.InputSystem.settings.backgroundBehavior = UnityEngine.InputSystem.InputSettings.BackgroundBehavior.IgnoreFocus;
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            if (keyboard != null && !keyboard.enabled) UnityEngine.InputSystem.InputSystem.EnableDevice(keyboard);
             // The window takes the focus as the game starts: clicks meant for something else must not use items.
             TerraMod.DevNoRealMouse = true;
             mod.StartCoroutine(Boot());
@@ -2761,6 +2769,9 @@ namespace TerraKnight
 
         void Finish()
         {
+            KeysDown();
+            InControl.InputManager.SuspendInBackground = suspendInputInBackground;
+            UnityEngine.InputSystem.InputSystem.settings.backgroundBehavior = inputBackgroundBehavior;
             done = true;
             if (quitAfter) mod.StartCoroutine(QuitSoon());
         }

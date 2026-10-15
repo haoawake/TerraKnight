@@ -35,6 +35,7 @@ namespace TerraKnight
                 // Struck down, each boss of the fight, until the book has the kill or a minute is up.
                 float stop = Time.realtimeSinceStartup + 25f, nextLog = 0f;
                 int strikes = 0, landed = 0;
+                bool earlyCredit = false;
                 while (Bestiary.KillsOf(s.Key) == kills0 && Time.realtimeSinceStartup < stop)
                 {
                     var hero = HeroController.SilentInstance;
@@ -48,6 +49,16 @@ namespace TerraKnight
                         if (col == null || !col.enabled) continue;
                         if (mod.Melee.HitWith(col, 99999, 0f, 0f, 1f, col.bounds.center)) landed++;
                         strikes++;
+                        if (s.Key == "Oblobble")
+                        {
+                            int living = 0;
+                            foreach (var body in Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
+                                if (UI.EnemyHover.RecordOf(body) == s.Key && body.GetComponent<HealthManager>() == body
+                                    && !body.isDead && body.hp > 0 && !EnemyStats.Defeated(body)) living++;
+                            int credited = Bestiary.KillsOf(s.Key) - kills0;
+                            earlyCredit |= living > 0 && credited != 0;
+                            Plugin.Log.LogInfo($"[AutoTest] 双体首领 {s.Key}：还活着 {living}，图鉴击杀 +{credited}，提前结算 {earlyCredit}");
+                        }
                     }
                     PlayerData.instance.isInvincible = true;
                     if (Time.realtimeSinceStartup >= nextLog)
@@ -77,7 +88,7 @@ namespace TerraKnight
                 }
                 yield return new WaitForSeconds(4f);
                 int kills = Bestiary.KillsOf(s.Key) - kills0, given = EnemyDrops.DevGiven - given0 + EnemyDrops.DevDropped - dropped0;
-                bool pass = kills == 1 && given > 0;
+                bool pass = kills == 1 && given > 0 && !earlyCredit;
                 if (pass) ok++;
                 else bad.Add($"{s.Key}（{scene}）：击杀 {kills}，掉落 {given}，出手 {strikes} 次，现在 {GameManager.instance.sceneName}");
                 Plugin.Log.LogInfo($"[AutoTest] 梦境神居首领 {s.Key}（{scene}）：{how}，图鉴击杀 +{kills}，掉落 {given} 件，出手 {strikes} 次 {(pass ? "通过" : "不通过")}");

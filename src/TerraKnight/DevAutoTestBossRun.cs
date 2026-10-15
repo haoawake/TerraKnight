@@ -153,6 +153,17 @@ namespace TerraKnight
                     // start: the Mantis Lords' arena), its words turned with jump.
                     t0 = Time.time;
                     bool woke = false;
+                    if (record == "MageLord")
+                        foreach (var body in all)
+                        {
+                            var startRange = body.transform.Find("Start Range");
+                            var range = startRange != null ? startRange.GetComponent<Collider2D>() : null;
+                            if (range == null || !range.enabled) continue;
+                            h.transform.position = Clear(h, range.bounds.center);
+                            Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record} 辅助：接近首领自己的开战范围 {range.bounds.center:F1}");
+                            yield return new WaitForSeconds(2f);
+                            break;
+                        }
                     int wakeTry = 0;
                     float nextPoke = Time.time + 4f;
                     while (all.Count > 0 && Time.time - t0 < 40f && !woke)
@@ -172,9 +183,24 @@ namespace TerraKnight
                             {
                                 wakeTry++;
                                 h.transform.position = Clear(h, prompt.transform.position);
-                                yield return new WaitForSeconds(1f);
-                                yield return Tap(UnityEngine.InputSystem.Key.W, 0.3f);
-                                Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}：在挑战提示 {(Vector2)prompt.transform.position:F1} 按上（{prompt.ActiveStateName}）");
+                                // The original prompt refuses input until grounded. A teleported
+                                // hero can still be falling when the first tap reaches it.
+                                for (float stand = Time.time + 3f; !h.cState.onGround && Time.time < stand;) yield return null;
+                                yield return new WaitForSeconds(0.2f);
+                                bool grounded = h.cState.onGround, canInput = h.CanInput(), sawUp = false, sawPress = false, sawRaw = false;
+                                string beforePrompt = prompt.ActiveStateName;
+                                var upKey = Player.TerraKeys.Get(Player.TerraKeys.Action.Up);
+                                for (float held = Time.realtimeSinceStartup + 0.35f; Time.realtimeSinceStartup < held;)
+                                {
+                                    KeysDown(upKey);
+                                    yield return null;
+                                    sawUp |= GameHooks.Input.inputActions.up.IsPressed;
+                                    sawPress |= GameHooks.Input.inputActions.up.WasPressed;
+                                    sawRaw |= UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current[upKey].isPressed;
+                                }
+                                KeysDown();
+                                yield return new WaitForSeconds(0.3f);
+                                Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}：在挑战提示 {(Vector2)prompt.transform.position:F1} 按 {upKey}，落地 {grounded} 可输入 {canInput} 键盘事件 {sawRaw} 原版上 {sawUp}/{sawPress}，状态 {beforePrompt}→{prompt.ActiveStateName}，焦点 {Application.isFocused} 键盘启用 {UnityEngine.InputSystem.Keyboard.current?.enabled} InControl {InControl.InputManager.Enabled}/{InControl.InputManager.SuspendInBackground} 动作启用 {GameHooks.Input.inputActions.Enabled}/{GameHooks.Input.inputActions.up.Enabled}");
                             }
                             else if (trig.Count > 0)
                             {
@@ -199,9 +225,11 @@ namespace TerraKnight
                     t0 = Time.time;
                     float nextHit = 0f, wokeAt = Time.time, nextWalk = Time.time + 6f, nextTalk = 0f, nextDiag = Time.time + 10f;
                     bool beaten = false;
+                    bool started = false;
                     string lastStates = "";
                     while (woke && Time.time - t0 < 300f)
                     {
+                        if (gm.sceneName != room) break;
                         mod.Stats.FullHeal();
                         PlayerData.instance.isInvincible = true;
                         // Beaten: the book counted it and none of its kind is left standing (the six Watcher Knights, the three Mantis
@@ -223,7 +251,6 @@ namespace TerraKnight
                         // it, from the other side each time.
                         // Once it has taken damage the fight is on: no more triggers (the Collector up at the ceiling a while).
                         bool stalled = Time.time - hpSince > 5f;
-                        bool started = hpStart >= 0 && lastHp >= 0 && lastHp < hpStart;
                         if (Time.time >= nextWalk)
                         {
                             nextWalk = Time.time + 6f;
@@ -263,6 +290,9 @@ namespace TerraKnight
                         int hpNow = 0;
                         foreach (var hm in Parts(false)) hpNow += Mathf.Max(0, hm.hp);
                         if (hpStart < 0 && hpNow > 0) hpStart = hpNow;
+                        // A phase change can restore health and raise the sum again. Once damage
+                        // has landed, never resume probing arbitrary scene triggers mid-fight.
+                        started |= lastHp >= 0 && hpNow < lastHp;
                         if (hpNow != lastHp) { lastHp = hpNow; hpSince = Time.time; }
                         else if (!dumped && Time.time - hpSince > 20f)
                         {
@@ -298,6 +328,28 @@ namespace TerraKnight
                         yield return null;
                     }
                     float took = Time.time - wokeAt;
+                    // The Soul Master's doors are opened by the game's Quake pickup cutscene,
+                    // not by his health reaching zero. Approach the reward before checking them.
+                    if (beaten && record == "MageLord")
+                    {
+                        int quakeBefore = PlayerData.instance.quakeLevel;
+                        bool approached = false;
+                        for (float until = Time.time + 20f; Time.time < until && PlayerData.instance.quakeLevel == quakeBefore;)
+                        {
+                            foreach (var pickup in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+                                if (pickup.name == "Quake Item" && pickup.FsmName == "Quake" && pickup.ActiveStateName == "Idle" && !approached)
+                                {
+                                    var col = pickup.GetComponent<Collider2D>();
+                                    Vector2 at = col != null ? (Vector2)col.bounds.center : (Vector2)pickup.transform.position;
+                                    Vector2 heroOffset = (Vector2)h.GetComponent<BoxCollider2D>().bounds.center - (Vector2)h.transform.position;
+                                    h.transform.position = Clear(h, at - heroOffset);
+                                    approached = true;
+                                    Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record} 辅助：接近下砸拾取 {at:F1}（{pickup.ActiveStateName}）");
+                                }
+                            yield return null;
+                        }
+                        Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}：领取下砸等级 {quakeBefore}→{PlayerData.instance.quakeLevel}");
+                    }
                     // Control back after the death (its scene's own ending to it).
                     t0 = Time.time;
                     while (!GameHooks.PlayerHasControl() && Time.time - t0 < 30f) yield return Tap(UnityEngine.InputSystem.Key.Space);
@@ -354,10 +406,11 @@ namespace TerraKnight
                             }
                         });
                     }
-                    bool ok = arrived && woke && beaten && control2 && drops > 0 && !barLeft && !gateShut && errors.Count == 0;
+                    int kills = KillsOf(record) - kills0;
+                    bool ok = arrived && woke && beaten && kills == 1 && control2 && drops > 0 && !barLeft && !gateShut && errors.Count == 0;
                     if (ok) good++;
                     else bad.Append($" {record}");
-                    string errs = errors.Count > 0 ? $"，报错 {errors.Count} 条：{string.Join(" | ", errors.GetRange(0, Mathf.Min(3, errors.Count)))}" : "";
+                    string errs = $"，图鉴击杀 +{kills}" + (errors.Count > 0 ? $"，报错 {errors.Count} 条：{string.Join(" | ", errors.GetRange(0, Mathf.Min(3, errors.Count)))}" : "");
                     Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}（{room}）：{(ok ? "好" : "坏")}，到达 {arrived}，找到 {all.Count} 个，醒了 {woke}，打了 {strikes} 下，{(beaten ? $"{took:F0} 秒打倒" : "没打倒")}，掉落 {drops} 样（阶段结束 {Items.BossPhases.DevPhaseEnds} 次 {Items.BossPhases.DevLast}，阶段掉药 {Items.BossPotions.DevPhases} 次、心 {Items.BossPotions.DevHearts} 个，图鉴整场生命 {Bestiary.StatsOf(record).Life}）{BossHearts()}，尸体还有血条 {barLeft}，之后可操作 {control2}{(gatesAfter.Length > 0 ? "，铁门" + gatesAfter : "")}{(beaten ? "" : "，最后的状态 " + lastStates)}{errs}");
                     Shot(gm.sceneName, $"bossrun_{record}");
                     yield return null;

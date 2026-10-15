@@ -234,7 +234,7 @@ namespace TerraKnight.Items
                 Credit(__instance, pooled ? __state.At : (Vector2?)null);
             }
             // A journal flag the death set: counted now, if this death didn't count it.
-            SpecialDeaths.AfterDeath();
+            SpecialDeaths.AfterDeath(__instance);
         }
 
         public static int DevPooledDeaths;
@@ -263,6 +263,17 @@ namespace TerraKnight.Items
                 return;
             }
             counted.Add(__instance.GetInstanceID());
+            // Other bodies can receive their journal/death callbacks later. The completed fight
+            // has already paid its loot; remember its dead bodies (and duplicate health components)
+            // too, without marking a living opponent during an unfinished fight.
+            if (EnemyDrops.IsBoss(rec))
+                foreach (var body in Object.FindObjectsByType<HealthManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (body != null && body.gameObject.scene == __instance.gameObject.scene && UI.EnemyHover.RecordOf(body) == rec
+                        && (whole || body.isDead || body.hp <= 0 || body.gameObject == __instance.gameObject))
+                    {
+                        counted.Add(body.GetInstanceID());
+                        if (whole) EnemyStats.MarkDefeated(body);
+                    }
             if (counted.Count > 4096) counted.Clear();
             // The book keeps a stage's own table apart (Hornet in Greenpath and in Kingdom's Edge).
             string record = EnemyDrops.KeyFor(rec, EnemyDrops.VariantLevel(__instance.gameObject.scene.name));

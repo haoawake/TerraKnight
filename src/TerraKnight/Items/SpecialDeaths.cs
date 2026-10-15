@@ -100,11 +100,16 @@ namespace TerraKnight.Items
         static (string Flag, string Record)? deferred;
 
         /// <summary>After a HealthManager.Die: a flag it set, counted if the death itself didn't count the boss.</summary>
-        public static void AfterDeath()
+        public static void AfterDeath(HealthManager dying)
         {
             if (deferred == null) return;
             var (flag, record) = deferred.Value;
             deferred = null;
+            // Each Oblobble writes killedOblobble from its own Die, including the first
+            // partner's death. Bestiary.AfterDie already waited for the surviving partner;
+            // do not turn that individual journal flag into a whole-fight win. Other bosses'
+            // terminal flags (e.g. the Soul Master's second phase) still finish their fight.
+            if (record == "Oblobble" && dying != null && UI.EnemyHover.RecordOf(dying) == record) return;
             CreditByFlag(flag, record);
         }
 
