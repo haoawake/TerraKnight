@@ -60,6 +60,20 @@ namespace TerraKnight.Items
 
         public static bool Known(string record) => record != null && table.ContainsKey(record);
 
+        /// <summary>The bosses of the table (their records; a boss's stage variants "Record@n" are the same boss).</summary>
+        public static IEnumerable<string> BossRecords()
+        {
+            var seen = new HashSet<string>();
+            foreach (var kv in table)
+            {
+                if (!kv.Value.Boss) continue;
+                string r = kv.Key;
+                int at = r.IndexOf('@');
+                if (at >= 0) r = r.Substring(0, at);
+                if (seen.Add(r)) yield return r;
+            }
+        }
+
         /// <summary>Dev: every table key.</summary>
         public static IEnumerable<string> DevRecords => table.Keys;
 

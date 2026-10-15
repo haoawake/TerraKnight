@@ -1080,10 +1080,19 @@ namespace TerraKnight
             }
         }
 
-        /// <summary>Life crystal: 20 more maximum life (and 20 life); mana crystal: 20 more mana.</summary>
+        public static int DevCrystalRefused;
+
+        /// <summary>Life crystal: 20 more maximum life (and 20 life), as many as <see cref="LifeCrystals.Allowance"/>; mana crystal: 20 more mana.</summary>
         void UseCrystal(ItemDef def, HeroController hero)
         {
-            if (def.LifeCrystal && Stats.LifeCrystals < TerraStats.MaxLifeCrystals)
+            if (def.LifeCrystal && Stats.LifeCrystals < TerraStats.MaxLifeCrystals && Stats.LifeCrystals >= LifeCrystals.Allowance())
+            {
+                // More crystals than masks and bosses allow yet: kept for later.
+                UI.CenterNotice.Show(Lang.T("要集齐更多面具或击败更多首领，才能再吃生命水晶"));
+                DevCrystalRefused++;
+                return;
+            }
+            else if (def.LifeCrystal && Stats.LifeCrystals < TerraStats.MaxLifeCrystals)
             {
                 Stats.LifeCrystals++;
                 Stats.UpdateMaximums(PlayerData.instance, Equipment.Current.ManaMax);

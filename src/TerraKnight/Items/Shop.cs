@@ -24,7 +24,7 @@ namespace TerraKnight.Items
             {
                 if (all != null) return all;
                 all = new List<ItemDef>();
-                foreach (var d in ItemDb.All) if (!string.IsNullOrEmpty(d.Name) && d.Name != d.Type.ToString()) all.Add(d);
+                foreach (var d in ItemDb.All) if (!string.IsNullOrEmpty(d.Name) && d.Name != d.Type.ToString() && !d.Permanent) all.Add(d);
                 all.Sort((a, b) => Category(a) != Category(b) ? Category(a).CompareTo(Category(b)) : a.Stage != b.Stage ? a.Stage.CompareTo(b.Stage) : a.Type.CompareTo(b.Type));
                 return all;
             }
@@ -37,7 +37,8 @@ namespace TerraKnight.Items
             {
                 if (basics != null) return basics;
                 basics = new List<ItemDef>();
-                foreach (var d in ItemDb.All) if (d.Source == ItemSource.Basic) basics.Add(d);
+                // The Knight's own nails (the Nail, the Dream Nail) are no one's to make.
+                foreach (var d in ItemDb.All) if (d.Source == ItemSource.Basic && !d.Permanent) basics.Add(d);
                 return basics;
             }
         }

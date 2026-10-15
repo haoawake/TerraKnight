@@ -3,12 +3,12 @@ using HarmonyLib;
 namespace TerraKnight.Player
 {
     /// <summary>
-    /// The nail is gone here, so its teachers and its smith have nothing to sell. The three
-    /// nailmasters (Oro, Mato, Sheo) say their first words and their greetings but never offer
-    /// their art: no price, no lesson, no "learned" message. The nailsmith greets without offering
-    /// an upgrade. Done on their conversation FSMs as they start: the talks that led on to the
-    /// yes/no offer end there instead, and a nailmaster whose art isn't learned greets as one whose
-    /// is.
+    /// The nail's teachers have nothing to teach here. The three nailmasters (Oro, Mato, Sheo) say
+    /// their first words and their greetings but never offer their art: no price, no lesson, no
+    /// "learned" message. Done on their conversation FSMs as they start: the talks that led on to
+    /// the yes/no offer end there instead, and a nailmaster whose art isn't learned greets as one
+    /// whose is. The Nailsmith offers his upgrades as in the game: each one raises the Nail item's
+    /// damage (Items.NailItem.DamageNow).
     /// </summary>
     [HarmonyPatch]
     internal static class NailServices
@@ -26,11 +26,6 @@ namespace TerraKnight.Player
                 Redirect(__instance, "Meet", "CONVO_FINISH", "Talk End");
                 Redirect(__instance, "Reoffer", "CONVO_FINISH", "Talk End");
                 Redirect(__instance, "Convo Choice", "REOFFER", "Greet");
-            }
-            else if (n == "Nailsmith")
-            {
-                Redirect(__instance, "Meet 3", "CONVO_FINISH", "Talk Finish 2");
-                Redirect(__instance, "Greet", "CONVO_FINISH", "Talk Finish 2");
             }
         }
 

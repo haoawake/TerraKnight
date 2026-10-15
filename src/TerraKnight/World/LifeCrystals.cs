@@ -6,22 +6,43 @@ using UnityEngine;
 namespace TerraKnight.World
 {
     /// <summary>
-    /// Life Crystals lying in the early areas, as Terraria's caves have them (WorldGen.AddLifeCrystal):
-    /// each save picks its own twelve scenes of King's Pass, the Crossroads, Greenpath and the
-    /// Howling Cliffs, and in each, the first time it is loaded, a spot on two cells of even ground
-    /// with room above, reachable from the scene's gates and away from spikes, acid and water. The
-    /// crystal is drawn from its tile (12, ten frames of six ticks); a pickaxe knocks it out as a
-    /// Life Crystal, and so does digging away the ground under it. Kept in the mod's save.
+    /// Life Crystals lying in the world, as Terraria's caves have them (WorldGen.AddLifeCrystal):
+    /// each save picks its own 24 scenes outside the boss rooms, from King's Pass, the Crossroads,
+    /// Greenpath and the Howling Cliffs to the Fungal Wastes, Fog Canyon, Queen's Gardens, the City,
+    /// the Waterways, Crystal Peak and Deepnest, and in each, the first time it is loaded, a spot on
+    /// two cells of even ground with room above, reachable from the scene's gates and away from
+    /// spikes, acid and water. The crystal is drawn from its tile (12, ten frames of six ticks); a
+    /// pickaxe knocks it out as a Life Crystal, and so does digging away the ground under it. Kept
+    /// in the mod's save; a save with fewer is given the rest. How many the player can eat is
+    /// <see cref="Allowance"/>: the ground gives more crystals than that, the rest of the fifteen
+    /// open with masks and bosses.
     /// </summary>
     internal sealed class LifeCrystals : MonoBehaviour
     {
-        public const int PerSave = 12;
+        public const int PerSave = 24;
+
+        /// <summary>Crystals eaten without a mask or a boss to show for it.</summary>
+        public const int GroundAllowance = 6;
+
+        /// <summary>
+        /// How many Life Crystals the player can have eaten by now: six, one more for each mask made
+        /// beyond the first five (Mask Shards), one more for each boss beaten (the Bestiary's kills),
+        /// up to Terraria's fifteen.
+        /// </summary>
+        public static int Allowance()
+        {
+            var pd = PlayerData.instance;
+            int masks = pd != null ? Mathf.Max(0, pd.maxHealthBase - 5) : 0;
+            int bosses = 0;
+            foreach (var r in EnemyDrops.BossRecords()) if (Bestiary.IsDefeated(r)) bosses++;
+            return Mathf.Min(Player.TerraStats.MaxLifeCrystals, GroundAllowance + masks + bosses);
+        }
         const float Px = Effects.TerraParticles.Px;
         const float Z = 0.0045f;
         const float Cell = CellGrid.CellSize;
 
         /// <summary>The early scenes a crystal may lie in: the boss arenas are left out.</summary>
-        static readonly string[] Prefixes = { "Tutorial_01", "Crossroads_", "Fungus1_", "Cliffs_" };
+        static readonly string[] Prefixes = { "Tutorial_01", "Crossroads_", "Fungus1_", "Cliffs_", "Fungus2_", "Fungus3_", "Ruins1_", "Ruins2_", "Waterways_", "Mines_", "Deepnest_" };
         static readonly HashSet<string> Arenas = new HashSet<string> { "Crossroads_04", "Crossroads_09", "Crossroads_10", "Fungus1_04", "Fungus1_20_v02", "Fungus1_35" };
 
         sealed class Crystal
@@ -51,6 +72,8 @@ namespace TerraKnight.World
         int frame, frameTicks;
 
         public static int DevBroken;
+        /// <summary>Dev: the save's crystals (lying, placed or not, and taken).</summary>
+        public static int DevCount => crystals.Count;
 
         public static LifeCrystals Create(Transform parent)
         {
@@ -67,7 +90,7 @@ namespace TerraKnight.World
             var list = new List<string>();
             foreach (var s in UI.WorldMap.DevSceneNames())
             {
-                if (Arenas.Contains(s)) continue;
+                if (Arenas.Contains(s) || BossRooms.IsRoom(s)) continue;
                 foreach (var p in Prefixes) if (s.StartsWith(p)) { list.Add(s); break; }
             }
             list.Sort(System.StringComparer.Ordinal);
@@ -127,6 +150,16 @@ namespace TerraKnight.World
             Seed = seed;
             foreach (var s in saved)
                 crystals.Add(new Crystal { Scene = s.Scene, Local = s.Placed ? s.Local : (Vector2?)null, Taken = s.Taken });
+            // A save from before there were 24: the rest from its own order, past the scenes it has.
+            if (crystals.Count >= PerSave) return;
+            var have = new HashSet<string>(Scenes());
+            int before = crystals.Count;
+            foreach (var scene in Order(Seed))
+            {
+                if (crystals.Count >= PerSave) break;
+                if (have.Add(scene)) crystals.Add(new Crystal { Scene = scene });
+            }
+            Plugin.Log.LogInfo($"[生命水晶] 存档里有 {before} 个，补上 {crystals.Count - before} 个：{string.Join("、", Scenes())}");
         }
 
         // ------------------------------------------------------------------ finding a spot

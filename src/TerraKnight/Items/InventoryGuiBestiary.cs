@@ -217,6 +217,25 @@ namespace TerraKnight.Items
             bestiaryScroll = Mathf.Clamp(bestiaryScroll + delta, 0, bookMaxScroll);
         }
 
+        // The chosen entry's drops, when more than fit: scrolled by rows with the wheel over them.
+        static int dropScroll, dropMaxScroll;
+        static string dropFor;
+        static Rect dropArea;
+        static Vector2 lastBookMouse;
+
+        /// <summary>The wheel over the drops of the chosen entry: those scroll, not the book's list.</summary>
+        static bool OverDrops => dropMaxScroll > 0 && dropArea.Contains(lastBookMouse);
+
+        static void ScrollDrops(int delta)
+        {
+            dropScroll = Mathf.Clamp(dropScroll + delta, 0, dropMaxScroll);
+        }
+
+        /// <summary>Dev: the chosen entry's drops scrolled by rows, as the wheel over them does; and how far they go.</summary>
+        public static void DevScrollDrops(int delta) => ScrollDrops(delta);
+        public static int DevDropScroll => dropScroll;
+        public static int DevDropMaxScroll => dropMaxScroll;
+
         static void DrawBestiaryButton(Rect view, float ui, Vector2 mouse)
         {
             float x = view.x + RightOfAmmo(ui), y = view.y + (Margin + 18f) * ui + 70f * ui;
@@ -591,13 +610,27 @@ namespace TerraKnight.Items
             int cols = Mathf.Clamp((int)(d.width / (170f * ui)), 1, 4);
             float cwid = d.width / cols, rowH = 46f * ui;
             int maxRows = Mathf.Max(1, (int)((d.yMax - y) / rowH));
-            // Past what fits, the last row makes way for the "and N more" line.
-            if (drops.Count > cols * maxRows) maxRows = Mathf.Max(1, (int)((d.yMax - y - 22f * ui) / rowH));
-            int shown = Mathf.Min(drops.Count, cols * maxRows);
-            for (int k = 0; k < shown; k++)
+            // More than fit: they scroll by rows (the wheel over them), with a bar at the side.
+            int rows = (drops.Count + cols - 1) / cols;
+            if (dropFor != rec) { dropFor = rec; dropScroll = 0; }
+            dropMaxScroll = Mathf.Max(0, rows - maxRows);
+            dropScroll = Mathf.Clamp(dropScroll, 0, dropMaxScroll);
+            dropArea = new Rect(d.x, y, d.width, maxRows * rowH);
+            lastBookMouse = mouse;
+            if (dropMaxScroll > 0)
+            {
+                cwid = (d.width - 10f * ui) / cols;
+                var track = new Rect(d.xMax - 6f * ui, y, 4f * ui, maxRows * rowH);
+                Fill(track, new Color(1f, 1f, 1f, 0.12f));
+                float thumbH = Mathf.Max(12f * ui, track.height * maxRows / rows);
+                Fill(new Rect(track.x, track.y + (track.height - thumbH) * dropScroll / dropMaxScroll, track.width, thumbH), new Color(0.95f, 0.85f, 0.45f, 0.8f));
+            }
+            int first = dropScroll * cols;
+            int shown = Mathf.Min(drops.Count, first + cols * maxRows);
+            for (int k = first; k < shown; k++)
             {
                 var dr = drops[k];
-                float ix = d.x + (k % cols) * cwid, iy = y + (k / cols) * rowH;
+                float ix = d.x + ((k - first) % cols) * cwid, iy = y + ((k - first) / cols) * rowH;
                 var s = new Rect(ix, iy, 40f * ui, 40f * ui);
                 Tex(s, "Inventory_Back", Color.white);
                 if (!beaten)
@@ -623,7 +656,6 @@ namespace TerraKnight.Items
                     hoveredExtra = null;
                 }
             }
-            if (shown < drops.Count) Outlined(new Rect(d.x, d.yMax - 20f * ui, d.width, 20f * ui), Lang.F("……还有 {0} 种", drops.Count - shown), bookSmall, new Color(0.7f, 0.7f, 0.8f));
         }
 
         /// <summary>A Stat_* panel at any width: its left third (the icon) at the panel's height, the rest of its fill stretched.</summary>

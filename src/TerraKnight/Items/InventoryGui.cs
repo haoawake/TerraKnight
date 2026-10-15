@@ -91,8 +91,13 @@ namespace TerraKnight.Items
                 float wheel = mouse.scroll.ReadValue().y;
                 if (bestiaryOpen)
                 {
-                    // The monster book's list scrolls instead while it is open.
-                    if (wheel > 0.1f) ScrollBestiary(-1);
+                    // The monster book's list scrolls instead while it is open; over a long list of drops, those.
+                    if (OverDrops)
+                    {
+                        if (wheel > 0.1f) ScrollDrops(-1);
+                        else if (wheel < -0.1f) ScrollDrops(1);
+                    }
+                    else if (wheel > 0.1f) ScrollBestiary(-1);
                     else if (wheel < -0.1f) ScrollBestiary(1);
                 }
                 else if (wheel > 0.1f) Scroll(grid ? -1 : 1);

@@ -3131,18 +3131,6 @@
   "pt-BR": "Ferrão dos sonhos",
   "ru-RU": "Гвоздь грёз"
  },
- "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n不能出售、丢弃，也不能扔进垃圾桶": {
-  "en-US": "In hand, the left or right button is the Knight's Dream Nail: hold to charge, release to slash\nReads the thoughts of creatures and enters dreams; its damage grows with your progress\nHold S as it slashes to set a Dreamgate, hold W to travel to it\nCannot be sold, thrown away or trashed",
-  "zh-Hant": "拿在手上時，左鍵或右鍵就是空洞騎士的夢之釘：按住蓄力，放開揮出\n能讀出生物的想法，進入夢境，傷害隨進度提升\n按住 S 揮出放下夢之門，按住 W 揮出傳送到夢之門\n不能出售、丟棄，也不能丟進垃圾桶",
-  "ja-JP": "手に持つと、左クリックか右クリックが騎士の夢見の釘になる：長押しで溜め、離して振る\n生き物の思考を読み、夢に入る。ダメージは進行度に応じて上がる\nSを押しながら振ると夢見の門を置き、Wを押しながら振るとそこへ移動する\n売却、投棄、ゴミ箱への廃棄はできない",
-  "ko-KR": "손에 들면 왼쪽이나 오른쪽 버튼이 기사의 꿈의 못이 된다: 누르고 있으면 모으고, 떼면 휘두른다\n생물의 생각을 읽고 꿈에 들어간다. 피해는 진행도에 따라 오른다\nS를 누른 채 휘두르면 꿈의 문을 놓고, W를 누른 채 휘두르면 그곳으로 이동한다\n팔거나 버리거나 휴지통에 넣을 수 없다",
-  "de-DE": "In der Hand ist die linke oder rechte Taste der Traumnagel des Ritters: halten zum Aufladen, loslassen zum Schlagen\nLiest die Gedanken von Kreaturen und betritt Träume; der Schaden wächst mit deinem Fortschritt\nS beim Schlag halten setzt ein Traumtor, W halten reist dorthin\nKann nicht verkauft, weggeworfen oder in den Müll gelegt werden",
-  "fr-FR": "En main, le bouton gauche ou droit est l'Aiguillon onirique du Chevalier : maintenir pour charger, relâcher pour frapper\nLit les pensées des créatures et entre dans les rêves ; ses dégâts augmentent avec ta progression\nMaintiens S en frappant pour poser une Porte onirique, W pour t'y rendre\nNe peut être ni vendu, ni jeté, ni mis à la corbeille",
-  "es-ES": "En la mano, el botón izquierdo o derecho es el Aguijón onírico del Caballero: mantén para cargar, suelta para golpear\nLee los pensamientos de las criaturas y entra en los sueños; su daño crece con tu progreso\nMantén S al golpear para colocar una Puerta onírica, W para viajar a ella\nNo se puede vender, tirar ni mandar a la papelera",
-  "it-IT": "In mano, il tasto sinistro o destro è il Chiodo dei sogni del Cavaliere: tieni premuto per caricare, rilascia per colpire\nLegge i pensieri delle creature ed entra nei sogni; il danno cresce con i tuoi progressi\nTieni premuto S mentre colpisci per piazzare un Portale dei sogni, W per raggiungerlo\nNon può essere venduto, gettato o cestinato",
-  "pt-BR": "Na mão, o botão esquerdo ou direito é o Ferrão dos sonhos do Cavaleiro: segure para carregar, solte para golpear\nLê os pensamentos das criaturas e entra nos sonhos; o dano cresce com o seu progresso\nSegure S ao golpear para colocar um Portal dos sonhos, W para viajar até ele\nNão pode ser vendido, jogado fora nem descartado",
-  "ru-RU": "В руке левая или правая кнопка — Гвоздь грёз Рыцаря: удерживайте, чтобы зарядить, отпустите, чтобы ударить\nЧитает мысли существ и открывает путь в сны; урон растёт вместе с прогрессом\nУдерживайте S при ударе, чтобы поставить Врата грёз, W — чтобы переместиться к ним\nНельзя продать, выбросить или отправить в корзину"
- },
  "补货": {
   "en-US": "Restock",
   "zh-Hant": "補貨",
@@ -3418,5 +3406,53 @@
   "it-IT": "Entra prima nell'arena del boss",
   "pt-BR": "Entre primeiro na arena do chefe",
   "ru-RU": "Сначала войдите на арену босса"
+ },
+ "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升，觉醒后再提高 50%\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n不能出售、丢弃，也不能扔进垃圾桶": {
+  "en-US": "In hand, the left or right button is the Knight's Dream Nail: hold to charge, release to slash\nReads the thoughts of creatures and enters dreams; its damage grows with your progress; Awoken, it deals 50% more\nHold S as it slashes to set a Dreamgate, hold W to travel to it\nCannot be sold, thrown away or trashed",
+  "zh-Hant": "拿在手上時，左鍵或右鍵就是空洞騎士的夢之釘：按住蓄力，放開揮出\n能讀出生物的想法，進入夢境，傷害隨進度提升，覺醒後再提高 50%\n按住 S 揮出放下夢之門，按住 W 揮出傳送到夢之門\n不能出售、丟棄，也不能丟進垃圾桶",
+  "ja-JP": "手に持つと、左クリックか右クリックが騎士の夢見の釘になる：長押しで溜め、離して振る\n生き物の思考を読み、夢に入る。ダメージは進行度に応じて上がる。覚醒するとさらに 50% 上がる。\nSを押しながら振ると夢見の門を置き、Wを押しながら振るとそこへ移動する\n売却、投棄、ゴミ箱への廃棄はできない",
+  "ko-KR": "손에 들면 왼쪽이나 오른쪽 버튼이 기사의 꿈의 못이 된다: 누르고 있으면 모으고, 떼면 휘두른다\n생물의 생각을 읽고 꿈에 들어간다. 피해는 진행도에 따라 오른다. 각성하면 50% 더 오른다\nS를 누른 채 휘두르면 꿈의 문을 놓고, W를 누른 채 휘두르면 그곳으로 이동한다\n팔거나 버리거나 휴지통에 넣을 수 없다",
+  "de-DE": "In der Hand ist die linke oder rechte Taste der Traumnagel des Ritters: halten zum Aufladen, loslassen zum Schlagen\nLiest die Gedanken von Kreaturen und betritt Träume; der Schaden wächst mit deinem Fortschritt; erweckt richtet er 50 % mehr Schaden an\nS beim Schlag halten setzt ein Traumtor, W halten reist dorthin\nKann nicht verkauft, weggeworfen oder in den Müll gelegt werden",
+  "fr-FR": "En main, le bouton gauche ou droit est l'Aiguillon onirique du Chevalier : maintenir pour charger, relâcher pour frapper\nLit les pensées des créatures et entre dans les rêves ; ses dégâts augmentent avec ta progression ; éveillé, il inflige 50 % de dégâts en plus\nMaintiens S en frappant pour poser une Porte onirique, W pour t'y rendre\nNe peut être ni vendu, ni jeté, ni mis à la corbeille",
+  "es-ES": "En la mano, el botón izquierdo o derecho es el Aguijón onírico del Caballero: mantén para cargar, suelta para golpear\nLee los pensamientos de las criaturas y entra en los sueños; su daño crece con tu progreso; despertado, inflige un 50 % más\nMantén S al golpear para colocar una Puerta onírica, W para viajar a ella\nNo se puede vender, tirar ni mandar a la papelera",
+  "it-IT": "In mano, il tasto sinistro o destro è il Chiodo dei sogni del Cavaliere: tieni premuto per caricare, rilascia per colpire\nLegge i pensieri delle creature ed entra nei sogni; il danno cresce con i tuoi progressi; risvegliato, infligge il 50% di danni in più\nTieni premuto S mentre colpisci per piazzare un Portale dei sogni, W per raggiungerlo\nNon può essere venduto, gettato o cestinato",
+  "pt-BR": "Na mão, o botão esquerdo ou direito é o Ferrão dos sonhos do Cavaleiro: segure para carregar, solte para golpear\nLê os pensamentos das criaturas e entra nos sonhos; o dano cresce com o seu progresso; desperto, causa 50% a mais\nSegure S ao golpear para colocar um Portal dos sonhos, W para viajar até ele\nNão pode ser vendido, jogado fora nem descartado",
+  "ru-RU": "В руке левая или правая кнопка — Гвоздь грёз Рыцаря: удерживайте, чтобы зарядить, отпустите, чтобы ударить\nЧитает мысли существ и открывает путь в сны; урон растёт вместе с прогрессом; пробуждённый, наносит на 50% больше\nУдерживайте S при ударе, чтобы поставить Врата грёз, W — чтобы переместиться к ним\nНельзя продать, выбросить или отправить в корзину"
+ },
+ "骨钉": {
+  "en-US": "Nail",
+  "zh-Hant": "骨釘",
+  "ja-JP": "釘",
+  "ko-KR": "못",
+  "de-DE": "Nagel",
+  "fr-FR": "Clou",
+  "es-ES": "Aguijón",
+  "it-IT": "Chiodo",
+  "pt-BR": "Ferrão",
+  "ru-RU": "Гвоздь"
+ },
+ "拿在手上时，左键就是空洞骑士的骨钉：按住连续挥砍，按住 W / S 上劈 / 下劈\n能格挡（比如安息之地的瑞维克），下劈能在尖刺和敌人身上弹起\n伤害随阶段提升，骨钉匠的每次升级再提高 25%\n不能出售、丢弃，也不能扔进垃圾桶": {
+  "en-US": "In hand, the left mouse button is Hollow Knight's nail: hold it to keep swinging, hold W / S to strike up / down\nIt parries (Revek in the Spirits' Glade, for one), and a down strike bounces off spikes and enemies\nIts damage grows with the stage, and each of the Nailsmith's upgrades adds 25%\nCannot be sold, dropped or thrown in the trash",
+  "zh-Hant": "拿在手上時，左鍵就是空洞騎士的骨釘：按住連續揮砍，按住 W / S 上劈 / 下劈\n能格擋（比如安息之地的瑞維克），下劈能在尖刺和敵人身上彈起\n傷害隨階段提升，骨釘匠的每次升級再提高 25%\n不能出售、丟棄，也不能扔進垃圾桶",
+  "ja-JP": "手に持つと、左クリックがホロウナイトの釘になる：押し続けると連続で振り、W / S を押しながらで上 / 下に斬る\nパリィできる（安息の地のレヴェクなど）。下斬りでトゲや敵の上で跳ねる\nダメージはステージに応じて上がり、釘鍛冶の強化ごとにさらに 25% 上がる\n売却・投棄・ゴミ箱への廃棄はできない",
+  "ko-KR": "손에 들면 왼쪽 버튼이 할로우 나이트의 못이 된다: 누르고 있으면 계속 휘두르고, W / S를 누른 채로 위 / 아래로 벤다\n패링할 수 있고(안식의 땅의 레벡 등), 아래 베기로 가시와 적 위에서 튀어 오른다\n피해량은 단계에 따라 오르고, 못 대장장이의 강화마다 25%씩 더 오른다\n판매, 버리기, 휴지통에 넣기가 불가능하다",
+  "de-DE": "In der Hand ist die linke Maustaste der Nagel aus Hollow Knight: gedrückt halten für Dauerschläge, W / S halten für Schläge nach oben / unten\nEr pariert (etwa Revek im Hain der Geister), und ein Abwärtsschlag federt von Stacheln und Gegnern ab\nDer Schaden steigt mit der Stufe, und jede Verbesserung des Nagelschmieds bringt 25 % mehr\nKann nicht verkauft, fallen gelassen oder weggeworfen werden",
+  "fr-FR": "En main, le bouton gauche de la souris est le clou de Hollow Knight : maintenez-le pour frapper en continu, maintenez W / S pour frapper vers le haut / le bas\nIl pare (Revek dans la Clairière des esprits, par exemple), et une frappe vers le bas rebondit sur les pointes et les ennemis\nSes dégâts augmentent avec l'étape, et chaque amélioration du forgeron de clous ajoute 25 %\nNe peut être ni vendu, ni lâché, ni jeté à la corbeille",
+  "es-ES": "En la mano, el botón izquierdo del ratón es el aguijón de Hollow Knight: mantenlo pulsado para golpear sin parar y mantén W / S para golpear hacia arriba / abajo\nBloquea (por ejemplo, a Revek en el Claro de los espíritus), y el golpe hacia abajo rebota en pinchos y enemigos\nSu daño aumenta con la etapa, y cada mejora del herrero de aguijones añade un 25 %\nNo se puede vender, soltar ni tirar a la papelera",
+  "it-IT": "In mano, il tasto sinistro del mouse è il chiodo di Hollow Knight: tienilo premuto per colpire di continuo, tieni W / S per colpire in alto / in basso\nPara i colpi (ad esempio di Revek nella Radura degli spiriti), e il colpo verso il basso rimbalza su spine e nemici\nIl danno aumenta con lo stadio, e ogni miglioramento del fabbro di chiodi aggiunge il 25%\nNon può essere venduto, lasciato cadere o cestinato",
+  "pt-BR": "Na mão, o botão esquerdo do mouse é o ferrão de Hollow Knight: segure para golpear sem parar e segure W / S para golpear para cima / baixo\nEle apara golpes (por exemplo, de Revek na Clareira dos Espíritos), e o golpe para baixo quica em espinhos e inimigos\nO dano aumenta com o estágio, e cada melhoria do ferreiro de ferrões adiciona 25%\nNão pode ser vendido, largado nem jogado no lixo",
+  "ru-RU": "В руке левая кнопка мыши — гвоздь из Hollow Knight: удерживайте для непрерывных ударов, удерживайте W / S для ударов вверх / вниз\nОн парирует (например, Ревека на Поляне духов), а удар вниз отскакивает от шипов и врагов\nУрон растёт с этапом, и каждое улучшение у гвоздаря добавляет 25%\nНельзя продать, выбросить или отправить в мусор"
+ },
+ "要集齐更多面具或击败更多首领，才能再吃生命水晶": {
+  "en-US": "Make more masks or beat more bosses to use another Life Crystal",
+  "zh-Hant": "要集齊更多面具或擊敗更多首領，才能再吃生命水晶",
+  "ja-JP": "仮面をもっと集めるかボスをもっと倒すと、ライフクリスタルをまた使える",
+  "ko-KR": "가면을 더 모으거나 보스를 더 쓰러뜨려야 생명 크리스탈을 더 쓸 수 있다",
+  "de-DE": "Mehr Masken sammeln oder mehr Bosse besiegen, um einen weiteren Lebenskristall zu nutzen",
+  "fr-FR": "Complétez plus de masques ou battez plus de boss pour utiliser un autre cristal de vie",
+  "es-ES": "Completa más máscaras o derrota a más jefes para usar otro cristal de vida",
+  "it-IT": "Completa altre maschere o sconfiggi altri boss per usare un altro cristallo di vita",
+  "pt-BR": "Complete mais máscaras ou derrote mais chefes para usar outro cristal da vida",
+  "ru-RU": "Соберите больше масок или победите больше боссов, чтобы использовать ещё один кристалл жизни"
  }
 }

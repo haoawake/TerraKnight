@@ -21,12 +21,23 @@ namespace TerraKnight.Items
         /// <summary>Its damage at each stage: about three swings of a melee weapon of that stage (it charges a second and more).</summary>
         static readonly int[] DamageByStage = { 40, 75, 120, 150, 200, 300 };
 
+        /// <summary>The Awoken Dream Nail (the Seer's reward for 1800 Essence): half as much again.</summary>
+        public const float Awoken = 1.5f;
+
+        /// <summary>Its damage now: the stage's, half as much again once awoken.</summary>
+        public static int DamageNow()
+        {
+            int stage = Mathf.Clamp(Shop.UnlockedStage(), 0, DamageByStage.Length - 1);
+            var pd = PlayerData.instance;
+            return Mathf.RoundToInt(DamageByStage[stage] * (pd != null && pd.dreamNailUpgraded ? Awoken : 1f));
+        }
+
         public static ItemDef Def() => new ItemDef
         {
             Type = ItemType.DreamNail, Name = "梦之钉", Texture = Icon, Class = DamageClass.Melee, Damage = DamageByStage[0], Knockback = 2f,
             UseAnimation = 1f, UseTime = 1f, MaxStack = 1, Rare = -11, Value = 0, Stage = 0, Source = ItemSource.Basic,
             NoMelee = true, NoUseGraphic = true, UseSound = null, Permanent = true, GameTool = true,
-            Tooltip = "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n不能出售、丢弃，也不能扔进垃圾桶",
+            Tooltip = "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升，觉醒后再提高 50%\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n不能出售、丢弃，也不能扔进垃圾桶",
         };
 
         public static bool Holding()
@@ -192,7 +203,7 @@ namespace TerraKnight.Items
             if (Time.unscaledTime < nextCheck) return;
             nextCheck = Time.unscaledTime + 1f;
             var def = ItemDb.Get(ItemType.DreamNail);
-            def.Damage = DamageByStage[Mathf.Clamp(Shop.UnlockedStage(), 0, DamageByStage.Length - 1)];
+            def.Damage = DamageNow();
             var pd = PlayerData.instance;
             if (pd == null || !pd.hasDreamNail || hero == null || Owned(mod)) return;
             int left = mod.Inventory.Pickup(ItemType.DreamNail, 1);
