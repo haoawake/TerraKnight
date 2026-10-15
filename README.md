@@ -1,18 +1,68 @@
-# 泰拉圣巢 · TerraKnight
+<!-- ==================== 语言切换 ==================== -->
 
 <div align="right">
   <strong>中文</strong> | <a href="./README.en.md">English</a>
 </div>
 
+<!-- ==================== 项目 Banner ==================== -->
+
 <div align="center">
-  <img src="./terraknight-banner.png" alt="泰拉圣巢 · TerraKnight — Terraria × Hollow Knight" width="100%"/>
+  <img
+    src="./images/banner.png"
+    alt="泰拉圣巢 · TerraKnight"
+    width="100%"
+  />
+
+  <h1>泰拉圣巢 · TerraKnight</h1>
+
+  <p>
+    <strong>把《泰拉瑞亚》带进《空洞骑士》：在圣巢挖矿、建造、探索、战斗。</strong>
+  </p>
+
+  <!-- ==================== 项目徽章 ==================== -->
+
+  <a href="https://github.com/haoawake/TerraKnight/releases/latest"><img src="https://img.shields.io/github/v/release/haoawake/TerraKnight?style=flat" alt="Latest Release"/></a>
+  <a href="https://github.com/haoawake/TerraKnight"><img src="https://img.shields.io/github/stars/haoawake/TerraKnight?style=flat&amp;logo=github" alt="GitHub Stars"/></a>
+  <a href="https://github.com/haoawake/TerraKnight/releases"><img src="https://img.shields.io/github/downloads/haoawake/TerraKnight/total?style=flat" alt="Total Downloads"/></a>
+  <img src="https://img.shields.io/badge/Platform-Windows_x64-blue?style=flat" alt="Windows x64"/>
+
 </div>
 
-> **把《泰拉瑞亚》带进《空洞骑士》：在圣巢挖矿、建造、探索、战斗。**
+<!-- ==================== 项目简介 ==================== -->
 
-你不再扮演小骑士，而是以泰拉瑞亚冒险者的身份闯入圣巢：用铜镐挖开地形、放置方块、制作装备、挑战首领，并沿着泰拉瑞亚的成长路线探索空洞骑士的世界。
+<p align="center">
+  你不再扮演小骑士，而是以泰拉瑞亚冒险者的身份闯入圣巢：<br>
+  用铜镐挖开地形、放置方块、制作装备、挑战首领，<br>
+  并沿着泰拉瑞亚的成长路线探索空洞骑士的世界。
+</p>
 
-**[⬇️ 下载最新版本](https://github.com/haoawake/TerraKnight/releases)** · **[📖 安装教程](docs/INSTALL.md)** · **[🎮 操作指南](docs/GAMEPLAY.md)** · **[🧩 完整功能](docs/FEATURES.md)** · **[📺 视频演示](https://www.bilibili.com/video/BV1H4pr6LEAM/)**
+<!-- ==================== 快捷导航 ==================== -->
+
+<div align="center">
+
+  <a href="https://github.com/haoawake/TerraKnight/releases">
+    <strong>下载最新版本</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="./docs/INSTALL.md">
+    <strong>安装教程</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="./docs/GAMEPLAY.md">
+    <strong>操作指南</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="./docs/FEATURES.md">
+    <strong>完整功能</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="https://www.bilibili.com/video/BV1H4pr6LEAM/">
+    <strong>视频演示</strong>
+  </a>
+
+</div>
+
+---
 
 ## 📑 目录
 
