@@ -1,6 +1,12 @@
 # 泰拉圣巢 · TerraKnight
 
-**中文** | [English](README.en.md)
+<div align="right">
+  <strong>中文</strong> | <a href="./README.en.md">English</a>
+</div>
+
+<div align="center">
+  <img src="./terraknight-banner.png" alt="泰拉圣巢 · TerraKnight — Terraria × Hollow Knight" width="100%"/>
+</div>
 
 > **把《泰拉瑞亚》带进《空洞骑士》：在圣巢挖矿、建造、探索、战斗。**
 
