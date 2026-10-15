@@ -6,7 +6,7 @@
 
 你不再扮演小骑士，而是以泰拉瑞亚冒险者的身份闯入圣巢：用铜镐挖开地形、放置方块、制作装备、挑战首领，并沿着泰拉瑞亚的成长路线探索空洞骑士的世界。
 
-**[⬇️ 下载最新版本](https://github.com/haoawake/TerraKnight/releases)** · **[📖 安装教程](docs/INSTALL.md)** · **[🎮 操作指南](docs/GAMEPLAY.md)** · **[🧩 完整功能](docs/FEATURES.md)**
+**[⬇️ 下载最新版本](https://github.com/haoawake/TerraKnight/releases)** · **[📖 安装教程](docs/INSTALL.md)** · **[🎮 操作指南](docs/GAMEPLAY.md)** · **[🧩 完整功能](docs/FEATURES.md)** · **[📺 视频演示](https://www.bilibili.com/video/BV1H4pr6LEAM/)**
 
 ## 📑 目录
 
@@ -125,6 +125,8 @@ TerraKnight 基于 **BepInEx**，运行空洞骑士本体，并在运行时实�
 **[卸载步骤与第三方代码声明 →](docs/UNINSTALL.md)**
 
 ---
+
+**作者 Bilibili 主页：** [访问作者空间](https://space.bilibili.com/438616101)
 
 **TerraKnight 为非官方粉丝创作项目，与 Re-Logic 或 Team Cherry 无官方关联。**
 
