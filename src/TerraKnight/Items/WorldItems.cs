@@ -15,7 +15,7 @@ namespace TerraKnight.Items
     /// An item belongs to the scene it lies in, in that scene's own coordinates: it sleeps while
     /// the scene isn't loaded and is saved with the mod's save.
     /// </summary>
-    internal sealed class WorldItems : MonoBehaviour
+    internal sealed partial class WorldItems : MonoBehaviour
     {
         const float Px = Effects.TerraParticles.Px;
         /// <summary>Half the 16 px box, world units.</summary>
@@ -27,6 +27,10 @@ namespace TerraKnight.Items
 
         sealed class Item
         {
+            public string NetId;
+            public int Dropper = -1;
+            public int PhysicsOwner = -1;
+            public bool ClaimPending;
             public ItemStack Stack;
             public string Scene;
             /// <summary>Box centre, in the scene's own coordinates.</summary>
@@ -68,6 +72,14 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: every lying item gone.</summary>
         public static void DevClear() => Clear();
+
+        /// <summary>Dev: how many of an item lie in the world.</summary>
+        public static int DevCount(ItemType t)
+        {
+            int n = 0;
+            foreach (var it in items) if (!it.Stack.IsEmpty && it.Stack.Type == t) n += it.Stack.Count;
+            return n;
+        }
         static readonly Dictionary<(ItemType, int), Sprite> sprites = new Dictionary<(ItemType, int), Sprite>();
         float ticks;
 
@@ -113,23 +125,33 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Item.NewItem with no velocity given: a random hop, up to 3 px/tick sideways and 1.6-4 up.</summary>
-        public static void Drop(ItemStack stack, Vector2 centre, bool fromSky = false)
+        public static void Drop(ItemStack stack, Vector2 centre, bool fromSky = false, bool personal = false)
         {
             var vel = new Vector2(Random.Range(-30, 31) * 0.1f, Random.Range(16, 41) * 0.1f);
-            Spawn(stack, centre, vel, 0, fromSky);
+            Spawn(stack, centre, vel, 0, fromSky, personal);
         }
 
-        static void Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false)
+        static void Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false, bool personal = false)
         {
             var region = RegionAt(centre) ?? TerrainSystem.Current?.Region;
             if (region == null) return;
+            if (Net.NetSession.Active && !personal && (Net.NetSession.Hosting || Net.WorldSync.CanInteract))
+            {
+                var local = centre - (Vector2)region.Root.position;
+                var action = new Net.WorldSync.Action { Op = "drop", Scene = region.SceneName, X = local.x, Y = local.y,
+                    Vx = vel.x, Vy = vel.y, Power = grabDelay, Sky = fromSky, Kind = (int)stack.Type, Count = stack.Count };
+                if (Net.NetSession.Hosting) NetSpawn(action, Net.NetSession.MySlot);
+                else Net.WorldSync.Submit(action);
+                return;
+            }
             stack.Favorite = false;
             if (items.Count >= MaxItems)
             {
                 // The oldest makes way (Item.PickAnItemSlotToSpawnItemOn).
-                int oldest = 0;
-                for (int i = 1; i < items.Count; i++) if (items[i].Age > items[oldest].Age) oldest = i;
-                Remove(oldest);
+                int oldest = -1;
+                for (int i = 0; i < items.Count; i++)
+                    if (items[i].NetId == null && (oldest < 0 || items[i].Age > items[oldest].Age)) oldest = i;
+                if (oldest >= 0) Remove(oldest);
             }
             items.Add(new Item
             {
@@ -163,6 +185,7 @@ namespace TerraKnight.Items
             {
                 var it = items[i];
                 if (it.Region == null) continue;
+                if (!NetSimulates(it)) continue;
                 if (it.Grabbed)
                 {
                     it.Local += it.Vel * Px;
@@ -170,7 +193,7 @@ namespace TerraKnight.Items
                 }
                 else
                 {
-                    Combine(i);
+                    if (it.NetId == null || !Net.WorldSync.Guest) Combine(i);
                     // MoveInWorld: gravity, sideways friction, then the blocks.
                     it.Vel.y = Mathf.Max(it.Vel.y - 0.1f, -7f);
                     it.Vel.x *= 0.95f;
@@ -183,25 +206,54 @@ namespace TerraKnight.Items
                 if (it.FromSky && !it.Grabbed && World.TerraTime.IsDay) Fade(it);
             }
             for (int i = items.Count - 1; i >= 0; i--)
-                if (items[i].Stack.IsEmpty || items[i].OutTicks > 120) Remove(i);
+                if (items[i].Stack.IsEmpty || items[i].OutTicks > 120)
+                {
+                    if (Net.WorldSync.Guest && items[i].NetId != null && NetSimulates(items[i]))
+                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "motion", Motion = new[] { new Net.WorldSync.Record { Key = items[i].NetId, Taken = true } } });
+                    Remove(i);
+                }
         }
 
         /// <summary>Player.GrabItems: pick up what touches the player, pull in what's within reach and fits.</summary>
         static void GrabItems(HeroController hero, Inventory inv)
         {
+            if (!Net.WorldSync.CanInteract) return;
             var body = hero.GetComponent<BoxCollider2D>().bounds;
             // The Treasure Magnet reaches 150 px further for everything (treasureGrabRange, Pl:35428-35431).
             float range = GrabRange + (Equipment.Current.TreasureMagnet ? 150f * Px : 0f);
             var reach = new Bounds(body.center, body.size + Vector3.one * (range * 2f));
+            // The hearts reach 250 px further with the Heartreach potion (lifeMagnet, Item.lifeGrabRange).
+            float heartRange = range + (Player.PlayerBuffs.Has(Player.PotionBuffs.Heartreach) ? 250f * Px : 0f);
+            var heartReach = new Bounds(body.center, body.size + Vector3.one * (heartRange * 2f));
             Vector2 heroVel = hero.GetComponent<Rigidbody2D>().linearVelocity / Player.TerraMovement.PxT;
             for (int i = 0; i < items.Count; i++)
             {
                 var it = items[i];
-                if (it.Region == null || it.GrabDelay > 0 || it.Stack.IsEmpty) continue;
+                if (it.Region == null || (it.GrabDelay > 0 && (it.NetId == null || it.Dropper == Net.NetSession.MySlot)) || it.Stack.IsEmpty) continue;
                 var c = it.World;
                 var box = new Bounds(new Vector3(c.x, c.y, body.center.z), new Vector3(Half * 2f, Half * 2f, 1f));
+                bool heart = it.Stack.Type == ItemType.Heart;
                 if (box.Intersects(body))
                 {
+                    if (heart && it.NetId == null)
+                    {
+                        // Player.PickupItem: a heart heals 20 and is gone (taken at full life too), never carried.
+                        int n = it.Stack.Count;
+                        TerraMod.Instance.Stats.Heal(20 * n);
+                        UI.CombatText.Show(body.center + Vector3.up * 0.9f, (20 * n).ToString(), UI.CombatText.Heal);
+                        TerraMod.Instance.PlaySound("Grab", 0.7f);
+                        it.Stack = default;
+                        continue;
+                    }
+                    if (it.NetId != null && Net.WorldSync.Guest)
+                    {
+                        if (!it.ClaimPending && inv.Room(it.Stack.Type) > 0)
+                        {
+                            it.ClaimPending = true;
+                            Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
+                        }
+                        continue;
+                    }
                     int count = it.Stack.Count;
                     int left = inv.Pickup(it.Stack.Type, count);
                     if (left == count) continue;
@@ -211,7 +263,18 @@ namespace TerraKnight.Items
                     if (left <= 0) it.Stack = default;
                     continue;
                 }
-                if (!box.Intersects(reach) || inv.Room(it.Stack.Type) <= 0) continue;
+                if (!box.Intersects(heart ? heartReach : reach) || (!heart && inv.Room(it.Stack.Type) <= 0)) continue;
+                if (it.NetId != null && Net.WorldSync.Guest)
+                {
+                    // The authority may have no local hero near this item. Request the same
+                    // magnet-range pickup, rather than simulating a second authoritative item.
+                    if (!it.ClaimPending)
+                    {
+                        it.ClaimPending = true;
+                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
+                    }
+                    continue;
+                }
                 // PullItem_Common: towards the player's middle on each axis on its own.
                 if (body.center.x > c.x)
                 {
@@ -276,7 +339,8 @@ namespace TerraKnight.Items
             for (int j = i + 1; j < items.Count && it.Stack.Count < max; j++)
             {
                 var o = items[j];
-                if (o.Region == null || o.Grabbed || o.Stack.IsEmpty || o.Stack.Type != it.Stack.Type || o.FromSky != it.FromSky) continue;
+                if (o.Region == null || o.Grabbed || o.Stack.IsEmpty || o.Stack.Type != it.Stack.Type || o.FromSky != it.FromSky
+                    || (o.NetId == null) != (it.NetId == null) || o.Dropper != it.Dropper || o.GrabDelay > 0 || it.GrabDelay > 0) continue;
                 var d = o.World - c;
                 if ((Mathf.Abs(d.x) + Mathf.Abs(d.y)) / Px > 30f) continue;
                 int n = Mathf.Min(o.Stack.Count, max - it.Stack.Count);
@@ -456,6 +520,34 @@ namespace TerraKnight.Items
         {
             for (int i = items.Count - 1; i >= 0; i--) Remove(i);
             UI.PopupText.Clear();
+        }
+
+        /// <summary>
+        /// One of a kind (UniqueItems): the lying ones of a type beyond one go, all of them when one is had
+        /// elsewhere already. Whether one is left lying.
+        /// </summary>
+        public static bool KeepOne(ItemType type, bool haveOne)
+        {
+            bool kept = haveOne;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var it = items[i];
+                if (it.Stack.IsEmpty || it.Stack.Type != type) continue;
+                if (it.NetId != null && Net.NetSession.Active)
+                {
+                    // Personal uniqueness never deletes somebody else's shared property.
+                    kept = true;
+                    continue;
+                }
+                if (!kept)
+                {
+                    kept = true;
+                    it.Stack.Count = 1;
+                    continue;
+                }
+                it.Stack = default;
+            }
+            return kept && !haveOne;
         }
 
         /// <summary>Whether an item of this kind lies in the world.</summary>

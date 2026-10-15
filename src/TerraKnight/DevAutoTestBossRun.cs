@@ -17,6 +17,13 @@ namespace TerraKnight
     /// </summary>
     internal sealed partial class DevAutoTest
     {
+        /// <summary>The hearts lying in the world now, and the player's life.</summary>
+        static string BossHearts()
+        {
+            var mod = TerraMod.Instance;
+            return mod == null ? "" : $"，地上的心 {WorldItems.DevCount(ItemType.Heart)} 个，生命 {mod.Stats.Life}/{mod.Stats.LifeMax}";
+        }
+
         IEnumerator BossRunTest(string[] only)
         {
             var list = new List<(string Record, string Scene)> { ("Hornet", "Fungus1_04_boss") };
@@ -31,6 +38,7 @@ namespace TerraKnight
             }
             Application.logMessageReceived += OnLog;
             RoarRelease.DevTrace = true;
+            SpecialDeaths.DevTrace = true;
             int good = 0;
             var bad = new StringBuilder();
             const int terrain = 1 << World.ChunkColliders.TerrainLayer;
@@ -51,6 +59,8 @@ namespace TerraKnight
                     {
                         gate = arenaGate;
                         foreach (var (flag, v) in needs) PlayerData.instance.SetBool(flag, v);
+                        // Not beaten yet (other suites leave the save with every boss beaten).
+                        BossArena.DevUnbeaten(key);
                     }
                     TransitionPoint.lastEntered = gate;
                     float t0 = Time.time;
@@ -95,7 +105,7 @@ namespace TerraKnight
                             var col = hm.GetComponent<Collider2D>();
                             var rend = hm.GetComponent<Renderer>();
                             var body = hm.GetComponent<Rigidbody2D>();
-                            d.Append($" [{hm.name} {(Vector2)hm.transform.position:F1} 血{hm.hp} 死{hm.isDead} 打倒{EnemyStats.Defeated(hm)} 无敌{hm.IsInvincible} 帧{MeleeHits.Immune(hm)} 碰撞{(col == null ? "无" : col.enabled ? (col.isTrigger ? "触发" : "开") : "关")} 显示{(rend != null && rend.enabled)} 速度{(body != null ? body.linearVelocity : Vector2.zero):F1}");
+                            d.Append($" [{hm.name} {(Vector2)hm.transform.position:F1} 血{hm.hp} 死{hm.isDead} 打倒{EnemyStats.Defeated(hm)} 无敌{hm.IsInvincible} 碰撞{(col == null ? "无" : col.enabled ? (col.isTrigger ? "触发" : "开") : "关")} 显示{(rend != null && rend.enabled)} 速度{(body != null ? body.linearVelocity : Vector2.zero):F1}");
                             foreach (var f in hm.GetComponents<PlayMakerFSM>()) d.Append($" {f.FsmName}:{f.ActiveStateName}{(f.enabled ? "" : "(关)")}");
                             d.Append("]");
                         }
@@ -190,7 +200,7 @@ namespace TerraKnight
                     float nextHit = 0f, wokeAt = Time.time, nextWalk = Time.time + 6f, nextTalk = 0f, nextDiag = Time.time + 10f;
                     bool beaten = false;
                     string lastStates = "";
-                    while (woke && Time.time - t0 < 150f)
+                    while (woke && Time.time - t0 < 300f)
                     {
                         mod.Stats.FullHeal();
                         PlayerData.instance.isInvincible = true;
@@ -348,7 +358,7 @@ namespace TerraKnight
                     if (ok) good++;
                     else bad.Append($" {record}");
                     string errs = errors.Count > 0 ? $"，报错 {errors.Count} 条：{string.Join(" | ", errors.GetRange(0, Mathf.Min(3, errors.Count)))}" : "";
-                    Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}（{room}）：{(ok ? "好" : "坏")}，到达 {arrived}，找到 {all.Count} 个，醒了 {woke}，打了 {strikes} 下，{(beaten ? $"{took:F0} 秒打倒" : "没打倒")}，掉落 {drops} 样，尸体还有血条 {barLeft}，之后可操作 {control2}{(gatesAfter.Length > 0 ? "，铁门" + gatesAfter : "")}{(beaten ? "" : "，最后的状态 " + lastStates)}{errs}");
+                    Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}（{room}）：{(ok ? "好" : "坏")}，到达 {arrived}，找到 {all.Count} 个，醒了 {woke}，打了 {strikes} 下，{(beaten ? $"{took:F0} 秒打倒" : "没打倒")}，掉落 {drops} 样（阶段结束 {Items.BossPhases.DevPhaseEnds} 次 {Items.BossPhases.DevLast}，阶段掉药 {Items.BossPotions.DevPhases} 次、心 {Items.BossPotions.DevHearts} 个，图鉴整场生命 {Bestiary.StatsOf(record).Life}）{BossHearts()}，尸体还有血条 {barLeft}，之后可操作 {control2}{(gatesAfter.Length > 0 ? "，铁门" + gatesAfter : "")}{(beaten ? "" : "，最后的状态 " + lastStates)}{errs}");
                     Shot(gm.sceneName, $"bossrun_{record}");
                     yield return null;
                 }

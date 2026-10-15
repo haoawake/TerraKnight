@@ -3550,5 +3550,113 @@
   "it-IT": "{0}%: 1 su {1}",
   "pt-BR": "{0}%: 1 de {1}",
   "ru-RU": "{0}%: 1 из {1}"
+ },
+ "泰拉圣巢 v{0}": {
+  "en-US": "TerraKnight v{0}",
+  "zh-Hant": "泰拉聖巢 v{0}",
+  "ja-JP": "TerraKnight v{0}",
+  "ko-KR": "TerraKnight v{0}",
+  "de-DE": "TerraKnight v{0}",
+  "fr-FR": "TerraKnight v{0}",
+  "es-ES": "TerraKnight v{0}",
+  "it-IT": "TerraKnight v{0}",
+  "pt-BR": "TerraKnight v{0}",
+  "ru-RU": "TerraKnight v{0}"
+ },
+ "首领的战斗范围内不能改动地形": {
+  "en-US": "The ground where a boss fights can't be changed",
+  "zh-Hant": "首領的戰鬥範圍內不能改動地形",
+  "ja-JP": "ボスが戦う範囲の地形は変えられない",
+  "ko-KR": "보스가 싸우는 범위의 지형은 바꿀 수 없다",
+  "de-DE": "Wo ein Boss kämpft, lässt sich nichts verändern",
+  "fr-FR": "Le terrain où se bat un boss ne peut pas être modifié",
+  "es-ES": "El terreno donde lucha un jefe no se puede modificar",
+  "it-IT": "Il terreno dove combatte un boss non si può modificare",
+  "pt-BR": "O terreno onde um chefe luta não pode ser alterado",
+  "ru-RU": "Там, где сражается босс, местность изменять нельзя"
+ },
+ "背包已满：放不下的掉落物会掉在脚下": {
+  "en-US": "Inventory full: what does not fit drops at your feet",
+  "zh-Hant": "背包已滿：放不下的掉落物會掉在腳下",
+  "ja-JP": "持ち物がいっぱい：入らないドロップは足元に落ちる",
+  "ko-KR": "가방이 가득 참: 들어가지 않는 전리품은 발밑에 떨어진다",
+  "de-DE": "Inventar voll: Was nicht passt, fällt dir vor die Füße",
+  "fr-FR": "Inventaire plein : ce qui ne rentre pas tombe à vos pieds",
+  "es-ES": "Inventario lleno: lo que no cabe cae a tus pies",
+  "it-IT": "Inventario pieno: ciò che non entra cade ai tuoi piedi",
+  "pt-BR": "Inventário cheio: o que não couber cai aos seus pés",
+  "ru-RU": "Инвентарь полон: что не поместилось, упадёт под ноги"
+ },
+ "当前层：{0}": {
+  "en-US": "Current: {0}",
+  "zh-Hant": "目前層：{0}",
+  "ja-JP": "現在の層：{0}",
+  "ko-KR": "현재 층: {0}",
+  "de-DE": "Aktuell: {0}",
+  "fr-FR": "Actuelle : {0}",
+  "es-ES": "Actual: {0}",
+  "it-IT": "Attuale: {0}",
+  "pt-BR": "Atual: {0}",
+  "ru-RU": "Текущий: {0}"
+ },
+ "浅层": {
+  "en-US": "Shallow",
+  "zh-Hant": "淺層",
+  "ja-JP": "浅層",
+  "ko-KR": "얕은 층",
+  "de-DE": "Flach",
+  "fr-FR": "Surface",
+  "es-ES": "Superficial",
+  "it-IT": "Superficie",
+  "pt-BR": "Raso",
+  "ru-RU": "Внешний"
+ },
+ "深层": {
+  "en-US": "Deep",
+  "zh-Hant": "深層",
+  "ja-JP": "深層",
+  "ko-KR": "깊은 층",
+  "de-DE": "Tief",
+  "fr-FR": "Profond",
+  "es-ES": "Profundo",
+  "it-IT": "Profondo",
+  "pt-BR": "Profundo",
+  "ru-RU": "Глубинный"
+ },
+ "心": {
+  "en-US": "Heart",
+  "zh-Hant": "心",
+  "ja-JP": "ハート",
+  "ko-KR": "하트",
+  "de-DE": "Herz",
+  "fr-FR": "Cœur",
+  "es-ES": "Corazón",
+  "it-IT": "Cuore",
+  "pt-BR": "Coração",
+  "ru-RU": "Сердце"
+ },
+ "拾取后恢复20点生命": {
+  "en-US": "Restores 20 life when picked up",
+  "zh-Hant": "拾取後恢復20點生命",
+  "ja-JP": "拾うとライフが20回復する",
+  "ko-KR": "주우면 생명력 20 회복",
+  "de-DE": "Stellt beim Aufheben 20 Leben wieder her",
+  "fr-FR": "Rend 20 points de vie une fois ramassé",
+  "es-ES": "Restaura 20 de vida al recogerlo",
+  "it-IT": "Ripristina 20 punti vita quando raccolto",
+  "pt-BR": "Restaura 20 de vida ao ser coletado",
+  "ru-RU": "Восстанавливает 20 здоровья при подборе"
+ },
+ "{0} 使用了首领召唤物，所有人都被传送到首领的竞技场": {
+  "en-US": "{0} used a boss seal: everyone is taken to the boss's arena",
+  "zh-Hant": "{0} 使用了首領召喚物，所有人都被傳送到首領的競技場",
+  "ja-JP": "{0} がボス召喚アイテムを使った：全員がボスの闘技場へ送られる",
+  "ko-KR": "{0} 님이 보스 소환물을 사용했습니다: 모두 보스의 경기장으로 이동합니다",
+  "de-DE": "{0} hat ein Boss-Siegel benutzt: Alle werden in die Arena des Bosses gebracht",
+  "fr-FR": "{0} a utilisé un sceau de boss : tout le monde est envoyé dans son arène",
+  "es-ES": "{0} usó un sello de jefe: todos son llevados a la arena del jefe",
+  "it-IT": "{0} ha usato un sigillo del boss: tutti vengono portati nella sua arena",
+  "pt-BR": "{0} usou um selo de chefe: todos são levados à arena do chefe",
+  "ru-RU": "{0} использует печать босса: все переносятся на арену босса"
  }
 }

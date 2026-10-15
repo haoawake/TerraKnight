@@ -17,16 +17,14 @@ namespace TerraKnight.UI
     /// water, spikes, acid and lava over the open cells, and the things worth knowing about as
     /// coloured blocks (benches, lamps, doors, levers, lifts, chests, the stag, grubs, totems...),
     /// named under the mouse. Scenes sit where the seamless world joins them (WorldMapLayout).
-    /// Like Terraria, cells are revealed as they come on screen (Terraria reveals what is lit there;
-    /// Hallownest has no darkness by the cell), and what has been revealed is kept with the save (TerraKnight_slotN.map beside the mod's save). Scenes known from
-    /// before the map existed show whole once seen again.
+    /// Cells are explored near the player with terrain occlusion and kept with the save
+    /// (TerraKnight_slotN.map). Purchased charts show unexplored cells at 30% opacity.
     /// </summary>
     internal static partial class WorldMap
     {
         public static bool Enabled = true;
         const float C = CellGrid.CellSize;
-        /// <summary>Cells past the screen's edge revealed too.</summary>
-        const int RevealMargin = 4;
+        const int MapVersion = 2;
 
         enum Tile : byte { None, Air, Terrain, Structure, Platform, Dirt, Stone, Wood, Sand, Ice, Torch, Rope, Dug }
         enum Wet : byte { None, Water, Spikes, Acid, Lava }
@@ -49,7 +47,7 @@ namespace TerraKnight.UI
             public bool Captured, RevealAll, AnySeen, Dirty = true;
             /// <summary>Filled from the world atlas (creative), not from the scene itself: not kept in the save.</summary>
             public bool FromAtlas;
-            /// <summary>Its area's map bought (Cornifer, Iselda): the whole room drawn, its Life Crystals still only where seen.</summary>
+            /// <summary>Its area's map bought: unexplored cells drawn at 30% opacity, Life Crystals still hidden.</summary>
             public bool Charted;
             public float LastBuilt;
             public Texture2D Solid, Open;
@@ -332,27 +330,16 @@ namespace TerraKnight.UI
 
         static void Reveal()
         {
-            var gc = GameCameras.instance;
-            var cam = gc != null ? gc.mainCamera : null;
-            if (cam == null || HeroController.SilentInstance == null) return;
-            // The gameplay plane's part the camera shows (perspective, the plane at z 0).
-            Vector3 cp = cam.transform.position;
-            float halfH = Mathf.Abs(cp.z) * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            float halfW = halfH * cam.aspect;
-            int gx0 = Mathf.FloorToInt((cp.x - halfW) / C) - RevealMargin, gx1 = Mathf.CeilToInt((cp.x + halfW) / C) + RevealMargin;
-            int gy0 = Mathf.FloorToInt((cp.y - halfH) / C) - RevealMargin, gy1 = Mathf.CeilToInt((cp.y + halfH) / C) + RevealMargin;
-            foreach (var ts in TerrainSystem.All)
-            {
-                var r = ts.Region;
-                if (r == null || r.SceneName == null || !rooms.TryGetValue(r.SceneName, out var room) || !room.Captured || room.W != r.Grid.Width) continue;
-                int x0 = Mathf.Max(0, gx0 - r.CellOffset.x), x1 = Mathf.Min(room.W - 1, gx1 - r.CellOffset.x);
-                int y0 = Mathf.Max(0, gy0 - r.CellOffset.y), y1 = Mathf.Min(room.H - 1, gy1 - r.CellOffset.y);
-                int changed = 0;
-                for (int y = y0; y <= y1; y++)
-                    for (int x = x0; x <= x1; x++)
-                        if (room.SetSeen(x, y)) changed++;
-                if (changed > 0) { room.AnySeen = true; room.Dirty = true; DevRevealed += changed; }
-            }
+            var hero = HeroController.SilentInstance;
+            var r = TerraWorld.Live;
+            if (hero == null || r == null || !GameHooks.PlayerHasControl() || Open) return;
+            if (r.SceneName == null || !rooms.TryGetValue(r.SceneName, out var room) || !room.Captured || room.W != r.Grid.Width || room.H != r.Grid.Height) return;
+            var body = hero.GetComponent<Collider2D>();
+            Vector2 centre = body != null ? (Vector2)body.bounds.center : (Vector2)hero.transform.position;
+            var cell = CellGrid.WorldToCell(centre) - r.CellOffset;
+            int changed = MapExploration.Reveal(room.W, room.H, cell.x, cell.y,
+                (x, y) => Cells.Blocks(r.Grid.Get(x, y)), room.SetSeen);
+            if (changed > 0) { room.AnySeen = true; room.Dirty = true; DevRevealed += changed; }
         }
 
         // ---------------------------------------------------------------- where things are on the map
@@ -365,7 +352,9 @@ namespace TerraKnight.UI
             var live = TerraWorld.Live;
             if (hero != null && live != null && live.SceneName != null && layout.TryGetValue(live.SceneName, out var at))
             {
-                Vector2 p = hero.transform.position;
+                // The body's middle (Terraria's map puts the head on the player's centre), as the cells round it are revealed.
+                var body = hero.GetComponent<Collider2D>();
+                Vector2 p = body != null ? (Vector2)body.bounds.center : (Vector2)hero.transform.position;
                 lastHead = new Vector2(at.x + p.x / C - live.CellOffset.x, at.y + p.y / C - live.CellOffset.y);
                 haveHead = true;
                 found = true;
@@ -468,16 +457,16 @@ namespace TerraKnight.UI
                     open[i] = clear;
                     if (!room.Shows(x, y)) continue;
                     var t = (Tile)room.Tiles[i];
-                    if (IsSolid(t)) solid[i] = colors[(int)t];
-                    else if (room.Wets[i] != 0) open[i] = wets[room.Wets[i]];
-                    else open[i] = colors[(int)t];
+                    if (IsSolid(t)) solid[i] = ExplorationColor(room, x, y, colors[(int)t]);
+                    else if (room.Wets[i] != 0) open[i] = ExplorationColor(room, x, y, wets[room.Wets[i]]);
+                    else open[i] = ExplorationColor(room, x, y, colors[(int)t]);
                 }
             foreach (var o in room.Things)
             {
                 Color32 c = ObjColor(o.Kind);
                 for (int y = Mathf.Max(0, o.Cells.yMin); y < Mathf.Min(room.H, o.Cells.yMax); y++)
                     for (int x = Mathf.Max(0, o.Cells.xMin); x < Mathf.Min(room.W, o.Cells.xMax); x++)
-                        if (room.Shows(x, y)) open[y * room.W + x] = c;
+                        if (room.Shows(x, y)) open[y * room.W + x] = ExplorationColor(room, x, y, c);
             }
             // The Life Crystals lying here (two cells on two, their bottom middle at the spot), once their cells are seen
             // (a bought map doesn't show them: they are found by exploring).
@@ -498,6 +487,12 @@ namespace TerraKnight.UI
             room.LastBuilt = Time.unscaledTime;
         }
 
+        static Color32 ExplorationColor(Room room, int x, int y, Color32 color)
+        {
+            color.a = (byte)((color.a * MapExploration.Alpha(room.IsSeen(x, y), room.Charted) + 127) / 255);
+            return color;
+        }
+
         // ---------------------------------------------------------------- open, close, input
 
         public static void Toggle()
@@ -513,8 +508,9 @@ namespace TerraKnight.UI
             if (gm == null || hero == null) return;
             Open = true;
             dragging = false;
-            // Terraria opens the map centred on the player.
+            // Terraria opens the map centred on the player, on the player's layer.
             pan = HeadCell(out _);
+            layerChoice = MapLayer.Current;
             hero.RelinquishControl();
             TerraMod.Instance?.PlaySound("Menu_Open", 0.7f);
         }
@@ -564,6 +560,12 @@ namespace TerraKnight.UI
                 Pylons.Teleport(pylon);
                 return;
             }
+            if (pressed && LayerTabAt(gui, out var layer))
+            {
+                layerChoice = layer;
+                TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+                return;
+            }
             if (pressed && FullMap.CloseButton().Contains(gui))
             {
                 Close();
@@ -590,7 +592,7 @@ namespace TerraKnight.UI
         {
             foreach (var p in Pylons.Unlocked)
             {
-                if (!ScenePoint(p.Scene, p.Local + new Vector2(0.75f, 1f), out var at)) continue;
+                if (!Shown(p.Scene) || !ScenePoint(p.Scene, p.Local + new Vector2(0.75f, 1f), out var at)) continue;
                 if (FullMap.PylonIconRect(ToScreen(at)).Contains(gui)) return p;
             }
             return null;
@@ -620,18 +622,19 @@ namespace TerraKnight.UI
                 if (room.Dirty || room.Solid == null) Build(room);
                 visible.Add((room, rect));
             }
+            LiveOnTop(visible);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Open);
 
-            // The player's own chests and the pylons found, as blocks and icons.
+            // The player's own chests and the pylons found, as blocks and icons (those of the layer drawn).
             foreach (var c in Chests.Save())
-                if (ScenePoint(c.Scene, c.Local, out var at) && Seen(at)) Block(at, 2, 2, ObjColor(Obj.TerraChest));
+                if (Shown(c.Scene) && ScenePoint(c.Scene, c.Local, out var at) && Seen(at)) Block(at, 2, 2, ObjColor(Obj.TerraChest));
             var mp = devMouse ?? TerraCursor.GuiMouse();
             Pylons.Pylon hoveredPylon = null;
             var icons = TerrariaAssets.Texture("Extra_182");
             foreach (var p in Pylons.Unlocked)
             {
-                if (!ScenePoint(p.Scene, p.Local + new Vector2(0.75f, 1f), out var at)) continue;
+                if (!Shown(p.Scene) || !ScenePoint(p.Scene, p.Local + new Vector2(0.75f, 1f), out var at)) continue;
                 var r = FullMap.PylonIconRect(ToScreen(at));
                 if (r.Contains(mp))
                 {
@@ -642,13 +645,14 @@ namespace TerraKnight.UI
             }
             // The shade, with Terraria's death marker.
             var pd = PlayerData.instance;
-            if (pd != null && !string.IsNullOrEmpty(pd.shadeScene) && pd.shadeScene != "None" && ScenePoint(pd.shadeScene, new Vector2(pd.shadePositionX, pd.shadePositionY), out var shade))
+            if (pd != null && !string.IsNullOrEmpty(pd.shadeScene) && pd.shadeScene != "None" && Shown(pd.shadeScene) && ScenePoint(pd.shadeScene, new Vector2(pd.shadePositionX, pd.shadePositionY), out var shade))
             {
                 var tex = TerrariaAssets.Texture("MapDeath");
                 var s = ToScreen(shade);
                 GUI.DrawTexture(new Rect(s.x - tex.width * ui / 2f, s.y - tex.height * ui / 2f, tex.width * ui, tex.height * ui), tex);
             }
-            FullMap.DrawHead(ToScreen(HeadCell(out _)), ui);
+            // The player on their own layer.
+            if (PlayerDeep == ViewDeep) FullMap.DrawHead(ToScreen(HeadCell(out _)), ui);
             // The other players of a LAN game where they are, their names under them.
             DrawOthers(ToScreen, ui, true, null);
 
@@ -659,6 +663,85 @@ namespace TerraKnight.UI
             var close = FullMap.CloseButton();
             GUI.DrawTexture(close, TerrariaAssets.Texture(close.Contains(mp) ? "Map_4" : "Map_0"));
             FullMap.Outlined(new Rect(close.xMax + 10f * ui, close.y + 4f * ui, 700f * ui, 24f * ui), Lang.T("滚轮缩放，拖动平移，鼠标指着看是什么，M 关闭"), new Color(1f, 1f, 1f, 0.7f));
+            DrawLayerTabs(mp);
+        }
+
+        // ---------------------------------------------------------------- layers
+
+        /// <summary>
+        /// The map's two layers: the world the seamless gates join (shallow) and the rooms only a door, a dream or a
+        /// tram leads into (deep, WorldMapLayers), which sit beside their door, over the world outside it. One layer is
+        /// drawn at a time: the corner maps the player's own, the full map the one picked on its tabs (the player's own at first).
+        /// </summary>
+        enum MapLayer : byte { Current, Shallow, Deep }
+
+        static MapLayer layerChoice;
+        static string lastLaidOut;
+
+        static bool IsDeep(string scene) => scene != null && deepRooms.Contains(scene);
+
+        /// <summary>The player's layer: the scene being played's (the last one with a place on the map, for one without).</summary>
+        static bool PlayerDeep
+        {
+            get
+            {
+                string scene = TerraWorld.Live?.SceneName;
+                if (scene != null && layout.ContainsKey(scene)) lastLaidOut = scene;
+                return IsDeep(lastLaidOut);
+            }
+        }
+
+        /// <summary>The layer drawn: the one picked on the full map, else the player's.</summary>
+        static bool ViewDeep => Open && layerChoice != MapLayer.Current ? layerChoice == MapLayer.Deep : PlayerDeep;
+
+        static bool Shown(Room room) => IsDeep(room.Name) == ViewDeep;
+
+        static bool Shown(string scene) => IsDeep(scene) == ViewDeep;
+
+        /// <summary>The room being played drawn last, over a room of its layer beside the same door (the Colosseum's trials).</summary>
+        static void LiveOnTop(List<(Room room, Rect rect)> visible)
+        {
+            string live = TerraWorld.Live?.SceneName;
+            int i = visible.FindIndex(v => v.room.Name == live);
+            if (i < 0 || i == visible.Count - 1) return;
+            var top = visible[i];
+            visible.RemoveAt(i);
+            visible.Add(top);
+        }
+
+        static readonly Rect[] layerTabs = new Rect[3];
+        static GUIStyle tabStyle;
+
+        /// <summary>The full map's layer tabs over its close button (as last drawn): the player's layer, the shallow, the deep.</summary>
+        static bool LayerTabAt(Vector2 gui, out MapLayer layer)
+        {
+            layer = MapLayer.Current;
+            for (int i = 0; i < layerTabs.Length; i++)
+                if (layerTabs[i].Contains(gui)) { layer = (MapLayer)i; return true; }
+            return false;
+        }
+
+        static void DrawLayerTabs(Vector2 mp)
+        {
+            float ui = GameView.Scale;
+            var close = FullMap.CloseButton();
+            if (tabStyle == null) tabStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
+            tabStyle.fontSize = Mathf.RoundToInt(18 * ui);
+            float x = close.x;
+            for (int i = 0; i < layerTabs.Length; i++)
+            {
+                string text = i == 0 ? Lang.F("当前层：{0}", Lang.T(PlayerDeep ? "深层" : "浅层")) : Lang.T(i == 1 ? "浅层" : "深层");
+                var r = new Rect(x, close.y - 36f * ui, tabStyle.CalcSize(new GUIContent(text)).x + 18f * ui, 28f * ui);
+                layerTabs[i] = r;
+                x = r.xMax + 6f * ui;
+                bool picked = (int)layerChoice == i, hover = r.Contains(mp);
+                // Terraria's panel blue, brighter for the tab picked and the one under the mouse.
+                var prev = GUI.color;
+                GUI.color = picked ? new Color(73 / 255f, 94 / 255f, 171 / 255f, 0.95f) : new Color(63 / 255f, 82 / 255f, 151 / 255f, hover ? 0.85f : 0.6f);
+                GUI.DrawTexture(r, Texture2D.whiteTexture);
+                GUI.color = prev;
+                FullMap.Outlined(new Rect(r.x + 9f * ui, r.y + 2f * ui, r.width, r.height), text, picked ? new Color(1f, 0.9f, 0.5f) : hover ? Color.white : new Color(1f, 1f, 1f, 0.75f));
+            }
         }
 
         static GUIStyle otherStyle;
@@ -669,7 +752,7 @@ namespace TerraKnight.UI
             if (Net.NetSession.State == Net.NetSession.Phase.Off) return;
             foreach (var p in Net.NetSession.Players.Values)
             {
-                if (!p.HasState || !p.Latest.Shown || !ScenePoint(p.Latest.Scene, p.Latest.BoxCenter, out var cell)) continue;
+                if (!p.HasState || !p.Latest.Shown || !Shown(p.Latest.Scene) || !ScenePoint(p.Latest.Scene, p.Latest.BoxCenter, out var cell)) continue;
                 var at = cellToScreen(cell);
                 if (clip.HasValue && !clip.Value.Contains(at)) continue;
                 var s = p.Latest;
@@ -692,12 +775,6 @@ namespace TerraKnight.UI
             GUI.DrawTexture(Rect.MinMaxRect(a.x, a.y, b.x, b.y), Texture2D.whiteTexture);
             GUI.color = prev;
         }
-
-        /// <summary>
-        /// A room behind a door (a shop, a house, the Troupe's tent) sits beside its door on the map but
-        /// nowhere in the world outside it: it is drawn only while the player is in it.
-        /// </summary>
-        static bool Shown(Room room) => !doorRooms.Contains(room.Name) || room.Name == TerraWorld.Live?.SceneName;
 
         static bool Seen(Vector2 cell)
         {
@@ -764,10 +841,10 @@ namespace TerraKnight.UI
                 else if (n != null) return n;
             }
             foreach (var c in Chests.Save())
-                if (ScenePoint(c.Scene, c.Local, out var at) && gx >= Mathf.FloorToInt(at.x) && gx < Mathf.FloorToInt(at.x) + 2 && gy >= Mathf.FloorToInt(at.y) && gy < Mathf.FloorToInt(at.y) + 2)
+                if (Shown(c.Scene) && ScenePoint(c.Scene, c.Local, out var at) && gx >= Mathf.FloorToInt(at.x) && gx < Mathf.FloorToInt(at.x) + 2 && gy >= Mathf.FloorToInt(at.y) && gy < Mathf.FloorToInt(at.y) + 2)
                     return "箱子";
             foreach (var (scene, local) in LifeCrystals.Standing())
-                if (ScenePoint(scene, local, out var at) && gx >= Mathf.FloorToInt(at.x) - 1 && gx < Mathf.FloorToInt(at.x) + 1 && gy >= Mathf.FloorToInt(at.y) && gy < Mathf.FloorToInt(at.y) + 2 && Seen(at + new Vector2(0f, 0.5f)))
+                if (Shown(scene) && ScenePoint(scene, local, out var at) && gx >= Mathf.FloorToInt(at.x) - 1 && gx < Mathf.FloorToInt(at.x) + 1 && gy >= Mathf.FloorToInt(at.y) && gy < Mathf.FloorToInt(at.y) + 2 && Seen(at + new Vector2(0f, 0.5f)))
                     return "生命水晶";
             return solidName;
         }
@@ -825,7 +902,7 @@ namespace TerraKnight.UI
                 using (var w = new BinaryWriter(gz))
                 {
                     w.Write("TKMAP");
-                    w.Write(1);
+                    w.Write(MapVersion);
                     var kept = new List<Room>();
                     foreach (var room in rooms.Values) if (!room.FromAtlas) kept.Add(room);
                     w.Write(kept.Count);
@@ -868,6 +945,7 @@ namespace TerraKnight.UI
             toCapture.Clear();
             // The bought maps' rooms (from the atlas, not kept) are charted again for the save now loaded.
             chartedKey = "";
+            nextReveal = nextCapture = nextChart = 0f;
             haveHead = false;
             Open = false;
         }
@@ -880,12 +958,14 @@ namespace TerraKnight.UI
             {
                 try
                 {
+                    int version;
                     using (var fs = File.OpenRead(path))
                     using (var gz = new GZipStream(fs, CompressionMode.Decompress))
                     using (var r = new BinaryReader(gz))
                     {
                         if (r.ReadString() != "TKMAP") throw new InvalidDataException("not a map file");
-                        r.ReadInt32();
+                        version = r.ReadInt32();
+                        if (version < 1 || version > MapVersion) throw new InvalidDataException("unsupported map version " + version);
                         int count = r.ReadInt32();
                         for (int k = 0; k < count; k++)
                         {
@@ -914,6 +994,28 @@ namespace TerraKnight.UI
                             rooms[name] = room;
                         }
                     }
+                    if (version < MapVersion)
+                    {
+                        // Old Seen bits mixed real exploration with camera-wide and legacy room reveals.
+                        // Preserve the original map before clearing only those bits. Purchased maps
+                        // remain in PlayerData and ChartBought reconstructs their dimmed outlines.
+                        string backup = path + ".before-exploration-v2.bak";
+                        if (File.Exists(backup)) backup += "." + DateTime.UtcNow.Ticks;
+                        try { File.Copy(path, backup); }
+                        catch (Exception e)
+                        {
+                            Plugin.Log.LogError($"[地图] 旧探索记录备份失败，保留原记录：{e.Message}");
+                            return;
+                        }
+                        foreach (var room in rooms.Values)
+                        {
+                            if (room.Seen != null) Array.Clear(room.Seen, 0, room.Seen.Length);
+                            room.AnySeen = room.RevealAll = false;
+                            room.Dirty = true;
+                        }
+                        Save(slot);
+                        Plugin.Log.LogInfo($"[地图] 已备份旧地图到 {backup}，重置探索；已购买地图保留");
+                    }
                     Plugin.Log.LogInfo($"[地图] 读入地图存档：{rooms.Count} 个场景");
                     return;
                 }
@@ -923,12 +1025,8 @@ namespace TerraKnight.UI
                     rooms.Clear();
                 }
             }
-            // No map yet for this save: the scenes already visited show whole when seen again.
-            var pd = PlayerData.instance;
-            if (pd?.scenesVisited != null)
-                foreach (var s in pd.scenesVisited)
-                    if (layout.TryGetValue(s, out var at))
-                        rooms[s] = new Room { Name = s, At = at, RevealAll = true, Area = Areas.AreaName(s), Hue = Player.OpeningPortal.AreaColor(Areas.AreaName(s)) };
+            // A visited scene is not a walked cell. With no cell map, begin exploring locally;
+            // purchased charts are reconstructed separately without setting Seen bits.
         }
 
         // ---------------------------------------------------------------- dev
@@ -1035,6 +1133,15 @@ namespace TerraKnight.UI
 
         /// <summary>Whether the map draws a room now (a room behind a door only while the player is in it).</summary>
         public static bool DevShown(string scene) => rooms.TryGetValue(scene, out var room) && Shown(room);
+
+        /// <summary>Dev: a scene in the deep layer; the layer drawn now; pick the full map's layer (0 the player's, 1 shallow, 2 deep).</summary>
+        public static bool DevDeep(string scene) => IsDeep(scene);
+        public static bool DevViewDeep => ViewDeep;
+        public static void DevPickLayer(int layer) => layerChoice = (MapLayer)layer;
+        public static Rect DevLayerTab(int i) => layerTabs[i];
+
+        /// <summary>Dev: the player's place on the map, in global cells.</summary>
+        public static Vector2 DevHeadCell => HeadCell(out _);
 
         public static void DevSetOpen(bool open)
         {

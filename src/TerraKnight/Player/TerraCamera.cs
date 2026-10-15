@@ -57,10 +57,55 @@ namespace TerraKnight.Player
                 return false;
             }
             if (__instance.mode != CameraController.CameraMode.FROZEN)
-                Snap(__instance, HeroCenter(___hero_ctrl) + ScopePan(__instance));
+                Snap(__instance, HeroCenter(___hero_ctrl) + ScopePan(__instance) + BossPan(__instance, HeroCenter(___hero_ctrl)));
             ref float timer = ref startLockedTimer(__instance);
             if (timer > 0f) timer -= Time.deltaTime;
             return false;
+        }
+
+        static Vector2 bossPan;
+        public static Vector2 DevBossPan => bossPan;
+
+        /// <summary>
+        /// Hollow Knight's view is about half of Terraria's at the same screen, and its arenas are made to be seen
+        /// whole under their camera locks: a boss leaping off the screen (the False Knight, Hornet...) leaves only its
+        /// health bar. While a boss's bar is up the view eases toward it as far as it is off screen (its whole body in
+        /// view, a margin inside the edge), the player kept within six tenths of the view's middle; back on the
+        /// player when the boss is in view again or the fight is over.
+        /// </summary>
+        static Vector2 BossPan(CameraController cc, Vector2 player)
+        {
+            var target = Vector2.zero;
+            var cam = cc.cam != null ? cc.cam : Camera.main;
+            var info = UI.EnemyHealthBars.Fought;
+            var hm = info?.Hm;
+            if (cam != null && hm != null && !hm.isDead && hm.hp > 0 && hm.gameObject.activeInHierarchy && !Items.EnemyStats.Defeated(hm))
+            {
+                Bounds b = default;
+                bool any = false;
+                foreach (var r in hm.GetComponentsInChildren<Renderer>())
+                {
+                    if (r == null || !r.enabled || r is ParticleSystemRenderer || r.bounds.size.x > 40f) continue;
+                    if (!any) { b = r.bounds; any = true; }
+                    else b.Encapsulate(r.bounds);
+                }
+                if (!any) { var col = hm.GetComponent<Collider2D>(); if (col != null) { b = col.bounds; any = true; } }
+                float dist = Mathf.Abs(cc.transform.position.z);
+                float halfH = cam.orthographic ? cam.orthographicSize : dist * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad), halfW = halfH * cam.aspect;
+                if (any && Vector2.Distance(b.center, player) < 40f)
+                {
+                    float mx = halfW * 0.9f, my = halfH * 0.85f;
+                    if (b.max.x > player.x + mx) target.x = b.max.x - (player.x + mx);
+                    else if (b.min.x < player.x - mx) target.x = b.min.x - (player.x - mx);
+                    if (b.max.y > player.y + my) target.y = b.max.y - (player.y + my);
+                    else if (b.min.y < player.y - my) target.y = b.min.y - (player.y - my);
+                    target.x = Mathf.Clamp(target.x, -halfW * 0.6f, halfW * 0.6f);
+                    target.y = Mathf.Clamp(target.y, -halfH * 0.6f, halfH * 0.6f);
+                }
+            }
+            // Glided there and back, a little faster than a scope (the boss doesn't wait).
+            bossPan = Vector2.MoveTowards(bossPan, target, 48f * 60f * Effects.TerraParticles.Px * Time.unscaledDeltaTime);
+            return bossPan;
         }
 
         static Vector2 pan;

@@ -84,6 +84,7 @@ namespace TerraKnight.World
         [HarmonyPatch(typeof(SetPosition), "DoSetPosition")]
         static bool SetPositionLocal(SetPosition __instance)
         {
+            if (!Net.BattleIsolation.Allows(__instance)) return false;
             var off = Of(__instance);
             if (off == Vector3.zero) return true;
             var target = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
@@ -101,16 +102,18 @@ namespace TerraKnight.World
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(iTweenMoveTo), "DoiTween")]
-        static void MoveToLocal(iTweenMoveTo __instance, out Vector3 __state)
+        static bool MoveToLocal(iTweenMoveTo __instance, out Vector3 __state)
         {
             __state = Vector3.zero;
-            var off = Of(__instance);
-            if (off == Vector3.zero || __instance.vectorPosition.IsNone) return;
-            if (!__instance.transformPosition.IsNone && __instance.transformPosition.Value != null) return;
             var target = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
-            if (target == null || !InWorldFrame(target, __instance.space)) return;
+            if (!Net.BattleIsolation.AllowsTarget(__instance.Fsm, target)) return false;
+            var off = Of(__instance);
+            if (off == Vector3.zero || __instance.vectorPosition.IsNone) return true;
+            if (!__instance.transformPosition.IsNone && __instance.transformPosition.Value != null) return true;
+            if (target == null || !InWorldFrame(target, __instance.space)) return true;
             __state = off;
             __instance.vectorPosition.Value += off;
+            return true;
         }
 
         [HarmonyPostfix]

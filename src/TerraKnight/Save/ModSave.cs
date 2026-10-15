@@ -236,20 +236,20 @@ namespace TerraKnight.Save
             file.Boosts = new List<string>();
             foreach (var b in mod.Stats.Boosts) file.Boosts.Add(b.ToString());
             file.Stations = new List<StationSave>();
-            foreach (var s in World.Stations.Save()) file.Stations.Add(new StationSave { Scene = s.Scene, Kind = s.Kind.ToString(), X = s.Local.x, Y = s.Local.y });
+            foreach (var s in Net.WorldSync.SaveStations()) file.Stations.Add(new StationSave { Scene = s.Scene, Kind = s.Kind.ToString(), X = s.Local.x, Y = s.Local.y });
             file.Chests = new List<ChestSave>();
-            foreach (var c in World.Chests.Save())
+            foreach (var c in Net.WorldSync.SaveChests())
             {
                 var cs = new ChestSave { Scene = c.Scene, X = c.Local.x, Y = c.Local.y };
                 foreach (var it in c.Items) cs.Items.Add(Pack(it));
                 file.Chests.Add(cs);
             }
-            file.CrystalSeed = World.LifeCrystals.Seed;
+            file.CrystalSeed = Net.WorldSync.SaveSeed;
             file.Crystals = new List<CrystalSave>();
-            foreach (var c in World.LifeCrystals.Save()) file.Crystals.Add(new CrystalSave { Scene = c.Scene, Placed = c.Placed, Taken = c.Taken, X = c.Local.x, Y = c.Local.y });
+            foreach (var c in Net.WorldSync.SaveCrystals()) file.Crystals.Add(new CrystalSave { Scene = c.Scene, Placed = c.Placed, Taken = c.Taken, X = c.Local.x, Y = c.Local.y });
             // Items lying in the world aren't kept (Terraria saves none with the world): quitting clears them,
             // so they never pile up from one session to the next.
-            foreach (var kv in World.WorldEdits.All)
+            foreach (var kv in Net.WorldSync.SaveEdits())
             {
                 var cells = new List<long>(kv.Value.Count);
                 foreach (var cell in kv.Value) cells.Add(((long)cell.Key << 8) | cell.Value);

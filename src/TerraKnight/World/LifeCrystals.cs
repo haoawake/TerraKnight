@@ -18,7 +18,7 @@ namespace TerraKnight.World
     /// <see cref="Allowance"/>: the ground gives more crystals than that, the rest of the fifteen
     /// open with masks and bosses.
     /// </summary>
-    internal sealed class LifeCrystals : MonoBehaviour
+    internal sealed partial class LifeCrystals : MonoBehaviour
     {
         public const int PerSave = 24;
 
@@ -119,6 +119,13 @@ namespace TerraKnight.World
             var order = Order(Seed);
             for (int i = 0; i < PerSave && i < order.Count; i++) crystals.Add(new Crystal { Scene = order[i] });
             Plugin.Log.LogInfo($"[生命水晶] 这个存档的 {crystals.Count} 个生命水晶在：{string.Join("、", Scenes())}");
+        }
+
+        /// <summary>Where the crystals lie that are drawn now (the Metal Detector's treasure).</summary>
+        public static IEnumerable<Vector2> Lying()
+        {
+            foreach (var c in crystals)
+                if (!c.Taken && c.Renderer != null && c.Renderer.enabled && c.Renderer.gameObject.activeInHierarchy) yield return c.Renderer.transform.position;
         }
 
         static IEnumerable<string> Scenes()
@@ -312,6 +319,7 @@ namespace TerraKnight.World
         /// <summary>A pickaxe swung at a crystal in reach: pick power until 100 knocks it out. True when the swing was at one.</summary>
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
+            if (!Net.WorldSync.CanInteract) return false;
             if (pick == null || pick.PickPower <= 0 || hero == null) return false;
             var reach = Reach(hero);
             foreach (var c in crystals)
@@ -321,6 +329,11 @@ namespace TerraKnight.World
                 if (region == null) continue;
                 var box = Box(c, region);
                 if (!box.Contains(mouse) || !reach.Overlaps(box)) continue;
+                if (Net.WorldSync.Guest)
+                {
+                    Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "mineCrystal", Key = "l:" + c.Scene, Power = pick.PickPower });
+                    return true;
+                }
                 c.Damage += pick.PickPower;
                 TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
                 if (c.Damage < 100)
@@ -375,6 +388,7 @@ namespace TerraKnight.World
 
         void Update()
         {
+            if (!Net.WorldSync.CanInteract) return;
             if (TerrainSystem.Current == null || crystals.Count == 0) return;
             // Main.AnimateTiles: tile 12 steps a frame every 6 ticks through 10.
             ticks += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
@@ -395,6 +409,12 @@ namespace TerraKnight.World
                 }
                 if (!c.Local.HasValue)
                 {
+                    if (Net.WorldSync.Guest)
+                    {
+                        bool placed = FindSpot(region, Seed, out var suggested);
+                        Net.WorldSync.Suggest(new Net.WorldSync.Action { Op = "locateCrystal", Scene = c.Scene, Placed = placed, X = suggested.x, Y = suggested.y });
+                        continue;
+                    }
                     if (FindSpot(region, Seed, out var local))
                     {
                         c.Local = local;
@@ -412,6 +432,11 @@ namespace TerraKnight.World
                 var g = CellGrid.WorldToCell(new Vector2(box.xMin + Cell * 0.5f, box.yMin - Cell * 0.5f));
                 if (!TerraWorld.IsSolid(g.x, g.y) && !TerraWorld.IsSolid(g.x + 1, g.y) && TerraWorld.InWorld(g.x, g.y))
                 {
+                    if (Net.WorldSync.Guest)
+                    {
+                        Net.WorldSync.Suggest(new Net.WorldSync.Action { Op = "mineCrystal", Key = "l:" + c.Scene, Power = 100 });
+                        continue;
+                    }
                     Break(c, box);
                     continue;
                 }

@@ -80,6 +80,21 @@ namespace TerraKnight.Net
                 if (live != null && live.IsNeighbour(s.name)) loaded.Add(s.name);
                 else inScenes.Add(s.name);
             }
+            // Loading a boss room (including its additive boss scene) is not participation.
+            // Otherwise a player waiting outside the arena can retain enemy authority forever,
+            // and the boss's local intro tries to stage that waiting player for somebody else's fight.
+            var hero = HeroController.SilentInstance;
+            if (hero != null)
+                for (int i = inScenes.Count - 1; i >= 0; i--)
+                {
+                    string scene = inScenes[i];
+                    if (!BossRooms.IsRoom(scene)) continue;
+                    string room = scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
+                    var region = TerrainSystem.Find(room) ?? TerrainSystem.Find(scene);
+                    if (region?.OwnZone == null || region.OwnZone.Value.Contains(hero.transform.position)) continue;
+                    inScenes.RemoveAt(i);
+                    if (!loaded.Contains(scene)) loaded.Add(scene);
+                }
         }
 
         static readonly Dictionary<int, bool> gameplay = new Dictionary<int, bool>();

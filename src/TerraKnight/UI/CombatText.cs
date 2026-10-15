@@ -32,6 +32,8 @@ namespace TerraKnight.UI
 
         public static void Show(Vector3 world, string text, Color color, bool big = false)
         {
+            // The damage the player deals, counted for the DPS Meter.
+            if ((color == EnemyHurt || color == EnemyCrit) && int.TryParse(text, out int dealt)) InfoAccessories.Dealt(dealt);
             entries.Add(new Entry
             {
                 World = world,

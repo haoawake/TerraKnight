@@ -62,7 +62,7 @@ namespace TerraKnight.Items
         static float nextCheck;
         static bool suppressed;
 
-        /// <summary>Each frame in play: the swing while the button is held, and the nail given back if it went missing.</summary>
+        /// <summary>Each frame in play: the swing while the button is held, and the nail given back if it went missing, kept to one (<see cref="UniqueItems"/>).</summary>
         public static void Tick(TerraMod mod, HeroController hero)
         {
             EnsureIcon();
@@ -82,7 +82,7 @@ namespace TerraKnight.Items
             }
             if (Time.unscaledTime < nextCheck) return;
             nextCheck = Time.unscaledTime + 1f;
-            if (Owned(mod)) return;
+            if (UniqueItems.Keep(mod.Inventory, ItemType.KnightNail)) return;
             int left = mod.Inventory.Pickup(ItemType.KnightNail, 1);
             var at = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
             if (left > 0) WorldItems.Drop(ItemStack.Of(ItemType.KnightNail), at);
@@ -118,7 +118,7 @@ namespace TerraKnight.Items
                 hero.SoulGain();
                 DevHits++;
             }
-            else DevLastRefused = $"{__instance.name}：免疫 {MeleeHits.Immune(__instance)}，场地外 {World.ArenaGuard.Outside(__instance)}";
+            else DevLastRefused = $"{__instance.name}：场地外 {World.ArenaGuard.Outside(__instance)}，唤醒中 {BossWake.Asleep(__instance)}";
             return false;
         }
 
@@ -138,17 +138,6 @@ namespace TerraKnight.Items
 
         /// <summary>The game's own nail checks (CanAttack) run while it is in hand; the Terraria hands keep them off otherwise.</summary>
         public static bool LetsAttack => TerraMod.Instance != null && Holding();
-
-        static bool Owned(TerraMod mod)
-        {
-            var inv = mod.Inventory;
-            if (inv.Mouse.Type == ItemType.KnightNail && !inv.Mouse.IsEmpty) return true;
-            foreach (var s in inv.Slots) if (s.Type == ItemType.KnightNail && !s.IsEmpty) return true;
-            foreach (var l in inv.Loadouts)
-                if (l.Bag != null) foreach (var s in l.Bag) if (s.Type == ItemType.KnightNail && !s.IsEmpty) return true;
-            if (World.Chests.Holds(ItemType.KnightNail)) return true;
-            return WorldItems.Lying(ItemType.KnightNail);
-        }
 
         // ------------------------------------------------------------------ its picture
 

@@ -11,6 +11,13 @@ namespace TerraKnight.World
         None, WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Bottle,
         /// <summary>Not a crafting station: the Piggy Bank, opened with a right click (Items.GeoWallet).</summary>
         PiggyBank,
+        Hellforge, AdamantiteForge, TitaniumForge, CrystalBall, Bookcase, ImbuingStation, Autohammer, AncientManipulator, Solidifier,
+        Keg, CookingPot, AlchemyTable, HeavyWorkBench, BoneWelder, GlassKiln, LivingLoom, SkyMill, IceMachine, LihzahrdFurnace,
+        SteampunkBoiler, FleshCloningVat, HoneyDispenser, BlendOMatic, MeatGrinder,
+        /// <summary>A right click gives their buff (BuffOf).</summary>
+        AmmoBox, BewitchingTable, SharpeningStation, WarTable, SliceOfCake,
+        /// <summary>Fixed in the world (FixedStations), not an item: the altars.</summary>
+        DemonAltar, CrimsonAltar,
     }
 
     /// <summary>
@@ -27,7 +34,7 @@ namespace TerraKnight.World
     /// that scene's own coordinates, and is kept in the mod's save. A Hallownest bench or Dirtmouth
     /// still makes everything its stage has reached (Items.Recipes), these add to that anywhere.
     /// </summary>
-    internal sealed class Stations : MonoBehaviour
+    internal sealed partial class Stations : MonoBehaviour
     {
         const float Px = Effects.TerraParticles.Px;
         const float Z = 0.0045f;
@@ -44,6 +51,8 @@ namespace TerraKnight.World
             public string[] Counts;
             /// <summary>Main.tileSolidTop: stood on like a platform, and furniture goes on top.</summary>
             public bool SolidTop;
+            /// <summary>The buff a right click on it gives (Player.TileInteractionsUse: Crystal Ball 29, Ammo Box 93, ...) and for how long, ticks.</summary>
+            public int Buff, BuffTicks;
         }
 
         static readonly Dictionary<StationKind, Spec> specs = new Dictionary<StationKind, Spec>
@@ -63,6 +72,41 @@ namespace TerraKnight.World
             [StationKind.Bottle] = new Spec { Texture = "Tiles_13", W = 1, H = 1, Heights = new[] { 16 }, Item = ItemType.Bottle, Counts = new[] { "玻璃瓶" } },
             // Tile 29: Style2x1 with CoordinateHeights {18}; it counts as no station.
             [StationKind.PiggyBank] = new Spec { Texture = "Tiles_29", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.PiggyBank, Counts = new string[0] },
+            // TileObjectData: the Hellforge counts as a Furnace too, the forges as both (Recipe: adjTile 77 and 17); the Alchemy
+            // Table as a placed bottle; the Living Loom as a Loom. Styles side by side for the second forge and the Crimson Altar.
+            [StationKind.Hellforge] = new Spec { Texture = "Tiles_77", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Hellforge, Counts = new[] { "地狱熔炉", "熔炉" } },
+            [StationKind.AdamantiteForge] = new Spec { Texture = "Tiles_133", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.AdamantiteForge, Counts = new[] { "精金熔炉", "地狱熔炉", "熔炉" } },
+            [StationKind.TitaniumForge] = new Spec { Texture = "Tiles_133", W = 3, H = 2, StyleX = 54, Heights = new[] { 16, 18 }, Item = ItemType.TitaniumForge, Counts = new[] { "精金熔炉", "地狱熔炉", "熔炉" } },
+            [StationKind.CrystalBall] = new Spec { Texture = "Tiles_125", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.CrystalBall, Counts = new[] { "水晶球" }, Buff = 29, BuffTicks = 36000 },
+            [StationKind.Bookcase] = new Spec { Texture = "Tiles_101", W = 3, H = 4, Heights = new[] { 16, 16, 16, 18 }, Item = ItemType.Bookcase, Counts = new[] { "书架" } },
+            [StationKind.ImbuingStation] = new Spec { Texture = "Tiles_243", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.ImbuingStation, Counts = new[] { "灌注站" } },
+            [StationKind.Autohammer] = new Spec { Texture = "Tiles_247", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.Autohammer, Counts = new[] { "自动锤炼机" } },
+            [StationKind.AncientManipulator] = new Spec { Texture = "Tiles_412", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.LunarCraftingStation, Counts = new[] { "远古操纵机" } },
+            [StationKind.Solidifier] = new Spec { Texture = "Tiles_220", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.Solidifier, Counts = new[] { "固化机" } },
+            [StationKind.Keg] = new Spec { Texture = "Tiles_94", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Keg, Counts = new[] { "酒桶" } },
+            [StationKind.CookingPot] = new Spec { Texture = "Tiles_96", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.CookingPot, Counts = new[] { "烹饪锅" } },
+            [StationKind.AlchemyTable] = new Spec { Texture = "Tiles_355", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.AlchemyTable, Counts = new[] { "炼药桌", "玻璃瓶" } },
+            [StationKind.HeavyWorkBench] = new Spec { Texture = "Tiles_283", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.HeavyWorkBench, Counts = new[] { "重型组装机" } },
+            [StationKind.BoneWelder] = new Spec { Texture = "Tiles_300", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.BoneWelder, Counts = new[] { "骨头焊机" } },
+            [StationKind.FleshCloningVat] = new Spec { Texture = "Tiles_301", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.FleshCloningVaat, Counts = new[] { "血肉克隆台" } },
+            [StationKind.GlassKiln] = new Spec { Texture = "Tiles_302", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.GlassKiln, Counts = new[] { "玻璃窑" } },
+            [StationKind.LihzahrdFurnace] = new Spec { Texture = "Tiles_303", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.LihzahrdFurnace, Counts = new[] { "丛林蜥蜴熔炉" } },
+            [StationKind.LivingLoom] = new Spec { Texture = "Tiles_304", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.LivingLoom, Counts = new[] { "生命木织机", "织布机" } },
+            [StationKind.SkyMill] = new Spec { Texture = "Tiles_305", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.SkyMill, Counts = new[] { "天磨" } },
+            [StationKind.IceMachine] = new Spec { Texture = "Tiles_306", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.IceMachine, Counts = new[] { "冰雪机" } },
+            [StationKind.SteampunkBoiler] = new Spec { Texture = "Tiles_307", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.SteampunkBoiler, Counts = new[] { "蒸汽朋克锅炉" } },
+            [StationKind.HoneyDispenser] = new Spec { Texture = "Tiles_308", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.HoneyDispenser, Counts = new[] { "蜂蜜分配机" } },
+            [StationKind.BlendOMatic] = new Spec { Texture = "Tiles_217", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.BlendOMatic, Counts = new[] { "搅拌机" } },
+            [StationKind.MeatGrinder] = new Spec { Texture = "Tiles_218", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.MeatGrinder, Counts = new[] { "绞肉机" } },
+            // The buff stations (buffs 93 Ammo Box, 150 Bewitched, 159 Sharpened, 348 Strategist: 10 minutes; 192 Sugar Rush: 2).
+            [StationKind.AmmoBox] = new Spec { Texture = "Tiles_287", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.AmmoBox, Counts = new string[0], Buff = 93, BuffTicks = 36000 },
+            [StationKind.BewitchingTable] = new Spec { Texture = "Tiles_354", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.BewitchingTable, Counts = new string[0], Buff = 150, BuffTicks = 36000 },
+            [StationKind.SharpeningStation] = new Spec { Texture = "Tiles_377", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.SharpeningStation, Counts = new string[0], Buff = 159, BuffTicks = 36000 },
+            [StationKind.WarTable] = new Spec { Texture = "Tiles_464", W = 5, H = 4, Heights = new[] { 16, 16, 16, 18 }, Item = ItemType.WarTable, Counts = new string[0], Buff = 348, BuffTicks = 36000 },
+            [StationKind.SliceOfCake] = new Spec { Texture = "Tiles_621", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.SliceOfCake, Counts = new string[0], Buff = 192, BuffTicks = 7200 },
+            // The altars (tile 26: Demon Altar style 0, Crimson Altar style 1), fixed in the world, never knocked down.
+            [StationKind.DemonAltar] = new Spec { Texture = "Tiles_26", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.None, Counts = new[] { "恶魔祭坛 / 猩红祭坛" } },
+            [StationKind.CrimsonAltar] = new Spec { Texture = "Tiles_26", W = 3, H = 2, StyleX = 54, Heights = new[] { 16, 18 }, Item = ItemType.None, Counts = new[] { "恶魔祭坛 / 猩红祭坛" } },
         };
 
         sealed class Station
@@ -72,6 +116,8 @@ namespace TerraKnight.World
             /// <summary>Bottom middle, in the scene's own coordinates.</summary>
             public Vector2 Local;
             public int Damage;
+            /// <summary>Set in the world by the mod (the altars): not the player's, never knocked down nor saved.</summary>
+            public bool Fixed;
             public SpriteRenderer Renderer;
             /// <summary>Its top, a one-way platform on the terrain layer (the solid-top ones).</summary>
             public GameObject Top;
@@ -157,12 +203,19 @@ namespace TerraKnight.World
         /// <summary>A station set where the cursor points: snapped to the grid, on even ground under all its cells, room for it, in reach.</summary>
         public static bool TryPlace(StationKind kind, HeroController hero, Vector2 aim)
         {
+            if (!Net.WorldSync.CanInteract) return false;
             if (hero == null || !specs.ContainsKey(kind)) return false;
             if (!FindSpot(kind, hero, aim, out var bottom)) return false;
             if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
             var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
+            if (Net.WorldSync.Guest)
+            {
+                var local = bottom - (Vector2)region.Root.position;
+                Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "station", Scene = region.SceneName, X = local.x, Y = local.y, Kind = (int)kind, Count = TerraMod.Instance.Inventory.Infinite ? 0 : 1 });
+                return true;
+            }
             stations.Add(new Station { Kind = kind, Region = region, Scene = region.SceneName, Local = bottom - (Vector2)region.Root.position });
             TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
             DevPlaced++;
@@ -207,7 +260,11 @@ namespace TerraKnight.World
             return true;
         }
 
-        /// <summary>A right click on a Piggy Bank in reach: the bank opens (or shuts) with the inventory. True when the click was on one.</summary>
+        /// <summary>
+        /// A right click on a station in reach: a Piggy Bank opens (or shuts) with the inventory; a buff station gives its
+        /// buff (Player.TileInteractionsUse: the Crystal Ball, the Ammo Box, the Bewitching Table, the Sharpening Station,
+        /// the War Table, the Slice of Cake). True when the click was on one.
+        /// </summary>
         public static bool TryRightClick(Vector2 mouse)
         {
             var hero = HeroController.SilentInstance;
@@ -215,11 +272,52 @@ namespace TerraKnight.World
             var reach = Reach(hero);
             foreach (var s in stations)
             {
-                if (s.Kind != StationKind.PiggyBank || s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
-                Chests.ToggleBank(s.Scene, s.Region, s.Local);
-                return true;
+                if (s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
+                if (s.Kind == StationKind.PiggyBank)
+                {
+                    Chests.ToggleBank(s.Scene, s.Region, s.Local);
+                    return true;
+                }
+                if (s.Spec.Buff > 0)
+                {
+                    Player.PlayerBuffs.Add(s.Spec.Buff, s.Spec.BuffTicks);
+                    TerraMod.Instance?.PlaySound(s.Kind == StationKind.SliceOfCake ? "Item_2" : s.Kind == StationKind.AmmoBox ? "Item_149" : s.Kind == StationKind.SharpeningStation ? "Item_37" : "Item_4");
+                    DevBuffsTaken++;
+                    return true;
+                }
             }
             return false;
+        }
+
+        public static int DevBuffsTaken;
+
+        /// <summary>Dev: the recipe stations standing within reach.</summary>
+        public static string DevNearNames(HeroController hero)
+        {
+            var names = new List<string>();
+            var reach = Reach(hero);
+            foreach (var s in stations)
+                if (s.Region != null && reach.Overlaps(s.Box))
+                    foreach (var c in s.Spec.Counts) if (!names.Contains(c)) names.Add(c);
+            return names.Count == 0 ? "无" : string.Join("、", names);
+        }
+
+        /// <summary>Dev: the box of the last station of a kind in a loaded scene.</summary>
+        public static Rect? DevBoxOf(StationKind kind)
+        {
+            for (int i = stations.Count - 1; i >= 0; i--)
+                if (stations[i].Kind == kind && stations[i].Region != null) return stations[i].Box;
+            return null;
+        }
+
+        /// <summary>
+        /// A station the mod sets in the world (the altars, FixedStations): once per scene and kind, bottom middle in the
+        /// scene's own coordinates; it is never knocked down, never falls and isn't saved.
+        /// </summary>
+        public static void PlaceFixed(StationKind kind, string scene, Vector2 local)
+        {
+            foreach (var s in stations) if (s.Fixed && s.Kind == kind && s.Scene == scene) return;
+            stations.Add(new Station { Kind = kind, Scene = scene, Local = local, Fixed = true });
         }
 
         // ------------------------------------------------------------------ breaking
@@ -227,14 +325,20 @@ namespace TerraKnight.World
         /// <summary>A pickaxe swung at a station in reach: pick power until 100 knocks it down, its item where it stood. True when the swing was at one.</summary>
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
+            if (!Net.WorldSync.CanInteract) return false;
             if (pick == null || pick.PickPower <= 0 || hero == null) return false;
             var reach = Reach(hero);
             for (int i = 0; i < stations.Count; i++)
             {
                 var s = stations[i];
                 if (s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
-                // WorldGen.CanKillTile: nothing under a chest goes.
-                if (Chests.RestsOn(s.Box)) return true;
+                // WorldGen.CanKillTile: nothing under a chest goes; the world's own altars stay.
+                if (Chests.RestsOn(s.Box) || s.Fixed) return true;
+                if (Net.WorldSync.Guest)
+                {
+                    Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "mineStation", Key = Net.WorldSync.Key("s", s.Scene, s.Local), Power = pick.PickPower });
+                    return true;
+                }
                 var px = Effects.TerraParticles.ToPx(s.Box.center);
                 s.Damage += pick.PickPower;
                 TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
@@ -267,6 +371,7 @@ namespace TerraKnight.World
         void Update()
         {
             if (TerrainSystem.Current == null) return;
+            FixedStations.Ensure();
             foreach (var s in stations) s.Region = RegionNamed(s.Scene);
             ticks += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
             while (ticks >= 1f)
@@ -280,9 +385,15 @@ namespace TerraKnight.World
             {
                 var s = stations[i];
                 if (s.Region == null) { s.SupportedIn = null; continue; }
+                if (s.Fixed) continue;
                 bool now = HasGround(s);
                 if (s.SupportedIn == s.Region && s.Supported && !now && !Chests.RestsOn(s.Box))
                 {
+                    if (Net.WorldSync.Guest)
+                    {
+                        Net.WorldSync.Suggest(new Net.WorldSync.Action { Op = "mineStation", Key = Net.WorldSync.Key("s", s.Scene, s.Local), Power = 100 });
+                        continue;
+                    }
                     Dust(Effects.TerraParticles.ToPx(s.Box.center), s, 10);
                     WorldItems.Drop(ItemStack.Of(s.Spec.Item), s.Box.center);
                     TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
@@ -518,13 +629,14 @@ namespace TerraKnight.World
 
         public static void Clear()
         {
+            FixedStations.Reset();
             for (int i = stations.Count - 1; i >= 0; i--) Remove(i);
         }
 
         public static List<Saved> Save()
         {
             var list = new List<Saved>(stations.Count);
-            foreach (var s in stations) list.Add(new Saved { Scene = s.Scene, Local = s.Local, Kind = s.Kind });
+            foreach (var s in stations) if (!s.Fixed) list.Add(new Saved { Scene = s.Scene, Local = s.Local, Kind = s.Kind });
             return list;
         }
 

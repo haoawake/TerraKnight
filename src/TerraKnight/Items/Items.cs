@@ -197,6 +197,41 @@ namespace TerraKnight.Items
         Geo, PiggyBank,
         // The materials of the craft chain (ItemsCraftChain.cs), crimtane and luminite ore among the ores (ItemsOres.cs).
         CrimtaneOre, CrimtaneBar, TissueSample, SpellTome, Harp, DjinnLamp, DivingHelmet, FlameWakerBoots, LunarOre,
+        // Append only: existing numeric save IDs must never move.
+        BossSigilFalseKnight, BossSigilGruzMother, BossSigilMawlek, BossSigilHornet, BossSigilMossCharger,
+        BossSigilGorb, BossSigilNoEyes, BossSigilDungDefender, BossSigilTraitorLord, BossSigilMantisLords,
+        BossSigilSoulMaster, BossSigilUumuu, BossSigilFlukemarm, BossSigilCrystalGuardian, BossSigilElderHu,
+        BossSigilMarmu, BossSigilWatcherKnights, BossSigilHiveKnight, BossSigilCollector, BossSigilNosk,
+        BossSigilGalien, BossSigilXero, BossSigilHornetSentinel, BossSigilMarkoth, BossSigilBrokenVessel,
+        BossSigilGrimm, BossSigilHollowKnight, BossSigilFailedChampion, BossSigilSoulTyrant, BossSigilLostKin,
+        BossSigilWhiteDefender, BossSigilGreyPrince, BossSigilNightmareGrimm, BossSigilRadiance,
+        BossSigilPureVessel, BossSigilOroMato, BossSigilSheo, BossSigilSly, BossSigilOblobbles, BossSigilGodTamer,
+        // The information accessories, the mirrors and the teleport rods (ItemsInfo.cs).
+        CopperWatch, TinWatch, SilverWatch, TungstenWatch, GoldWatch, PlatinumWatch, DepthMeter, Compass, GPS,
+        FishermansGuide, WeatherRadio, Sextant, FishFinder, MetalDetector, LifeformAnalyzer, DPSMeter, Stopwatch, TallyCounter,
+        GoblinTech, REK, PDA, CellPhone, MagicMirror, IceMirror, RodofDiscord, RodOfHarmony, MagnetFlower,
+        // The rest of the crafting stations and the buff ones (ItemsStations2.cs).
+        Hellforge, AdamantiteForge, TitaniumForge, CrystalBall, Bookcase, ImbuingStation, Autohammer, LunarCraftingStation, Solidifier,
+        Keg, CookingPot, AlchemyTable, HeavyWorkBench, BoneWelder, GlassKiln, LivingLoom, SkyMill, IceMachine, LihzahrdFurnace,
+        SteampunkBoiler, FleshCloningVaat, HoneyDispenser, BlendOMatic, MeatGrinder, AmmoBox, BewitchingTable, SharpeningStation,
+        WarTable, SliceOfCake, Book,
+        // The rest of Terraria's armor (ItemsArmor2.cs), and the Robe, the Pink Thread and the Pumpkin.
+        Goggles, MeteorHelmet, MeteorSuit, MeteorLeggings, EmptyBucket, WizardHat, NinjaHood, NinjaShirt, NinjaPants, MiningShirt, MiningPants,
+        EbonwoodHelmet, EbonwoodBreastplate, EbonwoodGreaves, RichMahoganyHelmet, RichMahoganyBreastplate, RichMahoganyGreaves, PearlwoodHelmet,
+        PearlwoodBreastplate, PearlwoodGreaves, CrimsonHelmet, CrimsonScalemail, CrimsonGreaves, EskimoHood, EskimoCoat, EskimoPants, GreenCap,
+        VikingHelmet, CactusHelmet, CactusBreastplate, CactusLeggings, ShadewoodHelmet, ShadewoodBreastplate, ShadewoodGreaves, AncientIronHelmet,
+        AncientGoldHelmet, AncientShadowHelmet, AncientShadowScalemail, AncientShadowGreaves, AncientNecroHelmet, AncientCobaltHelmet,
+        AncientCobaltBreastplate, AncientCobaltLeggings, PinkEskimoHood, PinkEskimoCoat, PinkEskimoPants, RainHat, RainCoat, AmethystRobe, TopazRobe,
+        SapphireRobe, EmeraldRobe, RubyRobe, DiamondRobe, PumpkinHelmet, PumpkinBreastplate, PumpkinLeggings, MagicHat, Gi, GypsyRobe, AnglerHat,
+        AnglerVest, AnglerPants, BorealWoodHelmet, BorealWoodBreastplate, BorealWoodGreaves, PalmWoodHelmet, PalmWoodBreastplate, PalmWoodGreaves,
+        NightVisionHelmet, GladiatorHelmet, GladiatorBreastplate, GladiatorLeggings, FossilHelm, FossilShirt, FossilPants, DjinnsCurse,
+        ApprenticeHat, ApprenticeRobe, ApprenticeTrousers, SquireGreatHelm, SquirePlating, SquireGreaves, HuntressWig, HuntressJerkin, HuntressPants,
+        MonkBrows, MonkShirt, MonkPants, SquireAltHead, SquireAltShirt, SquireAltPants, ApprenticeAltHead, ApprenticeAltShirt, ApprenticeAltPants,
+        HuntressAltHead, HuntressAltShirt, HuntressAltPants, MonkAltHead, MonkAltShirt, MonkAltPants, UltrabrightHelmet, AmberRobe, MoonLordLegs,
+        DeadMansSweater, AshWoodHelmet, AshWoodBreastplate, AshWoodGreaves, UpgradedMiningHead, UpgradedMiningBody, UpgradedMiningLegs,
+        UpgradedFishingHead, UpgradedFishingBody, UpgradedFishingLegs, Robe, PinkThread, Pumpkin,
+        // The bosses' hearts (BossPotions).
+        Heart,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -247,6 +282,17 @@ namespace TerraKnight.Items
         HallowedSummoner, ChlorophyteMelee, ChlorophyteSummon, SpectreHealing, SpectreDamage, BeetleDamage, BeetleDefense,
         Wood,
         Tin, Lead, Silver, Tungsten, Platinum,
+        // ItemsArmor2.cs: each wood its own set (Set(730, 731, 732)...); the robes count with the Wizard Hat and the Magic Hat.
+        Meteor, Ninja, Mining, Ebonwood, RichMahogany, Pearlwood, Shadewood, BorealWood, PalmWood, AshWood, Crimson, Snow, Cactus,
+        Wizard, MagicHat, Robe, Pumpkin, Angler, Gladiator, Fossil,
+        ApprenticeT2, SquireT2, HuntressT2, MonkT2, ApprenticeT3, SquireT3, HuntressT3, MonkT3,
+    }
+
+    /// <summary>The Old One's Army sets' sentry bonuses (Player.setSquireT2 ... setMonkT3; a tier 3 set has its tier 2's too).</summary>
+    [System.Flags]
+    internal enum OoaSet : byte
+    {
+        None = 0, SquireT2 = 1, SquireT3 = 2, ApprenticeT2 = 4, ApprenticeT3 = 8, HuntressT2 = 16, HuntressT3 = 32, MonkT2 = 64, MonkT3 = 128,
     }
 
     /// <summary>What a summon staff calls (Terraria projectile ids noted).</summary>
@@ -698,7 +744,7 @@ namespace TerraKnight.Items
         public bool FairyDust;
         /// <summary>desertBoots (×1.75 run on sand), flowerBoots (flowers on grass: none here), the Hellfire Treads' flame trail.</summary>
         public bool DesertBoots, FlowerBoots, FlameTrail;
-        /// <summary>waterWalk2 (1: water and honey) / waterWalk (2: lava too): Hallownest has no such liquids.</summary>
+        /// <summary>waterWalk2 (1: water and honey) / waterWalk (2: lava too): Hallownest's acid is walked on (Player.AcidLiquid); it has no lava.</summary>
         public int WaterWalk;
         public bool MagmaStone, KbGlove, MeleeScaleGlove, StarCloak, HoneyComb, Panic, MagicCuffs, PStone;
         public int ArmorPen;
@@ -750,6 +796,15 @@ namespace TerraKnight.Items
         /// <summary>maxTagEffects and tagEffectDuration above their base 1 (set once in Equipment's post-pass).</summary>
         public int MaxTagEffects;
         public float TagDuration;
+        /// <summary>
+        /// The sets' own effects (ArmorSetBonuses.Benefits): the Meteor set's free Space Gun (spaceGun), the Crimson set's
+        /// regeneration (crimsonRegen), the Cactus set's thorns (cactusThorns), the Ash Wood set's lava (ashWoodBonus), the
+        /// Angler set's fewer enemies (anglerSetSpawnReduction); the Dead Man's Sweater (deadMansSweater: traps hit and
+        /// debuff for half).
+        /// </summary>
+        public bool SpaceGunFree, CrimsonRegen, CactusThorns, AshWood, AnglerSet, DeadMansSweater;
+        /// <summary>The Old One's Army sets' sentry bonuses.</summary>
+        public OoaSet Ooa;
 
         public void Add(in Bonuses b)
         {
@@ -806,6 +861,8 @@ namespace TerraKnight.Items
             Calm |= b.Calm; Battle |= b.Battle; Invisible |= b.Invisible; Shine |= b.Shine; NightVision |= b.NightVision; LifeMagnet |= b.LifeMagnet; AmmoPotion |= b.AmmoPotion;
             Thorns = System.Math.Max(Thorns, b.Thorns); Luck += b.Luck; TileSpeed += b.TileSpeed; BlockRange += b.BlockRange;
             if (b.MeleeEnchant != 0) MeleeEnchant = b.MeleeEnchant;
+            SpaceGunFree |= b.SpaceGunFree; CrimsonRegen |= b.CrimsonRegen; CactusThorns |= b.CactusThorns; AshWood |= b.AshWood;
+            AnglerSet |= b.AnglerSet; DeadMansSweater |= b.DeadMansSweater; Ooa |= b.Ooa;
         }
     }
 
@@ -923,6 +980,8 @@ namespace TerraKnight.Items
         public int Mana;
         /// <summary>Used up on use (thrown explosives, potions, crystals).</summary>
         public bool Consumable;
+        /// <summary>A crafted boss rematch seal, distinct from minion staves.</summary>
+        public string BossSummonKey;
         public int HealLife, HealMana;
         public bool LifeCrystal, ManaCrystal;
         /// <summary>Kept for good: never sold, thrown, dropped or trashed (the Dream Nail).</summary>
@@ -979,7 +1038,7 @@ namespace TerraKnight.Items
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
         public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || PickPower > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
-            || BuffType > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion);
+            || BuffType > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type));
 
         /// <summary>
         /// Ammo with no use of its own (Item.useStyle 0: Explosive Jack 'O Lanterns, rockets, darts,
@@ -1259,7 +1318,7 @@ namespace TerraKnight.Items
             list.Add(new ItemDef { Type = ItemType.Rope, Name = "绳", Texture = "Item_965", UseAnimation = 15 * Tick, UseTime = 8 * Tick, Places = CellKind.Rope, MaxStack = 999, TileBoost = 3, Price = 1, Tier = 0, Tooltip = "可供攀爬\n按住上下攀爬" });
 
             // --- Armor. ---
-            list.Add(Armor(ItemType.MiningHelmet, "挖矿头盔", 88, ArmorSlot.Head, 11, 2, ArmorSet.None, price: 400, tier: 0, rare: 1, tip: "穿戴时可提供照明\n照亮黑暗的区域", bonus: new Bonuses { Light = true }));
+            list.Add(Armor(ItemType.MiningHelmet, "挖矿头盔", 88, ArmorSlot.Head, 11, 2, ArmorSet.Mining, price: 400, tier: 0, rare: 1, tip: "穿戴时可提供照明\n照亮黑暗的区域", bonus: new Bonuses { Light = true }));
             list.Add(Armor(ItemType.CopperHelmet, "铜头盔", 89, ArmorSlot.Head, 1, 1, ArmorSet.Copper, price: 40, tier: 0));
             list.Add(Armor(ItemType.CopperChainmail, "铜链甲", 80, ArmorSlot.Body, 1, 2, ArmorSet.Copper, price: 60, tier: 0));
             list.Add(Armor(ItemType.CopperGreaves, "铜护胫", 76, ArmorSlot.Legs, 1, 1, ArmorSet.Copper, price: 50, tier: 0));
@@ -1395,6 +1454,11 @@ namespace TerraKnight.Items
             AddOres(list);
             AddMoney(list);
             AddCraftChain(list);
+            AddInfo(list);
+            AddStations2(list);
+            AddArmor2(list);
+            AddHeart(list);
+            BossSummons.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
             // Held-out items not given one by hand: Terraria's own hold (Main.DrawPlayerItemPos).
@@ -1420,7 +1484,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), HeartSources()))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1989,7 +2053,7 @@ namespace TerraKnight.Items
         /// <summary>The inventory is open and an item is on the cursor: that item is the one in use.</summary>
         public bool UseMouse;
 
-        bool UsingMouse => UseMouse && !Mouse.IsEmpty;
+        internal bool UsingMouse => UseMouse && !Mouse.IsEmpty;
 
         public ItemStack Current => UsingMouse ? Mouse : Slots[Held];
 

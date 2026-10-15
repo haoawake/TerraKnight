@@ -176,8 +176,9 @@ namespace TerraKnight.Items
             }
             float period = p.Ai0 > 120f ? 5f : p.Ai0 > 90f ? 15f : 30f;
             p.Damage = Equipment.Damage(def);
-            p.Ai0++;
-            bool pay = p.Ai0 % period == 0f;
+            bool tick = MagicTick(p);
+            if (tick) p.Ai0++;
+            bool pay = tick && p.Ai0 % period == 0f;
             var v = TV(p);
             var aim = AimPx() - centre;
             var want = aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(0f, -1f);
@@ -372,13 +373,14 @@ namespace TerraKnight.Items
                 Kill(p);
                 return;
             }
-            p.Ai0++;
+            bool tick = MagicTick(p);
+            if (tick) p.Ai0++;
             int stage = (p.Ai0 >= 80f ? 1 : 0) + (p.Ai0 >= 180f ? 1 : 0);
             int ai0 = (int)p.Ai0;
-            bool pay = ai0 == 80 || ai0 == 180 || (p.Ai0 > 180f && ai0 % 20 == 0);
+            bool pay = tick && (ai0 == 80 || ai0 == 180 || (p.Ai0 > 180f && ai0 % 20 == 0));
             bool full = p.Ai0 >= 180f;
-            if (!full) p.Ai1++;
-            bool act = p.Ai0 == 1f || (full && p.Ai0 % 20f == 0f);
+            if (!full && tick) p.Ai1++;
+            bool act = tick && (p.Ai0 == 1f || (full && p.Ai0 % 20f == 0f));
             var v = TV(p);
             if ((!full && p.Ai1 >= 5f) || (full && ai0 % 5 == 0) || v == Vector2.zero)
             {
@@ -657,7 +659,8 @@ namespace TerraKnight.Items
             }
             const float period = 15f;
             bool glaring = p.Ai0 > 0f;
-            if (p.Ai0 > 0f) p.Ai0--;
+            bool tick = MagicTick(p);
+            if (p.Ai0 > 0f && tick) p.Ai0--;
             if (glaring)
             {
                 if (p.Frame < 8 || p.Frame >= 12) p.Frame = 8;
@@ -684,7 +687,7 @@ namespace TerraKnight.Items
             }
             // Centre = hand + (6, −14) − velocity, and UpdatePosition adds the velocity (facing, 0) back.
             var head = ArmPx(centre, facing, 2) + new Vector2(facing * 6f, -14f);
-            if (!glaring || p.Ai0 % period == 0f)
+            if (tick && (!glaring || p.Ai0 % period == 0f))
             {
                 var eye = centre + new Vector2(facing * 4f, 2f);
                 bool any = false;

@@ -161,7 +161,7 @@ namespace TerraKnight.UI
 
         /// <summary>
         /// A bought map (Cornifer, Iselda) charts its area as in the game: every room of it on the map,
-        /// those not visited yet from the world atlas, the whole room drawn. Its Life Crystals stay
+        /// those not visited yet from the world atlas, unexplored cells at 30% opacity. Its Life Crystals stay
         /// hidden until the player has seen their spot.
         /// </summary>
         static void ChartBought()

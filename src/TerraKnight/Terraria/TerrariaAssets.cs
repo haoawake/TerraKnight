@@ -37,6 +37,8 @@ namespace TerraKnight.Terraria
 
         public static Texture2D Texture(string name)
         {
+            // Generated from this player's Hollow Knight portraits, used everywhere an item draws.
+            if (name != null && name.StartsWith(Items.BossSummons.IconPrefix)) return Items.BossSummons.Icon(name);
             if (textures.TryGetValue(name, out var tex)) return tex;
 
             var img = XnbTexture.Load(Path.Combine(ImagesDir, name + ".xnb"));

@@ -107,6 +107,13 @@ namespace TerraKnight.Items
                     foreach (var (name, v) in a.Beaten) pd.SetBool(name, !v);
         }
 
+        /// <summary>Dev: a boss not beaten yet, as a visit sets it (its "encountered" records left be: the intro the test has seen).</summary>
+        internal static void DevUnbeaten(string key)
+        {
+            if (!arenas.TryGetValue(key, out var a)) return;
+            foreach (var (name, v) in a.Beaten) if (!Encountered(name)) PlayerData.instance.SetBool(name, v);
+        }
+
         /// <summary>Dev: a world arena's way in by the book's key ("Hornet@4"), and the flags its fight needs of the player.</summary>
         internal static bool DevWorldArena(string key, out string gate, out (string Name, bool Value)[] needs)
         {
@@ -144,9 +151,21 @@ namespace TerraKnight.Items
         public static bool DevActive => visit != null;
 
         public static bool Has(string key) => key != null && arenas.ContainsKey(key);
+        internal static string SceneOf(string key) => key != null && arenas.TryGetValue(key, out var a) ? a.Scene : null;
+        internal static bool Arrived(string key) => visit != null && visit.Key == key && visit.Arrived;
+        internal static void AbortEntry(string key)
+        {
+            if (visit == null || visit.Key != key || visit.Arrived) return;
+            if (visit.Arena.Kind == Kind.Godhome) BossSceneController.SetupEvent = null;
+            Restore(keepWins: true);
+            returnScene = null;
+        }
 
         /// <summary>Takes the player to the boss's arena for its fight; false when this boss has none (a copy is spawned then).</summary>
-        public static bool Fight(string key)
+        public static bool Fight(string key) => Fight(key, false);
+
+        /// <summary>The fight, as a rematch whatever this save has beaten (a LAN game's follower of another's seal).</summary>
+        public static bool Fight(string key, bool rematch)
         {
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
@@ -155,7 +174,13 @@ namespace TerraKnight.Items
             if (visit != null) Restore(keepWins: true);
             var a = arenas[key];
             var v = new Visit { Key = key, Arena = a };
-            foreach (var (n, val) in a.Beaten) { v.Bools[n] = pd.GetBool(n); pd.SetBool(n, val); }
+            // Beaten before (as a seal needs): the fight straight away, the story skipped, its "encountered" record kept on
+            // (the game's own way back into a fight it has seen); never beaten (the Creative book's button): met as the
+            // first time, intro and all.
+            rematch |= Bestiary.KillsOf(key) > 0;
+            // These writes are the visit's own, not a fight's (SpecialDeaths leaves them be).
+            Writing = true;
+            foreach (var (n, val) in a.Beaten) { v.Bools[n] = pd.GetBool(n); pd.SetBool(n, rematch && Encountered(n) ? true : val); }
             foreach (var (n, val) in a.Needs) { if (!v.Bools.ContainsKey(n)) v.Bools[n] = pd.GetBool(n); pd.SetBool(n, val); }
             foreach (var (n, val) in a.BeatenInts) { v.Ints[n] = pd.GetInt(n); pd.SetInt(n, val); }
             foreach (var (n, val) in a.NeedInts) { if (!v.Ints.ContainsKey(n)) v.Ints[n] = pd.GetInt(n); pd.SetInt(n, val); }
@@ -167,6 +192,7 @@ namespace TerraKnight.Items
                 data.activated = false;
                 SceneData.instance.SaveMyState(data);
             }
+            Writing = false;
             visit = v;
             if (a.Kind != Kind.World)
             {
@@ -185,6 +211,7 @@ namespace TerraKnight.Items
                     self.DreamReturnEvent = "DREAM RETURN";
                 };
             InventoryGui.Open = false;
+            UI.HudDialogue.Close();
             DevLast = $"{key} → {a.Scene}（{a.Gate}）";
             Plugin.Log.LogInfo($"[图鉴] 挑战 {DevLast}：开打前的记录 {string.Join("，", Describe(v))}");
             // An arena laid over its room only for one who came in by its door (the Watcher Knights':
@@ -198,6 +225,9 @@ namespace TerraKnight.Items
             });
             return true;
         }
+
+        /// <summary>A record of the boss met (its intro seen), not of it beaten (Nosk's "encountered" is his defeat).</summary>
+        static bool Encountered(string flag) => flag.IndexOf("ncountered", System.StringComparison.Ordinal) >= 0 && flag != "encounteredMimicSpider";
 
         static PersistentBoolData StateOf(string s)
         {
@@ -284,7 +314,17 @@ namespace TerraKnight.Items
         /// boss beaten: it wrote the win down) stays as the game left it when <paramref name="keepWins"/>.
         /// What the fight only needed always goes back.
         /// </summary>
+        /// <summary>The visit is writing the game's records itself (setting them up, putting them back, around a save): no fight's win.</summary>
+        public static bool Writing { get; private set; }
+
         static void Restore(bool keepWins)
+        {
+            Writing = true;
+            try { RestoreRecords(keepWins); }
+            finally { Writing = false; }
+        }
+
+        static void RestoreRecords(bool keepWins)
         {
             var v = visit;
             if (v == null) return;
@@ -329,6 +369,13 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(GameManager), "SaveGame", new[] { typeof(int), typeof(System.Action<bool>) })]
         static void BeforeSave()
         {
+            Writing = true;
+            try { SaveAsBefore(); }
+            finally { Writing = false; }
+        }
+
+        static void SaveAsBefore()
+        {
             if (visit == null) return;
             saving = visit;
             var pd = PlayerData.instance;
@@ -354,6 +401,13 @@ namespace TerraKnight.Items
         [HarmonyPostfix]
         [HarmonyPatch(typeof(GameManager), "SaveGame", new[] { typeof(int), typeof(System.Action<bool>) })]
         static void AfterSave()
+        {
+            Writing = true;
+            try { SaveDone(); }
+            finally { Writing = false; }
+        }
+
+        static void SaveDone()
         {
             var s = saving;
             saving = null;

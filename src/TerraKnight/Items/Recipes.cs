@@ -74,6 +74,7 @@ namespace TerraKnight.Items
                 every.AddRange(StationRecipes());
                 every.AddRange(OreRecipes());
                 every.AddRange(ChainRecipes());
+                every.AddRange(BossSummons.Recipes());
                 return every;
             }
         }

@@ -298,6 +298,11 @@ namespace TerraKnight.Items
             public ItemType Item;
             /// <summary>A point it goes for (a yoyo's spot by the cursor, Terraria px).</summary>
             public Vector2 Point;
+            /// <summary>A gem bolt's features (its gem's and the robe's) and ArPenSpread's armour penetration.</summary>
+            public GemFx Gem;
+            /// <summary>A held spell's clock short of mana (<see cref="MagicTick"/>).</summary>
+            public float SlowAcc;
+            public int GemArmorPen;
             /// <summary>A flail wielded with its partner (Blue Moon and Sunfury), and the off-hand one of the pair; a second timer.</summary>
             public bool Dual, OffHand;
             public float Timer2;
@@ -418,18 +423,67 @@ namespace TerraKnight.Items
             if (p != null) p.Melee = melee;
         }
 
-        /// <summary>A gem staff's bolt with its twin flag (ai1: the Sapphire's second weaves out of step).</summary>
-        public void ShootGem(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, float twin)
+        /// <summary>Projectile.GemStaffFeatures (1.4.5, ai[0]): what a gem staff's bolt does, by its gem and the robe worn.</summary>
+        [System.Flags]
+        public enum GemFx : byte { None = 0, Homing = 1, Aoe = 2, Swirl = 4, FastSlow = 8, Bounce = 16, ArPen = 32, Bigger = 64, Repeats = 128 }
+
+        /// <summary>Each gem's own feature (PackGemStaffFeatures: Amethyst homing, Topaz the burst, Sapphire the twins, Emerald fast then slow, Amber bouncing, Ruby the spread, Diamond the bigger hitbox).</summary>
+        public static GemFx GemOf(ProjKind kind) => kind switch
+        {
+            ProjKind.AmethystBolt => GemFx.Homing, ProjKind.TopazBolt => GemFx.Aoe, ProjKind.SapphireBolt => GemFx.Swirl, ProjKind.EmeraldBolt => GemFx.FastSlow,
+            ProjKind.AmberBolt => GemFx.Bounce, ProjKind.RubyBolt => GemFx.ArPen, ProjKind.DiamondBolt => GemFx.Bigger, _ => GemFx.None,
+        };
+
+        /// <summary>The gem robes' (1282-1287, 4256): their gem's feature on any gem staff's bolt.</summary>
+        public static GemFx RobeGem(ItemType body) => body switch
+        {
+            ItemType.AmethystRobe => GemFx.Homing, ItemType.TopazRobe => GemFx.Aoe, ItemType.SapphireRobe => GemFx.Swirl, ItemType.EmeraldRobe => GemFx.FastSlow,
+            ItemType.AmberRobe => GemFx.Bounce, ItemType.RubyRobe => GemFx.ArPen, ItemType.DiamondRobe => GemFx.Bigger, _ => GemFx.None,
+        };
+
+        /// <summary>
+        /// A gem staff's bolt with its twin flag (ai1: the second of SwirlTwins weaves out of step) and its features;
+        /// FinalizeProjectile_GemStaves (P:22261-22298): through one more for FastThenSlow or BiggerHitbox, two more for
+        /// CanBounce (the most of them counts), twice as long for FastThenSlow, 4 armour penetration for ArPenSpread.
+        /// </summary>
+        /// <summary>
+        /// Player.GetSlowMagicUseRate (1.4.5): short of mana a held spell's own clock goes 1/2.5 as fast (ai[0] +=
+        /// 0.4): whether it moves on this tick (two in five then; every tick otherwise).
+        /// </summary>
+        static bool MagicTick(Proj p)
+        {
+            var mod = TerraMod.Instance;
+            if (mod == null || !mod.SlowMagicUse) return true;
+            p.SlowAcc += 1f / TerraMod.SlowMagic;
+            if (p.SlowAcc < 1f) return false;
+            p.SlowAcc -= 1f;
+            return true;
+        }
+
+        /// <summary>Dev: the features of the last gem bolt shot.</summary>
+        public static GemFx DevLastGem;
+
+        public void ShootGem(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, float twin, GemFx fx)
         {
             var p = Spawn(kind, from, velocity, damage, knockback, crit);
-            if (p != null) p.Ai1 = twin;
+            if (p == null) return;
+            p.Ai1 = twin;
+            p.Gem = fx;
+            DevLastGem = fx;
+            int more = Mathf.Max((fx & GemFx.Bounce) != 0 ? 2 : 0, (fx & (GemFx.FastSlow | GemFx.Bigger)) != 0 ? 1 : 0);
+            p.Penetrate = 1 + more;
+            p.TimeLeft = (fx & GemFx.FastSlow) != 0 ? 600 : 300;
+            p.GemArmorPen = (fx & GemFx.ArPen) != 0 ? 4 : 0;
         }
 
         /// <summary>A minion's shot (stinger, fireball, laser): the minion's damage and knockback, never a crit of its own.</summary>
-        public void ShootMinion(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback)
+        public void ShootMinion(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, int penetrate = 0)
         {
             var p = Spawn(kind, from, velocity, damage, knockback, 0f);
-            if (p != null) p.MinionShot = true;
+            if (p == null) return;
+            p.MinionShot = true;
+            // Its own pierce instead of the kind's (the Ballista's bolt through 7 with the Squire's sets).
+            if (penetrate != 0) p.Penetrate = penetrate;
         }
 
         /// <summary>A Star Cloak star, through everything until below topY (the player's top when it was called down).</summary>
@@ -457,13 +511,6 @@ namespace TerraKnight.Items
         {
             if (!specs.TryGetValue(kind, out var spec)) return null;
             if (spec.Ai == Ai.Boomerang && Holds(kind)) return null; // one out at a time
-            if (kind == ProjKind.RubyBolt)
-            {
-                // ArPenSpread: half damage, a bit of spread, and a second bolt halfway through the use.
-                damage = Mathf.Max(1, Mathf.RoundToInt(damage * 0.5f));
-                from += Random.insideUnitCircle.normalized * 12f * Px;
-                if (useTicks > 1) pending.Add(new Pending { Ticks = useTicks / 2, Kind = kind, Speed = velocity.magnitude, Damage = damage * 2, Knockback = knockback, Crit = crit, Class = SpawnClass });
-            }
             // AI_001's launch clamp: no faster than 16 px an update on either axis.
             if (spec.Ai == Ai.Arrow)
                 for (int g = 0; g < 100 && (Mathf.Abs(velocity.x) >= 16f || Mathf.Abs(velocity.y) >= 16f); g++) velocity *= 0.97f;
@@ -838,28 +885,33 @@ namespace TerraKnight.Items
                     int d = DustAt(p.Pos, p.Spec.Dust, 10, Vector2.zero, 50, 1.2f, true);
                     if (d >= 0) TerraParticles.Instance[d].Velocity = Flip(p.Vel) * 0.3f;
                 }
-            if (p.Kind == ProjKind.AmethystBolt)
+            if ((p.Gem & GemFx.Homing) != 0)
             {
-                var target = NearestEnemy(p.Pos, 500f * Px);
+                // P:38563-38611: 500 px, twice as far with FastThenSlow or CanBounce; FastThenSlow up to 16 instead of 8 and
+                // turning less from 30 to 40.
+                bool fast = (p.Gem & GemFx.FastSlow) != 0;
+                float range = (p.Gem & (GemFx.FastSlow | GemFx.Bounce)) != 0 ? 1000f : 500f, top = fast ? 16f : 8f;
+                var target = NearestEnemy(p.Pos, range * Px);
                 if (target.HasValue)
                 {
                     float speed = p.Vel.magnitude;
-                    if (speed < 8f)
+                    if (speed < top)
                     {
                         p.Vel += p.Vel.normalized * 0.1f;
                         p.Vel *= 1.1f;
                     }
                     var to = (target.Value - p.Pos) / Px;
                     float dist = to.magnitude;
-                    float t = Remap(dist, 500f, 0f, 0f, 1f) * 0.1f + 0.01f;
-                    if (speed < 8f) t = (t + 0.05f) * Remap(speed, 1f, 3f, 10f, 1f);
+                    float t = Remap(dist, range, 0f, 0f, 1f) * 0.1f + 0.01f;
+                    if (speed < top) t = (t + 0.05f) * Remap(speed, 1f, 3f, 10f, 1f);
+                    if (fast) t *= Remap(speed, 30f, 40f, 1f, 0f);
                     float cur = Mathf.Atan2(p.Vel.y, p.Vel.x), want = Mathf.Atan2(to.y, to.x);
                     float a = Mathf.MoveTowardsAngle(cur * Mathf.Rad2Deg, want * Mathf.Rad2Deg, t * Mathf.Rad2Deg) * Mathf.Deg2Rad;
                     p.Vel = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * p.Vel.magnitude;
-                    p.Vel = Vector2.Lerp(p.Vel, Vector2.ClampMagnitude(to, 8f), Remap(dist, 150f, 0f, 0f, 0.2f));
+                    p.Vel = Vector2.Lerp(p.Vel, Vector2.ClampMagnitude(to, top), Remap(dist, 150f, 0f, 0f, 0.2f));
                 }
             }
-            if (p.Kind == ProjKind.SapphireBolt)
+            if ((p.Gem & GemFx.Swirl) != 0)
             {
                 // SwirlTwins (P:38614-38626): weaving 6 px across its flight, the twin out of step.
                 float phase = p.Ai1 * Mathf.PI, now = Mathf.Sin(p.LocalAi0 * Mathf.PI * 2f * 0.05f + phase), next = Mathf.Sin((p.LocalAi0 + 1f) * Mathf.PI * 2f * 0.05f + phase);
@@ -867,7 +919,7 @@ namespace TerraKnight.Items
                 var across = RotateBy(Vector2.right, Mathf.Atan2(-p.Vel.y, p.Vel.x) + Mathf.PI / 2f);
                 p.Pos += Flip(across) * (next - now) * 6f * Px;
             }
-            if (p.Kind == ProjKind.EmeraldBolt || forbidden)
+            if ((p.Gem & GemFx.FastSlow) != 0 || forbidden)
             {
                 // FastThenSlow (P:38628-38641): slowing 3% an update, then shrinking away once all but still.
                 if (p.Vel.magnitude > 0.1f) p.Vel *= 0.97f;
@@ -892,11 +944,17 @@ namespace TerraKnight.Items
         /// </summary>
         bool GemTile(Proj p, bool hitX, bool hitY, Vector2 oldVel)
         {
-            if (p.Kind == ProjKind.AmberBolt)
+            if ((p.Gem & GemFx.Bounce) != 0)
             {
                 if (hitX) p.Vel.x = -oldVel.x * 0.8f;
                 if (hitY) p.Vel.y = -oldVel.y * 0.8f;
                 p.Trail.Clear();
+                // Homing too: off the wall straight at the nearest enemy in sight within 2400 px (P:18126-18142).
+                if ((p.Gem & GemFx.Homing) != 0)
+                {
+                    var target = NearestEnemy(p.Pos, 2400f * Px);
+                    if (target.HasValue && (target.Value - p.Pos).sqrMagnitude > 0f) p.Vel = (target.Value - p.Pos).normalized * oldVel.magnitude * 0.8f;
+                }
                 if (--p.Penetrate > 0)
                 {
                     for (int i = 0; i < 5; i++) DustBox(p, 0, Vector2.zero, 0, 1f, false);
@@ -905,7 +963,7 @@ namespace TerraKnight.Items
                 }
                 return false;
             }
-            if (p.Kind == ProjKind.EmeraldBolt || p.Kind == ProjKind.ForbiddenGem)
+            if ((p.Gem & GemFx.FastSlow) != 0 || p.Kind == ProjKind.ForbiddenGem)
             {
                 p.Pos += oldVel * 0.99f * Px;
                 p.Vel = (oldVel.sqrMagnitude > 1e-8f ? oldVel.normalized : Vector2.zero) * 0.0001f;
@@ -1218,8 +1276,8 @@ namespace TerraKnight.Items
             var s = p.Spec;
             // SetDefaults scales the hitbox once and truncates it (the laser keeps its 2×2 as it grows).
             var size = (p.HitSize != Vector2.zero ? p.HitSize : new Vector2((int)(s.W * s.Scale), (int)(s.H * s.Scale))) * Px;
-            // The Diamond Staff's bolt hits 30 px further all round.
-            if (p.Kind == ProjKind.DiamondBolt) size += Vector2.one * 60f * Px;
+            // BiggerHitbox (the Diamond's, P:15458-15474): it hits 30 px further all round.
+            if ((p.Gem & GemFx.Bigger) != 0) size += Vector2.one * 60f * Px;
             overlaps.Clear();
             var filter = new ContactFilter2D { useTriggers = true, useLayerMask = true, layerMask = MeleeHits.HitMask };
             if (s.Beam != null)
@@ -1313,7 +1371,7 @@ namespace TerraKnight.Items
                 // A minion's or sentry's shot knocks nothing back.
                 float kb = p.MinionShot ? 0f : p.Knockback * (s.KnockbackScale != null ? s.KnockbackScale(p) : 1f);
                 // P:12855-12860: the Hive Pack's wasps go through 5 more defence.
-                int pen = Equipment.Current.ArmorPen + s.ArmorPen + (p.Kind == ProjKind.Wasp && Equipment.Current.StrongBees ? 5 : 0);
+                int pen = Equipment.Current.ArmorPen + s.ArmorPen + p.GemArmorPen + (p.Kind == ProjKind.Wasp && Equipment.Current.StrongBees ? 5 : 0);
                 melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap);
                 p.Hits++;
                 AccAfterHit(p, hm, dealt);
@@ -1448,7 +1506,7 @@ namespace TerraKnight.Items
                         var v = Flip(p.Vel).normalized;
                         dust.Velocity = (v * 2.2f + Random.insideUnitCircle * 1.5f) * Random.value;
                     }
-                    if (p.Kind == ProjKind.TopazBolt)
+                    if ((p.Gem & GemFx.Aoe) != 0)
                     {
                         // AoeExplosion (P:77012-77042): more gem dust flung out, and a 160 px burst at 35% damage and knockback.
                         for (int i = 0; i < 30; i++)
@@ -1863,7 +1921,7 @@ namespace TerraKnight.Items
             float breathe = 1f + 0.2f * Mathf.Cos(2f * Mathf.PI * Time.time);
             float rot = -p.Rot * Mathf.Deg2Rad + Mathf.PI / 2f;
             for (int k = 0; k < 4; k++) fx.Draw(glow, px, FxBatch.C(80, 80, 80, 0), rot, new Vector2(1.25f, 1f) * 0.6f * breathe);
-            if (p.Kind == ProjKind.DiamondBolt)
+            if ((p.Gem & GemFx.Bigger) != 0)
             {
                 float b2 = 1f + 0.2f * Mathf.Cos(8f * Mathf.PI * Time.time);
                 fx.Draw(glow, px, FxBatch.C(80, 80, 80, 0) * 0.5f, rot + Mathf.PI / 4f, new Vector2(1f, 2f) * b2);

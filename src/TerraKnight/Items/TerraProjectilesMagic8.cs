@@ -262,7 +262,7 @@ namespace TerraKnight.Items
                 if (p.SoundDelay > 0) p.SoundDelay--;
                 p.Dir = v.x >= 0f ? 1f : -1f;
                 mod.KeepUsing(def, Flip(v));
-                p.Ai0++;
+                if (MagicTick(p)) p.Ai0++;
                 p.Vel = Flip(v);
             }
             else

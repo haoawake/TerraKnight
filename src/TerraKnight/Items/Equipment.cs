@@ -69,7 +69,7 @@ namespace TerraKnight.Items
             // accMerman in liquid (Pl:25772-25779; Hallownest's liquid is acid): the merfolk, buff 34. The
             // werewolf at night unless the merfolk is on (buff 28, Pl:11980-11996).
             var hero = HeroController.SilentInstance;
-            MerfolkNow = b.Merfolk && hero != null && hero.cState.swimming;
+            MerfolkNow = b.Merfolk && Player.AcidLiquid.Swimming(hero);
             WerewolfNow = b.Werewolf && !MerfolkNow && !World.TerraTime.IsDay;
             if (WerewolfNow)
             {
@@ -96,7 +96,10 @@ namespace TerraKnight.Items
             // (Cobalt, Mythril, Adamantite, Hallowed, Chlorophyte, Spectre), the Beetle body's, or the family's.
             var head = armor[0].IsEmpty ? ArmorSet.None : armor[0].Def.Set;
             bool full = head != ArmorSet.None && !armor[1].IsEmpty && !armor[2].IsEmpty && armor[1].Def.Set == head && armor[2].Def.Set == head;
-            FullSet = !full ? ArmorSet.None
+            // The Wizard Hat's and the Magic Hat's sets are the hat and a robe, whatever the legs (Set(238, 1282, 0): no legs needed).
+            bool hatAndRobe = (head == ArmorSet.Wizard || head == ArmorSet.MagicHat) && !armor[1].IsEmpty && armor[1].Def.Set == ArmorSet.Robe;
+            FullSet = hatAndRobe ? head
+                    : !full ? ArmorSet.None
                     : head == ArmorSet.Beetle ? armor[1].Def.SetBonus
                     : armor[0].Def.SetBonus != ArmorSet.None ? armor[0].Def.SetBonus : head;
             b.Add(SetBonus(FullSet));
@@ -104,6 +107,30 @@ namespace TerraKnight.Items
             b.Add(MeleeSpecials.DynamicBonuses());
             b.Add(Player.PotionBuffs.Bonuses());
             Current = b;
+        }
+
+        /// <summary>
+        /// Player.SetMatch (Pl:37476-37560, male): the legs sheet a robe is drawn with in place of the worn legs (the Robe
+        /// 15→88, the gem robes 58-63→91-96, the Gi 165→118, the Mysterious Robe 167→101, the Amber Robe 213→187, the
+        /// Flinx Fur Coat 241→229); 0 for a body piece that isn't one.
+        /// </summary>
+        public static int RobeLegs(int bodySheet)
+        {
+            switch (bodySheet)
+            {
+                case 15: return 88;
+                case 58: return 91;
+                case 59: return 92;
+                case 60: return 93;
+                case 61: return 94;
+                case 62: return 95;
+                case 63: return 96;
+                case 165: return 118;
+                case 167: return 101;
+                case 213: return 187;
+                case 241: return 229;
+                default: return 0;
+            }
         }
 
         /// <summary>The werewolf (night), the merfolk (in acid) and the ice barrier (half life or less) this frame.</summary>
@@ -159,6 +186,30 @@ namespace TerraKnight.Items
                 case ArmorSet.Spooky: return new Bonuses { MinionDamage = 0.25f };
                 case ArmorSet.SpectreHealing: return new Bonuses { MagicDamage = -0.4f };
                 case ArmorSet.Solar: return new Bonuses { Endurance = 0.12f };
+                // ArmorSetBonuses.Benefits (1.4.5) of the sets in ItemsArmor2.cs.
+                case ArmorSet.Ebonwood: case ArmorSet.RichMahogany: case ArmorSet.Pearlwood: case ArmorSet.Shadewood: case ArmorSet.BorealWood: case ArmorSet.PalmWood:
+                    return new Bonuses { Defense = 1 };
+                case ArmorSet.AshWood: return new Bonuses { AshWood = true };
+                case ArmorSet.Meteor: return new Bonuses { SpaceGunFree = true };
+                case ArmorSet.Ninja: return new Bonuses { MoveSpeed = 0.2f };
+                case ArmorSet.Mining: return new Bonuses { PickSpeed = -0.1f };
+                case ArmorSet.Crimson: return new Bonuses { CrimsonRegen = true };
+                case ArmorSet.Snow: return new Bonuses { DebuffImmune = DebuffImmunity.Chilled | DebuffImmunity.Frozen };
+                case ArmorSet.Cactus: return new Bonuses { CactusThorns = true };
+                case ArmorSet.Wizard: return new Bonuses { MagicCrit = 0.1f };
+                case ArmorSet.MagicHat: return new Bonuses { ManaMax = 60 };
+                case ArmorSet.Pumpkin: return new Bonuses { MeleeDamage = 0.1f, RangedDamage = 0.1f, MagicDamage = 0.1f, MinionDamage = 0.1f };
+                case ArmorSet.Angler: return new Bonuses { AnglerSet = true };
+                case ArmorSet.Gladiator: return new Bonuses { NoKnockback = true };
+                case ArmorSet.Fossil: return new Bonuses { AmmoSave = 0.2f };
+                case ArmorSet.SquireT2: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.SquireT2 };
+                case ArmorSet.ApprenticeT2: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.ApprenticeT2 };
+                case ArmorSet.HuntressT2: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.HuntressT2 };
+                case ArmorSet.MonkT2: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.MonkT2 };
+                case ArmorSet.SquireT3: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.SquireT2 | OoaSet.SquireT3 };
+                case ArmorSet.ApprenticeT3: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.ApprenticeT2 | OoaSet.ApprenticeT3 };
+                case ArmorSet.HuntressT3: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.HuntressT2 | OoaSet.HuntressT3 };
+                case ArmorSet.MonkT3: return new Bonuses { MaxTurrets = 1, Ooa = OoaSet.MonkT2 | OoaSet.MonkT3 };
                 default: return default;
             }
         }
@@ -230,6 +281,30 @@ namespace TerraKnight.Items
                 case ArmorSet.Vortex: return "双击下切换隐形，\n提高远程能力并降低敌人以你为目标的几率，但会减慢移动速度";
                 case ArmorSet.Nebula: return "魔法伤害有几率生成增益强化道具\n拾取强化道具可获得堆叠增益";
                 case ArmorSet.Stardust: return "星尘守卫将保护你不受附近敌人的伤害";
+                case ArmorSet.Ebonwood: case ArmorSet.RichMahogany: case ArmorSet.Pearlwood: case ArmorSet.Shadewood: case ArmorSet.BorealWood: case ArmorSet.PalmWood:
+                    return "防御力 +1";
+                case ArmorSet.AshWood: return "降低因触碰熔岩而受到的伤害";
+                case ArmorSet.Meteor: return "太空枪不消耗魔力";
+                case ArmorSet.Ninja: return "移动速度提高20%";
+                // zh-Hans has the Snow set's line here by mistake; the bonus is the pieces' own mining speed.
+                case ArmorSet.Mining: return "挖矿速度提高10%";
+                case ArmorSet.Crimson: return "大大提高生命再生速度";
+                case ArmorSet.Snow: return "不会被冷冻或冰冻";
+                case ArmorSet.Cactus: return "攻击者因为仙人掌尖刺受到伤害";
+                case ArmorSet.Wizard: return "魔法暴击率提高10%";
+                case ArmorSet.MagicHat: return "最大魔力增加60";
+                case ArmorSet.Pumpkin: return "伤害提高10%";
+                case ArmorSet.Angler: return "敌人生成速度降低";
+                case ArmorSet.Gladiator: return "对击退免疫";
+                case ArmorSet.Fossil: return "20%几率省下弹药";
+                case ArmorSet.SquireT2: return "哨兵数量上限增加1\n弩车可以刺穿更多目标，你受到伤害时会得到弩车恐慌增益";
+                case ArmorSet.ApprenticeT2: return "哨兵数量上限增加1\n焰爆的视野和范围大幅增加";
+                case ArmorSet.HuntressT2: return "哨兵数量上限增加1\n爆炸机关充能更快，并会给敌人涂油\n点燃涂油的敌人可造成额外伤害";
+                case ArmorSet.MonkT2: return "哨兵数量上限增加1\n闪电光环现在可以暴击，并且打击得更快";
+                case ArmorSet.SquireT3: return "哨兵数量上限增加1\n大幅提升弩车效力";
+                case ArmorSet.ApprenticeT3: return "哨兵数量上限增加1\n极大提升焰爆效力";
+                case ArmorSet.HuntressT3: return "哨兵数量上限增加1\n极大提升爆炸机关效力";
+                case ArmorSet.MonkT3: return "哨兵数量上限增加1\n极大提升闪电光环效力";
                 default: return null;
             }
         }
@@ -352,6 +427,8 @@ namespace TerraKnight.Items
         public static int ManaCost(ItemDef item)
         {
             if (item.Mana <= 0) return 0;
+            // The Meteor set (spaceGun, Pl:51200, 53333): the Space Gun, the Zapinators and the Laser Rifle cost nothing.
+            if (Current.SpaceGunFree && (item.Type == ItemType.SpaceGun || item.Type == ItemType.ZapinatorGray || item.Type == ItemType.ZapinatorOrange || item.Type == ItemType.LaserRifle)) return 0;
             int mana = item.Type == ItemType.BookStaff && TerraMod.Instance != null && TerraMod.Instance.AltFunction ? item.Mana * 2 : item.Mana;
             return UnityEngine.Mathf.Max(1, UnityEngine.Mathf.FloorToInt(mana * (1f - UnityEngine.Mathf.Clamp01(Current.ManaCost))));
         }

@@ -31,7 +31,7 @@ namespace TerraKnight.Net
 
         static void OnEdited(TerrainRegion region, int x, int y)
         {
-            if (applying || !NetSession.Active || region == null || string.IsNullOrEmpty(region.SceneName)) return;
+            if (applying || WorldSync.Applying || !NetSession.Active || !WorldSync.Ready || region == null || string.IsNullOrEmpty(region.SceneName)) return;
             int i = y * region.Grid.Width + x;
             if (!pending.TryGetValue(region.SceneName, out var list)) pending[region.SceneName] = list = new List<(int, byte)>();
             list.Add((i, WorldEdits.Pack(region.Grid.GetAt(i), region.Grid.IsDugAt(i), region.Grid.SlopeAt(i))));
@@ -88,8 +88,7 @@ namespace TerraKnight.Net
                 applying = true;
                 try
                 {
-                    region.Grid.Set(x, y, kind);
-                    if (kind == CellKind.Platform) region.Grid.SetSlope(x, y, slope);
+                    region.Grid.ApplyNetwork(i, kind, dug, slope);
                 }
                 finally
                 {

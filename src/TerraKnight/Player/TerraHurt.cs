@@ -203,6 +203,8 @@ namespace TerraKnight.Player
         public static void BeforeHurt()
         {
             if (Items.Equipment.Current.Panic && TerraMod.Instance != null) TerraMod.Instance.PanicTicks = 480f;
+            // The Squire's sets (Pl:38524-38527): Ballista Panic for 5 s.
+            if ((Items.Equipment.Current.Ooa & Items.OoaSet.SquireT2) != 0) PlayerBuffs.Add(PotionBuffs.BallistaPanic, 300);
         }
 
         /// <summary>

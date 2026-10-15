@@ -15,9 +15,10 @@ namespace TerraKnight.Player
     /// the Hunter's glow on enemies, the Dangersense's on hazards, the Featherfall potion's slow
     /// fall. Battle, Calming and Invisibility change how fast the dead enemies come back
     /// (NPC.SpawnNPC's spawn rate ×0.5 / ×1.3 / ×1.2); the Flipper potion swims in acid as the
-    /// flippers do. The potions that only act on water, fish or Terraria's own biomes (Gills,
-    /// Water Walking, Fishing, Sonar, Crate, Biome Sight, Warmth, Heartreach) give their buff and
-    /// nothing here acts on it.
+    /// flippers do, the Water Walking potion walks on it as the boots do (<see cref="AcidLiquid"/>). The
+    /// Heartreach potion pulls the bosses' hearts from further (WorldItems). The potions that only act on
+    /// water, fish or Terraria's own biomes (Gills, Fishing, Sonar, Crate, Biome Sight, Warmth) give their
+    /// buff and nothing here acts on it.
     /// </summary>
     [HarmonyPatch]
     internal static class PotionBuffs
@@ -25,7 +26,10 @@ namespace TerraKnight.Player
         public const int ObsidianSkin = 1, Regeneration = 2, Swiftness = 3, Gills = 4, Ironskin = 5, ManaRegeneration = 6, MagicPower = 7, Featherfall = 8,
             Spelunker = 9, Invisibility = 10, Shine = 11, NightOwl = 12, Battle = 13, Thorns = 14, WaterWalking = 15, Archery = 16, Hunter = 17, Gravitation = 18,
             Mining = 104, Heartreach = 105, Calm = 106, Builder = 107, Titan = 108, Flipper = 109, Summoning = 110, Dangersense = 111, AmmoReservation = 112,
-            Lifeforce = 113, Endurance = 114, Rage = 115, Inferno = 116, Wrath = 117, Fishing = 121, Sonar = 122, Crate = 123, Warmth = 124, Lucky = 257, BiomeSight = 343;
+            Lifeforce = 113, Endurance = 114, Rage = 115, Inferno = 116, Wrath = 117, Fishing = 121, Sonar = 122, Crate = 123, Warmth = 124, Lucky = 257, BiomeSight = 343,
+            Clairvoyance = 29, AmmoBox = 93, Bewitched = 150, Sharpened = 159, SugarRush = 192, Strategist = 348,
+            // The Squire's sets after a hit (Pl:38524-38527): the Ballistas fire faster (MinionsSentries).
+            BallistaPanic = 205;
 
         /// <summary>The flasks' buffs (WeaponImbue*: Venom 71, Cursed Flames 73, Fire 74, Gold 75, Ichor 76, Nanites 77, Confetti 78, Poison 79) and their meleeEnchant.</summary>
         static readonly Dictionary<int, int> imbues = new Dictionary<int, int> { [71] = 1, [73] = 2, [74] = 3, [75] = 4, [76] = 5, [77] = 6, [78] = 7, [79] = 8 };
@@ -49,6 +53,10 @@ namespace TerraKnight.Player
             D(71, "武器灌注：酸性毒液", "近战攻击会对你的目标施放酸性毒液"); D(73, "武器灌注：诅咒焰", "近战攻击会对敌人施放诅咒焰");
             D(74, "武器灌注：火焰", "近战攻击会使敌人着火"); D(75, "武器灌注：金", "近战攻击会使敌人掉落更多金子"); D(76, "武器灌注：灵液", "近战攻击会降低敌人防御力");
             D(77, "武器灌注：纳米机器人", "近战攻击会使敌人困惑，额外造成5%的伤害"); D(78, "武器灌注：彩纸", "近战攻击会喷撒彩纸"); D(79, "武器灌注：毒药", "近战攻击会使敌人中毒");
+            // The buff stations' (World.Stations: a right click on them).
+            D(Clairvoyance, "灵视", "提高魔能"); D(AmmoBox, "弹药箱", "20%几率省下弹药"); D(Bewitched, "着魔", "仆从数量上限增加1");
+            D(Sharpened, "锋利", "近战武器具有盔甲穿透力"); D(Strategist, "战略家", "哨兵数量上限增加1"); D(SugarRush, "糖果冲刺", "移动和采矿速度各提高20%");
+            D(BallistaPanic, "弩车恐慌！", "你的弩车在恐慌之中快速射击！");
             return true;
         }
 
@@ -113,6 +121,8 @@ namespace TerraKnight.Player
             if (Has(Titan)) b.KbBuff = true;
             // The Flipper potion swims as the flippers do (accFlipper): here, in acid.
             if (Has(Flipper)) b.Swim = true;
+            // Water Walking (Player.waterWalk): on the acid, as the boots.
+            if (Has(WaterWalking)) b.WaterWalk = System.Math.Max(b.WaterWalk, 1);
             if (Has(Summoning)) b.MaxMinions += 1;
             if (Has(Dangersense)) b.DangerSense = true;
             if (Has(AmmoReservation)) b.AmmoPotion = true;
@@ -133,6 +143,25 @@ namespace TerraKnight.Player
                 b.MinionDamage += 0.1f;
             }
             if (Has(Warmth)) b.ResistCold = true;
+            // The buff stations' (Pl:10050-10400): Clairvoyance +5% magic damage, +2% magic crit, +20 mana, 2% less mana;
+            // Ammo Box 20% of shots without ammo; Bewitched a minion more; Sharpened 12 armor penetration (the melee
+            // weapons' in Terraria; all of them here); Strategist a sentry more; Sugar Rush 20% faster on foot and pick.
+            if (Has(Clairvoyance))
+            {
+                b.MagicDamage += 0.05f;
+                b.MagicCrit += 0.02f;
+                b.ManaMax += 20;
+                b.ManaCost += 0.02f;
+            }
+            if (Has(AmmoBox)) b.AmmoSave += 0.2f;
+            if (Has(Bewitched)) b.MaxMinions += 1;
+            if (Has(Sharpened)) b.ArmorPen += 12;
+            if (Has(Strategist)) b.MaxTurrets += 1;
+            if (Has(SugarRush))
+            {
+                b.MoveSpeed += 0.2f;
+                b.PickSpeed -= 0.2f;
+            }
             // Lucky (Pl:10431-10450): luckPotion 3 / 2 / 1 by the time left, a tenth of luck each.
             int lucky = PlayerBuffs.TimeLeft(Lucky);
             if (lucky > 0) b.Luck += (lucky > 36000 ? 3 : lucky > 18000 ? 2 : 1) * 0.1f;
@@ -162,6 +191,8 @@ namespace TerraKnight.Player
                 float f = 1f;
                 if (c.Battle) f *= 0.5f;
                 if (c.Calm) f *= 1.3f;
+                // The Angler set (anglerSetSpawnReduction, N:718-722): spawnRate ×1.3.
+                if (c.AnglerSet) f *= 1.3f;
                 if (c.Invisible) f *= 1.2f;
                 return f;
             }

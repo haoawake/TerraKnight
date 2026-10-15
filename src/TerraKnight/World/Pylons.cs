@@ -315,6 +315,8 @@ namespace TerraKnight.World
         /// </summary>
         static System.Collections.IEnumerator Travel(GameManager gm, PlayerData pd, HeroController hero, Pylon p)
         {
+            // Taken away mid-talk: the box goes down with the player.
+            UI.HudDialogue.Close();
             hero.RelinquishControl();
             hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
             gm.cameraCtrl.FadeOut(GlobalEnums.CameraFadeType.HERO_DEATH);
@@ -446,6 +448,7 @@ namespace TerraKnight.World
 
         static System.Collections.IEnumerator RecallTravel(GameManager gm, PlayerData pd, HeroController hero)
         {
+            UI.HudDialogue.Close();
             hero.RelinquishControl();
             hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
             gm.cameraCtrl.FadeOut(GlobalEnums.CameraFadeType.HERO_DEATH);

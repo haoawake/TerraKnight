@@ -79,6 +79,12 @@ namespace TerraKnight.Items
         });
 
         /// <summary>The ore a bar is smelted from, if any.</summary>
+        internal static bool IsOre(ItemType t)
+        {
+            foreach (var o in Ores) if (o.Ore == t) return true;
+            return false;
+        }
+
         internal static bool OreOf(ItemType bar, out OreInfo ore)
         {
             foreach (var o in Ores) if (o.Bar == bar) { ore = o; return true; }
@@ -145,14 +151,17 @@ namespace TerraKnight.Items
         /// <summary>
         /// Enemies drop ore, not bars (Terraria's drop bars only from crates and bosses' bags): every
         /// smeltable bar in the tables becomes its ore, as many times over as a bar takes, at the
-        /// same chance, so the same kills make the same bars once smelted.
+        /// same chance; a common enemy's twice that (<see cref="OreBoost"/>: the ore is all there is to
+        /// mine, and smelting takes its time), a boss's its bars' worth (a boss's ore is Terraria's own measure).
         /// </summary>
         static EnemyDrops()
         {
+            AddBossHealing();
             int changed = 0;
             foreach (var e in table.Values)
             {
                 if (e.Drops == null) continue;
+                int boost = e.Boss ? 1 : OreBoost;
                 for (int i = 0; i < e.Drops.Length; i++)
                 {
                     var d = e.Drops[i];
@@ -163,16 +172,29 @@ namespace TerraKnight.Items
                         d.LockStage = def != null ? def.Stage : 0;
                         e.Drops[i] = d;
                     }
-                    if (!ItemDb.OreOf(d.Type, out var ore)) continue;
+                    if (!ItemDb.OreOf(d.Type, out var ore))
+                    {
+                        // Ore dropped as it is (Terraria's own rows): a common enemy's as much more.
+                        if (boost > 1 && ItemDb.IsOre(d.Type))
+                        {
+                            d.Min *= boost;
+                            d.Max *= boost;
+                            e.Drops[i] = d;
+                        }
+                        continue;
+                    }
                     d.Type = ore.Ore;
-                    d.Min *= ore.PerBar;
-                    d.Max *= ore.PerBar;
+                    d.Min *= ore.PerBar * boost;
+                    d.Max *= ore.PerBar * boost;
                     e.Drops[i] = d;
                     changed++;
                 }
             }
             DevBarsToOre = changed;
         }
+
+        /// <summary>A common enemy's ore over its bars' worth.</summary>
+        public const int OreBoost = 2;
 
         /// <summary>Dev: how many bar drops the tables had turned into ore.</summary>
         public static int DevBarsToOre;

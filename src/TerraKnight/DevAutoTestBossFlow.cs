@@ -300,7 +300,7 @@ namespace TerraKnight
                         {
                             hpSince = Time.time;
                             var trig = WaitingTriggers(room);
-                            Plugin.Log.LogInfo($"[AutoTest] 首领全流程 {record}：25 秒没掉血（{hpNow}），用了 {uses} 下，主角 {(Vector2)h.transform.position:F1}，可操作 {GameHooks.PlayerHasControl()}，{(target != null ? $"目标 {target.name} {(Vector2)target.transform.position:F1} 距离 {Vector2.Distance(target.transform.position, h.transform.position):F1} 无敌 {target.IsInvincible} 受击间隔中 {MeleeHits.Immune(target)} 血 {target.hp} 层 {target.gameObject.layer}" : "没有目标")}；场景里的{SceneFsmStates(room)}");
+                            Plugin.Log.LogInfo($"[AutoTest] 首领全流程 {record}：25 秒没掉血（{hpNow}），用了 {uses} 下，主角 {(Vector2)h.transform.position:F1}，可操作 {GameHooks.PlayerHasControl()}，{(target != null ? $"目标 {target.name} {(Vector2)target.transform.position:F1} 距离 {Vector2.Distance(target.transform.position, h.transform.position):F1} 无敌 {target.IsInvincible} 血 {target.hp} 层 {target.gameObject.layer}" : "没有目标")}；场景里的{SceneFsmStates(room)}");
                             if (trig.Count > 0)
                             {
                                 var tb = trig[pokeTry++ % trig.Count];

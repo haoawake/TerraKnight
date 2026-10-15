@@ -39,15 +39,17 @@ namespace TerraKnight.Items
             public string Scene;
             /// <summary>Godhome's Ascended extra health over Attuned (1 elsewhere).</summary>
             public float GodhomeTier = 1f;
+            /// <summary>A boss's life for the players there when it was first seen (NPC.GetMyBalance; 1 alone, or below Expert).</summary>
+            public float Players = 1f;
             /// <summary>
             /// Terraria life per point of the enemy's own health: a boss's, its stand-in's life over its
             /// health; any other, the level's (its toughness, <see cref="World.Areas.LevelHealth"/>, included).
             /// </summary>
-            public float Scale => Ref != null
-                ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossBalance.Pool(Record, Hm, out int fills) / (float)Mathf.Max(1, MaxHp * fills)
-                : World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss);
-            /// <summary>Terraria defense: a boss's stand-in's, else the level's.</summary>
-            public int Defense => Ref != null ? Mathf.RoundToInt(BossStats.DefenseOf(Ref) * Tune.Defense) : World.Areas.Defense(Level);
+            public float Scale => (Ref != null
+                ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossPhases.Factor(this) / (float)Mathf.Max(1, MaxHp)
+                : World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss)) * Players;
+            /// <summary>Terraria defense: a boss's stand-in's (<see cref="BossDefense"/>), else the level's.</summary>
+            public int Defense => Ref != null ? BossDefense(Ref, Tune) : World.Areas.Defense(Level);
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }
@@ -113,6 +115,7 @@ namespace TerraKnight.Items
                 info.Elite = !info.Boss && EliteKind(record, info.MaxHp);
                 if (info.Boss)
                 {
+                    info.Players = PlayerBalance();
                     info.Scene = hm.gameObject.scene.name;
                     info.Ref = BossStats.Of(record, EnemyDrops.VariantLevel(info.Scene));
                     info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
@@ -125,7 +128,8 @@ namespace TerraKnight.Items
             else if (hm.hp > info.MaxHp)
             {
                 info.MaxHp = hm.hp;
-                if (info.Ref != null) info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
+                // Godhome's scaling comes before the first blow; a refill later (Oro's second phase) is no tier.
+                if (info.Ref != null && info.LastHit < -50f) info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
             }
             return info;
         }
@@ -211,12 +215,42 @@ namespace TerraKnight.Items
         public static int LifeMax(Info info) => Mathf.CeilToInt(info.MaxHp * info.Scale);
 
         /// <summary>
-        /// A boss's whole life, over all its pools and refills (its stand-in's, tuned: <see cref="BossBalance"/>);
-        /// any other enemy's, its own.
+        /// A boss's whole fight, every phase of it (its stand-in's life, tuned: <see cref="BossBalance"/>, a whole one a
+        /// phase: <see cref="BossPhases"/>); any other enemy's, its own.
         /// </summary>
         public static int LifeWhole(Info info) => info.Ref != null
-            ? Mathf.CeilToInt(BossStats.LifeOf(info.Ref, info.Scene, World.GameDifficulty.Current, info.GodhomeTier) * info.Tune.Life)
+            ? Mathf.CeilToInt(BossStats.LifeOf(info.Ref, info.Scene, World.GameDifficulty.Current, info.GodhomeTier) * info.Tune.Life * info.Players * BossPhases.WholeFactor(info.Record, info.Scene))
             : LifeMax(info);
+
+        /// <summary>A boss's phase now, all of it (its bodies together): what its staggers are paced by.</summary>
+        public static int LifePhase(Info info) => info.Ref != null
+            ? Mathf.CeilToInt(BossStats.LifeOf(info.Ref, info.Scene, World.GameDifficulty.Current, info.GodhomeTier) * info.Tune.Life * info.Players * BossPhases.PhaseFactor(info))
+            : LifeMax(info);
+
+        /// <summary>
+        /// A boss's Terraria defense: half its stand-in's (the user's: Hallownest's bosses are met with less than the gear
+        /// Terraria has by then, and fast weapons were left at a point a hit), its own measure only ever lowering it.
+        /// </summary>
+        public static int BossDefense(BossStats.Ref r, BossBalance.Tune t) => Mathf.RoundToInt(BossStats.DefenseOf(r) * Mathf.Min(1f, t.Defense) * 0.5f);
+
+        /// <summary>
+        /// NPC.GetStatScalingFactors for the players in the game now (the local one and every remote one), on Expert and
+        /// Master (ScaleStats_ByPlayerCount runs from Expert up): 1 alone; each player more adds the boost, which starts at
+        /// 0.35 and grows a third of the way to 1 each time; past 8 the balance bends ((b·2 + 8) / 3).
+        /// </summary>
+        public static float PlayerBalance()
+        {
+            if (!Net.NetSession.Active || World.GameDifficulty.Current < World.DifficultyLevel.Expert) return 1f;
+            int players = 1 + Net.NetSession.Players.Count;
+            float balance = 1f, boost = 0.35f;
+            for (int i = 1; i < players; i++)
+            {
+                balance += boost;
+                boost += (1f - boost) / 3f;
+            }
+            if (balance > 8f) balance = (balance * 2f + 8f) / 3f;
+            return Mathf.Min(balance, 1000f);
+        }
 
         /// <summary>
         /// NPC.StrikeNPC: the defense takes half its value off the hit (Main.CalculateDamageNPCsTake),

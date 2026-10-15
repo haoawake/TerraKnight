@@ -21,7 +21,7 @@ namespace TerraKnight
 
         IEnumerator Net2Boot()
         {
-            if (suite == "net2host")
+            if (suite == "net2host" || suite == "networldhost")
             {
                 bool ok = NetSession.Host(Net2Port, "", 8, out string error);
                 NetCheck(ok, $"开服 {Net2Port} {error}");
@@ -47,7 +47,7 @@ namespace TerraKnight
         IEnumerator WaitChat(string text, float seconds)
         {
             for (float t = 0f; t < seconds && !NetChat.DevHas(text); t += Time.unscaledDeltaTime) yield return null;
-            if (!NetChat.DevHas(text)) Plugin.Log.LogWarning($"[AutoTest] 联机2 等「{text}」超时");
+            if (!NetChat.DevHas(text)) Plugin.Log.LogWarning($"[AutoTest] 联机2 等「{text}」超时 [NET_TIMEOUT]");
         }
 
         static RemotePlayer Other()

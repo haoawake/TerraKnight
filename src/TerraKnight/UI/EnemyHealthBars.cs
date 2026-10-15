@@ -58,9 +58,13 @@ namespace TerraKnight.UI
                 var at = new Vector3(bounds.center.x, bounds.min.y - 10f * Px, bounds.center.z);
                 SmallBar(cam, at, life, max, info.Boss ? 1.5f : 1f);
             }
+            Fought = struck ?? boss;
             if (struck != null) BossBar(Hurtable(struck));
             else if (boss != null) BossBar(Hurtable(boss));
         }
+
+        /// <summary>The boss whose big bar is up (the one last struck, else the nearest in view): the one the camera keeps in view.</summary>
+        public static EnemyStats.Info Fought { get; private set; }
 
         /// <summary>
         /// The part of a boss the bar should follow: itself, unless nothing can hurt it now and a

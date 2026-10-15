@@ -20,7 +20,7 @@ namespace TerraKnight.Items
         public const int Poisoned = 20, OnFire = 24, Confused = 31, CursedInferno = 39, Frostburn = 44, Ichor = 69, Venom = 70,
             Midas = 72, Slimed = 137, Celled = 183, Shadowflame = 153, ScytheMark = 310, Hellfire = 323, Frostbite = 324, PotentAcid = 395,
             EelMark = 362, AcceleratePoisons = 398, TentacleSpiked = 337, BloodButchered = 344, Bleeding = 30, Daybroken = 189, Javelined = 169,
-            SoulDrain = 151, BetsysCurse = 203;
+            SoulDrain = 151, BetsysCurse = 203, Oiled = 204;
 
         /// <summary>
         /// Enemies soul-drained within 1100 px of the player while the Soul Drain is in use, counted
@@ -168,6 +168,13 @@ namespace TerraKnight.Items
                         if (d.Chunk > 0) chunk = Mathf.Max(chunk, d.Chunk);
                     }
                 }
+                // Oiled (N:92769-92772): what burns (On Fire!, Cursed Inferno, Hellfire, Frostburn, Frostbite, Shadowflame) 50 more, 10 at a time.
+                if (s.Buffs.ContainsKey(Oiled) && (s.Buffs.ContainsKey(OnFire) || s.Buffs.ContainsKey(CursedInferno) || s.Buffs.ContainsKey(Hellfire)
+                    || s.Buffs.ContainsKey(Frostburn) || s.Buffs.ContainsKey(Frostbite) || s.Buffs.ContainsKey(Shadowflame)))
+                {
+                    loss += 50;
+                    chunk = Mathf.Max(chunk, 10);
+                }
                 Visuals(s);
                 if (loss == 0) continue;
                 s.RegenCount -= loss;
@@ -275,6 +282,14 @@ namespace TerraKnight.Items
                                 d.Velocity.y -= 1f;
                                 if (!d.NoGravity) d.Scale *= 0.5f;
                             }
+                        }
+                        break;
+                    case Oiled:
+                        // N:92417-92433: black drips (4) two ticks in three.
+                        if (Random.Range(0, 3) != 0)
+                        {
+                            int i = p.NewDust(topLeft - new Vector2(2f, 2f), w + 4, h + 2, 4, 0f, 0f, 175, 1.4f);
+                            if (i >= 0) p[i].Color = new Color(0f, 0f, 0f, 250f / 255f);
                         }
                         break;
                     case Poisoned:

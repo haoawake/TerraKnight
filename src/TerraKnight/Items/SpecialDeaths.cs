@@ -85,25 +85,54 @@ namespace TerraKnight.Items
         {
             if (!value || TerraMod.Instance == null || boolName == null) return;
             string record = boolName.StartsWith("killed") && boolName.Length > 6 ? boolName.Substring(6) : beatenFlags.TryGetValue(boolName, out var r) ? r : null;
-            if (record == null || BossArena.Visiting || __instance.GetBool(boolName)) return;
+            // A rematch's win counts as any (its loot, its book entry); the visit's own writing of the records doesn't.
+            if (record == null || BossArena.Writing || __instance.GetBool(boolName)) return;
             if (!EnemyDrops.IsBoss(record)) return;
-            // Its health manager: the nearest live one of that record in a loaded scene.
+            // Set within a death (EnemyDeathEffects in HealthManager.Die): that death counts it; looked at again after it.
+            if (Bestiary.DyingNow != null)
+            {
+                deferred = (boolName, record);
+                return;
+            }
+            CreditByFlag(boolName, record);
+        }
+
+        static (string Flag, string Record)? deferred;
+
+        /// <summary>After a HealthManager.Die: a flag it set, counted if the death itself didn't count the boss.</summary>
+        public static void AfterDeath()
+        {
+            if (deferred == null) return;
+            var (flag, record) = deferred.Value;
+            deferred = null;
+            CreditByFlag(flag, record);
+        }
+
+        static void CreditByFlag(string boolName, string record)
+        {
+            // Its health manager: the nearest one of that record in a loaded scene, switched off or not (a dream's
+            // second phase is put away by the time its flag is set); one up and about first.
             var hero = HeroController.SilentInstance;
             Vector2 at = hero != null ? (Vector2)hero.transform.position : Vector2.zero;
             HealthManager best = null;
-            foreach (var hm in Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
+            foreach (var hm in Object.FindObjectsByType<HealthManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                if (hm == null || UI.EnemyHover.RecordOf(hm) != record || Bestiary.Credited(hm)) continue;
-                if (best == null || Vector2.Distance(hm.transform.position, at) < Vector2.Distance(best.transform.position, at)) best = hm;
+                if (hm == null || !hm.gameObject.scene.isLoaded || UI.EnemyHover.RecordOf(hm) != record) continue;
+                // Its death counted already (a phase of it went down by HealthManager.Die): not twice.
+                if (Bestiary.Credited(hm)) return;
+                bool up = hm.gameObject.activeInHierarchy, bestUp = best != null && best.gameObject.activeInHierarchy;
+                if (best == null || (up && !bestUp) || (up == bestUp && Vector2.Distance(hm.transform.position, at) < Vector2.Distance(best.transform.position, at))) best = hm;
             }
             if (best != null) Credit(best, boolName);
+            else Plugin.Log.LogWarning($"[首领] {boolName} 已设置，但找不到 {record} 的首领对象，没能记入图鉴");
         }
 
         static void Credit(HealthManager hm, string why)
         {
+            if (hm != null && Bestiary.Credited(hm)) Plugin.Log.LogInfo($"[首领] {hm.gameObject.scene.name}/{hm.name}（{why}）已经记过");
             if (hm == null || Bestiary.Credited(hm)) return;
             EnemyStats.MarkDefeated(hm);
-            Bestiary.Credit(hm);
+            Bestiary.Credit(hm, whole: true);
             DevCredited++;
             DevLast = $"{hm.gameObject.scene.name}/{hm.name}（{why}）";
             Plugin.Log.LogInfo($"[首领] {DevLast} 由它自己的死亡流程打倒：记入图鉴、掉落");

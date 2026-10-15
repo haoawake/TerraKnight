@@ -167,8 +167,84 @@ namespace TerraKnight.World
             return grid;
         }
 
-        /// <summary>A boss room: the game's own colliders and tilemap stand, the grid's are off.</summary>
+        /// <summary>A boss room: the game's own colliders and tilemap stand, the grid's are off (in its fight's zone, when one was found).</summary>
         public bool SceneOwnGround { get; private set; }
+
+        /// <summary>How the boss room's zone was found (or why the whole room is kept).</summary>
+        public string OwnZoneHow { get; private set; }
+
+        static bool Overlaps(Bounds b, Rect r) => b.max.x > r.xMin && b.min.x < r.xMax && b.max.y > r.yMin && b.min.y < r.yMax;
+
+        /// <summary>
+        /// Keeps the part of one of the tilemap's outlines within the zone: new edge colliders on its object (its markers,
+        /// layer and material) along the pieces inside, cut at the zone's edge (Liang-Barsky); the outline itself goes off.
+        /// </summary>
+        static void ClipToZone(EdgeCollider2D col, Rect zone)
+        {
+            var t = col.transform;
+            var pts = col.points;
+            var world = new Vector2[pts.Length];
+            for (int i = 0; i < pts.Length; i++) world[i] = t.TransformPoint(pts[i] + col.offset);
+            var pieces = new List<List<Vector2>>();
+            List<Vector2> cur = null;
+            for (int i = 0; i + 1 < world.Length; i++)
+            {
+                if (!ClipSegment(world[i], world[i + 1], zone, out var a, out var b))
+                {
+                    cur = null;
+                    continue;
+                }
+                if (cur == null || (cur[cur.Count - 1] - a).sqrMagnitude > 1e-6f)
+                {
+                    cur = new List<Vector2> { a };
+                    pieces.Add(cur);
+                }
+                cur.Add(b);
+                // Out of the zone at its end: the next piece starts afresh.
+                if ((b - world[i + 1]).sqrMagnitude > 1e-6f) cur = null;
+            }
+            foreach (var piece in pieces)
+            {
+                if (piece.Count < 2) continue;
+                var e = col.gameObject.AddComponent<EdgeCollider2D>();
+                e.sharedMaterial = col.sharedMaterial;
+                e.edgeRadius = col.edgeRadius;
+                var local = new Vector2[piece.Count];
+                for (int i = 0; i < piece.Count; i++) local[i] = t.InverseTransformPoint(piece[i]);
+                e.points = local;
+                DevClipped++;
+            }
+        }
+
+        /// <summary>Dev: the outline pieces kept in boss rooms' zones.</summary>
+        public static int DevClipped;
+
+        static bool ClipSegment(Vector2 p0, Vector2 p1, Rect r, out Vector2 a, out Vector2 b)
+        {
+            float t0 = 0f, t1 = 1f;
+            var d = p1 - p0;
+            bool Edge(float p, float q)
+            {
+                if (p == 0f) return q >= 0f;
+                float u = q / p;
+                if (p < 0f)
+                {
+                    if (u > t1) return false;
+                    if (u > t0) t0 = u;
+                }
+                else
+                {
+                    if (u < t0) return false;
+                    if (u < t1) t1 = u;
+                }
+                return true;
+            }
+            a = b = default;
+            if (!Edge(-d.x, p0.x - r.xMin) || !Edge(d.x, r.xMax - p0.x) || !Edge(-d.y, p0.y - r.yMin) || !Edge(d.y, r.yMax - p0.y)) return false;
+            a = p0 + t0 * d;
+            b = p0 + t1 * d;
+            return (b - a).sqrMagnitude > 1e-8f;
+        }
 
         bool Setup(tk2dTileMap map, string sceneName, CellGrid prebuilt, bool buildNow)
         {
@@ -206,8 +282,30 @@ namespace TerraKnight.World
             // nothing, for what reads it (shots against the ground, the map).
             SceneOwnGround = BossRooms.IsRoom(sceneName);
             Region.SceneOwnGround = SceneOwnGround;
-            if (SceneOwnGround) root.SetActive(false);
-            else foreach (var col in originals) col.enabled = false;
+            // Only the part the boss fights in (BossArenaZone): there the game's outlines are kept, cut at its edge, and
+            // the rest of the room is the grid's. A zone of most of the room, or none found: the whole room, as before.
+            Rect? zone = null;
+            OwnZoneHow = null;
+            if (SceneOwnGround)
+            {
+                Vector3 tile = map.data.tileSize;
+                var room = new Rect(map.transform.position.x, map.transform.position.y, map.width * tile.x, map.height * tile.y);
+                zone = BossArenaZone.OfRoom(map.gameObject.scene, room, out string how);
+                if (zone != null && zone.Value.width * zone.Value.height > 0.8f * room.width * room.height)
+                {
+                    how += "，占房间八成以上：整间保留";
+                    zone = null;
+                }
+                OwnZoneHow = how;
+            }
+            var kept = new List<Bounds>();
+            if (SceneOwnGround && zone == null) root.SetActive(false);
+            else
+                foreach (var col in originals)
+                {
+                    if (zone != null && Overlaps(col.bounds, zone.Value)) ClipToZone(col, zone.Value);
+                    col.enabled = false;
+                }
             float largest = 0f;
             foreach (var col in extra)
             {
@@ -220,8 +318,11 @@ namespace TerraKnight.World
                     FirstHandPlaced = col;
                     FirstHandPlacedBounds = col.bounds;
                 }
-                if (!SceneOwnGround) col.enabled = false;
+                // In a zone's room, what reaches into the zone stays whole (and its cells unchanged).
+                if (zone != null && Overlaps(col.bounds, zone.Value)) kept.Add(col.bounds);
+                else if (!SceneOwnGround || zone != null) col.enabled = false;
             }
+            if (zone != null) Region.SetOwnZone(zone.Value, kept);
             if (skipped.Count > 0)
             {
                 var sb = new System.Text.StringBuilder();
@@ -235,7 +336,7 @@ namespace TerraKnight.World
             int hiddenMeshes = 0;
             foreach (var mr in map.renderData.GetComponentsInChildren<MeshRenderer>(true))
             {
-                if (SceneOwnGround) break;
+                if (SceneOwnGround && zone == null) break;
                 if (mr.gameObject.layer != ChunkColliders.TerrainLayer || !mr.enabled) continue;
                 mr.enabled = false;
                 hiddenMeshes++;
@@ -246,7 +347,7 @@ namespace TerraKnight.World
             Plugin.Log.LogInfo($"[{sceneName}] 地形格子化：tilemap {map.width}x{map.height} 位置 {map.transform.position}，" +
                                $"{originals.Count} 条原版轮廓{(prebuilt != null ? "（格子沿用试放时的）" : $" / {segments} 段")} + {extra.Count} 个手放碰撞体 -> {grid.Width}x{grid.Height} 格，" +
                                $"{(prebuilt != null ? "" : $"实心 {filled}，")}碰撞盒 {Region.BoxCount}，替换 {hiddenMeshes} 块地图网格，{Holes.ArtCount} 个可抠前景精灵，" +
-                               $"{sw.ElapsedMilliseconds} ms（格子 {gridMs} ms）{(SceneOwnGround ? "；首领房间：保留原版地形碰撞和贴图" : "")}");
+                               $"{sw.ElapsedMilliseconds} ms（格子 {gridMs} ms）{(SceneOwnGround ? (zone != null ? $"；首领房间：战斗范围 {zone.Value.xMin:F0}~{zone.Value.xMax:F0} × {zone.Value.yMin:F0}~{zone.Value.yMax:F0}（{OwnZoneHow}）保留原版地形，其余可改动" : "；首领房间：保留原版地形碰撞和贴图（" + OwnZoneHow + "）") : "")}");
             return true;
         }
 

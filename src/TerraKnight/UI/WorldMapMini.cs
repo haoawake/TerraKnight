@@ -118,6 +118,12 @@ namespace TerraKnight.UI
 
         static bool MinimapShown() => Enabled && !Open && Style == 1 && !Items.InventoryGui.Open && GameHooks.IsGameplay(GameManager.UnsafeInstance);
 
+        /// <summary>The minimap is up in its frame (the information lines go under it).</summary>
+        public static bool MinimapVisible => MinimapShown();
+
+        /// <summary>A scene's grid origin on the world map, in cells (the compass and the depth meter).</summary>
+        public static bool TryLayout(string scene, out Vector2Int origin) => layout.TryGetValue(scene ?? "", out origin);
+
         /// <summary>The mouse is on the minimap's frame (the bag's "over the UI": no item use there).</summary>
         public static bool MouseOnMinimap(Vector2 gui)
         {
@@ -152,6 +158,7 @@ namespace TerraKnight.UI
                 if (room.Solid == null || room.Dirty && now - room.LastBuilt > 0.5f) Build(room);
                 visible.Add((room, rect));
             }
+            LiveOnTop(visible);
             var prev = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, alpha);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);

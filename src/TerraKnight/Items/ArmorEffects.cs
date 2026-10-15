@@ -558,16 +558,31 @@ namespace TerraKnight.Items
         {
             // The Thorns potion sends back a third as much (thorns 1 against the Turtle set's 2).
             float thorns = Mathf.Max(Set == ArmorSet.Turtle ? 2f : 0f, Equipment.Current.Thorns);
-            if (thorns <= 0f || attacker == null || attacker.isDead || raw <= 0) return;
+            bool cactus = Equipment.Current.CactusThorns;
+            if ((thorns <= 0f && !cactus) || attacker == null || attacker.isDead || raw <= 0) return;
             var col = attacker.GetComponent<Collider2D>() ?? attacker.GetComponentInChildren<Collider2D>();
             var hero = HeroController.SilentInstance;
             var melee = TerraMod.Instance?.Melee;
             if (col == null || hero == null || melee == null) return;
-            int dmg = Mathf.Min(1000, (int)(raw * Random.Range(0.85f, 1.15f) * thorns));
             Vector2 c = hero.GetComponent<BoxCollider2D>().bounds.center;
-            melee.HitWith(col, dmg, 10f, 0f, col.bounds.center.x >= c.x ? 1f : -1f, c);
-            DevThorns++;
+            float dir = col.bounds.center.x >= c.x ? 1f : -1f;
+            if (thorns > 0f)
+            {
+                int dmg = Mathf.Min(1000, (int)(raw * Random.Range(0.85f, 1.15f) * thorns));
+                melee.HitWith(col, dmg, 10f, 0f, dir, c);
+                DevThorns++;
+            }
+            // The Cactus set (cactusThorns, Pl:31642-31654): 15 back on every touch, 30 in Expert, 45 in Master.
+            if (cactus && !attacker.isDead)
+            {
+                var d = World.GameDifficulty.Current;
+                melee.HitWith(col, d == World.DifficultyLevel.Master ? 45 : d == World.DifficultyLevel.Expert ? 30 : 15, 10f, 0f, dir, c);
+                DevCactus++;
+            }
         }
+
+        /// <summary>Dev: the Cactus set's touches answered.</summary>
+        public static int DevCactus;
 
         /// <summary>
         /// The solar dash's touch (Pl:21291-21348), each tick of the dash: the first enemy met

@@ -4,11 +4,13 @@ using UnityEngine;
 namespace TerraKnight.World
 {
     /// <summary>
-    /// Boss rooms are fought as the game made them: nothing is dug, placed, blown up or frozen in
-    /// them. A boss room is the room of every boss of the monster book's table (its "_boss" scene
-    /// belongs to the room it is loaded into), the Greenpath Hornet's, the Grimm Troupe's tent and
-    /// the Colosseum; and any room while a boss or an elite is alive in it (a warrior's ghost once
-    /// dreamt up, a Godhome fight). A try there says so over the cursor.
+    /// Bosses are fought where the game made them: nothing is dug, placed, blown up or frozen where a
+    /// boss fights. A boss room is the room of every boss of the monster book's table (its "_boss" scene
+    /// belongs to the room it is loaded into), the Greenpath Hornet's, the Grimm Troupe's tent and the
+    /// Colosseum; what stays as it is there is the part the boss reaches (BossArenaZone: what the camera
+    /// shows while the fight's lock holds), the rest of the room is changed like any other. A boss up in
+    /// any room (a warrior's ghost dreamt up, a Godhome fight) keeps what it reaches the same way, while
+    /// it lives. A try there says so over the cursor.
     /// </summary>
     internal static class BossRooms
     {
@@ -27,33 +29,39 @@ namespace TerraKnight.World
             return rooms;
         }
 
-        static readonly Dictionary<string, (float At, bool Alive)> alive = new Dictionary<string, (float, bool)>();
+        static readonly Dictionary<string, (float At, List<Rect> Reach)> alive = new Dictionary<string, (float, List<Rect>)>();
 
-        /// <summary>A boss or elite alive and out in the room (checked twice a second).</summary>
-        static bool BossAlive(string room)
+        /// <summary>What each boss alive and out in the room reaches (BossArenaZone.Around; checked twice a second).</summary>
+        static List<Rect> BossReach(TerrainRegion region, string room)
         {
-            if (alive.TryGetValue(room, out var c) && Time.unscaledTime - c.At < 0.5f) return c.Alive;
-            bool any = false;
+            if (alive.TryGetValue(room, out var c) && Time.unscaledTime - c.At < 0.5f) return c.Reach;
+            var reach = new List<Rect>();
+            var area = new Rect(region.Root.position, new Vector2(region.Grid.Width, region.Grid.Height) * CellGrid.CellSize);
             foreach (var info in Items.EnemyStats.All)
             {
                 var hm = info.Hm;
                 if (!info.Boss || hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy || Items.EnemyStats.Defeated(hm)) continue;
-                if (Room(hm.gameObject.scene.name) == room) { any = true; break; }
+                if (Room(hm.gameObject.scene.name) != room) continue;
+                var col = hm.GetComponent<Collider2D>();
+                reach.Add(BossArenaZone.Around(hm.gameObject.scene, area, col != null && col.enabled ? (Vector2)col.bounds.center : (Vector2)hm.transform.position));
             }
-            alive[room] = (Time.unscaledTime, any);
-            return any;
+            alive[room] = (Time.unscaledTime, reach);
+            return reach;
         }
 
         /// <summary>A boss room for good (not one only while a boss is up in it): its ground is never changed.</summary>
         public static bool IsRoom(string scene) => !string.IsNullOrEmpty(scene) && Rooms().Contains(Room(scene));
 
-        /// <summary>Whether the room this cell lies in may not be changed.</summary>
+        /// <summary>Whether this cell may not be changed: in a boss room's fight, or within reach of a boss up.</summary>
         public static bool Locked(int gx, int gy)
         {
             var r = TerraWorld.RegionAt(gx, gy);
             if (r == null) return false;
             string room = Room(r.SceneName);
-            return Rooms().Contains(room) || BossAlive(room);
+            if (Rooms().Contains(room) && (r.OwnZone == null || r.IsOwnCell(gx - r.CellOffset.x, gy - r.CellOffset.y))) return true;
+            var at = new Vector2((gx + 0.5f) * CellGrid.CellSize, (gy + 0.5f) * CellGrid.CellSize);
+            foreach (var reach in BossReach(r, room)) if (reach.Contains(at)) return true;
+            return false;
         }
 
         public static bool Locked(Vector2 world)
@@ -69,7 +77,7 @@ namespace TerraKnight.World
         {
             if (Time.unscaledTime < nextNotice) return;
             nextNotice = Time.unscaledTime + 2f;
-            UI.CombatText.Show(new Vector3(at.x, at.y + 0.4f, 0f), Lang.T("首领房间里不能改动地形"), UI.CombatText.Notice);
+            UI.CombatText.Show(new Vector3(at.x, at.y + 0.4f, 0f), Lang.T("首领的战斗范围内不能改动地形"), UI.CombatText.Notice);
         }
 
         public static string DevRooms() => string.Join(" ", Rooms());

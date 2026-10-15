@@ -43,6 +43,12 @@ namespace TerraKnight.Net
         EnemyHit = 201,
         /// <summary>A minion snapshot (the owner's minions, drawn by the others).</summary>
         MinionSnapshot = 202,
+        WorldRequest = 203,
+        WorldState = 204,
+        WorldAction = 205,
+        WorldResult = 206,
+        /// <summary>The mod's: a boss seal used (its arena's key): everyone goes to the arena.</summary>
+        BossSummon = 207,
     }
 
     /// <summary>

@@ -154,6 +154,7 @@ namespace TerraKnight
         /// </summary>
         public void ResetPlayer()
         {
+            BossSummons.Reset();
             Inventory.Clear();
             Inventory.Slots[0] = ItemStack.Of(ItemType.CopperShortsword);
             Inventory.Slots[1] = ItemStack.Of(ItemType.CopperPickaxe);
@@ -198,6 +199,8 @@ namespace TerraKnight
 
         public void OnSceneReady(GameManager gm)
         {
+            // No talk goes on past a room's change: a box still up is one its speaker left behind.
+            HudDialogue.Close();
             LiveWorld.Instance?.OnSceneReady();
             Pylons.OnSceneReady();
             BossArena.OnSceneReady(gm);
@@ -236,6 +239,8 @@ namespace TerraKnight
             if (gm != null && gm.isPaused) lastPausedFrame = Time.frameCount;
             if (gameplay && !gm.isPaused && TerrainSystem.Current != null) InventoryGui.Tick();
             if (gameplay) World.BossPlatforms.Tick();
+            if (gameplay) AcidLiquid.Tick();
+            if (gameplay) BossPhases.Tick();
             if (gameplay)
             {
                 var rb = hero.GetComponent<Rigidbody2D>();
@@ -514,8 +519,13 @@ namespace TerraKnight
                 if (s.IsEmpty || !kind(s.Def)) continue;
                 if (best < 0 || s.Def.HealLife + s.Def.HealMana > Inventory.Slots[best].Def.HealLife + Inventory.Slots[best].Def.HealMana) best = i;
             }
-            if (best >= 0 && Drink(Inventory.Slots[best].Def)) Inventory.ConsumeAt(best);
+            bool drunk = best >= 0 && Drink(Inventory.Slots[best].Def);
+            if (drunk) Inventory.ConsumeAt(best);
+            DevLastQuickUse = best < 0 ? "背包里没找到" : $"第 {best} 格 {Inventory.Slots[best].Def?.Name} ×{Inventory.Slots[best].Count}，喝下 {drunk}";
         }
+
+        /// <summary>Dev: what the last quick use found and did.</summary>
+        public static string DevLastQuickUse = "";
 
         /// <summary>A potion's effect; false when it can't be drunk now (potion sickness, nothing to restore).</summary>
         /// <summary>
@@ -554,6 +564,7 @@ namespace TerraKnight
             }
             if (def.HealMana > 0)
             {
+                UndoSlowMagic();
                 int restored = Stats.RestoreMana(def.HealMana);
                 CombatText.Show(hero.transform.position + Vector3.up * 0.9f, restored.ToString(), CombatText.Mana);
             }
@@ -682,10 +693,18 @@ namespace TerraKnight
 
         void Use(ItemDef def, Vector2Int cell, bool usable, Vector2 mouse, Collider2D rock)
         {
+            if (!Net.WorldSync.CanInteract) return;
             var hero = HeroController.SilentInstance;
             float scale = Equipment.UseScale(def);
             useCooldown = (def.ShootsOnSwingStart ? def.UseAnimation : def.UseTime) * scale;
             UseDirection = mouse.x < hero.transform.position.x ? -1f : 1f;
+
+            if (def.BossSummonKey != null)
+            {
+                // The seal owns its transaction; ordinary weapon/potion consumption must not run.
+                BossSummons.TryUse(def, Inventory);
+                return;
+            }
 
             if (def.IsSummon)
             {
@@ -733,6 +752,17 @@ namespace TerraKnight
                 }
                 return;
             }
+            // The mirrors and the Cell Phone: home as the Recall Potion goes, kept.
+            if (ItemDb.IsMirror(def.Type))
+            {
+                if (Pylons.Recall()) PlaySound(def.UseSound ?? "Item_6");
+                return;
+            }
+            if (ItemDb.IsTeleportRod(def.Type))
+            {
+                if (TeleportRods.Use(this, hero, DevAim ?? mouse, def.Type == ItemType.RodofDiscord)) PlaySound(def.UseSound ?? "Item_8");
+                return;
+            }
             if (def.PlacesChest)
             {
                 if (Chests.TryPlace(hero, DevAim ?? mouse)) Inventory.ConsumeSelected();
@@ -753,7 +783,7 @@ namespace TerraKnight
                 // ItemCheck: only a swing that starts with itemTime run out shoots, and that sets it again.
                 if (shotCooldown <= 0f && Fire(def, hero, mouse))
                 {
-                    shotCooldown = def.UseTime * scale;
+                    shotCooldown = def.UseTime * scale * (slowSwing ? SlowMagic : 1f);
                     readyCueItem = def.Type;
                 }
             }
@@ -808,8 +838,7 @@ namespace TerraKnight
             if (TerraProjectiles.Instance != null && TerraProjectiles.Instance.Holds(def.Shoot)) return false;
             // Mana is paid as a use starts: the Aqua Scepter's second stream in the same use is free.
             bool freeShot = def.ManaEveryOtherShot && IsUsingItem && swingItem == def;
-            if (def.Mana > 0 && !freeShot && !def.NoUseMana && !CheckMana(def)) return false;
-            if (def.Mana > 0 && def.PayManaAfterCheck && Stats.Mana < Equipment.ManaCost(def)) return false;
+            if (def.Mana > 0 && !freeShot && !def.NoUseMana && !CheckMana(def, startOfUse: true)) return false;
 
             Vector2 center = hero.GetComponent<BoxCollider2D>().bounds.center;
             Vector2 dir = mouse - center;
@@ -926,12 +955,53 @@ namespace TerraKnight
         /// </summary>
         Vector2 shotDir;
 
-        /// <summary>Player.CheckMana(item, pay: true): the item's mana, the Mana Flower drinking a potion first if short.</summary>
-        public bool CheckMana(ItemDef def)
+        /// <summary>
+        /// Player.slowMagicUse (1.4.5, DebugOptions.ManaV2): the last mana check found too little; what is cast goes 2.5
+        /// times slower (GetSlowMagicMultiplier) until a check finds enough or a mana potion is drunk.
+        /// </summary>
+        public bool SlowMagicUse { get; private set; }
+        public const float SlowMagic = 2.5f;
+        /// <summary>This use started short of mana: its swing is 2.5 times as long too (SetItemAnimation with the multiplier).</summary>
+        bool slowSwing;
+        public static int DevSlowCasts, DevManaChecks, DevFlowerTries;
+
+        /// <summary>
+        /// Player.CheckMana(item, pay: true): the item's mana, the Mana Flower drinking a potion first if short. 1.4.5
+        /// (Pl:53214-53249): short all the same, it is cast: the mana spent to nothing and the use, started now, 2.5
+        /// times as long (ItemCheck_StartActualUse, ApplyItemTime with the multiplier).
+        /// </summary>
+        public bool CheckMana(ItemDef def, bool startOfUse = false)
         {
             int cost = Equipment.ManaCost(def);
-            if (Stats.Mana < cost && Equipment.Current.ManaFlower) QuickUse(d => d.HealMana > 0);
-            return Stats.SpendMana(cost);
+            SlowMagicUse = false;
+            DevManaChecks++;
+            if (Stats.Mana < cost && Equipment.Current.ManaFlower)
+            {
+                DevFlowerTries++;
+                QuickUse(d => d.HealMana > 0);
+            }
+            if (Stats.SpendMana(cost)) return true;
+            Stats.Mana = 0;
+            SlowMagicUse = true;
+            DevSlowCasts++;
+            if (startOfUse)
+            {
+                useCooldown *= SlowMagic;
+                slowSwing = true;
+            }
+            return true;
+        }
+
+        /// <summary>UndoSlowMagicUse (Pl:52583-52600): a mana potion drunk mid-use puts the use back to its own speed.</summary>
+        void UndoSlowMagic()
+        {
+            if (!SlowMagicUse) return;
+            SlowMagicUse = false;
+            if (!IsUsingItem) return;
+            useCooldown = Mathf.Max(2f / 60f, useCooldown / SlowMagic);
+            shotCooldown = Mathf.Max(0f, shotCooldown / SlowMagic);
+            swingDuration = Mathf.Max(2f / 60f, swingDuration / SlowMagic);
+            swingTime /= SlowMagic;
         }
 
         /// <summary>
@@ -1253,6 +1323,7 @@ namespace TerraKnight
             Stats.ManaRegenBonus = bonus.ManaRegenBonus;
             Stats.Endurance = bonus.Endurance;
             Stats.ShinyStone = bonus.ShinyStone;
+            Stats.CrimsonRegen = bonus.CrimsonRegen;
             Stats.LifeForce = bonus.LifeForce;
             Stats.ManaRegenBuff = bonus.ManaRegenBuff;
             Stats.UpdateMaximums(PlayerData.instance, bonus.ManaMax);
@@ -1311,7 +1382,7 @@ namespace TerraKnight
         void UpdateHeldTorchLight(ItemDef held, Bounds b, float facing)
         {
             var hero = HeroController.SilentInstance;
-            bool on = held != null && held.Places == CellKind.Torch && hero != null && playerSprite.gameObject.activeSelf && !hero.cState.swimming;
+            bool on = held != null && held.Places == CellKind.Torch && hero != null && playerSprite.gameObject.activeSelf && !AcidLiquid.Swimming(hero);
             if (on && heldTorchLight == null)
             {
                 heldTorchLight = Glow.CreateLight(transform, CellVisuals.TorchLight);
@@ -1351,6 +1422,7 @@ namespace TerraKnight
         /// </summary>
         public void ThrowHeld(bool rightClick)
         {
+            if (!Net.WorldSync.CanInteract) return;
             var hero = HeroController.SilentInstance;
             if (hero == null || hero.cState.dead || IsUsingItem || useCooldown > 0f || !GameHooks.PlayerHasControl()) return;
             bool fromMouse = InventoryGui.Open && !Inventory.Mouse.IsEmpty;
@@ -1588,7 +1660,8 @@ namespace TerraKnight
             swingSprite = def.NoUseGraphic ? null : ItemSprite(def.Type);
             // Terraria draws held swords diagonally from the handle, so the blade spans the diagonal.
             bladeLength = swingSprite != null ? swingSprite.bounds.size.magnitude * Equipment.ItemScale(def) : 0f;
-            swingDuration = Mathf.Max(def.UseAnimation * Equipment.UseScale(def), 0.1f);
+            swingDuration = Mathf.Max(def.UseAnimation * Equipment.UseScale(def) * (slowSwing && def.Mana > 0 ? SlowMagic : 1f), 0.1f);
+            slowSwing = false;
             swingTime = 0f;
             BeginUse(def);
             UpdateSwing(0f);
@@ -1820,8 +1893,9 @@ namespace TerraKnight
             {
                 Head = armor[0].IsEmpty ? 0 : armor[0].Def.ArmorSheet,
                 Body = armor[1].IsEmpty ? 0 : armor[1].Def.ArmorSheet,
-                // The Flinx Fur Coat is a robe: its own legs (229) are drawn instead of the worn ones (SetMatch, wearsRobe).
-                Legs = !armor[1].IsEmpty && armor[1].Type == ItemType.FlinxFurCoat ? 229 : armor[2].IsEmpty ? 0 : armor[2].Def.ArmorSheet,
+                // A robe (the Flinx Fur Coat, the gem robes...): its own legs are drawn instead of the worn ones (SetMatch, wearsRobe).
+                Legs = !armor[1].IsEmpty && Equipment.RobeLegs(armor[1].Def.ArmorSheet) > 0 ? Equipment.RobeLegs(armor[1].Def.ArmorSheet)
+                     : armor[2].IsEmpty ? 0 : armor[2].Def.ArmorSheet,
                 // GetHairSettings (Pl:16902-17043): of the hardmode heads only the Cobalt Hat (hatHair) and the Hallowed Headgear (fullHair).
                 HairUnderHead = !armor[0].IsEmpty && (armor[0].Type == ItemType.MiningHelmet || armor[0].Type == ItemType.JungleHat
                                                      || armor[0].Type == ItemType.CobaltHat || armor[0].Type == ItemType.HallowedHeadgear),

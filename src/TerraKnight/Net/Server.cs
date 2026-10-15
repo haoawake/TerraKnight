@@ -25,7 +25,7 @@ namespace TerraKnight.Net
         public const int MaxSlots = 16;
         /// <summary>What a client must say in its Hello (Terraria: "Terraria" + curRelease).</summary>
         public static string Protocol => "TerraKnight" + Plugin.Version + "/net" + NetVersion;
-        const int NetVersion = 1;
+        const int NetVersion = 2;
         /// <summary>RemoteClient's timeout: two minutes without a word (a scene loading on the other end can stall it for seconds).</summary>
         const double TimeoutSeconds = 120;
 
@@ -265,6 +265,21 @@ namespace TerraKnight.Net
                 if (c.State != 2) return;
                 switch (type)
                 {
+                    case Msg.WorldRequest:
+                    case Msg.WorldAction:
+                        body[1] = (byte)c.Slot;
+                        foreach (var host in clients)
+                            if (host != null && host.State == 2 && host.IsHost) host.Conn.Send(Packet.Frame(body));
+                        return;
+                    case Msg.WorldState:
+                    case Msg.WorldResult:
+                        if (!c.IsHost) return;
+                        body[1] = (byte)c.Slot;
+                        int target = body[2];
+                        foreach (var peer in clients)
+                            if (peer != null && peer.State == 2 && peer != c && (target == 255 || target == peer.Slot))
+                                peer.Conn.Send(Packet.Frame(body));
+                        return;
                     case Msg.PlayerState:
                         body[1] = (byte)c.Slot;
                         c.LastState = body;
@@ -349,6 +364,15 @@ namespace TerraKnight.Net
                     case Msg.SetTime:
                         if (c.IsHost) Relay(c, body);
                         return;
+                    case Msg.BossSummon:
+                    {
+                        r.ReadByte();
+                        r.ReadString();
+                        body[1] = (byte)c.Slot;
+                        Relay(c, body);
+                        Chat(NetText.Mod("{0} 使用了首领召唤物，所有人都被传送到首领的竞技场", c.Name), Yellow, null);
+                        return;
+                    }
                     case Msg.ProjectileSnapshot:
                     case Msg.MinionSnapshot:
                     case Msg.TileChange:

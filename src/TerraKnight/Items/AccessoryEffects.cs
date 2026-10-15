@@ -66,7 +66,7 @@ namespace TerraKnight.Items
             // The jellyfish necklaces' light (Pl:15337-15374): faint dry, bright in liquid.
             if (b.AccLight != AccLightKind.None && fx != null)
             {
-                bool wet = hero.cState.swimming;
+                bool wet = Player.AcidLiquid.Swimming(hero);
                 var c = b.AccLight == AccLightKind.Jellyfish
                     ? (wet ? new Color(1.8f, 0.4f, 1.2f) : new Color(0.225f, 0.05f, 0.15f))
                     : (wet ? new Color(0.4f, 1.2f, 1.8f) : new Color(0.05f, 0.15f, 0.225f));

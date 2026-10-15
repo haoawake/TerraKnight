@@ -761,8 +761,9 @@ namespace TerraKnight.Items
             {
                 lavaTimeTick = tick;
                 if (lavaTime > 0) lavaTime--;
-                else if (!hero.cState.invulnerable && !Equipment.Current.LavaImmune)
-                    Player.PlayerHooks.HurtPlayer(hero, Equipment.Current.LavaRose ? 35 : 80, hb.center.x >= p.Pos.x ? 1 : -1, gameObject);
+                // The Ash Wood set (ashWoodBonus, Pl:27883-27915): the lava's 80 halved, and with the Obsidian Rose none at all.
+                else if (!hero.cState.invulnerable && !Equipment.Current.LavaImmune && !(Equipment.Current.AshWood && Equipment.Current.LavaRose))
+                    Player.PlayerHooks.HurtPlayer(hero, (Equipment.Current.AshWood ? 40 : 80) - (Equipment.Current.LavaRose ? 45 : 0), hb.center.x >= p.Pos.x ? 1 : -1, gameObject);
             }
             else if (lavaTimeTick != tick && lavaTime < max) lavaTime++;
             if (lavaTime > max) lavaTime = max;

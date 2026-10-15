@@ -74,6 +74,12 @@ namespace TerraKnight.Items
 
         public static bool Known(string record) => record != null && table.ContainsKey(record);
 
+        /// <summary>A record of a boss (the table's Boss mark).</summary>
+        public static bool IsBossRecord(string record) => record != null && table.TryGetValue(record, out var e) && e.Boss;
+
+        /// <summary>A record of an elite: a miniboss, or tough enough (70 life or more) not to be a boss.</summary>
+        public static bool IsEliteRecord(string record) => record != null && table.TryGetValue(record, out var e) && !e.Boss && (e.Kind == "miniboss" || e.Hp >= 70);
+
         /// <summary>A drop of a stage the player hasn't unlocked yet: it doesn't drop, and the book hides it.</summary>
         public static bool Locked(Drop d) => d.LockStage > Shop.UnlockedStage();
 
@@ -255,9 +261,25 @@ namespace TerraKnight.Items
             int n = Random.Range(d.Min, EffectiveMax(d) + 1);
             if (n <= 0) return;
             if (DevSink != null) { DevSink(d.Type, n); DevDropped++; return; }
+            // A boss's hearts: each its own, never into the bag.
+            if (d.Type == ItemType.Heart)
+            {
+                BossPotions.Hearts(n, at, direct);
+                DevDropped++;
+                return;
+            }
             if (direct) Give(ItemStack.Of(d.Type, n));
-            else WorldItems.Drop(ItemStack.Of(d.Type, n), at);
+            else WorldItems.Drop(ItemStack.Of(d.Type, n), at, personal: true);
             DevDropped++;
+        }
+
+        /// <summary>A stack from a kill: into the world at the spot, or straight into the bag where there's no time to pick it up.</summary>
+        internal static void Spill(ItemStack stack, Vector2 at, bool direct)
+        {
+            if (stack.IsEmpty) return;
+            if (DevSink != null) { DevSink(stack.Type, stack.Count); return; }
+            if (direct) Give(stack);
+            else WorldItems.Drop(stack, at, personal: true);
         }
 
         /// <summary>Dev: sure picks made out of groups so far.</summary>
@@ -294,17 +316,25 @@ namespace TerraKnight.Items
                 mod.PlaySound("Grab", 0.7f);
                 DevGiven += stack.Count - left;
             }
-            if (left > 0) waiting.Add(ItemStack.Of(stack.Type, left));
+            if (left > 0)
+            {
+                waiting.Add(ItemStack.Of(stack.Type, left));
+                UI.CombatText.Show(hero.GetComponent<BoxCollider2D>().bounds.center + Vector3.up * 1.4f, Lang.T("背包已满：放不下的掉落物会掉在脚下"), UI.CombatText.Notice);
+            }
         }
 
-        /// <summary>Each frame in play: what didn't fit falls at the player's feet once they're back in the world and their own.</summary>
+        /// <summary>Godhome's halls (the Hall of Gods, the Atrium, the pantheons' rooms between fights): the game takes no one away from them.</summary>
+        static bool GodhomeHall(string scene) => scene == "GG_Workshop" || scene.StartsWith("GG_Atrium") || scene == "GG_Unlock_Wastes" || scene == "GG_Blue_Room"
+            || scene.StartsWith("GG_Engine") || scene == "GG_Spa" || scene == "GG_Wyrm" || scene == "GG_Boss_Door_Entrance" || scene == "GG_Door_5_Finale";
+
+        /// <summary>Each frame in play: what didn't fit falls at the player's feet once they're somewhere the game doesn't take them from, and their own.</summary>
         public static void Tick(HeroController hero)
         {
             if (waiting.Count == 0 || hero == null || !GameHooks.PlayerHasControl()) return;
             var gm = GameManager.UnsafeInstance;
-            if (gm == null || LeavesOnItsOwn(gm.sceneName)) return;
+            if (gm == null || gm.IsInSceneTransition || (LeavesOnItsOwn(gm.sceneName) && !GodhomeHall(gm.sceneName))) return;
             var at = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
-            foreach (var s in waiting) WorldItems.Drop(s, at);
+            foreach (var s in waiting) WorldItems.Drop(s, at, personal: true);
             waiting.Clear();
         }
 

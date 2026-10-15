@@ -263,7 +263,7 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// Each second in play: its damage set by the progress reached, and, with the Knight's Dream
-        /// Nail got, the item given if the bag, the cursor and the chests are all without it.
+        /// Nail got, the item given if the player has it nowhere, and kept to one (<see cref="UniqueItems"/>).
         /// </summary>
         public static void Tick(TerraMod mod, HeroController hero)
         {
@@ -274,24 +274,13 @@ namespace TerraKnight.Items
             var def = ItemDb.Get(ItemType.DreamNail);
             def.Damage = DamageNow();
             var pd = PlayerData.instance;
-            if (pd == null || !pd.hasDreamNail || hero == null || Owned(mod)) return;
+            if (pd == null || !pd.hasDreamNail || hero == null || UniqueItems.Keep(mod.Inventory, ItemType.DreamNail)) return;
             int left = mod.Inventory.Pickup(ItemType.DreamNail, 1);
             var at = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
             if (left > 0) WorldItems.Drop(ItemStack.Of(ItemType.DreamNail), at);
             else UI.PopupText.Show(def, 1, at);
             mod.PlaySound("Grab");
             Plugin.Log.LogInfo($"[梦之钉] 给了梦之钉{(left > 0 ? "（背包满了，放在脚下）" : "")}");
-        }
-
-        static bool Owned(TerraMod mod)
-        {
-            var inv = mod.Inventory;
-            if (inv.Mouse.Type == ItemType.DreamNail && !inv.Mouse.IsEmpty) return true;
-            foreach (var s in inv.Slots) if (s.Type == ItemType.DreamNail && !s.IsEmpty) return true;
-            foreach (var l in inv.Loadouts)
-                if (l.Bag != null) foreach (var s in l.Bag) if (s.Type == ItemType.DreamNail && !s.IsEmpty) return true;
-            if (World.Chests.Holds(ItemType.DreamNail)) return true;
-            return WorldItems.Lying(ItemType.DreamNail);
         }
 
         // ------------------------------------------------------------------ its picture

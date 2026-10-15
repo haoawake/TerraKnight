@@ -1,0 +1,260 @@
+using System.Collections.Generic;
+
+namespace TerraKnight.Items
+{
+    internal static partial class ItemDb
+    {
+        // <generated> by scratchpad/port/gen_armor2.py: edit the tables there.
+
+        /// <summary>
+        /// The rest of Terraria's armor (Item.SetDefaults: slot, sheet, defense, rarity; Player.GrantArmorBenefits: what each
+        /// piece adds; zh-Hans names and tooltips): the Meteor, Ninja, Mining and Prospector, Crimson, Snow and pink Snow,
+        /// Cactus, Pumpkin, Gladiator, Fossil, Angler and Captain, Ancient and wood sets, the Old One's Army's tier 2 and 3
+        /// sets, the Wizard Hat, the Magic Hat and the robes, and the single pieces (Goggles, Empty Bucket, Green Cap,
+        /// Viking Helmet, Rain set, Night Vision and Ultrabright Helmets, Gi, Djinn's Curse, Moon Lord Legs, Dead Man's
+        /// Sweater); and the Robe, the Pink Thread and the Pumpkin they are made from. The set bonuses are in Equipment.
+        /// </summary>
+        static void AddArmor2(List<ItemDef> list)
+        {
+            list.Add(HmArmor(ItemType.Goggles, "护目镜", 37, ArmorSlot.Head, 10, 1, ArmorSet.None, 0, null));
+            list.Add(HmArmor(ItemType.MeteorHelmet, "流星头盔", 123, ArmorSlot.Head, 6, 5, ArmorSet.Meteor, 1, "魔法伤害提高9%", new Bonuses { MagicDamage = 0.09f }));
+            list.Add(HmArmor(ItemType.MeteorSuit, "流星护甲", 124, ArmorSlot.Body, 6, 6, ArmorSet.Meteor, 1, "魔法伤害提高9%", new Bonuses { MagicDamage = 0.09f }));
+            list.Add(HmArmor(ItemType.MeteorLeggings, "流星护腿", 125, ArmorSlot.Legs, 6, 5, ArmorSet.Meteor, 1, "魔法伤害提高9%", new Bonuses { MagicDamage = 0.09f }));
+            list.Add(HmArmor(ItemType.EmptyBucket, "空桶", 205, ArmorSlot.Head, 13, 1, ArmorSet.None, 0, "可用来舀起少量液体\n收集雨水"));
+            list.Add(HmArmor(ItemType.WizardHat, "巫师帽", 238, ArmorSlot.Head, 14, 4, ArmorSet.Wizard, 2, "魔法伤害提高5%", new Bonuses { MagicDamage = 0.05f }));
+            list.Add(HmArmor(ItemType.NinjaHood, "忍者兜帽", 256, ArmorSlot.Head, 22, 2, ArmorSet.Ninja, 1, "暴击率提高3%", new Bonuses { AllCrit = 0.03f }));
+            list.Add(HmArmor(ItemType.NinjaShirt, "忍者衣", 257, ArmorSlot.Body, 14, 4, ArmorSet.Ninja, 1, "暴击率提高3%", new Bonuses { AllCrit = 0.03f }));
+            list.Add(HmArmor(ItemType.NinjaPants, "忍者裤", 258, ArmorSlot.Legs, 14, 3, ArmorSet.Ninja, 1, "暴击率提高3%", new Bonuses { AllCrit = 0.03f }));
+            list.Add(HmArmor(ItemType.MiningShirt, "挖矿衣", 410, ArmorSlot.Body, 20, 1, ArmorSet.Mining, 1, "挖矿速度提高10%", new Bonuses { PickSpeed = -0.1f }));
+            list.Add(HmArmor(ItemType.MiningPants, "挖矿裤", 411, ArmorSlot.Legs, 19, 1, ArmorSet.Mining, 1, "挖矿速度提高10%", new Bonuses { PickSpeed = -0.1f }));
+            list.Add(HmArmor(ItemType.EbonwoodHelmet, "乌木头盔", 730, ArmorSlot.Head, 53, 1, ArmorSet.Ebonwood, 0, null));
+            list.Add(HmArmor(ItemType.EbonwoodBreastplate, "乌木胸甲", 731, ArmorSlot.Body, 33, 2, ArmorSet.Ebonwood, 0, null));
+            list.Add(HmArmor(ItemType.EbonwoodGreaves, "乌木护胫", 732, ArmorSlot.Legs, 32, 1, ArmorSet.Ebonwood, 0, null));
+            list.Add(HmArmor(ItemType.RichMahoganyHelmet, "红木头盔", 733, ArmorSlot.Head, 54, 1, ArmorSet.RichMahogany, 0, null));
+            list.Add(HmArmor(ItemType.RichMahoganyBreastplate, "红木胸甲", 734, ArmorSlot.Body, 34, 1, ArmorSet.RichMahogany, 0, null));
+            list.Add(HmArmor(ItemType.RichMahoganyGreaves, "红木护胫", 735, ArmorSlot.Legs, 33, 1, ArmorSet.RichMahogany, 0, null));
+            list.Add(HmArmor(ItemType.PearlwoodHelmet, "珍珠木头盔", 736, ArmorSlot.Head, 55, 2, ArmorSet.Pearlwood, 0, null));
+            list.Add(HmArmor(ItemType.PearlwoodBreastplate, "珍珠木胸甲", 737, ArmorSlot.Body, 35, 3, ArmorSet.Pearlwood, 0, null));
+            list.Add(HmArmor(ItemType.PearlwoodGreaves, "珍珠木护胫", 738, ArmorSlot.Legs, 34, 2, ArmorSet.Pearlwood, 0, null));
+            list.Add(HmArmor(ItemType.CrimsonHelmet, "猩红头盔", 792, ArmorSlot.Head, 57, 6, ArmorSet.Crimson, 1, "伤害提高3%", new Bonuses { MeleeDamage = 0.03f, RangedDamage = 0.03f, MagicDamage = 0.03f, MinionDamage = 0.03f }));
+            list.Add(HmArmor(ItemType.CrimsonScalemail, "猩红鳞甲", 793, ArmorSlot.Body, 37, 7, ArmorSet.Crimson, 1, "伤害提高3%", new Bonuses { MeleeDamage = 0.03f, RangedDamage = 0.03f, MagicDamage = 0.03f, MinionDamage = 0.03f }));
+            list.Add(HmArmor(ItemType.CrimsonGreaves, "猩红护胫", 794, ArmorSlot.Legs, 35, 6, ArmorSet.Crimson, 1, "伤害提高3%", new Bonuses { MeleeDamage = 0.03f, RangedDamage = 0.03f, MagicDamage = 0.03f, MinionDamage = 0.03f }));
+            list.Add(HmArmor(ItemType.EskimoHood, "防雪兜帽", 803, ArmorSlot.Head, 58, 3, ArmorSet.Snow, 0, null));
+            list.Add(HmArmor(ItemType.EskimoCoat, "防雪大衣", 804, ArmorSlot.Body, 38, 3, ArmorSet.Snow, 0, null));
+            list.Add(HmArmor(ItemType.EskimoPants, "防雪裤", 805, ArmorSlot.Legs, 36, 3, ArmorSet.Snow, 0, null));
+            list.Add(HmArmor(ItemType.GreenCap, "绿帽", 867, ArmorSlot.Head, 63, 2, ArmorSet.None, 1, null));
+            list.Add(HmArmor(ItemType.VikingHelmet, "维京海盗头盔", 879, ArmorSlot.Head, 69, 4, ArmorSet.None, 1, null));
+            list.Add(HmArmor(ItemType.CactusHelmet, "仙人掌头盔", 894, ArmorSlot.Head, 70, 1, ArmorSet.Cactus, 0, null));
+            list.Add(HmArmor(ItemType.CactusBreastplate, "仙人掌胸甲", 895, ArmorSlot.Body, 46, 1, ArmorSet.Cactus, 0, null));
+            list.Add(HmArmor(ItemType.CactusLeggings, "仙人掌护腿", 896, ArmorSlot.Legs, 42, 1, ArmorSet.Cactus, 0, null));
+            list.Add(HmArmor(ItemType.ShadewoodHelmet, "暗影木头盔", 924, ArmorSlot.Head, 71, 1, ArmorSet.Shadewood, 0, null));
+            list.Add(HmArmor(ItemType.ShadewoodBreastplate, "暗影木胸甲", 925, ArmorSlot.Body, 47, 2, ArmorSet.Shadewood, 0, null));
+            list.Add(HmArmor(ItemType.ShadewoodGreaves, "暗影木护胫", 926, ArmorSlot.Legs, 43, 1, ArmorSet.Shadewood, 0, null));
+            list.Add(HmArmor(ItemType.AncientIronHelmet, "远古铁头盔", 954, ArmorSlot.Head, 72, 2, ArmorSet.Iron, 0, null));
+            list.Add(HmArmor(ItemType.AncientGoldHelmet, "远古金头盔", 955, ArmorSlot.Head, 73, 4, ArmorSet.Gold, 0, null));
+            list.Add(HmArmor(ItemType.AncientShadowHelmet, "远古暗影头盔", 956, ArmorSlot.Head, 74, 6, ArmorSet.Shadow, 1, "暴击率提高5%", new Bonuses { AllCrit = 0.05f }));
+            list.Add(HmArmor(ItemType.AncientShadowScalemail, "远古暗影鳞甲", 957, ArmorSlot.Body, 48, 7, ArmorSet.Shadow, 1, "暴击率提高5%", new Bonuses { AllCrit = 0.05f }));
+            list.Add(HmArmor(ItemType.AncientShadowGreaves, "远古暗影护胫", 958, ArmorSlot.Legs, 44, 6, ArmorSet.Shadow, 1, "暴击率提高5%", new Bonuses { AllCrit = 0.05f }));
+            list.Add(HmArmor(ItemType.AncientNecroHelmet, "远古死灵头盔", 959, ArmorSlot.Head, 75, 6, ArmorSet.Necro, 2, "远程伤害提高5%", new Bonuses { RangedDamage = 0.05f }));
+            list.Add(HmArmor(ItemType.AncientCobaltHelmet, "远古钴头盔", 960, ArmorSlot.Head, 76, 5, ArmorSet.Jungle, 3, "最大魔力增加40\n魔法暴击率提高6%", new Bonuses { MagicCrit = 0.06f, ManaMax = 40 }));
+            list.Add(HmArmor(ItemType.AncientCobaltBreastplate, "远古钴胸甲", 961, ArmorSlot.Body, 49, 6, ArmorSet.Jungle, 3, "最大魔力增加20\n魔法伤害提高6%", new Bonuses { MagicDamage = 0.06f, ManaMax = 20 }));
+            list.Add(HmArmor(ItemType.AncientCobaltLeggings, "远古钴护腿", 962, ArmorSlot.Legs, 45, 6, ArmorSet.Jungle, 3, "最大魔力增加20\n魔法暴击率提高6%", new Bonuses { MagicCrit = 0.06f, ManaMax = 20 }));
+            list.Add(HmArmor(ItemType.PinkEskimoHood, "粉色防雪兜帽", 978, ArmorSlot.Head, 77, 3, ArmorSet.Snow, 0, null));
+            list.Add(HmArmor(ItemType.PinkEskimoCoat, "粉色防雪大衣", 979, ArmorSlot.Body, 50, 3, ArmorSet.Snow, 0, null));
+            list.Add(HmArmor(ItemType.PinkEskimoPants, "粉色防雪裤", 980, ArmorSlot.Legs, 46, 3, ArmorSet.Snow, 0, null));
+            list.Add(HmArmor(ItemType.RainHat, "雨帽", 1135, ArmorSlot.Head, 81, 1, ArmorSet.None, 0, null));
+            list.Add(HmArmor(ItemType.RainCoat, "雨衣", 1136, ArmorSlot.Body, 52, 2, ArmorSet.None, 0, null));
+            list.Add(HmArmor(ItemType.AmethystRobe, "紫晶长袍", 1282, ArmorSlot.Body, 58, 0, ArmorSet.Robe, 0, "最大魔力值增加20\n魔力消耗降低5%\n为宝石魔法附魔\n紫晶自有其道", new Bonuses { ManaMax = 20, ManaCost = 0.05f }));
+            list.Add(HmArmor(ItemType.TopazRobe, "黄玉长袍", 1283, ArmorSlot.Body, 59, 1, ArmorSet.Robe, 0, "最大魔力值增加40\n魔力消耗降低7%\n为宝石魔法附魔\n黄玉绚烂绽放", new Bonuses { ManaMax = 40, ManaCost = 0.07f }));
+            list.Add(HmArmor(ItemType.SapphireRobe, "蓝玉长袍", 1284, ArmorSlot.Body, 60, 1, ArmorSet.Robe, 1, "最大魔力值增加40\n魔力消耗降低9%\n为宝石魔法附魔\n蓝玉成对旋舞", new Bonuses { ManaMax = 40, ManaCost = 0.09f }));
+            list.Add(HmArmor(ItemType.EmeraldRobe, "翡翠长袍", 1285, ArmorSlot.Body, 61, 2, ArmorSet.Robe, 1, "最大魔力值增加60\n魔力消耗降低11%\n为宝石魔法附魔\n翡翠照亮黑夜", new Bonuses { ManaMax = 60, ManaCost = 0.11f }));
+            list.Add(HmArmor(ItemType.RubyRobe, "红玉长袍", 1286, ArmorSlot.Body, 62, 2, ArmorSet.Robe, 1, "最大魔力值增加60\n魔力消耗降低13%\n为宝石魔法附魔\n红玉双重闪耀", new Bonuses { ManaMax = 60, ManaCost = 0.13f }));
+            list.Add(HmArmor(ItemType.DiamondRobe, "钻石长袍", 1287, ArmorSlot.Body, 63, 3, ArmorSet.Robe, 2, "最大魔力值增加80\n魔力消耗降低15%\n为宝石魔法附魔\n钻石璀璨生辉", new Bonuses { ManaMax = 80, ManaCost = 0.15f }));
+            list.Add(HmArmor(ItemType.PumpkinHelmet, "南瓜头盔", 1731, ArmorSlot.Head, 112, 2, ArmorSet.Pumpkin, 0, null));
+            list.Add(HmArmor(ItemType.PumpkinBreastplate, "南瓜胸甲", 1732, ArmorSlot.Body, 75, 3, ArmorSet.Pumpkin, 0, null));
+            list.Add(HmArmor(ItemType.PumpkinLeggings, "南瓜护腿", 1733, ArmorSlot.Legs, 64, 2, ArmorSet.Pumpkin, 0, null));
+            list.Add(HmArmor(ItemType.MagicHat, "魔法帽", 2275, ArmorSlot.Head, 159, 2, ArmorSet.MagicHat, 2, "魔法伤害和魔法暴击率各提高6%", new Bonuses { MagicDamage = 0.06f, MagicCrit = 0.06f }));
+            list.Add(HmArmor(ItemType.Gi, "稽古衣", 2277, ArmorSlot.Body, 165, 4, ArmorSet.None, 1, "伤害和暴击率各提高5%\n近战速度和移动速度各提高10%", new Bonuses { MeleeDamage = 0.05f, RangedDamage = 0.05f, MagicDamage = 0.05f, MinionDamage = 0.05f, AllCrit = 0.05f, MeleeSpeed = 0.1f, MoveSpeed = 0.1f }));
+            list.Add(HmArmor(ItemType.GypsyRobe, "神秘长袍", 2279, ArmorSlot.Body, 167, 2, ArmorSet.Robe, 1, "魔法伤害和魔法暴击率各提高6%\n魔力消耗降低10%", new Bonuses { MagicDamage = 0.06f, MagicCrit = 0.06f, ManaCost = 0.1f }));
+            list.Add(HmArmor(ItemType.AnglerHat, "渔夫帽", 2367, ArmorSlot.Head, 161, 1, ArmorSet.Angler, 1, "渔力增加5"));
+            list.Add(HmArmor(ItemType.AnglerVest, "渔夫背心", 2368, ArmorSlot.Body, 169, 2, ArmorSet.Angler, 1, "渔力增加5"));
+            list.Add(HmArmor(ItemType.AnglerPants, "渔夫裤", 2369, ArmorSlot.Legs, 104, 1, ArmorSet.Angler, 1, "渔力增加5"));
+            list.Add(HmArmor(ItemType.BorealWoodHelmet, "针叶木头盔", 2509, ArmorSlot.Head, 166, 1, ArmorSet.BorealWood, 0, null));
+            list.Add(HmArmor(ItemType.BorealWoodBreastplate, "针叶木胸甲", 2510, ArmorSlot.Body, 173, 1, ArmorSet.BorealWood, 0, null));
+            list.Add(HmArmor(ItemType.BorealWoodGreaves, "针叶木护胫", 2511, ArmorSlot.Legs, 108, 1, ArmorSet.BorealWood, 0, null));
+            list.Add(HmArmor(ItemType.PalmWoodHelmet, "棕榈木头盔", 2512, ArmorSlot.Head, 167, 1, ArmorSet.PalmWood, 0, null));
+            list.Add(HmArmor(ItemType.PalmWoodBreastplate, "棕榈木胸甲", 2513, ArmorSlot.Body, 174, 1, ArmorSet.PalmWood, 0, null));
+            list.Add(HmArmor(ItemType.PalmWoodGreaves, "棕榈木护胫", 2514, ArmorSlot.Legs, 109, 1, ArmorSet.PalmWood, 0, null));
+            list.Add(HmArmor(ItemType.NightVisionHelmet, "夜视头盔", 3109, ArmorSlot.Head, 179, 4, ArmorSet.None, 2, "改善视野", new Bonuses { NightVision = true }));
+            list.Add(HmArmor(ItemType.GladiatorHelmet, "角斗士头盔", 3187, ArmorSlot.Head, 180, 5, ArmorSet.Gladiator, 0, null));
+            list.Add(HmArmor(ItemType.GladiatorBreastplate, "角斗士胸甲", 3188, ArmorSlot.Body, 182, 6, ArmorSet.Gladiator, 0, null));
+            list.Add(HmArmor(ItemType.GladiatorLeggings, "角斗士护腿", 3189, ArmorSlot.Legs, 122, 5, ArmorSet.Gladiator, 0, null));
+            list.Add(HmArmor(ItemType.FossilHelm, "化石头盔", 3374, ArmorSlot.Head, 188, 4, ArmorSet.Fossil, 1, "远程暴击率提高4%", new Bonuses { RangedCrit = 0.04f }));
+            list.Add(HmArmor(ItemType.FossilShirt, "化石板甲", 3375, ArmorSlot.Body, 189, 5, ArmorSet.Fossil, 1, "远程伤害提高5%", new Bonuses { RangedDamage = 0.05f }));
+            list.Add(HmArmor(ItemType.FossilPants, "化石护胫", 3376, ArmorSlot.Legs, 129, 4, ArmorSet.Fossil, 1, "远程暴击率提高4%", new Bonuses { RangedCrit = 0.04f }));
+            list.Add(HmArmor(ItemType.DjinnsCurse, "神灵诅咒", 3770, ArmorSlot.Legs, 140, 0, ArmorSet.None, 4, "牺牲双脚换来了缓慢掉落效果", new Bonuses { SlowFall = true }));
+            list.Add(HmArmor(ItemType.ApprenticeHat, "学徒帽", 3797, ArmorSlot.Head, 203, 7, ArmorSet.ApprenticeT2, 8, "哨兵数量上限增加1，魔法伤害提高10%，魔力消耗降低10%", new Bonuses { MagicDamage = 0.1f, ManaCost = 0.1f, MaxTurrets = 1 }));
+            list.Add(HmArmor(ItemType.ApprenticeRobe, "学徒长袍", 3798, ArmorSlot.Body, 200, 15, ArmorSet.ApprenticeT2, 8, "召唤伤害提高20%，魔法伤害提高10%", new Bonuses { MagicDamage = 0.1f, MinionDamage = 0.2f }));
+            list.Add(HmArmor(ItemType.ApprenticeTrousers, "学徒裤", 3799, ArmorSlot.Legs, 144, 10, ArmorSet.ApprenticeT2, 8, "召唤伤害提高10%，魔法暴击率和移动速度各提高20%", new Bonuses { MinionDamage = 0.1f, MagicCrit = 0.2f, MoveSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.SquireGreatHelm, "侍卫大头盔", 3800, ArmorSlot.Head, 204, 13, ArmorSet.SquireT2, 8, "哨兵数量上限增加1，提高生命再生速度", new Bonuses { MaxTurrets = 1, LifeRegen = 4 }));
+            list.Add(HmArmor(ItemType.SquirePlating, "侍卫板甲", 3801, ArmorSlot.Body, 201, 27, ArmorSet.SquireT2, 8, "召唤伤害和近战伤害各提高15%", new Bonuses { MeleeDamage = 0.15f, MinionDamage = 0.15f }));
+            list.Add(HmArmor(ItemType.SquireGreaves, "侍卫护胫", 3802, ArmorSlot.Legs, 145, 18, ArmorSet.SquireT2, 8, "召唤伤害提高15%，近战暴击率和移动速度各提高15%", new Bonuses { MinionDamage = 0.15f, MeleeCrit = 0.15f, MoveSpeed = 0.15f }));
+            list.Add(HmArmor(ItemType.HuntressWig, "女猎人假发", 3803, ArmorSlot.Head, 205, 7, ArmorSet.HuntressT2, 8, "哨兵数量上限增加1，远程暴击率提高10%", new Bonuses { RangedCrit = 0.1f, MaxTurrets = 1 }));
+            list.Add(HmArmor(ItemType.HuntressJerkin, "女猎人上衣", 3804, ArmorSlot.Body, 202, 17, ArmorSet.HuntressT2, 8, "召唤伤害和远程伤害各提高20%，10%几率省下弹药", new Bonuses { RangedDamage = 0.2f, MinionDamage = 0.2f, AmmoSave = 0.1f }));
+            list.Add(HmArmor(ItemType.HuntressPants, "女猎人裤", 3805, ArmorSlot.Legs, 146, 12, ArmorSet.HuntressT2, 8, "召唤伤害提高10%，移动速度提高20%", new Bonuses { MinionDamage = 0.1f, MoveSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.MonkBrows, "武僧浓眉秃头帽", 3806, ArmorSlot.Head, 206, 8, ArmorSet.MonkT2, 8, "哨兵数量上限增加1，近战攻击速度提高20%", new Bonuses { MeleeSpeed = 0.2f, MaxTurrets = 1 }));
+            list.Add(HmArmor(ItemType.MonkShirt, "武僧衣", 3807, ArmorSlot.Body, 203, 22, ArmorSet.MonkT2, 8, "召唤伤害和近战伤害各提高20%", new Bonuses { MeleeDamage = 0.2f, MinionDamage = 0.2f }));
+            list.Add(HmArmor(ItemType.MonkPants, "武僧裤", 3808, ArmorSlot.Legs, 148, 16, ArmorSet.MonkT2, 8, "召唤伤害提高10%，\n近战暴击率提高15%，移动速度提高20%", new Bonuses { MinionDamage = 0.1f, MeleeCrit = 0.15f, MoveSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.SquireAltHead, "英灵殿骑士头盔", 3871, ArmorSlot.Head, 210, 20, ArmorSet.SquireT3, 8, "哨兵数量上限增加2，召唤伤害和近战伤害各提高10%", new Bonuses { MeleeDamage = 0.1f, MinionDamage = 0.1f, MaxTurrets = 2 }));
+            list.Add(HmArmor(ItemType.SquireAltShirt, "英灵殿骑士胸甲", 3872, ArmorSlot.Body, 204, 24, ArmorSet.SquireT3, 8, "召唤伤害提高30%，生命再生速度大幅提高", new Bonuses { MinionDamage = 0.3f, LifeRegen = 8 }));
+            list.Add(HmArmor(ItemType.SquireAltPants, "英灵殿骑士护胫", 3873, ArmorSlot.Legs, 152, 24, ArmorSet.SquireT3, 8, "召唤伤害和近战暴击率各提高20%\n移动速度提高20%", new Bonuses { MinionDamage = 0.2f, MeleeCrit = 0.2f, MoveSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.ApprenticeAltHead, "暗黑艺术家帽子", 3874, ArmorSlot.Head, 211, 7, ArmorSet.ApprenticeT3, 8, "哨兵数量上限增加2\n召唤伤害和魔法伤害各提高15%", new Bonuses { MagicDamage = 0.15f, MinionDamage = 0.15f, MaxTurrets = 2 }));
+            list.Add(HmArmor(ItemType.ApprenticeAltShirt, "暗黑艺术家长袍", 3875, ArmorSlot.Body, 205, 21, ArmorSet.ApprenticeT3, 8, "召唤伤害提高25%，魔法伤害提高10%\n魔力消耗降低15%", new Bonuses { MagicDamage = 0.1f, MinionDamage = 0.25f, ManaCost = 0.15f }));
+            list.Add(HmArmor(ItemType.ApprenticeAltPants, "暗黑艺术家护腿", 3876, ArmorSlot.Legs, 153, 14, ArmorSet.ApprenticeT3, 8, "召唤伤害提高20%，魔法暴击率提高25%\n移动速度提高20%", new Bonuses { MinionDamage = 0.2f, MagicCrit = 0.25f, MoveSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.HuntressAltHead, "红色骑术兜帽", 3877, ArmorSlot.Head, 212, 8, ArmorSet.HuntressT3, 8, "哨兵数量上限增加2\n召唤伤害和远程暴击率各提高10%", new Bonuses { MinionDamage = 0.1f, RangedCrit = 0.1f, MaxTurrets = 2 }));
+            list.Add(HmArmor(ItemType.HuntressAltShirt, "红色骑术服", 3878, ArmorSlot.Body, 206, 24, ArmorSet.HuntressT3, 8, "召唤伤害和远程伤害各提高25%，20%几率省下弹药", new Bonuses { RangedDamage = 0.25f, MinionDamage = 0.25f, AmmoSave = 0.2f }));
+            list.Add(HmArmor(ItemType.HuntressAltPants, "红色骑术护腿", 3879, ArmorSlot.Legs, 154, 16, ArmorSet.HuntressT3, 8, "召唤伤害提高25%，远程暴击率提高10%\n移动速度提高20%", new Bonuses { MinionDamage = 0.25f, RangedCrit = 0.1f, MoveSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.MonkAltHead, "渗透忍者头盔", 3880, ArmorSlot.Head, 213, 10, ArmorSet.MonkT3, 8, "哨兵数量上限增加2，召唤伤害和近战伤害各提高20%", new Bonuses { MeleeDamage = 0.2f, MinionDamage = 0.2f, MaxTurrets = 2 }));
+            list.Add(HmArmor(ItemType.MonkAltShirt, "渗透忍者上衣", 3881, ArmorSlot.Body, 207, 26, ArmorSet.MonkT3, 8, "召唤伤害和近战速度各提高20%\n近战暴击率提高5%", new Bonuses { MinionDamage = 0.2f, MeleeCrit = 0.05f, MeleeSpeed = 0.2f }));
+            list.Add(HmArmor(ItemType.MonkAltPants, "渗透忍者裤装", 3882, ArmorSlot.Legs, 156, 18, ArmorSet.MonkT3, 8, "召唤伤害和近战暴击率各提高20%\n移动速度提高30%", new Bonuses { MinionDamage = 0.2f, MeleeCrit = 0.2f, MoveSpeed = 0.3f }));
+            list.Add(HmArmor(ItemType.UltrabrightHelmet, "超亮头盔", 4008, ArmorSlot.Head, 216, 4, ArmorSet.Mining, 5, "穿戴时可改善视野并提供照明\n“黑暗对你毫无保留”", new Bonuses { NightVision = true, Light = true }));
+            list.Add(HmArmor(ItemType.AmberRobe, "琥珀长袍", 4256, ArmorSlot.Body, 213, 3, ArmorSet.Robe, 2, "最大魔力值增加60\n魔力消耗降低13%\n为宝石魔法附魔\n琥珀开辟前路", new Bonuses { ManaMax = 60, ManaCost = 0.13f }));
+            list.Add(HmArmor(ItemType.MoonLordLegs, "月亮领主腿", 5001, ArmorSlot.Legs, 217, 3, ArmorSet.None, 2, "略微提高移动能力\n“这些可能是Steve的”", new Bonuses { MoveSpeed = 0.25f, JumpSpeedBoost = 1.8f, ExtraFall = 10 }));
+            list.Add(HmArmor(ItemType.DeadMansSweater, "死人毛衣", 5007, ArmorSlot.Body, 234, 4, ArmorSet.None, 2, "陷阱造成的伤害和减益时间减少50%", new Bonuses { DeadMansSweater = true }));
+            list.Add(HmArmor(ItemType.AshWoodHelmet, "灰烬木头盔", 5279, ArmorSlot.Head, 278, 2, ArmorSet.AshWood, 0, null));
+            list.Add(HmArmor(ItemType.AshWoodBreastplate, "灰烬木胸甲", 5280, ArmorSlot.Body, 246, 3, ArmorSet.AshWood, 0, null));
+            list.Add(HmArmor(ItemType.AshWoodGreaves, "灰烬木护胫", 5281, ArmorSlot.Legs, 234, 2, ArmorSet.AshWood, 0, null));
+            list.Add(HmArmor(ItemType.UpgradedMiningHead, "勘探者头盔", 5588, ArmorSlot.Head, 285, 10, ArmorSet.Mining, 4, "穿戴时可提供照明", new Bonuses { Light = true }));
+            list.Add(HmArmor(ItemType.UpgradedMiningBody, "勘探者上衣", 5589, ArmorSlot.Body, 252, 12, ArmorSet.Mining, 4, "挖矿速度提高10%", new Bonuses { PickSpeed = -0.1f }));
+            list.Add(HmArmor(ItemType.UpgradedMiningLegs, "勘探者裤装", 5590, ArmorSlot.Legs, 240, 11, ArmorSet.Mining, 4, "挖矿速度提高10%", new Bonuses { PickSpeed = -0.1f }));
+            list.Add(HmArmor(ItemType.UpgradedFishingHead, "船长帽", 5591, ArmorSlot.Head, 286, 10, ArmorSet.Angler, 4, "渔力增加5\n“你现在是船长了”"));
+            list.Add(HmArmor(ItemType.UpgradedFishingBody, "船长背心", 5592, ArmorSlot.Body, 253, 12, ArmorSet.Angler, 4, "渔力增加5"));
+            list.Add(HmArmor(ItemType.UpgradedFishingLegs, "船长裤装", 5593, ArmorSlot.Legs, 241, 11, ArmorSet.Angler, 4, "渔力增加5"));
+            list.Add(HmArmor(ItemType.Robe, "长袍", 262, ArmorSlot.Body, 15, 0, ArmorSet.None, 0, null));
+            list.Add(Mat(ItemType.PinkThread, "粉线", 981, 0, "材料"));
+            list.Add(Mat(ItemType.Pumpkin, "南瓜", 1725, 0, "材料"));
+        }
+
+        /// <summary>Their stage, source and value (Item.value): crafted from Terraria's recipe, dropped where Terraria has them, the Old One's Army sets at the Witch Doctor.</summary>
+        static IEnumerable<(ItemType, int, ItemSource, int)> Armor2Sources()
+        {
+            yield return (ItemType.Goggles, 0, ItemSource.Craft, 1000);
+            yield return (ItemType.MeteorHelmet, 1, ItemSource.Craft, 45000);
+            yield return (ItemType.MeteorSuit, 1, ItemSource.Craft, 30000);
+            yield return (ItemType.MeteorLeggings, 1, ItemSource.Craft, 30000);
+            yield return (ItemType.EmptyBucket, 0, ItemSource.Craft, 0);
+            yield return (ItemType.WizardHat, 1, ItemSource.Drop, 10000);
+            yield return (ItemType.NinjaHood, 0, ItemSource.Drop, 10000);
+            yield return (ItemType.NinjaShirt, 0, ItemSource.Drop, 5000);
+            yield return (ItemType.NinjaPants, 0, ItemSource.Drop, 5000);
+            yield return (ItemType.MiningShirt, 1, ItemSource.Drop, 5000);
+            yield return (ItemType.MiningPants, 1, ItemSource.Drop, 5000);
+            yield return (ItemType.EbonwoodHelmet, 1, ItemSource.Craft, 0);
+            yield return (ItemType.EbonwoodBreastplate, 1, ItemSource.Craft, 0);
+            yield return (ItemType.EbonwoodGreaves, 1, ItemSource.Craft, 0);
+            yield return (ItemType.RichMahoganyHelmet, 1, ItemSource.Craft, 0);
+            yield return (ItemType.RichMahoganyBreastplate, 1, ItemSource.Craft, 0);
+            yield return (ItemType.RichMahoganyGreaves, 1, ItemSource.Craft, 0);
+            yield return (ItemType.PearlwoodHelmet, 4, ItemSource.Craft, 0);
+            yield return (ItemType.PearlwoodBreastplate, 4, ItemSource.Craft, 0);
+            yield return (ItemType.PearlwoodGreaves, 4, ItemSource.Craft, 0);
+            yield return (ItemType.CrimsonHelmet, 2, ItemSource.Craft, 50000);
+            yield return (ItemType.CrimsonScalemail, 2, ItemSource.Craft, 40000);
+            yield return (ItemType.CrimsonGreaves, 2, ItemSource.Craft, 30000);
+            yield return (ItemType.EskimoHood, 1, ItemSource.Drop, 50000);
+            yield return (ItemType.EskimoCoat, 1, ItemSource.Drop, 40000);
+            yield return (ItemType.EskimoPants, 1, ItemSource.Drop, 30000);
+            yield return (ItemType.GreenCap, 0, ItemSource.Drop, 25000);
+            yield return (ItemType.VikingHelmet, 2, ItemSource.Drop, 25000);
+            yield return (ItemType.CactusHelmet, 0, ItemSource.Craft, 200);
+            yield return (ItemType.CactusBreastplate, 0, ItemSource.Craft, 300);
+            yield return (ItemType.CactusLeggings, 0, ItemSource.Craft, 250);
+            yield return (ItemType.ShadewoodHelmet, 1, ItemSource.Craft, 0);
+            yield return (ItemType.ShadewoodBreastplate, 1, ItemSource.Craft, 0);
+            yield return (ItemType.ShadewoodGreaves, 1, ItemSource.Craft, 0);
+            yield return (ItemType.AncientIronHelmet, 0, ItemSource.Drop, 5000);
+            yield return (ItemType.AncientGoldHelmet, 0, ItemSource.Drop, 25000);
+            yield return (ItemType.AncientShadowHelmet, 2, ItemSource.Drop, 37500);
+            yield return (ItemType.AncientShadowScalemail, 2, ItemSource.Drop, 30000);
+            yield return (ItemType.AncientShadowGreaves, 2, ItemSource.Drop, 22500);
+            yield return (ItemType.AncientNecroHelmet, 2, ItemSource.Drop, 45000);
+            yield return (ItemType.AncientCobaltHelmet, 2, ItemSource.Drop, 45000);
+            yield return (ItemType.AncientCobaltBreastplate, 2, ItemSource.Drop, 30000);
+            yield return (ItemType.AncientCobaltLeggings, 2, ItemSource.Drop, 30000);
+            yield return (ItemType.PinkEskimoHood, 1, ItemSource.Craft, 50000);
+            yield return (ItemType.PinkEskimoCoat, 1, ItemSource.Craft, 40000);
+            yield return (ItemType.PinkEskimoPants, 1, ItemSource.Craft, 30000);
+            yield return (ItemType.RainHat, 0, ItemSource.Drop, 1000);
+            yield return (ItemType.RainCoat, 0, ItemSource.Drop, 1000);
+            yield return (ItemType.AmethystRobe, 1, ItemSource.Craft, 25000);
+            yield return (ItemType.TopazRobe, 1, ItemSource.Craft, 25000);
+            yield return (ItemType.SapphireRobe, 1, ItemSource.Craft, 25000);
+            yield return (ItemType.EmeraldRobe, 1, ItemSource.Craft, 25000);
+            yield return (ItemType.RubyRobe, 1, ItemSource.Craft, 25000);
+            yield return (ItemType.DiamondRobe, 1, ItemSource.Craft, 25000);
+            yield return (ItemType.PumpkinHelmet, 0, ItemSource.Craft, 0);
+            yield return (ItemType.PumpkinBreastplate, 0, ItemSource.Craft, 0);
+            yield return (ItemType.PumpkinLeggings, 0, ItemSource.Craft, 0);
+            yield return (ItemType.MagicHat, 1, ItemSource.Drop, 30000);
+            yield return (ItemType.Gi, 1, ItemSource.Drop, 20000);
+            yield return (ItemType.GypsyRobe, 1, ItemSource.Drop, 35000);
+            yield return (ItemType.AnglerHat, 1, ItemSource.Drop, 50000);
+            yield return (ItemType.AnglerVest, 1, ItemSource.Drop, 50000);
+            yield return (ItemType.AnglerPants, 1, ItemSource.Drop, 50000);
+            yield return (ItemType.BorealWoodHelmet, 1, ItemSource.Craft, 0);
+            yield return (ItemType.BorealWoodBreastplate, 1, ItemSource.Craft, 0);
+            yield return (ItemType.BorealWoodGreaves, 1, ItemSource.Craft, 0);
+            yield return (ItemType.PalmWoodHelmet, 1, ItemSource.Craft, 0);
+            yield return (ItemType.PalmWoodBreastplate, 1, ItemSource.Craft, 0);
+            yield return (ItemType.PalmWoodGreaves, 1, ItemSource.Craft, 0);
+            yield return (ItemType.NightVisionHelmet, 3, ItemSource.Drop, 50000);
+            yield return (ItemType.GladiatorHelmet, 3, ItemSource.Drop, 17500);
+            yield return (ItemType.GladiatorBreastplate, 3, ItemSource.Drop, 14000);
+            yield return (ItemType.GladiatorLeggings, 3, ItemSource.Drop, 10500);
+            yield return (ItemType.FossilHelm, 2, ItemSource.Craft, 15000);
+            yield return (ItemType.FossilShirt, 2, ItemSource.Craft, 25000);
+            yield return (ItemType.FossilPants, 2, ItemSource.Craft, 20000);
+            yield return (ItemType.DjinnsCurse, 4, ItemSource.Drop, 50000);
+            yield return (ItemType.ApprenticeHat, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.ApprenticeRobe, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.ApprenticeTrousers, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.SquireGreatHelm, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.SquirePlating, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.SquireGreaves, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.HuntressWig, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.HuntressJerkin, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.HuntressPants, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.MonkBrows, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.MonkShirt, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.MonkPants, 4, ItemSource.Shop, 150000);
+            yield return (ItemType.SquireAltHead, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.SquireAltShirt, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.SquireAltPants, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.ApprenticeAltHead, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.ApprenticeAltShirt, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.ApprenticeAltPants, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.HuntressAltHead, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.HuntressAltShirt, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.HuntressAltPants, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.MonkAltHead, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.MonkAltShirt, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.MonkAltPants, 5, ItemSource.Shop, 150000);
+            yield return (ItemType.UltrabrightHelmet, 3, ItemSource.Craft, 100000);
+            yield return (ItemType.AmberRobe, 2, ItemSource.Craft, 25000);
+            yield return (ItemType.MoonLordLegs, 5, ItemSource.Drop, 100000);
+            yield return (ItemType.DeadMansSweater, 1, ItemSource.Drop, 10000);
+            yield return (ItemType.AshWoodHelmet, 3, ItemSource.Craft, 0);
+            yield return (ItemType.AshWoodBreastplate, 3, ItemSource.Craft, 0);
+            yield return (ItemType.AshWoodGreaves, 3, ItemSource.Craft, 0);
+            yield return (ItemType.UpgradedMiningHead, 4, ItemSource.Craft, 125000);
+            yield return (ItemType.UpgradedMiningBody, 4, ItemSource.Craft, 125000);
+            yield return (ItemType.UpgradedMiningLegs, 4, ItemSource.Craft, 125000);
+            yield return (ItemType.UpgradedFishingHead, 4, ItemSource.Craft, 125000);
+            yield return (ItemType.UpgradedFishingBody, 4, ItemSource.Craft, 125000);
+            yield return (ItemType.UpgradedFishingLegs, 4, ItemSource.Craft, 125000);
+            yield return (ItemType.Robe, 1, ItemSource.Craft, 2000);
+            yield return (ItemType.PinkThread, 0, ItemSource.Shop, 10000);
+            yield return (ItemType.Pumpkin, 0, ItemSource.Drop, 125);
+        }
+    }
+}

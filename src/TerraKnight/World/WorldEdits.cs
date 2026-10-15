@@ -16,6 +16,12 @@ namespace TerraKnight.World
 
         public static void Clear() => scenes.Clear();
 
+        // Live TerrainRegions retain references to the per-scene dictionaries.
+        public static void ClearInPlace()
+        {
+            foreach (var edits in scenes.Values) edits.Clear();
+        }
+
         public static Dictionary<int, byte> For(string scene)
         {
             scene = scene ?? "";

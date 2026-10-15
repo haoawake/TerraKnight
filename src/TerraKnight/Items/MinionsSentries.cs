@@ -122,9 +122,27 @@ namespace TerraKnight.Items
                 m.Ai1 = kind == Kind.Flameburst1 ? 80f : kind == Kind.Flameburst2 ? 70f : 60f;
                 m.Dir = m.SpriteDir = pDir;
             }
-            else if (IsBallista(kind)) m.Ai1 = 160f;
-            else if (IsTrap(kind)) m.LocalAi0 = 90f;
+            else if (IsBallista(kind)) m.Ai1 = BallistaDelay();
+            else if (IsTrap(kind)) m.LocalAi0 = TrapCooldown();
         }
+
+        static OoaSet Ooa => Equipment.Current.Ooa;
+
+        /// <summary>Dev: the Ballistas' reload now.</summary>
+        public static float DevBallistaDelay => BallistaDelay();
+
+        /// <summary>
+        /// GetBallistraShotDelay (P:69724-69740): 160 ticks; 100 with the Squire's tier 3 set; 60 in Ballista Panic
+        /// (the Squire's sets, for 5 s after a hit); 30 both.
+        /// </summary>
+        static float BallistaDelay()
+        {
+            bool panic = Player.PlayerBuffs.Has(Player.PotionBuffs.BallistaPanic), t3 = (Ooa & OoaSet.SquireT3) != 0;
+            return panic && t3 ? 30f : panic ? 60f : t3 ? 100f : 160f;
+        }
+
+        /// <summary>GetExplosiveTrapCooldown (P:70453-70465): 90 ticks, 60 with the Huntress's tier 2 set, 30 with tier 3.</summary>
+        static float TrapCooldown() => (Ooa & OoaSet.HuntressT3) != 0 ? 30f : (Ooa & OoaSet.HuntressT2) != 0 ? 60f : 90f;
 
         int slingCooldown;
 
@@ -241,12 +259,12 @@ namespace TerraKnight.Items
         /// enemy nearest the shooting spot, within 900 px of it, passing the angle rule and in a
         /// clear line from the spot. No screen rule.
         /// </summary>
-        Npc SentryTarget(Vector2 spot, System.Func<Npc, Vector2, bool> angleOk)
+        Npc SentryTarget(Vector2 spot, System.Func<Npc, Vector2, bool> angleOk, float range = 900f)
         {
             bool Ok(Npc n)
             {
                 var d = n.Center - spot;
-                if (d.magnitude > 900f) return false;
+                if (d.magnitude > range) return false;
                 var u = d.sqrMagnitude > 0f ? d.normalized : Vector2.up;
                 return angleOk(n, u) && ClearLine(spot, n.Center);
             }
@@ -283,6 +301,9 @@ namespace TerraKnight.Items
         void AI130(M m)
         {
             int tier = m.Kind - Kind.Flameburst1;
+            // The Apprentice's sets (P:69332-69337): half as far again, nearly any angle (angleRatioMax 0.1), 1.4 times as fast.
+            bool t2 = (Ooa & OoaSet.ApprenticeT2) != 0;
+            float range = t2 ? 1350f : 900f, ratio = t2 ? 0.1f : 1f;
             var bottom = new Vector2(m.Center.x, m.Bottom);
             var spot = bottom + new Vector2(m.Dir * 6f, tier == 0 ? -40f : tier == 1 ? -44f : -46f);
             if (++m.LocalAi0 >= 300f) m.LocalAi0 = 0f;
@@ -295,7 +316,7 @@ namespace TerraKnight.Items
                 else ready = true;
                 if (ready)
                 {
-                    var t = SentryTarget(spot, (n, u) => Mathf.Abs(u.x) >= Mathf.Abs(u.y));
+                    var t = SentryTarget(spot, (n, u) => Mathf.Abs(u.x) >= Mathf.Abs(u.y) * ratio, range);
                     if (t != null)
                     {
                         float dx = t.Center.x - m.Center.x;
@@ -311,9 +332,9 @@ namespace TerraKnight.Items
                 if (m.Ai1 == 12f)
                 {
                     var aim = new Vector2(m.Dir, 0f);
-                    var t = SentryTarget(spot, (n, u) => Mathf.Abs(u.x) >= Mathf.Abs(u.y) && !(m.Dir * u.x < 0f));
+                    var t = SentryTarget(spot, (n, u) => Mathf.Abs(u.x) >= Mathf.Abs(u.y) * ratio && !(m.Dir * u.x < 0f), range);
                     if (t != null && (t.Center - spot).sqrMagnitude > 0f) aim = (t.Center - spot).normalized;
-                    float speed = tier == 0 ? 12f : tier == 1 ? 15f : 18f;
+                    float speed = (tier == 0 ? 12f : tier == 1 ? 15f : 18f) * (t2 ? 1.4f : 1f);
                     var v = aim * speed;
                     TerraProjectiles.Instance?.ShootMinion((ProjKind)((int)ProjKind.FlameburstShot1 + tier), TerraParticles.ToWorld(spot), new Vector2(v.x, -v.y), m.Damage, m.Knockback);
                 }
@@ -397,7 +418,7 @@ namespace TerraKnight.Items
             {
                 m.Dir = m.SpriteDir = pDir;
                 m.Ai0 = 1f;
-                m.Ai1 = 160f;
+                m.Ai1 = BallistaDelay();
                 if (m.Dir == -1) m.Rot = Mathf.PI;
             }
             bool AngleOk(Npc n, Vector2 u) => !(Mathf.Abs(u.x) < Mathf.Abs(u.y) * 0.75f && u.y > 0f);
@@ -405,6 +426,8 @@ namespace TerraKnight.Items
             {
                 m.Frame = 0;
                 bool ready = false;
+                // Ballista Panic cuts the wait left (P:69632-69639).
+                m.Ai1 = Mathf.Min(m.Ai1, BallistaDelay());
                 if (m.Ai1 > 0f) m.Ai1--;
                 else ready = true;
                 var t = SentryTarget(spot, AngleOk);
@@ -433,13 +456,15 @@ namespace TerraKnight.Items
                     if (t != null && (t.Center - spot).sqrMagnitude > 0f) aim = (t.Center - spot).normalized;
                     m.Rot = Mathf.Atan2(aim.y, aim.x);
                     m.Dir = m.Rot > Mathf.PI / 2f || m.Rot < -Mathf.PI / 2f ? -1 : 1;
-                    var v = aim * 16f;
-                    TerraProjectiles.Instance?.ShootMinion(ProjKind.BallistaBolt, TerraParticles.ToWorld(spot), new Vector2(v.x, -v.y), m.Damage, m.Knockback);
+                    // The Squire's sets (P:69589-69592, 11083-11086): the bolt at 21 instead of 16, through 7.
+                    bool squire = (Ooa & OoaSet.SquireT2) != 0;
+                    var v = aim * (squire ? 21f : 16f);
+                    TerraProjectiles.Instance?.ShootMinion(ProjKind.BallistaBolt, TerraParticles.ToWorld(spot), new Vector2(v.x, -v.y), m.Damage, m.Knockback, squire ? 7 : 0);
                 }
                 if (++m.Ai1 >= 25f)
                 {
                     m.Ai0 = 1f;
-                    m.Ai1 = 160f;
+                    m.Ai1 = BallistaDelay();
                 }
             }
             m.SpriteDir = m.Dir;
@@ -487,7 +512,7 @@ namespace TerraKnight.Items
                 {
                     if (!n.Box.Overlaps(box)) continue;
                     Sound("Custom/dd2_explosive_trap_explode_" + Random.Range(0, 3));
-                    m.LocalAi0 = 90f;
+                    m.LocalAi0 = TrapCooldown();
                     var b = Spawn((Kind)((int)Kind.TrapBlast1 + tier), null, c, m.Damage, m.Knockback);
                     b.Damage = m.Damage;
                     b.TileCollide = false;
@@ -550,7 +575,9 @@ namespace TerraKnight.Items
         /// </summary>
         void AI137(M m)
         {
-            if (++m.Ai0 >= 30f) m.Ai0 = 0f;
+            // The Monk's sets (P:69928-69941): a shock every 25 ticks instead of 30; with tier 3 the room up is 8-14 tiles instead of 4-10.
+            bool t3 = (Ooa & OoaSet.MonkT3) != 0;
+            if (++m.Ai0 >= ((Ooa & OoaSet.MonkT2) != 0 ? 25f : 30f)) m.Ai0 = 0f;
             if (m.Ai0 == 0f)
                 foreach (var n in npcs)
                     if (AuraReaches(m, n))
@@ -570,10 +597,11 @@ namespace TerraKnight.Items
                     m.Pos.y += 16f;
                     return;
                 }
-                for (int i = 0; i < 10 && cy == int.MinValue; i++)
+                int up = t3 ? 14 : 10, least = t3 ? 8 : 4;
+                for (int i = 0; i < up && cy == int.MinValue; i++)
                     if (GroundTile(ox, gy - 1 - i)) cy = gy - 1 - i;
-                if (cy == int.MinValue) cy = oy - 11;
-                float groundY = gy * 16f, h = Mathf.Clamp(groundY - cy * 16f, 64f, 160f);
+                if (cy == int.MinValue) cy = oy - up - 1;
+                float groundY = gy * 16f, h = Mathf.Clamp(groundY - cy * 16f, least * 16f, up * 16f);
                 m.W = m.H = (int)(2f * h);
                 m.Center = new Vector2(ox * 16f + 8f, groundY);
                 m.OldPos = m.Pos;
@@ -651,6 +679,9 @@ namespace TerraKnight.Items
             {
                 if (n.Hm == null || n.Hm.isDead || m.Immune.ContainsKey(n.Id) || !AuraReaches(m, n)) continue;
                 int dmg = SummonTags.Modify(n.Hm, m.Damage, out bool crit, 1f, true, m.Center);
+                // The Monk's sets (P:12930-12943): a crit one time in four (tier 3), one in six (tier 2).
+                if ((Ooa & OoaSet.MonkT3) != 0 ? Random.Range(0, 4) == 0 : (Ooa & OoaSet.MonkT2) != 0 && Random.Range(0, 6) == 0) crit = true;
+                if (crit) DevAuraCrits++;
                 melee.HitWith(n.Col, dmg, 0f, crit ? 100f : 0f, 1f, TerraParticles.ToWorld(m.Center), 9999);
                 DevHits++;
                 DevHitDamage += dmg;
@@ -658,6 +689,9 @@ namespace TerraKnight.Items
                 m.Immune[n.Id] = 3;
             }
         }
+
+        /// <summary>Dev: the aura's crits from the Monk's sets.</summary>
+        public static int DevAuraCrits;
 
         /// <summary>M:32523-32563: the crystal hanging from the square's top edge (and its glow), the base on the ground; a blue glow round the ground point.</summary>
         static void DrawAura(FxBatch fx, M m)

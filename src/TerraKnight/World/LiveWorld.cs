@@ -1592,6 +1592,7 @@ namespace TerraKnight.World
         [HarmonyPatch(typeof(GameManager), nameof(GameManager.BeginSceneTransition))]
         static bool BeforeSceneTransition(GameManager.SceneLoadInfo info)
         {
+            if (!Net.BattleIsolation.AllowsCurrent()) return false;
             var w = Instance;
             if (!Enabled || w == null) return true;
             Plugin.Log.LogInfo($"[切换] 去 {info.SceneName}（入口 {(string.IsNullOrEmpty(info.EntryGateName) ? "无" : info.EntryGateName)}），发起：{Caller()}");

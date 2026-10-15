@@ -41,6 +41,8 @@ namespace TerraKnight.Player
         public float HoneyTicks;
         /// <summary>The Shiny Stone worn; an item in use (no stone regeneration then); whether the stone is healing now.</summary>
         public bool ShinyStone, UsingItem, ShinyStill;
+        /// <summary>The Crimson set (crimsonRegen): the clock since a hit runs twice as fast, the natural part ×1.5.</summary>
+        public bool CrimsonRegen;
 
         /// <summary>lifeRegenTime: ticks since the last hit (the natural regeneration's clock).</summary>
         public float SinceHitTicks => sinceHit * 60f;
@@ -141,6 +143,8 @@ namespace TerraKnight.Player
             // The Vital Crystal (Pl:19227-19230): lifeRegenTime 0.2 more a tick.
             if (Boosts.Contains(Items.PermanentBoost.AegisCrystal)) sinceHit += dt * 0.2f;
             // The Shiny Stone (Pl:19222-19246), standing still with nothing in use: the clock jumps to 30 s and runs five times as fast, +4 lifeRegen.
+            // The Crimson set (Pl:19231-19234): lifeRegenTime one more a tick.
+            if (CrimsonRegen) sinceHit += dt;
             bool shiny = ShinyStone && standingStill && !UsingItem;
             ShinyStill = shiny && Life > 0 && Life < LifeMax;
             if (shiny)
@@ -160,6 +164,8 @@ namespace TerraKnight.Player
                     // the natural part only ×0.75 with it (Pl:19363-19378).
                     if (shiny) natural += Mathf.Min(30f, Mathf.Max(0f, (sinceHit * 60f - 3000f) / 300f)) * 0.5f;
                     if (ShinyStone) natural *= 1.1f * 1.5f;
+                    // The Crimson set (Pl:19359-19362): ×1.5.
+                    if (CrimsonRegen) natural *= 1.5f;
                     perSecond += natural;
                 }
                 regenAccumulator += perSecond * dt;

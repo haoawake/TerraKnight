@@ -13,8 +13,9 @@ namespace TerraKnight.Items
     /// Classic to Expert) and on Master CommonMasterBossLifeReduction's 0.85 (Remap from Expert to
     /// Master). Normal is Classic, Hard halfway to Expert, as Journey's slider would have it.
     /// A worm (the Eater of Worlds, the Destroyer) is taken at half: its life is spread over dozens of
-    /// segments a piercing weapon hits at once, against one body here. Bosses fought together (the
-    /// Watcher Knights, the Mantis Lords, the Nailmasters, the Oblobbles) share one boss out. Godhome's
+    /// segments a piercing weapon hits at once, against one body here. A boss in phases has a whole one
+    /// each phase, the bodies up together sharing it (<see cref="BossPhases"/>); the Oblobbles, two at
+    /// once from the start, share one out. Godhome's
     /// gods drop the Moon Lord's spoils, one class each, and have the Moon Lord's life.
     /// </summary>
     internal static class BossStats
@@ -113,7 +114,7 @@ namespace TerraKnight.Items
             // Stage 2: the Eater of Worlds or the Brain of Cthulhu, Skeletron.
             ["DungDefender"] = R(2, EaterOfWorlds),
             ["TraitorLord"] = R(2, EaterOfWorlds),
-            ["MantisLord"] = R(2, Skeletron.Of(1f / 3f, "三只分")),
+            ["MantisLord"] = R(2, Skeletron),
             ["MageLord"] = R(2, BrainOfCthulhu),
             ["MegaJellyfish"] = R(2, BrainOfCthulhu),
             ["FlukeMother"] = R(2, BrainOfCthulhu.Of(0.8f, "八成")),
@@ -121,7 +122,7 @@ namespace TerraKnight.Items
             ["GhostHu"] = R(2, BrainOfCthulhu.Of(0.6f, "六成")),
             ["GhostMarmu"] = R(2, BrainOfCthulhu.Of(0.6f, "六成")),
             // Stage 3: the Queen Bee, the underworld, the Wall of Flesh.
-            ["BlackKnight"] = R(3, WallOfFlesh.Of(1f / 6f, "六个分")),
+            ["BlackKnight"] = R(3, WallOfFlesh),
             ["HiveKnight"] = R(3, QueenBee),
             ["JarCollector"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
             ["MimicSpider"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
@@ -149,7 +150,7 @@ namespace TerraKnight.Items
 
             // Godhome's gods, one class of the Moon Lord's spoils each, and the Radiance: the Moon Lord.
             ["Nailsage"] = R(5, MoonLord),
-            ["NailBros"] = R(5, MoonLord.Of(0.5f, "两人分")),
+            ["NailBros"] = R(5, MoonLord),
             ["Paintmaster"] = R(5, MoonLord),
             ["HollowKnightPrime"] = R(5, MoonLord),
             ["FinalBoss"] = R(5, MoonLord),
@@ -182,6 +183,21 @@ namespace TerraKnight.Items
                 life *= Mathf.Clamp(godhomeTier, 1f, 2f);
             }
             return Mathf.Max(1, Mathf.RoundToInt(life));
+        }
+
+        /// <summary>
+        /// The potion the stand-in drops at its death (NPC.DoDeathEvents_DropBossPotionsAndHearts): the Lesser Healing
+        /// Potion, the Healing Potion for Skeletron, the Deerclops and the Wall of Flesh, Bottled Honey for the Queen
+        /// Bee, the Greater for the hardmode bosses, the Super for the Moon Lord. A share of a boss is the boss (its parts).
+        /// </summary>
+        public static ItemType PotionOf(Ref r)
+        {
+            var p = r.Boss.Parts;
+            if (p == MoonLord.Parts) return ItemType.SuperHealingPotion;
+            if (p == QueenBee.Parts) return ItemType.BottledHoney;
+            if (p == Skeletron.Parts || p == Deerclops.Parts || p == WallOfFlesh.Parts) return ItemType.HealingPotion;
+            if (p == KingSlime.Parts || p == EyeOfCthulhu.Parts || p == EaterOfWorlds.Parts || p == BrainOfCthulhu.Parts) return ItemType.LesserHealingPotion;
+            return ItemType.GreaterHealingPotion;
         }
 
         /// <summary>The boss's Terraria defense (Master leaves it as it is).</summary>

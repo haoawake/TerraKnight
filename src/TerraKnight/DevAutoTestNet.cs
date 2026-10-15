@@ -179,7 +179,7 @@ namespace TerraKnight
             }
         }
 
-        static void NetCheck(bool ok, string what) => Plugin.Log.LogInfo($"[AutoTest] 联机 {(ok ? "通过" : "失败")}：{what}");
+        static void NetCheck(bool ok, string what) => Plugin.Log.LogInfo($"[AutoTest] 联机 {(ok ? "通过" : "失败")}：{what}{(ok ? "" : " [NET_FAIL]")}");
 
         /// <summary>Before the game: the menu's panels, the server up, the bot in (a wrong password kicked first), King's Pass claimed by it.</summary>
         IEnumerator NetBoot()

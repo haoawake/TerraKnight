@@ -98,8 +98,28 @@ namespace TerraKnight.Items
             if (up != null && up.GetComponentInParent<HealthManager>() != null) return true;
             var recoil = recoilOf(hm);
             var body = hm.GetComponent<Rigidbody2D>();
-            return recoil != null && recoil.freezeInPlace && body != null && body.gravityScale == 0f;
+            // What the game itself never moves on a hit (the user's: those that can't move stay put): no Recoil, or one
+            // with no speed (Recoil.RecoilByDirection: recoilSpeedBase × the hit's magnitude), as the turrets, the Fool
+            // Eaters, the egg sacs have it; a static body.
+            if (recoil == null || speedBase(recoil) <= 0f) return true;
+            if (body != null && body.bodyType == RigidbodyType2D.Static) return true;
+            return recoil.freezeInPlace && body != null && body.gravityScale == 0f;
         }
+
+        /// <summary>Dev: whether an enemy takes knockback, and what decides it.</summary>
+        public static string DevWhy(HealthManager hm)
+        {
+            if (hm == null) return "-";
+            // A census loads scenes without waking their objects: the component itself, the field filled at Awake.
+            var recoil = recoilOf(hm) ?? hm.GetComponent<Recoil>();
+            var body = hm.GetComponent<Rigidbody2D>();
+            string how = body == null ? "无刚体" : body.bodyType + (body.gravityScale == 0f ? "无重力" : "");
+            string why = hm.GetComponent<Climber>() != null ? "绕地形爬" : hm.transform.parent != null && hm.transform.parent.GetComponentInParent<HealthManager>() != null ? "别的敌人的部件"
+                : recoil == null ? "无Recoil" : speedBase(recoil) <= 0f ? "Recoil速度0" : body != null && body.bodyType == RigidbodyType2D.Static ? "静态刚体"
+                : recoil.freezeInPlace && body != null && body.gravityScale == 0f ? "受击定住" : null;
+            return (why != null ? "免疫(" + why + ")" : "可击退") + " " + how + (recoil != null ? $" recoil {speedBase(recoil):F1}" : "");
+        }
+
         public static float DevPushSpeed;
         public static float DevLastOwnPush, DevLastLaunch;
 

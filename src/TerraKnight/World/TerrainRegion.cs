@@ -18,8 +18,42 @@ namespace TerraKnight.World
         public readonly Transform Root;
         public readonly bool IsLive;
         public readonly PhysicsMaterial2D Material;
-        /// <summary>A boss room's: the game's own colliders stand and this grid is solid to nothing (TerrainSystem).</summary>
+        /// <summary>A boss room's: the game's own colliders stand and this grid is solid to nothing (TerrainSystem); with
+        /// <see cref="OwnZone"/>, only there.</summary>
         public bool SceneOwnGround;
+        /// <summary>The boss's part of a boss room (world, BossArenaZone): the game's own ground there, the grid's elsewhere.</summary>
+        public Rect? OwnZone { get; private set; }
+        bool[] ownCollide, ownLock;
+
+        /// <summary>
+        /// Leaves a boss's arena to the game's own colliders: the grid stops colliding in the cells wholly inside it, and
+        /// those within it or under the hand-placed ground kept for it (kept whole, so not to be dug) stay as they are.
+        /// </summary>
+        public void SetOwnZone(Rect zone, List<Bounds> kept)
+        {
+            OwnZone = zone;
+            ownCollide = new bool[Grid.Width * Grid.Height];
+            ownLock = new bool[Grid.Width * Grid.Height];
+            const float c = CellGrid.CellSize;
+            Vector2 origin = Root.position;
+            for (int y = 0; y < Grid.Height; y++)
+            for (int x = 0; x < Grid.Width; x++)
+            {
+                var cell = new Rect(origin.x + x * c, origin.y + y * c, c, c);
+                int i = y * Grid.Width + x;
+                ownCollide[i] = zone.Contains(cell.min) && zone.Contains(cell.max);
+                bool locked = zone.Contains(cell.center);
+                if (!locked)
+                    foreach (var b in kept)
+                        if (b.min.x <= cell.center.x && cell.center.x <= b.max.x && b.min.y <= cell.center.y && cell.center.y <= b.max.y) { locked = true; break; }
+                ownLock[i] = locked;
+            }
+            colliders.Skip = (x, y) => ownCollide[y * Grid.Width + x];
+            if (!pendingBuild) colliders.BuildAll();
+        }
+
+        /// <summary>Whether a cell (local) is the game's own ground, unchanged: all of a boss room without a zone, its zone's cells with one.</summary>
+        public bool IsOwnCell(int lx, int ly) => SceneOwnGround && (ownLock == null || (Grid.InClip(lx, ly) && ownLock[ly * Grid.Width + lx]));
         public HoleCutter Holes { get; private set; }
         /// <summary>Global cell of this grid's (0, 0); world position is offset * CellSize.</summary>
         public Vector2Int CellOffset { get; private set; }
@@ -70,6 +104,7 @@ namespace TerraKnight.World
         /// <summary>Replays this scene's saved edits into a freshly rasterised grid, before construction.</summary>
         public static void ReplayEdits(CellGrid grid, string sceneName)
         {
+            grid.CaptureNetworkBase();
             foreach (var e in WorldEdits.For(sceneName))
             {
                 WorldEdits.Unpack(e.Value, out var kind, out bool wasDug, out int slope);

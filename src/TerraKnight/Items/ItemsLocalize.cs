@@ -24,6 +24,7 @@ namespace TerraKnight.Items
                     d.ZhName = d.Name;
                     d.ZhTooltip = d.Tooltip ?? "";
                 }
+                if (d.BossSummonKey != null) { BossSummons.Localize(d); done++; continue; }
                 int id = TerrariaId(d);
                 if (Lang.IsSource || id <= 0)
                 {

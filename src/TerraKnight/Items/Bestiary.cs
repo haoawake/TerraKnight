@@ -33,6 +33,24 @@ namespace TerraKnight.Items
             public float Knockback;
             public bool Boss, Elite;
             public string Scene;
+            /// <summary>What the numbers are made from (-1: an entry from before they were kept): its touch's masks, its own health, Godhome's tier.</summary>
+            public int Masks = -1, RawHp;
+            public float GodhomeTier = 1f;
+        }
+
+        /// <summary>A seen enemy's numbers worked out again from what they are made from: the difficulty now, the rules now.</summary>
+        static Seen Fresh(string key, Seen s)
+        {
+            int at = key.IndexOf('@');
+            string rec = at > 0 ? key.Substring(0, at) : key;
+            var info = new EnemyStats.Info { Record = rec, Scene = s.Scene, MaxHp = Mathf.Max(1, s.RawHp), Boss = s.Boss, Elite = s.Elite, Level = s.Level, GodhomeTier = s.GodhomeTier };
+            if (s.Boss) info.Ref = BossStats.Of(rec, EnemyDrops.VariantLevel(s.Scene));
+            return new Seen
+            {
+                Life = EnemyStats.LifeWhole(info), Defense = info.Defense, Level = s.Level,
+                Damage = s.Masks > 0 ? s.Masks * Mathf.RoundToInt(World.Areas.DamagePerMask(s.Level) * EnemyStats.DamageFactor(info)) : 0,
+                Knockback = s.Knockback, Boss = s.Boss, Elite = s.Elite, Scene = s.Scene, Masks = s.Masks, RawHp = s.RawHp, GodhomeTier = s.GodhomeTier,
+            };
         }
 
         static readonly HashSet<int> counted = new HashSet<int>();
@@ -79,7 +97,7 @@ namespace TerraKnight.Items
         public static Seen StatsOf(string record)
         {
             if (record == null) return null;
-            if (Stats.TryGetValue(record, out var s)) return s;
+            if (Stats.TryGetValue(record, out var s)) return s.Masks >= 0 ? Fresh(record, s) : s;
             int level = EnemyDrops.StageOf(record);
             int hp = Mathf.Max(1, EnemyDrops.HpOf(record));
             string kind = EnemyDrops.KindOf(record);
@@ -92,8 +110,8 @@ namespace TerraKnight.Items
             if (tune != null) factor *= tune.Damage;
             return new Seen
             {
-                Life = stand != null ? Mathf.CeilToInt(BossStats.LifeOf(stand, null, World.GameDifficulty.Current) * tune.Life) : Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)),
-                Defense = stand != null ? Mathf.RoundToInt(BossStats.DefenseOf(stand) * tune.Defense) : World.Areas.Defense(level), Level = level,
+                Life = stand != null ? Mathf.CeilToInt(BossStats.LifeOf(stand, null, World.GameDifficulty.Current) * tune.Life * BossPhases.WholeFactor(record, null)) : Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)),
+                Defense = stand != null ? EnemyStats.BossDefense(stand, tune) : World.Areas.Defense(level), Level = level,
                 Damage = kind == "passive" ? 0 : Mathf.RoundToInt(World.Areas.DamagePerMask(level) * factor),
                 Knockback = boss || elite ? 0f : World.Areas.KnockbackTaken(level), Boss = boss, Elite = elite, Scene = EnemyDrops.SceneOf(record),
             };
@@ -122,6 +140,7 @@ namespace TerraKnight.Items
                 Damage = info.Harmful ? masks * Mathf.RoundToInt(World.Areas.DamagePerMask(info.Level) * EnemyStats.DamageFactor(info)) : 0,
                 Knockback = EnemyStats.NoKnockback(info) || TerraKnockback.Immune(hm) ? 0f : World.Areas.KnockbackTaken(info.Level),
                 Boss = info.Boss, Elite = info.Elite, Scene = hm.gameObject.scene.name,
+                Masks = info.Harmful ? masks : 0, RawHp = info.MaxHp, GodhomeTier = info.GodhomeTier,
             };
         }
 
@@ -183,11 +202,15 @@ namespace TerraKnight.Items
             public Vector2 At;
         }
 
+        /// <summary>The enemy going through HealthManager.Die now (its journal flag is set within it; SpecialDeaths leaves that to this death).</summary>
+        public static HealthManager DyingNow { get; private set; }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
         static void BeforeDie(HealthManager __instance, out Dying __state)
         {
             __state = default;
+            DyingNow = __instance;
             if (__instance == null || __instance.isDead) return;
             var col = __instance.GetComponent<Collider2D>();
             __state = new Dying { OutOfHealth = __instance.hp <= 0, At = col != null ? (Vector2)col.bounds.center : (Vector2)__instance.transform.position };
@@ -200,10 +223,18 @@ namespace TerraKnight.Items
             // A special death (Grimm, the Radiance...) never sets isDead: it is at 0 hp. A pooled enemy (the Aspid
             // Mother's hatchlings) is taken back by its pool within Die, whole again and off to its cage: it died all
             // the same, and its drops fall where it was.
-            if (TerraMod.Instance == null || __instance == null || !(__instance.isDead || __instance.hp <= 0 || __state.OutOfHealth)) return;
-            bool pooled = __state.OutOfHealth && !__instance.isDead && __instance.hp > 0;
-            if (pooled) DevPooledDeaths++;
-            Credit(__instance, pooled ? __state.At : (Vector2?)null);
+            DyingNow = null;
+            // The False Knight's armour goes to no health at every break (Check Health gives it back): his death is his
+            // FSM's (SpecialDeaths, FalseyControl's Death Anim Start), not this.
+            bool ownDeath = __instance != null && PlayMakerFSM.FindFsmOnGameObject(__instance.gameObject, "FalseyControl") != null;
+            if (TerraMod.Instance != null && __instance != null && !ownDeath && (__instance.isDead || __instance.hp <= 0 || __state.OutOfHealth))
+            {
+                bool pooled = __state.OutOfHealth && !__instance.isDead && __instance.hp > 0;
+                if (pooled) DevPooledDeaths++;
+                Credit(__instance, pooled ? __state.At : (Vector2?)null);
+            }
+            // A journal flag the death set: counted now, if this death didn't count it.
+            SpecialDeaths.AfterDeath();
         }
 
         public static int DevPooledDeaths;
@@ -215,13 +246,24 @@ namespace TerraKnight.Items
         /// A kill: the book's count and first-kill note, and the drops. Once for each enemy, whichever
         /// way it went down (HealthManager.Die, or a boss's own death in its FSM: SpecialDeaths).
         /// </summary>
-        public static void Credit(HealthManager __instance, Vector2? dropAt = null)
+        /// <param name="whole">The whole boss beaten (its FSM's flag): counted whatever bodies of it are still about.</param>
+        public static void Credit(HealthManager __instance, Vector2? dropAt = null, bool whole = false)
         {
             if (TerraMod.Instance == null || __instance == null) return;
-            if (!counted.Add(__instance.GetInstanceID())) return;
-            if (counted.Count > 4096) counted.Clear();
+            if (counted.Contains(__instance.GetInstanceID())) return;
             string rec = UI.EnemyHover.RecordOf(__instance);
             if (rec == null || rec == "Dummy" || !EnemyDrops.Known(rec)) return;
+            // A boss in several bodies at once (the Oblobbles, the Mantis Lords, Oro and Mato): one kill, when the last
+            // of its bodies up falls. This body isn't counted yet: the kill comes with the last one, or with the boss's
+            // own record of its defeat (SpecialDeaths).
+            if (!whole && EnemyDrops.IsBoss(rec) && OtherBodyUp(__instance, rec, out var other))
+            {
+                DevBodiesLeft++;
+                Plugin.Log.LogInfo($"[图鉴] {__instance.gameObject.scene.name}/{__instance.name} 倒下，{other} 还在：等最后一个再记");
+                return;
+            }
+            counted.Add(__instance.GetInstanceID());
+            if (counted.Count > 4096) counted.Clear();
             // The book keeps a stage's own table apart (Hornet in Greenpath and in Kingdom's Edge).
             string record = EnemyDrops.KeyFor(rec, EnemyDrops.VariantLevel(__instance.gameObject.scene.name));
             // Killed before it was ever on screen (a minion's, a shot from afar): it is seen now.
@@ -245,6 +287,23 @@ namespace TerraKnight.Items
             }
             if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name));
             else EnemyDrops.Roll(record, __instance);
+        }
+
+        /// <summary>Dev: a boss's bodies that fell while another was still up (not counted on their own).</summary>
+        public static int DevBodiesLeft;
+
+        static bool OtherBodyUp(HealthManager hm, string rec, out string other)
+        {
+            other = null;
+            // A body's second HealthManager (the Mantis Lords', the Soul Tyrant's) takes no hits: not a body still up.
+            foreach (var o in Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
+                if (o != null && o != hm && o.gameObject != hm.gameObject && o.GetComponent<HealthManager>() == o && !o.isDead && o.hp > 0
+                    && o.gameObject.activeInHierarchy && !counted.Contains(o.GetInstanceID()) && !EnemyStats.Defeated(o) && UI.EnemyHover.RecordOf(o) == rec)
+                {
+                    other = o.name;
+                    return true;
+                }
+            return false;
         }
 
         public static void Clear()

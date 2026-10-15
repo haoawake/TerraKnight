@@ -91,12 +91,50 @@ namespace TerraKnight
             bool step3 = nearFar == 0 && !offeredFar && nearHere >= 1;
             Plugin.Log.LogInfo($"[AutoTest] 附近箱子合成 3 走开 12 格（{Vector2.Distance(from, far):F1}）：附近箱子 {nearFar} 个，列出 {offeredFar}；回来后附近箱子 {nearHere} 个 {(step3 ? "通过" : "不通过")}");
 
+            // 4. The chest open: its column still shown (Terraria's), the open chest's items counted.
+            inv.Mouse = default;
+            items[0] = ItemStack.Of(a, na * 3);
+            items[1] = ItemStack.Of(b, nb * 3);
+            Chests.DevOpenNear(hero.GetComponent<BoxCollider2D>().bounds.center);
+            InventoryGui.Open = true;
+            yield return null;
+            yield return null;
+            bool offeredOpen = InventoryGui.DevOffered().Contains(r.Result);
+            bool shown = InventoryGui.DevCraftingDrawn;
+            bool madeOpen = InventoryGui.DevCraft(r.Result);
+            bool step4 = Chests.IsOpen && offeredOpen && shown && madeOpen;
+            Plugin.Log.LogInfo($"[AutoTest] 附近箱子合成 4 开着箱子：开着 {Chests.IsOpen}，列出 {offeredOpen}，合成栏画出 {shown}，做出 {madeOpen} {(step4 ? "通过" : "不通过")}");
+            Shot("Crossroads_01", "craftchest_open");
+            Chests.Close(false);
+            InventoryGui.Open = false;
+            inv.Mouse = default;
+
+            // 5. Recalled home and back: the chest counts again.
+            string gate = EntryGateOf("Crossroads_01");
+            bool recalled = Pylons.Recall();
+            float until = Time.time + 20f;
+            while (Time.time < until && (GameManager.instance.sceneName == "Crossroads_01" || GameManager.instance.IsInSceneTransition || !GameHooks.PlayerHasControl())) yield return null;
+            string home = GameManager.instance.sceneName;
+            yield return new WaitForSeconds(1f);
+            yield return GoTo("Crossroads_01", gate);
+            hero = HeroController.instance;
+            hero.transform.position = from;
+            hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+            yield return new WaitForSeconds(0.6f);
+            InventoryGui.Open = true;
+            yield return null;
+            int nearBack = Chests.ForCrafting(hero).Count;
+            bool offeredBack = InventoryGui.DevOffered().Contains(r.Result);
+            bool step5 = nearBack >= 1 && offeredBack;
+            Plugin.Log.LogInfo($"[AutoTest] 附近箱子合成 5 回城（{recalled}，到了 {home}）再回来：附近箱子 {nearBack} 个，列出 {offeredBack}，{Chests.DevReport()} {(step5 ? "通过" : "不通过")}");
+
             InventoryGui.Open = false;
             inv.Mouse = default;
             for (int i = 0; i < items.Length; i++) items[i] = default;
             TerraMod.DevAllInfinite = allInfinite;
             mod.ApplyCreative(false);
-            Plugin.Log.LogInfo($"[AutoTest] 附近箱子合成 合计 {(step1 ? 1 : 0) + (step2 ? 1 : 0) + (step3 ? 1 : 0)}/3");
+            int passed = (step1 ? 1 : 0) + (step2 ? 1 : 0) + (step3 ? 1 : 0) + (step4 ? 1 : 0) + (step5 ? 1 : 0);
+            Plugin.Log.LogInfo($"[AutoTest] 附近箱子合成 合计 {passed}/5 {(passed == 5 ? "通过" : "不通过")}");
         }
     }
 }

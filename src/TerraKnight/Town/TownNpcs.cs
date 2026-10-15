@@ -37,7 +37,7 @@ namespace TerraKnight.Town
             Zh = zh;
             Profile = profile;
             Stage = stage;
-            Items = items;
+            Items = TownShopExtra.With(internalName, items);
         }
     }
 
@@ -138,6 +138,25 @@ namespace TerraKnight.Town
             for (int i = 0; i < ShopItems.Length; i++)
                 if (!ShopItems[i].IsEmpty) sb.Append($"{ShopItems[i].Def.Name}{(BuyBack[i] ? "(回购)" : "")}={Shop.Money(BuyPrice(i))} ");
             return sb.Length == 0 ? "空" : sb.ToString().Trim();
+        }
+
+        /// <summary>Dev: how many items a townsperson sells at a stage (every moon phase's), and whether one of them is this.</summary>
+        public static int DevStockAt(string internalName, int stage, ItemType type, out bool has)
+        {
+            has = false;
+            foreach (var def in roster)
+            {
+                if (def.Internal != internalName) continue;
+                int n = 0;
+                foreach (var s in def.Items)
+                {
+                    if (s.Stage > stage) continue;
+                    n++;
+                    if (s.Type == type) has = true;
+                }
+                return n;
+            }
+            return 0;
         }
 
         public static void Clear()

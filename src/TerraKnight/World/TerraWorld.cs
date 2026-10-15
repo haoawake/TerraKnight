@@ -19,7 +19,7 @@ namespace TerraKnight.World
         {
             var c = CellGrid.WorldToCell(world);
             var r = RegionAt(c.x, c.y);
-            return r != null && r.SceneOwnGround;
+            return r != null && r.IsOwnCell(c.x - r.CellOffset.x, c.y - r.CellOffset.y);
         }
 
         public static TerrainRegion RegionAt(int gx, int gy)

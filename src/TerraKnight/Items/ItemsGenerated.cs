@@ -413,7 +413,7 @@ namespace TerraKnight.Items
             (ItemType.ShadowFlameBow, 4, ItemSource.Drop, 100000),
             (ItemType.CrystalStorm, 4, ItemSource.Craft, 200000),
             (ItemType.CursedFlames, 4, ItemSource.Craft, 200000),
-            (ItemType.GoldenShower, 4, ItemSource.Drop, 200000),
+            (ItemType.GoldenShower, 4, ItemSource.Craft, 200000),
             (ItemType.FrostStaff, 4, ItemSource.Drop, 200000),
             (ItemType.PoisonStaff, 4, ItemSource.Drop, 200000),
             (ItemType.VenomStaff, 4, ItemSource.Craft, 350000),

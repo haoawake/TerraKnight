@@ -28,7 +28,7 @@ namespace TerraKnight.Player
         static int frame;
         static string scene;
         static Vector2 feet;
-        static bool tookControl, fromPylon;
+        static bool tookControl, fromPylon, afterEntry;
         static int walkDir = 1;
         /// <summary>The palette now: the portal's texture (recoloured for an area), its main colour and two more.</summary>
         static string portalTexture = "NPC_549";
@@ -59,6 +59,8 @@ namespace TerraKnight.Player
             World.Pylons.WatchRespawnFade();
             // A pylon's teleport arriving: beside the pylon, out of its portal.
             if (World.Pylons.Arrive(__instance)) return;
+            // A boss seal's: in by the arena's door, then out of its portal.
+            if (Items.BossSummons.Arrive(__instance)) return;
             if (gm == null || __instance == null || gm.sceneName != "Tutorial_01" || gm.entryGateName != "top1" || phase != Phase.None) return;
             var col = __instance.GetComponent<BoxCollider2D>();
             Vector2 from = col.bounds.center;
@@ -107,6 +109,27 @@ namespace TerraKnight.Player
             tookControl = false;
             DevSummons++;
             Plugin.Log.LogInfo($"[晶塔] 从{area}的传送门里走出来：{feet:F2}，朝{(walkDir > 0 ? "右" : "左")}");
+        }
+
+        /// <summary>
+        /// A boss seal's arrival (Items.BossSummons): the game brings the player in by the arena's own door (its run
+        /// in, drop or jump, ending where the game itself sets him down), unseen; then the portal opens where he
+        /// stands, control held, and he steps out of it.
+        /// </summary>
+        public static void SummonAfterEntry(HeroController hero, string area)
+        {
+            var gm = GameManager.instance;
+            if (gm == null || hero == null) return;
+            if (phase != Phase.None) End(hero);
+            scene = gm.sceneName;
+            SetPalette(area);
+            fromPylon = true;
+            afterEntry = true;
+            walkDir = hero.cState.facingRight ? 1 : -1;
+            phase = Phase.Waiting;
+            time = 0f;
+            tookControl = false;
+            DevSummons++;
         }
 
         /// <summary>Each area's portal colour (the opening's violet when none): Greenpath's green, the City's blue, Crystal Peak's pink...</summary>
@@ -190,6 +213,20 @@ namespace TerraKnight.Player
             switch (phase)
             {
                 case Phase.Waiting:
+                    if (afterEntry)
+                    {
+                        // In by the door first; the portal then opens where he stands, control held through it.
+                        if (hero.cState.transitioning && time < 8f) return;
+                        afterEntry = false;
+                        var col = hero.GetComponent<BoxCollider2D>();
+                        feet = new Vector2(col.bounds.center.x, col.bounds.min.y);
+                        walkDir = hero.cState.facingRight ? 1 : -1;
+                        hero.RelinquishControl();
+                        tookControl = true;
+                        if (rb != null) rb.linearVelocity = Vector2.zero;
+                        time = 0f;
+                        Plugin.Log.LogInfo($"[首领召唤物] 进场后从传送门里走出来：{feet:F2}");
+                    }
                     // The portal opens as the scene fades in (a pylon's at once).
                     if (time >= (fromPylon ? 0f : 0.35f))
                     {
@@ -203,7 +240,7 @@ namespace TerraKnight.Player
                 case Phase.Holding:
                     // Open and turning until the game's own entry (the drop it thinks is a fall, a respawn's
                     // getting up) is over; control held by it after that comes back when the summoning hands it back.
-                    if ((!hero.cState.transitioning && !(fromPylon && hero.controlReqlinquished) && time > (fromPylon ? 0f : 0.15f)) || time > 8f)
+                    if ((!hero.cState.transitioning && !(fromPylon && hero.controlReqlinquished && !tookControl) && time > (fromPylon ? 0f : 0.15f)) || time > 8f)
                     {
                         hero.RelinquishControl();
                         tookControl = true;

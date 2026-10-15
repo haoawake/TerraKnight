@@ -122,7 +122,8 @@ namespace TerraKnight.Net
         public static void Leave(NetText why)
         {
             bool was = State != Phase.Off;
-            if (conn != null) conn.Close("离开");
+            if (Active) World.Chests.Close(false);
+            if (conn != null) conn.CloseAfterSending("离开");
             conn = null;
             try { tcp?.Close(); }
             catch (Exception) { }
@@ -140,6 +141,7 @@ namespace TerraKnight.Net
             Items.TerraProjectiles.Instance?.NetClearGhosts();
             Items.Minions.Instance?.NetClearGhosts();
             TileSync.Reset();
+            WorldSync.Reset();
             World.TerraTime.NetOffset = 0f;
             State = Phase.Off;
             if (runInBackgroundBefore != null)
@@ -192,6 +194,15 @@ namespace TerraKnight.Net
             Team = team;
             var p = Mine(Msg.TeamChange);
             p.W.Write(team);
+            Send(p.Done());
+        }
+
+        /// <summary>A boss seal used here: the others are taken to its arena too (BossSummons.Follow).</summary>
+        public static void SendBossSummon(string key)
+        {
+            if (!Active) return;
+            var p = Mine(Msg.BossSummon);
+            p.W.Write(key ?? "");
             Send(p.Done());
         }
 
@@ -283,6 +294,7 @@ namespace TerraKnight.Net
             }
             if (inGame)
             {
+                WorldSync.Tick();
                 TileSync.Flush();
                 PvpHits.Tick();
                 Enemies.Tick();
@@ -385,6 +397,7 @@ namespace TerraKnight.Net
                         {
                             gone.Destroy();
                             Players.Remove(slot);
+                            WorldSync.PlayerLeft(slot);
                             Items.TerraProjectiles.Instance?.NetDropGhosts(slot);
                             Items.Minions.Instance?.NetDropGhosts(slot);
                         }
@@ -447,12 +460,27 @@ namespace TerraKnight.Net
                         Items.Minions.Instance?.NetReceive(slot, r);
                         return;
                     case Msg.TileChange:
-                        TileSync.Receive(r);
+                        if (Hosting || WorldSync.Ready) TileSync.Receive(r);
+                        return;
+                    case Msg.WorldRequest:
+                        if (Hosting) WorldSync.RequestSnapshot(slot);
+                        return;
+                    case Msg.WorldState:
+                        WorldSync.ReceiveState(r);
+                        return;
+                    case Msg.WorldAction:
+                        if (Hosting) WorldSync.ReceiveAction(slot, r.ReadString());
+                        return;
+                    case Msg.WorldResult:
+                        WorldSync.ReceiveResult(r);
                         return;
                     case Msg.PlayerHurt:
                         PvpHits.ReceiveHurt(slot, r);
                         return;
                     case Msg.PlayerDeath:
+                        return;
+                    case Msg.BossSummon:
+                        Items.BossSummons.Follow(r.ReadString(), Players.TryGetValue(slot, out var summoner) ? summoner.Name : null);
                         return;
                     case Msg.SetTime:
                     {

@@ -368,10 +368,11 @@ namespace TerraKnight.Items
                 Kill(p);
                 return;
             }
-            p.Ai0++;
+            bool tick = MagicTick(p);
+            if (tick) p.Ai0++;
             int stage = (p.Ai0 >= 40f ? 1 : 0) + (p.Ai0 >= 80f ? 1 : 0) + (p.Ai0 >= 120f ? 1 : 0);
             int every = 24 - 6 * stage;
-            p.Ai1++;
+            if (tick) p.Ai1++;
             bool shoot = false;
             if (p.Ai1 >= every)
             {

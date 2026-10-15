@@ -132,6 +132,9 @@ namespace TerraKnight.Player
         /// <summary>The hazardType of the hit being taken (1 enemies; 2 spikes, 3 acid, 4 lava, 5 pits).</summary>
         static int hazardNow;
 
+        /// <summary>Dev: the spikes' hits the Dead Man's Sweater halved.</summary>
+        public static int DevSweater;
+
         /// <summary>What dealt the hit being taken (an enemy, its attack, its shot).</summary>
         static GameObject sourceNow;
 
@@ -216,6 +219,13 @@ namespace TerraKnight.Player
                 // Master's hit less the defense, then the difficulty's share of that: an easier save takes
                 // a quarter (half, three quarters) of what Master would, whatever the armor.
                 int perMask = Mathf.RoundToInt(World.Areas.MasterDamagePerMask(World.Areas.LevelOf(GameManager.UnsafeInstance?.sceneName)) * SourceFactor(sourceNow));
+                // The Dead Man's Sweater (deadMansSweater, P:14920-14924, 15120-15124): a trap's hit halved, at most 300; Hallownest's
+                // spikes are its traps.
+                if (hazardNow == 2 && Items.Equipment.Current.DeadMansSweater)
+                {
+                    perMask = Mathf.Max(1, Mathf.Min(perMask / 2, 300 / Mathf.Max(1, amount)));
+                    DevSweater++;
+                }
                 float share = World.GameDifficulty.EnemyFactor;
                 int raw = overrideDamage > 0 ? overrideDamage : Mathf.Max(1, Mathf.RoundToInt(amount * perMask * share));
                 TerraHurt.BeforeHurt();

@@ -870,10 +870,14 @@ namespace TerraKnight.Items
                 if (overLoadout >= 0 && hovered.IsEmpty) DrawLines(mouse, new List<string> { Lang.F("配装{0}（{1}）", overLoadout + 1, Lang.T(loadoutClass[overLoadout])) + (inv.BagPerLoadout ? Lang.T("：盔甲、饰品和背包") : "") }, Color.white);
                 }
 
-                // The crafting column gives way to an open shop.
+                // The crafting column gives way to an open shop; beside an open chest it stays (Main.DrawInventory draws the
+                // recipes whatever chest is open, under its rows), the chest's items counted.
                 if (Town.TownNpcs.ShopOpen) DrawShopPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
-                else if (World.Chests.IsOpen) DrawChestPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
-                else DrawCrafting(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                else
+                {
+                    if (World.Chests.IsOpen) DrawChestPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                    DrawCrafting(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                }
                 DrawBestiaryButton(view, ui, mouse);
 
                 // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
@@ -1008,8 +1012,17 @@ namespace TerraKnight.Items
         /// others at three-quarter size fading out above and below, the label over it, and the
         /// grid toggle beside it; or, toggled, every recipe in a grid.
         /// </summary>
+        /// <summary>Dev: the crafting column was drawn since this was last read.</summary>
+        public static bool DevCraftingDrawn
+        {
+            get { bool d = craftingDrawn; craftingDrawn = false; return d; }
+        }
+
+        static bool craftingDrawn;
+
         static void DrawCrafting(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string hoveredExtra, ref Kind hoveredKind)
         {
+            craftingDrawn = true;
             RefreshRecipes();
             float H = view.height / ui;
             float adjY = (H - 600f) / 2f, middleY = H / 600f * 250f;
@@ -1417,7 +1430,8 @@ namespace TerraKnight.Items
             if (!string.IsNullOrEmpty(def.Tooltip))
                 foreach (var l in def.Tooltip.Split('\n'))
                     if (l != "材料" && l != Lang.T("材料")) lines.Add(l);
-            if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None && Equipment.FamilyOf(Equipment.FullSet) == def.Set)
+            if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None
+                && (Equipment.FamilyOf(Equipment.FullSet) == def.Set || (def.Set == ArmorSet.Robe && (Equipment.FullSet == ArmorSet.Wizard || Equipment.FullSet == ArmorSet.MagicHat))))
                 lines.Add(Lang.T("套装奖励：") + Lang.T(Equipment.SetBonusText(Equipment.FullSet)));
             if (extra != null) lines.AddRange(extra.Split('\n'));
             DrawLines(mouse, lines, ItemDb.RarityColor(def.Rare));

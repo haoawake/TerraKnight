@@ -22,32 +22,57 @@ namespace TerraKnight.Items
             Add(ItemType.Celebration, Celebration) & Add(ItemType.CelebrationMk2, HeldBow) & Add(ItemType.ElectrosphereLauncher, Electrosphere) &
             Add(ItemType.Sandgun, Sandgun) & Add(ItemType.Flamethrower, Flames) & Add(ItemType.ElfMelter, Flames) &
             Add(ItemType.SapphireStaff, GemStaff) & Add(ItemType.EmeraldStaff, GemStaff) & Add(ItemType.AmberStaff, GemStaff) &
+            Add(ItemType.AmethystStaff, GemStaff) & Add(ItemType.TopazStaff, GemStaff) & Add(ItemType.RubyStaff, GemStaff) & Add(ItemType.DiamondStaff, GemStaff) &
             Add(ItemType.PaintballGun, Paintball);
 
         /// <summary>Pl:49542-49553: the paint jittered and stepped forward (TerraProjectiles.ShootPaintball).</summary>
         static void Paintball(in Shot s) => TerraProjectiles.Instance?.ShootPaintball(s.From, s.Vel, s.Damage, s.Knockback, s.Crit);
 
         /// <summary>
-        /// Pl:49779-49890 (GemStaffFeatures): the Sapphire's two bolts at 60% damage, the second its
-        /// twin; the Emerald's five times as fast; the Amber's 25% faster at 80% damage.
+        /// Pl:49779-49890, 49988-50007 (GemStaffFeatures): the bolt's features are its gem's and the worn robe's
+        /// (GetEffectiveArmor(1)); the Ruby's (ArPenSpread) fires again halfway through the use (Pl:43030-43037).
         /// </summary>
         static void GemStaff(in Shot s)
         {
             var tp = TerraProjectiles.Instance;
             if (tp == null) return;
-            switch (s.Def.Type)
+            var own = TerraProjectiles.GemOf(s.Kind);
+            var body = TerraMod.Instance != null ? TerraMod.Instance.Inventory.EffectiveArmor[1] : default;
+            var robe = body.IsEmpty ? TerraProjectiles.GemFx.None : TerraProjectiles.RobeGem(body.Type);
+            var fx = own | robe;
+            if (robe != TerraProjectiles.GemFx.None && robe == own) fx |= TerraProjectiles.GemFx.Repeats;
+            FireGem(tp, s, fx, s.From, s.Vel);
+            if ((fx & TerraProjectiles.GemFx.ArPen) != 0 && s.UseTicks > 1)
             {
-                case ItemType.SapphireStaff:
-                    tp.ShootGem(s.Kind, s.From, s.Vel, (int)(s.Damage * 0.6f), s.Knockback, s.Crit, 0f);
-                    tp.ShootGem(s.Kind, s.From, s.Vel, (int)(s.Damage * 0.6f), s.Knockback, s.Crit, 1f);
-                    break;
-                case ItemType.EmeraldStaff:
-                    tp.ShootGem(s.Kind, s.From, s.Vel * 5f, s.Damage, s.Knockback, s.Crit, 0f);
-                    break;
-                default:
-                    tp.ShootGem(s.Kind, s.From, s.Vel * 1.25f, (int)(s.Damage * 0.8f), s.Knockback, s.Crit, 0f);
-                    break;
+                var copy = s;
+                tp.Later(s.UseTicks / 2, (from, dir) => { if (TerraProjectiles.Instance != null) FireGem(TerraProjectiles.Instance, copy, fx, from, dir * copy.Speed); });
             }
+        }
+
+        /// <summary>
+        /// One use's bolts: FastThenSlow five times as fast, CanBounce 25% faster, ArPenSpread from a point 12 px off; the
+        /// damage at the least of SwirlTwins' 60%, CanBounce's 80% and ArPenSpread's 50%; RepeatsGem 4 more damage and 1 more
+        /// knockback; SwirlTwins a twin.
+        /// </summary>
+        static void FireGem(TerraProjectiles tp, in Shot s, TerraProjectiles.GemFx fx, Vector2 from, Vector2 vel)
+        {
+            bool Has(TerraProjectiles.GemFx f) => (fx & f) != 0;
+            if (Has(TerraProjectiles.GemFx.FastSlow)) vel *= 5f;
+            if (Has(TerraProjectiles.GemFx.Bounce)) vel *= 1.25f;
+            if (Has(TerraProjectiles.GemFx.ArPen)) from += Random.insideUnitCircle.normalized * 12f * TerraParticles.Px;
+            float mult = 1f;
+            if (Has(TerraProjectiles.GemFx.Swirl)) mult = Mathf.Min(mult, 0.6f);
+            if (Has(TerraProjectiles.GemFx.Bounce)) mult = Mathf.Min(mult, 0.8f);
+            if (Has(TerraProjectiles.GemFx.ArPen)) mult = Mathf.Min(mult, 0.5f);
+            int damage = (int)(s.Damage * mult);
+            float kb = s.Knockback;
+            if (Has(TerraProjectiles.GemFx.Repeats))
+            {
+                damage += 4;
+                kb += 1f;
+            }
+            tp.ShootGem(s.Kind, from, vel, damage, kb, s.Crit, 0f, fx);
+            if (Has(TerraProjectiles.GemFx.Swirl)) tp.ShootGem(s.Kind, from, vel, damage, kb, s.Crit, 1f, fx);
         }
 
         /// <summary>Five bursts 6 ticks apart (useTime 6 of a 30 tick use), each aimed where the player then aims, with the use sound (Item34) each.</summary>

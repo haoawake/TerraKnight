@@ -6,6 +6,7 @@ namespace TerraKnight.Items
         /// <summary>The recipes of the craft chain: what Terraria makes by crafting is made here too, from what drops.</summary>
         static Recipe[] ChainRecipes() => new[]
         {
+            new Recipe(ItemType.RodOfHarmony, 1, "远古操纵机", 5, (ItemType.RodofDiscord, 1)), // Recipe.cs:ItemID.Sets.ShimmerTransformToItem (shimmer)
             new Recipe(ItemType.CopperPickaxe, 1, "砧", 0, (ItemType.CopperBar, 8), (ItemType.Wood, 4)), // Recipe.cs:9657
             new Recipe(ItemType.Megashark, 1, "秘银砧", 4, (ItemType.Minishark, 1), (ItemType.IllegalGunParts, 1), (ItemType.SharkFin, 5), (ItemType.SoulofMight, 20)), // Recipe.cs:12503
             new Recipe(ItemType.CrystalStorm, 1, "书架", 0, (ItemType.SpellTome, 1), (ItemType.CrystalShard, 20), (ItemType.SoulofLight, 15)), // Recipe.cs:14344
@@ -19,8 +20,6 @@ namespace TerraKnight.Items
             new Recipe(ItemType.HellfireArrow, 100, "砧", 0, (ItemType.WoodenArrow, 100), (ItemType.HellstoneBar, 1)), // Recipe.cs:2117
             new Recipe(ItemType.SilverBullet, 70, "砧", 0, (ItemType.MusketBall, 70), (ItemType.SilverBar, 1)), // Recipe.cs:2187
             new Recipe(ItemType.TungstenBullet, 70, "砧", 0, (ItemType.MusketBall, 70), (ItemType.TungstenBar, 1)), // Recipe.cs:2196
-            new Recipe(ItemType.BlizzardinaBottle, 1, "水晶球", 4, (ItemType.CloudinaBottle, 1), (ItemType.FrostCore, 1)), // Recipe.cs:13979
-            new Recipe(ItemType.SandstorminaBottle, 1, "水晶球", 4, (ItemType.CloudinaBottle, 1), (ItemType.AncientBattleArmorMaterial, 1)), // Recipe.cs:13973
             new Recipe(ItemType.CrimsonWhip, 1, "砧", 0, (ItemType.CrimtaneBar, 12)), // Recipe.cs:10722
             new Recipe(ItemType.MeteorWhip, 1, "砧", 0, (ItemType.MeteoriteBar, 20), (ItemType.Chain, 10), (ItemType.FallenStar, 10)), // Recipe.cs:10997
             new Recipe(ItemType.DivingGear, 1, "工匠作坊", 1, (ItemType.Flipper, 1), (ItemType.DivingHelmet, 1)), // Recipe.cs:13629
@@ -44,6 +43,83 @@ namespace TerraKnight.Items
             new Recipe(ItemType.LesserHealingPotion, 2, "玻璃瓶", 0, (ItemType.Mushroom, 1), (ItemType.Gel, 2), (ItemType.Bottle, 2)), // Recipe.cs:1589
             new Recipe(ItemType.HealingPotion, 1, "玻璃瓶", 0, (ItemType.LesserHealingPotion, 2), (ItemType.GlowingMushroom, 1)), // Recipe.cs:1607
             new Recipe(ItemType.ManaPotion, 1, "玻璃瓶", 0, (ItemType.LesserManaPotion, 2), (ItemType.GlowingMushroom, 1)), // Recipe.cs:1641
+            new Recipe(ItemType.CopperWatch, 1, "工作台", 0, (ItemType.CopperBar, 10), (ItemType.Chain, 1)), // Recipe.cs:9723
+            new Recipe(ItemType.TinWatch, 1, "工作台", 0, (ItemType.TinBar, 10), (ItemType.Chain, 1)), // Recipe.cs:9803
+            new Recipe(ItemType.SilverWatch, 1, "工作台", 0, (ItemType.SilverBar, 10), (ItemType.Chain, 1)), // Recipe.cs:10142
+            new Recipe(ItemType.TungstenWatch, 1, "工作台", 0, (ItemType.TungstenBar, 10), (ItemType.Chain, 1)), // Recipe.cs:10222
+            new Recipe(ItemType.GoldWatch, 1, "工作台", 0, (ItemType.GoldBar, 10), (ItemType.Chain, 1)), // Recipe.cs:10302
+            new Recipe(ItemType.PlatinumWatch, 1, "工作台", 0, (ItemType.PlatinumBar, 10), (ItemType.Chain, 1)), // Recipe.cs:10427
+            new Recipe(ItemType.GPS, 1, "工匠作坊", 1, (ItemType.GoldWatch, 1), (ItemType.DepthMeter, 1), (ItemType.Compass, 1)), // Recipe.cs:13644
+            new Recipe(ItemType.FishFinder, 1, "工匠作坊", 1, (ItemType.FishermansGuide, 1), (ItemType.WeatherRadio, 1), (ItemType.Sextant, 1)), // Recipe.cs:13657
+            new Recipe(ItemType.GoblinTech, 1, "工匠作坊", 1, (ItemType.MetalDetector, 1), (ItemType.Stopwatch, 1), (ItemType.DPSMeter, 1)), // Recipe.cs:13663
+            new Recipe(ItemType.REK, 1, "工匠作坊", 1, (ItemType.TallyCounter, 1), (ItemType.LifeformAnalyzer, 1), (ItemType.Radar, 1)), // Recipe.cs:13669
+            new Recipe(ItemType.PDA, 1, "工匠作坊", 1, (ItemType.GPS, 1), (ItemType.FishFinder, 1), (ItemType.GoblinTech, 1), (ItemType.REK, 1)), // Recipe.cs:13675
+            new Recipe(ItemType.CellPhone, 1, "工匠作坊", 1, (ItemType.PDA, 1), (ItemType.MagicMirror, 1)), // Recipe.cs:13701
+            new Recipe(ItemType.MagicMirror, 1, "熔炉", 0, (ItemType.Glass, 10), (ItemType.GoldBar, 8), (ItemType.Diamond, 3)), // Recipe.cs:13682
+            new Recipe(ItemType.MagnetFlower, 1, "工匠作坊", 1, (ItemType.ManaFlower, 1), (ItemType.CelestialMagnet, 1)), // Recipe.cs:13718
+            new Recipe(ItemType.AdamantiteForge, 1, "秘银砧", 4, (ItemType.AdamantiteOre, 30), (ItemType.Hellforge, 1)), // Recipe.cs:11676
+            new Recipe(ItemType.TitaniumForge, 1, "秘银砧", 4, (ItemType.TitaniumOre, 30), (ItemType.Hellforge, 1)), // Recipe.cs:11747
+            new Recipe(ItemType.Bookcase, 1, "锯木机", 0, (ItemType.Wood, 20), (ItemType.Book, 10)), // Recipe.cs:4775
+            new Recipe(ItemType.Keg, 1, "锯木机", 0, (ItemType.Wood, 14)), // Recipe.cs:6681
+            new Recipe(ItemType.CookingPot, 1, "砧", 0, (ItemType.IronBar, 10), (ItemType.Wood, 2)), // Recipe.cs:10047
+            new Recipe(ItemType.HeavyWorkBench, 1, "砧", 0, (ItemType.Wood, 12), (ItemType.IronBar, 8)), // Recipe.cs:9995
+            new Recipe(ItemType.GlassKiln, 1, "砧", 0, (ItemType.IronBar, 18), (ItemType.Torch, 8)), // Recipe.cs:10004
+            new Recipe(ItemType.Goggles, 1, "工作台", 0, (ItemType.Lens, 2)), // Recipe.cs:14368
+            new Recipe(ItemType.MeteorHelmet, 1, "砧", 0, (ItemType.MeteoriteBar, 10)), // Recipe.cs:11006
+            new Recipe(ItemType.MeteorSuit, 1, "砧", 0, (ItemType.MeteoriteBar, 20)), // Recipe.cs:11011
+            new Recipe(ItemType.MeteorLeggings, 1, "砧", 0, (ItemType.MeteoriteBar, 15)), // Recipe.cs:11016
+            new Recipe(ItemType.EmptyBucket, 1, "砧", 0, (ItemType.IronBar, 2)), // Recipe.cs:9961
+            new Recipe(ItemType.EbonwoodHelmet, 1, "工作台", 0, (ItemType.Ebonwood, 20)), // Recipe.cs:6927
+            new Recipe(ItemType.EbonwoodBreastplate, 1, "工作台", 0, (ItemType.Ebonwood, 30)), // Recipe.cs:6932
+            new Recipe(ItemType.EbonwoodGreaves, 1, "工作台", 0, (ItemType.Ebonwood, 25)), // Recipe.cs:6937
+            new Recipe(ItemType.RichMahoganyHelmet, 1, "工作台", 0, (ItemType.RichMahogany, 20)), // Recipe.cs:6837
+            new Recipe(ItemType.RichMahoganyBreastplate, 1, "工作台", 0, (ItemType.RichMahogany, 30)), // Recipe.cs:6842
+            new Recipe(ItemType.RichMahoganyGreaves, 1, "工作台", 0, (ItemType.RichMahogany, 25)), // Recipe.cs:6847
+            new Recipe(ItemType.PearlwoodHelmet, 1, "工作台", 0, (ItemType.Pearlwood, 20)), // Recipe.cs:6987
+            new Recipe(ItemType.PearlwoodBreastplate, 1, "工作台", 0, (ItemType.Pearlwood, 30)), // Recipe.cs:6992
+            new Recipe(ItemType.PearlwoodGreaves, 1, "工作台", 0, (ItemType.Pearlwood, 25)), // Recipe.cs:6997
+            new Recipe(ItemType.CrimsonHelmet, 1, "砧", 0, (ItemType.CrimtaneBar, 15), (ItemType.TissueSample, 10)), // Recipe.cs:10675
+            new Recipe(ItemType.CrimsonScalemail, 1, "砧", 0, (ItemType.CrimtaneBar, 25), (ItemType.TissueSample, 20)), // Recipe.cs:10682
+            new Recipe(ItemType.CrimsonGreaves, 1, "砧", 0, (ItemType.CrimtaneBar, 20), (ItemType.TissueSample, 15)), // Recipe.cs:10689
+            new Recipe(ItemType.CactusHelmet, 1, "工作台", 0, (ItemType.Cactus, 20)), // Recipe.cs:8071
+            new Recipe(ItemType.CactusBreastplate, 1, "工作台", 0, (ItemType.Cactus, 30)), // Recipe.cs:8076
+            new Recipe(ItemType.CactusLeggings, 1, "工作台", 0, (ItemType.Cactus, 25)), // Recipe.cs:8081
+            new Recipe(ItemType.ShadewoodHelmet, 1, "工作台", 0, (ItemType.Shadewood, 20)), // Recipe.cs:6957
+            new Recipe(ItemType.ShadewoodBreastplate, 1, "工作台", 0, (ItemType.Shadewood, 30)), // Recipe.cs:6962
+            new Recipe(ItemType.ShadewoodGreaves, 1, "工作台", 0, (ItemType.Shadewood, 25)), // Recipe.cs:6967
+            new Recipe(ItemType.PinkEskimoHood, 1, "工作台", 0, (ItemType.EskimoHood, 1), (ItemType.PinkThread, 3)), // Recipe.cs:9489
+            new Recipe(ItemType.PinkEskimoCoat, 1, "工作台", 0, (ItemType.EskimoCoat, 1), (ItemType.PinkThread, 3)), // Recipe.cs:9495
+            new Recipe(ItemType.PinkEskimoPants, 1, "工作台", 0, (ItemType.EskimoPants, 1), (ItemType.PinkThread, 3)), // Recipe.cs:9501
+            new Recipe(ItemType.AmethystRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Amethyst, 10)), // Recipe.cs:9278
+            new Recipe(ItemType.TopazRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Topaz, 10)), // Recipe.cs:9284
+            new Recipe(ItemType.SapphireRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Sapphire, 10)), // Recipe.cs:9290
+            new Recipe(ItemType.EmeraldRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Emerald, 10)), // Recipe.cs:9296
+            new Recipe(ItemType.RubyRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Ruby, 10)), // Recipe.cs:9302
+            new Recipe(ItemType.DiamondRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Diamond, 10)), // Recipe.cs:9308
+            new Recipe(ItemType.PumpkinHelmet, 1, "工作台", 0, (ItemType.Pumpkin, 20)), // Recipe.cs:8358
+            new Recipe(ItemType.PumpkinBreastplate, 1, "工作台", 0, (ItemType.Pumpkin, 30)), // Recipe.cs:8363
+            new Recipe(ItemType.PumpkinLeggings, 1, "工作台", 0, (ItemType.Pumpkin, 25)), // Recipe.cs:8368
+            new Recipe(ItemType.BorealWoodHelmet, 1, "工作台", 0, (ItemType.BorealWood, 20)), // Recipe.cs:6852
+            new Recipe(ItemType.BorealWoodBreastplate, 1, "工作台", 0, (ItemType.BorealWood, 30)), // Recipe.cs:6857
+            new Recipe(ItemType.BorealWoodGreaves, 1, "工作台", 0, (ItemType.BorealWood, 25)), // Recipe.cs:6862
+            new Recipe(ItemType.PalmWoodHelmet, 1, "工作台", 0, (ItemType.PalmWood, 20)), // Recipe.cs:6882
+            new Recipe(ItemType.PalmWoodBreastplate, 1, "工作台", 0, (ItemType.PalmWood, 30)), // Recipe.cs:6887
+            new Recipe(ItemType.PalmWoodGreaves, 1, "工作台", 0, (ItemType.PalmWood, 25)), // Recipe.cs:6892
+            new Recipe(ItemType.FossilHelm, 1, "砧", 0, (ItemType.SturdyFossil, 15)), // Recipe.cs:11049
+            new Recipe(ItemType.FossilShirt, 1, "砧", 0, (ItemType.SturdyFossil, 25)), // Recipe.cs:11054
+            new Recipe(ItemType.FossilPants, 1, "砧", 0, (ItemType.SturdyFossil, 20)), // Recipe.cs:11059
+            new Recipe(ItemType.UltrabrightHelmet, 1, "工匠作坊", 1, (ItemType.MiningHelmet, 1), (ItemType.NightVisionHelmet, 1)), // Recipe.cs:13751
+            new Recipe(ItemType.AmberRobe, 1, "织布机", 0, (ItemType.Robe, 1), (ItemType.Amber, 10)), // Recipe.cs:9314
+            new Recipe(ItemType.AshWoodHelmet, 1, "工作台", 0, (ItemType.AshWood, 20)), // Recipe.cs:16215
+            new Recipe(ItemType.AshWoodBreastplate, 1, "工作台", 0, (ItemType.AshWood, 30)), // Recipe.cs:16219
+            new Recipe(ItemType.AshWoodGreaves, 1, "工作台", 0, (ItemType.AshWood, 25)), // Recipe.cs:16223
+            new Recipe(ItemType.UpgradedMiningHead, 1, "秘银砧", 4, (ItemType.MiningHelmet, 1), (ItemType.MythrilBar, 10)), // Recipe.cs:11753
+            new Recipe(ItemType.UpgradedMiningBody, 1, "秘银砧", 4, (ItemType.MiningShirt, 1), (ItemType.MythrilBar, 10)), // Recipe.cs:11758
+            new Recipe(ItemType.UpgradedMiningLegs, 1, "秘银砧", 4, (ItemType.MiningPants, 1), (ItemType.MythrilBar, 10)), // Recipe.cs:11763
+            new Recipe(ItemType.UpgradedFishingHead, 1, "秘银砧", 4, (ItemType.AnglerHat, 1), (ItemType.MythrilBar, 10)), // Recipe.cs:11774
+            new Recipe(ItemType.UpgradedFishingBody, 1, "秘银砧", 4, (ItemType.AnglerVest, 1), (ItemType.MythrilBar, 10)), // Recipe.cs:11779
+            new Recipe(ItemType.UpgradedFishingLegs, 1, "秘银砧", 4, (ItemType.AnglerPants, 1), (ItemType.MythrilBar, 10)), // Recipe.cs:11784
+            new Recipe(ItemType.Robe, 1, "织布机", 0, (ItemType.Silk, 20)), // Recipe.cs:9213
         };
     }
 }

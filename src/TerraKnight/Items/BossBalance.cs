@@ -14,9 +14,8 @@ namespace TerraKnight.Items
     /// weapon; the rest keep their super armour. All of it on every difficulty and stage alike: those
     /// set the stand-in's life and damage, this only shapes it.
     ///
-    /// A boss in several pools of health (<see cref="Pool"/>): the stand-in's life is shared out over
-    /// all of them, refills included, instead of each pool having the whole: the False Knight's armour
-    /// (three rounds) and his head (three times out), the Soul Master's two phases.
+    /// A boss fought in phases (the False Knight's rounds, the Soul Master's two, the Mantis Lords', the
+    /// Watcher Knights', Oro and Mato's) has a whole stand-in's life in each (<see cref="BossPhases"/>).
     /// </summary>
     internal static class BossBalance
     {
@@ -94,25 +93,6 @@ namespace TerraKnight.Items
             return table.TryGetValue(record, out t) ? t : Plain;
         }
 
-        /// <summary>
-        /// The share of the boss's life one of its health pools carries, and how many times the game fills
-        /// it in a fight: the False Knight's (and the Failed Champion's) armour three rounds, his head out
-        /// three times; the Soul Master's (and the Soul Tyrant's) first phase and second; one pool, once, else.
-        /// </summary>
-        public static float Pool(string record, HealthManager hm, out int fills)
-        {
-            fills = 1;
-            if (hm == null || record == null) return 1f;
-            string n = hm.gameObject.name;
-            if (record == "FalseKnight")
-            {
-                fills = 3;
-                return n.Contains("Head") ? 0.35f : 0.65f;
-            }
-            if (record == "MageLord") return n.Contains("Phase2") ? 0.4f : 0.6f;
-            return 1f;
-        }
-
         /// <summary>A boss whose attacks can be broken off takes a stagger for every this much of its life.</summary>
         public const float StunEvery = 0.022f;
 
@@ -124,7 +104,7 @@ namespace TerraKnight.Items
         public static bool StunCounts(EnemyStats.Info info, int terraDamage)
         {
             if (info == null || !info.Boss || info.Ref == null || !Of(info.Record, EnemyDrops.VariantLevel(info.Scene)).Stun) return false;
-            float every = Mathf.Max(1f, EnemyStats.LifeWhole(info) * StunEvery);
+            float every = Mathf.Max(1f, EnemyStats.LifePhase(info) * StunEvery);
             info.StunCarry += terraDamage;
             if (info.StunCarry < every) return false;
             info.StunCarry -= every;

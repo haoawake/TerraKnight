@@ -12,14 +12,15 @@ namespace TerraKnight.UI
     /// used while the button is held) and the enemy health bars; in a LAN game where it is, who is
     /// in it and a way out. Keybindings (Terraria's Controls menu): every Terraria action with its
     /// key, a click and a key press to change one (Escape keeps it), "Reset to Default". Choices are
-    /// saved in the mod's config. Escape or a click outside closes it.
+    /// saved in the mod's config. The mod's version stands in gold at the top right. Escape or a
+    /// click outside closes it.
     /// </summary>
     internal static class IngameOptions
     {
         public static bool Open { get; private set; }
 
         static ConfigEntry<bool> autoReuseSetting, barsSetting;
-        static GUIStyle row, head, keyStyle, section;
+        static GUIStyle row, head, keyStyle, section, version;
         static int openedFrame;
 
         public static void Bind(ConfigEntry<bool> autoReuse, ConfigEntry<bool> bars)
@@ -87,11 +88,13 @@ namespace TerraKnight.UI
                 head = new GUIStyle(row);
                 section = new GUIStyle(row) { alignment = TextAnchor.MiddleLeft };
                 keyStyle = new GUIStyle(row) { alignment = TextAnchor.MiddleLeft };
+                version = new GUIStyle(row) { alignment = TextAnchor.MiddleRight };
             }
             row.fontSize = Mathf.RoundToInt(24 * ui);
             head.fontSize = Mathf.RoundToInt(32 * ui);
             section.fontSize = Mathf.RoundToInt(26 * ui);
             keyStyle.fontSize = Mathf.RoundToInt(20 * ui);
+            version.fontSize = Mathf.RoundToInt(28 * ui);
             var p = Panel(ui);
             bool choosing = TerraKeys.Listening.HasValue || TerraKeys.Busy;
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && !choosing && Time.frameCount != openedFrame)
@@ -109,6 +112,8 @@ namespace TerraKnight.UI
             CreativeMenu.Fill(p, new Color(0.13f, 0.17f, 0.42f, 0.9f));
             CreativeMenu.Rim(p, new Color(0.05f, 0.05f, 0.12f, 0.95f), 3f * ui);
             CreativeMenu.Shadowed(new Rect(p.x, p.y + 12f * ui, p.width, 44f * ui), Lang.T("泰拉瑞亚设置"), head, Color.white);
+            // The mod's version, in gold at the top right, so it is seen at a glance.
+            CreativeMenu.Shadowed(new Rect(p.xMax - 430f * ui, p.y + 12f * ui, 400f * ui, 44f * ui), Lang.F("泰拉圣巢 v{0}", Plugin.Version), version, Gold);
 
             // General, down the left.
             float lx = p.x + 30f * ui, lw = 380f * ui, y = p.y + 70f * ui;

@@ -16,6 +16,8 @@ namespace TerraKnight
             yield return GoTo("Crossroads_01", EntryGateOf("Crossroads_01"));
             yield return new WaitForSeconds(2f);
             PlayerData.instance.isInvincible = true;
+            bool fog = WorldMap.DevExplorationChecks(out string fogReport);
+            Plugin.Log.LogInfo($"[AutoTest] 地图探索：{fogReport} {(fog ? "通过" : "不通过")}");
             const string area = "遗忘十字路";
             Plugin.Log.LogInfo($"[AutoTest] 买地图 买之前 {WorldMap.DevChart(area)}");
             PlayerData.instance.SetBool("mapCrossroads", true);
@@ -29,7 +31,14 @@ namespace TerraKnight
             yield return new WaitForSeconds(0.6f);
             Shot("Crossroads_01", "mapbuy_full");
             yield return null;
+            WorldMap.DevZoom(6f);
+            WorldMap.DevCentreScene("Crossroads_01");
+            yield return new WaitForSeconds(0.6f);
+            Shot("Crossroads_01", "mapbuy_detail");
             WorldMap.DevSetOpen(false);
+            bool migration = WorldMap.DevExplorationMigration(out string migrationReport);
+            Plugin.Log.LogInfo($"[AutoTest] 地图迁移：{migrationReport} {(migration ? "通过" : "不通过")}");
+            yield return new WaitForSeconds(1.5f);
             bool pass = after.Contains("画出来的") && WorldMap.DevChartCount(area) > 30 && drawnUnseen == 0;
             Plugin.Log.LogInfo($"[AutoTest] 买地图 十字路买到的场景 {WorldMap.DevChartCount(area)} 个，没看到却画出来的生命水晶 {drawnUnseen} 个 {(pass ? "通过" : "不通过")}");
         }

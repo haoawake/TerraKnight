@@ -123,6 +123,24 @@ namespace TerraKnight.World
             slopes[index] = kind == CellKind.Platform ? (byte)slope : (byte)0;
         }
 
+        CellKind[] networkBase;
+        public void CaptureNetworkBase() => networkBase = (CellKind[])cells.Clone();
+
+        public void ResetNetworkEdits()
+        {
+            if (networkBase == null) return;
+            for (int i = 0; i < cells.Length; i++) ApplyNetwork(i, networkBase[i], false, 0);
+        }
+
+        public void ApplyNetwork(int index, CellKind kind, bool wasDug, int slope)
+        {
+            if (index < 0 || index >= cells.Length) return;
+            byte s = kind == CellKind.Platform ? (byte)slope : (byte)0;
+            if (cells[index] == kind && dug[index] == wasDug && slopes[index] == s) return;
+            Restore(index, kind, wasDug, slope);
+            CellChanged?.Invoke(index % Width, index / Width);
+        }
+
         public CellKind GetAt(int index) => cells[index];
         public bool IsDugAt(int index) => dug[index];
         public int SlopeAt(int index) => slopes[index];
@@ -148,6 +166,7 @@ namespace TerraKnight.World
             Array.Copy(dug, copy.dug, dug.Length);
             Array.Copy(art, copy.art, art.Length);
             Array.Copy(slopes, copy.slopes, slopes.Length);
+            copy.networkBase = networkBase != null ? (CellKind[])networkBase.Clone() : null;
             return copy;
         }
 

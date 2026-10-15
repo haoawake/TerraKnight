@@ -101,7 +101,8 @@ namespace TerraKnight.Items
             if (melee != null)
             {
                 float facing = p.Vel.x < 0f ? -1f : 1f;
-                foreach (var hm in EnemiesIn(p.Pos, 96f))
+                // The Apprentice's tier 3 set (P:73061-73074): a 13-tile blast instead of 6.
+                foreach (var hm in EnemiesIn(p.Pos, (Equipment.Current.Ooa & OoaSet.ApprenticeT3) != 0 ? 208f : 96f))
                 {
                     int id = hm.GetInstanceID();
                     if (p.Immune.ContainsKey(id)) continue;

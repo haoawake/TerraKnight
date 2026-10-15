@@ -240,6 +240,11 @@ namespace TerraKnight.UI
             ("White Palace Fly", "PalaceFly"), ("Ordeal Zoteling", "ZotelingHopper"), ("Zote Balloon", "ZotelingBalloon"), ("Zoteling", "ZotelingBuzzer"),
             ("Nightmare Grimm Boss", "NightmareGrimm"), ("Grimm Boss", "Grimm"), ("Corpse Flukeman", null), ("Flukeman Top", null), ("Flukeman Bot", null),
             ("fluke_baby", null), ("Hollow Shade", null),
+            // Their deaths carry the placeholder record (Dummy) or none: the Soul Tyrant's two phases (the dream's, Godhome's;
+            // the book keeps it as MageLord@5), the Abyss's Siblings, the Spiny Husks risen from the corpses, Godhome's Crystal
+            // and Enraged Guardians, the Absolute Radiance.
+            ("Dream Mage Lord", "MageLord"), ("Shade Sibling", "Sibling"), ("Corpse Garden Zombie", "GardenZombie"),
+            ("Mega Zombie Beam Miner", "MegaBeamMiner"), ("Zombie Beam Miner Rematch", "MegaBeamMiner"), ("Absolute Radiance", "FinalBoss"),
         };
 
         /// <summary>A kill record's Hunter's Journal name in the game's language, or null when the journal has none.</summary>

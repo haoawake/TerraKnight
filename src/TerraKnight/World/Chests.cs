@@ -16,7 +16,7 @@ namespace TerraKnight.World
     /// in it), dropping it back as an item. A chest belongs to the scene it stands in, in that
     /// scene's own coordinates, and is kept in the mod's save with what it holds.
     /// </summary>
-    internal sealed class Chests : MonoBehaviour
+    internal sealed partial class Chests : MonoBehaviour
     {
         public const int Capacity = 40;
         const float Px = Effects.TerraParticles.Px;
@@ -124,12 +124,19 @@ namespace TerraKnight.World
         /// </summary>
         public static bool TryPlace(HeroController hero, Vector2 aim)
         {
+            if (!Net.WorldSync.CanInteract) return false;
             if (hero == null) return false;
             if (!FindSpot(hero, aim, out var bottom)) return false;
             if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var region = TerraWorld.RegionAt(CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).x, CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).y)
                          ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
+            if (Net.WorldSync.Guest)
+            {
+                var local = bottom - (Vector2)region.Root.position;
+                Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "chest", Scene = region.SceneName, X = local.x, Y = local.y, Count = TerraMod.Instance.Inventory.Infinite ? 0 : 1 });
+                return true;
+            }
             chests.Add(new Chest { Region = region, Scene = region.SceneName, Local = bottom - (Vector2)region.Root.position });
             TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
             DevPlaced++;
@@ -206,6 +213,11 @@ namespace TerraKnight.World
 
         static void Open(Chest c)
         {
+            if (!c.Bank && Net.NetSession.Active && !Net.WorldSync.OwnsChest(c.Scene, c.Local))
+            {
+                if (Net.WorldSync.CanInteract) Net.WorldSync.OpenChest(c.Scene, c.Local);
+                return;
+            }
             if (Town.TownNpcs.ChatOpen) Town.TownNpcs.Close(false);
             open = c;
             InventoryGui.Open = true;
@@ -217,11 +229,24 @@ namespace TerraKnight.World
         public static void Close(bool sound)
         {
             if (open == null) return;
+            if (!open.Bank && Net.NetSession.Active)
+                Net.WorldSync.FlushChest(Net.WorldSync.Key("c", open.Scene, open.Local), NetSlots(open), true);
             open = null;
             if (sound) TerraMod.Instance?.PlaySound("Menu_Close", 0.7f);
         }
 
         /// <summary>Dev: opens the chest nearest a point (no reach check).</summary>
+        /// <summary>Dev: every chest set down: its scene, whether its scene is loaded, where it stands, how far from the player.</summary>
+        public static string DevReport()
+        {
+            var hero = HeroController.SilentInstance;
+            Vector2 from = hero != null ? (Vector2)hero.transform.position : Vector2.zero;
+            var sb = new System.Text.StringBuilder($"{chests.Count} 个箱子");
+            foreach (var c in chests)
+                sb.Append($"；{c.Scene} 已加载 {c.Region != null} 位置 {c.Box.center:F1} 距离 {Vector2.Distance(c.Box.center, from):F1}");
+            return sb.ToString();
+        }
+
         public static bool DevOpenNear(Vector2 at)
         {
             Chest best = null;
@@ -333,7 +358,7 @@ namespace TerraKnight.World
             float reach = CraftTiles * CellGrid.CellSize;
             var around = Rect.MinMaxRect(b.min.x - reach, b.min.y - reach, b.max.x + reach, b.max.y + reach);
             foreach (var c in chests)
-                if (c.Region != null && !c.Bank && around.Overlaps(c.Box)) list.Add(c.Items);
+                if (c.Region != null && !c.Bank && Net.WorldSync.OwnsChest(c.Scene, c.Local) && around.Overlaps(c.Box)) list.Add(c.Items);
             return list;
         }
 
@@ -352,7 +377,7 @@ namespace TerraKnight.World
             var near = new List<Chest>();
             if (Stations.PiggyBankWithin(from, range)) near.Add(new Chest(inv.Bank) { Bank = true });
             foreach (var c in chests)
-                if (c.Region != null && !c.Bank && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
+                if (c.Region != null && !c.Bank && Net.WorldSync.OwnsChest(c.Scene, c.Local) && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
             near.Sort((a, b) => a.Bank != b.Bank ? (a.Bank ? -1 : 1) : (a.Bank ? 0 : Vector2.Distance(a.Box.center, from).CompareTo(Vector2.Distance(b.Box.center, from))));
             // The geo: the bank first, else a chest that has some, else the nearest chest.
             if (near.Count > 0)
@@ -430,13 +455,19 @@ namespace TerraKnight.World
         /// </summary>
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
+            if (!Net.WorldSync.CanInteract) return false;
             if (pick == null || pick.PickPower <= 0 || hero == null) return false;
             for (int i = 0; i < chests.Count; i++)
             {
                 var c = chests[i];
                 if (c.Region == null || !c.Box.Contains(mouse) || !InReach(hero, c.Box)) continue;
+                if (Net.NetSession.Active && Net.WorldSync.Guest)
+                {
+                    Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "mineChest", Key = Net.WorldSync.Key("c", c.Scene, c.Local), Power = pick.PickPower });
+                    return true;
+                }
                 var px = Effects.TerraParticles.ToPx(c.Box.center);
-                if (!c.Empty || open == c)
+                if (!c.Empty || open == c || Net.WorldSync.ChestBusy(c.Scene, c.Local))
                 {
                     TerraMod.Instance?.PlaySound("Tink_" + Random.Range(0, 3));
                     WoodDust(px, 1);
@@ -561,6 +592,12 @@ namespace TerraKnight.World
         }
 
         /// <summary>Whether any chest set down holds an item of this kind.</summary>
+        /// <summary>Every chest's slots, in every scene (the Piggy Bank's are the player's, not here).</summary>
+        public static IEnumerable<ItemStack[]> AllSlots()
+        {
+            foreach (var c in chests) if (!c.Bank && Net.WorldSync.OwnsChest(c.Scene, c.Local)) yield return c.Items;
+        }
+
         public static bool Holds(ItemType type)
         {
             foreach (var c in chests)
