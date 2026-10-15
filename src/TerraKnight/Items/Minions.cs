@@ -884,10 +884,11 @@ namespace TerraKnight.Items
         M Spawn(Kind kind, ItemDef staff, Vector2 centerPx, int damage, float knockback)
         {
             var s = specs[kind];
+            // Minions and sentries knock nothing back: their own hits, their shots and their children's (all take this).
             var m = new M
             {
                 Kind = kind, S = s, Staff = staff != null ? staff.Type : ItemType.None, W = s.W, H = s.H,
-                OriginalDamage = damage, Damage = damage, Knockback = knockback, Serial = serial++,
+                OriginalDamage = damage, Damage = damage, Knockback = 0f, Serial = serial++,
             };
             m.Center = centerPx;
             m.OldPos = m.Pos;

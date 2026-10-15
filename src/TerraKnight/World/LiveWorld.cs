@@ -44,7 +44,7 @@ namespace TerraKnight.World
                     string key = "";
                     foreach (var kv in ls.HiddenArt) if (kv.Value.Contains(r)) key = kv.Key;
                     string sprite = r is SpriteRenderer sr && sr.sprite != null ? sr.sprite.name : r.GetType().Name;
-                    sb.Append($"\n  {ls.Name}/{r.name} [{sprite}] 显示 {r.enabled && r.gameObject.activeInHierarchy} z {b.center.z:F2} 范围 {b.min.x:F1},{b.min.y:F1}..{b.max.x:F1},{b.max.y:F1}{(key != "" ? " 藏于 " + key : "")}");
+                    sb.Append($"\n  {ls.Name}/{r.name} [{sprite}] 显示 {r.enabled && !r.forceRenderingOff && r.gameObject.activeInHierarchy} z {b.center.z:F2} 范围 {b.min.x:F1},{b.min.y:F1}..{b.max.x:F1},{b.max.y:F1}{(key != "" ? " 藏于 " + key : "")}");
                 }
             }
             return sb.ToString();
@@ -881,7 +881,7 @@ namespace TerraKnight.World
                         if (!(r is SpriteRenderer sr) || sr == null || HandPlacedArt.Destroyed.Contains(r) || !keep.Contains(sr)) continue;
                         var bb = sr.bounds;
                         if (Mathf.Min(bb.max.y, wtop) - Mathf.Max(bb.min.y, wy) < 0.75f * bb.size.y) continue;
-                        r.enabled = true;
+                        r.forceRenderingOff = false;
                         kv.Value.RemoveAt(i);
                         shown++;
                     }
@@ -893,10 +893,10 @@ namespace TerraKnight.World
                 if (lower.HiddenArt.TryGetValue(link.Key, out var past))
                     foreach (var sr in keep)
                     {
-                        if (!sr.enabled || past.Contains(sr) || sr.bounds.min.y >= wy || sr.bounds.max.y < wtop + 2f) continue;
+                        if (!sr.enabled || sr.forceRenderingOff || past.Contains(sr) || sr.bounds.min.y >= wy || sr.bounds.max.y < wtop + 2f) continue;
                         string n = sr.name.ToLowerInvariant();
                         if (!n.Contains("glow") && !n.Contains("beam") && !n.Contains("light")) continue;
-                        sr.enabled = false;
+                        sr.forceRenderingOff = true;
                         past.Add(sr);
                         Plugin.Log.LogInfo($"[无缝] {lower.Name} 的 {sr.name} 从井道一直伸到 {upper.Name} 地面上方 {sr.bounds.max.y - wtop:F1}，藏起来");
                     }
@@ -958,7 +958,9 @@ namespace TerraKnight.World
                 if (!keys.Contains(kv.Key)) stale.Add(kv.Key);
             foreach (var key in stale)
             {
-                foreach (var r in ls.HiddenArt[key]) if (r != null && !HandPlacedArt.Destroyed.Contains(r)) r.enabled = true;
+                // Only this hiding is undone: what the game itself turned off meanwhile (a Whispering Root's
+                // essence before the Dream Nail wakes it, in its Start) stays off.
+                foreach (var r in ls.HiddenArt[key]) if (r != null && !HandPlacedArt.Destroyed.Contains(r)) r.forceRenderingOff = false;
                 ls.HiddenArt.Remove(key);
             }
             if (!ls.Scene.IsValid() || !ls.Scene.isLoaded) return;
@@ -977,7 +979,7 @@ namespace TerraKnight.World
                 var hidden = new List<Renderer>();
                 foreach (var r in ls.ArtCandidates)
                 {
-                    if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+                    if (r == null || !r.enabled || r.forceRenderingOff || !r.gameObject.activeInHierarchy) continue;
                     var b = r.bounds;
                     bool hide;
                     switch (rule)
@@ -996,9 +998,10 @@ namespace TerraKnight.World
                             hide = (gate != null && r.transform.IsChildOf(gate)) || WhollyPast(b, world, area) || (IsEdgeMask(r) && Crosses(b, world, area));
                             break;
                     }
+                    // Not drawn, its enabled flag left to the game's own scripts (forceRenderingOff).
                     if (hide)
                     {
-                        r.enabled = false;
+                        r.forceRenderingOff = true;
                         hidden.Add(r);
                     }
                 }

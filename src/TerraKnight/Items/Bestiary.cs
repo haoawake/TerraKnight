@@ -86,12 +86,14 @@ namespace TerraKnight.Items
             bool boss = EnemyStats.IsBossKind(record, hp);
             bool elite = !boss && EnemyStats.EliteKind(record, hp);
             float factor = boss ? World.Areas.BossDamage : elite ? World.Areas.EliteDamage : 1f;
-            // A boss as its Terraria stand-in has it, where it is first fought (not a Godhome rematch).
+            // A boss as its Terraria stand-in has it, where it is first fought (not a Godhome rematch), with its own measure.
             var stand = boss ? BossStats.Of(record, level) : null;
+            var tune = stand != null ? BossBalance.Of(record, level) : null;
+            if (tune != null) factor *= tune.Damage;
             return new Seen
             {
-                Life = stand != null ? BossStats.LifeOf(stand, null, World.GameDifficulty.Current) : Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)),
-                Defense = stand != null ? BossStats.DefenseOf(stand) : World.Areas.Defense(level), Level = level,
+                Life = stand != null ? Mathf.CeilToInt(BossStats.LifeOf(stand, null, World.GameDifficulty.Current) * tune.Life) : Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)),
+                Defense = stand != null ? Mathf.RoundToInt(BossStats.DefenseOf(stand) * tune.Defense) : World.Areas.Defense(level), Level = level,
                 Damage = kind == "passive" ? 0 : Mathf.RoundToInt(World.Areas.DamagePerMask(level) * factor),
                 Knockback = boss || elite ? 0f : World.Areas.KnockbackTaken(level), Boss = boss, Elite = elite, Scene = EnemyDrops.SceneOf(record),
             };
@@ -115,12 +117,15 @@ namespace TerraKnight.Items
             if (masks <= 0 && info.Harmful) masks = 1;
             return new Seen
             {
-                Life = EnemyStats.LifeMax(info), Defense = info.Defense, Level = info.Level,
+                // A boss in several pools (the False Knight's armour and head): its whole life, not the one pool's.
+                Life = EnemyStats.LifeWhole(info), Defense = info.Defense, Level = info.Level,
                 Damage = info.Harmful ? masks * Mathf.RoundToInt(World.Areas.DamagePerMask(info.Level) * EnemyStats.DamageFactor(info)) : 0,
                 Knockback = EnemyStats.NoKnockback(info) || TerraKnockback.Immune(hm) ? 0f : World.Areas.KnockbackTaken(info.Level),
                 Boss = info.Boss, Elite = info.Elite, Scene = hm.gameObject.scene.name,
             };
         }
+
+        public static int DevRevived;
 
         /// <summary>Four times a second: any enemy on screen not in the book yet is entered (and announced).</summary>
         public static void Tick(HeroController hero)
@@ -133,6 +138,18 @@ namespace TerraKnight.Items
             {
                 if (hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy) continue;
                 int id = hm.GetInstanceID();
+                // One sent out again from its pool (the Aspid Mother's hatchlings): killed before, alive and whole now, a new
+                // enemy: its kill counts again (book, drops) and the damage left over from the last one is gone.
+                if (counted.Contains(id))
+                {
+                    var info = EnemyStats.Of(hm);
+                    if (info != null && !info.Boss && hm.hp >= info.MaxHp)
+                    {
+                        counted.Remove(id);
+                        info.Carry = 0f;
+                        DevRevived++;
+                    }
+                }
                 if (looked.Contains(id)) continue;
                 var col = hm.GetComponent<Collider2D>();
                 if (col == null || !col.enabled) continue;
@@ -141,7 +158,9 @@ namespace TerraKnight.Items
                 looked.Add(id);
                 if (looked.Count > 4096) looked.Clear();
                 string key = KeyOf(hm);
-                if (key == null || Stats.ContainsKey(key)) continue;
+                if (key == null) continue;
+                // One in the book already: its numbers as they are now (the difficulty, a newer version's).
+                if (Stats.ContainsKey(key)) { Stats[key] = Snapshot(hm); continue; }
                 Discover(key, hm);
             }
         }
@@ -157,14 +176,37 @@ namespace TerraKnight.Items
             UI.BestiaryToast.Show(key, false);
         }
 
+        /// <summary>An enemy as it goes into HealthManager.Die: out of health, and where it was.</summary>
+        struct Dying
+        {
+            public bool OutOfHealth;
+            public Vector2 At;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
+        static void BeforeDie(HealthManager __instance, out Dying __state)
+        {
+            __state = default;
+            if (__instance == null || __instance.isDead) return;
+            var col = __instance.GetComponent<Collider2D>();
+            __state = new Dying { OutOfHealth = __instance.hp <= 0, At = col != null ? (Vector2)col.bounds.center : (Vector2)__instance.transform.position };
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
-        static void AfterDie(HealthManager __instance)
+        static void AfterDie(HealthManager __instance, Dying __state)
         {
-            // A special death (Grimm, the Radiance...) never sets isDead: it is at 0 hp.
-            if (TerraMod.Instance == null || __instance == null || !(__instance.isDead || __instance.hp <= 0)) return;
-            Credit(__instance);
+            // A special death (Grimm, the Radiance...) never sets isDead: it is at 0 hp. A pooled enemy (the Aspid
+            // Mother's hatchlings) is taken back by its pool within Die, whole again and off to its cage: it died all
+            // the same, and its drops fall where it was.
+            if (TerraMod.Instance == null || __instance == null || !(__instance.isDead || __instance.hp <= 0 || __state.OutOfHealth)) return;
+            bool pooled = __state.OutOfHealth && !__instance.isDead && __instance.hp > 0;
+            if (pooled) DevPooledDeaths++;
+            Credit(__instance, pooled ? __state.At : (Vector2?)null);
         }
+
+        public static int DevPooledDeaths;
 
         /// <summary>Whether this enemy's kill has been counted (its book entry, its drops).</summary>
         public static bool Credited(HealthManager hm) => hm != null && counted.Contains(hm.GetInstanceID());
@@ -173,7 +215,7 @@ namespace TerraKnight.Items
         /// A kill: the book's count and first-kill note, and the drops. Once for each enemy, whichever
         /// way it went down (HealthManager.Die, or a boss's own death in its FSM: SpecialDeaths).
         /// </summary>
-        public static void Credit(HealthManager __instance)
+        public static void Credit(HealthManager __instance, Vector2? dropAt = null)
         {
             if (TerraMod.Instance == null || __instance == null) return;
             if (!counted.Add(__instance.GetInstanceID())) return;
@@ -201,7 +243,8 @@ namespace TerraKnight.Items
                 DevCollected++;
                 UI.BestiaryToast.Show(record, true);
             }
-            EnemyDrops.Roll(record, __instance);
+            if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name));
+            else EnemyDrops.Roll(record, __instance);
         }
 
         public static void Clear()

@@ -35,7 +35,7 @@ namespace TerraKnight.World
                 Vector2 p = hero.GetComponent<BoxCollider2D>().bounds.center;
                 foreach (var sr in masks)
                 {
-                    if (sr == null || !sr.enabled || !sr.gameObject.activeInHierarchy || sr.color.a < 0.05f || fading.ContainsKey(sr)) continue;
+                    if (sr == null || !sr.enabled || sr.forceRenderingOff || !sr.gameObject.activeInHierarchy || sr.color.a < 0.05f || fading.ContainsKey(sr)) continue;
                     var b = sr.bounds;
                     // Inset a little: the soft edge of the mask spills over the room's walls.
                     if (p.x > b.min.x + 0.5f && p.x < b.max.x - 0.5f && p.y > b.min.y + 0.5f && p.y < b.max.y - 0.5f)

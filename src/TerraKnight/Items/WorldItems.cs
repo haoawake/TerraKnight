@@ -57,6 +57,15 @@ namespace TerraKnight.Items
 
         public static WorldItems Instance { get; private set; }
         static readonly List<Item> items = new List<Item>();
+
+        /// <summary>Dev: the renderers of the items lying now.</summary>
+        public static IEnumerable<SpriteRenderer> DevRenderers
+        {
+            get { foreach (var it in items) if (it.Renderer != null) yield return it.Renderer; }
+        }
+
+        /// <summary>Dev: every lying item gone.</summary>
+        public static void DevClear() => Clear();
         static readonly Dictionary<(ItemType, int), Sprite> sprites = new Dictionary<(ItemType, int), Sprite>();
         float ticks;
 
@@ -347,6 +356,8 @@ namespace TerraKnight.Items
                     var go = new GameObject("Terra World Item " + it.Stack.Type);
                     go.transform.SetParent(it.Region.Root, false);
                     it.Renderer = go.AddComponent<SpriteRenderer>();
+                    // Over the scenery (its foreground and the black of its ground draw nearer than z 0) and under the light map.
+                    it.Renderer.sortingOrder = World.LightMap.Order - 5;
                 }
                 // An animated sheet's frame of the moment (the Fallen Star twinkles, souls pulse).
                 it.Renderer.sprite = SpriteOf(it.Stack.Type, ItemFrames.FrameNow(ItemDb.Get(it.Stack.Type).Texture));

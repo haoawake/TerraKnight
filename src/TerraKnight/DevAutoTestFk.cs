@@ -104,7 +104,11 @@ namespace TerraKnight
                 }
                 yield return null;
             }
+            // Right after the kill, and once it has all settled: every head there is to see.
+            Plugin.Log.LogInfo($"[AutoTest] 假骑士死亡 刚打完的头：{HeadsShown()}");
+            Shot(arena, "fkdeath_moment");
             yield return new WaitForSeconds(6f);
+            Plugin.Log.LogInfo($"[AutoTest] 假骑士死亡 6 秒后的头：{HeadsShown()}");
             int kills = Bestiary.Kills.TryGetValue("FalseKnight", out int k1) ? k1 : 0;
             var after = new StringBuilder();
             foreach (var hm in all) if (hm != null) after.Append($" {PathOf(hm.transform)}=hp {hm.hp}{(hm.isDead ? " 死" : "")}{(hm.gameObject.activeInHierarchy ? "" : " 藏")}");
@@ -118,6 +122,22 @@ namespace TerraKnight
             Shot(arena, "fkdeath_after");
             yield return null;
             Player.TerraCamera.DevLook = null;
+        }
+        /// <summary>Every object named for a head that is drawn now (any scene), with where it is and what it belongs to.</summary>
+        static string HeadsShown()
+        {
+            var sb = new StringBuilder();
+            int n = 0;
+            foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+            {
+                if (!r.enabled || r.forceRenderingOff || !r.isVisible) continue;
+                string path = PathOf(r.transform);
+                if (path.IndexOf("head", System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                n++;
+                string sprite = r is SpriteRenderer sr && sr.sprite != null ? sr.sprite.name : r is MeshRenderer ? "网格" : r.GetType().Name;
+                sb.Append($"\n    {r.gameObject.scene.name}/{path} [{sprite}] {(Vector2)r.bounds.center:F1}");
+            }
+            return $"{n} 个{sb}";
         }
     }
 }

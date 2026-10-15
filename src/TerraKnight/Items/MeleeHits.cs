@@ -363,10 +363,11 @@ namespace TerraKnight.Items
                     Push = pushSpeed, TerraDamage = damage, Crit = crit, BigHit = damage * bigScale > EnemyStats.LifeMax(info), Set = true,
                 };
             }
-            // A boss or elite isn't staggered: the game counts every hit towards stunning it (the
-            // Stun Control FSM's STUN DAMAGE), meant for a nail's few slashes, not a hail of shots.
+            // A boss or elite isn't staggered by every hit: the game counts each one towards stunning it
+            // (the Stun Control FSM's STUN DAMAGE), meant for a nail's few slashes, not a hail of shots.
+            // A boss whose attacks can be broken off counts one hit in so much damage (BossBalance).
             PlayMakerFSM heldStun = null;
-            if (hm != null && EnemyStats.Unstoppable(info))
+            if (hm != null && EnemyStats.Unstoppable(info) && !BossBalance.StunCounts(info, damage))
             {
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;

@@ -1643,6 +1643,8 @@ namespace TerraKnight.Player
             bool strong = 32f * downDashTime > 300f;
             float radius = strong ? 176f : 128f, kb = strong ? 20f : 10f;
             var b = hero.GetComponent<BoxCollider2D>().bounds;
+            // The floor it lands on gives way where the Knight's dive would break it.
+            World.DiveFloors.Pound(b);
             Vector2 c = b.center;
             var at = TerraParticles.ToPx(new Vector2(c.x, b.min.y)) + new Vector2(0f, -4f);
             TerraMod.Instance.PlaySound("Custom/dd2_monk_staff_ground_impact_" + UnityEngine.Random.Range(0, 3));

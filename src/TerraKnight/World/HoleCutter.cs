@@ -61,7 +61,7 @@ namespace TerraKnight.World
             if (Mathf.Abs(depth) < 1e-3f) return false;
             foreach (var sr in cover)
             {
-                if (sr == null || !sr.enabled || sr.color.a < 0.9f || !sr.gameObject.activeInHierarchy || IsGlow(sr)) continue;
+                if (sr == null || !sr.enabled || sr.forceRenderingOff || sr.color.a < 0.9f || !sr.gameObject.activeInHierarchy || IsGlow(sr)) continue;
                 if (holeAtPoint && sr.maskInteraction == SpriteMaskInteraction.VisibleOutsideMask) continue;
                 var b = sr.bounds;
                 if (b.size.x > 40f || b.size.y > 40f) continue;

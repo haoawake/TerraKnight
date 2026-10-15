@@ -3454,5 +3454,29 @@
   "it-IT": "Completa altre maschere o sconfiggi altri boss per usare un altro cristallo di vita",
   "pt-BR": "Complete mais máscaras ou derrote mais chefes para usar outro cristal da vida",
   "ru-RU": "Соберите больше масок или победите больше боссов, чтобы использовать ещё один кристалл жизни"
+ },
+ "背包里有 {0}，附近的箱子里有 {1}": {
+  "en-US": "In your inventory: {0}; in chests nearby: {1}",
+  "zh-Hant": "背包裡有 {0}，附近的箱子裡有 {1}",
+  "ja-JP": "持ち物にある数：{0}、近くのチェストにある数：{1}",
+  "ko-KR": "인벤토리에 {0}개, 근처 상자에 {1}개",
+  "de-DE": "Im Inventar: {0}; in Truhen in der Nähe: {1}",
+  "fr-FR": "Dans l'inventaire : {0} ; dans les coffres à proximité : {1}",
+  "es-ES": "En el inventario: {0}; en cofres cercanos: {1}",
+  "it-IT": "Nell'inventario: {0}; nei forzieri vicini: {1}",
+  "pt-BR": "No inventário: {0}; em baús próximos: {1}",
+  "ru-RU": "В инвентаре: {0}; в сундуках рядом: {1}"
+ },
+ "猛击能砸开需要下砸的地板": {
+  "en-US": "The slam breaks floors that need a downward slam",
+  "zh-Hant": "猛擊能砸開需要下砸的地板",
+  "ja-JP": "叩きつけで、叩きつけが必要な床を壊せる",
+  "ko-KR": "강타로 내려찍기가 필요한 바닥을 부술 수 있음",
+  "de-DE": "Der Stampfer zerbricht Böden, die einen Stampfangriff erfordern",
+  "fr-FR": "La frappe brise les sols qui demandent une frappe descendante",
+  "es-ES": "La embestida rompe los suelos que requieren un golpe descendente",
+  "it-IT": "Lo schianto rompe i pavimenti che richiedono un colpo verso il basso",
+  "pt-BR": "O golpe quebra pisos que exigem um golpe para baixo",
+  "ru-RU": "Удар разбивает полы, которые требуют удара сверху"
  }
 }

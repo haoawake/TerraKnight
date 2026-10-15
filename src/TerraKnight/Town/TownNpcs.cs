@@ -599,6 +599,32 @@ namespace TerraKnight.Town
             return BuyBack[slot] ? System.Math.Max(1L, price / 5) : DiscountLatched ? (long)(price * 0.8f) : price;
         }
 
+        /// <summary>Dev: every shop's every item (any stage, any moon) whose icon doesn't load or is blank.</summary>
+        public static string DevBadIcons(out int checkedCount)
+        {
+            checkedCount = 0;
+            var sb = new System.Text.StringBuilder();
+            foreach (var def in roster)
+                foreach (var st in def.Items)
+                {
+                    checkedCount++;
+                    var d = ItemDb.Get(st.Type);
+                    string why = null;
+                    if (d == null || string.IsNullOrEmpty(d.Texture)) why = "没有贴图名";
+                    else
+                    {
+                        try
+                        {
+                            var tex = Terraria.TerrariaAssets.Texture(d.Texture);
+                            if (tex == null || tex.width <= 1 || tex.height <= 1) why = "贴图是空的";
+                        }
+                        catch (System.Exception e) { why = "读不出 " + d.Texture + "：" + e.GetType().Name; }
+                    }
+                    if (why != null) sb.Append($" {def.Zh}:{st.Type}（{why}）");
+                }
+            return sb.ToString();
+        }
+
         /// <summary>discountAvailable: whether the Discount Card was worn as the shop opened.</summary>
         public static bool DiscountLatched;
 

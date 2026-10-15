@@ -770,7 +770,7 @@ namespace TerraKnight
                 melee.Strike(rock, def, UseDirection);
                 PlaySound("Tink_" + Random.Range(0, 3));
             }
-            else if (def.PickPower > 0 && (Chests.TryMine(def, DevAim ?? mouse, hero) || Stations.TryMine(def, DevAim ?? mouse, hero) || LifeCrystals.TryMine(def, DevAim ?? mouse, hero)))
+            else if (def.PickPower > 0 && (Chests.TryMine(def, DevAim ?? mouse, hero) || Stations.TryMine(def, DevAim ?? mouse, hero) || LifeCrystals.TryMine(def, DevAim ?? mouse, hero) || DiveFloors.TryMine(def, DevAim ?? mouse, hero)))
                 useCooldown *= Equipment.PickTime;
             else if (def.PickPower > 0 && usable)
             {
@@ -1438,7 +1438,8 @@ namespace TerraKnight
 
         /// <summary>
         /// Picking up one of the Knight's abilities (Mothwing Cloak, Mantis Claw, Monarch Wings,
-        /// buying Sprintmaster) gives the Terraria accessory that does the same job instead.
+        /// Isma's Tear, Desolate Dive, buying Sprintmaster) gives the Terraria accessory that does the
+        /// same job instead.
         /// </summary>
         void GrantAbilityAccessories(float dt)
         {
@@ -1450,7 +1451,8 @@ namespace TerraKnight
             foreach (var (flag, item) in PlayerHooks.AbilityItems)
             {
                 // Isma's tear read as the save has it: GetBool also counts worn flippers (PlayerHooks.EquipmentFlags).
-                bool has = flag == "hasAcidArmour" ? pd.hasAcidArmour : pd.GetBool(flag);
+                // Desolate Dive is a level (Descending Dark is 2).
+                bool has = flag == "hasAcidArmour" ? pd.hasAcidArmour : flag == "quakeLevel" ? pd.quakeLevel > 0 : pd.GetBool(flag);
                 if (GrantedAbilities.Contains(flag) || !has) continue;
                 GrantedAbilities.Add(flag);
                 if (Inventory.Owns(item)) continue;

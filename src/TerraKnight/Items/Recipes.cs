@@ -138,32 +138,57 @@ namespace TerraKnight.Items
             return n;
         }
 
-        /// <summary>Whether the inventory holds every ingredient (Recipe.FindRecipes: only those are offered).</summary>
-        public static bool HasIngredients(Recipe r, Inventory inv)
+        /// <summary>How many of an item the inventory and the chests near the player hold together.</summary>
+        public static int Count(Inventory inv, ItemType t, List<ItemStack[]> chests)
+        {
+            int n = Count(inv, t);
+            if (chests != null)
+                foreach (var slots in chests)
+                    foreach (var s in slots) if (!s.IsEmpty && s.Type == t) n += s.Count;
+            return n;
+        }
+
+        /// <summary>Whether the inventory, with the chests near the player, holds every ingredient (Recipe.FindRecipes: only those are offered).</summary>
+        public static bool HasIngredients(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
             if (inv.Infinite) return true;
             foreach (var (t, n) in r.Ingredients)
-                if (Count(inv, t) < n) return false;
+                if (Count(inv, t, chests) < n) return false;
             return true;
         }
 
-        /// <summary>Recipe.Create: the ingredients are taken out of the inventory, last slots first for the ones in the hotbar.</summary>
-        public static void Consume(Recipe r, Inventory inv)
+        /// <summary>
+        /// Recipe.Create: the ingredients are taken out of the inventory, last slots first for the ones
+        /// in the hotbar; what it lacks comes out of the chests near the player.
+        /// </summary>
+        public static void Consume(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
             if (inv.Infinite) return;
             foreach (var (t, need) in r.Ingredients)
             {
-                int left = need;
-                for (int i = inv.Slots.Length - 1; i >= 0 && left > 0; i--)
-                {
-                    ref var s = ref inv.Slots[i];
-                    if (s.IsEmpty || s.Type != t) continue;
-                    int take = UnityEngine.Mathf.Min(left, s.Count);
-                    s.Count -= take;
-                    left -= take;
-                    if (s.Count <= 0) s = default;
-                }
+                int left = Take(inv.Slots, t, need);
+                if (chests != null)
+                    foreach (var slots in chests)
+                    {
+                        if (left <= 0) break;
+                        left = Take(slots, t, left);
+                    }
             }
+        }
+
+        /// <summary>Up to that many of an item taken out of the slots, last first; how many are still wanted.</summary>
+        static int Take(ItemStack[] slots, ItemType t, int left)
+        {
+            for (int i = slots.Length - 1; i >= 0 && left > 0; i--)
+            {
+                ref var s = ref slots[i];
+                if (s.IsEmpty || s.Type != t) continue;
+                int take = UnityEngine.Mathf.Min(left, s.Count);
+                s.Count -= take;
+                left -= take;
+                if (s.Count <= 0) s = default;
+            }
+            return left;
         }
     }
 }

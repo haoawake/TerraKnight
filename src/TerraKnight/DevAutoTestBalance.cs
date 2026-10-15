@@ -39,7 +39,7 @@ namespace TerraKnight
             mod.DevNoFallDamage = true;
             var saved = GameDifficulty.Current;
             // Held-down (channel) weapons hit at their own rhythm, not once a use: left out of the estimate.
-            var weapons = ItemDb.All.Where(d => d.IsWeapon && !d.IsSummon && !d.IsWhip && !d.Channel && d.Class != DamageClass.None && d.PickPower <= 0 && d.Damage > 0).ToList();
+            var weapons = ItemDb.All.Where(d => d.IsWeapon && !d.GameTool && !d.IsSummon && !d.IsWhip && !d.Channel && d.Class != DamageClass.None && d.PickPower <= 0 && d.Damage > 0).ToList();
             var records = EnemyDrops.DevRecords.Where(r =>
             {
                 var k = EnemyDrops.KindOf(r);
@@ -93,11 +93,15 @@ namespace TerraKnight
             foreach (var kv in BossStats.DevAll.OrderBy(k => k.Value.Stage))
             {
                 var r = kv.Value;
-                var have = weapons.Where(d => d.Stage <= r.Stage).OrderByDescending(d => DpsOf(d, r.Boss.Defense, r.Stage)).ToList();
-                float dps = have.Count > 0 ? DpsOf(have[0], r.Boss.Defense, r.Stage) : 1f;
-                var lives = levels.Select(lv => BossStats.LifeOf(r, null, lv)).ToList();
-                Plugin.Log.LogInfo($"[平衡] 首领 {Bestiary.NameOf(kv.Key)}（{kv.Key}，阶段 {r.Stage}）= 泰拉 {r.Boss.Name}：生命 {string.Join("/", lives)}（普通/困难/专家/大师），防御 {r.Boss.Defense}；" +
-                                   $"最强武器 {(have.Count > 0 ? have[0].Name : "无")} {dps:F0}/秒，大师 {lives[3] / dps:F0} 秒；神居重打 大师 {BossStats.LifeOf(r, "GG_", DifficultyLevel.Master)}");
+                // Its own measure on top (BossBalance): the record is the key less any "@stage".
+                string rec = kv.Key.Contains("@") ? kv.Key.Substring(0, kv.Key.IndexOf('@')) : kv.Key;
+                var tune = BossBalance.Of(rec, kv.Key.Contains("@") ? int.Parse(kv.Key.Substring(kv.Key.IndexOf('@') + 1)) : r.Stage);
+                int defense = Mathf.RoundToInt(r.Boss.Defense * tune.Defense);
+                var have = weapons.Where(d => d.Stage <= r.Stage).OrderByDescending(d => DpsOf(d, defense, r.Stage)).ToList();
+                float dps = have.Count > 0 ? DpsOf(have[0], defense, r.Stage) : 1f;
+                var lives = levels.Select(lv => Mathf.RoundToInt(BossStats.LifeOf(r, null, lv) * tune.Life)).ToList();
+                Plugin.Log.LogInfo($"[平衡] 首领 {Bestiary.NameOf(rec)}（{kv.Key}，阶段 {r.Stage}）= 泰拉 {r.Boss.Name}，{tune.Note ?? "按原样"}：生命 ×{tune.Life:F2} {string.Join("/", lives)}（普通/困难/专家/大师），防御 {defense}（×{tune.Defense:F2}），" +
+                                   $"伤害 ×{World.Areas.BossDamage * tune.Damage:F2}（普通敌人的倍数），{(tune.Stun ? "能被打出硬直" : "霸体")}；最强武器 {(have.Count > 0 ? have[0].Name : "无")} {dps:F0}/秒，大师 {lives[3] / dps:F0} 秒；神居重打 大师 {Mathf.RoundToInt(BossStats.LifeOf(r, "GG_", DifficultyLevel.Master) * tune.Life)}");
             }
 
             // Things on offer earlier than their Terraria tier (rarity 4+ is hardmode, 7+ after Plantera, 10+ lunar):

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using TerraKnight.Items;
 using TerraKnight.World;
@@ -92,7 +93,10 @@ namespace TerraKnight
             }
 
             // Life Crystals: 24 in this save; eaten only as far as the masks and bosses allow.
-            Check(LifeCrystals.DevCount == LifeCrystals.PerSave, $"地上的生命水晶 {LifeCrystals.DevCount} 个（应 {LifeCrystals.PerSave}）");
+            var crystalScenes = LifeCrystals.DevScenes();
+            int later = crystalScenes.Count(sc => Areas.LevelOf(sc) > LifeCrystals.LastStage);
+            Check(LifeCrystals.DevCount == LifeCrystals.PerSave && later == 0,
+                $"地上的生命水晶 {LifeCrystals.DevCount} 个（应 {LifeCrystals.PerSave}），在阶段 {LifeCrystals.LastStage} 之后的场景 {later} 个：{string.Join("、", crystalScenes.Select(sc => sc + "/" + Areas.LevelOf(sc)))}");
             int masks0 = pd.maxHealthBase, eaten0 = mod.Stats.LifeCrystals;
             pd.maxHealthBase = 5;
             mod.Stats.LifeCrystals = LifeCrystals.Allowance();

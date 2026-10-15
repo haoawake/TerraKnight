@@ -1309,7 +1309,8 @@ namespace TerraKnight.Items
                 {
                     Class = ClassOf(p), FromProjectile = true, ProjDamage = p.Damage, ProjHits = p.Hits, Suppress = s.NoSetOnHit, NoGhost = s.NoGhost || s.NoSetOnHit,
                 };
-                float kb = p.Knockback * (s.KnockbackScale != null ? s.KnockbackScale(p) : 1f);
+                // A minion's or sentry's shot knocks nothing back.
+                float kb = p.MinionShot ? 0f : p.Knockback * (s.KnockbackScale != null ? s.KnockbackScale(p) : 1f);
                 // P:12855-12860: the Hive Pack's wasps go through 5 more defence.
                 int pen = Equipment.Current.ArmorPen + s.ArmorPen + (p.Kind == ProjKind.Wasp && Equipment.Current.StrongBees ? 5 : 0);
                 melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap);
@@ -1661,7 +1662,7 @@ namespace TerraKnight.Items
                     var hm = col.GetComponentInParent<HealthManager>();
                     if (hm == null || hm.isDead || !done.Add(hm.GetInstanceID())) continue;
                     float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-                    if (melee.HitWith(col, damage, s.BlastKnockback, 4f, facing, p.Pos)) hitEnemies++;
+                    if (melee.HitWith(col, damage, p.MinionShot ? 0f : s.BlastKnockback, 4f, facing, p.Pos)) hitEnemies++;
                 }
 
             // The player, if caught in it (Terraria's explosives hurt their owner).
@@ -1717,40 +1718,8 @@ namespace TerraKnight.Items
             return n;
         }
 
-        /// <summary>
-        /// The floors the Knight breaks by diving through them (quake_floor: it turns to a trigger
-        /// when a dive starts, and breaks when the diving Knight passes into it) and the floors
-        /// broken by striking them (break_floor) go in a blast.
-        /// </summary>
-        static int BreakSpecialFloors(Vector2 center, float radius)
-        {
-            int n = 0;
-            var seen = new HashSet<PlayMakerFSM>();
-            foreach (var col in Physics2D.OverlapCircleAll(center, radius))
-            {
-                foreach (var fsm in col.GetComponentsInParent<PlayMakerFSM>())
-                {
-                    if (!seen.Add(fsm)) continue;
-                    if (fsm.FsmName == "quake_floor")
-                    {
-                        fsm.SendEvent("QUAKE FALL START");
-                        fsm.SendEvent("DESTROY");
-                        n++;
-                    }
-                    else if (fsm.FsmName == "break_floor" && fsm.Fsm.GetState("Break") != null && fsm.ActiveStateName != "Break")
-                    {
-                        fsm.SetState("Break");
-                        n++;
-                    }
-                    else if (fsm.FsmName == "Detect Quake")
-                    {
-                        fsm.SendEvent("QUAKE");
-                        n++;
-                    }
-                }
-            }
-            return n;
-        }
+        /// <summary>The floors broken by a dive or by striking them, in a blast (World.DiveFloors).</summary>
+        static int BreakSpecialFloors(Vector2 center, float radius) => World.DiveFloors.BreakAround(center, radius);
 
         /// <summary>The blast counts as a few quick strikes for props that count nail hits.</summary>
         void PulseBlastProps()
@@ -2268,7 +2237,7 @@ namespace TerraKnight.Items
                 int id = hm.GetInstanceID();
                 if (id == p.LastHit || npcImmune.ContainsKey(id) || p.Immune.ContainsKey(id) || typeImmune.ContainsKey((p.Kind, id)) || !done.Add(id)) continue;
                 float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-                if (melee.HitWith(col, damage, knockback, p.Crit, facing, p.Pos, Equipment.Current.ArmorPen + p.Spec.ArmorPen)) hit.Add(id);
+                if (melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, p.Pos, Equipment.Current.ArmorPen + p.Spec.ArmorPen)) hit.Add(id);
             }
             return hit;
         }
@@ -2285,7 +2254,7 @@ namespace TerraKnight.Items
             int id = hm.GetInstanceID();
             if (col == null || npcImmune.ContainsKey(id)) return false;
             float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-            if (!melee.HitWith(col, damage, knockback, p.Crit, facing, col.bounds.center, Equipment.Current.ArmorPen + p.Spec.ArmorPen)) return false;
+            if (!melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, col.bounds.center, Equipment.Current.ArmorPen + p.Spec.ArmorPen)) return false;
             npcImmune[id] = 10;
             DevHits[p.Kind] = DevHit(p.Kind) + 1;
             return true;

@@ -174,6 +174,21 @@ namespace TerraKnight.Items
         static bool Ctrl => DevCtrl || Keyboard.current != null && (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed);
         static bool Alt => DevAlt || Keyboard.current != null && Keyboard.current.leftAltKey.isPressed;
 
+        /// <summary>Dev: the topmost click region at a GUI point, what a click there acts on ("Kind#index").</summary>
+        public static string DevHitAt(Vector2 gui)
+        {
+            for (int i = hits.Count - 1; i >= 0; i--)
+                if (hits[i].Rect.Contains(gui)) return hits[i].Kind + "#" + hits[i].Index;
+            return "无";
+        }
+
+        /// <summary>Dev: where a click region was last drawn (its kind's name and index).</summary>
+        public static Rect? DevRectOf(string kind, int index)
+        {
+            foreach (var h in hits) if (h.Kind.ToString() == kind && h.Index == index) return h.Rect;
+            return null;
+        }
+
         /// <summary>Dev: modifier keys held for the autotest, which has no keyboard.</summary>
         public static bool DevShift, DevCtrl, DevAlt;
 
@@ -323,6 +338,12 @@ namespace TerraKnight.Items
                 // ToggleFavorited.
                 slot.Favorite = !slot.Favorite;
                 Sound("Menu_Tick");
+                return;
+            }
+            // ItemSlot.OverrideHover / SellOrTrash: with an NPC's shop open, Shift+click sells the stack too.
+            if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.Permanent)
+            {
+                Town.TownNpcs.Sell(ref slot);
                 return;
             }
             if (Ctrl && !slot.IsEmpty && !slot.Favorite && !slot.Def.Permanent)
@@ -607,8 +628,9 @@ namespace TerraKnight.Items
                 bool here = CraftingHere;
                 if (here) foreach (var d in Shop.Basics) recipes.Add(Recipe.Bought(d, false));
                 int stage = Shop.UnlockedStage();
+                var near = World.Chests.ForCrafting(HeroController.SilentInstance);
                 foreach (var r in Recipes.All)
-                    if (CanMakeHere(r, here, stage) && Fits(r.Def) && Recipes.HasIngredients(r, inv)) recipes.Add(r);
+                    if (CanMakeHere(r, here, stage) && Fits(r.Def) && Recipes.HasIngredients(r, inv, near)) recipes.Add(r);
                 // A basic item that can be made from what is carried isn't offered for money as well (a torch from wood and gel).
                 var made = new HashSet<ItemType>();
                 foreach (var r in recipes) if (!r.IsBought) made.Add(r.Result);
@@ -669,6 +691,7 @@ namespace TerraKnight.Items
             if (!held || blocked || preventCraft || stackSplit > 1 || (!Shop.Free && !r.IsBought && !CanMakeHere(r, CraftingHere, Shop.UnlockedStage())) || (r.IsBought && !CraftingHere)) return;
             int count = (superFastStack + 1) * (Shift ? 10 : 1);
             int made = 0;
+            var near = r.IsBought ? null : World.Chests.ForCrafting(HeroController.SilentInstance);
             for (int k = 0; k < count; k++)
             {
                 // TryAllowingToCraftRecipe: an empty cursor, or the same item with room on it.
@@ -684,8 +707,8 @@ namespace TerraKnight.Items
                 else
                 {
                     // Recipe.Create: the ingredients go, the result comes onto the cursor.
-                    if (!Recipes.HasIngredients(r, inv)) break;
-                    Recipes.Consume(r, inv);
+                    if (!Recipes.HasIngredients(r, inv, near)) break;
+                    Recipes.Consume(r, inv, near);
                 }
                 if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(r.Result, 0);
                 inv.Mouse.Count += r.Count;
@@ -973,6 +996,7 @@ namespace TerraKnight.Items
             if (kind == Kind.Slot && Alt) icon = "UI/Cursor_3";
             else if (kind == Kind.Slot && hovered.Favorite) return;
             else if (kind == Kind.Slot && Ctrl) icon = Town.TownNpcs.ShopOpen ? "UI/Cursor_10" : "UI/Cursor_6";
+            else if (kind == Kind.Slot && Shift && Town.TownNpcs.ShopOpen) icon = "UI/Cursor_10";
             else if ((kind == Kind.Armor || kind == Kind.Accessory) && Alt) icon = "UI/Cursor_3";
             else if ((kind == Kind.Armor || kind == Kind.Accessory || kind == Kind.Trash) && Shift) icon = "UI/Cursor_7";
             if (icon == null) return;
@@ -1053,6 +1077,8 @@ namespace TerraKnight.Items
                             Shop.Purse >= r.Cost ? new Color(144 / 255f, 238 / 255f, 144 / 255f) : new Color(1f, 140 / 255f, 160 / 255f));
                     }
                     else
+                    {
+                        var near = World.Chests.ForCrafting(HeroController.SilentInstance);
                         for (int k = 0; k < r.Ingredients.Length; k++)
                         {
                             var (t, n) = r.Ingredients[k];
@@ -1061,7 +1087,7 @@ namespace TerraKnight.Items
                             var rect = new Rect(p.x, p.y, 52f * 0.6f * ui, 52f * 0.6f * ui);
                             GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back4"));
                             DrawIconOnly(rect, ItemStack.Of(t));
-                            int have = Recipes.Count(inv, t);
+                            int carried = Recipes.Count(inv, t), have = Recipes.Count(inv, t, near);
                             Outlined(new Rect(rect.x + 2f * ui, rect.yMax - 16f * ui, 60f * ui, 16f * ui), n.ToString(), labelStyle,
                                 have >= n ? Color.white : new Color(1f, 140 / 255f, 160 / 255f));
                             panels.Add(rect);
@@ -1069,9 +1095,10 @@ namespace TerraKnight.Items
                             {
                                 hovered = ItemStack.Of(t);
                                 hoveredKind = Kind.Recipe;
-                                hoveredExtra = Lang.F("背包里有 {0}", have);
+                                hoveredExtra = have > carried ? Lang.F("背包里有 {0}，附近的箱子里有 {1}", carried, have - carried) : Lang.F("背包里有 {0}", have);
                             }
                         }
+                    }
                 }
             }
 

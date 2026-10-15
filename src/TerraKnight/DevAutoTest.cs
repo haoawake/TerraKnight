@@ -261,7 +261,17 @@ namespace TerraKnight
             // The menu flow plays its saves itself (Boot): nothing else runs in them.
             if (suite == "menuflow") yield break;
             yield return new WaitForSeconds(3f);
-            while (!GameHooks.PlayerHasControl()) yield return null;
+            // A loaded save starts on its bench: up, as a player gets up (a key press).
+            float nextGetUp = Time.time + 3f;
+            while (!GameHooks.PlayerHasControl())
+            {
+                if (Time.time >= nextGetUp && PlayerData.instance != null && PlayerData.instance.atBench)
+                {
+                    nextGetUp = Time.time + 3f;
+                    yield return Tap(UnityEngine.InputSystem.Key.Space);
+                }
+                yield return null;
+            }
 
             var terrain = TerrainSystem.Current;
             var hero = HeroController.instance;
@@ -562,7 +572,7 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
-            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "respawnblock" || suite == "lightmap" || suite == "worldspawn" || suite == "hookjump" || suite == "terrarecoil" || suite == "v241" || suite == "dropscroll" || suite.StartsWith("npcfloor") || suite == "hook" || suite == "v240fix" || suite == "quit" || suite == "suicide" || suite == "dreamnail")
+            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "respawnblock" || suite == "lightmap" || suite == "worldspawn" || suite == "hookjump" || suite == "terrarecoil" || suite == "v241" || suite == "dropscroll" || suite == "shopcheck" || suite == "dropvisible" || suite == "craftchest" || suite == "crystalmove" || suite == "v250" || suite.StartsWith("npcfloor") || suite.StartsWith("quakeall") || suite == "quakepick" || suite == "quakedump" || suite == "essence" || suite == "sealscan" || suite == "mapbuy" || suite == "shopsell" || suite == "spaenemies" || suite == "lemm" || suite == "hatchling" || suite == "quirrel" || suite == "sealroom" || suite == "clothenemies" || suite == "v250e" || suite == "v250f" || suite == "v250d" || suite == "v250c" || suite == "v250b" || suite == "hook" || suite == "v240fix" || suite == "quit" || suite == "suicide" || suite == "dreamnail")
             {
                 if (suite == "fsmdump") yield return FsmDumpTest();
                 else if (suite == "stag") yield return StagTest(hero);
@@ -579,7 +589,70 @@ namespace TerraKnight
                 else if (suite == "terrarecoil") yield return TerraRecoilTest();
                 else if (suite == "v241") yield return V241Test();
                 else if (suite == "dropscroll") yield return DropScrollTest();
-                else if (suite.StartsWith("npcfloor") && int.TryParse(suite.Substring(8), out int npcPart)) yield return NpcFloorTest(npcPart);
+                else if (suite == "shopcheck") yield return ShopCheckTest();
+                else if (suite == "dropvisible") yield return DropVisibleTest();
+                else if (suite == "craftchest") yield return CraftChestTest();
+                else if (suite == "crystalmove") yield return CrystalMoveTest();
+                else if (suite == "v250")
+                {
+                    yield return DropVisibleTest();
+                    yield return CraftChestTest();
+                    yield return CrystalMoveTest();
+                    yield return V241Test();
+                }
+                else if (suite.StartsWith("npcfloor") && int.TryParse(suite.Substring(8, 1), out int npcPart)) yield return NpcFloorTest(npcPart, suite.Contains("@") ? suite.Substring(suite.IndexOf('@') + 1) : null);
+                else if (suite.StartsWith("quakeall") && int.TryParse(suite.Substring(8, 1), out int quakePart)) yield return QuakeAllTest(quakePart, suite.Contains("@") ? suite.Substring(suite.IndexOf('@') + 1) : null);
+                else if (suite == "quakedump") yield return QuakeDumpTest();
+                else if (suite == "quakepick") yield return QuakePickTest();
+                else if (suite == "essence") yield return EssenceTest();
+                else if (suite == "sealscan") yield return SealScanTest();
+                else if (suite == "mapbuy") yield return MapBuyTest();
+                else if (suite == "shopsell") yield return ShopSellTest();
+                else if (suite == "spaenemies") yield return SpaEnemiesTest();
+                else if (suite == "lemm") yield return LemmTest();
+                else if (suite == "hatchling") yield return HatchlingTest();
+                else if (suite == "quirrel") yield return QuirrelTest();
+                else if (suite == "sealroom") yield return SealRoomTest();
+                else if (suite == "clothenemies") yield return ClothEnemiesTest();
+                else if (suite == "v250f")
+                {
+                    yield return ClothEnemiesTest();
+                    yield return HatchlingTest();
+                    yield return QuirrelTest();
+                }
+                else if (suite == "v250e")
+                {
+                    yield return ClothEnemiesTest();
+                    yield return QuirrelTest();
+                    yield return HatchlingTest();
+                    yield return EssenceTest();
+                }
+                else if (suite == "v250d")
+                {
+                    yield return QuirrelTest();
+                    yield return SealRoomTest();
+                    yield return HatchlingTest();
+                    yield return ShopSellTest();
+                    yield return EssenceTest();
+                }
+                else if (suite == "v250c")
+                {
+                    yield return QuirrelTest();
+                    yield return ShopSellTest();
+                    yield return HatchlingTest();
+                    yield return EssenceTest();
+                    yield return SealScanTest();
+                }
+                else if (suite == "v250b")
+                {
+                    yield return QuakeDumpTest();
+                    yield return LemmTest();
+                    yield return MapBuyTest();
+                    yield return ShopSellTest();
+                    yield return SpaEnemiesTest();
+                    yield return EssenceTest();
+                    yield return SealScanTest();
+                }
                 else if (suite == "v240fix")
                 {
                     yield return WorldSpawnTest();

@@ -17,7 +17,7 @@ namespace TerraKnight
     {
         const int NpcFloorParts = 3;
 
-        IEnumerator NpcFloorTest(int part)
+        IEnumerator NpcFloorTest(int part, string resumeAt = null)
         {
             var scenes = new List<string>();
             foreach (var s in UI.WorldMap.DevSceneNames())
@@ -28,6 +28,8 @@ namespace TerraKnight
             }
             scenes.Sort(System.StringComparer.Ordinal);
             int from = scenes.Count * (part - 1) / NpcFloorParts, to = scenes.Count * part / NpcFloorParts;
+            // "npcfloor3@Scene": from that scene on (after a run that stopped).
+            if (resumeAt != null) from = Mathf.Max(from, scenes.IndexOf(resumeAt));
             Plugin.Log.LogInfo($"[AutoTest] NPC脚下 第{part}段：{from}..{to - 1}（共 {scenes.Count} 个场景）");
             const int terrain = 1 << ChunkColliders.TerrainLayer;
             int npcs = 0, problems = 0, scenesWith = 0;
@@ -58,6 +60,10 @@ namespace TerraKnight
                 var h = HeroController.instance;
                 foreach (var fsm in found)
                 {
+                    // Revek attacks whoever comes near (his dream ghost kills through invincibility).
+                    if (fsm == null || fsm.gameObject.name.Contains("revek")) continue;
+                    if (gm.sceneName != scene) break;
+                    PlayerData.instance.isInvincible = true;
                     npcs++;
                     var root = fsm.transform;
                     // The NPC's body: its biggest renderer's bounds (the talk region's collider is wider than it).

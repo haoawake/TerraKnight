@@ -49,11 +49,16 @@ namespace TerraKnight.UI
             public bool Captured, RevealAll, AnySeen, Dirty = true;
             /// <summary>Filled from the world atlas (creative), not from the scene itself: not kept in the save.</summary>
             public bool FromAtlas;
+            /// <summary>Its area's map bought (Cornifer, Iselda): the whole room drawn, its Life Crystals still only where seen.</summary>
+            public bool Charted;
             public float LastBuilt;
             public Texture2D Solid, Open;
             public Color Hue;
 
             public bool IsSeen(int x, int y) { int i = y * W + x; return (Seen[i >> 3] & (1 << (i & 7))) != 0; }
+            /// <summary>Drawn on the map: seen, or its area's map bought.</summary>
+            public bool Shows(int x, int y) => Charted || IsSeen(x, y);
+            public bool AnyShown => AnySeen || Charted;
             public bool SetSeen(int x, int y)
             {
                 int i = y * W + x;
@@ -67,7 +72,7 @@ namespace TerraKnight.UI
         static readonly Dictionary<string, Room> rooms = new Dictionary<string, Room>();
         static readonly HashSet<CellGrid> watched = new HashSet<CellGrid>();
         static readonly Queue<string> toCapture = new Queue<string>();
-        static float nextReveal, nextCapture;
+        static float nextReveal, nextCapture, nextChart;
         static Vector2 lastHead;
         static bool haveHead;
 
@@ -107,6 +112,11 @@ namespace TerraKnight.UI
             {
                 nextReveal = now + 0.15f;
                 Reveal();
+            }
+            if (now >= nextChart)
+            {
+                nextChart = now + 1f;
+                ChartBought();
             }
         }
 
@@ -456,7 +466,7 @@ namespace TerraKnight.UI
                     int i = y * room.W + x;
                     solid[i] = clear;
                     open[i] = clear;
-                    if (!room.IsSeen(x, y)) continue;
+                    if (!room.Shows(x, y)) continue;
                     var t = (Tile)room.Tiles[i];
                     if (IsSolid(t)) solid[i] = colors[(int)t];
                     else if (room.Wets[i] != 0) open[i] = wets[room.Wets[i]];
@@ -467,9 +477,10 @@ namespace TerraKnight.UI
                 Color32 c = ObjColor(o.Kind);
                 for (int y = Mathf.Max(0, o.Cells.yMin); y < Mathf.Min(room.H, o.Cells.yMax); y++)
                     for (int x = Mathf.Max(0, o.Cells.xMin); x < Mathf.Min(room.W, o.Cells.xMax); x++)
-                        if (room.IsSeen(x, y)) open[y * room.W + x] = c;
+                        if (room.Shows(x, y)) open[y * room.W + x] = c;
             }
-            // The Life Crystals lying here (two cells on two, their bottom middle at the spot), once their cells are seen.
+            // The Life Crystals lying here (two cells on two, their bottom middle at the spot), once their cells are seen
+            // (a bought map doesn't show them: they are found by exploring).
             Color32 crystal = ObjColor(Obj.LifeCrystal);
             foreach (var (scene, local) in LifeCrystals.Standing())
             {
@@ -601,7 +612,7 @@ namespace TerraKnight.UI
             var visible = new List<(Room room, Rect rect)>();
             foreach (var room in rooms.Values)
             {
-                if (!room.Captured || !room.AnySeen || !Shown(room)) continue;
+                if (!room.Captured || !room.AnyShown || !Shown(room)) continue;
                 var a = ToScreen(new Vector2(room.At.x, room.At.y + room.H));
                 var b = ToScreen(new Vector2(room.At.x + room.W, room.At.y));
                 var rect = Rect.MinMaxRect(a.x, a.y, b.x, b.y);
@@ -741,9 +752,9 @@ namespace TerraKnight.UI
             string solidName = null;
             foreach (var room in rooms.Values)
             {
-                if (!room.Captured || !room.AnySeen || !Shown(room)) continue;
+                if (!room.Captured || !room.AnyShown || !Shown(room)) continue;
                 int x = gx - room.At.x, y = gy - room.At.y;
-                if (x < 0 || y < 0 || x >= room.W || y >= room.H || !room.IsSeen(x, y)) continue;
+                if (x < 0 || y < 0 || x >= room.W || y >= room.H || !room.Shows(x, y)) continue;
                 foreach (var o in room.Things)
                     if (o.Cells.Contains(new Vector2Int(x, y))) return o.Name;
                 int i = y * room.W + x;
@@ -855,6 +866,8 @@ namespace TerraKnight.UI
             rooms.Clear();
             watched.Clear();
             toCapture.Clear();
+            // The bought maps' rooms (from the atlas, not kept) are charted again for the save now loaded.
+            chartedKey = "";
             haveHead = false;
             Open = false;
         }

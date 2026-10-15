@@ -29,6 +29,7 @@ namespace TerraKnight.Player
             ("hasDoubleJump", Items.ItemType.CloudinaBottle), // Monarch Wings
             ("gotCharm_37", Items.ItemType.HermesBoots),     // Sprintmaster
             ("hasAcidArmour", Items.ItemType.Flipper),       // Isma's Tear
+            ("quakeLevel", Items.ItemType.DeadCellsRamRune), // Desolate Dive: the slam breaks the dive floors
         };
 
         /// <summary>

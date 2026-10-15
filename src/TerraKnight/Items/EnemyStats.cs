@@ -30,6 +30,8 @@ namespace TerraKnight.Items
             public string Record;
             /// <summary>Terraria damage dealt that didn't make a whole point of the enemy's own health yet.</summary>
             public float Carry;
+            /// <summary>A boss that can be broken off: Terraria damage dealt towards its next stagger (<see cref="BossBalance.StunCounts"/>).</summary>
+            public float StunCarry;
             /// <summary>Time of the last Terraria hit it took.</summary>
             public float LastHit = -100f;
             /// <summary>A boss's Terraria stand-in (<see cref="BossStats"/>), or null.</summary>
@@ -42,10 +44,12 @@ namespace TerraKnight.Items
             /// health; any other, the level's (its toughness, <see cref="World.Areas.LevelHealth"/>, included).
             /// </summary>
             public float Scale => Ref != null
-                ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) / (float)Mathf.Max(1, MaxHp)
+                ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossBalance.Pool(Record, Hm, out int fills) / (float)Mathf.Max(1, MaxHp * fills)
                 : World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss);
             /// <summary>Terraria defense: a boss's stand-in's, else the level's.</summary>
-            public int Defense => Ref != null ? BossStats.DefenseOf(Ref) : World.Areas.Defense(Level);
+            public int Defense => Ref != null ? Mathf.RoundToInt(BossStats.DefenseOf(Ref) * Tune.Defense) : World.Areas.Defense(Level);
+            /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
+            public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }
 
         // By instance id: destroyed Unity objects compare equal to each other.
@@ -174,7 +178,7 @@ namespace TerraKnight.Items
         static readonly HashSet<string> pushedElites = new HashSet<string> { "GorgeousHusk" };
 
         /// <summary>How much harder than the area's common enemies this one hits.</summary>
-        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage : info.Elite ? World.Areas.EliteDamage : 1f;
+        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage * (info.Ref != null ? info.Tune.Damage : 1f) : info.Elite ? World.Areas.EliteDamage : 1f;
 
         /// <summary>Godhome gives its bosses (and only them) health per difficulty.</summary>
         static bool HasBossScale(HealthManager hm)
@@ -205,6 +209,14 @@ namespace TerraKnight.Items
             hm.isDead ? 0 : Mathf.Max(0, Mathf.CeilToInt((hm.hp - info.Carry) * info.Scale));
 
         public static int LifeMax(Info info) => Mathf.CeilToInt(info.MaxHp * info.Scale);
+
+        /// <summary>
+        /// A boss's whole life, over all its pools and refills (its stand-in's, tuned: <see cref="BossBalance"/>);
+        /// any other enemy's, its own.
+        /// </summary>
+        public static int LifeWhole(Info info) => info.Ref != null
+            ? Mathf.CeilToInt(BossStats.LifeOf(info.Ref, info.Scene, World.GameDifficulty.Current, info.GodhomeTier) * info.Tune.Life)
+            : LifeMax(info);
 
         /// <summary>
         /// NPC.StrikeNPC: the defense takes half its value off the hit (Main.CalculateDamageNPCsTake),

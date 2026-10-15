@@ -288,6 +288,27 @@ namespace TerraKnight.World
             }
         }
 
+        /// <summary>How far around the player's hitbox the chests' items count for crafting (8 tiles).</summary>
+        public const int CraftTiles = 8;
+
+        /// <summary>
+        /// The slots of the chests standing within <see cref="CraftTiles"/> tiles of the player's hitbox
+        /// in a loaded scene: crafting counts and uses their items after the inventory's.
+        /// </summary>
+        public static List<ItemStack[]> ForCrafting(HeroController hero)
+        {
+            var list = new List<ItemStack[]>();
+            if (hero == null) return list;
+            var col = hero.GetComponent<BoxCollider2D>();
+            if (col == null) return list;
+            var b = col.bounds;
+            float reach = CraftTiles * CellGrid.CellSize;
+            var around = Rect.MinMaxRect(b.min.x - reach, b.min.y - reach, b.max.x + reach, b.max.y + reach);
+            foreach (var c in chests)
+                if (c.Region != null && !c.Bank && around.Overlaps(c.Box)) list.Add(c.Items);
+            return list;
+        }
+
         /// <summary>
         /// Quick Stack to Nearby Chests (QuickStacking.QuickStackToNearbyChests): the bag below the
         /// hotbar, not its favourites, onto every chest within 600 px (NearbyChests.GetChestsInRangeOf)

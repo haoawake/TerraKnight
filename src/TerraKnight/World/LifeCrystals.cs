@@ -7,13 +7,14 @@ namespace TerraKnight.World
 {
     /// <summary>
     /// Life Crystals lying in the world, as Terraria's caves have them (WorldGen.AddLifeCrystal):
-    /// each save picks its own 24 scenes outside the boss rooms, from King's Pass, the Crossroads,
-    /// Greenpath and the Howling Cliffs to the Fungal Wastes, Fog Canyon, Queen's Gardens, the City,
-    /// the Waterways, Crystal Peak and Deepnest, and in each, the first time it is loaded, a spot on
+    /// each save picks its own 24 scenes of the first two stages, outside the boss rooms (King's Pass,
+    /// the Crossroads and Greenpath; the Fungal Wastes, Fog Canyon and the Howling Cliffs: past them
+    /// the player has the life already), and in each, the first time it is loaded, a spot on
     /// two cells of even ground with room above, reachable from the scene's gates and away from
     /// spikes, acid and water. The crystal is drawn from its tile (12, ten frames of six ticks); a
     /// pickaxe knocks it out as a Life Crystal, and so does digging away the ground under it. Kept
-    /// in the mod's save; a save with fewer is given the rest. How many the player can eat is
+    /// in the mod's save; a save with fewer is given the rest, and one still lying in a later stage's
+    /// scene (from 2.4.1) is moved to one of the first two. How many the player can eat is
     /// <see cref="Allowance"/>: the ground gives more crystals than that, the rest of the fifteen
     /// open with masks and bosses.
     /// </summary>
@@ -41,8 +42,8 @@ namespace TerraKnight.World
         const float Z = 0.0045f;
         const float Cell = CellGrid.CellSize;
 
-        /// <summary>The early scenes a crystal may lie in: the boss arenas are left out.</summary>
-        static readonly string[] Prefixes = { "Tutorial_01", "Crossroads_", "Fungus1_", "Cliffs_", "Fungus2_", "Fungus3_", "Ruins1_", "Ruins2_", "Waterways_", "Mines_", "Deepnest_" };
+        /// <summary>The stages whose scenes a crystal may lie in (Areas.LevelOf): the first two.</summary>
+        public const int LastStage = 1;
         static readonly HashSet<string> Arenas = new HashSet<string> { "Crossroads_04", "Crossroads_09", "Crossroads_10", "Fungus1_04", "Fungus1_20_v02", "Fungus1_35" };
 
         sealed class Crystal
@@ -90,8 +91,8 @@ namespace TerraKnight.World
             var list = new List<string>();
             foreach (var s in UI.WorldMap.DevSceneNames())
             {
-                if (Arenas.Contains(s) || BossRooms.IsRoom(s)) continue;
-                foreach (var p in Prefixes) if (s.StartsWith(p)) { list.Add(s); break; }
+                if (Arenas.Contains(s) || BossRooms.IsRoom(s) || s.StartsWith("GG_") || s.StartsWith("Dream_") || s.StartsWith("Room_")) continue;
+                if (Areas.LevelOf(s) <= LastStage) list.Add(s);
             }
             list.Sort(System.StringComparer.Ordinal);
             return list;
@@ -150,11 +151,27 @@ namespace TerraKnight.World
             Seed = seed;
             foreach (var s in saved)
                 crystals.Add(new Crystal { Scene = s.Scene, Local = s.Placed ? s.Local : (Vector2?)null, Taken = s.Taken });
+            var have = new HashSet<string>(Scenes());
+            // One still lying in a later stage's scene (2.4.1 spread them further): to a scene of the first two.
+            int moved = 0;
+            var order = Order(Seed);
+            int next = 0;
+            foreach (var c in crystals)
+            {
+                if (c.Taken || Areas.LevelOf(c.Scene) <= LastStage) continue;
+                while (next < order.Count && have.Contains(order[next])) next++;
+                if (next >= order.Count) break;
+                have.Remove(c.Scene);
+                c.Scene = order[next];
+                c.Local = null;
+                have.Add(c.Scene);
+                moved++;
+            }
+            if (moved > 0) Plugin.Log.LogInfo($"[生命水晶] {moved} 个还没挖的生命水晶从后面阶段的场景挪到前两个阶段：{string.Join("、", Scenes())}");
             // A save from before there were 24: the rest from its own order, past the scenes it has.
             if (crystals.Count >= PerSave) return;
-            var have = new HashSet<string>(Scenes());
             int before = crystals.Count;
-            foreach (var scene in Order(Seed))
+            foreach (var scene in order)
             {
                 if (crystals.Count >= PerSave) break;
                 if (have.Add(scene)) crystals.Add(new Crystal { Scene = scene });
