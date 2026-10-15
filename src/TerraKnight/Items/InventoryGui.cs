@@ -601,15 +601,12 @@ namespace TerraKnight.Items
         /// <summary>
         /// Recipe.FindRecipes: the recipes whose ingredients are all in the inventory and whose
         /// station the progress has reached, plus the basic items bought for geo; while testing,
-        /// everything for free. Each loadout sees its own class's weapons, armor and accessories
-        /// plus the general items.
+        /// everything for free. Every loadout sees every recipe, of whichever class.
         /// </summary>
         static void RefreshRecipes()
         {
             int keep = focus >= 0 && focus < recipes.Count ? (int)recipes[focus].Result : -1;
             recipes.Clear();
-            var kit = inv.LoadoutKit;
-            bool Fits(ItemDef d) => d.Kit == Kit.General || d.Kit == kit;
             var guide = Town.TownNpcs.GuideCraftOpen ? Town.TownNpcs.GuideItem : default;
             if (!guide.IsEmpty)
             {
@@ -619,8 +616,7 @@ namespace TerraKnight.Items
             }
             else if (Shop.Free)
             {
-                foreach (var d in Shop.Everything)
-                    if (Fits(d)) recipes.Add(Recipe.Bought(d, true));
+                foreach (var d in Shop.Everything) recipes.Add(Recipe.Bought(d, true));
             }
             else
             {
@@ -630,7 +626,7 @@ namespace TerraKnight.Items
                 int stage = Shop.UnlockedStage();
                 var near = World.Chests.ForCrafting(HeroController.SilentInstance);
                 foreach (var r in Recipes.All)
-                    if (CanMakeHere(r, here, stage) && Fits(r.Def) && Recipes.HasIngredients(r, inv, near)) recipes.Add(r);
+                    if (CanMakeHere(r, here, stage) && Recipes.HasIngredients(r, inv, near)) recipes.Add(r);
                 // A basic item that can be made from what is carried isn't offered for money as well (a torch from wood and gel).
                 var made = new HashSet<ItemType>();
                 foreach (var r in recipes) if (!r.IsBought) made.Add(r.Result);

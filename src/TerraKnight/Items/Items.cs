@@ -225,9 +225,8 @@ namespace TerraKnight.Items
     internal enum ItemSource : byte { Basic, Shop, Craft, Drop }
 
     /// <summary>
-    /// Which class's crafting list an item is in: the four loadouts are one per class, and a
-    /// loadout's crafting column shows its class's weapons, armor and accessories plus the
-    /// General ones (blocks, tools, potions, ammo, movement and defence gear).
+    /// Which class an item serves: its weapons, armor and accessories, or General (blocks, tools,
+    /// potions, ammo, movement and defence gear). Every loadout's crafting column shows them all.
     /// </summary>
     internal enum Kit : byte { General, Melee, Ranged, Magic, Summon }
     internal enum AmmoKind : byte { None, Arrow, Bullet, FallenStar, Rocket, Dart, Sand, Gel, Flare, Snowball, StyngerBolt, CandyCorn, JackOLantern, Stake, Nail, Ale, Acorn }
@@ -963,7 +962,7 @@ namespace TerraKnight.Items
         public int Shoe, Waist, Balloon, Wing, Shield, Neck, Back, HandOn, HandOff;
         /// <summary>faceSlot (Acc_Face_N, on the head) and frontSlot (Acc_Front_N, the cape's front halves).</summary>
         public int Face, Front;
-        /// <summary>The class whose crafting list it is in (<see cref="Items.Kit"/>).</summary>
+        /// <summary>The class it serves (<see cref="Items.Kit"/>).</summary>
         public Kit Kit;
         /// <summary>A summon staff: the minion it calls and the buff (Buff_N) that keeps its minions.</summary>
         public MinionKind Minion;
