@@ -91,6 +91,11 @@ namespace TerraKnight.Items
         {
             if (hm == null) return false;
             if (hm.GetComponent<Climber>() != null) return true;
+            // A part of another enemy goes where its owner puts it: the False Knight's head, pushed on its own
+            // while he lay stunned, stayed where the blows left it, and the game brought it out from there the
+            // next times, beyond the arena's gates, away from the head drawn on his body.
+            var up = hm.transform.parent;
+            if (up != null && up.GetComponentInParent<HealthManager>() != null) return true;
             var recoil = recoilOf(hm);
             var body = hm.GetComponent<Rigidbody2D>();
             return recoil != null && recoil.freezeInPlace && body != null && body.gravityScale == 0f;
