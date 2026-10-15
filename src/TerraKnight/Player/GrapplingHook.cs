@@ -17,7 +17,7 @@ namespace TerraKnight.Player
     /// pulled at the kind's speed toward the middle of the holding hooks (the Anti-Gravity Hook
     /// lets them float about its hook, the Static Hook holds them still, reeled in and out along
     /// the rope; the Squirrel Hook hangs them a little off it; the Queen Slime's hook takes them
-    /// there at once). Jump lets go of them all (a full jump if barely moving) and gives back the
+    /// there at once). Jump lets go of them all with a jump (down held: only lets go) and gives back the
     /// double jumps; hanging on refreshes rocket boots, wings and the flying carpet. The hooks go
     /// when the player dies or the game moves him. Chains are drawn link by link as Main.DrawProj
     /// draws each kind's.
@@ -375,7 +375,7 @@ namespace TerraKnight.Player
         /// <summary>The held direction keys as Terraria's control vector (y down), turned with gravity.</summary>
         static Vector2 InputVector()
         {
-            var a = InputHandler.Instance != null ? InputHandler.Instance.inputActions : null;
+            var a = GameHooks.Input != null ? GameHooks.Input.inputActions : null;
             if (a == null) return Vector2.zero;
             float x = (a.right.IsPressed ? 1f : 0f) - (a.left.IsPressed ? 1f : 0f);
             float y = (a.down.IsPressed ? 1f : 0f) - (a.up.IsPressed ? 1f : 0f);
@@ -464,8 +464,10 @@ namespace TerraKnight.Player
 
         void LetGoWithJump(HeroController hero)
         {
-            var input = InputHandler.Instance.inputActions;
-            bool jump = slow && !input.down.IsPressed && !(standingPullDown && !input.up.IsPressed);
+            var input = GameHooks.Input.inputActions;
+            // Off a hook always with a jump, moving or not (Terraria's GrappleMovement jumps only from a hook it
+            // hangs still on, and a jump pressed while still pulled only let go and fell); down held only lets go.
+            bool jump = !input.down.IsPressed && !(standingPullDown && !input.up.IsPressed);
             Note("跳跃松开");
             hooks.Clear();
             doubleJumped(hero) = false;
@@ -584,7 +586,7 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "LookForQueueInput")]
         static void BeforeQueueInput(HeroController __instance)
         {
-            if (!IsLatched || !Playing(__instance) || InputHandler.Instance == null || !InputHandler.Instance.inputActions.jump.WasPressed) return;
+            if (!IsLatched || !Playing(__instance) || GameHooks.Input == null || !GameHooks.Input.inputActions.jump.WasPressed) return;
             consumedJumpFrame = Time.frameCount;
             Instance.LetGoWithJump(__instance);
         }

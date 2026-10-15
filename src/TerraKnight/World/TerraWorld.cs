@@ -14,6 +14,14 @@ namespace TerraKnight.World
         /// <summary>The grid of the scene being played.</summary>
         public static TerrainRegion Live => TerrainSystem.Current != null ? TerrainSystem.Current.Region : null;
 
+        /// <summary>The game's own ground there (a boss room's): the grid's helpers (steps, unsticking) leave the player to it.</summary>
+        public static bool OwnGroundAt(Vector2 world)
+        {
+            var c = CellGrid.WorldToCell(world);
+            var r = RegionAt(c.x, c.y);
+            return r != null && r.SceneOwnGround;
+        }
+
         public static TerrainRegion RegionAt(int gx, int gy)
         {
             var live = Live;

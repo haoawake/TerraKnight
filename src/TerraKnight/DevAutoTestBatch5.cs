@@ -95,7 +95,7 @@ namespace TerraKnight
             long held4 = GeoWallet.Held(inv);
             Check("吉欧物品", held1 == held0 + 50 && held2 == held1 - 10 && spent && held3 == held2 - 20 && pd3 == held3 && held4 == held3 + 12,
                 $"开始 {held0}；原版加 50 → {held1}；原版扣 10 → {held2}；商店花 20 → {held3}（原版吉欧 {pd3}）；收入 12.34 → {held4}，零头 {Shop.SpareCopper} 铜，最大叠 {ItemDb.Get(ItemType.Geo).MaxStack}");
-            // Into the Piggy Bank: the bag empties, the game's geo follows, buying draws on the bank.
+            // Into the Piggy Bank: the bag empties, the game's geo still counts it (the bank pays the game's tolls too), buying draws on the bank.
             for (int i = 0; i < inv.Slots.Length; i++)
                 if (!inv.Slots[i].IsEmpty && inv.Slots[i].Type == ItemType.Geo) { inv.Bank[0] = inv.Slots[i]; inv.Slots[i] = default; }
             yield return null; yield return null;
@@ -103,7 +103,7 @@ namespace TerraKnight
             long purse = Shop.Purse;
             bool paid = Shop.Spend(500);
             yield return null;
-            Check("存钱罐", pdAfterBank == 0 && paid && GeoWallet.Banked(inv) == held4 - 5,
+            Check("存钱罐", pdAfterBank == held4 && paid && GeoWallet.Banked(inv) == held4 - 5,
                 $"钱放进存钱罐后原版吉欧 {pdAfterBank}，总钱 {purse} 铜；花 5 吉欧 {(paid ? "成功" : "失败")}，存钱罐剩 {GeoWallet.Banked(inv)}");
             inv.Slots[Inventory.HotbarSize + 5] = inv.Bank[0];
             inv.Bank[0] = default;

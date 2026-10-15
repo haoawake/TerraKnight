@@ -76,7 +76,10 @@ namespace TerraKnight.Items
             FSMUtility.SendEventToGameObject(hitInstance.Source, "HIT LANDED");
             if (go.GetComponent<DontClinkGates>() == null)
             {
-                FSMUtility.SendEventToGameObject(go, "HIT");
+                // Not to a body a weak point of it reports its hits to (the False Knight's head sends him HIT):
+                // a blow on its shut armor isn't one on the head, and a Terraria weapon's stream of them held his
+                // stun open for good, the head out and him never fighting again.
+                if (!TakesForwardedHits(__instance)) FSMUtility.SendEventToGameObject(go, "HIT");
                 if (!preventInvincibleEffect(__instance) && boxCollider(__instance) != null)
                 {
                     string side = dir switch { 0 => "BLOCKED HIT R", 2 => "BLOCKED HIT L", 1 => "BLOCKED HIT U", 3 => "BLOCKED DOWN", _ => null };
@@ -84,6 +87,16 @@ namespace TerraKnight.Items
                 }
             }
             evasionByHitRemaining(__instance) = 0.15f;
+            return false;
+        }
+
+        static readonly AccessTools.FieldRef<HealthManager, GameObject> sendHitTo = AccessTools.FieldRefAccess<HealthManager, GameObject>("sendHitTo");
+
+        /// <summary>Whether a part of this enemy passes its hits on to it (HealthManager.sendHitTo: the False Knight's head to his body).</summary>
+        static bool TakesForwardedHits(HealthManager hm)
+        {
+            foreach (var part in hm.GetComponentsInChildren<HealthManager>(true))
+                if (part != hm && sendHitTo(part) == hm.gameObject) return true;
             return false;
         }
 

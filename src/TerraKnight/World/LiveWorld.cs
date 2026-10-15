@@ -1327,9 +1327,64 @@ namespace TerraKnight.World
                         }
                         return;
                     }
+                    // Up through a gate in the roof: as the game's own entry from below does, a push up and
+                    // to the side for a moment, onto the ledge beside the shaft (else a jump that only just
+                    // crosses the line falls straight back into the room below).
+                    var body = hero.GetComponent<Rigidbody2D>();
+                    bool rising = link.Side == GatePosition.top && body != null && body.linearVelocity.y > 0f;
                     Promote(link);
+                    if (rising) StartCoroutine(EnterFromBelow(hero, link.EntryGate));
                     return;
                 }
+            }
+        }
+
+        public static int DevLifts;
+
+        /// <summary>
+        /// HeroController.EnterScene from a bottom gate: the hero set three units over the gate (and
+        /// its entryOffset: the ledge beside the shaft), then SPEED_TO_ENTER_SCENE_HOR sideways (the
+        /// gate's alwaysEnterLeft/Right, else the way the player holds or faces) and
+        /// SPEED_TO_ENTER_SCENE_UP up for TIME_TO_ENTER_SCENE_BOT; then he drops as he would. Here
+        /// he is carried there in a fifth of a second instead of put there, when he is below it and
+        /// the way is clear.
+        /// </summary>
+        System.Collections.IEnumerator EnterFromBelow(HeroController hero, TransitionPoint gate)
+        {
+            var body = hero.GetComponent<Rigidbody2D>();
+            if (gate != null && body != null)
+            {
+                var box = hero.GetComponent<BoxCollider2D>();
+                Vector2 feetOffset = (Vector2)hero.transform.position - (Vector2)box.bounds.center;
+                Vector2 target = (Vector2)gate.transform.position + gate.entryOffset + new Vector2(0f, 3f);
+                Vector2 from = hero.transform.position;
+                bool clear = Physics2D.OverlapBox(target - feetOffset, box.bounds.size * 0.9f, 0f, 1 << ChunkColliders.TerrainLayer) == null;
+                Plugin.Log.LogInfo($"[无缝] 从下面进：门 {gate.name} 的落点 {target:F1}（主角 {from:F1}，{(clear ? "空着" : "被挡住")}）");
+                if (target.y > from.y && clear)
+                {
+                    const float carry = 0.2f;
+                    var v = (target - from) / carry;
+                    for (float t = 0f; t < carry; t += Time.fixedDeltaTime)
+                    {
+                        yield return new WaitForFixedUpdate();
+                        if (body == null || hero.cState.dead || hero.cState.transitioning) yield break;
+                        body.linearVelocity = v;
+                    }
+                }
+            }
+            float dir = gate != null && gate.alwaysEnterRight ? 1f : gate != null && gate.alwaysEnterLeft ? -1f
+                : Player.TerraMovement.DevMove != 0 ? Player.TerraMovement.DevMove
+                : GameHooks.Input != null && GameHooks.Input.inputActions.left.IsPressed ? -1f
+                : GameHooks.Input != null && GameHooks.Input.inputActions.right.IsPressed ? 1f
+                : hero.cState.facingRight ? 1f : -1f;
+            var push = new Vector2(dir * hero.SPEED_TO_ENTER_SCENE_HOR, hero.SPEED_TO_ENTER_SCENE_UP);
+            DevLifts++;
+            Plugin.Log.LogInfo($"[无缝] 从下面进 {GameManager.instance?.sceneName}：像原版一样往上推 {push:F1}，{hero.TIME_TO_ENTER_SCENE_BOT:F2} 秒");
+            for (float t = 0f; t < hero.TIME_TO_ENTER_SCENE_BOT; t += Time.fixedDeltaTime)
+            {
+                yield return new WaitForFixedUpdate();
+                if (body == null || hero.cState.dead || hero.cState.transitioning) yield break;
+                body.linearVelocity = push;
             }
         }
 

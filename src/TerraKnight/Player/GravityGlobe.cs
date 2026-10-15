@@ -89,7 +89,7 @@ namespace TerraKnight.Player
         public static void Tick(HeroController hero)
         {
             if (hero == null || depth != 0) return;
-            bool press = DevUpPress || (InputHandler.Instance != null && InputHandler.Instance.inputActions.up.WasPressed);
+            bool press = DevUpPress || (GameHooks.Input != null && GameHooks.Input.inputActions.up.WasPressed);
             DevUpPress = false;
             var cs = hero.cState;
             if (!Equipment.Current.GravityControl || cs.dead || cs.hazardDeath || cs.hazardRespawning || cs.transitioning)

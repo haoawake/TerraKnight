@@ -103,6 +103,7 @@ namespace TerraKnight
             GrapplingHook.Create(transform);
             Effects.TerraParticles.Create(transform);
             Effects.FxBatch.Create(transform);
+            World.LightMap.Create(transform);
             WorldItems.Create(transform);
             Chests.Create(transform);
             Stations.Create(transform);
@@ -228,7 +229,7 @@ namespace TerraKnight
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
             bool gameplay = hero != null && GameHooks.IsGameplay(gm);
-            if (gm != null) TerraControls.Apply(InputHandler.Instance, gameplay && !gm.isPaused && TerrainSystem.Current != null);
+            if (gm != null) TerraControls.Apply(GameHooks.Input, gameplay && !gm.isPaused && TerrainSystem.Current != null);
             Net.NetChat.Tick(gameplay && !gm.isPaused);
             // A new game's summoning out of the portal (no fall down King's Pass).
             if (hero != null && gm != null && !gm.isPaused) OpeningPortal.Tick(hero);
@@ -268,8 +269,10 @@ namespace TerraKnight
                 if (Creative) Shop.KeepCreativeGeo(hero);
                 BossArena.Tick();
                 RoarRelease.Tick(hero);
+                BenchGetUp.Tick(hero);
                 GrantAbilityAccessories(dt);
                 DreamNailItem.Tick(this, HeroController.SilentInstance);
+                NailItem.Tick(this, HeroController.SilentInstance);
                 GeoWallet.Tick(this);
                 GeoItem.EnsureIcon();
                 HoldFrameRate();
@@ -561,9 +564,9 @@ namespace TerraKnight
 
         /// <summary>
         /// The cell the held tool acts on: the one under the mouse, or with smart cursor on, the
-        /// block Terraria's pickaxe smart cursor picks (<see cref="Items.SmartCursor"/>). Blocks are
-        /// always placed under the mouse (Terraria's smart block placement is off by default).
-        /// smart tells whether the smart cursor chose it, which is when Terraria marks the tile.
+        /// block Terraria's pickaxe smart cursor picks (<see cref="Items.SmartCursor"/>), and for a
+        /// block the nearest place it can go (<see cref="SmartBlock"/>). smart tells whether the
+        /// smart cursor chose it, which is when Terraria marks the tile.
         /// </summary>
         bool FindTarget(HeroController hero, ItemDef def, Vector2 mouse, out Vector2Int cell, out bool smart)
         {
@@ -591,7 +594,38 @@ namespace TerraKnight
                 smart = true;
                 return true;
             }
+            if (SmartCursor && def.Places != CellKind.Empty && Cells.Blocks(def.Places) && SmartBlock(bounds, def, mouse, out var spot))
+            {
+                cell = spot;
+                smart = true;
+                return true;
+            }
             return InReach(bounds, def, cell) && CanAct(def, cell);
+        }
+
+        /// <summary>
+        /// SmartCursorHelper.Step_BlocksLines: the mouse on an empty cell in reach, the block goes to
+        /// the reachable empty cell nearest the mouse that a solid block borders on one side (and that
+        /// nothing stands in), so a line or a bridge is laid by sweeping the mouse along it.
+        /// </summary>
+        static bool SmartBlock(Bounds hitbox, ItemDef def, Vector2 mouse, out Vector2Int spot)
+        {
+            spot = default;
+            var at = CellGrid.WorldToCell(mouse);
+            if (TerraWorld.Get(at.x, at.y) != CellKind.Empty || !InReach(hitbox, def, at)) return false;
+            var reach = ReachBox(hitbox, def);
+            var candidates = new List<(float D, Vector2Int Cell)>();
+            for (int x = reach.xMin; x < reach.xMax; x++)
+                for (int y = reach.yMin; y < reach.yMax; y++)
+                {
+                    if (TerraWorld.Get(x, y) != CellKind.Empty) continue;
+                    if (!(TerraWorld.IsSolid(x - 1, y) || TerraWorld.IsSolid(x + 1, y) || TerraWorld.IsSolid(x, y - 1) || TerraWorld.IsSolid(x, y + 1))) continue;
+                    candidates.Add((Vector2.Distance(CellGrid.CellCenter(x, y), mouse), new Vector2Int(x, y)));
+                }
+            candidates.Sort((a, b) => a.D.CompareTo(b.D));
+            foreach (var (_, c) in candidates)
+                if (CanPlace(c, def.Places)) { spot = c; return true; }
+            return false;
         }
 
         /// <summary>Dev: whether an item aimed at a point has something to act on (FindTarget), and which cell.</summary>
@@ -1102,7 +1136,8 @@ namespace TerraKnight
             }
             int hardness = ItemDb.Hardness(kind);
             miningDamage += pick.PickPower * hardness;
-            PlaySound((hardness > 1 ? "Dig_" : "Tink_") + Random.Range(0, 3));
+            // Tile.soundType: rock tinks, the soft blocks and wood dig.
+            PlaySound((kind == CellKind.Original || kind == CellKind.Stone ? "Tink_" : "Dig_") + Random.Range(0, 3));
             // WorldGen.KillTile with fail: a few dust of the tile's kind on every hit, more when it breaks.
             if (miningDamage < MineThreshold)
             {
@@ -1282,7 +1317,8 @@ namespace TerraKnight
         {
             var hero = HeroController.SilentInstance;
             on &= hero != null && playerSprite.gameObject.activeSelf;
-            if (on && helmetLight == null) helmetLight = Glow.CreateLight(transform, new Color(1f, 0.95f, 0.85f, 0.16f));
+            // Player.Update, head 11: Lighting.AddLight at the head, 0.92 0.8 0.65.
+            if (on && helmetLight == null) helmetLight = Glow.CreateLight(transform, new Color(1f, 0.95f, 0.85f, 0.16f), new Color(0.92f, 0.8f, 0.65f));
             if (helmetLight == null) return;
             if (helmetLight.gameObject.activeSelf != on) helmetLight.gameObject.SetActive(on);
             if (!on) return;
@@ -1387,7 +1423,7 @@ namespace TerraKnight
             if (gm == null) return;
             // The pause action is off during play (Escape opens the inventory); switch it back on now
             // so the menu can be closed with Escape.
-            TerraControls.Apply(InputHandler.Instance, false);
+            TerraControls.Apply(GameHooks.Input, false);
             gm.StartCoroutine(gm.PauseGameToggleByMenu());
         }
 
@@ -1404,7 +1440,9 @@ namespace TerraKnight
             if (pd == null) return;
             foreach (var (flag, item) in PlayerHooks.AbilityItems)
             {
-                if (GrantedAbilities.Contains(flag) || !pd.GetBool(flag)) continue;
+                // Isma's tear read as the save has it: GetBool also counts worn flippers (PlayerHooks.EquipmentFlags).
+                bool has = flag == "hasAcidArmour" ? pd.hasAcidArmour : pd.GetBool(flag);
+                if (GrantedAbilities.Contains(flag) || !has) continue;
                 GrantedAbilities.Add(flag);
                 if (Inventory.Owns(item)) continue;
                 Inventory.Add(item);
@@ -1945,6 +1983,10 @@ namespace TerraKnight
         float fallPeak;
         bool wasGrounded = true;
         bool fallReset;
+        /// <summary>Control came back after a way into a room with the Knight not yet on his feet.</summary>
+        bool entryFall;
+        /// <summary>Dev: the last fall that hurt or was let off, as logged.</summary>
+        public static string DevLastFall;
 
         /// <summary>A fall starts again from here (Terraria resets fallStart while hooked).</summary>
         public void ResetFall() => fallReset = true;
@@ -1952,12 +1994,20 @@ namespace TerraKnight
         /// <summary>
         /// Terraria fall damage: measured from where the player stopped rising, 10 per tile beyond
         /// 25 tiles. Scene entries, hazard respawns and other moves the game makes are not falls.
+        /// Nor is the drop a room is entered by: many of the game's rooms are entered through a gate
+        /// above their floor, the Knight already falling when control comes back (the Broken Vessel's
+        /// from its upper right). The first landing after a gate doesn't hurt unless he stood first.
+        /// Boss rooms take none at all: nothing can be dug or built there to climb down by.
         /// </summary>
         void UpdateFallDamage(HeroController hero, float feetY, float vy)
         {
             bool grounded = hero.cState.onGround;
             if (fallReset || !GameHooks.PlayerHasControl() || hero.cState.hazardRespawning || hero.cState.dead)
             {
+                var gm = GameManager.UnsafeInstance;
+                // A way in from the side or from below (falling in through a top gate is the player's own drop).
+                if (gm != null && (gm.IsInSceneTransition || hero.cState.transitioning || gm.gameState == GlobalEnums.GameState.ENTERING_LEVEL))
+                    entryFall = !(gm.entryGateName ?? "").StartsWith("top");
                 fallPeak = feetY;
                 wasGrounded = grounded;
                 fallReset = false;
@@ -1968,7 +2018,10 @@ namespace TerraKnight
                 int tiles = Mathf.FloorToInt((fallPeak - feetY) / CellGrid.CellSize);
                 // 25 tiles (35 with the Frog Leg's extraFall) before it hurts; never with wings on (!hasWings).
                 int safe = 25 + Equipment.Current.ExtraFall;
-                if (tiles > safe && !DevNoFallDamage && !Equipment.Current.NoFallDamage && !TerraMovement.HasWings && !TerraHurt.DodgeFall(hero))
+                string scene = GameManager.UnsafeInstance?.sceneName;
+                bool spared = tiles > safe && (entryFall || BossRooms.IsRoom(scene));
+                if (spared) Plugin.Log.LogInfo(DevLastFall = $"[摔落] {scene} 摔下 {tiles} 格：{(entryFall ? "进房间的落差" : "首领房间")}，不算伤害");
+                if (tiles > safe && !spared && !DevNoFallDamage && !Equipment.Current.NoFallDamage && !TerraMovement.HasWings && !TerraHurt.DodgeFall(hero))
                 {
                     int raw = (tiles - safe) * 10;
                     TerraHurt.BeforeHurt();
@@ -1976,12 +2029,14 @@ namespace TerraKnight
                     TerraHurt.AfterHurt(hero, raw, damage, true);
                     CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), CombatText.PlayerHurt);
                     TerraHurt.LastDamage = damage;
+                    Plugin.Log.LogInfo(DevLastFall = $"[摔落] {scene} 摔下 {tiles} 格（安全 {safe} 格）：伤害 {damage}，剩 {Stats.Life}{(Stats.IsDead ? "，摔死了" : "")}");
                     if (!Stats.IsDead) PlaySound(Equipment.WerewolfNow ? "NPC_Hit_6" : "Player_Hit_" + Random.Range(0, 3));
                     // Out of life: let the game kill the hero through its normal damage path.
                     if (Stats.IsDead) hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1);
                 }
             }
             if (grounded || vy > 0f) fallPeak = feetY;
+            if (grounded) entryFall = false;
             wasGrounded = grounded;
         }
 
@@ -2158,6 +2213,7 @@ namespace TerraKnight
             InfoAccessories.Draw(Inventory, Stats);
             InventoryGui.Draw(Inventory, SmartCursor);
             BestiaryToast.Draw();
+            CenterNotice.Draw();
             Net.NetChat.Draw();
             UI.IngameOptions.Draw();
         }

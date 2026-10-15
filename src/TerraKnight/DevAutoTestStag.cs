@@ -138,12 +138,17 @@ namespace TerraKnight
             if (kb != null) InputSystem.QueueStateEvent(kb, new KeyboardState(keys));
         }
 
-        /// <summary>A key pressed for a moment and let go.</summary>
+        /// <summary>The keys taps hold down now: taps running at once (a jump while a key is pressed) keep each other's keys.</summary>
+        static readonly System.Collections.Generic.List<Key> tapHeld = new System.Collections.Generic.List<Key>();
+
+        /// <summary>A key pressed for a moment and let go (any other tap's key still held stays held).</summary>
         static IEnumerator Tap(Key key, float hold = 0.15f)
         {
-            KeysDown(key);
+            tapHeld.Add(key);
+            KeysDown(tapHeld.ToArray());
             yield return new WaitForSecondsRealtime(hold);
-            KeysDown();
+            tapHeld.Remove(key);
+            KeysDown(tapHeld.ToArray());
             yield return new WaitForSecondsRealtime(0.2f);
         }
 

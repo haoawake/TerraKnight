@@ -9,7 +9,9 @@ namespace TerraKnight.World
     /// carries on past the one the player is in (Dirtmouth's sky, a cliff's open side, a room's far
     /// side with nothing beyond), the player stops at its edge as at a wall instead of flying off into
     /// nothing. A gate there (a door into a scene not loaded, a transition the seamless world leaves
-    /// to the game) still lets the player through to it.
+    /// to the game) still lets the player through to it. Held at the bottom a moment, he has fallen
+    /// into a pit: the game's pit hazard takes him back to the last safe ground, as its own pit
+    /// triggers do further down (a dream's platforms over the void, the Dream Nail's trial).
     /// </summary>
     [HarmonyPatch]
     internal static class WorldBorder
@@ -25,6 +27,8 @@ namespace TerraKnight.World
         static readonly List<Bounds> gates = new List<Bounds>();
         static int gatesForScenes = -1;
         static float gatesAt = -10f;
+        static float bottomSince = -1f;
+        public static int DevPits;
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
@@ -73,6 +77,16 @@ namespace TerraKnight.World
                 shift.x = Mathf.Max(0f, left + Inset - b.min.x);
                 if (v.x < 0f) v.x = 0f;
                 side = (side ?? "") + "左";
+            }
+            if (side == null || !side.Contains("下")) bottomSince = -1f;
+            else if (bottomSince < 0f) bottomSince = Time.time;
+            else if (Time.time - bottomSince > 0.3f)
+            {
+                bottomSince = -1f;
+                DevPits++;
+                Plugin.Log.LogInfo($"[边界] {home.SceneName} 掉出了场景底部：当作掉进深坑，回到上一个安全落脚点");
+                __instance.TakeDamage(null, GlobalEnums.CollisionSide.bottom, 1, 1 + (int)GlobalEnums.HazardType.PIT);
+                return;
             }
             if (side == null) return;
             ___rb2d.linearVelocity = v;

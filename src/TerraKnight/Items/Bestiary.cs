@@ -117,7 +117,7 @@ namespace TerraKnight.Items
             {
                 Life = EnemyStats.LifeMax(info), Defense = info.Defense, Level = info.Level,
                 Damage = info.Harmful ? masks * Mathf.RoundToInt(World.Areas.DamagePerMask(info.Level) * EnemyStats.DamageFactor(info)) : 0,
-                Knockback = EnemyStats.Unstoppable(info) || TerraKnockback.Immune(hm) ? 0f : World.Areas.KnockbackTaken(info.Level),
+                Knockback = EnemyStats.NoKnockback(info) || TerraKnockback.Immune(hm) ? 0f : World.Areas.KnockbackTaken(info.Level),
                 Boss = info.Boss, Elite = info.Elite, Scene = hm.gameObject.scene.name,
             };
         }

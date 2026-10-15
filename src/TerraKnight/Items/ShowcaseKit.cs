@@ -108,8 +108,9 @@ namespace TerraKnight.Items
             {
                 var wornArmor = l == 0 ? inv.Armor : inv.Loadouts[l].Armor;
                 var wornAcc = l == 0 ? inv.Accessories : inv.Loadouts[l].Accessories;
-                for (int i = 0; i < Inventory.ArmorSlots; i++) wornArmor[i] = Stack(armor[l][i]);
-                for (int i = 0; i < Inventory.AccessorySlots; i++) wornAcc[i] = Stack(accessories[l][i]);
+                // Seven accessory slots (the Demon Heart's included): the kit's six, the last left empty.
+                for (int i = 0; i < Inventory.ArmorSlots; i++) wornArmor[i] = i < armor[l].Length ? Stack(armor[l][i]) : default;
+                for (int i = 0; i < Inventory.AccessorySlots; i++) wornAcc[i] = i < accessories[l].Length ? Stack(accessories[l][i]) : default;
             }
             // The melee bag is out; the other three wait with their loadouts.
             if (!inv.BagPerLoadout) Plugin.Log.LogWarning("[创造] 展示装备：这个存档只有一个背包，只放近战的");

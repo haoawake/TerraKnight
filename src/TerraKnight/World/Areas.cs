@@ -181,6 +181,10 @@ namespace TerraKnight.World
             // Godhome-named rooms that are ordinary parts of the world (spec-hkenemies 1.4).
             if (Starts(scene, "GG_Pipeway", "GG_Waterways")) return 2;
             if (Starts(scene, "GG_Lurker")) return 4;
+            // The dream bosses' rooms (and their Godhome halls) at their own stage (Items.BossStats); their tables stay "record@5" (EnemyDrops.VariantLevel).
+            if (scene == "Dream_01_False_Knight" || scene == "GG_Failed_Champion") return 2;
+            if (scene == "Dream_02_Mage_Lord" || scene == "GG_Soul_Tyrant") return 3;
+            if (scene == "Dream_03_Infected_Knight" || scene == "GG_Lost_Kin") return 4;
             if (Starts(scene, "White_Palace", "GG_", "Dream_", "Grimm_", "Room_Final", "Abyss_15")) return 5;
             if (Starts(scene, "Room_Tram")) return 3;
             switch (AreaName(scene))

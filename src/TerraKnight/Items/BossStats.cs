@@ -127,6 +127,12 @@ namespace TerraKnight.Items
             ["MimicSpider"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
             ["GhostGalien"] = R(3, WallOfFlesh.Of(0.5f, "一半")),
             ["GhostXero"] = R(3, WallOfFlesh.Of(0.5f, "一半")),
+            // The three dream bosses come with the Dream Nail, long before the end: each a step past its waking self
+            // (the Failed Champion with Skeletron, the Soul Tyrant with the Wall of Flesh, the Lost Kin with the
+            // Destroyer), in their dreams and in Godhome alike. (Their old stand-ins' spoils went to Godhome's gods.)
+            ["FalseKnight@5"] = R(2, Skeletron),
+            ["MageLord@5"] = R(3, WallOfFlesh),
+            ["InfectedKnight@5"] = R(4, Destroyer),
             // Stage 4: hardmode, the Queen Slime (the Colosseum, in Kingdom's Edge), the mechanical bosses, Plantera.
             ["Oblobble"] = R(4, QueenSlime.Of(0.5f, "两只分")),
             ["LobsterLancer"] = R(4, QueenSlime.Of(0.6f, "六成")),
@@ -140,9 +146,7 @@ namespace TerraKnight.Items
             ["GreyPrince"] = R(5, Mothron),
             ["NightmareGrimm"] = R(5, DukeFishron),
             ["HollowKnight"] = R(5, Golem),
-            ["FalseKnight@5"] = R(5, MartianSaucer),
-            ["MageLord@5"] = R(5, Betsy),
-            ["InfectedKnight@5"] = R(5, EmpressOfLight),
+
             // Godhome's gods, one class of the Moon Lord's spoils each, and the Radiance: the Moon Lord.
             ["Nailsage"] = R(5, MoonLord),
             ["NailBros"] = R(5, MoonLord.Of(0.5f, "两人分")),

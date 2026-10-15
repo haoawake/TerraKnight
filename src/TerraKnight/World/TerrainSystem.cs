@@ -43,6 +43,9 @@ namespace TerraKnight.World
         /// <param name="prebuilt">A grid already rasterised from this map (by <see cref="BuildGrid"/>), to use instead of building another.</param>
         public static TerrainSystem AttachTo(tk2dTileMap map, string sceneName, bool makeCurrent = true, CellGrid prebuilt = null)
         {
+            // The game's map asks for the tilemap without naming a scene (GameMap: RefreshTilemapInfo(null)): the
+            // map's own scene is the one, or the room would be built nameless (no boss room, no town) for good.
+            if (string.IsNullOrEmpty(sceneName)) sceneName = map.gameObject.scene.name;
             var existing = map.GetComponent<TerrainSystem>();
             if (existing == null)
             {
@@ -156,6 +159,9 @@ namespace TerraKnight.World
             return grid;
         }
 
+        /// <summary>A boss room: the game's own colliders and tilemap stand, the grid's are off.</summary>
+        public bool SceneOwnGround { get; private set; }
+
         bool Setup(tk2dTileMap map, string sceneName, CellGrid prebuilt, bool buildNow)
         {
             var sw = Stopwatch.StartNew();
@@ -186,7 +192,14 @@ namespace TerraKnight.World
             Region.SetOffset(CellOffsetOf(map));
             // While the hand-placed colliders still answer point queries: which cells and art are whose.
             Region.TrackHandPlaced(extra, SceneArt(map));
-            foreach (var col in originals) col.enabled = false;
+            // A boss room keeps the game's own ground, its colliders and its art: nothing is dug or built there
+            // (World.BossRooms), and its bosses run, dash and land on the edges they were made for (the False
+            // Knight stuck on a cell's corner, Hornet's dash into a wall). The grid stays, unseen and solid to
+            // nothing, for what reads it (shots against the ground, the map).
+            SceneOwnGround = BossRooms.IsRoom(sceneName);
+            Region.SceneOwnGround = SceneOwnGround;
+            if (SceneOwnGround) root.SetActive(false);
+            else foreach (var col in originals) col.enabled = false;
             float largest = 0f;
             foreach (var col in extra)
             {
@@ -199,7 +212,7 @@ namespace TerraKnight.World
                     FirstHandPlaced = col;
                     FirstHandPlacedBounds = col.bounds;
                 }
-                col.enabled = false;
+                if (!SceneOwnGround) col.enabled = false;
             }
             if (skipped.Count > 0)
             {
@@ -214,6 +227,7 @@ namespace TerraKnight.World
             int hiddenMeshes = 0;
             foreach (var mr in map.renderData.GetComponentsInChildren<MeshRenderer>(true))
             {
+                if (SceneOwnGround) break;
                 if (mr.gameObject.layer != ChunkColliders.TerrainLayer || !mr.enabled) continue;
                 mr.enabled = false;
                 hiddenMeshes++;
@@ -224,7 +238,7 @@ namespace TerraKnight.World
             Plugin.Log.LogInfo($"[{sceneName}] 地形格子化：tilemap {map.width}x{map.height} 位置 {map.transform.position}，" +
                                $"{originals.Count} 条原版轮廓{(prebuilt != null ? "（格子沿用试放时的）" : $" / {segments} 段")} + {extra.Count} 个手放碰撞体 -> {grid.Width}x{grid.Height} 格，" +
                                $"{(prebuilt != null ? "" : $"实心 {filled}，")}碰撞盒 {Region.BoxCount}，替换 {hiddenMeshes} 块地图网格，{Holes.ArtCount} 个可抠前景精灵，" +
-                               $"{sw.ElapsedMilliseconds} ms（格子 {gridMs} ms）");
+                               $"{sw.ElapsedMilliseconds} ms（格子 {gridMs} ms）{(SceneOwnGround ? "；首领房间：保留原版地形碰撞和贴图" : "")}");
             return true;
         }
 

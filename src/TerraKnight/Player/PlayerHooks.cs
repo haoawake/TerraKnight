@@ -33,8 +33,8 @@ namespace TerraKnight.Player
 
         /// <summary>
         /// The game asks "has the lumafly lantern?" before lighting a dark room, and "has Isma's
-        /// tear?" before letting acid be swum in. A worn mining helmet lights dark rooms too;
-        /// swimming in acid takes the flippers (Isma's tear gives them).
+        /// tear?" before letting acid be swum in. A worn mining helmet lights dark rooms too; worn
+        /// flippers let acid be swum in too (Isma's tear also gives a pair).
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PlayerData), nameof(PlayerData.GetBool))]
@@ -43,7 +43,7 @@ namespace TerraKnight.Player
             if (!Active) return;
             // The mining helmet, and the Night Owl potion (nightVision: the dark is seen through), light the dark rooms as the lantern does.
             if (boolName == "hasLantern") __result |= Items.Equipment.Current.Light || Items.Equipment.Current.NightVision;
-            else if (boolName == "hasAcidArmour") __result = Items.Equipment.Current.Swim;
+            else if (boolName == "hasAcidArmour") __result |= Items.Equipment.Current.Swim;
         }
 
         // --- Hollow Knight abilities: nail, spells, focus, dream nail, crystal heart are gone. ---
@@ -56,9 +56,11 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanFocus))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanSuperDash))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanBackDash))]
-        static bool Disabled(ref bool __result)
+        static bool Disabled(ref bool __result, System.Reflection.MethodBase __originalMethod)
         {
             if (!Active) return true;
+            // The nail item in hand: the game's own nail checks (Items.NailItem).
+            if (__originalMethod.Name == "CanAttack" && Items.NailItem.LetsAttack) return true;
             __result = false;
             return false;
         }

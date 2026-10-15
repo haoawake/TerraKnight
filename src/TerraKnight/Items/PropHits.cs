@@ -75,7 +75,9 @@ namespace TerraKnight.Items
         /// <summary>One hit on a collider: a stand-in nail slash on it, if it is a prop that answers one.</summary>
         public static void Pulse(Collider2D col, Vector2 from, float facing, int damage)
         {
-            if (col == null || !col.enabled || !Listens(col)) return;
+            if (col == null || !col.enabled) return;
+            if (Revek(col)) return;
+            if (!Listens(col)) return;
             int id = col.GetInstanceID();
             float now = Time.time;
             if (lastPulse.TryGetValue(id, out float last) && now - last < Cooldown) return;
@@ -146,9 +148,49 @@ namespace TerraKnight.Items
             return false;
         }
 
-        /// <summary>A stand-in slash is a hit landing on a prop, not the Knight's blade at the wall: no recoil off hard things for it.</summary>
+        /// <summary>
+        /// Revek, the Spirits' Glade's guard, has no health: only the nail's parry of his slash
+        /// (nail_clash_tink, then TAKE DAMAGE) or the Dream Nail disperses him for a while. Terraria
+        /// has no parry: any hit of the player's on him or his blade while he waits to strike, winds up
+        /// or slashes (his Control's states that take TAKE DAMAGE) counts as one. True for any of his.
+        /// </summary>
+        public static bool Revek(Collider2D col)
+        {
+            var t = col.transform;
+            Transform root = null;
+            for (int i = 0; i < 3 && t != null && root == null; i++, t = t.parent)
+                if (t.name == "Ghost Battle Revek") root = t;
+            if (root == null) return false;
+            var control = PlayMakerFSM.FindFsmOnGameObject(root.gameObject, "Control");
+            string st = control != null ? control.ActiveStateName : "";
+            if (st == "Slash Idle" || st == "Slash Antic" || st == "Slash")
+            {
+                FSMUtility.SendEventToGameObject(root.gameObject, "TAKE DAMAGE");
+                DevRevek++;
+                Plugin.Log.LogInfo($"[瑞维克] 在 {st} 被打中：打散");
+            }
+            return true;
+        }
+
+        public static int DevRevek;
+
+        /// <summary>
+        /// A stand-in slash (a pulse's, a weapon swing's, a blast's) is a hit landing on a prop, not
+        /// the Knight's blade at the wall: no recoil off hard things for it (TinkEffect pushes the
+        /// Knight back off spikes, armour and shells it hits), nor its clank. Terraria's weapons
+        /// never push the player back for what they hit.
+        /// </summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(TinkEffect), "OnTriggerEnter2D")]
-        static bool NoTinkFromPulses(Collider2D collision) => collision == null || !pulseObjects.Contains(collision.gameObject);
+        static bool NoTinkFromPulses(Collider2D collision)
+        {
+            if (collision == null) return true;
+            var go = collision.gameObject;
+            if (!pulseObjects.Contains(go) && !NailAttackProxy.IsAnyProxy(go)) return true;
+            DevTinksStopped++;
+            return false;
+        }
+
+        public static int DevTinksStopped;
     }
 }

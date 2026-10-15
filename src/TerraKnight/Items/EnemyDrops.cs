@@ -50,7 +50,13 @@ namespace TerraKnight.Items
         static readonly HashSet<string> wakingRematches = new HashSet<string> { "GG_False_Knight", "GG_Soul_Master", "GG_Broken_Vessel" };
 
         /// <summary>The level whose own table a kill in this scene uses (<see cref="KeyFor"/>): the scene's, but a waking boss's Godhome rematch none (its usual table).</summary>
-        public static int VariantLevel(string scene) => wakingRematches.Contains(scene) ? -1 : World.Areas.LevelOf(scene);
+        public static int VariantLevel(string scene) => wakingRematches.Contains(scene) ? -1 : dreamBosses.Contains(scene) ? 5 : World.Areas.LevelOf(scene);
+
+        /// <summary>The dream bosses' rooms: fought at their own stage (World.Areas.LevelOf), their tables still "record@5".</summary>
+        static readonly HashSet<string> dreamBosses = new HashSet<string>
+        {
+            "Dream_01_False_Knight", "Dream_02_Mage_Lord", "Dream_03_Infected_Knight", "GG_Failed_Champion", "GG_Soul_Tyrant", "GG_Lost_Kin",
+        };
 
         public static bool Known(string record) => record != null && table.ContainsKey(record);
 

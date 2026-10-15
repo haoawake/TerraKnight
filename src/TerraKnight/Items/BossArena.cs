@@ -98,6 +98,15 @@ namespace TerraKnight.Items
             return a;
         }
 
+        /// <summary>Dev: every world boss beaten, as the game records it (each arena's beaten flags the other way from a visit's).</summary>
+        internal static void DevAllBeaten()
+        {
+            var pd = PlayerData.instance;
+            foreach (var a in arenas.Values)
+                if (a.Kind == Kind.World)
+                    foreach (var (name, v) in a.Beaten) pd.SetBool(name, !v);
+        }
+
         /// <summary>Dev: a world arena's way in by the book's key ("Hornet@4"), and the flags its fight needs of the player.</summary>
         internal static bool DevWorldArena(string key, out string gate, out (string Name, bool Value)[] needs)
         {

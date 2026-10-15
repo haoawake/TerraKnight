@@ -26,6 +26,8 @@ namespace TerraKnight.Items
             /// <summary>Hurts on touch (npc.damage > 0, for the Radar): has a DamageHero dealing damage.</summary>
             public bool Harmful;
             public string Name;
+            /// <summary>Its journal record (UI.EnemyHover.RecordOf).</summary>
+            public string Record;
             /// <summary>Terraria damage dealt that didn't make a whole point of the enemy's own health yet.</summary>
             public float Carry;
             /// <summary>Time of the last Terraria hit it took.</summary>
@@ -101,6 +103,7 @@ namespace TerraKnight.Items
                     Name = DisplayName(hm.gameObject.name),
                 };
                 string record = UI.EnemyHover.RecordOf(hm);
+                info.Record = record;
                 string kind = EnemyDrops.KindOf(record);
                 info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp);
                 info.Elite = !info.Boss && EliteKind(record, info.MaxHp);
@@ -158,6 +161,17 @@ namespace TerraKnight.Items
 
         /// <summary>Bosses and elites: no stagger and no knockback (Terraria's bosses are never interrupted).</summary>
         public static bool Unstoppable(Info info) => info != null && (info.Boss || info.Elite);
+
+        /// <summary>
+        /// Takes no knockback: a boss or elite (knockBackResist 0), but not the Gorgeous Husk (the
+        /// game's own nail pushes it, unlike the other uniques); nor a Bluggsac sitting on its egg
+        /// or a Fungoon hanging in the air, which the game never moves either.
+        /// </summary>
+        public static bool NoKnockback(Info info) =>
+            info != null && (fixedInPlace.Contains(info.Record) || Unstoppable(info) && !pushedElites.Contains(info.Record));
+
+        static readonly HashSet<string> fixedInPlace = new HashSet<string> { "EggSac", "FungusFlyer" };
+        static readonly HashSet<string> pushedElites = new HashSet<string> { "GorgeousHusk" };
 
         /// <summary>How much harder than the area's common enemies this one hits.</summary>
         public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage : info.Elite ? World.Areas.EliteDamage : 1f;

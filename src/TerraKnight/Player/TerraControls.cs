@@ -14,9 +14,9 @@ namespace TerraKnight.Player
         static HeroActions boundFor;
         static int boundVersion = -1;
         /// <summary>The keys this mod added to each of the Knight's actions (so a new binding can take the old one's place).</summary>
-        static readonly System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource> added = new System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource>();
+        static readonly System.Collections.Generic.Dictionary<PlayerAction, BindingSource> added = new System.Collections.Generic.Dictionary<PlayerAction, BindingSource>();
         /// <summary>The Terraria key each action should answer to, ours or the game's own.</summary>
-        static readonly System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource> wanted = new System.Collections.Generic.Dictionary<PlayerAction, KeyBindingSource>();
+        static readonly System.Collections.Generic.Dictionary<PlayerAction, BindingSource> wanted = new System.Collections.Generic.Dictionary<PlayerAction, BindingSource>();
 
         public static void Apply(InputHandler input, bool inPlay)
         {
@@ -74,8 +74,8 @@ namespace TerraKnight.Player
                 action.RemoveBinding(old);
                 added.Remove(action);
             }
-            if (!TerraKeys.ToInControl(TerraKeys.Get(which), out var key)) { wanted.Remove(action); return; }
-            var source = new KeyBindingSource(key);
+            var source = TerraKeys.ToInControlSource(TerraKeys.Get(which));
+            if (source == null) { wanted.Remove(action); return; }
             wanted[action] = source;
             if (action.HasBinding(source)) return;
             action.AddBinding(source);

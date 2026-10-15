@@ -113,9 +113,11 @@ namespace TerraKnight
                     var g = GameManager.instance;
                     var h = HeroController.instance;
                     InventoryGui.Open = false;
-                    Plugin.Log.LogInfo($"[AutoTest] 最终起身：{g.sceneName} 切换={g.IsInSceneTransition} timeScale={Time.timeScale} 输入={h.acceptingInput} 交出控制={h.controlReqlinquished} 长椅={PlayerData.instance.atBench}");
                     KeysDown(UnityEngine.InputSystem.Key.A, UnityEngine.InputSystem.Key.Space);
-                    yield return new WaitForSecondsRealtime(0.2f);
+                    yield return new WaitForSecondsRealtime(0.1f);
+                    var ja = g.inputHandler.inputActions.jump;
+                    Plugin.Log.LogInfo($"[AutoTest] 最终起身：{g.sceneName} 切换={g.IsInSceneTransition} timeScale={Time.timeScale} 输入={h.acceptingInput} 交出控制={h.controlReqlinquished} 长椅={PlayerData.instance.atBench}；按着空格时 跳跃键按下={ja.IsPressed} 动作集启用={g.inputHandler.inputActions.Enabled}/{ja.Enabled} 跳跃绑定={string.Join(",", System.Linq.Enumerable.Select(ja.Bindings, x => x.Name))} 窗口焦点={Application.isFocused} 键盘上空格={(UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed)} 全局输入是它={InputHandler.Instance == g.inputHandler} mod用的是它={GameHooks.Input == g.inputHandler}");
+                    yield return new WaitForSecondsRealtime(0.1f);
                     KeysDown();
                     yield return new WaitForSecondsRealtime(0.8f);
                 } while (!GameHooks.PlayerHasControl() && Time.realtimeSinceStartup < standEnd);
@@ -124,7 +126,7 @@ namespace TerraKnight
                 gm = GameManager.instance;
                 string after = State();
                 bool same = after == before;
-                Plugin.Log.LogInfo($"[AutoTest] 退出{round} 读回存档：{gm.sceneName}，可操作={GameHooks.PlayerHasControl()}；{after}");
+                Plugin.Log.LogInfo($"[AutoTest] 退出{round} 读回存档：{gm.sceneName}，可操作={GameHooks.PlayerHasControl()}（长椅兜底起身 {World.BenchGetUp.DevNudged} 次）；{after}");
                 Plugin.Log.LogInfo($"[AutoTest] 退出{round} {(stats != null && same && GameHooks.PlayerHasControl() ? "通过" : "不通过")}（存档{(stats != null ? "读得出" : "读不出")}，mod 内容{(same ? "一样" : "不一样")}）");
                 Shot(gm.sceneName, $"quit_{round}_back");
                 yield return null;

@@ -101,6 +101,9 @@ namespace TerraKnight
                         }
                         return d.ToString();
                     }
+                    // The battle gates as found on arrival: one shut already isn't this fight's.
+                    var gatesBefore = new Dictionary<string, string>();
+                    foreach (var (gn, gs) in BattleGates(room)) gatesBefore[gn] = gs;
                     var all = Parts(true);
                     // An arena laid over its room may come a moment later.
                     for (float until = Time.time + 10f; all.Count == 0 && Time.time < until; all = Parts(true)) yield return new WaitForSeconds(0.5f);
@@ -308,11 +311,44 @@ namespace TerraKnight
                     foreach (var hm in Parts(false))
                         if (!hm.isDead && hm.hp > 0 && !EnemyStats.Defeated(hm) && EnemyStats.Of(hm).Boss && hm.gameObject.activeInHierarchy && Vector2.Distance(hm.transform.position, h.transform.position) < 40f) barLeft = true;
                     int drops = EnemyDrops.DevDropped - drops0;
-                    bool ok = arrived && woke && beaten && control2 && drops > 0 && !barLeft && errors.Count == 0;
+                    // The battle's gates after it: the ones open on arrival open again within 10 s of the end
+                    // (the Gruz Mother's right one stayed shut once).
+                    var gatesAfter = new StringBuilder();
+                    bool gateShut = false;
+                    float gatesFrom = Time.time;
+                    List<(string Name, string State)> now;
+                    while (true)
+                    {
+                        now = BattleGates(room);
+                        bool shut = false;
+                        foreach (var (gn, gs) in now)
+                            if (Shut(gs) && !(gatesBefore.TryGetValue(gn, out var b0) && Shut(b0))) shut = true;
+                        if (!beaten || !shut || Time.time - gatesFrom > 40f) { gateShut = beaten && shut; break; }
+                        yield return new WaitForSeconds(0.5f);
+                    }
+                    foreach (var (gn, gs) in now)
+                        gatesAfter.Append($" {gn}:{(gatesBefore.TryGetValue(gn, out var b1) ? b1 + "→" : "")}{gs}");
+                    if (beaten && now.Count > 0) gatesAfter.Append($"（{Time.time - gatesFrom:F1} 秒后）");
+                    // Still shut: what the room's battle is waiting for.
+                    if (gateShut)
+                    {
+                        Logged(() =>
+                        {
+                            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+                            {
+                                string sn = f.gameObject.scene.name;
+                                if ((sn != room && sn != room + "_boss") || f.FsmName == "BG Control") continue;
+                                if (!f.FsmName.Contains("Battle") && !f.name.Contains("Battle") && !f.FsmName.Contains("Control")) continue;
+                                Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record} 门没开时 {PathOf(f.transform)} {f.FsmName}={f.ActiveStateName}");
+                                if (f.name.Contains("Battle")) DumpFsm(f);
+                            }
+                        });
+                    }
+                    bool ok = arrived && woke && beaten && control2 && drops > 0 && !barLeft && !gateShut && errors.Count == 0;
                     if (ok) good++;
                     else bad.Append($" {record}");
                     string errs = errors.Count > 0 ? $"，报错 {errors.Count} 条：{string.Join(" | ", errors.GetRange(0, Mathf.Min(3, errors.Count)))}" : "";
-                    Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}（{room}）：{(ok ? "好" : "坏")}，到达 {arrived}，找到 {all.Count} 个，醒了 {woke}，打了 {strikes} 下，{(beaten ? $"{took:F0} 秒打倒" : "没打倒")}，掉落 {drops} 样，尸体还有血条 {barLeft}，之后可操作 {control2}{(beaten ? "" : "，最后的状态 " + lastStates)}{errs}");
+                    Plugin.Log.LogInfo($"[AutoTest] 首领流程 {record}（{room}）：{(ok ? "好" : "坏")}，到达 {arrived}，找到 {all.Count} 个，醒了 {woke}，打了 {strikes} 下，{(beaten ? $"{took:F0} 秒打倒" : "没打倒")}，掉落 {drops} 样，尸体还有血条 {barLeft}，之后可操作 {control2}{(gatesAfter.Length > 0 ? "，铁门" + gatesAfter : "")}{(beaten ? "" : "，最后的状态 " + lastStates)}{errs}");
                     Shot(gm.sceneName, $"bossrun_{record}");
                     yield return null;
                 }
@@ -420,5 +456,24 @@ namespace TerraKnight
             foreach (var f in hm.GetComponents<PlayMakerFSM>()) if (f.FsmName == name) return f;
             return null;
         }
+        /// <summary>A room's battle gates ("BG Control") and their states, the room's and its boss scene's.</summary>
+        static List<(string Name, string State)> BattleGates(string room)
+        {
+            var list = new List<(string, string)>();
+            var seen = new Dictionary<string, int>();
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+            {
+                string sn = f.gameObject.scene.name;
+                if ((sn != room && sn != room + "_boss") || f.FsmName != "BG Control") continue;
+                string name = f.name;
+                // Two gates of one name (Ruins2_03's "Battle Gate" twice) told apart by their order.
+                seen[name] = seen.TryGetValue(name, out int k) ? k + 1 : 1;
+                if (seen[name] > 1) name += "#" + seen[name];
+                list.Add((name, f.ActiveStateName ?? ""));
+            }
+            return list;
+        }
+
+        static bool Shut(string state) => state.StartsWith("Close") || state == "Double Close" || state == "Quick Close";
     }
 }

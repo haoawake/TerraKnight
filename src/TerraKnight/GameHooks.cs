@@ -61,24 +61,54 @@ namespace TerraKnight
         [HarmonyPatch(typeof(GameManager), nameof(GameManager.StartNewGame))]
         static void BeforeNewGame()
         {
-            World.LiveWorld.Instance?.ClearAll();
-            World.WorldEdits.Clear();
-            TerraMod.Instance?.ResetPlayer();
+            // Each step on its own: one that fails is logged and the rest go on, and the game's new
+            // game is never stopped by it (a failure here used to leave the player on the menu).
+            Safely("清空世界", () =>
+            {
+                World.LiveWorld.Instance?.ClearAll();
+                World.WorldEdits.Clear();
+            });
+            Safely("重置角色", () => TerraMod.Instance?.ResetPlayer());
             // Creative if the creative mode button asked for this slot, else an ordinary game; at
             // the difficulty chosen for it (Master when none was, as for the autotests' games).
             var gm = GameManager.instance;
             if (gm != null) Save.ModSave.BeganNewGame(gm.profileID);
             // A new game's geo is the item from the start.
             Items.GeoWallet.Reset(true);
-            TerraMod.Instance?.ApplyCreative(gm != null && UI.CreativeMenu.TakePending(gm.profileID));
-            World.GameDifficulty.Current = UI.CreativeMenu.TakeDifficulty();
+            Safely("模式和难度", () =>
+            {
+                TerraMod.Instance?.ApplyCreative(gm != null && UI.CreativeMenu.TakePending(gm.profileID));
+                World.GameDifficulty.Current = UI.CreativeMenu.TakeDifficulty();
+            });
             // A creative save starts with the showcase kit: every class's best, worn and in the bag.
-            if (TerraMod.Instance != null && TerraMod.Instance.Creative) Items.ShowcaseKit.Give(TerraMod.Instance);
+            if (TerraMod.Instance != null && TerraMod.Instance.Creative) Safely("创造模式开局装备", () => Items.ShowcaseKit.Give(TerraMod.Instance));
             // A new game's map starts empty (the last save's mustn't stay); a creative one shows everything.
-            UI.WorldMap.Reset();
+            Safely("地图", () => UI.WorldMap.Reset());
             // Its own Life Crystals in the early areas.
-            World.LifeCrystals.NewWorld();
-            TerraMod.Instance?.ApplyCreativeWorld();
+            Safely("生命水晶", () => World.LifeCrystals.NewWorld());
+            Safely("创造模式的世界", () => TerraMod.Instance?.ApplyCreativeWorld());
+        }
+
+        static void Safely(string what, System.Action step)
+        {
+            try { step(); }
+            catch (System.Exception e) { Plugin.Log.LogError($"[新存档] 开局准备“{what}”出错（游戏照常开始）：{e}"); }
+        }
+
+        /// <summary>
+        /// The game's live input handler: the GameManager's own. InputHandler.Instance is whichever one
+        /// woke last, and back at the menu that is a duplicate GameManager's, destroyed straight away:
+        /// keys bound and the pause switched off on it reach nothing (the game's pause came back with
+        /// Escape, rebound keys didn't move the Knight).
+        /// </summary>
+        public static InputHandler Input
+        {
+            get
+            {
+                var gm = GameManager.UnsafeInstance;
+                var ih = gm != null ? gm.inputHandler : null;
+                return ih != null ? ih : InputHandler.Instance;
+            }
         }
 
         /// <summary>Gameplay scenes carry the game's per-scene SceneManager with sceneType GAMEPLAY.</summary>

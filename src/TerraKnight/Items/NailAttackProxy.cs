@@ -21,6 +21,12 @@ namespace TerraKnight.Items
         /// <summary>One of the stand-in slashes (a hit of the player's).</summary>
         public static bool IsProxy(GameObject go) => go != null && slashes.Contains(go);
 
+        /// <summary>Every stand-in (the swings' and the blasts').</summary>
+        static readonly HashSet<GameObject> all = new HashSet<GameObject>();
+
+        /// <summary>Any stand-in, a swing's or a blast's: a Terraria hit, not the Knight's nail.</summary>
+        public static bool IsAnyProxy(GameObject go) => go != null && all.Contains(go);
+
         /// <summary>
         /// Geo deposits react to anything dealing damage that touches them (ReceivedDamage); a
         /// sword's slash shouldn't get geo out of one, only a pickaxe aimed at it.
@@ -49,6 +55,7 @@ namespace TerraKnight.Items
             go = new GameObject(isSwing ? "Terra Nail Attack" : "Terra Blast Attack") { layer = HeroAttackLayer, tag = "Nail Attack" };
             go.transform.SetParent(parent, false);
             if (isSwing) slashes.Add(go);
+            all.Add(go);
             var rb = go.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Kinematic;
             box = go.AddComponent<BoxCollider2D>();
@@ -76,7 +83,36 @@ namespace TerraKnight.Items
             direction.Value = facing > 0f ? 0f : 180f;
             damageDealt.Value = Mathf.Max(1, damage);
             until = Time.time + SlashTime;
+            if (until > anyOutUntil) anyOutUntil = until;
             go.SetActive(true);
+        }
+
+        /// <summary>Until when some stand-in is out.</summary>
+        static float anyOutUntil = -10f;
+
+        /// <summary>A stand-in is out, or was a moment ago (what it touched may answer a frame or two late).</summary>
+        public static bool OutNow => Time.time <= anyOutUntil + 0.15f;
+
+        public static int DevRecoilsStopped;
+
+        /// <summary>
+        /// The Knight's recoil off what its nail hits (HeroController.RecoilLeft and the rest): the
+        /// game's hard things (TinkEffect), breakable walls, clashing blades and shielded enemies
+        /// answer the nail with it, the stand-ins too. A Terraria weapon never pushes the player
+        /// back for what it hits, so while a stand-in is out and the Knight isn't swinging its own
+        /// nail (the Nail item), no recoil. The knockback of being hurt is another road (StartRecoil).
+        /// </summary>
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilLeft))]
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilRight))]
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilDown))]
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilLeftLong))]
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilRightLong))]
+        static bool NoRecoilForTerrariaHits(HeroController __instance)
+        {
+            if (!OutNow || __instance == null || __instance.cState.attacking) return true;
+            DevRecoilsStopped++;
+            return false;
         }
 
         public void Tick(Vector2 center, Vector2 size)

@@ -400,7 +400,7 @@ namespace TerraKnight.Player
             var v = ___rb2d.linearVelocity;
             if (v.y >= 0f) return;
             float g = -Physics2D.gravity.y * ___rb2d.gravityScale * Time.fixedDeltaTime;
-            bool up = InputHandler.Instance != null && InputHandler.Instance.inputActions.up.IsPressed;
+            bool up = GameHooks.Input != null && GameHooks.Input.inputActions.up.IsPressed;
             // The step's gravity is paid in advance: give back all but a third (a tenth).
             ___rb2d.linearVelocity = new Vector2(v.x, v.y + g * (up ? 0.9f : 2f / 3f));
             mod.ResetFall();

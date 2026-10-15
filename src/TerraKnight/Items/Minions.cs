@@ -1021,7 +1021,9 @@ namespace TerraKnight.Items
                 if (info == null || EnemyStats.LifeMax(info) <= 5) continue;
                 // CanBeChasedBy (dontTakeDamage): not while nothing can hurt it (burrowed, asleep in the moss); a
                 // shell only spells get through (a curled-up Elder Baldur) is fair game, Terraria's hits get through it.
-                if (EnemyStats.Untouchable(hm)) continue;
+                if ((EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm))) continue;
+                // A boss behind its arena's gates from the player: not fought from outside (World.ArenaGuard).
+                if (World.ArenaGuard.Outside(hm) || World.ArenaGuard.OffMap(hm)) continue;
                 var main = hm.GetComponent<Collider2D>();
                 var use = main != null && main.enabled ? main : col;
                 var b = use.bounds;
@@ -1409,7 +1411,8 @@ namespace TerraKnight.Items
             {
                 if (m.Dead) return;
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null && m.Damage > 0) PropHits.Pulse(col, TerraParticles.ToWorld(m.Center), m.SpriteDir >= 0 ? 1f : -1f, m.Damage);
+                // A minion fights, it doesn't pull levers or break pots (a City lift called away by a slime); Revek is fought.
+                if (hm == null && m.Damage > 0) PropHits.Revek(col);
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (!hitNow.Add(id)) continue;

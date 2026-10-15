@@ -30,6 +30,37 @@ namespace TerraKnight.Effects
 
         public static FxBatch Instance { get; private set; }
 
+        /// <summary>
+        /// The sorting order the weapons' effects draw at: over all of the game's scenery (its leaves,
+        /// silhouettes and other near things sort by distance at order 0 and would cover them), as
+        /// Terraria draws its shots, swings and dust over its tiles and NPCs. The over-player draws go
+        /// two above. Below the player's see-through outline (TerraPlayerSprite, 32000).
+        /// </summary>
+        public const int OnTopOrder = 31000;
+
+        /// <summary>While set, draws are the weapons' effects (<see cref="OnTopOrder"/>); the player's own layers, the townsfolk and the minions stay among the scenery.</summary>
+        public bool OnTop;
+
+        /// <summary>Dev: while set, who drew what wasn't on top (the method that called Draw), counted.</summary>
+        public static bool DevTraceLow;
+        public static readonly Dictionary<string, int> DevLowCallers = new Dictionary<string, int>();
+
+        static void TraceLow(string kind)
+        {
+            var frames = new System.Diagnostics.StackTrace(1, false).GetFrames();
+            string who = "?";
+            if (frames != null)
+                foreach (var f in frames)
+                {
+                    var m = f.GetMethod();
+                    if (m == null || m.DeclaringType == typeof(FxBatch)) continue;
+                    who = m.DeclaringType?.Name + "." + m.Name;
+                    break;
+                }
+            who = kind + who;
+            DevLowCallers[who] = DevLowCallers.TryGetValue(who, out int n) ? n + 1 : 1;
+        }
+
         readonly List<SpriteRenderer> alpha = new List<SpriteRenderer>(), additive = new List<SpriteRenderer>(), glows = new List<SpriteRenderer>();
         int alphaUsed, additiveUsed, glowUsed;
         float behind = BehindZ, over = OverZ;
@@ -93,6 +124,12 @@ namespace TerraKnight.Effects
         public void Light(Vector2 pos, Color rgb, float radiusTiles = 4f)
         {
             if (rgb.r + rgb.g + rgb.b < 0.01f) return;
+            // Terraria's lighting on: the light goes into the map, which spreads it tile by tile.
+            if (World.LightMap.Active)
+            {
+                World.LightMap.Add(TerraParticles.ToWorld(pos), rgb);
+                return;
+            }
             SpriteRenderer sr;
             if (glowUsed < glows.Count) sr = glows[glowUsed];
             else
@@ -102,6 +139,10 @@ namespace TerraKnight.Effects
             }
             glowUsed++;
             if (!sr.enabled) sr.enabled = true;
+            // A weapon's shot's own light goes over the scenery with it, just under the effects (FxBatch.OnTop).
+            int glowOrder = OnTop ? OnTopOrder - 1 : 0;
+            if (DevTraceLow && !OnTop) TraceLow("光 ");
+            if (sr.sortingOrder != glowOrder) sr.sortingOrder = glowOrder;
             var world = TerraParticles.ToWorld(pos);
             sr.transform.position = new Vector3(world.x, world.y, World.Glow.Z);
             float k = Mathf.Clamp01(Mathf.Max(rgb.r, Mathf.Max(rgb.g, rgb.b)));
@@ -128,6 +169,23 @@ namespace TerraKnight.Effects
             if (!sr.enabled) sr.enabled = true;
             sr.sprite = sprite;
             sr.color = color;
+            int order = OnTop ? (overPlayer ? OnTopOrder + 2 : OnTopOrder) : 0;
+            if (DevTraceLow && !OnTop) TraceLow("");
+            if (false)
+            {
+                var frames = new System.Diagnostics.StackTrace(2, false).GetFrames();
+                string who = "?";
+                if (frames != null)
+                    foreach (var f in frames)
+                    {
+                        var m = f.GetMethod();
+                        if (m == null || m.DeclaringType == typeof(FxBatch)) continue;
+                        who = m.DeclaringType?.Name + "." + m.Name;
+                        break;
+                    }
+                DevLowCallers[who] = DevLowCallers.TryGetValue(who, out int n) ? n + 1 : 1;
+            }
+            if (sr.sortingOrder != order) sr.sortingOrder = order;
             sr.flipX = flipX;
             sr.flipY = flipY;
             float z;

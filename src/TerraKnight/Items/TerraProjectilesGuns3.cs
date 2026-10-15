@@ -268,6 +268,7 @@ namespace TerraKnight.Items
             var light = Glow.Create(transform, new Color(0.3f, 0.8f, 1f, 1f), 192f * Px * 0.6f);
             light.transform.position = new Vector3(p.Pos.x, p.Pos.y, Glow.Z);
             light.gameObject.AddComponent<FadeOut>().Begin(0.4f);
+            LightMap.Attach(light, new Color(0.3f, 0.8f, 1f), followSprite: true);
         }
 
         // ------------------------------------------------------------------ 1024: the Killing Deck

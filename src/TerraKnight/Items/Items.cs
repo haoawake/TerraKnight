@@ -186,8 +186,8 @@ namespace TerraKnight.Items
         // Crafting stations set down, and the wood gear made at the first of them (ItemsStations.cs).
         WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Chain,
         WoodHelmet, WoodBreastplate, WoodGreaves,
-        // The Knight's own (DreamNailItem.cs).
-        DreamNail,
+        // The Knight's own (DreamNailItem.cs, NailItem.cs).
+        DreamNail, KnightNail,
         // Ores and the metal sets made of their bars (ItemsOres.cs).
         CopperOre, TinOre, LeadOre, SilverOre, TungstenOre, PlatinumOre, DemoniteOre, Meteorite,
         CobaltOre, PalladiumOre, MythrilOre, OrichalcumOre, AdamantiteOre, TitaniumOre, ChlorophyteOre,
@@ -1389,6 +1389,7 @@ namespace TerraKnight.Items
             AddR7(list);
             AddStations(list);
             list.Add(DreamNailItem.Def());
+            list.Add(NailItem.Def());
             AddOres(list);
             AddMoney(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
@@ -1720,7 +1721,7 @@ namespace TerraKnight.Items
         static ItemDef Potion(ItemType t, string name, int id, int life, int mana, int price, int tier, int rare = 0) => new ItemDef
         {
             Type = t, Name = name, Texture = "Item_" + id, HealLife = life, HealMana = mana, Consumable = true, MaxStack = 30,
-            UseAnimation = 17 * Tick, UseTime = 17 * Tick, UseSound = "Item_3", Price = price, Tier = tier, Rare = rare,
+            UseAnimation = 17 * Tick, UseTime = 17 * Tick, UseSound = "Item_3", Price = price, Tier = tier, Rare = rare, PotionSick = life > 0,
             Tooltip = life > 0 ? $"恢复 {life} 生命值\n会造成药水病（60 秒内不能再喝）" : $"恢复 {mana} 魔力值",
         };
 
@@ -1751,17 +1752,19 @@ namespace TerraKnight.Items
             }
         }
 
-        /// <summary>Terraria digs soft blocks twice as fast; torches, rope and platforms break at once.</summary>
+        /// <summary>
+        /// Player.GetPickaxeDamage: dirt and sand take the pick's power twice; torches (tileNoFail)
+        /// and rope (tileRope) break at once; wood and platforms are ordinary tiles (a copper pick
+        /// three hits, a gold one two).
+        /// </summary>
         public static int Hardness(CellKind kind)
         {
             switch (kind)
             {
                 case CellKind.Dirt:
-                case CellKind.Wood:
                 case CellKind.Sand: return 2;
                 case CellKind.Torch:
-                case CellKind.Rope:
-                case CellKind.Platform: return 100;
+                case CellKind.Rope: return 100;
                 default: return 1;
             }
         }

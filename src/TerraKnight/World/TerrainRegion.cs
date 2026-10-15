@@ -18,6 +18,8 @@ namespace TerraKnight.World
         public readonly Transform Root;
         public readonly bool IsLive;
         public readonly PhysicsMaterial2D Material;
+        /// <summary>A boss room's: the game's own colliders stand and this grid is solid to nothing (TerrainSystem).</summary>
+        public bool SceneOwnGround;
         public HoleCutter Holes { get; private set; }
         /// <summary>Global cell of this grid's (0, 0); world position is offset * CellSize.</summary>
         public Vector2Int CellOffset { get; private set; }

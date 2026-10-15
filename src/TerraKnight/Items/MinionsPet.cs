@@ -109,7 +109,7 @@ namespace TerraKnight.Items
             if (petted != null)
             {
                 var hero = HeroController.SilentInstance;
-                var input = InputHandler.Instance != null ? InputHandler.Instance.inputActions : null;
+                var input = GameHooks.Input != null ? GameHooks.Input.inputActions : null;
                 bool moved = input != null && (input.left.IsPressed || input.right.IsPressed || input.up.IsPressed || input.down.IsPressed || input.jump.IsPressed);
                 var feet = new Vector2(Mathf.Floor(petted.Center.x + petOffsetX), Mathf.Floor(petted.Bottom));
                 var mine = new Vector2(pBox.center.x, pBox.yMax);

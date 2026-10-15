@@ -116,29 +116,52 @@ namespace TerraKnight.World
             return spare;
         }
 
+        /// <summary>The respawn marker's name for the world's spawn: no object has it, <see cref="SpawnPointFallback"/> finds the place.</summary>
+        public const string WorldSpawnMarker = "TerraKnight World Spawn";
+        const string WorldSpawnScene = "Tutorial_01", WorldSpawnGate = "top1";
+
         /// <summary>
         /// Hollow Knight's respawn before the player has rested on any bench is a Death Respawn
         /// Marker: high on Dirtmouth's entrance ledge, with no bench and no pylon there (players took
-        /// it for a broken stag station). Terraria brings a player without a bed back at the world's
-        /// spawn, where the town is; here that is Dirtmouth's bench, which from then on is the respawn
-        /// point as resting on it would make it (the player comes back sat on it, so its pylon unlocks).
+        /// it for a broken stag station), or King's Pass's. Terraria brings a player without a bed
+        /// back at the world's spawn, where the player first came into the world: here King's Pass's
+        /// floor under its top entrance, where the opening's portal stands. No bench is a respawn
+        /// point before the player has rested on it (Dirtmouth's included: it isn't unlocked yet).
         /// </summary>
         [HarmonyPatch(typeof(GameManager), nameof(GameManager.ReadyForRespawn))]
-        static class RespawnAtTownBench
+        static class RespawnAtWorldSpawn
         {
             static void Prefix()
             {
                 var pd = PlayerData.instance;
                 if (pd == null || TerraMod.Instance == null || pd.respawnType == 1 || pd.respawnMarkerName != "Death Respawn Marker") return;
-                if (pd.respawnScene != "Town" && pd.respawnScene != "Tutorial_01") return;
-                Plugin.Log.LogInfo($"[复活点] 还没在长椅上休息过：从 {pd.respawnScene} 的 {pd.respawnMarkerName} 改到德特茅斯的长椅");
-                pd.respawnScene = "Town";
-                pd.respawnMarkerName = "RestBench";
-                pd.respawnType = 1;
+                if (pd.respawnScene != "Town" && pd.respawnScene != WorldSpawnScene) return;
+                Plugin.Log.LogInfo($"[复活点] 还没在长椅上休息过：从 {pd.respawnScene} 的 {pd.respawnMarkerName} 改到世界出生点（国王山道开局的地方）");
+                pd.respawnScene = WorldSpawnScene;
+                pd.respawnMarkerName = WorldSpawnMarker;
+                pd.respawnType = 0;
             }
         }
 
+        /// <summary>The world's spawn in King's Pass: the floor straight under its top entrance (where the opening sets the player down), a little above it.</summary>
+        static bool WorldSpawnSpot(UnityEngine.SceneManagement.Scene scene, out Vector3 spot)
+        {
+            spot = default;
+            if (!scene.IsValid() || scene.name != WorldSpawnScene) return false;
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var gate in root.GetComponentsInChildren<TransitionPoint>(true))
+                {
+                    if (gate.name != WorldSpawnGate) continue;
+                    var hit = Physics2D.Raycast(gate.transform.position, Vector2.down, 300f, 1 << ChunkColliders.TerrainLayer);
+                    // No ground found (the grid not up yet): the entrance itself, the game finds the floor under it.
+                    spot = hit.collider != null ? new Vector3(hit.point.x, hit.point.y + 1f, 0f) : gate.transform.position;
+                    return true;
+                }
+            return false;
+        }
+
         public static int DevSpawnFallbacks;
+        public static Vector3 DevLastWorldSpawn;
         public static string DevLastFallback = "";
 
         /// <summary>
@@ -160,7 +183,12 @@ namespace TerraKnight.World
                 string marker = pd != null ? pd.respawnMarkerName : null;
                 Transform found = null;
                 string how = null;
-                if (!string.IsNullOrEmpty(marker) && scene.IsValid())
+                if (marker == WorldSpawnMarker && WorldSpawnSpot(scene, out var worldSpawn))
+                {
+                    found = Spare(worldSpawn);
+                    how = "世界出生点";
+                }
+                if (found == null && !string.IsNullOrEmpty(marker) && marker != WorldSpawnMarker && scene.IsValid())
                     foreach (var root in scene.GetRootGameObjects())
                     {
                         foreach (var t in root.GetComponentsInChildren<Transform>(true))
@@ -187,6 +215,14 @@ namespace TerraKnight.World
                         break;
                     }
                 if (found == null) return;
+                __result = found;
+                // The world's spawn is where it should be, not a fallback.
+                if (how == "世界出生点")
+                {
+                    DevLastWorldSpawn = found.position;
+                    Plugin.Log.LogInfo($"[复活点] 在世界出生点复活：{scene.name} {found.position:F1}");
+                    return;
+                }
                 if (pd != null && pd.respawnType == 1 && (!found.gameObject.activeInHierarchy || FSMUtility.LocateFSM(found.gameObject, "Bench Control") == null))
                     pd.respawnType = 0;
                 __result = found;

@@ -94,7 +94,9 @@ namespace TerraKnight.Items
             if (!byFsm)
             {
                 if (lockFsm == null || lockFsm.gameObject != hero.gameObject) lockFsm = PlayMakerFSM.FindFsmOnGameObject(hero.gameObject, "Roar Lock");
-                var roarer = lockFsm != null && lockFsm.ActiveStateName != lockFsm.Fsm.StartState ? lockFsm.FsmVariables.FindFsmGameObject("Roar Object") : null;
+                // Held: past its waiting states (Init, then Detect: listening for ROAR ENTER).
+                string ls = lockFsm != null ? lockFsm.ActiveStateName : null;
+                var roarer = ls != null && ls != lockFsm.Fsm.StartState && ls != "Detect" && ls != "Init" ? lockFsm.FsmVariables.FindFsmGameObject("Roar Object") : null;
                 if (roarer != null && Dead(roarer.Value)) held = lockFsm;
             }
             if (!byFsm && held == null) { deadSince = -1f; return; }

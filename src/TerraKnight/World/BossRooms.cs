@@ -44,6 +44,9 @@ namespace TerraKnight.World
             return any;
         }
 
+        /// <summary>A boss room for good (not one only while a boss is up in it): its ground is never changed.</summary>
+        public static bool IsRoom(string scene) => !string.IsNullOrEmpty(scene) && Rooms().Contains(Room(scene));
+
         /// <summary>Whether the room this cell lies in may not be changed.</summary>
         public static bool Locked(int gx, int gy)
         {

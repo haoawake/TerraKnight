@@ -142,8 +142,17 @@ namespace TerraKnight
             slot = SlotOf(ItemType.DreamNail);
             if (slot >= Inventory.HotbarSize) { (inv.Slots[0], inv.Slots[slot]) = (inv.Slots[slot], inv.Slots[0]); slot = 0; }
             inv.Selected = slot;
-            hero.transform.position = Clear(hero, (Vector2)hero.transform.position + Vector2.left * 3f);
+            // A few steps into the room (from its left gate: rightwards), on its floor.
+            hero.transform.position = Clear(hero, (Vector2)hero.transform.position + Vector2.right * 3f);
             yield return new WaitForSeconds(0.8f);
+            {
+                // What the FSM's "Can Set?" looks at: the map's room flag, a parent, the floor 0.3 either side.
+                var hp = (Vector2)hero.transform.position;
+                bool l = Physics2D.Raycast(hp + new Vector2(-0.3f, 0f), Vector2.down, 2f, 1 << 8).collider != null;
+                bool r = Physics2D.Raycast(hp + new Vector2(0.3f, 0f), Vector2.down, 2f, 1 << 8).collider != null;
+                var map = GameManager.instance.gameMap != null ? GameManager.instance.gameMap.GetComponent<GameMap>() : null;
+                Plugin.Log.LogInfo($"[AutoTest] 梦钉 设门前：主角 {hp:F1}，在小房间 {(map != null && map.GetInRoom())}，父物体 {(hero.transform.parent != null ? hero.transform.parent.name : "无")}，左脚下有地 {l}，右脚下有地 {r}");
+            }
             string gate0 = pd.dreamGateScene;
             var gateStates = new List<string>();
             string lastGate = null;

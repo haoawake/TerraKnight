@@ -402,6 +402,8 @@ namespace TerraKnight.Effects
             go.transform.SetParent(transform, false);
             var sr = go.AddComponent<SpriteRenderer>();
             if (defaultMaterial == null) defaultMaterial = sr.sharedMaterial;
+            // Dust over the game's scenery, as Terraria draws it over its tiles (with the weapons' effects).
+            sr.sortingOrder = FxBatch.OnTopOrder + 1;
             return sr;
         }
 

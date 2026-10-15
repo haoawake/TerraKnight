@@ -137,7 +137,7 @@ namespace TerraKnight.Player
         /// <summary>Dev: the last look for a gap in a wall alongside.</summary>
         public static string DevLastOpening = "";
 
-        static bool JumpHeld => DevJump || InputHandler.Instance.inputActions.jump.IsPressed;
+        static bool JumpHeld => DevJump || GameHooks.Input.inputActions.jump.IsPressed;
         public static bool JumpHeldNow => JumpHeld;
 
         public static void ResetState()
@@ -153,9 +153,44 @@ namespace TerraKnight.Player
 
         // --- Horizontal movement and the dash, after the Knight's own Move each physics step. ---
 
+        /// <summary>
+        /// The speed Terraria's run carries on from. A belt's (Crystal Peak's conveyors) the game adds
+        /// after each step's move (FixedUpdate: on one standing, or in a conveyor zone) isn't the run's:
+        /// left in, it was added again every step and the belt flung the player off.
+        /// </summary>
+        /// <summary>
+        /// A belt under a Knight the game takes no input from (no_input, out of any transition or
+        /// recoil: the moment after a hazard respawn): nothing moves him then, so nothing takes the
+        /// speed the game's FixedUpdate adds each step back off, and it piled up (8, 16, 24... a belt of
+        /// 8 flung him at 64). He rides at the belt's speed instead (twice it in a conveyor zone too).
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
+        static void BeltWithoutInput(HeroController __instance, Rigidbody2D ___rb2d)
+        {
+            if (!Active || ___rb2d == null || __instance.hero_state != GlobalEnums.ActorStates.no_input) return;
+            var cs = __instance.cState;
+            if (cs.transitioning || cs.recoiling || cs.dead) return;
+            bool belt = cs.onConveyor && cs.onGround && !cs.superDashing;
+            if (!belt && !cs.inConveyorZone) return;
+            float carried = (belt ? __instance.conveyorSpeed : 0f) + (cs.inConveyorZone ? __instance.conveyorSpeed : 0f);
+            var v = ___rb2d.linearVelocity;
+            if (Mathf.Abs(v.x - carried) > 0.01f) ___rb2d.linearVelocity = new Vector2(carried, v.y);
+        }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HeroController), "Move")]
-        static void BeforeMove(Rigidbody2D ___rb2d, out float __state) => __state = ___rb2d.linearVelocity.x;
+        static void BeforeMove(HeroController __instance, Rigidbody2D ___rb2d, out float __state)
+        {
+            float vx = ___rb2d.linearVelocity.x;
+            var cs = __instance.cState;
+            // What the game's FixedUpdate added after the last step's move, by its own two rules: once for
+            // standing on a belt (or landing hard on one), once more inside a conveyor zone. Taken off
+            // again, so the run isn't carried on top of it step after step (a belt in a zone flung him).
+            if (cs.onConveyor && ((cs.onGround && !cs.superDashing) || __instance.hero_state == GlobalEnums.ActorStates.hard_landing)) vx -= __instance.conveyorSpeed;
+            if (cs.inConveyorZone) vx -= __instance.conveyorSpeed;
+            __state = vx;
+        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "Move")]
@@ -165,7 +200,16 @@ namespace TerraKnight.Player
             float ticks = Time.fixedDeltaTime * 60f;
             var cs = __instance.cState;
             float vx = __state / PxT;
-            if (DevMove != 0) move_direction = DevMove;
+            if (DevMove != 0)
+            {
+                move_direction = DevMove;
+                // Turned the way he walks, as the key would turn him (a side gate puts back one walked into backwards).
+                if (!cs.wallSliding && !cs.attacking)
+                {
+                    if (DevMove > 0 && !cs.facingRight) __instance.FaceRight();
+                    else if (DevMove < 0 && cs.facingRight) __instance.FaceLeft();
+                }
+            }
             bool left = move_direction < -0.1f, right = move_direction > 0.1f;
             if (!cs.wallSliding) vx = Horizontal(__instance, vx, left, right, cs.onGround, ticks);
             vx = Dash(__instance, ___rb2d, vx, left, right, ticks);
@@ -186,6 +230,7 @@ namespace TerraKnight.Player
         {
             const float c = World.CellGrid.CellSize;
             var b = hero.GetComponent<BoxCollider2D>().bounds;
+            if (World.TerraWorld.OwnGroundAt(b.center)) return false;
             int front = Mathf.FloorToInt((dir > 0 ? b.max.x + 0.04f : b.min.x - 0.04f) / c);
             int own0 = Mathf.FloorToInt(b.min.x / c), own1 = Mathf.FloorToInt((b.max.x - 0.001f) / c);
             int rows = Mathf.CeilToInt(b.size.y / c - 0.01f);
@@ -257,6 +302,7 @@ namespace TerraKnight.Player
         {
             const float c = World.CellGrid.CellSize;
             var b = hero.GetComponent<BoxCollider2D>().bounds;
+            if (World.TerraWorld.OwnGroundAt(b.center)) return;
             float frontX = dir > 0 ? b.max.x + 0.04f : b.min.x - 0.04f;
             int fx = Mathf.FloorToInt(frontX / c);
             int feet = Mathf.FloorToInt((b.min.y + 0.04f) / c);
@@ -292,7 +338,7 @@ namespace TerraKnight.Player
             const float c = World.CellGrid.CellSize;
             var b = hero.GetComponent<BoxCollider2D>().bounds;
             var cell = World.CellGrid.WorldToCell(b.center);
-            if (!World.TerraWorld.IsSolid(cell.x, cell.y) || !World.TerraWorld.InWorld(cell.x, cell.y))
+            if (!World.TerraWorld.IsSolid(cell.x, cell.y) || !World.TerraWorld.InWorld(cell.x, cell.y) || World.TerraWorld.OwnGroundAt(b.center))
             {
                 stuckTime = 0f;
                 return;
@@ -783,7 +829,7 @@ namespace TerraKnight.Player
             }
 
             if (!cs.wallSliding) return;
-            var input = InputHandler.Instance.inputActions;
+            var input = GameHooks.Input.inputActions;
             int slideDir = ___wallSlidingL ? -1 : 1;
             // Terraria slides only while the player holds towards the wall.
             if (!(slideDir < 0 ? input.left.IsPressed || DevMove < 0 : input.right.IsPressed || DevMove > 0))
@@ -846,7 +892,7 @@ namespace TerraKnight.Player
             ref bool ___wallSlidingL, ref bool ___wallSlidingR, ref bool ___touchingWallL, ref bool ___touchingWallR)
         {
             if (!Active || !__state.sliding || __instance.cState.wallSliding) return;
-            if (!InputHandler.Instance.inputActions.down.WasPressed) return;
+            if (!GameHooks.Input.inputActions.down.WasPressed) return;
             __instance.cState.wallSliding = true;
             ___wallSlidingL = ___touchingWallL = __state.l;
             ___wallSlidingR = ___touchingWallR = __state.r;
@@ -860,8 +906,8 @@ namespace TerraKnight.Player
         public static bool OnRope { get; private set; }
         const float RopeClimbUp = 2.5f, RopeClimbDown = 3f;
 
-        internal static bool DownHeld => InputHandler.Instance.inputActions.down.IsPressed || DevDown;
-        static bool UpHeld => InputHandler.Instance.inputActions.up.IsPressed || DevUp;
+        internal static bool DownHeld => GameHooks.Input.inputActions.down.IsPressed || DevDown;
+        static bool UpHeld => GameHooks.Input.inputActions.up.IsPressed || DevUp;
         /// <summary>Dev: held up/down for the autotest.</summary>
         public static bool DevDown, DevUp;
 
@@ -1507,7 +1553,7 @@ namespace TerraKnight.Player
         /// <summary>Each frame: Down held and a fresh jump press in the air ask for the dash.</summary>
         public static void PollDownDash(HeroController hero)
         {
-            bool press = DevDownDash || (InputHandler.Instance != null && InputHandler.Instance.inputActions.jump.WasPressed);
+            bool press = DevDownDash || (GameHooks.Input != null && GameHooks.Input.inputActions.jump.WasPressed);
             DevDownDash = false;
             if (!press || !DownDash || DownDashing || hero.cState.onGround || !DownHeld) return;
             downDashRequest = true;
@@ -1664,7 +1710,7 @@ namespace TerraKnight.Player
             var v = rb.linearVelocity / PxT;
             float g = -Physics2D.gravity.y * rb.gravityScale * Time.fixedDeltaTime / PxT;
             bool hoverDown = DownHeld && JumpHeld && wingTime > 0f;
-            var input = InputHandler.Instance != null ? InputHandler.Instance.inputActions : null;
+            var input = GameHooks.Input != null ? GameHooks.Input.inputActions : null;
             bool sideways = input != null && (input.left.IsPressed || input.right.IsPressed);
             // flag19 (Pl:26975-26996): in the air, the jump's lift over; the hover wings also from a lift or the ground with down held.
             bool fly = canAct && JumpHeld && wingTime > 0f && ((!grounded && !lift) || (w.HoverStart && DownHeld));

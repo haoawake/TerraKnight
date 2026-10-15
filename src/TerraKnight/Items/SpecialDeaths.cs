@@ -18,6 +18,8 @@ namespace TerraKnight.Items
     {
         public static int DevCredited;
         public static string DevLast = "";
+        /// <summary>Dev: every state the False Knight's FSM enters, with his armor's and his head's health.</summary>
+        public static bool DevTrace;
 
         /// <summary>Out of the rage: the armor given back before the next state's own actions (which may set it themselves).</summary>
         [HarmonyPrefix]
@@ -40,6 +42,13 @@ namespace TerraKnight.Items
             if (fsm == null || fsm.Name != "FalseyControl" || fsm.GameObject == null) return;
             var hm = fsm.GameObject.GetComponent<HealthManager>();
             if (hm == null) return;
+            if (DevTrace)
+            {
+                HealthManager head = null;
+                foreach (var c in hm.GetComponentsInChildren<HealthManager>(true)) if (c != hm) head = c;
+                Plugin.Log.LogInfo($"[假骑士] {Time.time:F1} 进入 {__instance.Name}：盔甲 血 {hm.hp} 无敌 {hm.IsInvincible}{(armored.Contains(hm.GetInstanceID()) ? "（mod 加的）" : "")}，" +
+                    (head != null ? $"头 血 {head.hp} 在场 {head.gameObject.activeInHierarchy} 无敌 {head.IsInvincible} 位置 {(Vector2)head.transform.position:F1}" : "没有头"));
+            }
             if (__instance.Name == "Death Anim Start") Credit(hm, "FalseyControl/Death Anim Start");
             // The False Knight's rage after each stun (the leap, the slams) can't be cut short: his
             // armor holds through it. His third stun breaks the floor only where the rage ends (Rage
@@ -58,12 +67,15 @@ namespace TerraKnight.Items
         static readonly System.Collections.Generic.HashSet<int> armored = new System.Collections.Generic.HashSet<int>();
 
         /// <summary>
-        /// Bosses beaten without dying, by the flag their FSM sets: Hornet at Kingdom's Edge kneels
-        /// and leaves (her journal kill was written at Greenpath already, so it never turns on again).
+        /// Bosses beaten without a journal kill of their own, by the flag their FSM sets: Hornet at
+        /// Kingdom's Edge kneels and leaves, and the three dream bosses (the Failed Champion, the Soul
+        /// Tyrant, the Lost Kin) share the journal kill their waking selves wrote already, so it never
+        /// turns on again.
         /// </summary>
         static readonly System.Collections.Generic.Dictionary<string, string> beatenFlags = new System.Collections.Generic.Dictionary<string, string>
         {
             ["hornet1Defeated"] = "Hornet", ["hornetOutskirtsDefeated"] = "Hornet",
+            ["falseKnightDreamDefeated"] = "FalseKnight", ["mageLordDreamDefeated"] = "MageLord", ["infectedKnightDreamDefeated"] = "InfectedKnight",
         };
 
         /// <summary>The journal's kill flag set (EnemyDeathEffects.RecordKillForJournal, or a boss FSM's SetPlayerDataBool), or a beaten flag.</summary>

@@ -1157,7 +1157,16 @@ namespace TerraKnight.Items
 
         static FxBatch Fx => FxBatch.Instance;
 
+        /// <summary>The swings' effects, over the game's scenery (FxBatch.OnTopOrder).</summary>
         void DrawAll()
+        {
+            var top = Fx;
+            if (top != null) top.OnTop = true;
+            try { DrawAllOnTop(); }
+            finally { if (top != null) top.OnTop = false; }
+        }
+
+        void DrawAllOnTop()
         {
             var fx = Fx;
             if (fx == null) return;
@@ -1690,7 +1699,7 @@ namespace TerraKnight.Items
             foreach (var col in Physics2D.OverlapCircleAll(world, within * Px, 1 << 11))
             {
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null || hm.isDead) continue;
+                if (hm == null || hm.isDead || (EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm)) || ArenaGuard.Outside(hm) || ArenaGuard.OffMap(hm)) continue;
                 float dd = Vector2.Distance(col.bounds.center, world);
                 if (dd > bestD) continue;
                 bestD = dd;

@@ -62,6 +62,10 @@ namespace TerraKnight.World
             public float Delay;
             public GameObject Ghost;
             public Renderer GhostRenderer;
+            /// <summary>This time's way from its spot to where it comes back (blocks or platforms the player put on the spot: the nearest clear place).</summary>
+            public Vector2 Shift;
+            /// <summary>Since when its live enemy has been out of the world (Time.time; negative: it isn't).</summary>
+            public float LostSince = -1f;
         }
 
         /// <summary>Every enemy the slots have put down (and the originals): whose corpses go (<see cref="CorpseCleanup"/>).</summary>
@@ -74,7 +78,7 @@ namespace TerraKnight.World
         float nextCheck;
 
         /// <summary>Dev: captured, extra copies placed, respawned so far; and why the last scene's enemies were left alone.</summary>
-        public static int DevCaptured, DevDoubled, DevRespawned, DevOffScreen, DevNoRoom;
+        public static int DevCaptured, DevDoubled, DevRespawned, DevOffScreen, DevNoRoom, DevMoved, DevLost;
         public static Vector2 DevLastSpawn;
         public static Rect DevView => ViewRect();
         public static readonly Dictionary<string, int> DevRejected = new Dictionary<string, int>();
@@ -209,14 +213,15 @@ namespace TerraKnight.World
         static void Reject(string why) => DevRejected[why] = DevRejected.TryGetValue(why, out int n) ? n + 1 : 1;
 
         /// <summary>
-        /// How long a dead enemy of this kind takes to come back, seconds: by its own health in the
-        /// game (a crawlid or a vengefly 8, a husk 15-20, a husk guard 65), elites longest.
+        /// How long a dead enemy of this kind takes to come back while the player stays in its room,
+        /// seconds: by its own health in the game (a crawlid or a vengefly 8, a husk 15-20, a husk guard
+        /// 65), the big ones three minutes and the elites five (a husk guard came back too soon).
         /// </summary>
         static float DelayFor(HealthManager hm)
         {
-            if (Items.EnemyStats.Unstoppable(Items.EnemyStats.Of(hm))) return 240f;
+            if (Items.EnemyStats.Unstoppable(Items.EnemyStats.Of(hm))) return 300f;
             int hp = hm.hp;
-            return hp <= 10 ? 30f : hp <= 25 ? 45f : hp <= 50 ? 70f : 100f;
+            return hp <= 10 ? 30f : hp <= 25 ? 45f : hp <= 50 ? 90f : 180f;
         }
 
         static string DescribeRejects()
@@ -499,12 +504,23 @@ namespace TerraKnight.World
                     s.LocalPos = s.BesideOf.LocalPos + shift;
                     s.BesideOf = null;
                 }
-                // An extra copy whose group has just switched on comes at once.
-                Spawn(s);
+                // An extra copy whose group has just switched on comes at once (beside blocks put on its place).
+                if (!FindClear(s, SpawnPoint(s), out s.Shift)) s.Shift = Vector2.zero;
+                Spawn(s, s.Shift == Vector2.zero ? (Vector2?)null : SpawnPoint(s) + s.Shift);
                 DevDoubled++;
                 return;
             }
             bool gone = s.Live == null || (s.Live.GetComponent<HealthManager>() is HealthManager lhm && lhm.isDead) || !s.Live.activeInHierarchy && Dead(s.Live);
+            // One lost out of the world for a while (dropped through the ground, flung off the map): it won't
+            // be back by itself and it holds its spot, so it goes and the spot comes back as for a kill.
+            if (!gone && Lost(s))
+            {
+                Plugin.Log.LogInfo($"[刷怪] {BaseName(s.Live.name)} 掉出了地图（{(Vector2)s.Live.transform.position:F1}），按死了重新等");
+                Destroy(s.Live);
+                s.Live = null;
+                gone = true;
+                DevLost++;
+            }
             if (!gone)
             {
                 s.FreeSince = -1f;
@@ -518,13 +534,138 @@ namespace TerraKnight.World
             float left = wait - (Time.time - s.FreeSince);
             if (left > TelegraphSeconds) { s.Why = "等时间"; return; }
             // Its last seconds: its ghost where it will stand, then the enemy there (not on top of the player).
+            // Blocks or platforms the player has put on its spot: the nearest clear place round it, found
+            // afresh whenever the place the ghost shows on is built over.
             var home = SpawnPoint(s);
-            ShowGhost(s, home);
+            if (s.Ghost == null || Built(s, home + s.Shift, s.Shift == Vector2.zero))
+            {
+                HideGhost(s);
+                if (!FindClear(s, home, out s.Shift)) { s.Why = "出生点被方块堵住，附近也没空位"; return; }
+            }
+            var spot = home + s.Shift;
+            ShowGhost(s, spot);
             if (left > 0f) { s.Why = "快刷出来了"; return; }
-            if (Vector2.Distance(home + s.Offset, heroPos) < KeepClear) { s.Why = "主角站在出生点旁"; return; }
+            if (Vector2.Distance(spot + s.Offset, heroPos) < KeepClear) { s.Why = "主角站在出生点旁"; return; }
             HideGhost(s);
-            Spawn(s);
+            if (s.Shift != Vector2.zero) DevMoved++;
+            Spawn(s, s.Shift == Vector2.zero ? (Vector2?)null : spot);
             DevRespawned++;
+        }
+
+        // ------------------------------------------------------------------ room to come back in
+
+        /// <summary>How it stood: upright (rotated 10° at most), and which way is down for it.</summary>
+        static bool Upright(Slot s, out Vector2 along, out Vector2 down)
+        {
+            var rot = s.HadParent && s.Parent != null ? s.Parent.rotation * s.LocalRot : s.LocalRot;
+            along = ((Vector2)(rot * Vector3.right)).normalized;
+            down = -((Vector2)(rot * Vector3.up)).normalized;
+            return Mathf.Abs(Mathf.DeltaAngle(0f, rot.eulerAngles.z)) <= 10f;
+        }
+
+        /// <summary>
+        /// Something in the way of its body at a position: a block or a platform (its feet may touch
+        /// a floor). On its own spot only what the player put there counts: the room's own ground
+        /// is where the game set it, even where it presses into it.
+        /// </summary>
+        static bool Built(Slot s, Vector2 p, bool placedOnly)
+        {
+            bool upright = Upright(s, out _, out _);
+            var c = p + s.Offset;
+            var centre = upright ? new Vector2(c.x, c.y + s.Size.y * 0.125f) : c;
+            var size = upright ? new Vector2(s.Size.x * 0.8f, s.Size.y * 0.75f) : s.Size * 0.7f;
+            var lo = CellGrid.WorldToCell(centre - size * 0.5f);
+            var hi = CellGrid.WorldToCell(centre + size * 0.5f);
+            for (int y = lo.y; y <= hi.y; y++)
+                for (int x = lo.x; x <= hi.x; x++)
+                {
+                    var k = TerraWorld.Get(x, y);
+                    if (k == CellKind.Platform || Cells.Blocks(k) && !(placedOnly && k == CellKind.Original)) return true;
+                }
+            return false;
+        }
+
+        /// <summary>
+        /// Where it comes back: its own spot, or, with blocks or platforms the player has put on it,
+        /// the nearest clear place round it, as Terraria's enemies never come in inside tiles: room
+        /// for its body; for one that stood on the room's ground a floor under it (a block or a
+        /// platform, on top of what was built or beside it); for one clinging to a wall or ceiling
+        /// that surface going on under it; in its own room. False when there is none near.
+        /// </summary>
+        static bool FindClear(Slot s, Vector2 home, out Vector2 shift)
+        {
+            shift = Vector2.zero;
+            if (!Built(s, home, true)) return true;
+            bool upright = Upright(s, out var along, out var down);
+            bool walker = upright && GroundBelow(home + s.Offset, s.Size.y * 0.5f + 1.5f);
+            const float c = CellGrid.CellSize;
+            float best = float.MaxValue;
+            for (int j = -4; j <= 20; j++)
+                for (int i = -20; i <= 20; i++)
+                {
+                    var off = along * (i * c) - down * (j * c);
+                    float d = off.sqrMagnitude;
+                    if (d >= best) continue;
+                    var p = home + off;
+                    var cell = CellGrid.WorldToCell(p + s.Offset);
+                    var region = TerraWorld.RegionAt(cell.x, cell.y);
+                    if (region == null || region.SceneName != s.Scene) continue;
+                    if (Built(s, p, false)) continue;
+                    var body = p + s.Offset;
+                    if (walker && !FloorUnder(body, s.Size.y * 0.5f + 1.5f)) continue;
+                    if (!upright && !TerraWorld.IsSolidAt(body + down * (s.Size.y * 0.5f + 0.3f))) continue;
+                    best = d;
+                    shift = off;
+                }
+            return best < float.MaxValue;
+        }
+
+        /// <summary>The room's own ground below a point, within range (what the enemy stood on, whatever is built on it now).</summary>
+        static bool GroundBelow(Vector2 p, float range)
+        {
+            var cell = CellGrid.WorldToCell(p);
+            int steps = Mathf.CeilToInt(range / CellGrid.CellSize);
+            for (int i = 1; i <= steps; i++)
+                if (TerraWorld.Get(cell.x, cell.y - i) == CellKind.Original) return true;
+            return false;
+        }
+
+        /// <summary>Something to stand on below an open point, within range: a block or a platform.</summary>
+        static bool FloorUnder(Vector2 p, float range)
+        {
+            var cell = CellGrid.WorldToCell(p);
+            int steps = Mathf.CeilToInt(range / CellGrid.CellSize);
+            for (int i = 1; i <= steps; i++)
+            {
+                var k = TerraWorld.Get(cell.x, cell.y - i);
+                if (Cells.Blocks(k) || k == CellKind.Platform) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Its live enemy has been well out of every part of the world for 3 seconds.</summary>
+        static bool Lost(Slot s)
+        {
+            if (s.Live == null || !s.Live.activeInHierarchy || !SceneBuilt(s.Scene)) { s.LostSince = -1f; return false; }
+            Vector2 at = s.Live.transform.position;
+            const float margin = 4f;
+            bool inWorld = false;
+            foreach (var p in new[] { at, at + new Vector2(0f, margin), at - new Vector2(0f, margin), at + new Vector2(margin, 0f), at - new Vector2(margin, 0f) })
+            {
+                var cell = CellGrid.WorldToCell(p);
+                if (TerraWorld.RegionAt(cell.x, cell.y) != null) { inWorld = true; break; }
+            }
+            if (inWorld) { s.LostSince = -1f; return false; }
+            if (s.LostSince < 0f) s.LostSince = Time.time;
+            return Time.time - s.LostSince >= 3f;
+        }
+
+        /// <summary>The scene's grid is up (before it is, nothing of it is "out of the world").</summary>
+        static bool SceneBuilt(string scene)
+        {
+            foreach (var t in TerrainSystem.All)
+                if (t != null && t.Region != null && t.Region.SceneName == scene) return true;
+            return false;
         }
 
         // ------------------------------------------------------------------ the ghost before a respawn
@@ -570,6 +711,10 @@ namespace TerraKnight.World
                 CopySorting(sr, made);
             }
             else go.transform.position = new Vector3(home.x, home.y, rootT.position.z);
+            // tk2d gives a sprite the collider its definition has (tk2dBaseSprite.UpdateCollider): the
+            // ghost is only to be seen, nothing stands on it, bumps it or hits it.
+            foreach (var col in go.GetComponents<Collider2D>()) DestroyImmediate(col);
+            foreach (var col in go.GetComponents<Collider>()) DestroyImmediate(col);
             s.Ghost = go;
             s.GhostRenderer = made;
             SetGhostAlpha(s, 0.3f);
@@ -656,6 +801,56 @@ namespace TerraKnight.World
                 foreach (var s in slots) if (s.Ghost != null) n++;
                 return n;
             }
+        }
+
+        /// <summary>Dev: colliders on the ghosts showing now (none should be).</summary>
+        public int DevGhostColliders
+        {
+            get
+            {
+                int n = 0;
+                foreach (var s in slots)
+                    if (s.Ghost != null) n += s.Ghost.GetComponentsInChildren<Collider2D>(true).Length + s.Ghost.GetComponentsInChildren<Collider>(true).Length;
+                return n;
+            }
+        }
+
+        /// <summary>Dev: a live enemy's slot: its spot (the enemy's position), its body's size and centre from there, whether it stood upright on the room's ground.</summary>
+        public bool DevBody(HealthManager hm, out Vector2 home, out Vector2 size, out Vector2 offset, out bool walker)
+        {
+            foreach (var s in slots)
+                if (s.Live == hm.gameObject)
+                {
+                    home = SpawnPoint(s);
+                    size = s.Size;
+                    offset = s.Offset;
+                    walker = Upright(s, out _, out _) && GroundBelow(home + s.Offset, s.Size.y * 0.5f + 1.5f);
+                    return true;
+                }
+            home = size = offset = Vector2.zero;
+            walker = false;
+            return false;
+        }
+
+        /// <summary>Dev: a live enemy's slot as the lost check sees it.</summary>
+        public string DevLostState(HealthManager hm)
+        {
+            foreach (var s in slots)
+                if (s.Live == hm.gameObject)
+                {
+                    Vector2 at = s.Live.transform.position;
+                    var cell = CellGrid.WorldToCell(at);
+                    return $"位置 {at:F1}，所在区域 {TerraWorld.RegionAt(cell.x, cell.y)?.SceneName ?? "无"}，激活 {s.Live.activeInHierarchy}，地形建好 {SceneBuilt(s.Scene)}，出界起 {s.LostSince:F1}（现在 {Time.time:F1}），{s.Why ?? "活着"}";
+                }
+            return "不是哪个刷新点的";
+        }
+
+        /// <summary>Dev: where the ghosts show now.</summary>
+        public List<Vector2> DevGhostsAt()
+        {
+            var list = new List<Vector2>();
+            foreach (var s in slots) if (s.Ghost != null) list.Add(SpawnPoint(s) + s.Shift + s.Offset);
+            return list;
         }
 
         /// <summary>Dev: the slot whose spot is nearest a point: its state, its spot and its ghost.</summary>

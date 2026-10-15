@@ -166,9 +166,21 @@ namespace TerraKnight.Items
         void TryHit(Collider2D col)
         {
             if (col.CompareTag("Geo")) return;
+            if (PropHits.Revek(col)) return;
             HeroInRange(col);
             // Geo deposits are mined, not cut: only a pickaxe gets geo out of them.
             if (weapon.PickPower <= 0 && col.GetComponentInParent<GeoRock>() != null) return;
+            // A boss or a battle's enemy struck from outside its arena: nothing (World.ArenaGuard).
+            if (World.ArenaGuard.Refuse(col.GetComponentInParent<HealthManager>())) return;
+            // A sleeping boss woken by it: one point, no more (Items.BossWake); one still waking takes nothing.
+            var wakeHm = col.GetComponentInParent<HealthManager>();
+            var wake = BossWake.Hit(wakeHm);
+            if (wake == BossWake.Result.Held) return;
+            if (wake == BossWake.Result.Woke)
+            {
+                if (hitThisSwing.Add(wakeHm.gameObject)) Deal(col, wakeHm, wakeHm.gameObject, 1, 0f, 0f, direction, 0);
+                return;
+            }
             // DamageEnemies tells the collider's object it was hit; geo rocks and many props listen for this (not another game's
             // enemy in a LAN game: its scripts are off here, and the hit goes to the game that runs it).
             if (struckThisSwing.Add(col.gameObject) && !Net.Enemies.IsPuppet(col.GetComponentInParent<HealthManager>())) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
@@ -254,6 +266,17 @@ namespace TerraKnight.Items
             if (target == null || (hm != null && hm.isDead)) return false;
             // Still in its frames after the last hit: the shot goes through, as past an immune NPC.
             if (Immune(hm)) return false;
+            if (World.ArenaGuard.Refuse(hm)) return false;
+            var wake = BossWake.Hit(hm);
+            if (wake == BossWake.Result.Held) return false;
+            if (wake == BossWake.Result.Woke)
+            {
+                source.transform.position = new Vector3(from.x, from.y, 0f);
+                Deal(col, hm, target, 1, 0f, 0f, facing, 0);
+                return true;
+            }
+            // As a spell's DamageEnemies does, the struck enemy's FSMs hear TAKE DAMAGE first (what wakes some of them).
+            if (hm != null && !Net.Enemies.IsPuppet(hm)) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
             source.transform.position = new Vector3(from.x, from.y, 0f);
             Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation);
             return hm != null;
@@ -315,7 +338,7 @@ namespace TerraKnight.Items
                 damage = EnemyStats.Strike(info, damage, crit, armorPen);
                 LastStruck = damage;
                 // Bosses and elites don't budge (knockBackResist 0), the rest by their level.
-                float resist = EnemyStats.Unstoppable(info) ? 0f : World.Areas.KnockbackTaken(info.Level);
+                float resist = EnemyStats.NoKnockback(info) ? 0f : World.Areas.KnockbackTaken(info.Level);
                 pushSpeed = TerraKnockback.Launch(knockback, resist, crit);
                 // Terraria's knockback is the mod's own (TerraKnockback.Push): the game's recoil
                 // slide is left out, only its hit events (an FSM's HIT LEFT / RIGHT) still go.

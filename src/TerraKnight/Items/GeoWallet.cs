@@ -6,17 +6,18 @@ namespace TerraKnight.Items
     /// Money is an item, as Terraria's coins are: the bag's Geo (one stack holds up to
     /// int.MaxValue) is what the player carries, and it can be dropped, put in a chest or in the
     /// Piggy Bank. The game's own geo (PlayerData.geo: the counter in the corner, the stag's and the
-    /// benches' tolls, Sly's shop, the shade that takes it at a death) is kept equal to what the
-    /// bag carries: geo the game adds (a pickup, the shade struck) comes into the bag as the item,
-    /// geo it takes leaves the bag, and Geo moved in or out of the bag by hand sets its count.
-    /// Buying from the townsfolk takes from the bag first, then the Piggy Bank (Player.BuyItem).
-    /// A save from before this has its geo turned into the item the first time it is played.
+    /// benches' tolls, Sly's shop) is kept equal to all the money the player can spend, the bag's
+    /// and the Piggy Bank's (Player.BuyItem spends both): geo the game adds (a pickup, the shade
+    /// struck) comes into the bag as the item, geo it takes leaves the bag first and then the bank,
+    /// and Geo moved by hand sets its count. A death's shade takes only what the bag carried (the
+    /// game's geoPool), the bank's stays. A save from before this has its geo turned into the item
+    /// the first time it is played.
     /// </summary>
+    [HarmonyLib.HarmonyPatch]
     internal static class GeoWallet
     {
         static bool primed;
         static int lastPd;
-        static long lastHeld;
 
         /// <summary>The save's geo already lives in the bag as the item (from the mod's save).</summary>
         public static bool Migrated;
@@ -56,19 +57,37 @@ namespace TerraKnight.Items
                     Migrated = true;
                     Plugin.Log.LogInfo($"[吉欧] 老存档的 {pd.geo} 吉欧换成背包里的吉欧");
                 }
-                SetGameGeo(pd, Held(inv));
+                SetGameGeo(pd, Held(inv) + Banked(inv));
                 lastPd = pd.geo;
-                lastHeld = Held(inv);
                 primed = true;
                 return;
             }
             int dPd = pd.geo - lastPd;
             if (dPd > 0) Give(mod, dPd);
-            else if (dPd < 0) Take(inv.Slots, ref inv.Mouse, -dPd);
-            long held = Held(inv);
-            if (pd.geo != Clamp(held)) SetGameGeo(pd, held);
+            else if (dPd < 0)
+            {
+                long left = -dPd - Take(inv.Slots, ref inv.Mouse, -dPd);
+                // A death takes only the bag's (its shade carries that much); a toll or a price the bank too.
+                var hero = HeroController.SilentInstance;
+                if (left > 0 && !(hero != null && hero.cState.dead))
+                {
+                    var none = default(ItemStack);
+                    Take(inv.Bank, ref none, left);
+                }
+            }
+            long total = Held(inv) + Banked(inv);
+            if (pd.geo != Clamp(total)) SetGameGeo(pd, total);
             lastPd = pd.geo;
-            lastHeld = held;
+        }
+
+        /// <summary>The shade's geo at a death: what the bag carried, not the Piggy Bank's share of the counter.</summary>
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(PlayerData), nameof(PlayerData.SetInt))]
+        static void ShadeGeo(string intName, ref int value)
+        {
+            var mod = TerraMod.Instance;
+            if (intName != "geoPool" || value <= 0 || mod == null || mod.Creative) return;
+            value = Clamp(System.Math.Min(value, Held(mod.Inventory)));
         }
 
         static int Clamp(long n) => n > int.MaxValue ? int.MaxValue : n < 0 ? 0 : (int)n;

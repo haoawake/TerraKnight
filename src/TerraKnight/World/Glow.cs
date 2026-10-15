@@ -71,8 +71,11 @@ namespace TerraKnight.World
         /// A Terraria light (a torch's, the mining helmet's): it falls off by 0.91 a tile through
         /// the air (LightMap.LightDecayThroughAir), so it is soft beside its source and reaches far,
         /// drawn out to <see cref="LightReachTiles"/> tiles. The colour's alpha is its strength.
+        /// With Terraria's lighting on (<see cref="LightMap"/>) the map lights from it instead, in
+        /// its Terraria colour (<paramref name="mapRgb"/>, a plain torch's if none), and the sprite
+        /// is hidden.
         /// </summary>
-        public static SpriteRenderer CreateLight(Transform parent, Color color)
+        public static SpriteRenderer CreateLight(Transform parent, Color color, Color? mapRgb = null)
         {
             Init();
             if (lightSprite == null)
@@ -97,6 +100,7 @@ namespace TerraKnight.World
             sr.gameObject.name = "Terra Light";
             sr.sprite = lightSprite;
             sr.transform.localScale = Vector3.one * (LightReachTiles * CellGrid.CellSize * 2f / (lightSprite.rect.width / lightSprite.pixelsPerUnit));
+            LightMap.Attach(sr, mapRgb ?? LightMap.TorchRgb);
             return sr;
         }
 

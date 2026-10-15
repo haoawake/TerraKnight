@@ -562,6 +562,17 @@ namespace TerraKnight.UI
             if (!TerraCursor.LeftHeld(mouse)) dragging = false;
             if (dragging) pan -= new Vector2(m.x - lastMouse.x, m.y - lastMouse.y) / zoom;
             lastMouse = m;
+            // Player.cs: the movement keys pan the fullscreen map, 16 screen pixels a tick.
+            if (kb != null)
+            {
+                float step = 16f * Time.unscaledDeltaTime * 60f / zoom;
+                var dir = Vector2.zero;
+                if (Player.TerraKeys.Held(Player.TerraKeys.Action.Up)) dir.y += 1f;
+                if (Player.TerraKeys.Held(Player.TerraKeys.Action.Down)) dir.y -= 1f;
+                if (Player.TerraKeys.Held(Player.TerraKeys.Action.Left)) dir.x -= 1f;
+                if (Player.TerraKeys.Held(Player.TerraKeys.Action.Right)) dir.x += 1f;
+                pan += dir * step;
+            }
         }
 
         static Pylons.Pylon PylonAt(Vector2 gui)

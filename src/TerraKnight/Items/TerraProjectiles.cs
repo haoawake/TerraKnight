@@ -1645,6 +1645,7 @@ namespace TerraKnight.Items
             var light = World.Glow.Create(transform, new Color(1f, 0.75f, 0.4f, 1f), blast * 0.9f);
             light.transform.position = new Vector3(p.Pos.x, p.Pos.y, World.Glow.Z);
             light.gameObject.AddComponent<FadeOut>().Begin(0.4f);
+            World.LightMap.Attach(light, new Color(1f, 0.75f, 0.4f), followSprite: true);
 
             var melee = TerraMod.Instance?.Melee;
             int hitEnemies = 0;
@@ -1780,9 +1781,17 @@ namespace TerraKnight.Items
         {
             var fx = FxBatch.Instance;
             if (fx == null) return;
-            FxParticles.Draw(fx);
-            foreach (var p in live) DrawOne(fx, p);
-            DrawGhosts(fx);
+            fx.OnTop = true;
+            try
+            {
+                FxParticles.Draw(fx);
+                foreach (var p in live) DrawOne(fx, p);
+                DrawGhosts(fx);
+            }
+            finally
+            {
+                fx.OnTop = false;
+            }
         }
 
         /// <summary>One projectile as Main.DrawProj draws it (the player's own, or another player's ghost).</summary>
@@ -2316,7 +2325,7 @@ namespace TerraKnight.Items
             foreach (var col in Physics2D.OverlapCircleAll(at, withinPx * Px, 1 << 11))
             {
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy) continue;
+                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || (EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm)) || ArenaGuard.Outside(hm) || ArenaGuard.OffMap(hm)) continue;
                 float d = Manhattan(hm, at);
                 if (d >= bestD) continue;
                 if (Physics2D.Linecast(at, Centre(hm), 1 << ChunkColliders.TerrainLayer)) continue;
@@ -2774,7 +2783,7 @@ namespace TerraKnight.Items
             foreach (var col in Physics2D.OverlapCircleAll(p.Pos, withinPx * Px, 1 << 11))
             {
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || p.Immune.ContainsKey(hm.GetInstanceID())) continue;
+                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || (EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm)) || ArenaGuard.Outside(hm) || ArenaGuard.OffMap(hm) || p.Immune.ContainsKey(hm.GetInstanceID())) continue;
                 var c = Centre(hm);
                 float d = Vector2.Distance(c, p.Pos);
                 if (d >= bestD || Physics2D.Linecast(p.Pos, c, 1 << ChunkColliders.TerrainLayer)) continue;
@@ -3068,7 +3077,7 @@ namespace TerraKnight.Items
             foreach (var col in Physics2D.OverlapCircleAll(at, within, 1 << 11))
             {
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null || hm.isDead) continue;
+                if (hm == null || hm.isDead || (EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm)) || ArenaGuard.Outside(hm) || ArenaGuard.OffMap(hm)) continue;
                 float d = Vector2.Distance(col.bounds.center, at);
                 if (d >= bestD) continue;
                 if (Physics2D.Linecast(at, col.bounds.center, 1 << ChunkColliders.TerrainLayer)) continue;

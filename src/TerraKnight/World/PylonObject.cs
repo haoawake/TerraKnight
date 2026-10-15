@@ -40,6 +40,8 @@ namespace TerraKnight.World
         SpriteRenderer crystal;
         readonly SpriteRenderer[] shine = new SpriteRenderer[6];
         SpriteRenderer light;
+        /// <summary>Its style's light (TileLightScanner: the pylon tile's colour).</summary>
+        Color lightColor;
         float appear = 1f;
         static readonly Dictionary<(int, int), Sprite> crystalFrames = new Dictionary<(int, int), Sprite>();
         static readonly Dictionary<(int, int, int), Sprite> baseTiles = new Dictionary<(int, int, int), Sprite>();
@@ -68,6 +70,7 @@ namespace TerraKnight.World
                 if (additive != null) shine[k].sharedMaterial = additive;
             }
             var lc = Lights[Mathf.Clamp(p.Style, 0, Lights.Length - 1)];
+            lightColor = new Color(lc.r * 0.75f, lc.g * 0.75f, lc.b * 0.75f);
             // Terraria's tile light, softened: Hallownest's painted dark has no light map to stop it at walls.
             light = Glow.Create(transform, new Color(lc.r * 0.75f, lc.g * 0.75f, lc.b * 0.75f, 0.3f), 2.4f);
             light.transform.localPosition = new Vector3(24 * Px, 40 * Px, Glow.Z);
@@ -125,7 +128,13 @@ namespace TerraKnight.World
                 float v = 0.1f * pulse * appear;
                 shine[k].color = shine[k].sharedMaterial == crystal.sharedMaterial ? new Color(1f, 1f, 1f, v) : new Color(v, v, v, 1f);
             }
-            light.enabled = appear > 0.05f;
+            // Terraria's lighting on: the pylon's colour lights the map round its crystal instead of the glow.
+            if (LightMap.Active)
+            {
+                light.enabled = false;
+                if (appear > 0.05f) LightMap.Add(transform.TransformPoint(center), lightColor * appear);
+            }
+            else light.enabled = appear > 0.05f;
             // TileDrawing: a 1 in 40 chance each frame of one sparkle drifting off the crystal.
             if (Random.value < 1f / 40f) Burst(transform.TransformPoint(center), 1, Pylon.Style);
         }

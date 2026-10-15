@@ -167,7 +167,8 @@ namespace TerraKnight.Items
             foreach (var col in Physics2D.OverlapCircleAll(TerraParticles.ToWorld(px), radius * Px, 1 << EnemyLayer))
             {
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy) continue;
+                // CanBeChasedBy: nothing that can't be hurt now (the False Knight's armor while his head is out).
+                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || (EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm)) || ArenaGuard.Outside(hm) || ArenaGuard.OffMap(hm)) continue;
                 var c = TerraParticles.ToPx(col.bounds.center);
                 float d = Vector2.Distance(c, px);
                 if (d < best)
@@ -198,7 +199,9 @@ namespace TerraKnight.Items
             sword.Ribbon = new Mesh();
             sword.Ribbon.MarkDynamic();
             ribbon.AddComponent<MeshFilter>().sharedMesh = sword.Ribbon;
-            ribbon.AddComponent<MeshRenderer>().sharedMaterial = additive;
+            var ribbonRenderer = ribbon.AddComponent<MeshRenderer>();
+            ribbonRenderer.sharedMaterial = additive;
+            ribbonRenderer.sortingOrder = Effects.FxBatch.OnTopOrder;
             swords.Add(sword);
             return sword;
         }
@@ -208,6 +211,8 @@ namespace TerraKnight.Items
             var sr = new GameObject(name).AddComponent<SpriteRenderer>();
             sr.transform.SetParent(parent.transform, false);
             if (material != null) sr.sharedMaterial = material;
+            // Over the game's scenery, with the other weapons' effects.
+            sr.sortingOrder = Effects.FxBatch.OnTopOrder;
             return sr;
         }
 

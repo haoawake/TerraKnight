@@ -32,7 +32,7 @@ namespace TerraKnight.UI
                 EnemyStats.Prune();
             }
             Vector2 heroPos = hero.transform.position;
-            EnemyStats.Info boss = null;
+            EnemyStats.Info boss = null, struck = null;
             float bossDist = float.MaxValue;
             foreach (var info in EnemyStats.All)
             {
@@ -47,6 +47,9 @@ namespace TerraKnight.UI
                         boss = info;
                         bossDist = d;
                     }
+                    // The one being fought comes first: the Mantis Lords' sisters still sitting on
+                    // their thrones are nearer than the one in the air.
+                    if (d < 45f && Time.time - info.LastHit < 10f && (struck == null || info.LastHit > struck.LastHit)) struck = info;
                 }
                 if (life >= max && !Always) continue;
                 var bounds = Bounds(hm);
@@ -55,7 +58,25 @@ namespace TerraKnight.UI
                 var at = new Vector3(bounds.center.x, bounds.min.y - 10f * Px, bounds.center.z);
                 SmallBar(cam, at, life, max, info.Boss ? 1.5f : 1f);
             }
-            if (boss != null) BossBar(boss);
+            if (struck != null) BossBar(Hurtable(struck));
+            else if (boss != null) BossBar(Hurtable(boss));
+        }
+
+        /// <summary>
+        /// The part of a boss the bar should follow: itself, unless nothing can hurt it now and a
+        /// part of it can (the False Knight's head out of his fallen armor, which takes the blows).
+        /// </summary>
+        static EnemyStats.Info Hurtable(EnemyStats.Info info)
+        {
+            var hm = info.Hm;
+            if (hm == null || !EnemyStats.Untouchable(hm)) return info;
+            foreach (var other in EnemyStats.All)
+            {
+                var o = other.Hm;
+                if (o == null || o == hm || o.isDead || o.hp <= 0 || !o.gameObject.activeInHierarchy || EnemyStats.Defeated(o) || EnemyStats.Untouchable(o)) continue;
+                if (o.transform.IsChildOf(hm.transform) || hm.transform.IsChildOf(o.transform)) return other;
+            }
+            return info;
         }
 
         static bool Visible(HealthManager hm)

@@ -3370,5 +3370,53 @@
   "it-IT": "Salvadanaio",
   "pt-BR": "Cofrinho",
   "ru-RU": "Копилка"
+ },
+ "鼠标中键": {
+  "en-US": "Mouse3 (middle)",
+  "zh-Hant": "滑鼠中鍵",
+  "ja-JP": "マウス中ボタン",
+  "ko-KR": "마우스 가운데 버튼",
+  "de-DE": "Mausrad-Taste",
+  "fr-FR": "Bouton central",
+  "es-ES": "Botón central",
+  "it-IT": "Tasto centrale",
+  "pt-BR": "Botão do meio",
+  "ru-RU": "Средняя кнопка мыши"
+ },
+ "鼠标侧键（后）": {
+  "en-US": "Mouse4 (back)",
+  "zh-Hant": "滑鼠側鍵（後）",
+  "ja-JP": "マウスサイドボタン（戻る）",
+  "ko-KR": "마우스 측면 버튼(뒤로)",
+  "de-DE": "Maus-Seitentaste (zurück)",
+  "fr-FR": "Bouton latéral (précédent)",
+  "es-ES": "Botón lateral (atrás)",
+  "it-IT": "Tasto laterale (indietro)",
+  "pt-BR": "Botão lateral (voltar)",
+  "ru-RU": "Боковая кнопка мыши (назад)"
+ },
+ "鼠标侧键（前）": {
+  "en-US": "Mouse5 (forward)",
+  "zh-Hant": "滑鼠側鍵（前）",
+  "ja-JP": "マウスサイドボタン（進む）",
+  "ko-KR": "마우스 측면 버튼(앞으로)",
+  "de-DE": "Maus-Seitentaste (vor)",
+  "fr-FR": "Bouton latéral (suivant)",
+  "es-ES": "Botón lateral (adelante)",
+  "it-IT": "Tasto laterale (avanti)",
+  "pt-BR": "Botão lateral (avançar)",
+  "ru-RU": "Боковая кнопка мыши (вперёд)"
+ },
+ "先进入首领的战斗区域": {
+  "en-US": "Enter the boss arena first",
+  "zh-Hant": "先進入首領的戰鬥區域",
+  "ja-JP": "まずボスの戦闘エリアに入ろう",
+  "ko-KR": "먼저 보스 전투 구역에 들어가세요",
+  "de-DE": "Betritt zuerst die Arena des Bosses",
+  "fr-FR": "Entrez d'abord dans l'arène du boss",
+  "es-ES": "Entra primero en la arena del jefe",
+  "it-IT": "Entra prima nell'arena del boss",
+  "pt-BR": "Entre primeiro na arena do chefe",
+  "ru-RU": "Сначала войдите на арену босса"
  }
 }

@@ -604,6 +604,10 @@ namespace TerraKnight.Items
                 int stage = Shop.UnlockedStage();
                 foreach (var r in Recipes.All)
                     if (CanMakeHere(r, here, stage) && Fits(r.Def) && Recipes.HasIngredients(r, inv)) recipes.Add(r);
+                // A basic item that can be made from what is carried isn't offered for money as well (a torch from wood and gel).
+                var made = new HashSet<ItemType>();
+                foreach (var r in recipes) if (!r.IsBought) made.Add(r.Result);
+                recipes.RemoveAll(r => r.IsBought && made.Contains(r.Result));
             }
             // TryRefocusingRecipe: stay on the same item when the list changes.
             int found = recipes.FindIndex(r => (int)r.Result == keep);
@@ -1079,7 +1083,7 @@ namespace TerraKnight.Items
         static string RecipeExtra(Recipe r)
         {
             if (Shop.Free) return Lang.T("点击拿取，按住连续拿取");
-            if (r.IsBought) return Lang.F("价格：{0}", Shop.Money(r.Cost));
+            if (r.IsBought) return r.Cost > 0 ? Lang.F("购买（不用材料）：{0}", Shop.Money(r.Cost)) : Lang.T("免费拿取（不用材料）");
             var sb = new System.Text.StringBuilder(Lang.T("需要："));
             for (int k = 0; k < r.Ingredients.Length; k++)
             {

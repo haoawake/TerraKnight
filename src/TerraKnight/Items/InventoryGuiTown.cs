@@ -191,16 +191,25 @@ namespace TerraKnight.Items
             return v > 0 ? Lang.F("卖出价: {0}", Shop.Money(v)) : Lang.T("无价值");
         }
 
+        static bool soldOnPress;
+
         /// <summary>A click on a shop slot: buy (held: again, faster and faster), or sell the cursor's item onto an empty one.</summary>
         static void ActShop(int index, bool leftPress, bool rightPress, bool leftHeld, bool rightHeld)
         {
             if (!TownNpcs.ShopOpen) return;
             var slot = TownNpcs.ShopItems[index];
+            // A sale's click held on: the item it put in that slot isn't bought straight back.
+            if (!leftHeld) soldOnPress = false;
             if (slot.IsEmpty)
             {
-                if (leftPress && !inv.Mouse.IsEmpty) TownNpcs.Sell(ref inv.Mouse);
+                if (leftPress && !inv.Mouse.IsEmpty)
+                {
+                    TownNpcs.Sell(ref inv.Mouse);
+                    soldOnPress = true;
+                }
                 return;
             }
+            if (soldOnPress && !rightHeld) return;
             if (!(leftHeld || rightHeld) || stackSplit > 1) return;
             int n = (superFastStack + 1) * (Shift ? 10 : 1);
             if (TownNpcs.Buy(index, n, inv)) RefreshStackSplitCooldown();

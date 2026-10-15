@@ -387,6 +387,7 @@ namespace TerraKnight.Items
             var light = Glow.Create(transform, new Color(1f, 0.75f, 0.4f, 1f), size * Px * 0.9f);
             light.transform.position = new Vector3(p.Pos.x, p.Pos.y, Glow.Z);
             light.gameObject.AddComponent<FadeOut>().Begin(0.4f);
+            LightMap.Attach(light, new Color(1f, 0.75f, 0.4f), followSprite: true);
             if (tier >= 8)
             {
                 KillLiquidRocket(c, tier - 8);

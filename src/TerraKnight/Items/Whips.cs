@@ -839,7 +839,16 @@ namespace TerraKnight.Items
 
         // ------------------------------------------------------------------ drawing (DrawWhip)
 
+        /// <summary>The whips, over the game's scenery (FxBatch.OnTopOrder).</summary>
         void Draw()
+        {
+            var top = FxBatch.Instance;
+            if (top != null) top.OnTop = true;
+            try { DrawOnTop(); }
+            finally { if (top != null) top.OnTop = false; }
+        }
+
+        void DrawOnTop()
         {
             var fx = FxBatch.Instance;
             if (fx == null || live.Count == 0 || !Owner()) return;

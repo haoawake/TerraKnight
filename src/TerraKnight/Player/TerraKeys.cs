@@ -13,7 +13,9 @@ namespace TerraKnight.Player
     /// throw, inventory, grapple, quick heal and mana, auto select, smart cursor, the maps, the
     /// chat, the ten hotbar slots and the four loadouts. A binding is changed by clicking it and
     /// pressing the new key (Escape keeps the old one); the choices are saved in the mod's config
-    /// (section Keys).
+    /// (section Keys). As in Terraria a binding may also be a mouse button: the middle one or a side
+    /// one (Mouse3, Mouse4, Mouse5; the left and right stay the item's), stand-ins past the keyboard's
+    /// keys in the same Key values.
     /// </summary>
     internal static class TerraKeys
     {
@@ -24,6 +26,32 @@ namespace TerraKnight.Player
         }
 
         public static readonly Action[] All = (Action[])Enum.GetValues(typeof(Action));
+
+        /// <summary>The mouse buttons a binding may take, as Key values no keyboard key has.</summary>
+        public const Key MouseMiddle = (Key)1001, MouseBack = (Key)1002, MouseForward = (Key)1003;
+
+        public static bool IsMouse(Key k) => k == MouseMiddle || k == MouseBack || k == MouseForward;
+
+        static ButtonControl MouseButton(Key k)
+        {
+            var m = Mouse.current;
+            if (m == null) return null;
+            return k == MouseMiddle ? m.middleButton : k == MouseBack ? m.backButton : k == MouseForward ? m.forwardButton : null;
+        }
+
+        /// <summary>A binding as the config writes it: the key's name, or Terraria's Mouse3 / Mouse4 / Mouse5.</summary>
+        static string Id(Key k) => k == MouseMiddle ? "Mouse3" : k == MouseBack ? "Mouse4" : k == MouseForward ? "Mouse5" : k.ToString();
+
+        static bool TryParse(string s, out Key k)
+        {
+            switch ((s ?? "").Trim().ToLowerInvariant())
+            {
+                case "mouse3": case "middlebutton": k = MouseMiddle; return true;
+                case "mouse4": case "backbutton": k = MouseBack; return true;
+                case "mouse5": case "forwardbutton": k = MouseForward; return true;
+            }
+            return Enum.TryParse(s, true, out k) && k != Key.None && !IsMouse(k);
+        }
 
         static readonly Dictionary<Action, Key> defaults = new Dictionary<Action, Key>
         {
@@ -45,9 +73,9 @@ namespace TerraKnight.Player
         {
             foreach (var a in All)
             {
-                var e = cfg.Bind("Keys", a.ToString(), defaults[a].ToString(), $"{a} 的按键（Unity Input System 的键名，如 W、Space、LeftShift、Digit1、F1）。游戏里物品栏右下角“泰拉瑞亚设置”里可以直接改。");
+                var e = cfg.Bind("Keys", a.ToString(), defaults[a].ToString(), $"{a} 的按键（Unity Input System 的键名，如 W、Space、LeftShift、Digit1、F1；鼠标中键 Mouse3，侧键 Mouse4 / Mouse5）。游戏里物品栏右下角“泰拉瑞亚设置”里可以直接改。");
                 settings[a] = e;
-                if (Enum.TryParse<Key>(e.Value, true, out var k) && k != Key.None) keys[a] = k;
+                if (TryParse(e.Value, out var k)) keys[a] = k;
             }
             Version++;
         }
@@ -56,10 +84,13 @@ namespace TerraKnight.Player
 
         public static Key Default(Action a) => defaults[a];
 
+        /// <summary>Dev: what the config holds for an action.</summary>
+        public static string DevSaved(Action a) => settings.TryGetValue(a, out var e) ? e.Value : null;
+
         public static void Set(Action a, Key k)
         {
             keys[a] = k;
-            if (settings.TryGetValue(a, out var e)) e.Value = k.ToString();
+            if (settings.TryGetValue(a, out var e)) e.Value = Id(k);
             Version++;
             Plugin.Log.LogInfo($"[按键] {a} = {k}");
         }
@@ -69,10 +100,11 @@ namespace TerraKnight.Player
             foreach (var a in All) Set(a, defaults[a]);
         }
 
-        static KeyControl Control(Action a)
+        static ButtonControl Control(Action a)
         {
             var kb = Keyboard.current;
             var k = Get(a);
+            if (IsMouse(k)) return MouseButton(k);
             if (kb == null || k == Key.None) return null;
             try { return kb[k]; }
             catch (ArgumentException) { return null; }
@@ -114,21 +146,31 @@ namespace TerraKnight.Player
             capturedFrame = Time.frameCount;
         }
 
-        /// <summary>Each frame: while a binding waits for its key, the first key pressed is it (Escape: no change).</summary>
+        /// <summary>Each frame: while a binding waits for its key, the first key or mouse button (middle, side) pressed is it (Escape: no change).</summary>
         public static void Tick()
         {
             if (Listening == null || Time.frameCount == listenFrame) return;
             var kb = Keyboard.current;
-            if (kb == null) return;
-            if (kb.escapeKey.wasPressedThisFrame && Listening != Action.Inventory)
+            if (kb != null)
             {
-                StopListening();
-                return;
+                if (kb.escapeKey.wasPressedThisFrame && Listening != Action.Inventory)
+                {
+                    StopListening();
+                    return;
+                }
+                foreach (var c in kb.allKeys)
+                {
+                    if (c == null || !c.wasPressedThisFrame || c.keyCode == Key.None) continue;
+                    Set(Listening.Value, c.keyCode);
+                    StopListening();
+                    return;
+                }
             }
-            foreach (var c in kb.allKeys)
+            foreach (var k in new[] { MouseMiddle, MouseBack, MouseForward })
             {
-                if (c == null || !c.wasPressedThisFrame || c.keyCode == Key.None) continue;
-                Set(Listening.Value, c.keyCode);
+                var b = MouseButton(k);
+                if (b == null || !b.wasPressedThisFrame) continue;
+                Set(Listening.Value, k);
                 StopListening();
                 return;
             }
@@ -169,6 +211,9 @@ namespace TerraKnight.Player
         /// <summary>A key as the keyboard shows it.</summary>
         public static string KeyName(Key k)
         {
+            if (k == MouseMiddle) return Lang.T("鼠标中键");
+            if (k == MouseBack) return Lang.T("鼠标侧键（后）");
+            if (k == MouseForward) return Lang.T("鼠标侧键（前）");
             var kb = Keyboard.current;
             try
             {
@@ -177,6 +222,19 @@ namespace TerraKnight.Player
             }
             catch (ArgumentException) { }
             return k.ToString();
+        }
+
+        /// <summary>
+        /// The binding of the Knight's own actions (movement and jump) for a key or mouse button:
+        /// InControl's key of the same name, or its mouse button (its Button4 / Button5 are the side
+        /// buttons, UnityMouseProvider's back and forward).
+        /// </summary>
+        public static InControl.BindingSource ToInControlSource(Key k)
+        {
+            if (k == MouseMiddle) return new InControl.MouseBindingSource(InControl.Mouse.MiddleButton);
+            if (k == MouseBack) return new InControl.MouseBindingSource(InControl.Mouse.Button4);
+            if (k == MouseForward) return new InControl.MouseBindingSource(InControl.Mouse.Button5);
+            return ToInControl(k, out var ik) ? new InControl.KeyBindingSource(ik) : null;
         }
 
         /// <summary>The InControl key of the same name, for the Knight's own actions (movement and jump).</summary>

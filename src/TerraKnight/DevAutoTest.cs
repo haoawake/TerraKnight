@@ -104,6 +104,13 @@ namespace TerraKnight
             if (suite == "net") yield return NetBoot();
             if (suite == "net2host" || suite == "net2client") yield return Net2Boot();
             if (suite == "slots") yield return SlotsBoot();
+            if (suite == "menuflow")
+            {
+                yield return MenuFlowTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "promoA")
             {
                 // The trailer's opening: the profiles, the creative panel, the difficulty, recorded (DevAutoTestPromo2).
@@ -251,6 +258,8 @@ namespace TerraKnight
 
         IEnumerator Run(string scene)
         {
+            // The menu flow plays its saves itself (Boot): nothing else runs in them.
+            if (suite == "menuflow") yield break;
             yield return new WaitForSeconds(3f);
             while (!GameHooks.PlayerHasControl()) yield return null;
 
@@ -272,6 +281,27 @@ namespace TerraKnight
                 // in Dirtmouth loads King's Pass as a neighbour too.
                 yield return SeamlessTest(scene, hero);
                 yield return DeathTest(hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "pit")
+            {
+                yield return PitTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "conveyor")
+            {
+                yield return ConveyorTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "geobank")
+            {
+                yield return GeoBankTest(hero);
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
@@ -300,6 +330,50 @@ namespace TerraKnight
             if (suite == "batch5")
             {
                 yield return Batch5Test();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite.StartsWith("gatecheck_") || suite.StartsWith("gatewon_"))
+            {
+                // gatewon_: with every world boss beaten (the ways their fights open).
+                if (suite.StartsWith("gatewon_")) Items.BossArena.DevAllBeaten();
+                yield return GateCheckTest(suite.Substring(suite.IndexOf('_') + 1).Split('+'));
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "revek2")
+            {
+                yield return RevekTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "revek")
+            {
+                // Revek in the Spirits' Glade: his FSMs, his health manager, what his slash is made of.
+                PlayerData.instance.SetBool("hasDreamNail", true);
+                PlayerData.instance.isInvincible = true;
+                yield return GoTo("RestingGrounds_08", EntryGateOf("RestingGrounds_08"));
+                for (int i = 0; i < 8; i++)
+                {
+                    yield return new WaitForSeconds(3f);
+                    var sb = new System.Text.StringBuilder();
+                    foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                        if (f.gameObject.scene.name.StartsWith("RestingGrounds_08") && (f.gameObject.name.Contains("Revek") || f.transform.root.name.Contains("Revek") || f.FsmName.Contains("Revek")))
+                            sb.Append($" {PathOf(f.transform)}/{f.FsmName}:{f.ActiveStateName}{(f.gameObject.activeInHierarchy ? "" : "(关)")}");
+                    Plugin.Log.LogInfo($"[AutoTest] 瑞维克 {i}：主角 {(Vector2)HeroController.instance.transform.position:F1}{sb}");
+                    if (i == 2 || i == 7)
+                        foreach (var root in UnityEngine.SceneManagement.SceneManager.GetSceneByName("RestingGrounds_08").GetRootGameObjects())
+                            if (root.name.Contains("Revek") || root.GetComponentInChildren<PlayMakerFSM>(true) != null && root.GetComponentsInChildren<PlayMakerFSM>(true).Length > 0 && System.Array.Exists(root.GetComponentsInChildren<Transform>(true), t => t.name.Contains("Revek")))
+                            {
+                                foreach (var hm in root.GetComponentsInChildren<HealthManager>(true)) Plugin.Log.LogInfo($"[AutoTest] 瑞维克 血量管理器 {PathOf(hm.transform)} hp {hm.hp} 无敌 {hm.IsInvincible}");
+                                foreach (var c in root.GetComponentsInChildren<Collider2D>(true)) Plugin.Log.LogInfo($"[AutoTest] 瑞维克 碰撞 {PathOf(c.transform)} 层 {LayerMask.LayerToName(c.gameObject.layer)} 标签 {c.tag} 触发 {c.isTrigger} 开 {c.enabled}");
+                                if (i == 2) DumpFsms(root.transform);
+                            }
+                    Shot("RestingGrounds_08", $"revek_{i}");
+                }
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
@@ -335,9 +409,47 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "gruzwake")
+            {
+                yield return GruzWakeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "fxtop")
+            {
+                yield return FxTopTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "mousebind")
+            {
+                yield return MouseBindTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "water")
             {
                 yield return WaterTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "fkbody")
+            {
+                // The False Knight fought with a Minishark aimed at his body the whole time, his head out or not.
+                flowWeapon = Items.ItemType.Minishark;
+                flowAimBody = true;
+                yield return BossFlowTest(new[] { "FalseKnight" });
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "bossflow" || suite.StartsWith("bossflow_"))
+            {
+                yield return BossFlowTest(suite.Length > 9 ? suite.Substring(9).Split('+') : null);
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
@@ -450,7 +562,7 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
-            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "quit" || suite == "suicide" || suite == "dreamnail")
+            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "respawnblock" || suite == "lightmap" || suite == "worldspawn" || suite == "hookjump" || suite == "terrarecoil" || suite == "hook" || suite == "v240fix" || suite == "quit" || suite == "suicide" || suite == "dreamnail")
             {
                 if (suite == "fsmdump") yield return FsmDumpTest();
                 else if (suite == "stag") yield return StagTest(hero);
@@ -459,6 +571,20 @@ namespace TerraKnight
                 else if (suite == "plat") { yield return BellTest(); yield return PlatformDropTest(); }
                 else if (suite == "guide") yield return GuideTest();
                 else if (suite == "respawn") yield return RespawnTest();
+                else if (suite == "respawnblock") yield return RespawnBlockTest();
+                else if (suite == "lightmap") yield return LightMapTest();
+                else if (suite == "hook") yield return HookTest(HeroController.instance);
+                else if (suite == "worldspawn") yield return WorldSpawnTest();
+                else if (suite == "hookjump") yield return HookJumpTest();
+                else if (suite == "terrarecoil") yield return TerraRecoilTest();
+                else if (suite == "v240fix")
+                {
+                    yield return WorldSpawnTest();
+                    yield return HookJumpTest();
+                    yield return TerraRecoilTest();
+                    yield return RespawnBlockTest();
+                    yield return LightMapTest();
+                }
                 else if (suite == "quit") yield return QuitTest();
                 else if (suite == "suicide") yield return SuicideTest();
                 else if (suite == "dreamnail") yield return DreamNailTest();

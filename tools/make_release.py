@@ -1,6 +1,6 @@
 """Packs a release: release/TerraKnight-v<version>.zip, laid out like the game folder so it unzips
 straight into it: BepInEx/plugins/TerraKnight/TerraKnight.dll, the launcher (泰拉圣巢.bat and
-terraknight-launch.ps1) and 安装说明.txt. The version is Plugin.Version. The build goes to the
+terraknight-launch.ps1), 安装说明.txt and its English twin Install (English).txt. The version is Plugin.Version. The build goes to the
 staging folder, never into the game's own plugin folder (so it is safe while the game is running).
 
     python tools/make_release.py
@@ -24,6 +24,21 @@ NOTES = """泰拉圣巢 TerraKnight v{version}
 完整说明：{repo}
 """
 
+NOTES_EN = """TerraKnight v{version}
+
+1. Install BepInEx 5.4.23 (win x64) for Hollow Knight first: https://github.com/BepInEx/BepInEx/releases
+   Unzip BepInEx_win_x64_5.4.23.x.zip into Hollow Knight's game folder (the folder with hollow_knight.exe),
+   then start the game once from Steam, wait for the main menu and quit, so that BepInEx creates its folders.
+2. Unzip everything in this archive into the same game folder. It goes into BepInEx\\plugins\\TerraKnight\\,
+   plus 泰拉圣巢.bat (the TerraKnight launcher) and terraknight-launch.ps1 in the game folder.
+3. Terraria (Steam, 1.4.x) must be installed on the same computer: the mod reads its textures, sounds and
+   text from your Terraria, and none of them are packed with the mod. Terraria in the same Steam library is
+   found automatically; otherwise set TerrariaDir in BepInEx\\config\\com.haoawake.terraknight.cfg.
+4. Double-click 泰拉圣巢.bat in the game folder to play. Starting the game from Steam runs vanilla Hollow Knight.
+
+Full documentation (English): {repo}/blob/main/README.en.md
+"""
+
 
 def main():
     plugin = open(os.path.join(ROOT, 'src', 'TerraKnight', 'Plugin.cs'), encoding='utf-8').read()
@@ -43,6 +58,8 @@ def main():
         shutil.copy2(os.path.join(ROOT, 'launcher', f), stage)
     with open(os.path.join(stage, '安装说明.txt'), 'w', encoding='utf-8-sig', newline='\r\n') as f:
         f.write(NOTES.format(version=version, repo=REPO))
+    with open(os.path.join(stage, 'Install (English).txt'), 'w', encoding='utf-8-sig', newline='\r\n') as f:
+        f.write(NOTES_EN.format(version=version, repo=REPO))
     zip_path = os.path.join(ROOT, 'release', name + '.zip')
     if os.path.exists(zip_path):
         os.remove(zip_path)
