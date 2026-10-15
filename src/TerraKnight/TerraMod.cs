@@ -1192,6 +1192,8 @@ namespace TerraKnight
             int x = cell.x, y = cell.y;
             if (!TerraWorld.InWorld(x, y) || TerraWorld.Get(x, y) != CellKind.Empty) return false;
             if (BossRooms.Locked(x, y)) return false;
+            // Furniture stands there (a station, a chest).
+            if (Stations.Covers(cell) || Chests.Covers(cell)) return false;
             switch (kind)
             {
                 case CellKind.Torch:

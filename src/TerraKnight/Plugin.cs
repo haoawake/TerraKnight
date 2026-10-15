@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "2.5.0";
+        public const string Version = "2.5.1";
 
         internal static ManualLogSource Log;
 
@@ -136,6 +136,7 @@ namespace TerraKnight
             World.EnemyBlockers.Init();
             UI.TerraCursor.Install(host, harmony);
             if (mod.AutoTest != null && testSuite.Value == "profile") DevLoadProfiler.Install(harmony);
+            if (mod.AutoTest != null && (suite == "lag" || suite == "sentryscan" || suite == "v251diag")) DevFrameProfiler.Install(harmony);
             Log.LogInfo($"{ModName} {Version} 已加载，泰拉瑞亚素材：{TerrariaAssets.ImagesDir}");
         }
     }

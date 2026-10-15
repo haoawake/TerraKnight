@@ -62,11 +62,12 @@ namespace TerraKnight.Items
             box.isTrigger = true;
 
             // The variables DamageEnemies documents for the slash FSM; props mostly read "direction".
+            // A Dreamer in its dream multiplies the damage by "Multiplier" (read as 0 when missing: no hit).
             var fsm = go.AddComponent<PlayMakerFSM>();
             fsm.FsmName = "damages_enemy";
             direction = new FsmFloat("direction");
             damageDealt = new FsmInt("damageDealt");
-            fsm.FsmVariables.FloatVariables = new[] { direction, new FsmFloat("magnitudeMult") { Value = 1f } };
+            fsm.FsmVariables.FloatVariables = new[] { direction, new FsmFloat("magnitudeMult") { Value = 1f }, new FsmFloat("Multiplier") { Value = 1f } };
             fsm.FsmVariables.IntVariables = new[] { damageDealt, new FsmInt("attackType"), new FsmInt("Special Type") };
             fsm.FsmVariables.BoolVariables = new[] { new FsmBool("circleDirection"), new FsmBool("Ignore Invuln"), new FsmBool("moveDirection") };
             go.SetActive(false);

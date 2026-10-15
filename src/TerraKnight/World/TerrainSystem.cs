@@ -97,6 +97,12 @@ namespace TerraKnight.World
         static List<Collider2D> HandPlacedTerrain(tk2dTileMap map, Dictionary<string, List<string>> skipped)
         {
             var list = new List<Collider2D>();
+            // The tilemap's own area, which the grid covers. Ground set down wholly outside it is kept
+            // as the game made it: the off-map cages the pooled enemies wait in (Deepnest's tram rooms
+            // keep their Carver Hatchers' spawners on such a floor; without it they fell for ever, dying
+            // and coming back on a kill plane below, hundreds of bodies a minute).
+            Vector3 tile = map.data != null ? map.data.tileSize : Vector3.one;
+            var area = new Rect(map.transform.position.x, map.transform.position.y, map.width * tile.x, map.height * tile.y);
             foreach (var root in map.gameObject.scene.GetRootGameObjects())
                 foreach (var col in root.GetComponentsInChildren<Collider2D>(false))
                 {
@@ -105,8 +111,10 @@ namespace TerraKnight.World
                     if (col.GetComponentInParent<TerraOwned>() != null) continue;
                     string why = null;
                     var rb = col.attachedRigidbody;
+                    var b = col.bounds;
+                    if (!area.Overlaps(Rect.MinMaxRect(b.min.x, b.min.y, b.max.x, b.max.y))) why = "在地图外";
                     // One-way platforms (effectors) stay the game's.
-                    if (col.isTrigger) why = "触发器";
+                    else if (col.isTrigger) why = "触发器";
                     else if (col.usedByEffector) why = "单向平台";
                     else if (col is CompositeCollider2D || col.compositeOperation != Collider2D.CompositeOperation.None) why = "复合";
                     else if (rb != null && rb.bodyType != RigidbodyType2D.Static) why = "会动";

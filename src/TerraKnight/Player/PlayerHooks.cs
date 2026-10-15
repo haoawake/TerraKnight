@@ -47,7 +47,7 @@ namespace TerraKnight.Player
             else if (boolName == "hasAcidArmour") __result |= Items.Equipment.Current.Swim;
         }
 
-        // --- Hollow Knight abilities: nail, spells, focus, dream nail, crystal heart are gone. ---
+        // --- Hollow Knight abilities: nail, spells, focus, dream nail, crystal heart are gone (the focus comes back to drain a Dreamer). ---
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HeroController), "CanAttack")]
@@ -62,6 +62,8 @@ namespace TerraKnight.Player
             if (!Active) return true;
             // The nail item in hand: the game's own nail checks (Items.NailItem).
             if (__originalMethod.Name == "CanAttack" && Items.NailItem.LetsAttack) return true;
+            // A Dreamer struck down in its dream, the Dream Nail in hand: the focus that drains it (Items.DreamNailItem).
+            if (__originalMethod.Name == "CanFocus" && Items.DreamNailItem.DreamFocus()) return true;
             __result = false;
             return false;
         }

@@ -947,6 +947,9 @@ namespace TerraKnight.Player
                     foreach (var t in World.TerrainSystem.All) t.Region?.SuspendPlatforms(area, 0.3f);
                     if (___rb2d.linearVelocity.y > -2f * PxT) ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x, -2f * PxT);
                 }
+                // A Work Bench or an anvil stood on: through its top the same way.
+                else if (!solid && World.Stations.DropThrough(b, 0.3f) && ___rb2d.linearVelocity.y > -2f * PxT)
+                    ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x, -2f * PxT);
             }
 
             // Rope: any of the hero's rows in the column under his centre.

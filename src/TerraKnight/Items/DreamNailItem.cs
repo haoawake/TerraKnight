@@ -12,7 +12,8 @@ namespace TerraKnight.Items
     /// or the right button is the game's own Dream Nail button: held it charges, let go it slashes,
     /// with S or W held it sets or takes the Dreamgate, all by the game's Dream Nail FSM and its
     /// animations. Its slash also deals damage, a melee hit as strong as the progress reached
-    /// (<see cref="Shop.UnlockedStage"/>), to whatever it reads.
+    /// (<see cref="Shop.UnlockedStage"/>), to whatever it reads. In a Dreamer's dream, once the
+    /// Dreamer is struck down, its button held is the Knight's focus that drains the Dreamer.
     /// </summary>
     [HarmonyPatch]
     internal static class DreamNailItem
@@ -37,7 +38,7 @@ namespace TerraKnight.Items
             Type = ItemType.DreamNail, Name = "梦之钉", Texture = Icon, Class = DamageClass.Melee, Damage = DamageByStage[0], Knockback = 2f,
             UseAnimation = 1f, UseTime = 1f, MaxStack = 1, Rare = -11, Value = 0, Stage = 0, Source = ItemSource.Basic,
             NoMelee = true, NoUseGraphic = true, UseSound = null, Permanent = true, GameTool = true,
-            Tooltip = "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升，觉醒后再提高 50%\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n不能出售、丢弃，也不能扔进垃圾桶",
+            Tooltip = "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升，觉醒后再提高 50%\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n在守梦人的梦里打伤守梦人后，按住左键或右键就是聚集，吸收守梦人\n不能出售、丢弃，也不能扔进垃圾桶",
         };
 
         public static bool Holding()
@@ -91,10 +92,77 @@ namespace TerraKnight.Items
             if (gm == null || gm.isPaused || !(__instance.activeBool.Value || __instance.activeBool.IsNone)) return false;
             Sample();
             var fsm = __instance.Fsm;
+            // Draining a Dreamer: the button is the focus (ListenFocus), not a slash.
+            if (DreamFocus())
+            {
+                fsm.Event(__instance.isNotPressed);
+                return false;
+            }
             if (pressed) fsm.Event(__instance.wasPressed);
             if (released) fsm.Event(__instance.wasReleased);
             fsm.Event(down ? __instance.isPressed : __instance.isNotPressed);
             return false;
+        }
+
+        // ------------------------------------------------------------------ the Dreamers' focus
+
+        static PlayMakerFSM spellFsm;
+        static HeroController spellOf;
+
+        static PlayMakerFSM SpellFsm(HeroController hero)
+        {
+            if (hero == null) return null;
+            if (spellOf == hero && spellFsm != null) return spellFsm;
+            spellOf = hero;
+            spellFsm = null;
+            foreach (var f in hero.GetComponents<PlayMakerFSM>())
+                if (f.FsmName == "Spell Control") { spellFsm = f; break; }
+            return spellFsm;
+        }
+
+        /// <summary>
+        /// A Dreamer struck down in its dream: the game sets the Knight's Spell Control "Dream Focus"
+        /// and waits for the focus that drains the Dreamer (Dreamer NPC: DREAM FOCUS START).
+        /// </summary>
+        public static bool DreamerWounded()
+        {
+            var fsm = SpellFsm(HeroController.SilentInstance);
+            var b = fsm != null ? fsm.FsmVariables.FindFsmBool("Dream Focus") : null;
+            return b != null && b.Value;
+        }
+
+        /// <summary>
+        /// The Knight's focus is gone with the rest of his spells (Terraria heals with potions); with a
+        /// Dreamer struck down and the Dream Nail in hand, the Dream Nail's button is that focus.
+        /// </summary>
+        public static bool DreamFocus() => TerraMod.Instance != null && Holding() && DreamerWounded();
+
+        /// <summary>The game's focus button listener (its key is switched off), fed from the Dream Nail's button while draining a Dreamer.</summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ListenForCast), nameof(ListenForCast.CheckForInput))]
+        static bool ListenFocus(ListenForCast __instance)
+        {
+            if (!DreamFocus()) return true;
+            var gm = GameManager.UnsafeInstance;
+            if (gm == null || gm.isPaused || !(__instance.activeBool.IsNone || __instance.activeBool.Value)) return false;
+            Sample();
+            var fsm = __instance.Fsm;
+            if (pressed) fsm.Event(__instance.wasPressed);
+            if (released) fsm.Event(__instance.wasReleased);
+            fsm.Event(down ? __instance.isPressed : __instance.isNotPressed);
+            return false;
+        }
+
+        static float nextHint;
+
+        /// <summary>While a struck-down Dreamer waits to be drained: what to press, every few seconds until the button is held.</summary>
+        static void DreamFocusHint()
+        {
+            if (!DreamerWounded()) { nextHint = 0f; return; }
+            if (down && Holding()) { nextHint = Time.unscaledTime + 4f; return; }
+            if (Time.unscaledTime < nextHint) return;
+            nextHint = Time.unscaledTime + 6f;
+            UI.CenterNotice.Show(Lang.T(Holding() ? "按住左键或右键聚集，吸收守梦人" : "拿起梦之钉，按住左键或右键聚集"));
         }
 
         // ------------------------------------------------------------------ standing still
@@ -200,6 +268,7 @@ namespace TerraKnight.Items
         public static void Tick(TerraMod mod, HeroController hero)
         {
             EnsureIcon();
+            DreamFocusHint();
             if (Time.unscaledTime < nextCheck) return;
             nextCheck = Time.unscaledTime + 1f;
             var def = ItemDb.Get(ItemType.DreamNail);

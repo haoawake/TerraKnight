@@ -82,6 +82,8 @@ namespace TerraKnight.World
         public static Vector2 DevLastSpawn;
         public static Rect DevView => ViewRect();
         public static readonly Dictionary<string, int> DevRejected = new Dictionary<string, int>();
+        /// <summary>Dev: the copies' FSMs left off as the originals have them (enemy/FSM).</summary>
+        public static readonly HashSet<string> DevKeptOff = new HashSet<string>();
 
         static readonly AccessTools.FieldRef<HealthManager, GameObject> battleScene = AccessTools.FieldRefAccess<HealthManager, GameObject>("battleScene");
         static readonly AccessTools.FieldRef<HealthManager, GameObject> killedObj = AccessTools.FieldRefAccess<HealthManager, GameObject>("sendKilledToObject");
@@ -207,7 +209,8 @@ namespace TerraKnight.World
                     }
                 }
             }
-            if (count > 0) Plugin.Log.LogInfo($"[刷怪] {name}：{count} 个刷新点（模板 {found.Count} 个敌人中合格的），排除：{DescribeRejects()}");
+            if (count > 0) Plugin.Log.LogInfo($"[刷怪] {name}：{count} 个刷新点（模板 {found.Count} 个敌人中合格的），排除：{DescribeRejects()}{(DevKeptOff.Count > 0 ? "；复制体里照原版关着的状态机：" + string.Join("、", DevKeptOff) : "")}");
+            DevKeptOff.Clear();
         }
 
         static void Reject(string why) => DevRejected[why] = DevRejected.TryGetValue(why, out int n) ? n + 1 : 1;
@@ -314,13 +317,24 @@ namespace TerraKnight.World
 
         /// <summary>
         /// The inactive copy every later enemy of the slot is made from: no persistence record (it
-        /// would tie its deaths to the original's), no premade corpse, alive, in no arena, its
-        /// FSMs switched on again (a neighbour's were held), marked "(TK)".
+        /// would tie its deaths to the original's), no premade corpse, alive, in no arena, each FSM
+        /// on or off as the scene has it on the original (a neighbour's held ones as the scene had
+        /// them), marked "(TK)". An FSM the scene keeps off stays off: the Husk Sentry's Fall Check,
+        /// on in a copy, flipped it between falling and landing every frame, frozen in place and
+        /// starting its startle and patrol sounds over and over.
         /// </summary>
         static GameObject MakeTemplate(HealthManager hm, Transform holder)
         {
+            var own = hm.GetComponentsInChildren<PlayMakerFSM>(true);
             var t = Instantiate(hm.gameObject, holder, true);
             t.name = hm.gameObject.name + TK;
+            // Paired one for one while the copy is still whole (its premade corpse, taken out below, has FSMs too).
+            var copies = t.GetComponentsInChildren<PlayMakerFSM>(true);
+            for (int i = 0; i < copies.Length; i++)
+            {
+                copies[i].enabled = copies.Length == own.Length ? DeferredFsms.WasOn(own[i]) ?? own[i].enabled : true;
+                if (!copies[i].enabled) DevKeptOff.Add($"{BaseName(hm.name)}/{copies[i].FsmName}");
+            }
             var pbi = t.GetComponent<PersistentBoolItem>();
             if (pbi != null) DestroyImmediate(pbi);
             var ede = hm.GetComponent<EnemyDeathEffects>();
@@ -333,7 +347,6 @@ namespace TerraKnight.World
             var thm = t.GetComponent<HealthManager>();
             thm.SetIsDead(false);
             thm.SetBattleScene(null);
-            foreach (var f in t.GetComponentsInChildren<PlayMakerFSM>(true)) f.enabled = true;
             if (!t.activeSelf) t.SetActive(true);
             return t;
         }

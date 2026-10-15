@@ -106,6 +106,14 @@ namespace TerraKnight.World
             return false;
         }
 
+        /// <summary>A held FSM: whether its scene had it switched on (null: not held, its own enabled says).</summary>
+        public static bool? WasOn(PlayMakerFSM fsm)
+        {
+            foreach (var (f, wasOn) in held)
+                if (f == fsm) return wasOn;
+            return null;
+        }
+
         /// <summary>Forget held FSMs (their scene is going).</summary>
         public static void Clear()
         {

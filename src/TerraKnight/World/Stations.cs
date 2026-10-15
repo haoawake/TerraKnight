@@ -18,7 +18,12 @@ namespace TerraKnight.World
     /// Furnace and an anvil at the bench, and the rest. Standing near one (Player.AdjTiles: the
     /// player's tile reach, 5 tiles across and 4 up and down) makes its recipes. Each is drawn from
     /// its tile's sheet (its style's frame), stands on two or three cells of ground like a chest,
-    /// and a pickaxe knocks it back into an item. A station belongs to the scene it stands in, in
+    /// and a pickaxe knocks it back into an item. The ones Terraria makes solid on top (Main.tileSolidTop:
+    /// the Work Bench, the anvils, the Tinkerer's Workshop) are stood on like a platform (held down,
+    /// dropped through) and carry other furniture (TileObject.CanPlace's SolidWithTop and Table
+    /// anchors: an anvil on a bench, a bottle on a bench). One whose ground is dug out from under it
+    /// falls back into its item, as Terraria's furniture breaks without its anchor, and whatever
+    /// stood on it with it. A station belongs to the scene it stands in, in
     /// that scene's own coordinates, and is kept in the mod's save. A Hallownest bench or Dirtmouth
     /// still makes everything its stage has reached (Items.Recipes), these add to that anywhere.
     /// </summary>
@@ -37,21 +42,23 @@ namespace TerraKnight.World
             public ItemType Item;
             /// <summary>The recipe stations it is (Recipe.Station's names): an anvil of mythril is an anvil too.</summary>
             public string[] Counts;
+            /// <summary>Main.tileSolidTop: stood on like a platform, and furniture goes on top.</summary>
+            public bool SolidTop;
         }
 
         static readonly Dictionary<StationKind, Spec> specs = new Dictionary<StationKind, Spec>
         {
             // TileObjectData: Style2x1 with CoordinateHeights {18} (tiles 18, 16), Style3x2 {16, 18} (17, 114).
-            [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" } },
+            [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" }, SolidTop = true },
             [StationKind.Furnace] = new Spec { Texture = "Tiles_17", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Furnace, Counts = new[] { "熔炉" } },
-            [StationKind.IronAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.IronAnvil, Counts = new[] { "砧" } },
-            [StationKind.LeadAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, StyleX = 36, Heights = new[] { 18 }, Item = ItemType.LeadAnvil, Counts = new[] { "砧" } },
+            [StationKind.IronAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.IronAnvil, Counts = new[] { "砧" }, SolidTop = true },
+            [StationKind.LeadAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, StyleX = 36, Heights = new[] { 18 }, Item = ItemType.LeadAnvil, Counts = new[] { "砧" }, SolidTop = true },
             // Tile 134: Style2x1, drawn 2 px down (DrawYOffset).
-            [StationKind.MythrilAnvil] = new Spec { Texture = "Tiles_134", W = 2, H = 1, Heights = new[] { 16 }, DrawY = 2, Item = ItemType.MythrilAnvil, Counts = new[] { "砧", "秘银砧" } },
-            [StationKind.OrichalcumAnvil] = new Spec { Texture = "Tiles_134", W = 2, H = 1, StyleX = 36, Heights = new[] { 16 }, DrawY = 2, Item = ItemType.OrichalcumAnvil, Counts = new[] { "砧", "秘银砧" } },
+            [StationKind.MythrilAnvil] = new Spec { Texture = "Tiles_134", W = 2, H = 1, Heights = new[] { 16 }, DrawY = 2, Item = ItemType.MythrilAnvil, Counts = new[] { "砧", "秘银砧" }, SolidTop = true },
+            [StationKind.OrichalcumAnvil] = new Spec { Texture = "Tiles_134", W = 2, H = 1, StyleX = 36, Heights = new[] { 16 }, DrawY = 2, Item = ItemType.OrichalcumAnvil, Counts = new[] { "砧", "秘银砧" }, SolidTop = true },
             [StationKind.Sawmill] = new Spec { Texture = "Tiles_106", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.Sawmill, Counts = new[] { "锯木机" } },
             [StationKind.Loom] = new Spec { Texture = "Tiles_86", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Loom, Counts = new[] { "织布机" } },
-            [StationKind.TinkerersWorkshop] = new Spec { Texture = "Tiles_114", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.TinkerersWorkshop, Counts = new[] { "工匠作坊" } },
+            [StationKind.TinkerersWorkshop] = new Spec { Texture = "Tiles_114", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.TinkerersWorkshop, Counts = new[] { "工匠作坊" }, SolidTop = true },
             // A placed bottle (tile 13 style 0) is the alchemy station.
             [StationKind.Bottle] = new Spec { Texture = "Tiles_13", W = 1, H = 1, Heights = new[] { 16 }, Item = ItemType.Bottle, Counts = new[] { "玻璃瓶" } },
             // Tile 29: Style2x1 with CoordinateHeights {18}; it counts as no station.
@@ -66,6 +73,12 @@ namespace TerraKnight.World
             public Vector2 Local;
             public int Damage;
             public SpriteRenderer Renderer;
+            /// <summary>Its top, a one-way platform on the terrain layer (the solid-top ones).</summary>
+            public GameObject Top;
+            public float TopOffUntil;
+            /// <summary>Whether it had its ground under it at the last look, in which region (a load starts afresh).</summary>
+            public bool Supported;
+            public TerrainRegion SupportedIn;
             TerrainRegion region;
             public TerrainRegion Region
             {
@@ -156,6 +169,10 @@ namespace TerraKnight.World
             return true;
         }
 
+        /// <summary>Dev: why the last FindSpot found no spot.</summary>
+        public static string DevWhy;
+        public static int DevDrops;
+
         public static bool FindSpot(StationKind kind, HeroController hero, Vector2 aim, out Vector2 bottom)
         {
             bottom = default;
@@ -166,22 +183,26 @@ namespace TerraKnight.World
             // An odd width centres on a cell, an even one on a cell edge.
             float x = spec.W % 2 == 1 ? (Mathf.Floor(aim.x / cell) + 0.5f) * cell : Mathf.Round(aim.x / cell) * cell;
             var down = Physics2D.Raycast(new Vector2(x, aim.y + 0.25f), Vector2.down, 1.5f, mask);
-            if (down.collider == null) return false;
+            if (down.collider == null) { DevWhy = "下面没有地"; return false; }
             float y = down.point.y;
             for (int i = 0; i < spec.W; i++)
             {
                 float cx = x - w / 2f + (i + 0.5f) * cell;
                 var side = Physics2D.Raycast(new Vector2(cx, y + 0.1f), Vector2.down, 0.2f, mask);
-                if (side.collider == null || Mathf.Abs(side.point.y - y) > 0.06f) return false;
+                if (side.collider == null || Mathf.Abs(side.point.y - y) > 0.06f) { DevWhy = $"第 {i + 1} 格下面不平（{(side.collider != null ? side.collider.name + " " + side.point.y.ToString("F2") : "无")}，地面 {y:F2}）"; return false; }
             }
             var centre = new Vector2(x, y + h / 2f + 0.02f);
-            if (Physics2D.OverlapBox(centre, new Vector2(w, h) * 0.9f, 0f, mask) != null) return false;
+            var inWay = Physics2D.OverlapBox(centre, new Vector2(w, h) * 0.9f, 0f, mask);
+            if (inWay != null) { DevWhy = "挡着 " + inWay.name; return false; }
             var box = new Rect(x - w / 2f, y, w, h);
+            // Inset a little: one standing on another's top only touches it.
+            var inner = new Rect(box.x + 0.02f, box.y + 0.02f, box.width - 0.04f, box.height - 0.04f);
             foreach (var s in stations)
-                if (s.Region != null && s.Box.Overlaps(box)) return false;
+                if (s.Region != null && s.Box.Overlaps(inner)) { DevWhy = "和别的工作站重叠"; return false; }
             foreach (var c in Chests.Positions())
-                if (box.Contains(c)) return false;
-            if (!Reach(hero).Overlaps(box)) return false;
+                if (box.Contains(c)) { DevWhy = "和箱子重叠"; return false; }
+            if (!Reach(hero).Overlaps(box)) { DevWhy = "够不着"; return false; }
+            DevWhy = null;
             bottom = new Vector2(x, y);
             return true;
         }
@@ -212,6 +233,8 @@ namespace TerraKnight.World
             {
                 var s = stations[i];
                 if (s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
+                // WorldGen.CanKillTile: nothing under a chest goes.
+                if (Chests.RestsOn(s.Box)) return true;
                 var px = Effects.TerraParticles.ToPx(s.Box.center);
                 s.Damage += pick.PickPower;
                 TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
@@ -252,6 +275,24 @@ namespace TerraKnight.World
                 foreach (var s in stations)
                     if (s.Damage > 0 && Random.Range(0, 60) == 0) s.Damage = 0;
             }
+            // Ground dug out from under one: it falls back into its item (stacked ones follow over the next frames).
+            for (int i = stations.Count - 1; i >= 0; i--)
+            {
+                var s = stations[i];
+                if (s.Region == null) { s.SupportedIn = null; continue; }
+                bool now = HasGround(s);
+                if (s.SupportedIn == s.Region && s.Supported && !now && !Chests.RestsOn(s.Box))
+                {
+                    Dust(Effects.TerraParticles.ToPx(s.Box.center), s, 10);
+                    WorldItems.Drop(ItemStack.Of(s.Spec.Item), s.Box.center);
+                    TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
+                    Remove(i);
+                    DevFell++;
+                    continue;
+                }
+                s.Supported = now;
+                s.SupportedIn = s.Region;
+            }
             foreach (var s in stations)
             {
                 if (s.Region == null)
@@ -271,6 +312,15 @@ namespace TerraKnight.World
                 var spec = s.Spec;
                 float sink = (spec.Heights[spec.Heights.Length - 1] - 16) + spec.DrawY;
                 s.Renderer.transform.localPosition = new Vector3(s.Local.x, s.Local.y - sink * Px, Z - s.Region.Root.position.z);
+                if (s.Spec.SolidTop)
+                {
+                    if (s.Top == null) s.Top = MakeTop(s);
+                    else PlaceTop(s, s.Top);
+                    // Back on only once the player is out of it or above it: switched on round a body inside,
+                    // the one-way top pushes it up on to itself (a drop through would bounce back up).
+                    bool on = Time.time >= s.TopOffUntil && !Inside(s);
+                    if (s.Top.activeSelf != on) s.Top.SetActive(on);
+                }
             }
         }
 
@@ -303,6 +353,145 @@ namespace TerraKnight.World
             sp = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0f), 1f / Px, 0, SpriteMeshType.FullRect);
             sprites[kind] = sp;
             return sp;
+        }
+
+        public static int DevFell;
+
+        /// <summary>
+        /// Its anchor (AnchorBottom across its width): under each of its cells a block or a platform of
+        /// the grid, a solid-top station, or the scene's own ground the grid doesn't hold.
+        /// </summary>
+        static bool HasGround(Station s)
+        {
+            var box = s.Box;
+            const float cell = CellGrid.CellSize;
+            for (int i = 0; i < s.Spec.W; i++)
+            {
+                float cx = box.xMin + (i + 0.5f) * cell;
+                var under = CellGrid.WorldToCell(new Vector2(cx, box.yMin - 0.05f));
+                if (TerraWorld.RegionAt(under.x, under.y) != null && (TerraWorld.IsSolid(under.x, under.y) || TerraWorld.IsPlatform(under.x, under.y))) continue;
+                if (TopAt(cx, box.yMin, s)) continue;
+                if (OwnGround(new Vector2(cx, box.yMin + 0.05f))) continue;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>A solid-top station (other than one) whose top is at that height over that point.</summary>
+        static bool TopAt(float x, float y, Station except = null)
+        {
+            foreach (var o in stations)
+            {
+                if (o == except || o.Region == null || !o.Spec.SolidTop) continue;
+                var b = o.Box;
+                if (x > b.xMin && x < b.xMax && Mathf.Abs(b.yMax - y) < 0.06f) return true;
+            }
+            return false;
+        }
+
+        static readonly RaycastHit2D[] hits = new RaycastHit2D[8];
+
+        /// <summary>Terrain the grid doesn't hold right under a point (the scene's own floors kept as they are): not ours.</summary>
+        static bool OwnGround(Vector2 from)
+        {
+            int n = Physics2D.RaycastNonAlloc(from, Vector2.down, hits, 0.15f, 1 << ChunkColliders.TerrainLayer);
+            for (int i = 0; i < n; i++)
+                if (hits[i].collider != null && hits[i].collider.GetComponentInParent<TerraOwned>() == null && hits[i].collider.GetComponentInParent<Stations>() == null) return true;
+            return false;
+        }
+
+        /// <summary>The player's body overlaps the station with the feet below its top (dropped through, walked into).</summary>
+        static bool Inside(Station s)
+        {
+            if (s.Top == null || s.Top.activeSelf) return false;
+            var hero = HeroController.SilentInstance;
+            var col = hero != null ? hero.GetComponent<BoxCollider2D>() : null;
+            if (col == null) return false;
+            var h = col.bounds;
+            var b = s.Box;
+            return h.max.x > b.xMin && h.min.x < b.xMax && h.max.y > b.yMin && h.min.y < b.yMax - 0.02f;
+        }
+
+        /// <summary>A solid-top station's top: a one-way platform over its box on the terrain layer, as the grid's platforms are.</summary>
+        static GameObject MakeTop(Station s)
+        {
+            var go = new GameObject("Terra Station Top") { layer = ChunkColliders.TerrainLayer };
+            go.transform.SetParent(s.Renderer.transform, false);
+            go.AddComponent<TerraOwned>();
+            var rb = go.AddComponent<Rigidbody2D>();
+            rb.bodyType = RigidbodyType2D.Static;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.usedByEffector = true;
+            box.sharedMaterial = s.Region != null ? s.Region.Material : null;
+            var effector = go.AddComponent<PlatformEffector2D>();
+            effector.useOneWay = true;
+            effector.surfaceArc = 160f;
+            effector.useSideFriction = false;
+            effector.useSideBounce = false;
+            PlaceTop(s, go);
+            return go;
+        }
+
+        static void PlaceTop(Station s, GameObject top)
+        {
+            // In the renderer's space, which stands sunk by the sprite's extra pixels: the box is the station's own.
+            var b = s.Box;
+            var box = top.GetComponent<BoxCollider2D>();
+            top.transform.position = new Vector3(b.center.x, b.center.y, s.Renderer.transform.position.z);
+            box.size = b.size;
+            box.offset = Vector2.zero;
+        }
+
+        /// <summary>
+        /// Down held on a solid-top station: its top lets the player through for a moment, as the
+        /// grid's platforms do. True when the feet were on one.
+        /// </summary>
+        public static bool DropThrough(Bounds feet, float seconds)
+        {
+            bool any = false;
+            foreach (var s in stations)
+            {
+                if (s.Region == null || !s.Spec.SolidTop || s.Top == null) continue;
+                var b = s.Box;
+                if (feet.max.x <= b.xMin || feet.min.x >= b.xMax || Mathf.Abs(feet.min.y - b.yMax) > 0.15f) continue;
+                s.TopOffUntil = Time.time + seconds;
+                s.Top.SetActive(false);
+                any = true;
+                DevDrops++;
+            }
+            return any;
+        }
+
+        /// <summary>A loaded station takes up part of this box (touching its top or sides doesn't count).</summary>
+        public static bool Overlaps(Rect box)
+        {
+            var inner = new Rect(box.x + 0.02f, box.y + 0.02f, box.width - 0.04f, box.height - 0.04f);
+            foreach (var s in stations)
+                if (s.Region != null && s.Box.Overlaps(inner)) return true;
+            return false;
+        }
+
+        /// <summary>A station covers this cell (blocks can't go in it).</summary>
+        public static bool Covers(Vector2Int cell)
+        {
+            var c = CellGrid.CellCenter(cell.x, cell.y);
+            foreach (var s in stations)
+                if (s.Region != null && s.Box.Contains(c)) return true;
+            return false;
+        }
+
+        /// <summary>Dev: the box of the station nearest a point (empty when none is loaded).</summary>
+        public static Rect DevBoxNear(Vector2 p)
+        {
+            Rect best = default;
+            float d = float.MaxValue;
+            foreach (var s in stations)
+            {
+                if (s.Region == null) continue;
+                float e = Vector2.Distance(s.Box.center, p);
+                if (e < d) { d = e; best = s.Box; }
+            }
+            return best;
         }
 
         static TerrainRegion RegionNamed(string scene)

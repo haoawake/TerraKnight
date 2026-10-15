@@ -80,6 +80,33 @@ namespace TerraKnight.World
         /// <summary>The open chest's slots (null when none is open).</summary>
         public static ItemStack[] OpenItems => IsOpen ? open.Items : null;
 
+        /// <summary>A loaded chest stands on top of this box (its bottom on the box's top, over it).</summary>
+        public static bool RestsOn(Rect below)
+        {
+            foreach (var c in chests)
+            {
+                if (c.Region == null) continue;
+                var b = c.Box;
+                if (b.xMax > below.xMin + 0.01f && b.xMin < below.xMax - 0.01f && Mathf.Abs(b.yMin - below.yMax) < 0.06f) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A loaded chest covers this cell, or stands right on it (WorldGen.CanKillTile: the ground under a chest stays).</summary>
+        public static bool Covers(Vector2Int cell, bool orUnder = false)
+        {
+            var c = CellGrid.CellCenter(cell.x, cell.y);
+            const float cs = CellGrid.CellSize;
+            foreach (var ch in chests)
+            {
+                if (ch.Region == null) continue;
+                var b = ch.Box;
+                if (b.Contains(c)) return true;
+                if (orUnder && c.x > b.xMin && c.x < b.xMax && c.y < b.yMin && c.y > b.yMin - cs) return true;
+            }
+            return false;
+        }
+
         /// <summary>Where each chest in a loaded scene stands (its middle).</summary>
         public static IEnumerable<Vector2> Positions()
         {
@@ -133,6 +160,7 @@ namespace TerraKnight.World
             var box = new Rect(x - Width / 2f, y, Width, Height);
             foreach (var c in chests)
                 if (c.Region != null && c.Box.Overlaps(box)) return false;
+            if (Stations.Overlaps(box)) return false;
             if (!InReach(hero, box)) return false;
             bottom = new Vector2(x, y);
             return true;

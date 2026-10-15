@@ -143,6 +143,8 @@ namespace TerraKnight.World
             if (r.Grid.Get(lx, ly) == CellKind.Empty) return false;
             // A boss room stays as it is (mining, explosions).
             if (BossRooms.Locked(gx, gy)) return false;
+            // WorldGen.CanKillTile: the ground a chest stands on stays.
+            if (Chests.Covers(new Vector2Int(gx, gy), orUnder: true)) return false;
             // Within BorderCells of where this region stops, the world must carry on in another region.
             for (int k = 1; k <= TerrainSystem.BorderCells; k++)
             {
