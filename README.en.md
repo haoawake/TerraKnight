@@ -1,131 +1,241 @@
-# TerraKnight
+<!-- ==================== Language Switch ==================== -->
 
-[中文](README.md) | **English**
+<div align="right">
+  <a href="./README.md">中文</a> | <strong>English</strong>
+</div>
 
-> **Terraria meets Hollow Knight. Dig, build, fight, and explore Hallownest as a Terrarian.**
+<!-- ==================== Project Banner ==================== -->
 
-Replace the Knight with a Terraria adventurer. Dig through Hallownest with a Copper Pickaxe, build with blocks, craft weapons and accessories, and fight Hollow Knight's enemies with Terraria-style progression.
+<div align="center">
+  <img
+    src="./images/banner_en.png"
+    alt="TerraKnight — Terraria × Hollow Knight"
+    width="100%"
+  />
 
-**[⬇️ Latest Release](https://github.com/haoawake/TerraKnight/releases)** · **[📖 Installation Guide](docs/INSTALL.en.md)** · **[🎮 Controls](docs/GAMEPLAY.en.md)** · **[🧩 All Features](docs/FEATURES.en.md)**
+  <h1>TerraKnight</h1>
 
-## 📑 Table of Contents
+  <p>
+    <strong>Bring Terraria into Hollow Knight: mine, build, explore, and fight in Hallownest.</strong>
+  </p>
 
-- [Highlights](#-highlights)
-- [Download and Installation](#-download-and-installation)
-- [Gameplay and Controls](#-gameplay-and-controls)
-- [Multiplayer](#-multiplayer)
-- [Changelog](#-changelog)
-- [Guides and Reference](#-guides-and-reference)
-- [FAQ](#-faq)
-- [Technical Details and Development](#-technical-details-and-development)
-- [Uninstallation and Credits](#-uninstallation-and-credits)
+  <!-- ==================== Project Badges ==================== -->
 
-## ✨ Highlights
+  <a href="https://github.com/haoawake/TerraKnight/releases/latest"><img src="https://img.shields.io/github/v/release/haoawake/TerraKnight?style=flat" alt="Latest Release"/></a>
+  <a href="https://github.com/haoawake/TerraKnight"><img src="https://img.shields.io/github/stars/haoawake/TerraKnight?style=flat&amp;logo=github" alt="GitHub Stars"/></a>
+  <a href="https://github.com/haoawake/TerraKnight/releases"><img src="https://img.shields.io/github/downloads/haoawake/TerraKnight/total?style=flat" alt="Total Downloads"/></a>
+  <img src="https://img.shields.io/badge/Platform-Windows_x64-blue?style=flat" alt="Windows x64"/>
+  <a href="https://space.bilibili.com/438616101" target="_blank"><img alt="Bilibili" src="https://img.shields.io/badge/Bilibili-B站主页-FF6699?style=flat&amp;logo=bilibili&amp;logoColor=00A1D6"/></a>
 
-- **Terraria progression in Hallownest:** four classes, over a thousand Terraria items, equipment, crafting recipes, ores, materials, and stage-based drops.
-- **Dig and build:** mine terrain, place blocks and platforms, and set up workstations while exploring Hallownest in new ways.
-- **Reimagined combat and bosses:** Terraria-style health, mana, weapon damage, defenses, and equipment combined with Hollow Knight encounters.
-- **Four difficulty levels and Creative mode:** Normal, Difficult, Expert, Master, and an unrestricted mode for experimenting and exploration.
-- **Exploration and quality-of-life systems:** a Bestiary, town NPCs, shops, pylon teleportation, loadouts, inventory management, and additional save slots.
-- **Direct-IP multiplayer for up to 16 players:** explore and fight together on a LAN or virtual LAN.
+</div>
 
-For the full breakdown of game systems and mechanics, see **[All Features](docs/FEATURES.en.md)**.
+<!-- ==================== Project Introduction ==================== -->
 
-## 🚀 Download and Installation
+<p align="center">
+  You no longer play as the Knight, but enter Hallownest as a Terrarian adventurer:<br>
+  mine terrain with a Copper Pickaxe, place blocks, craft equipment, and challenge bosses,<br>
+  all while exploring Hollow Knight's world through Terraria-style progression.
+</p>
 
-**Platform: Windows 64-bit.** You need Steam installations of both **Hollow Knight** and **Terraria** on the same PC. TerraKnight loads Terraria's assets, audio, and localization from your installed game at runtime; Hollow Knight alone is not sufficient.
+<!-- ==================== Quick Links ==================== -->
 
-| Requirement | Version |
-| --- | --- |
-| Hollow Knight | Steam stable release **1.5.12620** |
-| Terraria | Steam **1.4.x** |
-| Mod loader | **BepInEx 5.4.23.x**, Windows x64 |
-| Operating system | **Windows 64-bit** |
+<div align="center">
 
-**Quick installation:**
+  <a href="https://github.com/haoawake/TerraKnight/releases">
+    <strong>Latest Release</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="./docs/INSTALL.en.md">
+    <strong>Installation Guide</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="./docs/GAMEPLAY.en.md">
+    <strong>Controls</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="./docs/FEATURES.en.md">
+    <strong>All Features</strong>
+  </a>
+  &nbsp;·&nbsp;
+  <a href="https://www.bilibili.com/video/BV1H4pr6LEAM/">
+    <strong>Video Demo</strong>
+  </a>
 
-1. Download **BepInEx 5.4.23.x win_x64** from [BepInEx Releases](https://github.com/BepInEx/BepInEx/releases) and extract it into the Hollow Knight game directory.
-2. Launch Hollow Knight once and quit after reaching the main menu so BepInEx can initialize.
-3. Download the latest TerraKnight ZIP from [Releases](https://github.com/haoawake/TerraKnight/releases) and extract it into the same game directory.
-4. Launch the mod by double-clicking **`泰拉圣巢.bat`** in the game directory.
-
-**A fresh save slot is recommended; back up your original saves first.** For installation paths, conflicts with the Modding API, and troubleshooting steps, see the full guide.
-
-**[Full installation guide and troubleshooting →](docs/INSTALL.en.md)**
-
-## 🎮 Gameplay and Controls
-
-Start a new journey in King's Pass as a Terrarian. Terraria weapons, armor, accessories, and movement mechanics replace much of the Knight's original combat and traversal.
-
-- **[Launching, controls, and gameplay tips](docs/GAMEPLAY.en.md)**
-- **[Complete mechanics and feature reference](docs/FEATURES.en.md)**
-
-## 🌐 Multiplayer
-
-TerraKnight supports **up to 16 players** via direct IP connection, using port `7777` by default, with optional passwords. Players can bring their own saves and explore, build, and fight together.
-
-Some features, including certain boss encounters, environmental events, and shops, are not fully synchronized. All players should use the same TerraKnight version.
-
-**[Hosting, joining, synchronization, and known limitations →](docs/MULTIPLAYER.en.md)**
-
-## 📰 Changelog
-
-Version history, improvements, and fixes are documented separately. Check Releases for current downloads and the trailer.
-
-- **2.6.1:** All loadouts display the full crafting recipe list.
-- **2.6.0:** Reworked stage-based loot, crafting materials, and Geo distribution.
-- **2.5.x–2.4.x:** Changes to bosses, maps, lighting, workstations, the Dream Nail, and more.
-- **2.0:** Multiplayer, customizable controls, and expanded save slots.
-
-**[Full changelog →](docs/CHANGELOG.en.md)** · **[Releases →](https://github.com/haoawake/TerraKnight/releases)**
-
-## 📚 Guides and Reference
-
-| Document | What you'll find |
-| --- | --- |
-| [All Features](docs/FEATURES.en.md) | Classes, items, combat, world systems, economy, and Creative mode |
-| [Stage Comparison](阶段对照.en.md) | Terraria progression stages matched to Hollow Knight exploration |
-| [Enemy Encounter Order](怪物遭遇顺序.en.md) | Enemy encounters organized by progression |
-| [Drop Records](掉落记录.md) | Enemy loot sources and drop probabilities |
-| [Balance Testing Report](平衡性测试报告.en.md) | Combat statistics and balance testing |
-| [Changelog](docs/CHANGELOG.en.md) | Version-by-version changes |
-
-## ❓ FAQ
-
-**Q: Why am I still playing as the Knight?**
-
-Launch the game via `泰拉圣巢.bat` and check `BepInEx/LogOutput.log` for TerraKnight loading messages.
-
-**Q: Can I still launch unmodded Hollow Knight through Steam?**
-
-Yes. The launcher temporarily enables BepInEx when starting the mod. Note that a newly installed BepInEx setup may initially be enabled until the launcher has run.
-
-**Q: Why do I need Terraria installed?**
-
-The mod reads textures, sound, and localized strings directly from your local Terraria installation rather than redistributing those assets.
-
-**Q: What if it conflicts with Scarab, Lumafly, or an older Modding API?**
-
-See the installation guide for MonoMod, Mono.Cecil, and Modding API dependency conflicts.
-
-**[Full troubleshooting guide →](docs/INSTALL.en.md#4-troubleshooting)**
-
-## 🛠️ Technical Details and Development
-
-TerraKnight runs Hollow Knight with **BepInEx** and implements Terraria-style systems in the game. Its terrain conversion, collision handling, asset loading, and scene systems are custom integrations.
-
-Relevant source and tooling directories: [src/](src/), [launcher/](launcher/), [tools/](tools/), and [promo/](promo/).
-
-**[Implementation, requirements, configuration, and development →](docs/DEVELOPMENT.en.md)**
-
-## 🧹 Uninstallation and Credits
-
-Follow the uninstallation instructions to avoid accidentally removing save data or other mods. Third-party code acknowledgments and licensing notes are included.
-
-**[Uninstallation and third-party code →](docs/UNINSTALL.en.md)**
+</div>
 
 ---
 
-**TerraKnight is an unofficial fan-made project and is not affiliated with Re-Logic or Team Cherry.**
+## 📑 Table of Contents
+
+- [✨ Highlights](#-highlights)
+- [🚀 Download and Installation](#-download-and-installation)
+- [🎮 Gameplay and Controls](#-gameplay-and-controls)
+- [🌐 Multiplayer](#-multiplayer)
+- [📰 Changelog](#-changelog)
+- [📚 Guides and Reference](#-guides-and-reference)
+- [❓ FAQ](#-faq)
+- [🛠️ Technical Details and Development](#️-technical-details-and-development)
+- [🧹 Uninstallation and Third-party Code](#-uninstallation-and-third-party-code)
+- [💬 Community QQ Group](#-community-qq-group)
+
+---
+
+## ✨ Highlights
+
+| System | Features |
+| :--- | :--- |
+| **⚔️ Terraria Progression** | Four classes, over a thousand items, weapons and accessories, original crafting recipes, ores and materials, and drops organized by progression stage. |
+| **⛏️ Mining and Building** | Mine Hallownest's terrain with a pickaxe, place blocks, build platforms and workstations, and explore beyond the usual routes. |
+| **👑 Combat and Bosses** | Terraria-style health, mana, equipment stats, and damage systems integrated with Hollow Knight's bosses and exploration. |
+| **🎚️ Difficulties and Modes** | Normal, Difficult, Expert, and Master difficulty, plus Creative mode for testing, exploration, and demonstrations. |
+| **🗺️ Exploration and Quality-of-life Features** | Bestiary, town NPCs and shops, pylon teleportation, additional save slots, equipment loadout switching, and inventory management. |
+| **🤝 Multiplayer** | Direct-IP multiplayer for up to 16 players over LAN or virtual LAN, with cooperative exploration, combat, and building. |
+
+> This is an overview of the key features. See the **[🧩 full feature documentation](docs/FEATURES.en.md)** for detailed mechanics, values, and limitations.
+
+## 🚀 Download and Installation
+
+### System Requirements
+
+**Supported platform: Windows 64-bit.**
+
+You need the Steam versions of **Hollow Knight** and **Terraria** installed on the same PC. TerraKnight reads Terraria's textures, audio, and localized resources from your local installation at runtime, so **Hollow Knight alone is not enough**.
+
+| Requirement | Version |
+| :--- | :--- |
+| **Hollow Knight** | Steam stable release **1.5.12620** |
+| **Terraria** | Steam **1.4.x** |
+| **Mod Loader** | **BepInEx 5.4.23.x**, Windows x64 |
+| **Operating System** | **Windows 64-bit** |
+
+### Quick Installation
+
+1. Download **BepInEx 5.4.23.x win_x64** from [BepInEx Releases](https://github.com/BepInEx/BepInEx/releases) and extract it into the Hollow Knight game directory.
+2. Launch Hollow Knight once, reach the main menu, and then quit to initialize BepInEx.
+3. Download the latest ZIP from [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases) and extract it into the same game directory, replacing files as prompted.
+4. Double-click **`泰拉圣巢.bat`** in the game directory to launch the mod.
+
+> [!IMPORTANT]
+> **Use a fresh save slot when possible and back up your original saves beforehand.**
+>
+> If the mod fails to load or you encounter version mismatches or MonoMod / Modding API conflicts, consult the full troubleshooting instructions.
+
+**📖 [Installation steps, directory examples, and troubleshooting →](docs/INSTALL.en.md)**
+
+## 🎮 Gameplay and Controls
+
+Start a new adventure in King's Pass, using Terraria weapons and accessories in place of some of the Knight's original movement and combat abilities. Switch between class loadouts, mine and build, collect materials, and craft new equipment.
+
+| Guide | Description |
+| :--- | :--- |
+| **[🎮 Gameplay Guide](docs/GAMEPLAY.en.md)** | Launch instructions, controls, and gameplay tips |
+| **[🧩 Full Feature Reference](docs/FEATURES.en.md)** | Detailed game mechanics and complete feature descriptions |
+| **[📺 Gameplay Demo](https://www.bilibili.com/video/BV1H4pr6LEAM/)** | Watch the TerraKnight demo on Bilibili |
+
+## 🌐 Multiplayer
+
+TerraKnight supports **direct-IP multiplayer for up to 16 players**, using port **`7777`** by default, with optional room passwords.
+
+Each player uses their own character and save, exploring, fighting, and building together in the same scene.
+
+> [!NOTE]
+> Multiplayer still has some synchronization limitations, including certain boss mechanisms and shop behaviors. All players should use the same mod version.
+
+**🌐 [Hosting, joining, synchronization rules, and known limitations →](docs/MULTIPLAYER.en.md)**
+
+## 📰 Changelog
+
+This section summarizes changes, new features, and fixes across versions. Check the [Releases page](https://github.com/haoawake/TerraKnight/releases) for the latest version and trailer.
+
+| Version | Highlights |
+| :--- | :--- |
+| **2.6.1** | Complete crafting recipes are shown in the crafting panel for every class loadout. |
+| **2.6.0** | Reworked progression-based drops, material crafting, and Geo distribution. |
+| **2.5.x–2.4.x** | Improvements to bosses, maps, lighting, workstations, the Dream Nail, and more. |
+| **2.0** | Introduced multiplayer, customizable controls, and additional save slots. |
+
+**[📜 Full Changelog](docs/CHANGELOG.en.md)** · **[⬇️ All Releases](https://github.com/haoawake/TerraKnight/releases)**
+
+## 📚 Guides and Reference
+
+The following documents provide details on gameplay mechanics, progression, and balance testing.
+
+| Document | Description |
+| :--- | :--- |
+| **[All Features](docs/FEATURES.en.md)** | Classes, items, world systems, combat, economy, Creative mode, and other mechanics |
+| **[Stage Comparison](阶段对照.en.md)** | How Hollow Knight exploration stages correspond to Terraria progression |
+| **[Enemy Encounter Order](怪物遭遇顺序.en.md)** | Enemy encounters arranged by exploration progress |
+| **[Drop Records](掉落记录.md)** | Enemy drops, sources, and drop probabilities |
+| **[Balance Testing Report](平衡性测试报告.en.md)** | Numerical and combat-balance test results |
+| **[Changelog](docs/CHANGELOG.en.md)** | Features added and fixes made in each version |
+
+## ❓ FAQ
+
+<details>
+<summary><strong>Why am I still playing as the original Knight?</strong></summary>
+
+Make sure to launch through `泰拉圣巢.bat` and check `BepInEx/LogOutput.log` for TerraKnight loading messages.
+
+</details>
+
+<details>
+<summary><strong>Can I still launch unmodded Hollow Knight through Steam?</strong></summary>
+
+Yes. The launcher temporarily enables BepInEx when launching the mod. Before you first use the launcher, a fresh BepInEx installation may still be enabled by default.
+
+</details>
+
+<details>
+<summary><strong>Why do I need to install Terraria?</strong></summary>
+
+The mod reads textures, sounds, and localized resources directly from your local Terraria installation instead of bundling those assets.
+
+</details>
+
+<details>
+<summary><strong>What if TerraKnight conflicts with Scarab, Lumafly, or an older Modding API?</strong></summary>
+
+Refer to the installation guide for troubleshooting MonoMod, Mono.Cecil, and Modding API dependency conflicts, and avoid mixing incompatible mod-loading environments.
+
+</details>
+
+**🔧 [Full Troubleshooting Guide →](docs/INSTALL.en.md#4-troubleshooting)**
+
+## 🛠️ Technical Details and Development
+
+TerraKnight uses **BepInEx** to run Hollow Knight with Terraria-style systems implemented at runtime. Terrain, collisions, resource loading, and some map processing have dedicated implementations.
+
+### Code Directories
+
+| Directory | Description |
+| :--- | :--- |
+| [`src/`](src/) | Project source code |
+| [`launcher/`](launcher/) | Launcher code |
+| [`tools/`](tools/) | Related tools |
+| [`promo/`](promo/) | Promotional resources and tools |
+
+**🛠️ [Implementation, requirements, configuration, and development guide →](docs/DEVELOPMENT.en.md)**
+
+## 🧹 Uninstallation and Third-party Code
+
+Read the uninstallation instructions before removing the mod to avoid accidentally deleting save data or files belonging to other mods. Third-party code acknowledgments and licensing information are also documented there.
+
+**📦 [Uninstallation Instructions and Third-party Code Notices →](docs/UNINSTALL.en.md)**
+
+## 💬 Community QQ Group
+
+Join the TerraKnight QQ group to discuss gameplay, share your experiences, and report issues or suggestions.
+
+<div align="center">
+  <img src="./images/QQGroup.jpg" alt="TerraKnight QQ community QR code" width="240"/>
+  <p>Scan the QR code to join the QQ group</p>
+</div>
+
+---
+
+<div align="center">
+  <p><strong>Author's Bilibili profile:</strong> <a href="https://space.bilibili.com/438616101">Visit the creator's page</a></p>
+  <p><strong>TerraKnight is an unofficial fan-made project and is not affiliated with Re-Logic or Team Cherry.</strong></p>
+</div>
 
 [⬆ Back to top](#terraknight)
