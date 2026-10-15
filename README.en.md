@@ -25,7 +25,7 @@
   <a href="https://github.com/haoawake/TerraKnight"><img src="https://img.shields.io/github/stars/haoawake/TerraKnight?style=flat&amp;logo=github" alt="GitHub Stars"/></a>
   <a href="https://github.com/haoawake/TerraKnight/releases"><img src="https://img.shields.io/github/downloads/haoawake/TerraKnight/total?style=flat" alt="Total Downloads"/></a>
   <img src="https://img.shields.io/badge/Platform-Windows_x64-blue?style=flat" alt="Windows x64"/>
-  <a href="https://space.bilibili.com/438616101" target="_blank"><img alt="Bilibili" src="https://img.shields.io/badge/Bilibili-B站主页-FF6699?style=flat&amp;logo=bilibili&amp;logoColor=00A1D6"/></a>
+  <a href="https://space.bilibili.com/438616101" target="_blank"><img alt="Bilibili" src="https://img.shields.io/badge/Bilibili-Profile-FF6699?style=flat&amp;logo=bilibili&amp;logoColor=00A1D6"/></a>
 
 </div>
 
