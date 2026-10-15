@@ -7,8 +7,12 @@ namespace TerraKnight.Items
     /// Each Hallownest enemy's fixed drops, the way a MapleStory monster has its own: by Hunter's
     /// Journal record, a few items with a "1 in N" chance each (as Terraria's ItemDropRule.Common
     /// rolls them), rolled on every kill and dropped where it died beside its geo (straight into
-    /// the inventory in a fight the game ends by taking the player away). The deeper an enemy
-    /// lives, the later the stage its drops belong to.
+    /// the inventory in a fight the game ends by taking the player away). A table holds items of
+    /// every stage, from its area's Terraria biome: one of a stage the player hasn't unlocked yet
+    /// doesn't drop (the monster book shows it as a question mark). Elites and bosses have sure
+    /// picks: one item out of a group, among the unlocked ones (ItemDropRule.OneFromOptions). The
+    /// geo an enemy drops is the table's (its Terraria counterpart's coins in proportion, scaled
+    /// to Hollow Knight's own income in its area).
     /// </summary>
     [HarmonyLib.HarmonyPatch]
     internal static partial class EnemyDrops
@@ -19,6 +23,14 @@ namespace TerraKnight.Items
             /// <summary>One chance in Den (Num in Den when Num > 1).</summary>
             public int Num, Den;
             public int Min, Max;
+            /// <summary>Above 0: one roll for all the drops of this group, at its first's chance, that gives one of them.</summary>
+            public int Group;
+            /// <summary>
+            /// The stage it unlocks at: above the unlocked one, it doesn't drop. An enemy's own rows from before the
+            /// rework are 0 (they drop as they always have); the rest take their item's stage (a bar's, before it
+            /// turns into its ore), set when the table is first read (-1 until then).
+            /// </summary>
+            public int LockStage;
 
             public float Chance => Mathf.Clamp01(Num / (float)Den);
         }
@@ -32,6 +44,8 @@ namespace TerraKnight.Items
             public int Hp;
             public string Scene;
             public bool Boss;
+            /// <summary>The geo it drops (-1: the game's own).</summary>
+            public int Geo;
             public Drop[] Drops;
         }
 
@@ -59,6 +73,12 @@ namespace TerraKnight.Items
         };
 
         public static bool Known(string record) => record != null && table.ContainsKey(record);
+
+        /// <summary>A drop of a stage the player hasn't unlocked yet: it doesn't drop, and the book hides it.</summary>
+        public static bool Locked(Drop d) => d.LockStage > Shop.UnlockedStage();
+
+        /// <summary>The geo a record's kill drops on the current difficulty (-1: the game's own).</summary>
+        public static int GeoOf(string key) => key != null && table.TryGetValue(key, out var e) && e.Geo >= 0 ? Mathf.RoundToInt(e.Geo * GeoScale) : -1;
 
         /// <summary>The bosses of the table (their records; a boss's stage variants "Record@n" are the same boss).</summary>
         public static IEnumerable<string> BossRecords()
@@ -135,20 +155,46 @@ namespace TerraKnight.Items
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> mediumGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("mediumGeoDrops");
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> largeGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("largeGeoDrops");
 
-        /// <summary>A death's geo scaled by the difficulty (each size of piece in turn, rounded, never below what it was).</summary>
+        /// <summary>
+        /// A death's geo: the table's for its record (on the difficulty), in the game's own pieces (large 25, medium 5,
+        /// small 1); an enemy the table doesn't know keeps the game's, scaled by the difficulty.
+        /// </summary>
         [HarmonyLib.HarmonyPrefix]
         [HarmonyLib.HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
         static void MoreGeo(HealthManager __instance)
         {
+            if (__instance == null || __instance.isDead || TerraMod.Instance == null) return;
+            string rec = UI.EnemyHover.RecordOf(__instance);
+            int geo = rec != null ? GeoOf(KeyFor(rec, VariantLevel(__instance.gameObject.scene.name))) : -1;
+            if (geo >= 0)
+            {
+                largeGeo(__instance) = geo / 25;
+                mediumGeo(__instance) = geo % 25 / 5;
+                smallGeo(__instance) = geo % 5;
+                DevGeo = geo;
+                return;
+            }
             float k = GeoScale;
-            if (__instance == null || __instance.isDead || k <= 1f || TerraMod.Instance == null) return;
+            if (k <= 1f) return;
             smallGeo(__instance) = Mathf.RoundToInt(smallGeo(__instance) * k);
             mediumGeo(__instance) = Mathf.RoundToInt(mediumGeo(__instance) * k);
             largeGeo(__instance) = Mathf.RoundToInt(largeGeo(__instance) * k);
         }
 
+        /// <summary>Dev: the geo the last kill with a table value was given.</summary>
+        public static int DevGeo = -1;
+
         /// <summary>A drop's chance on the current difficulty.</summary>
         public static float EffectiveChance(Drop d) => d.Chance >= 1f ? 1f : Mathf.Min(1f, d.Chance * ChanceScale);
+
+        /// <summary>How many of a drop's group are unlocked now (the book's "one of N"); 0 for a drop in no group.</summary>
+        public static int GroupSize(IReadOnlyList<Drop> drops, int group)
+        {
+            if (group <= 0) return 0;
+            int n = 0;
+            foreach (var d in drops) if (d.Group == group && !Locked(d)) n++;
+            return n;
+        }
 
         /// <summary>The most a drop gives on the current difficulty (a single item stays one).</summary>
         public static int EffectiveMax(Drop d)
@@ -177,16 +223,45 @@ namespace TerraKnight.Items
         {
             var drops = Of(record);
             if (drops.Count == 0) return;
+            List<int> rolled = null;
             foreach (var d in drops)
             {
+                if (Locked(d)) continue;
+                if (d.Group > 0)
+                {
+                    // A group: one roll, at its first drop's chance, for one of its unlocked drops.
+                    if (rolled == null) rolled = new List<int>();
+                    if (rolled.Contains(d.Group)) continue;
+                    rolled.Add(d.Group);
+                    if (Random.value >= EffectiveChance(d)) continue;
+                    var options = new List<Drop>();
+                    foreach (var o in drops) if (o.Group == d.Group && !Locked(o)) options.Add(o);
+                    if (options.Count == 0) continue;
+                    var pick = options[Random.Range(0, options.Count)];
+                    Put(pick, at, direct);
+                    DevGroupPicks++;
+                    continue;
+                }
                 if (Random.value >= EffectiveChance(d)) continue;
-                int n = Random.Range(d.Min, EffectiveMax(d) + 1);
-                if (n <= 0) continue;
-                if (direct) Give(ItemStack.Of(d.Type, n));
-                else WorldItems.Drop(ItemStack.Of(d.Type, n), at);
-                DevDropped++;
+                Put(d, at, direct);
             }
         }
+
+        /// <summary>Dev: when set, kills' drops go here (type, count) instead of into the world, for counting them.</summary>
+        public static System.Action<ItemType, int> DevSink;
+
+        static void Put(Drop d, Vector2 at, bool direct)
+        {
+            int n = Random.Range(d.Min, EffectiveMax(d) + 1);
+            if (n <= 0) return;
+            if (DevSink != null) { DevSink(d.Type, n); DevDropped++; return; }
+            if (direct) Give(ItemStack.Of(d.Type, n));
+            else WorldItems.Drop(ItemStack.Of(d.Type, n), at);
+            DevDropped++;
+        }
+
+        /// <summary>Dev: sure picks made out of groups so far.</summary>
+        public static int DevGroupPicks;
 
         /// <summary>Dev: items dropped by kills so far, and the ones given straight to the inventory.</summary>
         public static int DevDropped, DevGiven;
@@ -233,6 +308,12 @@ namespace TerraKnight.Items
             waiting.Clear();
         }
 
-        static Drop D(ItemType t, int den, int min = 1, int max = 1, int num = 1) => new Drop { Type = t, Num = num, Den = den, Min = min, Max = max };
+        static Drop D(ItemType t, int den, int min = 1, int max = 1, int num = 1) => new Drop { Type = t, Num = num, Den = den, Min = min, Max = max, LockStage = -1 };
+
+        /// <summary>One of an enemy's own rows from before the rework: never locked.</summary>
+        static Drop C(ItemType t, int den, int min = 1, int max = 1, int num = 1) => new Drop { Type = t, Num = num, Den = den, Min = min, Max = max };
+
+        /// <summary>A drop in a sure pick (group): one of the group's for certain, or at 1 in den.</summary>
+        static Drop G(int group, ItemType t, int den = 1) => new Drop { Type = t, Num = 1, Den = den, Min = 1, Max = 1, Group = group, LockStage = -1 };
     }
 }

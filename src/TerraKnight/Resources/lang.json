@@ -3502,5 +3502,53 @@
   "it-IT": "Prendi in mano il Chiodo dei sogni e tieni premuto il tasto sinistro o destro per concentrarti",
   "pt-BR": "Pegue o Ferrão dos sonhos e segure o botão esquerdo ou direito para se concentrar",
   "ru-RU": "Возьмите в руку Гвоздь грёз и удерживайте левую или правую кнопку, чтобы сосредоточиться"
+ },
+ "阶段 {0} 解锁后掉落": {
+  "en-US": "Drops once Stage {0} is unlocked",
+  "zh-Hant": "階段 {0} 解鎖後掉落",
+  "ja-JP": "ステージ {0} 解放後にドロップ",
+  "ko-KR": "단계 {0} 해금 후 드롭",
+  "de-DE": "Fällt ab Stufe {0}",
+  "fr-FR": "Tombe une fois l'étape {0} débloquée",
+  "es-ES": "Cae al desbloquear la etapa {0}",
+  "it-IT": "Cade dopo aver sbloccato la fase {0}",
+  "pt-BR": "Cai ao desbloquear o estágio {0}",
+  "ru-RU": "Выпадает после открытия этапа {0}"
+ },
+ "再获得 {0} 种能力后解锁（通常是{1}）": {
+  "en-US": "Unlocks after {0} more abilities (usually the {1})",
+  "zh-Hant": "再獲得 {0} 種能力後解鎖（通常是{1}）",
+  "ja-JP": "あと {0} つ能力を得ると解放（ふつうは{1}）",
+  "ko-KR": "능력을 {0}개 더 얻으면 해금 (보통 {1})",
+  "de-DE": "Wird nach {0} weiteren Fähigkeiten frei (meist {1})",
+  "fr-FR": "Se débloque après {0} capacités de plus (en général {1})",
+  "es-ES": "Se desbloquea tras {0} habilidades más (normalmente {1})",
+  "it-IT": "Si sblocca dopo altre {0} abilità (di solito {1})",
+  "pt-BR": "Desbloqueia após mais {0} habilidades (geralmente {1})",
+  "ru-RU": "Откроется ещё после {0} способностей (обычно {1})"
+ },
+ "{0} 选 1 必掉": {
+  "en-US": "Sure: 1 of {0}",
+  "zh-Hant": "{0} 選 1 必掉",
+  "ja-JP": "{0} 種から 1 つ確定",
+  "ko-KR": "{0}개 중 1개 확정",
+  "de-DE": "Sicher: 1 von {0}",
+  "fr-FR": "Assuré : 1 sur {0}",
+  "es-ES": "Seguro: 1 de {0}",
+  "it-IT": "Sicuro: 1 su {0}",
+  "pt-BR": "Certo: 1 de {0}",
+  "ru-RU": "Точно: 1 из {0}"
+ },
+ "{0}% 掉 {1} 选 1": {
+  "en-US": "{0}%: 1 of {1}",
+  "zh-Hant": "{0}% 掉 {1} 選 1",
+  "ja-JP": "{0}%で {1} 種から 1 つ",
+  "ko-KR": "{0}% 확률로 {1}개 중 1개",
+  "de-DE": "{0} %: 1 von {1}",
+  "fr-FR": "{0} % : 1 sur {1}",
+  "es-ES": "{0} %: 1 de {1}",
+  "it-IT": "{0}%: 1 su {1}",
+  "pt-BR": "{0}%: 1 de {1}",
+  "ru-RU": "{0}%: 1 из {1}"
  }
 }

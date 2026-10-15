@@ -1,4 +1,5 @@
 using TerraKnight.Effects;
+using TerraKnight.World;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -13,6 +14,23 @@ namespace TerraKnight.Items
     internal sealed partial class TerraProjectiles
     {
         public static int DevXenoBullets, DevBetsyShrapnel, DevBeeArrowBees, DevOnyxBlasts;
+
+        /// <summary>A star falling from the night sky from a point, its velocity in px a tick (y down); it hurts nothing.</summary>
+        public void SkyStar(Vector2 from, Vector2 velYDown)
+        {
+            var keep = SpawnClass;
+            SpawnClass = DamageClass.None;
+            Spawn(ProjKind.FallingStar, from, Flip(velYDown), 1000, 10f, 0f);
+            SpawnClass = keep;
+        }
+
+        /// <summary>The sky's stars falling now.</summary>
+        public int SkyStars()
+        {
+            int n = 0;
+            foreach (var q in live) if (q.Kind == ProjKind.FallingStar && !q.Dead) n++;
+            return n;
+        }
 
         static void RegisterGuns()
         {
@@ -77,6 +95,20 @@ namespace TerraKnight.Items
                 Ai = Ai.Custom, Texture = "Projectile_955", W = 18, H = 18, Time = 3600, Penetrate = -1, AlphaStart = 50f / 255f, TileCollide = false,
                 Light = new Color(0.9f, 0.9f, 0.9f), Update = (t, p) => t.StepCannonStar(p), Draw = (t, fx, p, px) => DrawFallingStar(fx, p, px),
                 OnKill = (t, p) => KillFallingStar(p),
+            };
+            // P:926-939, 24224-24238: the star falling from the night sky, AI_005 as the Star Cannon's, its light
+            // 0.9 × (0.9, 0.8, 0.1), hurting nothing here; where it lands lies a Fallen Star (P:79348), at daybreak
+            // it comes down at once (P:24093). See World.FallingStars.
+            specs[ProjKind.FallingStar] = new Spec
+            {
+                Ai = Ai.Custom, Texture = "Projectile_12", W = 18, H = 18, Time = 3600, Penetrate = -1, AlphaStart = 50f / 255f, TileCollide = false,
+                Light = new Color(0.81f, 0.72f, 0.09f), CanDamage = p => false,
+                Update = (t, p) => t.StepSkyStar(p), Draw = (t, fx, p, px) => DrawFallingStar(fx, p, px),
+                OnKill = (t, p) =>
+                {
+                    KillFallingStar(p);
+                    WorldItems.Drop(ItemStack.Of(ItemType.FallenStar, 1), p.Pos, fromSky: true);
+                },
             };
             // P:7661: the Super Star Shooter's star, AI_151, through everything, each enemy once.
             specs[ProjKind.SuperStar] = new Spec
@@ -622,7 +654,37 @@ namespace TerraKnight.Items
                 return;
             }
             p.SoundDelay = 20 + Random.Range(0, 40);
-            Sound("Item_9");
+            Sound("Item_9", Heard(p));
+        }
+
+        /// <summary>
+        /// How loud a star is heard: the sky's by its distance from the view's middle (ActiveSound.DetermineIntendedVolume:
+        /// 1 - distance / 2500 px), the player's own at full.
+        /// </summary>
+        static float Heard(Proj p)
+        {
+            var cam = Camera.main;
+            if (p.Kind != ProjKind.FallingStar || cam == null) return 1f;
+            return Mathf.Clamp01(1f - Vector2.Distance(p.Pos, cam.transform.position) / (2500f * Px));
+        }
+
+        /// <summary>
+        /// The sky's star: AI_005 as the Star Cannon's. Out of the room's sides or below its floor it is gone; at
+        /// daybreak it comes down where it is (P:24093, Kill, so the Fallen Star is dropped and vanishes in the light).
+        /// </summary>
+        void StepSkyStar(Proj p)
+        {
+            if (!FallingStars.InRoom(p.Pos))
+            {
+                p.Dead = true;
+                return;
+            }
+            if (TerraTime.IsDay)
+            {
+                Kill(p);
+                return;
+            }
+            StepCannonStar(p);
         }
 
         /// <summary>
@@ -683,7 +745,7 @@ namespace TerraKnight.Items
         /// </summary>
         static void KillFallingStar(Proj p)
         {
-            Sound("Item_10");
+            Sound("Item_10", Heard(p));
             var v = TV(p);
             int w = p.Spec.W;
             var c = CenterPx(p);

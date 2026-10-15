@@ -893,6 +893,7 @@ namespace TerraKnight.Items
             }
 
             DrawChat(view, ui, mouse);
+            BookHint = null;
             if (Open && bestiaryOpen) DrawBestiary(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             MouseOverUi = UI.WorldMap.MouseOnMinimap(mouse);
             foreach (var p in panels)
@@ -927,6 +928,8 @@ namespace TerraKnight.Items
             // A townsperson under the cursor: its name (Main.HoverOverNPCs).
             string npcName = Town.TownNpcs.HoverName();
             if (npcName != null && hovered.IsEmpty && inv.Mouse.IsEmpty && !MouseOverUi) DrawLines(mouse, new List<string> { npcName }, Color.white);
+            // A locked drop in the monster book: when it unlocks.
+            if (BookHint != null && hovered.IsEmpty && inv.Mouse.IsEmpty) DrawLines(mouse, new List<string> { BookHint }, new Color(0.85f, 0.85f, 0.95f));
         }
 
         /// <summary>Main.buffAlpha: each icon brightens while hovered, fading back to 0.4.</summary>
@@ -1413,7 +1416,11 @@ namespace TerraKnight.Items
             if (def.IsAccessory) lines.Add(Lang.T("可装备"));
             if (def.Places != World.CellKind.Empty || def.PlacesStation != World.StationKind.None || def.PlacesChest) lines.Add(Lang.T("可放置"));
             if (def.Consumable && !def.IsAmmo) lines.Add(Lang.T("消耗品"));
-            if (!string.IsNullOrEmpty(def.Tooltip)) lines.AddRange(def.Tooltip.Split('\n'));
+            // Item.material (Main.MouseText_DrawItemTooltip, tip[36]): whatever goes into a recipe, from the recipes themselves.
+            if (Recipes.IsMaterial(def.Type)) lines.Add(Lang.T("材料"));
+            if (!string.IsNullOrEmpty(def.Tooltip))
+                foreach (var l in def.Tooltip.Split('\n'))
+                    if (l != "材料" && l != Lang.T("材料")) lines.Add(l);
             if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None && Equipment.FamilyOf(Equipment.FullSet) == def.Set)
                 lines.Add(Lang.T("套装奖励：") + Lang.T(Equipment.SetBonusText(Equipment.FullSet)));
             if (extra != null) lines.AddRange(extra.Split('\n'));

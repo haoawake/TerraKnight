@@ -7,9 +7,10 @@ namespace TerraKnight.Items
         /// <summary>
         /// The ores and their bars, as in Terraria: enemies drop ore (EnemyDrops turns the bars of
         /// its tables into ore), smelted at a Furnace (Recipe.SetupRecipes: three of copper, tin,
-        /// iron, lead, demonite, meteorite, cobalt and palladium a bar; four of silver, tungsten,
-        /// gold, platinum, mythril and orichalcum; hellstone with obsidian at the Hellforge;
-        /// adamantite, titanium and chlorophyte at the Adamantite Forge). The metal armor sets the
+        /// iron, lead, demonite, crimtane, meteorite, cobalt and palladium a bar; four of silver,
+        /// tungsten, gold, platinum, mythril and orichalcum; hellstone with obsidian at the Hellforge;
+        /// adamantite, titanium and chlorophyte at the Adamantite Forge; four of luminite at the
+        /// Ancient Manipulator). The metal armor sets the
         /// mod lacked come with them: tin, lead, silver, tungsten and platinum (Item.SetDefaults
         /// 687-698, 91/82/78), made at an anvil.
         /// </summary>
@@ -63,6 +64,7 @@ namespace TerraKnight.Items
             new OreInfo(ItemType.PlatinumOre, "铂金矿", 702, ItemType.PlatinumBar, 4, 0, 1, 2250),
             new OreInfo(ItemType.DemoniteOre, "魔矿", 56, ItemType.DemoniteBar, 3, 1, 1, 5000),
             new OreInfo(ItemType.Meteorite, "陨石", 116, ItemType.MeteoriteBar, 3, 1, 1, 2333),
+            new OreInfo(ItemType.CrimtaneOre, "猩红矿", 880, ItemType.CrimtaneBar, 3, 1, 1, 6500),
             // Hellstone bars take an obsidian each too (OreRecipes).
             new OreInfo(ItemType.Hellstone, "狱石", 174, ItemType.HellstoneBar, 3, 2, 3, 1250, "地狱熔炉", 3),
             new OreInfo(ItemType.CobaltOre, "钴矿", 364, ItemType.CobaltBar, 3, 3, 4, 3500),
@@ -72,6 +74,8 @@ namespace TerraKnight.Items
             new OreInfo(ItemType.AdamantiteOre, "精金矿", 366, ItemType.AdamantiteBar, 4, 3, 4, 7500, "精金熔炉", 4),
             new OreInfo(ItemType.TitaniumOre, "钛金矿", 1106, ItemType.TitaniumBar, 4, 3, 4, 8500, "精金熔炉", 4),
             new OreInfo(ItemType.ChlorophyteOre, "叶绿矿", 947, ItemType.ChlorophyteBar, 5, 7, 4, 9000, "精金熔炉", 4),
+            // Luminite into its bars at the Ancient Manipulator (Recipe.cs: 4 a bar, tile 412).
+            new OreInfo(ItemType.LunarOre, "夜明矿", 3460, ItemType.LunarBar, 4, 10, 5, 15000, "远古操纵机", 5),
         });
 
         /// <summary>The ore a bar is smelted from, if any.</summary>
@@ -152,6 +156,13 @@ namespace TerraKnight.Items
                 for (int i = 0; i < e.Drops.Length; i++)
                 {
                     var d = e.Drops[i];
+                    // The stage a new row is locked to is the bar's (ores carry none of their own).
+                    if (d.LockStage < 0)
+                    {
+                        var def = ItemDb.Get(d.Type);
+                        d.LockStage = def != null ? def.Stage : 0;
+                        e.Drops[i] = d;
+                    }
                     if (!ItemDb.OreOf(d.Type, out var ore)) continue;
                     d.Type = ore.Ore;
                     d.Min *= ore.PerBar;

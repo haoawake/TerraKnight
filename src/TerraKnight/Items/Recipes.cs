@@ -73,6 +73,7 @@ namespace TerraKnight.Items
                 every = new List<Recipe>(all);
                 every.AddRange(StationRecipes());
                 every.AddRange(OreRecipes());
+                every.AddRange(ChainRecipes());
                 return every;
             }
         }

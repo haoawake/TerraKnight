@@ -516,6 +516,7 @@ namespace TerraKnight.Items
             FxParticles.Tick();
             AccessoryEffects.Tick();
             ArmorEffects.Tick();
+            FallingStars.Tick();
             MeleeSpecials.TickNow();
             armorTicks++;
             AccTick();

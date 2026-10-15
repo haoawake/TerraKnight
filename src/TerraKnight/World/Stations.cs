@@ -471,6 +471,14 @@ namespace TerraKnight.World
             return false;
         }
 
+        /// <summary>A Piggy Bank stands within this distance of a point in a loaded scene (quick stacking reaches it).</summary>
+        public static bool PiggyBankWithin(Vector2 from, float range)
+        {
+            foreach (var s in stations)
+                if (s.Kind == StationKind.PiggyBank && s.Region != null && Vector2.Distance(s.Box.center, from) <= range) return true;
+            return false;
+        }
+
         /// <summary>A station covers this cell (blocks can't go in it).</summary>
         public static bool Covers(Vector2Int cell)
         {

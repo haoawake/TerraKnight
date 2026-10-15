@@ -195,6 +195,8 @@ namespace TerraKnight.Items
         TungstenHelmet, TungstenChainmail, TungstenGreaves, PlatinumHelmet, PlatinumChainmail, PlatinumGreaves,
         // Money as an item and the bank it is kept in (ItemsMoney.cs).
         Geo, PiggyBank,
+        // The materials of the craft chain (ItemsCraftChain.cs), crimtane and luminite ore among the ores (ItemsOres.cs).
+        CrimtaneOre, CrimtaneBar, TissueSample, SpellTome, Harp, DjinnLamp, DivingHelmet, FlameWakerBoots, LunarOre,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -629,6 +631,7 @@ namespace TerraKnight.Items
         RocketWet, RocketLava, RocketHoney, RocketDry, LauncherGrenadeWet, LauncherGrenadeLava, LauncherGrenadeHoney, LauncherGrenadeDry, // 784 787 790 799 785 788 791 800
         MineWet, MineLava, MineHoney, MineDry, SnowmanWet, SnowmanLava, SnowmanHoney, SnowmanDry, // 786 789 792 801 805 806 807 810
         SpilledLiquid, FlaironHead, // (a pool where a liquid rocket burst) 404
+        FallingStar, // 12 (the night sky's)
     }
 
     /// <summary>
@@ -1392,6 +1395,7 @@ namespace TerraKnight.Items
             list.Add(NailItem.Def());
             AddOres(list);
             AddMoney(list);
+            AddCraftChain(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
             // Held-out items not given one by hand: Terraria's own hold (Main.DrawPlayerItemPos).
@@ -1417,7 +1421,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1557,6 +1561,7 @@ namespace TerraKnight.Items
             Show(ItemType.FrostsparkBoots, shoe: 9);
             Show(ItemType.TerrasparkBoots, shoe: 24);
             Show(ItemType.HellfireTreads, shoe: 23);
+            Show(ItemType.FlameWakerBoots, shoe: 22);
             Show(ItemType.TigerClimbingGear, shoe: 4, handOn: 11, handOff: 6);
             Show(ItemType.Tabi, shoe: 3);
             Show(ItemType.BlackBelt, waist: 10);

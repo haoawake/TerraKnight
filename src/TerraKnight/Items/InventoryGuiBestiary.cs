@@ -478,6 +478,9 @@ namespace TerraKnight.Items
         }
 
         /// <summary>The right page: portrait, name and kind, danger, stats, description, notes and drops.</summary>
+        /// <summary>The note under the cursor on a locked drop (when it unlocks), drawn after the book.</summary>
+        public static string BookHint;
+
         static void DrawBookEntry(Rect d, string rec, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind, ref string hoveredExtra)
         {
             bool seen = Bestiary.IsSeen(rec), beaten = Bestiary.IsDefeated(rec);
@@ -640,12 +643,28 @@ namespace TerraKnight.Items
                     Outlined(new Rect(ix + 46f * ui, iy + 10f * ui, cwid - 50f * ui, 20f * ui), "？？？", bookSmall, new Color(0.7f, 0.7f, 0.8f));
                     continue;
                 }
+                // A drop of a stage not unlocked yet: a question mark and when it comes, not the item.
+                if (EnemyDrops.Locked(dr))
+                {
+                    Outlined(s, "?", bookCentre, new Color(0.85f, 0.85f, 0.95f, 0.9f));
+                    Outlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), "？？？", bookSmall, new Color(0.7f, 0.7f, 0.8f));
+                    Outlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), Lang.F("阶段 {0} 解锁后掉落", dr.LockStage), bookSmall, new Color(0.65f, 0.65f, 0.75f));
+                    if (s.Contains(mouse))
+                    {
+                        int need = dr.LockStage - Shop.UnlockedStage();
+                        BookHint = Lang.F("再获得 {0} 种能力后解锁（通常是{1}）", need, Lang.T(Shop.GateAbility(dr.LockStage)));
+                    }
+                    continue;
+                }
                 DrawIconOnly(s, ItemStack.Of(dr.Type));
                 // On the save's difficulty (EnemyDrops.EffectiveChance / EffectiveMax).
                 int most = EnemyDrops.EffectiveMax(dr);
                 string count = dr.Min == most ? (dr.Min > 1 ? $" ×{dr.Min}" : "") : $" ×{dr.Min}-{most}";
                 float eff = EnemyDrops.EffectiveChance(dr);
                 string chance = eff >= 1f ? Lang.T("必定掉落") : $"{eff * 100f:0.##}%";
+                // One of a sure pick: one of the group's unlocked drops comes, at the group's chance.
+                int of = EnemyDrops.GroupSize(drops, dr.Group);
+                if (of > 0) chance = eff >= 1f ? Lang.F("{0} 选 1 必掉", of) : Lang.F("{0}% 掉 {1} 选 1", (eff * 100f).ToString("0.##"), of);
                 var def = ItemDb.Get(dr.Type);
                 Outlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), def.Name + count, bookSmall, ItemDb.RarityColor(def.Rare));
                 Outlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), chance, bookSmall, new Color(0.8f, 0.8f, 0.85f));

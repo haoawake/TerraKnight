@@ -35,6 +35,8 @@ namespace TerraKnight.Items
             public Vector2 Vel;
             public int GrabDelay, Age, OutTicks;
             public bool Grabbed;
+            /// <summary>A Fallen Star that fell from the night sky: gone at daybreak unless picked up.</summary>
+            public bool FromSky;
             public SpriteRenderer Renderer;
             TerrainRegion region;
             /// <summary>The item's scene while it is laid out; null from the moment that scene goes (not only from the next tick).</summary>
@@ -111,13 +113,13 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Item.NewItem with no velocity given: a random hop, up to 3 px/tick sideways and 1.6-4 up.</summary>
-        public static void Drop(ItemStack stack, Vector2 centre)
+        public static void Drop(ItemStack stack, Vector2 centre, bool fromSky = false)
         {
             var vel = new Vector2(Random.Range(-30, 31) * 0.1f, Random.Range(16, 41) * 0.1f);
-            Spawn(stack, centre, vel, 0);
+            Spawn(stack, centre, vel, 0, fromSky);
         }
 
-        static void Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay)
+        static void Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false)
         {
             var region = RegionAt(centre) ?? TerrainSystem.Current?.Region;
             if (region == null) return;
@@ -132,7 +134,7 @@ namespace TerraKnight.Items
             items.Add(new Item
             {
                 Stack = stack, Region = region, Scene = region.SceneName,
-                Local = centre - (Vector2)region.Root.position, Vel = vel, GrabDelay = grabDelay,
+                Local = centre - (Vector2)region.Root.position, Vel = vel, GrabDelay = grabDelay, FromSky = fromSky,
             });
         }
 
@@ -178,6 +180,7 @@ namespace TerraKnight.Items
                 Adopt(it);
                 if (it.GrabDelay > 0) it.GrabDelay--;
                 it.Age++;
+                if (it.FromSky && !it.Grabbed && World.TerraTime.IsDay) Fade(it);
             }
             for (int i = items.Count - 1; i >= 0; i--)
                 if (items[i].Stack.IsEmpty || items[i].OutTicks > 120) Remove(i);
@@ -234,6 +237,35 @@ namespace TerraKnight.Items
             }
         }
 
+        /// <summary>
+        /// WorldItem.DespawnIfMeetingConditions: a Fallen Star lying in the daylight goes in ten sparkles (15) and
+        /// three star gores. Only the sky's: the ones enemies drop and the player throws stay.
+        /// </summary>
+        static void Fade(Item it)
+        {
+            var tl = Effects.TerraParticles.ToPx(it.World) - new Vector2(8f, 8f);
+            var v = new Vector2(it.Vel.x, -it.Vel.y);
+            var pp = Effects.TerraParticles.Instance;
+            if (pp != null)
+            {
+                for (int i = 0; i < 10; i++) pp.NewDust(tl, 16, 16, 15, v.x, v.y, 150, 1.2f);
+                for (int i = 0; i < 3; i++) pp.NewGore(tl, v, Random.Range(16, 18));
+            }
+            it.Stack = default;
+            DevFaded++;
+        }
+
+        /// <summary>Dev: how many of the sky's Fallen Stars went at daybreak.</summary>
+        public static int DevFaded;
+
+        /// <summary>How many of the sky's Fallen Stars lie in the world.</summary>
+        public static int SkyStarsLying()
+        {
+            int n = 0;
+            foreach (var it in items) if (it.FromSky && !it.Stack.IsEmpty) n += it.Stack.Count;
+            return n;
+        }
+
         /// <summary>TryCombiningIntoNearbyItems: the same stackable item within 30 px (summed along x and y) joins this one.</summary>
         static void Combine(int i)
         {
@@ -244,7 +276,7 @@ namespace TerraKnight.Items
             for (int j = i + 1; j < items.Count && it.Stack.Count < max; j++)
             {
                 var o = items[j];
-                if (o.Region == null || o.Grabbed || o.Stack.IsEmpty || o.Stack.Type != it.Stack.Type) continue;
+                if (o.Region == null || o.Grabbed || o.Stack.IsEmpty || o.Stack.Type != it.Stack.Type || o.FromSky != it.FromSky) continue;
                 var d = o.World - c;
                 if ((Mathf.Abs(d.x) + Mathf.Abs(d.y)) / Px > 30f) continue;
                 int n = Mathf.Min(o.Stack.Count, max - it.Stack.Count);

@@ -16,8 +16,9 @@ namespace TerraKnight.World
     /// seconds a faint ghost of the enemy shows on the spot, so the player sees it coming; none
     /// comes back with the player standing right there.
     /// Bosses, arena and gauntlet waves, scripted and one-time enemies, the Path of Pain's and
-    /// other pogo platforms, pooled spawner children and everything in Godhome, dreams, the
-    /// Colosseum and the White Palace are left alone.
+    /// other pogo platforms, pooled spawner children, the Dirtcarvers (they dig away and come
+    /// up again whole by themselves, the game sending more out of its pool) and everything in
+    /// Godhome, dreams, the Colosseum and the White Palace are left alone.
     /// </summary>
     internal sealed class EnemyRespawn : MonoBehaviour
     {
@@ -377,7 +378,7 @@ namespace TerraKnight.World
 
         static readonly HashSet<string> recordNever = new HashSet<string>
         {
-            "AbyssTendril", "AcidFlyer", "AcidWalker", "BigBuzzer", "BigCentipede", "BigFly", "BindingSeal", "BlackKnight", "Blobble", "Blocker", "ColFlyingSentry",
+            "AbyssTendril", "AcidFlyer", "AcidWalker", "BabyCentipede", "BigBuzzer", "BigCentipede", "BigFly", "BindingSeal", "BlackKnight", "Blobble", "Blocker", "ColFlyingSentry",
             "ColHopper", "ColMiner", "ColMosquito", "ColRoller", "ColShield", "ColWorm", "CrystalCrawler", "DungDefender", "EggSac", "ElectricMage", "FalseKnight",
             "FinalBoss", "FlameBearerLarge", "FlameBearerMed", "FlameBearerSmall", "FlukeMother", "GhostAladar", "GhostGalien", "GhostHu", "GhostMarkoth", "GhostMarmu",
             "GhostNoEyes", "GhostXero", "GodseekerMask", "GorgeousHusk", "GreyPrince", "Grimm", "GrubMimic", "Hatchling", "HealthScuttler", "HiveKnight", "HollowKnight",

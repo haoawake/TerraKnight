@@ -340,15 +340,33 @@ namespace TerraKnight.World
         /// <summary>
         /// Quick Stack to Nearby Chests (QuickStacking.QuickStackToNearbyChests): the bag below the
         /// hotbar, not its favourites, onto every chest within 600 px (NearbyChests.GetChestsInRangeOf)
-        /// that already holds that item. How many stacks moved.
+        /// that already holds that item, a Piggy Bank in range among them (its storage is the player's
+        /// bank). The geo goes too, from anywhere in the bag: into the Piggy Bank when one stands in
+        /// range, else onto the chests in range that hold geo, else into the nearest of them. How many
+        /// stacks moved.
         /// </summary>
         public static int QuickStackNearby(Inventory inv, Vector2 from)
         {
             int moved = 0;
             float range = 600f * Effects.TerraParticles.Px;
+            var near = new List<Chest>();
+            if (Stations.PiggyBankWithin(from, range)) near.Add(new Chest(inv.Bank) { Bank = true });
             foreach (var c in chests)
+                if (c.Region != null && !c.Bank && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
+            near.Sort((a, b) => a.Bank != b.Bank ? (a.Bank ? -1 : 1) : (a.Bank ? 0 : Vector2.Distance(a.Box.center, from).CompareTo(Vector2.Distance(b.Box.center, from))));
+            // The geo: the bank first, else a chest that has some, else the nearest chest.
+            if (near.Count > 0)
             {
-                if (c.Region == null || Vector2.Distance(c.Box.center, from) > range) continue;
+                Chest to = near[0].Bank ? near[0] : near.Find(c => System.Array.Exists(c.Items, it => !it.IsEmpty && it.Type == ItemType.Geo)) ?? near[0];
+                for (int i = 0; i < Inventory.Size; i++)
+                {
+                    ref var s = ref inv.Slots[i];
+                    if (s.IsEmpty || s.Favorite || s.Type != ItemType.Geo) continue;
+                    if (PutIn(to, ref s)) moved++;
+                }
+            }
+            foreach (var c in near)
+            {
                 for (int i = Inventory.HotbarSize; i < Inventory.Size; i++)
                 {
                     ref var s = ref inv.Slots[i];
