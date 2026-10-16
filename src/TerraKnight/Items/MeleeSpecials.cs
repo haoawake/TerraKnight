@@ -319,7 +319,7 @@ namespace TerraKnight.Items
             var mod = TerraMod.Instance;
             if (hero == null || mod == null) return;
             var mouse = UnityEngine.InputSystem.Mouse.current;
-            bool right = !TerraMod.DevNoRealMouse && mouse != null && mouse.rightButton.isPressed && !InventoryGui.MouseOverUi && GameHooks.PlayerHasControl();
+            bool right = !TerraMod.DevNoRealMouse && Player.TerraKeys.Held(Player.TerraKeys.Action.Interact) && !InventoryGui.MouseOverUi && GameHooks.PlayerHasControl();
             Tick(hero, mod.IsUsingItem, right, RightLatch);
             RightLatch = false;
         }

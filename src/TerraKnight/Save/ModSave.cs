@@ -99,6 +99,8 @@ namespace TerraKnight.Save
         {
             public string Scene;
             public float X, Y;
+            /// <summary>Its name (ChestUI's Rename), "" for none.</summary>
+            public string Name;
             public List<SlotItem> Items = new List<SlotItem>();
         }
 
@@ -264,7 +266,7 @@ namespace TerraKnight.Save
             file.Chests = new List<ChestSave>();
             foreach (var c in Net.WorldSync.SaveChests())
             {
-                var cs = new ChestSave { Scene = c.Scene, X = c.Local.x, Y = c.Local.y };
+                var cs = new ChestSave { Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Name = c.Name };
                 foreach (var it in c.Items) cs.Items.Add(Pack(it));
                 file.Chests.Add(cs);
             }
@@ -466,7 +468,7 @@ namespace TerraKnight.Save
                     {
                         var items = new ItemStack[World.Chests.Capacity];
                         if (c.Items != null) Load(c.Items, items);
-                        chests.Add(new World.Chests.Saved { Scene = c.Scene, Local = new Vector2(c.X, c.Y), Items = items });
+                        chests.Add(new World.Chests.Saved { Scene = c.Scene, Local = new Vector2(c.X, c.Y), Items = items, Name = c.Name });
                     }
                     World.Chests.Load(chests);
                 }

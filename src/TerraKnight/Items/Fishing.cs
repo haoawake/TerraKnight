@@ -63,7 +63,7 @@ namespace TerraKnight.Items
         static ItemType pole;
         static Vector2 pos, vel;
         static Pond pond;
-        static bool floating, notEnoughWaterShown;
+        static bool floating;
         static float tickAcc, timer;
         static int hookTicks;
         static ItemType catchType;
@@ -106,7 +106,7 @@ namespace TerraKnight.Items
         /// <summary>The first bait: the ammo slots first, then the bag.</summary>
         static int FindBait(Inventory inv)
         {
-            for (int i = Inventory.Size; i < Inventory.Total; i++) if (!inv.Slots[i].IsEmpty && inv.Slots[i].Def.BaitPower > 0) return i;
+            for (int i = Inventory.Size; i < Inventory.AmmoEnd; i++) if (!inv.Slots[i].IsEmpty && inv.Slots[i].Def.BaitPower > 0) return i;
             for (int i = 0; i < Inventory.Size; i++) if (!inv.Slots[i].IsEmpty && inv.Slots[i].Def.BaitPower > 0) return i;
             return -1;
         }
@@ -135,7 +135,6 @@ namespace TerraKnight.Items
             if (Active && floating && pond != null)
             {
                 int tiles = DevPondTiles > 0 ? DevPondTiles : pond.Tiles;
-                if (tiles < 75) return Lang.T("水量不够！");
                 int need = Needed();
                 if (tiles < need) return Lang.F("{0}（{1}%）渔力", (int)(fl * (float)tiles / need), Mathf.RoundToInt(100f * tiles / need));
             }
@@ -175,7 +174,6 @@ namespace TerraKnight.Items
             Biting = false;
             timer = 0f;
             tickAcc = 0f;
-            notEnoughWaterShown = false;
             MakeBobber(rod);
             DevLast = $"抛竿 渔力 {Power}";
             return true;
@@ -346,12 +344,6 @@ namespace TerraKnight.Items
         {
             var rod = ItemDb.Get(pole);
             int tiles = DevPondTiles > 0 ? DevPondTiles : pond.Tiles;
-            if (tiles < 75)
-            {
-                if (!notEnoughWaterShown) CombatText.Show(new Vector3(pos.x, pos.y + 0.6f), Lang.T("水量不够！"), new Color(1f, 0.85f, 0.5f));
-                notEnoughWaterShown = true;
-                return;
-            }
             var area = areas.TryGetValue(Areas.AreaName(pond.Scene), out var a) ? a : (Stage: 0, Height: 1, Zones: Zone.None);
             int need = Needed(area.Height);
             if (tiles < need) fl = (int)(fl * (float)tiles / need);
@@ -385,12 +377,11 @@ namespace TerraKnight.Items
             DevLast = $"咬钩 {ItemDb.Get(got).Name}（渔力 {fl}，{tiles} 格{(pond.Acid ? " 酸水" : "")}）";
         }
 
-        /// <summary>The water a pond needs not to weaken the line (waterNeededToFish): 300, 75 in the sky.</summary>
-        static int Needed(int height = -1)
-        {
-            if (height < 0) height = AreaHere().Height;
-            return height == 0 ? 75 : 300;
-        }
+        /// <summary>
+        /// The water a pond needs not to weaken the line (Terraria's waterNeededToFish, 300): any here (the user's, 2026-10-16:
+        /// every water fishes whatever its size; Hallownest's pools are small next to Terraria's lakes).
+        /// </summary>
+        static int Needed(int height = -1) => 1;
 
         static ulong Flags((int Stage, int Height, Zone Zones) area, int tiles, ItemDef rod, Inventory inv, bool junk, bool crate)
         {
@@ -540,6 +531,18 @@ namespace TerraKnight.Items
                         }
                 }
                 ponds.Add(new Pond { Area = b, Region = fsm.gameObject, Tiles = Count(b, acid), Scene = fsm.gameObject.scene.name });
+            }
+            // Acid that is only a hazard (no swim region over it): acid water too.
+            foreach (var dh in Object.FindObjectsByType<DamageHero>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (dh == null || dh.hazardType != 3 || !dh.gameObject.scene.isLoaded) continue;
+                var c = dh.GetComponent<BoxCollider2D>();
+                if (c == null || !c.enabled) continue;
+                var b = BoxBounds(c);
+                bool covered = false;
+                foreach (var q in ponds) if (q.Area.Intersects(b)) { covered = true; break; }
+                if (covered || b.size.x < CellGrid.CellSize) continue;
+                ponds.Add(new Pond { Area = b, Tiles = Count(b, true), Scene = dh.gameObject.scene.name, SpaAcid = true });
             }
             foreach (var col in Object.FindObjectsByType<Collider2D>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {

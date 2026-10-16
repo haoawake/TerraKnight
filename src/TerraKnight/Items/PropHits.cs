@@ -31,7 +31,7 @@ namespace TerraKnight.Items
 
         static PropHits instance;
         readonly List<NailAttackProxy> pool = new List<NailAttackProxy>();
-        readonly List<(NailAttackProxy proxy, Vector2 at)> live = new List<(NailAttackProxy, Vector2)>();
+        readonly List<(NailAttackProxy proxy, Vector2 at, Collider2D on, Vector2 from)> live = new List<(NailAttackProxy, Vector2, Collider2D, Vector2)>();
         static readonly HashSet<GameObject> pulseObjects = new HashSet<GameObject>();
         static readonly Dictionary<int, bool> listens = new Dictionary<int, bool>();
         static readonly Dictionary<int, float> lastPulse = new Dictionary<int, float>();
@@ -77,10 +77,17 @@ namespace TerraKnight.Items
         {
             if (col == null || !col.enabled) return;
             if (Revek(col)) return;
-            if (!Listens(col)) return;
+            var tink = PropTink(col);
+            if (tink == null && !Listens(col)) return;
             int id = col.GetInstanceID();
             float now = Time.time;
             if (lastPulse.TryGetValue(id, out float last) && now - last < Cooldown) return;
+            if (tink != null)
+            {
+                lastPulse[id] = now;
+                Tink(tink, facing > 0f ? 0f : 180f);
+                return;
+            }
             var self = Get();
             if (self == null) return;
             NailAttackProxy free = null;
@@ -91,8 +98,8 @@ namespace TerraKnight.Items
             if (lastPulse.Count > 512) lastPulse.Clear();
             Vector2 at = col.ClosestPoint(from);
             free.Begin(facing, damage);
-            free.Tick(at, Vector2.one * Size);
-            self.live.Add((free, at));
+            free.Tick(at, SizeOn(col));
+            self.live.Add((free, at, col, from));
             DevPulses++;
             DevLast = $"{col.gameObject.scene.name}/{col.name} @ {at:F2}";
         }
@@ -102,10 +109,26 @@ namespace TerraKnight.Items
             // Held out for the slash's time, then put away (NailAttackProxy.Tick does that).
             for (int i = live.Count - 1; i >= 0; i--)
             {
-                var (proxy, at) = live[i];
-                proxy.Tick(at, Vector2.one * Size);
+                var (proxy, at, on, from) = live[i];
+                // A thing on the move (a dung ball bouncing, a barrel falling): the slash goes with it, over its middle.
+                if (on != null && on.enabled && Moving(on)) at = on.bounds.center;
+                proxy.Tick(at, on != null ? SizeOn(on) : Vector2.one * Size);
                 if (proxy.Live == null) live.RemoveAt(i);
             }
+        }
+
+        static bool Moving(Collider2D col)
+        {
+            var body = col.attachedRigidbody;
+            return body != null && body.bodyType == RigidbodyType2D.Dynamic && body.velocity.sqrMagnitude > 0.25f;
+        }
+
+        /// <summary>The slash's size on a prop: a point's, or most of a moving thing it must not slip off.</summary>
+        static Vector2 SizeOn(Collider2D col)
+        {
+            if (!Moving(col)) return Vector2.one * Size;
+            var b = col.bounds.size;
+            return Vector2.one * Mathf.Clamp(Mathf.Min(b.x, b.y) * 0.8f, Size, 2f);
         }
 
         /// <summary>A prop that answers the nail's slash: one of the game's listening components, or an FSM that does, on the collider's own object or its body's.</summary>
@@ -144,9 +167,68 @@ namespace TerraKnight.Items
                 {
                     if (a is HutongGames.PlayMaker.Actions.ReceivedDamage) return true;
                     if (a is HutongGames.PlayMaker.Actions.Trigger2dEvent te && te.collideTag != null && te.collideTag.Value == "Nail Attack") return true;
+                    // False Knight's falling barrels: the tag and the slash's layer.
+                    if (a is HutongGames.PlayMaker.Actions.Trigger2dEventLayer tl && tl.collideTag != null && tl.collideTag.Value == "Nail Attack") return true;
                 }
             return false;
         }
+
+        /// <summary>
+        /// What a boss sends out that the nail knocks away or breaks (Hornet Sentinel's barbs, False Knight's falling
+        /// barrels, Dung Defender's dung balls, Hive Knight's droppers): a prop that answers the nail and hurts the
+        /// Knight. A minion leaves the world's props alone but hits these as any weapon does.
+        /// </summary>
+        public static bool Hostile(Collider2D col)
+        {
+            if (col == null || !col.enabled) return false;
+            if (PropTink(col) == null && !Listens(col)) return false;
+            if (col.GetComponent<DamageHero>() != null) return true;
+            var body = col.attachedRigidbody;
+            return body != null && body.GetComponent<DamageHero>() != null;
+        }
+
+        /// <summary>A swing over a collider: a prop's tink told it was struck (facing: the swing's side, + right).</summary>
+        public static void TinkStruck(Collider2D col, float facing)
+        {
+            if (col == null || !col.enabled) return;
+            var tink = PropTink(col);
+            if (tink != null) Tink(tink, facing > 0f ? 0f : 180f);
+        }
+
+        static readonly AccessTools.FieldRef<TinkEffect, float> nextTink = AccessTools.FieldRefAccess<TinkEffect, float>("nextTinkTime");
+
+        /// <summary>
+        /// A TinkEffect that tells its FSM it was struck (a Hornet Sentinel's barb breaks on its BLOCKED HIT), on the
+        /// collider's object or its body's; not one on an enemy's armour (that tink is a blow it parries).
+        /// </summary>
+        static TinkEffect PropTink(Collider2D col)
+        {
+            var tink = col.GetComponent<TinkEffect>();
+            var body = col.attachedRigidbody;
+            if (tink == null && body != null) tink = body.GetComponent<TinkEffect>();
+            if (tink == null || tink.fsm == null || !(tink.sendFSMEvent || tink.sendDirectionalFSMEvents)) return null;
+            return tink.GetComponentInParent<HealthManager>() == null ? tink : null;
+        }
+
+        /// <summary>
+        /// The struck prop's part of TinkEffect.OnTriggerEnter2D, its FSM's events (no more often than its repeat
+        /// delay): not the Knight's recoil, the camera's shake or the clank.
+        /// </summary>
+        static void Tink(TinkEffect tink, float direction)
+        {
+            if (Time.time < nextTink(tink)) return;
+            nextTink(tink) = Time.time + 0.25f;
+            if (tink.sendDirectionalFSMEvents)
+            {
+                int dir = DirectionUtils.GetCardinalDirection(direction);
+                tink.fsm.SendEvent(dir == 0 ? "TINK RIGHT" : dir == 1 ? "TINK UP" : dir == 2 ? "TINK LEFT" : "TINK DOWN");
+            }
+            if (tink.sendFSMEvent) tink.fsm.SendEvent(tink.FSMEvent);
+            DevTinkEvents++;
+            DevLast = $"{tink.gameObject.scene.name}/{tink.name} 的 {tink.FSMEvent}";
+        }
+
+        public static int DevTinkEvents;
 
         /// <summary>
         /// Revek, the Spirits' Glade's guard, has no health: only the nail's parry of his slash
@@ -178,16 +260,23 @@ namespace TerraKnight.Items
         /// A stand-in slash (a pulse's, a weapon swing's, a blast's) is a hit landing on a prop, not
         /// the Knight's blade at the wall: no recoil off hard things for it (TinkEffect pushes the
         /// Knight back off spikes, armour and shells it hits), nor its clank. Terraria's weapons
-        /// never push the player back for what they hit.
+        /// never push the player back for what they hit. A prop the tink tells it was struck (a
+        /// barb) still hears it.
         /// </summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(TinkEffect), "OnTriggerEnter2D")]
-        static bool NoTinkFromPulses(Collider2D collision)
+        static bool NoTinkFromPulses(TinkEffect __instance, Collider2D collision)
         {
             if (collision == null) return true;
             var go = collision.gameObject;
             if (!pulseObjects.Contains(go) && !NailAttackProxy.IsAnyProxy(go)) return true;
             DevTinksStopped++;
+            if (go.CompareTag("Nail Attack") && __instance.fsm != null && (__instance.sendFSMEvent || __instance.sendDirectionalFSMEvents)
+                && __instance.GetComponentInParent<HealthManager>() == null)
+            {
+                var slash = PlayMakerFSM.FindFsmOnGameObject(go, "damages_enemy");
+                Tink(__instance, slash != null ? slash.FsmVariables.FindFsmFloat("direction").Value : 0f);
+            }
             return false;
         }
 

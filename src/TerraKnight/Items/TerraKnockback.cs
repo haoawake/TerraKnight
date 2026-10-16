@@ -79,7 +79,29 @@ namespace TerraKnight.Items
             return crit ? k * 1.4f : k;
         }
 
-        public static int DevOwnPushes, DevLaunches, DevPushCalls, DevImmune;
+        public static int DevOwnPushes, DevLaunches, DevPushCalls, DevImmune, DevPushUps;
+
+        /// <summary>
+        /// The Nail's upward slash: the struck enemy knocked up by Terraria's launch speed (its level's resistance; bosses and
+        /// elites stand), a body that falls given that speed upward, the rest the game's own upward recoil.
+        /// </summary>
+        public static void PushUp(HealthManager hm, float knockBack)
+        {
+            if (hm == null || hm.isDead || Immune(hm)) return;
+            var info = EnemyStats.Of(hm);
+            if (info == null || EnemyStats.NoKnockback(info)) return;
+            float speed = Launch(knockBack, World.Areas.KnockbackTaken(info.Level), false);
+            if (speed <= 0f) return;
+            DevPushUps++;
+            var body = hm.GetComponent<Rigidbody2D>();
+            if (body != null && body.bodyType == RigidbodyType2D.Dynamic && body.gravityScale > 0.01f)
+            {
+                body.linearVelocity = new Vector2(body.linearVelocity.x, Mathf.Max(body.linearVelocity.y, speed * Effects.TerraParticles.Px * 60f));
+                return;
+            }
+            var recoil = hm.GetComponent<Recoil>();
+            if (recoil != null) recoil.RecoilByDirection(1, speed / 8f);
+        }
 
         /// <summary>
         /// Enemies that go round the terrain on a track of their own, not after the player, take no

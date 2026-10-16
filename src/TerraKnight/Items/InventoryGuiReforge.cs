@@ -44,7 +44,7 @@ namespace TerraKnight.Items
             long cost = Prefixes.ReforgeCost(item);
             Outlined(text, TT("LegacyInterface.46", "花费") + ": " + Shop.Money(cost), labelStyle, color);
             // The hammer, 70 right and 40 down of the slot, growing while hovered.
-            var tex = TerrariaAssets.Texture(reforgeHover ? "Reforge_1" : "Reforge_0");
+            var tex = TerrariaAssets.Texture(reforgeHover ? "UI/Reforge_1" : "UI/Reforge_0");
             reforgeScale = Mathf.MoveTowards(reforgeScale, reforgeHover ? 1.2f : 1f, 0.02f);
             float w = tex.width * reforgeScale * ui, h = tex.height * reforgeScale * ui;
             var hammer = new Rect(rect.x + 70f * ui - w / 2f, rect.y + 40f * ui - h / 2f, w, h);

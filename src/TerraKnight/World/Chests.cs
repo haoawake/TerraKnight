@@ -31,6 +31,8 @@ namespace TerraKnight.World
             public readonly ItemStack[] Items;
             /// <summary>The Piggy Bank's (the player's bank, opened at one), not a chest of the world.</summary>
             public bool Bank;
+            /// <summary>Chest.name: what the player called it (ChestUI's Rename), "" for none.</summary>
+            public string Name = "";
             public Chest() : this(new ItemStack[Capacity]) { }
             public Chest(ItemStack[] items) { Items = items; }
             public int FrameCounter, Damage;
@@ -59,6 +61,7 @@ namespace TerraKnight.World
             public string Scene;
             public Vector2 Local;
             public ItemStack[] Items;
+            public string Name;
         }
 
         public static Chests Instance { get; private set; }
@@ -210,6 +213,29 @@ namespace TerraKnight.World
 
         /// <summary>The open storage is the Piggy Bank (the panel's name).</summary>
         public static bool BankOpen => IsOpen && open.Bank;
+
+        /// <summary>Chest.MaxNameLength.</summary>
+        public const int MaxNameLength = 20;
+
+        /// <summary>The open chest's name ("" none; null for the bank or nothing open).</summary>
+        public static string OpenName => IsOpen && !open.Bank ? open.Name ?? "" : null;
+
+        /// <summary>ChestUI.RenameChestSubmit: the open chest's new name (trimmed, 20 characters at most).</summary>
+        public static void SetOpenName(string name)
+        {
+            if (!IsOpen || open.Bank) return;
+            name = (name ?? "").Trim();
+            if (name.Length > MaxNameLength) name = name.Substring(0, MaxNameLength);
+            open.Name = name;
+        }
+
+        /// <summary>The name of the chest under a world point (Main.DrawInterface_ChestNameHover's), null for none or an unnamed one.</summary>
+        public static string NameAt(Vector2 world)
+        {
+            foreach (var c in chests)
+                if (c.Region != null && !c.Bank && !string.IsNullOrEmpty(c.Name) && c.Box.Contains(world)) return c.Name;
+            return null;
+        }
 
         static void Open(Chest c)
         {
@@ -608,7 +634,7 @@ namespace TerraKnight.World
         public static List<Saved> Save()
         {
             var list = new List<Saved>(chests.Count);
-            foreach (var c in chests) list.Add(new Saved { Scene = c.Scene, Local = c.Local, Items = (ItemStack[])c.Items.Clone() });
+            foreach (var c in chests) list.Add(new Saved { Scene = c.Scene, Local = c.Local, Items = (ItemStack[])c.Items.Clone(), Name = c.Name });
             return list;
         }
 
@@ -618,7 +644,7 @@ namespace TerraKnight.World
             if (saved == null) return;
             foreach (var s in saved)
             {
-                var c = new Chest { Scene = s.Scene, Local = s.Local };
+                var c = new Chest { Scene = s.Scene, Local = s.Local, Name = s.Name ?? "" };
                 if (s.Items != null)
                     for (int i = 0; i < Capacity && i < s.Items.Length; i++) c.Items[i] = s.Items[i];
                 chests.Add(c);

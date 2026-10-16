@@ -1415,8 +1415,13 @@ namespace TerraKnight.Items
             {
                 if (m.Dead) return;
                 var hm = col.GetComponentInParent<HealthManager>();
-                // A minion fights, it doesn't pull levers or break pots (a City lift called away by a slime); Revek is fought.
-                if (hm == null && m.Damage > 0) PropHits.Revek(col);
+                // A minion fights, it doesn't pull levers or break pots (a City lift called away by a slime); Revek is
+                // fought, and what a boss sends out at the player (barbs, barrels, dung balls) is hit as by any weapon.
+                if (hm == null && m.Damage > 0)
+                {
+                    if (PropHits.Hostile(col)) PropHits.Pulse(col, TerraParticles.ToWorld(m.Center), m.Dir, m.Damage);
+                    else PropHits.Revek(col);
+                }
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (!hitNow.Add(id)) continue;

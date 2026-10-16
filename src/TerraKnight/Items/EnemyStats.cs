@@ -47,9 +47,9 @@ namespace TerraKnight.Items
             /// </summary>
             public float Scale => (Ref != null
                 ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossPhases.Factor(this) / (float)Mathf.Max(1, MaxHp)
-                : World.Areas.HealthScale * World.Areas.LevelHealth(Level, Boss)) * Players;
+                : Boss ? World.Areas.HealthScale * World.Areas.LevelHealth(Level, true) : World.Areas.LifeScale(Level)) * Players;
             /// <summary>Terraria defense: a boss's stand-in's (<see cref="BossDefense"/>), else the level's.</summary>
-            public int Defense => Ref != null ? BossDefense(Ref, Tune) : World.Areas.Defense(Level);
+            public int Defense => Ref != null ? BossDefense(Ref, Tune) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }

@@ -252,10 +252,13 @@ namespace TerraKnight.Items
         DyeVat, Worm, Bass,
 
         // Fishing (gen_fishing.py)
-        BloodFishingRod, FiberglassFishingPole, ScarabFishingRod, MechanicsRod, SittingDucksFishingRod, HotlineFishingHook, GoldenFishingRod, MonarchButterfly, SulphurButterfly, Snail, Scorpion, Grasshopper, ZebraSwallowtailButterfly, GlowingSnail, BlackScorpion, ApprenticeBait, Grubby, HellButterfly, WaterStrider, Firefly, UlyssesButterfly, BlackDragonfly, BlueDragonfly, GreenDragonfly, OrangeDragonfly, RedDragonfly, YellowDragonfly, Maggot, JuliaButterfly, Sluggy, Lavafly, RedAdmiralButterfly, JourneymanBait, PurpleEmperorButterfly, LightningBug, EnchantedNightcrawler, MagmaSnail, Buggy, TreeNymphButterfly, MasterBait, GoldButterfly, GoldGrasshopper, GoldWorm, GoldDragonfly, GoldLadyBug, GoldWaterStrider, BlueJellyfish, GreenJellyfish, PinkJellyfish, Batfish, Catfish, Cloudfish, Cursedfish, Dirtfish, DynamiteFish, EaterofPlankton, FallenStarfish, TheFishofCthulu, Fishotron, Harpyfish, Hungerfish, Ichorfish, Jewelfish, Pengfish, Pixiefish, Spiderfish, TundraTrout, UnicornFish, GuideVoodooFish, Wyverntail, ZombieFish, AmanitaFungifin, Angelfish, BloodyManowar, Bonefish, Bunnyfish, CapnTunabeard, Clownfish, DemonicHellfish, Derpfish, InfectedScabbardfish, Mudfish, Slimefish, TropicalBarracuda, ScarabFish, ScorpioFish, WoodenCrate, WoodenCrateHard, IronCrate, IronCrateHard, GoldenCrate, GoldenCrateHard, DungeonFishingCrate, DungeonFishingCrateHard, OceanCrate, OceanCrateHard, CorruptFishingCrate, CorruptFishingCrateHard, CrimsonFishingCrate, CrimsonFishingCrateHard, HallowedFishingCrate, HallowedFishingCrateHard, JungleFishingCrate, JungleFishingCrateHard, FrozenCrate, FrozenCrateHard, OasisCrate, OasisCrateHard, FloatingIslandFishingCrate, FloatingIslandFishingCrateHard, LavaCrate, LavaCrateHard, Trout, Salmon, AtlanticCod, Tuna, RedSnapper, NeonTetra, PrincessFish, GoldenCarp, Honeyfin, Shrimp, Rockfish, Stinkfish, OldShoe, FishingSeaweed, TinCan, BombFish, Flounder, RockLobster, Oyster, JojaCola, ShuckedOyster,
+        BloodFishingRod, FiberglassFishingPole, ScarabFishingRod, MechanicsRod, SittingDucksFishingRod, HotlineFishingHook, GoldenFishingRod, MonarchButterfly, SulphurButterfly, Snail, Scorpion, Grasshopper, ZebraSwallowtailButterfly, GlowingSnail, BlackScorpion, ApprenticeBait, Grubby, HellButterfly, WaterStrider, Firefly, UlyssesButterfly, BlackDragonfly, BlueDragonfly, GreenDragonfly, OrangeDragonfly, RedDragonfly, YellowDragonfly, Maggot, JuliaButterfly, Sluggy, Lavafly, RedAdmiralButterfly, JourneymanBait, PurpleEmperorButterfly, LightningBug, EnchantedNightcrawler, MagmaSnail, Buggy, TreeNymphButterfly, MasterBait, GoldButterfly, GoldGrasshopper, GoldWorm, GoldDragonfly, GoldLadyBug, GoldWaterStrider, BlueJellyfish, GreenJellyfish, PinkJellyfish, Batfish, Catfish, Cloudfish, Cursedfish, Dirtfish, DynamiteFish, EaterofPlankton, FallenStarfish, TheFishofCthulu, Fishotron, Harpyfish, Hungerfish, Ichorfish, Jewelfish, Pengfish, Pixiefish, Spiderfish, TundraTrout, UnicornFish, GuideVoodooFish, Wyverntail, ZombieFish, AmanitaFungifin, Angelfish, BloodyManowar, Bonefish, Bunnyfish, CapnTunabeard, Clownfish, DemonicHellfish, Derpfish, InfectedScabbardfish, Mudfish, Slimefish, TropicalBarracuda, ScarabFish, ScorpioFish, WoodenCrate, WoodenCrateHard, IronCrate, IronCrateHard, GoldenCrate, GoldenCrateHard, DungeonFishingCrate, DungeonFishingCrateHard, OceanCrate, OceanCrateHard, CorruptFishingCrate, CorruptFishingCrateHard, CrimsonFishingCrate, CrimsonFishingCrateHard, HallowedFishingCrate, HallowedFishingCrateHard, JungleFishingCrate, JungleFishingCrateHard, FrozenCrate, FrozenCrateHard, OasisCrate, OasisCrateHard, FloatingIslandFishingCrate, FloatingIslandFishingCrateHard, LavaCrate, LavaCrateHard, Trout, Salmon, AtlanticCod, Tuna, RedSnapper, NeonTetra, PrincessFish, GoldenCarp, Honeyfin, Shrimp, Rockfish, Stinkfish, OldShoe, FishingSeaweed, TinCan, BombFish, Flounder, RockLobster, Oyster, JojaCola, ShuckedOyster, BumblebeeTuna, MirageFish, MutantFlinxfin, Fishron,
 
         // Hallownest's key items (HkItems.cs)
         HkLumaflyLantern, HkCityCrest, HkSimpleKey, HkElegantKey, HkLoveKey, HkShopkeepersKey, HkTramPass, HkKingsBrand, HkDelicateFlower, HkRancidEgg, HkPaleOre, HkWanderersJournal, HkHallownestSeal, HkKingsIdol, HkArcaneEgg, HkKingsoul, HkVoidHeart,
+
+        // Food (gen_food.py)
+        PumpkinPie, CookedFish, CookedShrimp, Sashimi, GrubSoup, Escargot, GoldenDelight, SeafoodDinner, LobsterTail, MonsterLasagna, BlackenedFish,
 
     }
 
@@ -1507,6 +1510,7 @@ namespace TerraKnight.Items
             AddCraftChain(list);
             AddCraftingSupplement(list);
             AddFishing(list);
+            AddFood(list);
             HkItems.AddItems(list);
             AddInfo(list);
             AddStations2(list);
@@ -1540,7 +1544,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>()), FishingSources())))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>()), System.Linq.Enumerable.Concat(FishingSources(), FoodSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1950,8 +1954,15 @@ namespace TerraKnight.Items
         /// <see cref="Slots"/>: Size to Total - 1, top to bottom.
         /// </summary>
         public const int AmmoSlots = 4;
-        public const int Total = Size + AmmoSlots;
-        public static bool IsAmmoSlot(int i) => i >= Size && i < Total;
+        public const int AmmoEnd = Size + AmmoSlots;
+        /// <summary>Terraria's coin slots (inventory 50-53), one of them: the Geo, the only money, is one stack. After the ammo slots.</summary>
+        public const int CoinSlots = 1;
+        public const int CoinSlot = AmmoEnd;
+        public const int Total = AmmoEnd + CoinSlots;
+        public static bool IsAmmoSlot(int i) => i >= Size && i < AmmoEnd;
+        public static bool IsCoinSlot(int i) => i == CoinSlot;
+        /// <summary>ItemSlot's InventoryCoin context: money only.</summary>
+        public static bool FitsCoinSlot(ItemDef d) => d != null && d.Type == ItemType.Geo;
 
         /// <summary>Item.FitsAmmoSlot: what an ammo slot takes (ammo of any kind, the Ale too).</summary>
         public static bool FitsAmmoSlot(ItemDef d) => d != null && (d.Ammo != AmmoKind.None || d.BaitPower > 0);
@@ -2046,7 +2057,8 @@ namespace TerraKnight.Items
             for (int i = 0; i < ArmorSlots; i++) (Armor[i], l.Armor[i]) = (l.Armor[i], Armor[i]);
             for (int i = 0; i < AccessorySlots; i++) (Accessories[i], l.Accessories[i]) = (l.Accessories[i], Accessories[i]);
             if (!BagPerLoadout) return;
-            for (int i = 0; i < Total; i++) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
+            // The money stays the player's whatever the loadout.
+            for (int i = 0; i < Total; i++) if (i != CoinSlot) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
             (Selected, l.Selected) = (l.Selected, Selected);
         }
 
@@ -2200,6 +2212,7 @@ namespace TerraKnight.Items
         public int Pickup(ItemType type, int count, bool favorite = false)
         {
             var def = ItemDb.Get(type);
+            count = FillCoins(def, count);
             count = FillAmmo(def, count);
             for (int i = 0; i < Size && count > 0; i++)
             {
@@ -2226,6 +2239,33 @@ namespace TerraKnight.Items
             return count;
         }
 
+        /// <summary>Player.GetItem's coins: money goes to the coin slot first. Returns how many are left.</summary>
+        int FillCoins(ItemDef def, int count)
+        {
+            if (!FitsCoinSlot(def) || count <= 0) return count;
+            var s = Slots[CoinSlot];
+            if (!s.IsEmpty && s.Type != def.Type) return count;
+            int have = s.IsEmpty ? 0 : s.Count;
+            int moved = System.Math.Min(count, def.MaxStack - have);
+            if (moved <= 0) return count;
+            if (s.IsEmpty) Slots[CoinSlot] = ItemStack.Of(def.Type, moved);
+            else Slots[CoinSlot].Count += moved;
+            return count - moved;
+        }
+
+        /// <summary>The Geo the bag carries elsewhere gathered into the coin slot (a save from before it had one).</summary>
+        public void GatherCoins()
+        {
+            var geo = ItemDb.Get(ItemType.Geo);
+            for (int i = 0; i < Size; i++)
+            {
+                if (Slots[i].IsEmpty || !FitsCoinSlot(Slots[i].Def)) continue;
+                int left = FillCoins(geo, Slots[i].Count);
+                if (left <= 0) Slots[i] = default;
+                else Slots[i].Count = left;
+            }
+        }
+
         /// <summary>
         /// Player.FillAmmo: ammo picked up tops up the ammo slots' stacks of it, top to bottom, then
         /// takes an empty one (<see cref="FillsEmptyAmmoSlot"/>). Returns how many are left.
@@ -2233,7 +2273,7 @@ namespace TerraKnight.Items
         int FillAmmo(ItemDef def, int count)
         {
             if (!FitsAmmoSlot(def)) return count;
-            for (int i = Size; i < Total && count > 0; i++)
+            for (int i = Size; i < AmmoEnd && count > 0; i++)
             {
                 if (Slots[i].IsEmpty || Slots[i].Type != def.Type || Slots[i].Count >= def.MaxStack) continue;
                 int moved = System.Math.Min(count, def.MaxStack - Slots[i].Count);
@@ -2241,7 +2281,7 @@ namespace TerraKnight.Items
                 count -= moved;
             }
             if (!FillsEmptyAmmoSlot(def)) return count;
-            for (int i = Size; i < Total && count > 0; i++)
+            for (int i = Size; i < AmmoEnd && count > 0; i++)
             {
                 if (!Slots[i].IsEmpty) continue;
                 int moved = System.Math.Min(count, def.MaxStack);
@@ -2260,6 +2300,7 @@ namespace TerraKnight.Items
             {
                 var s = Slots[i];
                 bool ammoSlot = IsAmmoSlot(i);
+                if (IsCoinSlot(i) && !FitsCoinSlot(def)) continue;
                 if (s.IsEmpty) { if (!ammoSlot || FillsEmptyAmmoSlot(def)) room += def.MaxStack; }
                 else if (s.Type == type && (!ammoSlot || FitsAmmoSlot(def))) room += def.MaxStack - s.Count;
             }
@@ -2286,7 +2327,7 @@ namespace TerraKnight.Items
         /// </summary>
         public int FindAmmo(AmmoKind kind)
         {
-            for (int i = Size; i < Total; i++)
+            for (int i = Size; i < AmmoEnd; i++)
                 if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) return i;
             for (int i = 0; i < Size; i++)
                 if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) return i;
@@ -2304,7 +2345,7 @@ namespace TerraKnight.Items
         {
             if (mode == AmmoCycleMode.Off || mode == AmmoCycleMode.Simple) return FindAmmo(kind);
             cycle.Clear();
-            for (int i = Size; i < Total; i++)
+            for (int i = Size; i < AmmoEnd; i++)
                 if (!Slots[i].IsEmpty && Slots[i].Def.Ammo == kind) cycle.Add(i);
             if (mode == AmmoCycleMode.AmmoSlots)
             {

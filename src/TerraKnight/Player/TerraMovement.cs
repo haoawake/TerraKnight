@@ -151,6 +151,17 @@ namespace TerraKnight.Player
             wingTime = 0f;
         }
 
+        /// <summary>
+        /// A room entered: an extra jump still lifting (the lift ran on from the last room and kept the player rising)
+        /// ends, as does the Knight's double jump it rode on.
+        /// </summary>
+        public static void OnSceneEntered(HeroController hero)
+        {
+            cloudTicks = 0f;
+            activeJump = Extra.None;
+            if (hero != null) hero.cState.doubleJumping = false;
+        }
+
         // --- Horizontal movement and the dash, after the Knight's own Move each physics step. ---
 
         /// <summary>

@@ -23,8 +23,10 @@ namespace TerraKnight.Items
         const float SlotSize = 44f;   // Terraria's 52 px slot at inventoryScale 0.85
         /// <summary>The ammo slots are drawn smaller, as Terraria's coin and ammo columns are (inventoryScale 0.6 of 0.85).</summary>
         const float AmmoSlotSize = SlotSize * 0.8f;
-        /// <summary>Right of the bag: the ammo column, then the Geo line's notes and the book's button beyond it.</summary>
-        internal static float RightOfAmmo(float ui) => Margin * ui + Inventory.Columns * SlotStep * ui + 8f * ui + AmmoSlotSize * ui + 14f * ui;
+        /// <summary>The coin column's width (Main.DrawInventory's coins at x 497, the ammo at 534).</summary>
+        const float CoinStep = AmmoSlotSize + 2f;
+        /// <summary>Right of the bag: the coin and ammo columns, then the Geo line's notes and the book's button beyond them.</summary>
+        internal static float RightOfAmmo(float ui) => Margin * ui + Inventory.Columns * SlotStep * ui + 8f * ui + CoinStep * ui + AmmoSlotSize * ui + 14f * ui;
         const float SlotStep = 47.6f; // 56 px spacing at the same scale
         const float Margin = 20f;
         const float RecipeStep = 65f;
@@ -83,6 +85,7 @@ namespace TerraKnight.Items
         {
             var mouse = Mouse.current;
             if (mouse == null || TerraMod.Instance == null) return;
+            TickRename();
             leftPress |= UI.TerraCursor.LeftPressed(mouse);
             rightPress |= mouse.rightButton.wasPressedThisFrame;
             if (Open)
@@ -172,7 +175,7 @@ namespace TerraKnight.Items
 
         static bool Shift => DevShift || Keyboard.current != null && !Net.NetChat.Typing && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
         static bool Ctrl => DevCtrl || Keyboard.current != null && (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed);
-        static bool Alt => DevAlt || Keyboard.current != null && Keyboard.current.leftAltKey.isPressed;
+        static bool Alt => DevAlt || Player.TerraKeys.Held(Player.TerraKeys.Action.Favorite);
 
         /// <summary>Dev: the topmost click region at a GUI point, what a click there acts on ("Kind#index").</summary>
         public static string DevHitAt(Vector2 gui)
@@ -395,8 +398,9 @@ namespace TerraKnight.Items
                 return;
             }
             if (inv.Mouse.IsEmpty && slot.IsEmpty) return;
-            // An ammo slot takes ammo only (ItemSlot.PickItemMovementAction, context 2: FitsAmmoSlot).
+            // An ammo slot takes ammo only (ItemSlot.PickItemMovementAction, context 2: FitsAmmoSlot), the coin slot money (context 1).
             if (Inventory.IsAmmoSlot(i) && !inv.Mouse.IsEmpty && !Inventory.FitsAmmoSlot(inv.Mouse.Def)) return;
+            if (Inventory.IsCoinSlot(i) && !inv.Mouse.IsEmpty && !Inventory.FitsCoinSlot(inv.Mouse.Def)) return;
             // MouseItemSwap, then top the slot up from the cursor when they stack.
             if (CanStack(inv.Mouse, slot) && slot.Count < slot.Def.MaxStack && inv.Mouse.Count < inv.Mouse.Def.MaxStack)
             {
@@ -843,14 +847,32 @@ namespace TerraKnight.Items
                 if (stats.PotionSickness > 0f)
                     Outlined(new Rect(view.x + RightOfAmmo(ui), y0 + 22f * ui, 220f * ui, 22f * ui), Lang.F("药水病：{0} 秒", Mathf.CeilToInt(stats.PotionSickness)), labelStyle, new Color(1f, 0.6f, 0.6f));
 
-                // The ammo slots (Main.DrawInventory's ammo column, inventory 54-57), right of the bag
-                // level with its four lower rows: what a bow or a gun takes first, top to bottom.
+                // The coin slot (Main.DrawInventory's coin column, one slot of its four): right of the bag level
+                // with its second row, where the Geo picked up goes first.
                 float ammoS = AmmoSlotSize * ui;
-                Outlined(new Rect(rx - 4f * ui, y0 + step - 18f * ui, ammoS + 8f * ui, 18f * ui), Lang.T("弹药"), labelStyle, Color.white);
+                {
+                    int i = Inventory.CoinSlot;
+                    Outlined(new Rect(rx - 4f * ui, y0 + step - 18f * ui, ammoS + 8f * ui, 18f * ui), Lang.T("钱币"), labelStyle, Color.white);
+                    var rect = new Rect(rx, y0 + step + (slot - ammoS) / 2f, ammoS, ammoS);
+                    Add(rect, Kind.Slot, i);
+                    var st = inv.Slots[i];
+                    DrawSlot(rect, st, st.Favorite && !st.IsEmpty ? "Inventory_Back10" : "Inventory_Back", inv.Infinite);
+                    if (rect.Contains(mouse))
+                    {
+                        hovered = st;
+                        hoveredKind = Kind.Slot;
+                        if (st.IsEmpty) DrawLines(mouse, new List<string> { Lang.T("钱币") }, Color.white);
+                    }
+                }
+
+                // The ammo slots (Main.DrawInventory's ammo column, inventory 54-57), right of the coin
+                // column level with the bag's four lower rows: what a bow or a gun takes first, top to bottom.
+                float ammoX = rx + CoinStep * ui;
+                Outlined(new Rect(ammoX - 4f * ui, y0 + step - 18f * ui, ammoS + 8f * ui, 18f * ui), Lang.T("弹药"), labelStyle, Color.white);
                 for (int k = 0; k < Inventory.AmmoSlots; k++)
                 {
                     int i = Inventory.Size + k;
-                    var rect = new Rect(rx, y0 + (k + 1) * step + (slot - ammoS) / 2f, ammoS, ammoS);
+                    var rect = new Rect(ammoX, y0 + (k + 1) * step + (slot - ammoS) / 2f, ammoS, ammoS);
                     Add(rect, Kind.Slot, i);
                     var st = inv.Slots[i];
                     DrawSlot(rect, st, st.Favorite && !st.IsEmpty ? "Inventory_Back10" : "Inventory_Back", inv.Infinite);
@@ -941,6 +963,12 @@ namespace TerraKnight.Items
             foreach (var p in panels)
                 if (p.Contains(mouse)) MouseOverUi = true;
 
+            // Main.DrawInterface_ChestNameHover's: a named chest's name under the cursor in the world.
+            if (!MouseOverUi && TerraMod.Instance != null)
+            {
+                string chestName = World.Chests.NameAt(TerraMod.Instance.AimPoint);
+                if (chestName != null) DrawLines(mouse, new List<string> { chestName }, Color.white);
+            }
             if (notice != null && Time.unscaledTime < noticeUntil)
                 Outlined(new Rect(mouse.x + 20f * ui, mouse.y - 26f * ui, 300f * ui, 22f * ui), notice, labelStyle, new Color(1f, 0.5f, 0.45f));
 

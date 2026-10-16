@@ -58,6 +58,7 @@ namespace TerraKnight.Items
             list.Add(Bait(ItemType.GreenJellyfish, "绿水母", 2437, 20, 1, null, false));
             list.Add(Bait(ItemType.PinkJellyfish, "粉水母", 2438, 20, 1, null, false));
             list.Add(Quest(ItemType.Batfish, "蝙蝠鱼", 2450, "抓捕位置：真菌荒地、泪水之城、深渊"));
+            list.Add(Quest(ItemType.BumblebeeTuna, "大黄蜂金枪鱼", 2451, "抓捕位置：王后花园"));
             list.Add(Quest(ItemType.Catfish, "猫鱼", 2452, "抓捕位置：苍绿之径"));
             list.Add(Quest(ItemType.Cloudfish, "云鱼", 2453, "抓捕位置：神居"));
             list.Add(Quest(ItemType.Cursedfish, "诅咒鱼", 2454, "抓捕位置：皇家水道"));
@@ -71,6 +72,8 @@ namespace TerraKnight.Items
             list.Add(Quest(ItemType.Hungerfish, "饿鬼鱼", 2462, "抓捕位置：深渊"));
             list.Add(Quest(ItemType.Ichorfish, "灵液鱼", 2463, "抓捕位置：深巢"));
             list.Add(Quest(ItemType.Jewelfish, "珠宝鱼", 2464, "抓捕位置：真菌荒地、泪水之城、深渊"));
+            list.Add(Quest(ItemType.MirageFish, "幻象鱼", 2465, "抓捕位置：神居"));
+            list.Add(Quest(ItemType.MutantFlinxfin, "突变雪怪鱼", 2466, "抓捕位置：安息之地"));
             list.Add(Quest(ItemType.Pengfish, "企鹅鱼", 2467, "抓捕位置：安息之地"));
             list.Add(Quest(ItemType.Pixiefish, "妖精鱼", 2468, "抓捕位置：神居"));
             list.Add(Quest(ItemType.Spiderfish, "蜘蛛鱼", 2469, "抓捕位置：真菌荒地、泪水之城、深渊"));
@@ -88,6 +91,7 @@ namespace TerraKnight.Items
             list.Add(Quest(ItemType.Clownfish, "小丑鱼", 2481, "抓捕位置：雾之峡谷"));
             list.Add(Quest(ItemType.DemonicHellfish, "恶魔地狱鱼", 2482, "抓捕位置：深渊"));
             list.Add(Quest(ItemType.Derpfish, "跳跳鱼", 2483, "抓捕位置：苍绿之径"));
+            list.Add(Quest(ItemType.Fishron, "猪龙鱼", 2484, "抓捕位置：安息之地"));
             list.Add(Quest(ItemType.InfectedScabbardfish, "染病鞘鱼", 2485, "抓捕位置：皇家水道"));
             list.Add(Quest(ItemType.Mudfish, "泥鱼", 2486, "抓捕位置：苍绿之径、王后花园"));
             list.Add(Quest(ItemType.Slimefish, "史莱姆鱼", 2487, "抓捕位置：遗忘十字路、真菌荒地、泪水之城、深渊"));
@@ -221,6 +225,7 @@ namespace TerraKnight.Items
             yield return (ItemType.GreenJellyfish, 4, ItemSource.Drop, 175000);
             yield return (ItemType.PinkJellyfish, 2, ItemSource.Drop, 175000);
             yield return (ItemType.Batfish, 2, ItemSource.Drop, 0);
+            yield return (ItemType.BumblebeeTuna, 3, ItemSource.Drop, 0);
             yield return (ItemType.Catfish, 2, ItemSource.Drop, 0);
             yield return (ItemType.Cloudfish, 5, ItemSource.Drop, 0);
             yield return (ItemType.Cursedfish, 4, ItemSource.Drop, 0);
@@ -234,6 +239,8 @@ namespace TerraKnight.Items
             yield return (ItemType.Hungerfish, 4, ItemSource.Drop, 0);
             yield return (ItemType.Ichorfish, 4, ItemSource.Drop, 0);
             yield return (ItemType.Jewelfish, 2, ItemSource.Drop, 0);
+            yield return (ItemType.MirageFish, 5, ItemSource.Drop, 0);
+            yield return (ItemType.MutantFlinxfin, 2, ItemSource.Drop, 0);
             yield return (ItemType.Pengfish, 2, ItemSource.Drop, 0);
             yield return (ItemType.Pixiefish, 5, ItemSource.Drop, 0);
             yield return (ItemType.Spiderfish, 2, ItemSource.Drop, 0);
@@ -251,6 +258,7 @@ namespace TerraKnight.Items
             yield return (ItemType.Clownfish, 2, ItemSource.Drop, 0);
             yield return (ItemType.DemonicHellfish, 4, ItemSource.Drop, 0);
             yield return (ItemType.Derpfish, 4, ItemSource.Drop, 0);
+            yield return (ItemType.Fishron, 4, ItemSource.Drop, 0);
             yield return (ItemType.InfectedScabbardfish, 2, ItemSource.Drop, 0);
             yield return (ItemType.Mudfish, 2, ItemSource.Drop, 0);
             yield return (ItemType.Slimefish, 0, ItemSource.Drop, 0);

@@ -34,7 +34,7 @@ namespace TerraKnight
 
             // ---- data
             Check("规则与宝匣", Fishing.DevRules > 100 && Fishing.DevCrates == 27, $"规则 {Fishing.DevRules} 条，宝匣 {Fishing.DevCrates} 种");
-            Check("任务鱼", Fishing.QuestList(5).Count() == 37 && Fishing.QuestList(0).Count() >= 8, $"第5阶段 {Fishing.QuestList(5).Count()} 条，第0阶段 {Fishing.QuestList(0).Count()} 条");
+            Check("任务鱼", Fishing.QuestList(5).Count() == 41 && Fishing.QuestList(0).Count() >= 8, $"第5阶段 {Fishing.QuestList(5).Count()} 条，第0阶段 {Fishing.QuestList(0).Count()} 条");
             Check("改名", ItemDb.Get(ItemType.LavaFishingHook).Name == Lang.T("酸水钩") && ItemDb.Get(ItemType.HotlineFishingHook).AcidPole && ItemDb.Get(ItemType.HellButterfly).AcidBait,
                   $"{ItemDb.Get(ItemType.LavaFishingHook).Name}、{ItemDb.Get(ItemType.HotlineFishingHook).Name}、{ItemDb.Get(ItemType.LavaCrate).Name}");
             Check("钓竿和鱼饵", ItemDb.Get(ItemType.GoldenFishingRod).FishingPower == 50 && ItemDb.Get(ItemType.MasterBait).BaitPower == 50 && ItemDb.Get(ItemType.WoodFishingPole).Bobber == 360,
@@ -57,7 +57,9 @@ namespace TerraKnight
             var ways = Fishing.DevSimulate("皇家水道", false, 50, 2600, 20000);
             Check("皇家水道 腐化渔获", ways.ContainsKey(ItemType.Ebonkoi) && AllAtOrBelow(ways, 2), Top(ways, 10));
             var small = Fishing.DevSimulate("泪水之城", false, 50, 125, 20000);
-            Check("温泉小水池出垃圾", small.ContainsKey(ItemType.OldShoe) || small.ContainsKey(ItemType.TinCan) || small.ContainsKey(ItemType.FishingSeaweed), Top(small, 8));
+            // Any water of any size is fished as a big one: no small-pool penalty, its catches mostly fish.
+            int junk = new[] { ItemType.OldShoe, ItemType.TinCan, ItemType.FishingSeaweed }.Sum(t => small.TryGetValue(t, out int c) ? c : 0);
+            Check("温泉小水池照常能钓", small.Keys.Any(t => t != ItemType.None && ItemDb.Get(t).Rare >= 0 && !ItemDb.Get(t).QuestFish) && junk < small.Values.Sum() / 10, Top(small, 8));
             Shop.DevStage = 5;
             var god = Fishing.DevSimulate("神居", false, 80, 1664, 20000, crateBuff: true);
             Check("神居 太空和神圣", god.ContainsKey(ItemType.Damselfish) && (god.ContainsKey(ItemType.HallowedFishingCrateHard) || god.ContainsKey(ItemType.FloatingIslandFishingCrateHard)), Top(god, 10));

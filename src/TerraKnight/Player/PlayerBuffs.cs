@@ -150,7 +150,13 @@ namespace TerraKnight.Player
             return list;
         }
         public static bool IsDebuff(int type) => info.TryGetValue(type, out var i) && i.Debuff;
-        public static bool NoTime(int type) => info.TryGetValue(type, out var i) && i.NoTime;
+        public static bool NoTime(int type) => (info.TryGetValue(type, out var i) && i.NoTime) || UntilDeath(type);
+
+        /// <summary>The buff stations' buffs (Clairvoyance, Ammo Box, Bewitched, Sharpened, Strategist): on until death, shown without a time.</summary>
+        public static bool UntilDeath(int type) => type == 29 || type == 93 || type == 150 || type == 159 || type == 348;
+
+        /// <summary>A time no play outlasts (about 200 days of ticks): the buff goes only with death.</summary>
+        public const int Forever = 1 << 30;
         public static bool IsMinionBuff(int type) => info.TryGetValue(type, out var i) && i.Minion;
 
         public static bool Has(int type)

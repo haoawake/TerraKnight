@@ -29,7 +29,11 @@ namespace TerraKnight.Player
             Lifeforce = 113, Endurance = 114, Rage = 115, Inferno = 116, Wrath = 117, Fishing = 121, Sonar = 122, Crate = 123, Warmth = 124, Lucky = 257, BiomeSight = 343,
             Clairvoyance = 29, AmmoBox = 93, Bewitched = 150, Sharpened = 159, SugarRush = 192, Strategist = 348,
             // The Squire's sets after a hit (Pl:38524-38527): the Ballistas fire faster (MinionsSentries).
-            BallistaPanic = 205;
+            BallistaPanic = 205,
+            // Food (ItemsFood.cs): the fed states, and the Ale's Tipsy.
+            Tipsy = 25, WellFed = 26, PlentySatisfied = 206, ExquisitelyStuffed = 207;
+
+        static readonly int[] fed = { WellFed, PlentySatisfied, ExquisitelyStuffed };
 
         /// <summary>The flasks' buffs (WeaponImbue*: Venom 71, Cursed Flames 73, Fire 74, Gold 75, Ichor 76, Nanites 77, Confetti 78, Poison 79) and their meleeEnchant.</summary>
         static readonly Dictionary<int, int> imbues = new Dictionary<int, int> { [71] = 1, [73] = 2, [74] = 3, [75] = 4, [76] = 5, [77] = 6, [78] = 7, [79] = 8 };
@@ -57,6 +61,8 @@ namespace TerraKnight.Player
             D(Clairvoyance, "灵视", "提高魔能"); D(AmmoBox, "弹药箱", "20%几率省下弹药"); D(Bewitched, "着魔", "仆从数量上限增加1");
             D(Sharpened, "锋利", "近战武器具有盔甲穿透力"); D(Strategist, "战略家", "哨兵数量上限增加1"); D(SugarRush, "糖果冲刺", "移动和采矿速度各提高20%");
             D(BallistaPanic, "弩车恐慌！", "你的弩车在恐慌之中快速射击！");
+            D(WellFed, "吃得好", "所有属性小幅提升"); D(PlentySatisfied, "很满意", "所有属性中幅提升"); D(ExquisitelyStuffed, "酒足饭饱", "所有属性大幅提升");
+            D(Tipsy, "醉醺醺", "近战能力提升，防御力降低");
             return true;
         }
 
@@ -72,6 +78,10 @@ namespace TerraKnight.Player
             }
             if (imbues.ContainsKey(buff))
                 foreach (var other in imbues.Keys)
+                    if (other != buff) PlayerBuffs.Remove(other);
+            // Player.AddBuff for food (5269-5278): a fed state takes the place of any other, a lesser one too.
+            if (System.Array.IndexOf(fed, buff) >= 0)
+                foreach (var other in fed)
                     if (other != buff) PlayerBuffs.Remove(other);
             PlayerBuffs.Add(buff, ticks);
             DevGiven++;
@@ -143,6 +153,32 @@ namespace TerraKnight.Player
                 b.MinionDamage += 0.1f;
             }
             if (Has(Warmth)) b.ResistCold = true;
+            // The fed states (Player.cs:12018-12065): defense, crit, damage, melee speed, minion knockback, speed on foot, mining.
+            int tier = Has(ExquisitelyStuffed) ? 3 : Has(PlentySatisfied) ? 2 : Has(WellFed) ? 1 : 0;
+            if (tier > 0)
+            {
+                b.Defense += 1 + tier;
+                float crit = (1 + tier) * 0.01f, dmg = 0.025f * (1 + tier);
+                b.MeleeCrit += crit;
+                b.RangedCrit += crit;
+                b.MagicCrit += crit;
+                b.MeleeDamage += dmg;
+                b.RangedDamage += dmg;
+                b.MagicDamage += dmg;
+                b.MinionDamage += dmg;
+                b.MeleeSpeed += dmg;
+                b.MinionKB += 0.25f * (1 + tier);
+                b.MoveSpeed += 0.1f * (1 + tier);
+                b.PickSpeed -= 0.05f * tier;
+            }
+            // Tipsy (12005-12017): 4 defense less, melee crit +2%, melee damage and speed +10%.
+            if (Has(Tipsy))
+            {
+                b.Defense -= 4;
+                b.MeleeCrit += 0.02f;
+                b.MeleeDamage += 0.1f;
+                b.MeleeSpeed += 0.1f;
+            }
             // The buff stations' (Pl:10050-10400): Clairvoyance +5% magic damage, +2% magic crit, +20 mana, 2% less mana;
             // Ammo Box 20% of shots without ammo; Bewitched a minion more; Sharpened 12 armor penetration (the melee
             // weapons' in Terraria; all of them here); Strategist a sentry more; Sugar Rush 20% faster on foot and pick.

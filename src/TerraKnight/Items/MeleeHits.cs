@@ -170,6 +170,8 @@ namespace TerraKnight.Items
         {
             if (col.CompareTag("Geo")) return;
             if (PropHits.Revek(col)) return;
+            // A barb come to rest is a kinematic body the swing's own slash never touches: told it was struck all the same.
+            PropHits.TinkStruck(col, direction);
             HeroInRange(col);
             // Geo deposits are mined, not cut: only a pickaxe gets geo out of them.
             if (weapon.PickPower <= 0 && col.GetComponentInParent<GeoRock>() != null) return;

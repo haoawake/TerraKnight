@@ -163,7 +163,14 @@ namespace TerraKnight.Player
         /// </summary>
         /// <summary>The Terraria damage a touch of this many masks from this source would be (before defense).</summary>
         public static int RawContact(int amount, GameObject source) =>
-            amount * Mathf.RoundToInt(World.Areas.DamagePerMask(World.Areas.LevelOf(GameManager.UnsafeInstance?.sceneName)) * SourceFactor(source));
+            amount * Mathf.RoundToInt(StageDamage(World.Areas.DamagePerMask) * SourceFactor(source));
+
+        /// <summary>A mask's damage in the room now, at the level its enemies are met at (Areas.StatLevel), a little less when brought up to it.</summary>
+        static float StageDamage(System.Func<int, int> perMask)
+        {
+            int level = World.Areas.LevelOf(GameManager.UnsafeInstance?.sceneName);
+            return perMask(World.Areas.StatLevel(level)) * World.Areas.CatchUp(level);
+        }
 
         static float SourceFactor(GameObject go)
         {
@@ -220,7 +227,7 @@ namespace TerraKnight.Player
             {
                 // Master's hit less the defense, then the difficulty's share of that: an easier save takes
                 // a quarter (half, three quarters) of what Master would, whatever the armor.
-                int perMask = Mathf.RoundToInt(World.Areas.MasterDamagePerMask(World.Areas.LevelOf(GameManager.UnsafeInstance?.sceneName)) * SourceFactor(sourceNow));
+                int perMask = Mathf.RoundToInt(StageDamage(World.Areas.MasterDamagePerMask) * SourceFactor(sourceNow));
                 // The Dead Man's Sweater (deadMansSweater, P:14920-14924, 15120-15124): a trap's hit halved, at most 300; Hallownest's
                 // spikes are its traps.
                 if (hazardNow == 2 && Items.Equipment.Current.DeadMansSweater)

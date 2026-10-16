@@ -170,6 +170,27 @@ namespace TerraKnight.Items
             return 0;
         }
 
+        /// <summary>PrefixID.Sets.ReducedNaturalChance: the poor prefixes a natural roll keeps only one time in three.</summary>
+        static readonly HashSet<int> reducedNatural = new HashSet<int> { 7, 8, 9, 10, 11, 22, 23, 24, 29, 30, 31, 39, 40, 56, 41, 47, 48, 49 };
+
+        /// <summary>
+        /// Item.Prefix(-1), an item found (an enemy's loot): one time in four none; else one of its prefixes, a poor one
+        /// (ReducedNaturalChance) kept only one time in three; rolled again where it would change nothing. 0: none.
+        /// </summary>
+        public static int RollNatural(ItemDef d)
+        {
+            var list = Rollable(d);
+            if (list == null || d.Type == ItemType.KnightNail || d.Type == ItemType.DreamNail) return 0;
+            for (int tries = 0; tries < 200; tries++)
+            {
+                if (Random.Range(0, 4) == 0) return 0;
+                int p = list[Random.Range(0, list.Length)];
+                if (reducedNatural.Contains(p) && Random.Range(0, 3) != 0) return 0;
+                if (TryStats(d, p, out _, out _)) return p;
+            }
+            return 0;
+        }
+
         /// <summary>The cost of reforging (Main.DrawInventory: the item's value with its prefix, times the stack, a third), in copper; at least 1.</summary>
         public static long ReforgeCost(ItemStack s)
         {

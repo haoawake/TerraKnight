@@ -16,6 +16,7 @@ namespace TerraKnight.Items
     /// Knights' WAKE) are left to it. While the Knight has no control (a roar, a scene) no Terraria
     /// blow counts on a boss either.
     /// </summary>
+    [HarmonyLib.HarmonyPatch]
     internal static class BossWake
     {
         public enum Result { Normal, Woke, Held }
@@ -75,22 +76,55 @@ namespace TerraKnight.Items
                 return Result.Normal;
             }
             string from = f.ActiveStateName;
+            // A boss that wakes only when struck with the Knight beside it (the Crystal Guardian's Hero Range,
+            // tested after its BLOCKED HIT) is struck from across the room as from beside it.
+            var near = f.FsmVariables.FindFsmBool("Hero Range");
+            if (near != null) near.Value = true;
             // As the Knight's coming and his blow would: near (a shield dropped), then struck.
             if (Has(f.Fsm.ActiveState, "HERO ENTER")) f.SendEvent("HERO ENTER");
             var st = f.Fsm.ActiveState;
             if (st != null && Has(st, "TAKE DAMAGE")) f.SendEvent("TAKE DAMAGE");
             else if (st != null && Has(st, "BLOCKED HIT")) f.SendEvent("BLOCKED HIT");
+            else if (st != null && Has(st, "TOOK DAMAGE")) f.SendEvent("TOOK DAMAGE");
             waking[id] = Time.time;
             DevWoken++;
             Plugin.Log.LogInfo($"[叫醒] {hm.gameObject.scene.name}/{hm.name} 的 {f.FsmName} 在 {from} 被泰拉攻击叫醒（现在 {f.ActiveStateName}）：这一下只掉 1 点，醒完之前不掉血");
             return Result.Woke;
         }
 
-        /// <summary>Its waking not over: under half a second, the Knight held, its shield up, or its FSM in a wake or a roar (20 s at most).</summary>
+        /// <summary>
+        /// Its waking is over once its own FSM stands idle (First Idle, Idle): a roar after that is one of its attacks (the
+        /// Crystal Guardian's crystal rain), not its waking, and blows count through it.
+        /// </summary>
+        [HarmonyLib.HarmonyPostfix]
+        [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.FsmState), nameof(HutongGames.PlayMaker.FsmState.OnEnter))]
+        static void Entered(HutongGames.PlayMaker.FsmState __instance)
+        {
+            DevEntered?.Invoke(__instance);
+            if (waking.Count == 0 || __instance.Name == null || !__instance.Name.Contains("Idle")) return;
+            var go = __instance.Fsm != null ? __instance.Fsm.GameObject : null;
+            var hm = go != null ? go.GetComponent<HealthManager>() : null;
+            if (hm == null) return;
+            int id = hm.GetInstanceID();
+            if (!waking.TryGetValue(id, out float since) || Time.time - since < 0.5f) return;
+            waking.Remove(id);
+            DevAwake++;
+        }
+
+        public static int DevAwake;
+
+        /// <summary>Dev: every FSM state entered, as it is (a test watching a prop's FSM run through a hit in one frame).</summary>
+        public static System.Action<HutongGames.PlayMaker.FsmState> DevEntered;
+
+        /// <summary>
+        /// Its waking not over: under half a second, the Knight held, its shield up, or its FSM in a wake or a roar (20 s at
+        /// most). One gone back to sleep (the blow didn't wake it) isn't waking: the next blow tries again.
+        /// </summary>
         static bool StillWaking(HealthManager hm, float since)
         {
             float t = Time.time - since;
             if (t > 20f) return false;
+            if (Sleeper(hm) != null) return false;
             if (t < 0.5f || !GameHooks.PlayerHasControl() || hm.IsInvincible) return true;
             foreach (var f in hm.GetComponents<PlayMakerFSM>())
             {

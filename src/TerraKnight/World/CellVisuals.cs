@@ -166,7 +166,8 @@ namespace TerraKnight.World
 
         void ShowLight(int i, int x, int y)
         {
-            if (lights.ContainsKey(i)) return;
+            // One left from before whose object is gone (its chunk rebuilt): made again.
+            if (lights.TryGetValue(i, out var had) && had != null) return;
             var sr = Glow.CreateLight(root, TorchLight);
             var c = CellGrid.CellCenter(x, y);
             sr.transform.localPosition = new Vector3(c.x, c.y + 0.1f, Glow.Z);

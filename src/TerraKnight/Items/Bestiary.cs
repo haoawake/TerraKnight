@@ -137,7 +137,7 @@ namespace TerraKnight.Items
             {
                 // A boss in several pools (the False Knight's armour and head): its whole life, not the one pool's.
                 Life = EnemyStats.LifeWhole(info), Defense = info.Defense, Level = info.Level,
-                Damage = info.Harmful ? masks * Mathf.RoundToInt(World.Areas.DamagePerMask(info.Level) * EnemyStats.DamageFactor(info)) : 0,
+                Damage = info.Harmful ? masks * Mathf.RoundToInt(World.Areas.DamagePerMask(info.Boss ? info.Level : World.Areas.StatLevel(info.Level)) * (info.Boss ? 1f : World.Areas.CatchUp(info.Level)) * EnemyStats.DamageFactor(info)) : 0,
                 Knockback = EnemyStats.NoKnockback(info) || TerraKnockback.Immune(hm) ? 0f : World.Areas.KnockbackTaken(info.Level),
                 Boss = info.Boss, Elite = info.Elite, Scene = hm.gameObject.scene.name,
                 Masks = info.Harmful ? masks : 0, RawHp = info.MaxHp, GodhomeTier = info.GodhomeTier,

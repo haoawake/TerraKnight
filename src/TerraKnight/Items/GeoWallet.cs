@@ -57,6 +57,7 @@ namespace TerraKnight.Items
                     Migrated = true;
                     Plugin.Log.LogInfo($"[吉欧] 老存档的 {pd.geo} 吉欧换成背包里的吉欧");
                 }
+                inv.GatherCoins();
                 SetGameGeo(pd, Held(inv) + Banked(inv));
                 lastPd = pd.geo;
                 primed = true;

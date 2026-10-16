@@ -30,6 +30,9 @@ namespace TerraKnight.UI
             {
                 nextPrune = Time.unscaledTime + 5f;
                 EnemyStats.Prune();
+                var gone = new System.Collections.Generic.List<HealthManager>();
+                foreach (var k in lastBounds.Keys) if (k == null || k.isDead) gone.Add(k);
+                foreach (var k in gone) lastBounds.Remove(k);
             }
             Vector2 heroPos = hero.transform.position;
             EnemyStats.Info boss = null, struck = null;
@@ -42,7 +45,9 @@ namespace TerraKnight.UI
                 if (info.Boss)
                 {
                     float d = Vector2.Distance(hm.transform.position, heroPos);
-                    if (d < 45f && d < bossDist && Visible(hm))
+                    // The boss whose bar is up keeps it while it burrows or flies out of sight (the Dung Defender
+                    // underground, the Hive Knight above): only a new one has to be seen first.
+                    if (d < 45f && d < bossDist && (Visible(hm) || info == Fought))
                     {
                         boss = info;
                         bossDist = d;
@@ -53,7 +58,9 @@ namespace TerraKnight.UI
                 }
                 if (life >= max && !Always) continue;
                 var bounds = Bounds(hm);
-                if (bounds.size == Vector3.zero) continue;
+                // Out of sight (its collider and art switched off while it burrows or flies off): where it was last seen.
+                if (bounds.size == Vector3.zero) { if (!lastBounds.TryGetValue(hm, out bounds)) continue; }
+                else lastBounds[hm] = bounds;
                 // Under the NPC: 10 px below its hitbox, centred.
                 var at = new Vector3(bounds.center.x, bounds.min.y - 10f * Px, bounds.center.z);
                 SmallBar(cam, at, life, max, info.Boss ? 1.5f : 1f);
@@ -82,6 +89,8 @@ namespace TerraKnight.UI
             }
             return info;
         }
+
+        static readonly System.Collections.Generic.Dictionary<HealthManager, Bounds> lastBounds = new System.Collections.Generic.Dictionary<HealthManager, Bounds>();
 
         static bool Visible(HealthManager hm)
         {

@@ -53,6 +53,33 @@ namespace TerraKnight.Items
 
         static readonly Drop[] none = new Drop[0];
 
+        static float[] typicalHp;
+
+        /// <summary>The usual health (the median) of a level's common enemies (the roster's), for bringing earlier areas up to a stage.</summary>
+        public static float TypicalHp(int level)
+        {
+            if (typicalHp == null)
+            {
+                var by = new List<int>[World.Areas.MaxLevel + 1];
+                for (int i = 0; i < by.Length; i++) by[i] = new List<int>();
+                foreach (var e in table.Values)
+                {
+                    if (e.Boss || e.Kind != "normal" || e.Hp <= 0 || string.IsNullOrEmpty(e.Scene)) continue;
+                    int l = Mathf.Clamp(World.Areas.LevelOf(e.Scene), 0, World.Areas.MaxLevel);
+                    by[l].Add(e.Hp);
+                }
+                typicalHp = new float[by.Length];
+                float last = 10f;
+                for (int i = 0; i < by.Length; i++)
+                {
+                    by[i].Sort();
+                    if (by[i].Count > 0) last = by[i][by[i].Count / 2];
+                    typicalHp[i] = last;
+                }
+            }
+            return typicalHp[Mathf.Clamp(level, 0, typicalHp.Length - 1)];
+        }
+
         public static IReadOnlyList<Drop> Of(string record) => record != null && table.TryGetValue(record, out var e) && e.Drops != null ? e.Drops : none;
 
         /// <summary>The table key for a kill: "Record@stage" where that stage has its own table (Hornet in Kingdom's Edge), else the record.</summary>
@@ -231,6 +258,9 @@ namespace TerraKnight.Items
         {
             var drops = Of(record);
             if (drops.Count == 0) return;
+            // A boss can go down inside a wall, under the floor or high over the arena (burrowing, flying): its loot
+            // comes down beside the player then, not out of sight in the ground.
+            if (IsBoss(record) && !direct) at = SafeBossDropPoint(at);
             List<int> rolled = null;
             foreach (var d in drops)
             {
@@ -280,10 +310,27 @@ namespace TerraKnight.Items
                 DevDropped++;
                 return;
             }
-            if (direct) Give(ItemStack.Of(d.Type, n));
-            else WorldItems.Drop(ItemStack.Of(d.Type, n), at, personal: true);
+            var stack = ItemStack.Of(d.Type, n);
+            // Item.NewItem's prefixGiven -1 for an enemy's loot (Item.Prefix(-1)): a weapon or an accessory now and then reforged.
+            if (n == 1) stack.Prefix = (byte)Prefixes.RollNatural(ItemDb.Get(d.Type));
+            if (direct) Give(stack);
+            else WorldItems.Drop(stack, at, personal: true);
             DevDropped++;
         }
+
+        /// <summary>Where a boss's loot comes down: where it died, unless that is inside the ground or far off (then by the player).</summary>
+        static Vector2 SafeBossDropPoint(Vector2 at)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return at;
+            Vector2 h = hero.GetComponent<BoxCollider2D>().bounds.center;
+            bool buried = Physics2D.OverlapPoint(at, 1 << World.ChunkColliders.TerrainLayer) != null || World.TerraWorld.IsSolidAt(at);
+            if (!buried && Vector2.Distance(at, h) <= 14f) return at;
+            DevBossDropMoved++;
+            return h + new Vector2(0f, 0.5f);
+        }
+
+        public static int DevBossDropMoved;
 
         /// <summary>A stack from a kill: into the world at the spot, or straight into the bag where there's no time to pick it up.</summary>
         internal static void Spill(ItemStack stack, Vector2 at, bool direct)
@@ -321,7 +368,7 @@ namespace TerraKnight.Items
                 waiting.Add(stack);
                 return;
             }
-            int left = mod.Inventory.Pickup(stack.Type, stack.Count);
+            int left = mod.Inventory.Pickup(stack);
             if (left < stack.Count)
             {
                 UI.PopupText.Show(stack.Def, stack.Count - left, hero.GetComponent<BoxCollider2D>().bounds.center);
@@ -330,7 +377,9 @@ namespace TerraKnight.Items
             }
             if (left > 0)
             {
-                waiting.Add(ItemStack.Of(stack.Type, left));
+                var rest = stack;
+                rest.Count = left;
+                waiting.Add(rest);
                 UI.CombatText.Show(hero.GetComponent<BoxCollider2D>().bounds.center + Vector3.up * 1.4f, Lang.T("背包已满：放不下的掉落物会掉在脚下"), UI.CombatText.Notice);
             }
         }

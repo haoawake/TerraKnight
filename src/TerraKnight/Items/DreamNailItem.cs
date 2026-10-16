@@ -62,7 +62,7 @@ namespace TerraKnight.Items
             if (sampled == Time.frameCount) return;
             sampled = Time.frameCount;
             var mouse = Mouse.current;
-            bool raw = DevHold ?? (!TerraMod.DevNoRealMouse && mouse != null && (mouse.leftButton.isPressed || mouse.rightButton.isPressed));
+            bool raw = DevHold ?? (!TerraMod.DevNoRealMouse && (Player.TerraKeys.Held(Player.TerraKeys.Action.UseItem) || Player.TerraKeys.Held(Player.TerraKeys.Action.Interact)));
             if (!raw) suppressed = false;
             bool btn = raw && !suppressed && Holding();
             // A press that lands on the inventory or the hotbar is the interface's.

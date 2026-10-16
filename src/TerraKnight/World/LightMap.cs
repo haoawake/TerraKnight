@@ -192,7 +192,8 @@ namespace TerraKnight.World
                     {
                         int lx = gx - cellRegion.CellOffset.x, ly = gy - cellRegion.CellOffset.y;
                         kind = cellRegion.Grid.Get(lx, ly);
-                        dug = cellRegion.Grid.IsDug(lx, ly);
+                        // A dug cell with no wall behind it (a spike's cell mined out of the air, a tunnel's wall hammered off) is open air.
+                        dug = cellRegion.Grid.IsDug(lx, ly) && cellRegion.Grid.GetWall(lx, ly) != 0;
                     }
                     bool isSolid = Cells.Blocks(kind);
                     solid[i] = isSolid;

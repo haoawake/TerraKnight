@@ -165,6 +165,10 @@ namespace TerraKnight.Items
             /// <summary>Brought to the arena's front door (a seal): the room before it, until the player walks in.</summary>
             public string Door;
             public bool AtDoor;
+            /// <summary>The boss's kills when the visit began; when it was beaten in this one; its gates opened since.</summary>
+            public int KillsBefore;
+            public float WonAt = -1f;
+            public bool GatesOpened;
         }
 
         static Visit visit;
@@ -206,7 +210,7 @@ namespace TerraKnight.Items
             if (!Has(key) || gm == null || hero == null || pd == null || gm.IsInSceneTransition) return false;
             if (visit != null) Restore(keepWins: true);
             var a = arenas[key];
-            var v = new Visit { Key = key, Arena = a };
+            var v = new Visit { Key = key, Arena = a, KillsBefore = Bestiary.KillsOf(key) };
             string scene = a.Scene, gate = a.Gate;
             if (atDoor && a.Kind == Kind.World && frontDoors.TryGetValue(key, out var door))
             {
@@ -369,9 +373,41 @@ namespace TerraKnight.Items
             if (!visit.Arrived) return;
             var gm = GameManager.UnsafeInstance;
             var live = World.TerraWorld.Live?.SceneName;
-            if (gm == null || gm.IsInSceneTransition || live == null || InFight(live)) return;
+            if (gm == null || gm.IsInSceneTransition || live == null) return;
+            if (InFight(live))
+            {
+                OpenGatesAfterWin(gm);
+                return;
+            }
             Restore(keepWins: true);
         }
+
+        /// <summary>
+        /// A rematch won: the arena's battle gates opened 5 s after the boss went down. Some open only once the reward is
+        /// picked up (the ability's shiny), which a save that has it doesn't get again, so they stayed shut.
+        /// </summary>
+        static void OpenGatesAfterWin(GameManager gm)
+        {
+            if (visit.GatesOpened) return;
+            if (visit.WonAt < 0f)
+            {
+                if (Bestiary.KillsOf(visit.Key) > visit.KillsBefore) visit.WonAt = Time.time;
+                return;
+            }
+            if (Time.time - visit.WonAt < 5f) return;
+            visit.GatesOpened = true;
+            int n = 0;
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+            {
+                if (f == null || f.FsmName != "BG Control" || !f.gameObject.scene.isLoaded) continue;
+                f.SendEvent("BG OPEN");
+                n++;
+            }
+            DevGatesOpened += n;
+            Plugin.Log.LogInfo($"[图鉴] 挑战 {visit.Key}：赢了，打开 {n} 道战斗门");
+        }
+
+        public static int DevGatesOpened;
 
         /// <summary>
         /// Everything set for the visit put back. A flag or scene state the game changed since (the

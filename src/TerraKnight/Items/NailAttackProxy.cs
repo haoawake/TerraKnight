@@ -34,9 +34,15 @@ namespace TerraKnight.Items
         [HarmonyLib.HarmonyPrefix]
         [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ReceivedDamage), nameof(HutongGames.PlayMaker.Actions.ReceivedDamage.DoTriggerEnter2D))]
         [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ReceivedDamage), nameof(HutongGames.PlayMaker.Actions.ReceivedDamage.DoTriggerStay2D))]
-        static bool NotOnGeoRocks(HutongGames.PlayMaker.Actions.ReceivedDamage __instance, Collider2D collisionInfo) =>
-            collisionInfo == null || !slashes.Contains(collisionInfo.gameObject)
-            || __instance.Owner == null || __instance.Owner.GetComponentInParent<GeoRock>() == null;
+        static bool NotOnGeoRocks(HutongGames.PlayMaker.Actions.ReceivedDamage __instance, Collider2D collisionInfo)
+        {
+            if (collisionInfo != null && all.Contains(collisionInfo.gameObject)) DevReceivedTouches++;
+            return collisionInfo == null || !slashes.Contains(collisionInfo.gameObject)
+                || __instance.Owner == null || __instance.Owner.GetComponentInParent<GeoRock>() == null;
+        }
+
+        /// <summary>Dev: a stand-in come into a ReceivedDamage's trigger.</summary>
+        public static int DevReceivedTouches;
 
         readonly GameObject go;
         readonly BoxCollider2D box;

@@ -72,10 +72,10 @@ namespace TerraKnight.Items
             var pd = PlayerData.instance;
             def.Damage = DamageNow();
             var mouse = Mouse.current;
-            bool raw = DevHold ?? (!TerraMod.DevNoRealMouse && mouse != null && mouse.leftButton.isPressed);
+            bool raw = DevHold ?? (!TerraMod.DevNoRealMouse && Player.TerraKeys.Held(Player.TerraKeys.Action.UseItem));
             if (!raw) suppressed = false;
             // A press that lands on the inventory or the hotbar is the interface's.
-            if (raw && !suppressed && mouse != null && mouse.leftButton.wasPressedThisFrame && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver)) suppressed = true;
+            if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem) && Player.TerraKeys.IsMouse(Player.TerraKeys.Get(Player.TerraKeys.Action.UseItem)) && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver)) suppressed = true;
             // The inventory open, it swings as Terraria's held item does; an item on the cursor is the one used instead.
             if (raw && !suppressed && Holding() && GameHooks.PlayerHasControl() && !(InventoryGui.Open && !mod.Inventory.Mouse.IsEmpty) && (bool)canAttack.Invoke(hero, null))
             {
@@ -122,6 +122,8 @@ namespace TerraKnight.Items
             DevIntercepted++;
             if (mod.Melee.HitWith(col, Equipment.Damage(def), def.Knockback, Equipment.Crit(def), facing, from))
             {
+                // The upward slash knocks the enemy up (Terraria's push is sideways only).
+                if (Mathf.Abs(Mathf.DeltaAngle(hitInstance.Direction, 90f)) < 30f) TerraKnockback.PushUp(__instance, Equipment.Knockback(def));
                 hero.SoulGain();
                 DevHits++;
             }

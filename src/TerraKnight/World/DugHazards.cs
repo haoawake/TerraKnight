@@ -42,6 +42,47 @@ namespace TerraKnight.World
 
         static GameObject lastLogged;
 
+        static readonly Collider2D[] probe = new Collider2D[16];
+
+        /// <summary>A cell of open air where a spike or thorn hazard stands (a DamageHero of hazard type 2 over it), not dug yet.</summary>
+        public static bool IsSpikeCell(Vector2Int cell)
+        {
+            if (TerraWorld.Get(cell.x, cell.y) != CellKind.Empty || TerraWorld.IsDug(cell.x, cell.y) || !TerraWorld.InWorld(cell.x, cell.y)) return false;
+            if (BossRooms.Locked(cell.x, cell.y)) return false;
+            var c = CellGrid.CellCenter(cell.x, cell.y);
+            int n = Physics2D.OverlapBoxNonAlloc(c, Vector2.one * CellGrid.CellSize * 0.8f, 0f, probe);
+            for (int k = 0; k < n; k++)
+            {
+                var col = probe[k];
+                if (col == null || !col.enabled) continue;
+                var dh = col.GetComponent<DamageHero>() ?? col.GetComponentInParent<DamageHero>();
+                if (dh != null && dh.hazardType == Spikes) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A spike's cell mined out: its art cut away and harmless there, kept in the save (CellGrid.CutOpenArt).</summary>
+        public static void CutSpike(Vector2Int cell)
+        {
+            var r = TerraWorld.RegionAt(cell.x, cell.y);
+            if (r == null) return;
+            r.Grid.CutOpenArt(cell.x - r.CellOffset.x, cell.y - r.CellOffset.y);
+            DevSpikesCut++;
+        }
+
+        public static int DevSpikesCut;
+
+        /// <summary>Ground dug out from under spikes: theirs within two cells go with it, none left hanging in the air.</summary>
+        public static void CutLooseSpikes(Vector2Int dug)
+        {
+            for (int dy = -2; dy <= 2; dy++)
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    var c = new Vector2Int(dug.x + dx, dug.y + dy);
+                    if (IsSpikeCell(c)) CutSpike(c);
+                }
+        }
+
         /// <summary>
         /// Every point where the hero's box overlaps the hazard's colliders lies in a dug cell.
         /// False when the overlap can't be found (touching at an edge): the hit then stands.

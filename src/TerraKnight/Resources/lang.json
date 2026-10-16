@@ -4534,5 +4534,113 @@
   "it-IT": "Disattivo",
   "pt-BR": "Desligado",
   "ru-RU": "Выкл."
- }
+ },
+  "钱币": {
+    "en-US": "Coins",
+    "zh-Hant": "錢幣",
+    "ja-JP": "コイン",
+    "ko-KR": "코인",
+    "de-DE": "Münzen",
+    "fr-FR": "Pièces",
+    "es-ES": "Monedas",
+    "it-IT": "Monete",
+    "pt-BR": "Moedas",
+    "ru-RU": "Монеты"
+  },
+  "收藏": {
+    "en-US": "Favorite",
+    "zh-Hant": "收藏",
+    "ja-JP": "お気に入り",
+    "ko-KR": "즐겨찾기",
+    "de-DE": "Favorit",
+    "fr-FR": "Favori",
+    "es-ES": "Favorito",
+    "it-IT": "Preferito",
+    "pt-BR": "Favorito",
+    "ru-RU": "Избранное"
+  },
+  "鼠标左键": {
+    "en-US": "Left Mouse",
+    "zh-Hant": "滑鼠左鍵",
+    "ja-JP": "マウス左ボタン",
+    "ko-KR": "마우스 왼쪽 버튼",
+    "de-DE": "Linke Maustaste",
+    "fr-FR": "Clic gauche",
+    "es-ES": "Clic izquierdo",
+    "it-IT": "Tasto sinistro",
+    "pt-BR": "Botão esquerdo",
+    "ru-RU": "Левая кнопка мыши"
+  },
+  "鼠标右键": {
+    "en-US": "Right Mouse",
+    "zh-Hant": "滑鼠右鍵",
+    "ja-JP": "マウス右ボタン",
+    "ko-KR": "마우스 오른쪽 버튼",
+    "de-DE": "Rechte Maustaste",
+    "fr-FR": "Clic droit",
+    "es-ES": "Clic derecho",
+    "it-IT": "Tasto destro",
+    "pt-BR": "Botão direito",
+    "ru-RU": "Правая кнопка мыши"
+  },
+  "使用物品": {
+    "en-US": "Use Item",
+    "zh-Hant": "使用物品",
+    "ja-JP": "アイテムを使う",
+    "ko-KR": "아이템 사용",
+    "de-DE": "Gegenstand benutzen",
+    "fr-FR": "Utiliser l'objet",
+    "es-ES": "Usar objeto",
+    "it-IT": "Usa oggetto",
+    "pt-BR": "Usar item",
+    "ru-RU": "Использовать предмет"
+  },
+  "交互": {
+    "en-US": "Interact",
+    "zh-Hant": "互動",
+    "ja-JP": "インタラクト",
+    "ko-KR": "상호작용",
+    "de-DE": "Interagieren",
+    "fr-FR": "Interagir",
+    "es-ES": "Interactuar",
+    "it-IT": "Interagisci",
+    "pt-BR": "Interagir",
+    "ru-RU": "Взаимодействие"
+  },
+  "重命名": {
+    "en-US": "Rename",
+    "zh-Hant": "重新命名",
+    "ja-JP": "名前を変更",
+    "ko-KR": "이름 변경",
+    "de-DE": "Umbenennen",
+    "fr-FR": "Renommer",
+    "es-ES": "Renombrar",
+    "it-IT": "Rinomina",
+    "pt-BR": "Renomear",
+    "ru-RU": "Переименовать"
+  },
+  "取消": {
+    "en-US": "Cancel",
+    "zh-Hant": "取消",
+    "ja-JP": "キャンセル",
+    "ko-KR": "취소",
+    "de-DE": "Abbrechen",
+    "fr-FR": "Annuler",
+    "es-ES": "Cancelar",
+    "it-IT": "Annulla",
+    "pt-BR": "Cancelar",
+    "ru-RU": "Отмена"
+  },
+  "保存": {
+    "en-US": "Save",
+    "zh-Hant": "儲存",
+    "ja-JP": "保存",
+    "ko-KR": "저장",
+    "de-DE": "Speichern",
+    "fr-FR": "Enregistrer",
+    "es-ES": "Guardar",
+    "it-IT": "Salva",
+    "pt-BR": "Salvar",
+    "ru-RU": "Сохранить"
+  }
 }

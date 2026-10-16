@@ -22,6 +22,7 @@ namespace TerraKnight.UI
         static ConfigEntry<bool> autoReuseSetting, barsSetting;
         static GUIStyle row, head, keyStyle, section, version;
         static int openedFrame;
+        static float openedAt;
 
         public static void Bind(ConfigEntry<bool> autoReuse, ConfigEntry<bool> bars)
         {
@@ -35,6 +36,7 @@ namespace TerraKnight.UI
         {
             Open = true;
             openedFrame = Time.frameCount;
+            openedAt = Time.unscaledTime;
             TerraMod.Instance?.PlaySound("Menu_Open", 0.7f);
         }
 
@@ -97,13 +99,15 @@ namespace TerraKnight.UI
             version.fontSize = Mathf.RoundToInt(28 * ui);
             var p = Panel(ui);
             bool choosing = TerraKeys.Listening.HasValue || TerraKeys.Busy;
-            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && !choosing && Time.frameCount != openedFrame)
+            // The click (or key) that opened it may reach the GUI a frame or two later: none counts for 0.3 s.
+            bool settled = Time.frameCount != openedFrame && Time.unscaledTime - openedAt > 0.3f;
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && !choosing && settled)
             {
                 e.Use();
                 Hide();
                 return;
             }
-            if (e.type == EventType.MouseDown && !p.Contains(TerraCursor.GuiMouse()) && Time.frameCount != openedFrame)
+            if (e.type == EventType.MouseDown && !p.Contains(TerraCursor.GuiMouse()) && settled)
             {
                 e.Use();
                 Hide();
@@ -155,6 +159,9 @@ namespace TerraKnight.UI
             ry += 44f * ui;
             var all = TerraKeys.Ordered;
             int columns = all.Length > 30 ? 3 : 2;
+            // Three columns: a size smaller, each on one line.
+            keyStyle.fontSize = Mathf.RoundToInt((columns == 3 ? 17 : 20) * ui);
+            keyStyle.wordWrap = false;
             int perColumn = (all.Length + columns - 1) / columns;
             float colW = (rw - 20f * (columns - 1) * ui) / columns, rh = Mathf.Min(38f * ui, (p.yMax - 200f * ui - ry) / perColumn);
             var mouse = TerraCursor.GuiMouse();
@@ -165,10 +172,10 @@ namespace TerraKnight.UI
                 bool over = r.Contains(mouse);
                 bool listening = TerraKeys.Listening == a;
                 CreativeMenu.Fill(r, listening ? new Color(1f, 0.85f, 0.3f, 0.25f) : over ? new Color(1f, 1f, 1f, 0.1f) : new Color(0f, 0f, 0f, 0.25f));
-                CreativeMenu.Shadowed(new Rect(r.x + 10f * ui, r.y, r.width * 0.55f, r.height), TerraKeys.Name(a), keyStyle, over ? Gold : Color.white);
+                CreativeMenu.Shadowed(new Rect(r.x + 8f * ui, r.y, r.width * 0.58f, r.height), TerraKeys.Name(a), keyStyle, over ? Gold : Color.white);
                 string key = listening ? Lang.T("按下新按键……") : TerraKeys.KeyName(TerraKeys.Get(a));
                 var keyColor = listening ? Gold : TerraKeys.Clashes(a) ? new Color(1f, 0.45f, 0.4f) : new Color(0.8f, 0.9f, 1f);
-                CreativeMenu.Shadowed(new Rect(r.x + r.width * 0.55f, r.y, r.width * 0.45f - 10f * ui, r.height), key, keyStyle, keyColor);
+                CreativeMenu.Shadowed(new Rect(r.x + r.width * 0.6f, r.y, r.width * 0.4f - 6f * ui, r.height), key, keyStyle, keyColor);
                 if (e.type == EventType.MouseDown && e.button == 0 && over)
                 {
                     e.Use();

@@ -4,8 +4,8 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// A boss fought in phases one after another has its stand-in's whole life (<see cref="BossStats"/>, tuned) in every
-    /// phase, each phase <see cref="Step"/> more than the one before; the bodies up together in a phase share it (the
+    /// A boss fought in phases one after another has half its stand-in's life (<see cref="BossStats"/>, tuned; <see cref="Share"/>)
+    /// in its first phase, each phase <see cref="Step"/> more than the one before; the bodies up together in a phase share it (the
     /// user's: a phase is a boss of its time, not a slice of one). The phases as the game's own fights run them (their
     /// scenes' FSMs):
     /// <list type="bullet">
@@ -25,9 +25,11 @@ namespace TerraKnight.Items
     {
         /// <summary>Each phase's life over the one before's.</summary>
         public const float Step = 0.2f;
+        /// <summary>The first phase's life over the stand-in's: half (a whole one each was too much, 2026-10-16).</summary>
+        public const float Share = 0.5f;
         const float Armour = 10f / 13f, Head = 3f / 13f;
 
-        public static float Mult(int phase) => 1f + Step * phase;
+        public static float Mult(int phase) => Share * (1f + Step * phase);
 
         /// <summary>A body's phase and its share of the phase's life; false for a boss not fought in phases.</summary>
         public static bool Of(EnemyStats.Info info, out int phase, out float share)

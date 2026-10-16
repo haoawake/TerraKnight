@@ -201,6 +201,21 @@ namespace TerraKnight.World
             return copy;
         }
 
+        /// <summary>
+        /// A cell of open air holding a spike's or a thorn's art dug out (the art cut away there, no dug wall drawn behind it):
+        /// dug, with its wall explicitly none; raises the changes so the edit is kept.
+        /// </summary>
+        public void CutOpenArt(int x, int y)
+        {
+            if (!InBounds(x, y)) return;
+            int i = y * Width + x;
+            if (cells[i] != CellKind.Empty || dug[i]) return;
+            dug[i] = true;
+            if (WallAt(i) < 0) RestoreWall(i, 0);
+            CellChanged?.Invoke(x, y);
+            WallChanged?.Invoke(x, y);
+        }
+
         public void Set(int x, int y, CellKind kind)
         {
             if (!InBounds(x, y)) return;

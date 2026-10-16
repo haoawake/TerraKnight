@@ -303,7 +303,8 @@ namespace TerraKnight.World
                 }
                 if (s.Spec.Buff > 0)
                 {
-                    Player.PlayerBuffs.Add(s.Spec.Buff, s.Spec.BuffTicks);
+                    // The buff stations' last until death (the user's: a spike's death too); the cake's Sugar Rush its 2 minutes.
+                    Player.PlayerBuffs.Add(s.Spec.Buff, Player.PlayerBuffs.UntilDeath(s.Spec.Buff) ? Player.PlayerBuffs.Forever : s.Spec.BuffTicks);
                     TerraMod.Instance?.PlaySound(s.Kind == StationKind.SliceOfCake ? "Item_2" : s.Kind == StationKind.AmmoBox ? "Item_149" : s.Kind == StationKind.SharpeningStation ? "Item_37" : "Item_4");
                     DevBuffsTaken++;
                     return true;

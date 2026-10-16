@@ -5,20 +5,22 @@ using UnityEngine;
 namespace TerraKnight.World
 {
     /// <summary>
-    /// Corpses of the enemies that come back (<see cref="EnemyRespawn"/>) don't pile up: a few
-    /// seconds after the death the body fades and goes, as a Terraria enemy leaves nothing but
-    /// its drops. Hollow Knight keeps every corpse until the room is left, which with doubled,
-    /// respawning enemies fills a room with them. Bosses, scripted and one-time enemies (whose
-    /// bodies can matter to the scene) keep theirs.
+    /// Corpses of the enemies that come back (<see cref="EnemyRespawn"/>) lie where they fell as Hollow Knight leaves them
+    /// (Deepnest's are taken over and get up as Corpse Creepers), up to <see cref="MaxCorpses"/> at once: past that the
+    /// oldest fades and goes, so doubled, respawning enemies don't fill a room with bodies. Bosses, scripted and one-time
+    /// enemies (whose bodies can matter to the scene) keep theirs.
     /// </summary>
     [HarmonyPatch]
     internal static class CorpseCleanup
     {
-        /// <summary>Seconds a corpse lies before fading, and the fade.</summary>
-        public const float Linger = 3f, Fade = 1f;
+        /// <summary>Seconds an extra corpse lies before fading, and the fade; how many lie at once.</summary>
+        public const float Linger = 0f, Fade = 1f;
+        public const int MaxCorpses = 24;
+        static readonly List<GameObject> lying = new List<GameObject>();
 
         static readonly AccessTools.FieldRef<EnemyDeathEffects, GameObject> corpseOf = AccessTools.FieldRefAccess<EnemyDeathEffects, GameObject>("corpse");
         static EnemyDeathEffects emitting;
+        static readonly Dictionary<GameObject, bool> fromPool = new Dictionary<GameObject, bool>();
         static GameObject pooled;
 
         /// <summary>Dev: corpses set to fade, and those gone.</summary>
@@ -50,9 +52,26 @@ namespace TerraKnight.World
                 if (TerraMod.Instance == null || respawn == null || __instance == null || !respawn.Owns(__instance.gameObject)) return;
                 var body = pooled != null ? pooled : corpseOf(__instance);
                 if (body == null || !body.activeInHierarchy) return;
-                var fade = body.GetComponent<CorpseFade>() ?? body.AddComponent<CorpseFade>();
-                fade.Begin(pooled != null);
-                DevScheduled++;
+                lying.RemoveAll(g => g == null || !g.activeInHierarchy);
+                if (fromPool.Count > 4 * MaxCorpses)
+                {
+                    var gone = new List<GameObject>();
+                    foreach (var k in fromPool.Keys) if (k == null || !lying.Contains(k)) gone.Add(k);
+                    foreach (var k in gone) fromPool.Remove(k);
+                }
+                if (!lying.Contains(body)) lying.Add(body);
+                fromPool[body] = pooled != null;
+                // Past the most that lie at once, the oldest goes.
+                while (lying.Count > MaxCorpses)
+                {
+                    var old = lying[0];
+                    lying.RemoveAt(0);
+                    if (old == null) continue;
+                    var fade = old.GetComponent<CorpseFade>() ?? old.AddComponent<CorpseFade>();
+                    fade.Begin(fromPool.TryGetValue(old, out bool p) && p);
+                    fromPool.Remove(old);
+                    DevScheduled++;
+                }
             }
             finally
             {

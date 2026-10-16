@@ -65,7 +65,7 @@ namespace TerraKnight
         ItemType readyCueItem;
 
         /// <summary>Whether the use button is still down (what Player.channel waits on); the tests stand in for it.</summary>
-        public bool UseHeld => DevHold ?? (!DevNoRealMouse && Mouse.current != null && Mouse.current.leftButton.isPressed);
+        public bool UseHeld => DevHold ?? (!DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem));
         /// <summary>Dev: the autotest is driving; the real mouse buttons are ignored (a click from whoever is at the computer can't steer it).</summary>
         public static bool DevNoRealMouse;
         public bool? DevHold;
@@ -204,6 +204,7 @@ namespace TerraKnight
             // No talk goes on past a room's change: a box still up is one its speaker left behind.
             HudDialogue.Close();
             LiveWorld.Instance?.OnSceneReady();
+            TerraMovement.OnSceneEntered(HeroController.SilentInstance);
             Pylons.OnSceneReady();
             BossArena.OnSceneReady(gm);
             // The minions follow the player into the new room; a crack in progress ends.
@@ -315,13 +316,13 @@ namespace TerraKnight
             if (!Net.NetChat.BlocksKeys) ReadKeys();
             if (!MouseWorld(out var mouse)) return;
             // A right click on a townsperson in reach starts talking to it (Main.HoverOverNPCs).
-            bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && (Town.TownNpcs.TryRightClick(mouse) || Town.Angler.TryRightClick(mouse));
+            bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && (Town.TownNpcs.TryRightClick(mouse) || Town.Angler.TryRightClick(mouse));
             // A right click on an own sentry in reach puts it away (TryDespawningProjectile, 1.4).
-            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Minions.Instance != null && Minions.Instance.TryDespawnSentry(mouse));
+            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && Minions.Instance != null && Minions.Instance.TryDespawnSentry(mouse));
             // A right click on a chest in reach opens it (Player.TileInteractionsUse); on the pet Pal, a pat (Player.PetAnimal).
-            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Chests.TryRightClick(mouse));
-            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Stations.TryRightClick(mouse));
-            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Minions.Instance != null && Minions.Instance.TryPet(hero, mouse));
+            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && Chests.TryRightClick(mouse));
+            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && Stations.TryRightClick(mouse));
+            talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && Minions.Instance != null && Minions.Instance.TryPet(hero, mouse));
             if (talked) DreamNailItem.Cancel();
             GrapplingHook.Instance?.ReadKey(hero, GrapplingHook.HookItem(Inventory), mouse);
 
@@ -332,10 +333,10 @@ namespace TerraKnight
             // Terraria: with the inventory open, the item on the cursor is the one used in the world.
             Inventory.UseMouse = InventoryGui.Open && !Inventory.Mouse.IsEmpty;
             var def = Inventory.Current.Def;
-            if (!DevNoRealMouse && (!Mouse.current.leftButton.isPressed || Mouse.current.leftButton.wasPressedThisFrame)) BuildingTools.PoundReady = true;
+            if (!DevNoRealMouse && (!TerraKeys.Held(TerraKeys.Action.UseItem) || TerraKeys.Pressed(TerraKeys.Action.UseItem))) BuildingTools.PoundReady = true;
             // Over the hotbar (closed) or any panel (open), a click is the interface's, not a use.
             bool overUi = InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver;
-            if (!DevNoRealMouse && !overUi && !talked && Mouse.current.rightButton.wasPressedThisFrame) MeleeSpecials.RightLatch = true;
+            if (!DevNoRealMouse && !overUi && !talked && TerraKeys.Pressed(TerraKeys.Action.Interact)) MeleeSpecials.RightLatch = true;
             bool usable = false, smart = false;
             var cell = CellGrid.WorldToCell(mouse);
             var bounds = hero.GetComponent<BoxCollider2D>().bounds;
@@ -352,14 +353,14 @@ namespace TerraKnight
                 highlight.transform.position = new Vector3(c.x, c.y, CellVisuals.BlockZ - 0.001f);
             }
 
-            if (!overUi && !talked && !usable && rock == null && !DevNoRealMouse && Mouse.current.leftButton.isPressed
+            if (!overUi && !talked && !usable && rock == null && !DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem)
                 && (def.PickPower > 0 || def.HammerPower > 0 || def.PlacesWall > 0 || def.Places != CellKind.Empty || def.PlacesChest || def.PlacesStation != StationKind.None) && BossRooms.Locked(mouse))
                 BossRooms.Notice(mouse);
             // Potions and crystals take a click each; everything else keeps going while held.
             bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def);
-            bool pressed = !DevNoRealMouse && (once ? Mouse.current.leftButton.wasPressedThisFrame : Mouse.current.leftButton.isPressed);
+            bool pressed = !DevNoRealMouse && (once ? TerraKeys.Pressed(TerraKeys.Action.UseItem) : TerraKeys.Held(TerraKeys.Action.UseItem));
             // The Axe strums a note on each click, by how far off the cursor is (Pl:46946-46971), whether or not it swings now.
-            if (!overUi && !talked && !DevNoRealMouse && def.Type == ItemType.TheAxe && Mouse.current.leftButton.wasPressedThisFrame) StrumGuitar(mouse);
+            if (!overUi && !talked && !DevNoRealMouse && def.Type == ItemType.TheAxe && TerraKeys.Pressed(TerraKeys.Action.UseItem)) StrumGuitar(mouse);
             if (!overUi && pressed && useCooldown <= 0f && def.IsUsable)
             {
                 AltFunction = false;
@@ -371,14 +372,14 @@ namespace TerraKnight
                      && def.Class != DamageClass.Melee && def.UseTime < def.UseAnimation && !Equipment.AutoReuses(def))
                 Use(def, cell, usable, DevAim ?? mouse, rock);
             // ItemCheck_ManageRightClickFeatures: an item with another use takes it on the right button (held, for the Fury).
-            else if (!overUi && !talked && !DevNoRealMouse && def.AltUse && Mouse.current.rightButton.isPressed && useCooldown <= 0f && !IsUsingItem)
+            else if (!overUi && !talked && !DevNoRealMouse && def.AltUse && TerraKeys.Held(TerraKeys.Action.Interact) && useCooldown <= 0f && !IsUsingItem)
             {
                 AltFunction = true;
                 Use(def, cell, usable, mouse, rock);
             }
             // A right click with a summon staff picks (or drops) the minions' target, swinging the staff
             // (ItemCheck_ManageRightClickFeatures; not while holding an item on the open inventory's cursor).
-            else if (!overUi && !talked && !DevNoRealMouse && def.IsSummon && Mouse.current.rightButton.wasPressedThisFrame && !IsUsingItem && useCooldown <= 0f
+            else if (!overUi && !talked && !DevNoRealMouse && def.IsSummon && TerraKeys.Pressed(TerraKeys.Action.Interact) && !IsUsingItem && useCooldown <= 0f
                      && !(InventoryGui.Open && !Inventory.Mouse.IsEmpty))
                 AimMinions(def, mouse);
         }
@@ -641,7 +642,7 @@ namespace TerraKnight
             smart = false;
             // A platform line keeps its direction only while the button is held with smart cursor on.
             bool platforms = def.Places == CellKind.Platform;
-            if (!SmartCursor || !platforms || Mouse.current == null || !Mouse.current.leftButton.isPressed) PlatformStairs.Unlock();
+            if (!SmartCursor || !platforms || !TerraKeys.Held(TerraKeys.Action.UseItem)) PlatformStairs.Unlock();
             if (SmartCursor && platforms)
             {
                 if (PlatformStairs.SmartTarget(mouse, ReachBox(bounds, def), out var step))
@@ -761,7 +762,7 @@ namespace TerraKnight
         static float ReachTop(Bounds hitbox) => hitbox.max.y + (TerraMovement.StoolActive ? TerraMovement.StoolLift : 0f);
 
         static bool CanAct(ItemDef def, Vector2Int cell) =>
-            def.PickPower > 0 ? TerraWorld.CanDig(cell.x, cell.y) :
+            def.PickPower > 0 ? TerraWorld.CanDig(cell.x, cell.y) || DugHazards.IsSpikeCell(cell) :
             def.HammerPower > 0 ? BuildingTools.CanShape(cell) || BuildingTools.CanHammerWall(cell) :
             def.PlacesWall > 0 ? BuildingTools.CanPlaceWall(cell) : def.Places != CellKind.Empty && CanPlace(cell, def.Places);
 
@@ -1288,6 +1289,17 @@ namespace TerraKnight
                 miningDamage = 0;
             }
             var kind = TerraWorld.Get(cell.x, cell.y);
+            // A spike or thorn standing in open air: mined out like soft ground, its art cut away.
+            if (kind == CellKind.Empty && DugHazards.IsSpikeCell(cell))
+            {
+                miningDamage += pick.PickPower;
+                PlaySound("Tink_" + Random.Range(0, 3));
+                if (miningDamage < MineThreshold) { MineDust(cell, CellKind.Stone, 3); return; }
+                miningDamage = 0;
+                DugHazards.CutSpike(cell);
+                MineDust(cell, CellKind.Stone, 10);
+                return;
+            }
             if (kind == CellKind.Original)
             {
                 var region = TerraWorld.RegionAt(cell.x, cell.y);
@@ -1325,6 +1337,8 @@ namespace TerraKnight
             MineDust(cell, kind, 10);
             // Sand above, or rope hanging under it, may have lost what held it.
             FallingSand.Instance?.Check(cell.x, cell.y + 1);
+            // Spikes it held up go with it.
+            DugHazards.CutLooseSpikes(cell);
         }
 
         /// <summary>Tile dust: dirt 0, stone 1, wood 7, sand 32, torch 6 (WorldGen.KillTile_MakeTileDust).</summary>
@@ -1907,7 +1921,7 @@ namespace TerraKnight
                 // Holding the button keeps swinging, like Terraria's auto-reuse.
                 bool overUi = InventoryGui.Open && InventoryGui.MouseOverUi;
                 // Shooting items start each use themselves (they need ammo or mana for it).
-                if (hero != null && !DevNoRealMouse && Mouse.current != null && Mouse.current.leftButton.isPressed && !overUi && swingItem.Shoot == ProjKind.None && Equipment.AutoReuses(swingItem)
+                if (hero != null && !DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem) && !overUi && swingItem.Shoot == ProjKind.None && Equipment.AutoReuses(swingItem)
                     && !swingItem.IsSummon && !swingItem.IsWhip
                     && swingItem == Inventory.Current.Def && GameHooks.PlayerHasControl())
                 {

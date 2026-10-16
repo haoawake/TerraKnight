@@ -25,6 +25,8 @@ namespace TerraKnight.Player
             Hotbar1, Hotbar2, Hotbar3, Hotbar4, Hotbar5, Hotbar6, Hotbar7, Hotbar8, Hotbar9, Hotbar10, Loadout1, Loadout2, Loadout3, Loadout4,
             // 1.4.4-1.4.5: the Dash key, Quick Buff, the map's zoom and opacity, cycling the loadouts, the armor set ability.
             Dash, QuickBuff, MapZoomIn, MapZoomOut, MapAlphaUp, MapAlphaDown, NextLoadout, PreviousLoadout, ArmorSetAbility,
+            // Use Item and Interact (Terraria's MouseLeft and MouseRight triggers), the favourite key (config FavoriteKey).
+            UseItem, Interact, Favorite,
         }
 
         /// <summary>
@@ -33,7 +35,7 @@ namespace TerraKnight.Player
         /// </summary>
         public static readonly Action[] Ordered =
         {
-            Action.Up, Action.Down, Action.Left, Action.Right, Action.Jump, Action.Grapple, Action.AutoSelect, Action.SmartCursor,
+            Action.UseItem, Action.Interact, Action.Up, Action.Down, Action.Left, Action.Right, Action.Jump, Action.Grapple, Action.AutoSelect, Action.SmartCursor, Action.Favorite,
             Action.QuickHeal, Action.QuickMana, Action.QuickBuff, Action.Throw, Action.Inventory, Action.Chat,
             Action.Loadout1, Action.Loadout2, Action.Loadout3, Action.Loadout4, Action.NextLoadout, Action.PreviousLoadout, Action.ArmorSetAbility, Action.Dash,
             Action.MapZoomIn, Action.MapZoomOut, Action.MapAlphaUp, Action.MapAlphaDown, Action.FullMap, Action.MapStyle,
@@ -43,24 +45,27 @@ namespace TerraKnight.Player
         public static readonly Action[] All = (Action[])Enum.GetValues(typeof(Action));
 
         /// <summary>The mouse buttons a binding may take, as Key values no keyboard key has.</summary>
-        public const Key MouseMiddle = (Key)1001, MouseBack = (Key)1002, MouseForward = (Key)1003;
+        public const Key MouseMiddle = (Key)1001, MouseBack = (Key)1002, MouseForward = (Key)1003, MouseLeft = (Key)1004, MouseRight = (Key)1005;
 
-        public static bool IsMouse(Key k) => k == MouseMiddle || k == MouseBack || k == MouseForward;
+        public static bool IsMouse(Key k) => k == MouseMiddle || k == MouseBack || k == MouseForward || k == MouseLeft || k == MouseRight;
 
         static ButtonControl MouseButton(Key k)
         {
             var m = Mouse.current;
             if (m == null) return null;
-            return k == MouseMiddle ? m.middleButton : k == MouseBack ? m.backButton : k == MouseForward ? m.forwardButton : null;
+            return k == MouseMiddle ? m.middleButton : k == MouseBack ? m.backButton : k == MouseForward ? m.forwardButton
+                : k == MouseLeft ? m.leftButton : k == MouseRight ? m.rightButton : null;
         }
 
         /// <summary>A binding as the config writes it: the key's name, or Terraria's Mouse3 / Mouse4 / Mouse5.</summary>
-        static string Id(Key k) => k == MouseMiddle ? "Mouse3" : k == MouseBack ? "Mouse4" : k == MouseForward ? "Mouse5" : k == Key.None ? "None" : k.ToString();
+        static string Id(Key k) => k == MouseLeft ? "Mouse1" : k == MouseRight ? "Mouse2" : k == MouseMiddle ? "Mouse3" : k == MouseBack ? "Mouse4" : k == MouseForward ? "Mouse5" : k == Key.None ? "None" : k.ToString();
 
         static bool TryParse(string s, out Key k)
         {
             switch ((s ?? "").Trim().ToLowerInvariant())
             {
+                case "mouse1": case "leftbutton": k = MouseLeft; return true;
+                case "mouse2": case "rightbutton": k = MouseRight; return true;
                 case "mouse3": case "middlebutton": k = MouseMiddle; return true;
                 case "mouse4": case "backbutton": k = MouseBack; return true;
                 case "mouse5": case "forwardbutton": k = MouseForward; return true;
@@ -81,6 +86,7 @@ namespace TerraKnight.Player
             [Action.Dash] = Key.None, [Action.QuickBuff] = Key.B, [Action.MapZoomIn] = Key.NumpadPlus, [Action.MapZoomOut] = Key.NumpadMinus,
             [Action.MapAlphaUp] = Key.PageUp, [Action.MapAlphaDown] = Key.PageDown, [Action.NextLoadout] = Key.None, [Action.PreviousLoadout] = Key.None,
             [Action.ArmorSetAbility] = Key.None,
+            [Action.UseItem] = MouseLeft, [Action.Interact] = MouseRight, [Action.Favorite] = Key.LeftAlt,
         };
 
         static readonly Dictionary<Action, Key> keys = new Dictionary<Action, Key>(defaults);
@@ -160,7 +166,7 @@ namespace TerraKnight.Player
         }
 
         /// <summary>A key is being chosen (or was just now): the keys are the settings' only.</summary>
-        static bool Blocked => Listening != null || Time.frameCount - capturedFrame <= 1;
+        static bool Blocked => Listening != null || Time.frameCount - capturedFrame <= 1 || Items.InventoryGui.TypingName;
 
         /// <summary>A key is being chosen or was chosen this frame or the last (its Escape or Enter isn't anyone else's).</summary>
         public static bool Busy => Blocked;
@@ -201,7 +207,7 @@ namespace TerraKnight.Player
                     return;
                 }
             }
-            foreach (var k in new[] { MouseMiddle, MouseBack, MouseForward })
+            foreach (var k in new[] { MouseLeft, MouseRight, MouseMiddle, MouseBack, MouseForward })
             {
                 var b = MouseButton(k);
                 if (b == null || !b.wasPressedThisFrame) continue;
@@ -236,6 +242,7 @@ namespace TerraKnight.Player
                 Action.Dash => "UI.Dash", Action.QuickBuff => "LegacyMenu.157", Action.MapZoomIn => "LegacyMenu.168", Action.MapZoomOut => "LegacyMenu.169",
                 Action.MapAlphaUp => "LegacyMenu.171", Action.MapAlphaDown => "LegacyMenu.170", Action.NextLoadout => "UI.NextLoadout",
                 Action.PreviousLoadout => "UI.PreviousLoadout", Action.ArmorSetAbility => "UI.ArmorSetAbility",
+                Action.UseItem => "LegacyMenu.162", Action.Interact => "LegacyMenu.163",
                 _ => null,
             };
             if (IsHotbar(a)) key = "LegacyMenu." + (176 + (a - Action.Hotbar1));
@@ -244,7 +251,7 @@ namespace TerraKnight.Player
                 Action.Chat => "聊天", Action.Loadout4 => "配装4", Action.Jump => "跳", Action.Throw => "丢下", Action.Grapple => "抓钩", Action.FullMap => "切换完整地图",
                 Action.MapStyle => "切换地图类型", Action.Dash => "冲刺", Action.QuickBuff => "快速增益", Action.MapZoomIn => "放大", Action.MapZoomOut => "缩小",
                 Action.MapAlphaUp => "降低透明度", Action.MapAlphaDown => "提高透明度", Action.NextLoadout => "下一配装", Action.PreviousLoadout => "上一配装",
-                Action.ArmorSetAbility => "盔甲套装能力", _ => a.ToString(),
+                Action.ArmorSetAbility => "盔甲套装能力", Action.UseItem => "使用物品", Action.Interact => "交互", Action.Favorite => "收藏", _ => a.ToString(),
             };
             return (key != null ? Terraria.TerrariaText.Get(Lang.Culture, key) : null) ?? Lang.T(zh);
         }
@@ -254,6 +261,9 @@ namespace TerraKnight.Player
         {
             // LegacyMenu.195: "<Unbound>"
             if (k == Key.None) return Terraria.TerrariaText.Get(Lang.Culture, "LegacyMenu.195") ?? Lang.T("<未绑定>");
+            // Controls.LeftClick / RightClick
+            if (k == MouseLeft) return Terraria.TerrariaText.Get(Lang.Culture, "Controls.LeftClick") ?? Lang.T("鼠标左键");
+            if (k == MouseRight) return Terraria.TerrariaText.Get(Lang.Culture, "Controls.RightClick") ?? Lang.T("鼠标右键");
             if (k == MouseMiddle) return Lang.T("鼠标中键");
             if (k == MouseBack) return Lang.T("鼠标侧键（后）");
             if (k == MouseForward) return Lang.T("鼠标侧键（前）");
@@ -274,6 +284,8 @@ namespace TerraKnight.Player
         /// </summary>
         public static InControl.BindingSource ToInControlSource(Key k)
         {
+            if (k == MouseLeft) return new InControl.MouseBindingSource(InControl.Mouse.LeftButton);
+            if (k == MouseRight) return new InControl.MouseBindingSource(InControl.Mouse.RightButton);
             if (k == MouseMiddle) return new InControl.MouseBindingSource(InControl.Mouse.MiddleButton);
             if (k == MouseBack) return new InControl.MouseBindingSource(InControl.Mouse.Button4);
             if (k == MouseForward) return new InControl.MouseBindingSource(InControl.Mouse.Button5);

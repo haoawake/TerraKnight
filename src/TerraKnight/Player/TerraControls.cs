@@ -40,7 +40,7 @@ namespace TerraKnight.Player
             }
 
             // Typing (the LAN chat, a name or an address in the multiplayer menu): no key moves the Knight or the menus.
-            bool typing = Net.NetChat.Typing || Net.NetMenu.TextFocused;
+            bool typing = Net.NetChat.Typing || Net.NetMenu.TextFocused || Items.InventoryGui.TypingName;
             if (a.Enabled == typing) a.Enabled = !typing;
 
             a.attack.Enabled = false;

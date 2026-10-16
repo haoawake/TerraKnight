@@ -14,7 +14,83 @@ namespace TerraKnight.Items
     /// </summary>
     internal static partial class InventoryGui
     {
-        static readonly string[] chestButtons = { "全部拿取", "全部存放", "快速堆叠", "补货", "排序物品" };
+        static readonly string[] chestButtons = { "全部拿取", "全部存放", "快速堆叠", "补货", "排序物品", "重命名", "取消" };
+
+        // ChestUI's Rename (buttons 5 and 6, RenameChest / RenameChestCancel): the name typed in place of the label.
+        static bool renaming;
+        static string nameDraft = "";
+        static bool textHooked;
+
+        /// <summary>A chest's name is being typed: the keys are the text's.</summary>
+        public static bool TypingName => renaming || Time.frameCount - renameEnded <= 1;
+        /// <summary>The frame the typing ended: its Enter or Esc closes nothing else.</summary>
+        static int renameEnded = -10;
+
+        static void StartRename()
+        {
+            if (Chests.OpenName == null) return;
+            renaming = true;
+            nameDraft = Chests.OpenName;
+            if (!textHooked && UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                textHooked = true;
+                UnityEngine.InputSystem.Keyboard.current.onTextInput += TypedChar;
+            }
+            Sound("Menu_Tick");
+        }
+
+        static void TypedChar(char c)
+        {
+            if (!renaming || char.IsControl(c)) return;
+            if (nameDraft.Length < Chests.MaxNameLength) nameDraft += c;
+        }
+
+        /// <summary>RenameChestSubmit (Enter, Save) or RenameChestCancel (Esc, Cancel).</summary>
+        static void EndRename(bool keep)
+        {
+            if (!renaming) return;
+            renaming = false;
+            renameEnded = Time.frameCount;
+            if (keep) Chests.SetOpenName(nameDraft);
+            Sound("Menu_Tick");
+        }
+
+        /// <summary>Each frame: Backspace, Enter and Esc while the name is typed; the chest shut ends it.</summary>
+        static void TickRename()
+        {
+            if (!renaming) return;
+            if (!Chests.IsOpen || !Open || Chests.BankOpen) { renaming = false; return; }
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb == null) return;
+            if (kb.backspaceKey.wasPressedThisFrame && nameDraft.Length > 0) nameDraft = nameDraft.Substring(0, nameDraft.Length - 1);
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) EndRename(true);
+            else if (kb.escapeKey.wasPressedThisFrame) EndRename(false);
+        }
+
+        /// <summary>The chest panel's title: the name being typed (with its caret), the chest's name, else "箱子".</summary>
+        static string ChestTitle()
+        {
+            if (Chests.BankOpen) return Lang.T("猪猪存钱罐");
+            if (renaming) return nameDraft + ((int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : " ");
+            string name = Chests.OpenName;
+            return string.IsNullOrEmpty(name) ? Lang.T("箱子") : name;
+        }
+
+        static string ChestButtonText(int i)
+        {
+            // Lang.inter: 29 Loot All, 30 Deposit All, 31 Quick Stack, 82 Restock; 61 Rename, 47 Save while renaming, 63 Cancel.
+            if (i == 5) return renaming ? TT("LegacyInterface.47", "保存") : TT("LegacyInterface.61", "重命名");
+            if (i == 6) return TT("LegacyInterface.63", "取消");
+            return Lang.T(chestButtons[i]);
+        }
+
+        /// <summary>Dev: a chest renamed as typing and Enter would.</summary>
+        public static void DevRename(string name)
+        {
+            StartRename();
+            nameDraft = name.Length > Chests.MaxNameLength ? name.Substring(0, Chests.MaxNameLength) : name;
+            EndRename(true);
+        }
         static int chestButtonHover = -1, inventoryButtonHover = -1;
 
         /// <summary>
@@ -120,7 +196,7 @@ namespace TerraKnight.Items
             if (items == null) return;
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
             float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f) * ui;
-            Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T(Chests.BankOpen ? "猪猪存钱罐" : "箱子"), nameStyleLeft(ui), Color.white);
+            Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), ChestTitle(), nameStyleLeft(ui), renaming ? new Color(1f, 0.85f, 0.3f) : Color.white);
             panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 224f * 0.755f * ui));
             var prev = GUI.color;
             for (int i = 0; i < Chests.Capacity; i++)
@@ -142,6 +218,8 @@ namespace TerraKnight.Items
             int over = -1;
             for (int i = 0; i < chestButtons.Length; i++)
             {
+                // The bank has no name; Cancel only while renaming.
+                if ((i == 5 && Chests.BankOpen) || (i == 6 && !renaming)) continue;
                 var r = new Rect(view.x + 506f * ui, y0 + (30f + i * 28f) * ui, 120f * ui, 24f * ui);
                 Add(r, Kind.ChestButton, i);
                 bool hover = r.Contains(mouse);
@@ -149,7 +227,7 @@ namespace TerraKnight.Items
                 var style = nameStyleLeft(ui);
                 int size = style.fontSize;
                 style.fontSize = Mathf.RoundToInt((hover ? 20 : 17) * ui);
-                Outlined(r, Lang.T(chestButtons[i]), style, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
+                Outlined(r, ChestButtonText(i), style, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
                 style.fontSize = size;
             }
             if (over != chestButtonHover && over >= 0) Sound("Menu_Tick");
@@ -205,6 +283,8 @@ namespace TerraKnight.Items
             else if (index == 1) Chests.DepositAll(inv);
             else if (index == 2) Chests.QuickStack(inv);
             else if (index == 3) Chests.Restock(inv);
+            else if (index == 5) { if (renaming) EndRename(true); else StartRename(); return; }
+            else if (index == 6) { EndRename(false); return; }
             else Chests.SortOpen();
             Sound("Grab");
         }

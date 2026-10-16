@@ -77,6 +77,7 @@ namespace TerraKnight.Items
                 every.AddRange(ChainRecipes());
                 every.AddRange(SupplementRecipes());
                 every.AddRange(WallRecipes());
+                every.AddRange(FoodRecipes());
                 every.AddRange(BossSummons.Recipes());
                 return every;
             }
