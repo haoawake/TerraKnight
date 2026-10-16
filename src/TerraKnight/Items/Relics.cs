@@ -7,7 +7,7 @@ namespace TerraKnight.Items
     /// Master Mode relics (Terraria's MasterTrophy items: ItemDropRule.MasterModeCommonDrop, one every kill in Master
     /// Mode and never in another; placed as furniture on MasterTrophyBase; 5 gold to buy, so a gold to sell). Each of
     /// Hallownest's bosses has one (空洞骑士大师圣物素材包, RelicsGenerated.cs): its picture fitted to a relic's place,
-    /// uniformly 2 cells wide and 3 cells high, using a 64x96 texture with the same front-elevation base. A fight the
+    /// a three-cell-wide base and floating sculpture in a 3x4-cell space, split from a 64x96 texture. A fight the
     /// drop tables key as another (the Absolute Radiance, the
     /// Enraged Guardian, the Sisters of Battle, the Winged Nosk) gives its own, told apart by its scene or its boss's name.
     /// </summary>

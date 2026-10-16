@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "3.0.0";
+        public const string Version = "3.1.0";
 
         internal static ManualLogSource Log;
 
@@ -74,7 +74,7 @@ namespace TerraKnight
                 "敌人的泰拉瑞亚血条一直显示。关闭时和泰拉瑞亚一样，敌人掉血后才显示。\nEnemies' Terraria health bars always show. Off: as in Terraria, a bar shows once the enemy has lost health.");
             var autoReuse = Config.Bind("Gameplay", "AutoReuseAllItems", false,
                 "泰拉瑞亚设置里的“自动开火”（自动挥舞）：开启时所有武器按住鼠标就一直挥舞、射击。游戏里物品栏右下角的“设置”里也能切换。\nAuto Reuse from Terraria's settings: with it on, every weapon keeps swinging and firing while the mouse button is held. It can also be switched in \"Settings\" at the bottom right of the inventory.");
-            UI.IngameOptions.Bind(autoReuse, barsAlways);
+            UI.IngameOptions.Bind(autoReuse, barsAlways, centeredCamera);
             Net.NetSettings.Bind(Config);
             Player.TerraKeys.Bind(Config);
             var multiplier = Config.Bind("Gameplay", "EnemyMultiplier", 2,

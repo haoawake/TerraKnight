@@ -348,7 +348,7 @@ namespace TerraKnight.Items
             new Recipe(ItemType.SilverBroadsword, 1, "砧", 0, (ItemType.SilverBar, 8)), // Recipe.cs:10105-10109
             new Recipe(ItemType.TungstenBroadsword, 1, "砧", 0, (ItemType.TungstenBar, 8)), // Recipe.cs:10185-10189
             new Recipe(ItemType.CactusSword, 1, "工作台", 0, (ItemType.Cactus, 10)), // Recipe.cs:8086-8090
-            new Recipe(ItemType.GravediggerShovel, 1, "砧", 0, (ItemType.IronBar, 12), (ItemType.Wood, 3)), // Recipe.cs:9857-9866
+            new Recipe(ItemType.GravediggerShovel, 1, "砧", 0, (ItemType.IronBar, 12), (ItemType.Wood, 3)) { Environment = CraftEnvironment.Graveyard }, // Recipe.cs:9857-9866
             new Recipe(ItemType.BluePhaseblade, 1, "砧", 0, (ItemType.MeteoriteBar, 15), (ItemType.Sapphire, 15)), // Recipe.cs:10866-10872
             new Recipe(ItemType.RedPhaseblade, 1, "砧", 0, (ItemType.MeteoriteBar, 15), (ItemType.Ruby, 15)), // Recipe.cs:10873-10879
             new Recipe(ItemType.GreenPhaseblade, 1, "砧", 0, (ItemType.MeteoriteBar, 15), (ItemType.Emerald, 15)), // Recipe.cs:10880-10886
@@ -376,7 +376,6 @@ namespace TerraKnight.Items
             new Recipe(ItemType.GoldShortsword, 1, "砧", 0, (ItemType.GoldBar, 6)), // Recipe.cs:10270-10274
             new Recipe(ItemType.PlatinumShortsword, 1, "砧", 0, (ItemType.PlatinumBar, 6)), // Recipe.cs:10395-10399
             new Recipe(ItemType.ChlorophyteSaber, 1, "秘银砧", 4, (ItemType.ChlorophyteBar, 12)), // Recipe.cs:12054-12058
-            new Recipe(ItemType.TrueCopperShortsword, 1, "秘银砧", 4, (ItemType.Zenith, 1)), // ItemID.Sets.ShimmerTransformToItem (shimmer)
             new Recipe(ItemType.DayBreak, 1, "远古操纵机", 5, (ItemType.FragmentSolar, 18)), // Recipe.cs:12301-12305
             new Recipe(ItemType.Trimarang, 1, "工作台", 0, (ItemType.EnchantedBoomerang, 1), (ItemType.Shroomerang, 1), (ItemType.IceBoomerang, 1)), // Recipe.cs:6774-6779
             new Recipe(ItemType.DeadCellsFlint, 1, "精金熔炉", 4, (ItemType.AdamantiteBar, 24), (ItemType.HellstoneBar, 20)), // Recipe.cs:11336-11340
@@ -511,12 +510,10 @@ namespace TerraKnight.Items
             new Recipe(ItemType.ClayPotStaff, 1, "熔炉", 0, (ItemType.ClayBlock, 30), (ItemType.LesserHealingPotion, 1), (ItemType.Daybloom, 1), (ItemType.Blinkroot, 1)), // Recipe.cs:15105-15108
             new Recipe(ItemType.ForbiddenStaff, 1, "秘银砧", 4, (ItemType.DarkShard, 1), (ItemType.LightShard, 1), (ItemType.AncientBattleArmorMaterial, 2), (ItemType.SoulofNight, 5), (ItemType.SoulofLight, 5)), // Recipe.cs:15109-15112
             new Recipe(ItemType.RainbowFlare, 10, "徒手", 0, (ItemType.Flare, 10), (ItemType.RainbowBrick, 1)), // Recipe.cs:821-826
-            new Recipe(ItemType.ShimmerFlare, 1, "徒手", 0, (ItemType.Flare, 1)), // ItemID.Sets.ShimmerTransformToItem (shimmer)
-            new Recipe(ItemType.WetRocket, 1, "徒手", 0, (ItemType.DryRocket, 1), (ItemType.BottledWater, 1)), // Recipe.cs:2275 (needWater)
-            new Recipe(ItemType.LavaRocket, 1, "徒手", 0, (ItemType.DryRocket, 1), (ItemType.HellstoneBar, 1)), // Recipe.cs:2279 (needLava)
-            new Recipe(ItemType.HoneyRocket, 1, "徒手", 0, (ItemType.DryRocket, 1), (ItemType.BeeWax, 1)), // Recipe.cs:2283 (needHoney)
+            new Recipe(ItemType.WetRocket, 1, "徒手", 0, (ItemType.DryRocket, 1)) { Environment = CraftEnvironment.Water },
+            new Recipe(ItemType.LavaRocket, 1, "徒手", 0, (ItemType.DryRocket, 1)) { Environment = CraftEnvironment.Lava },
+            new Recipe(ItemType.HoneyRocket, 1, "徒手", 0, (ItemType.DryRocket, 1)) { Environment = CraftEnvironment.Honey },
             new Recipe(ItemType.DryRocket, 1, "徒手", 0, (ItemType.WetRocket, 1)), // Recipe.cs:2287-2290
-            new Recipe(ItemType.Flairon, 1, "徒手", 0, (ItemType.FlaironFlail, 1)), // ItemSlot.TryItemSwap (right click)
             new Recipe(ItemType.IvyWhip, 1, "砧", 0, (ItemType.JungleSpores, 12), (ItemType.Vine, 3)), // Recipe.cs:11108-11114
             new Recipe(ItemType.AmethystHook, 1, "砧", 0, (ItemType.Amethyst, 15)), // Recipe.cs:10742-10746
             new Recipe(ItemType.TopazHook, 1, "砧", 0, (ItemType.Topaz, 15)), // Recipe.cs:10747-10751
@@ -546,7 +543,7 @@ namespace TerraKnight.Items
             new Recipe(ItemType.HunterPotion, 1, "玻璃瓶", 0, (ItemType.BottledWater, 1), (ItemType.Daybloom, 1), (ItemType.Blinkroot, 1), (ItemType.SharkFin, 1)), // Recipe.cs:1808-1814
             new Recipe(ItemType.GravitationPotion, 1, "玻璃瓶", 0, (ItemType.BottledWater, 1), (ItemType.Fireblossom, 1), (ItemType.Deathweed, 1), (ItemType.Blinkroot, 1), (ItemType.Feather, 1)), // Recipe.cs:1815-1822
             new Recipe(ItemType.GreaterHealingPotion, 3, "玻璃瓶", 0, (ItemType.BottledWater, 3), (ItemType.PixieDust, 3), (ItemType.CrystalShard, 1)), // Recipe.cs:1614-1623
-            new Recipe(ItemType.BottledHoney, 1, "徒手", 0, (ItemType.Bottle, 1), (ItemType.BeeWax, 1)), // Recipe.cs (needHoney)
+            new Recipe(ItemType.BottledHoney, 1, "徒手", 0, (ItemType.Bottle, 1)) { Environment = CraftEnvironment.Honey }, // Recipe.cs (needHoney)
             new Recipe(ItemType.FlaskofVenom, 1, "灌注站", 2, (ItemType.BottledWater, 1), (ItemType.VialofVenom, 5)), // Recipe.cs:2017-2022
             new Recipe(ItemType.FlaskofCursedFlames, 1, "灌注站", 2, (ItemType.BottledWater, 1), (ItemType.CursedFlame, 2)), // Recipe.cs:2035-2040
             new Recipe(ItemType.FlaskofFire, 1, "灌注站", 2, (ItemType.BottledWater, 1), (ItemType.Hellstone, 3)), // Recipe.cs:2011-2016

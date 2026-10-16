@@ -118,6 +118,16 @@ namespace TerraKnight.Town
         // ------------------------------------------------------------------ the reward
 
         /// <summary>Player.GetAnglerReward (Pl:56967-57357), with the items Hallownest has.</summary>
+        static readonly ItemType[] rewardAccessories = { ItemType.HighTestFishingLine, ItemType.AnglerEarring, ItemType.TackleBox,
+            ItemType.FishermansGuide, ItemType.WeatherRadio, ItemType.Sextant, ItemType.FishingBobber };
+
+        internal static IEnumerable<ItemType> DevRewardSources()
+        {
+            foreach (var t in rewardAccessories) if (Has(t)) yield return t;
+            foreach (var t in new[] { ItemType.AnglerHat, ItemType.AnglerVest, ItemType.AnglerPants })
+                if (Has(t)) yield return t;
+        }
+
         static void Reward(Inventory inv)
         {
             int q = QuestsDone;
@@ -147,7 +157,7 @@ namespace TerraKnight.Town
             if (!main)
             {
                 // The fishing accessories not owned yet (the tackle bags count for their parts, a glowing bobber for the plain one).
-                var pool = new List<ItemType> { ItemType.HighTestFishingLine, ItemType.AnglerEarring, ItemType.TackleBox, ItemType.FishermansGuide, ItemType.WeatherRadio, ItemType.Sextant, ItemType.FishingBobber };
+                var pool = new List<ItemType>(rewardAccessories);
                 var owned = Owned(inv);
                 if (owned.Contains(ItemType.AnglerTackleBag) || owned.Contains(ItemType.LavaproofTackleBag)) { owned.Add(ItemType.HighTestFishingLine); owned.Add(ItemType.TackleBox); owned.Add(ItemType.AnglerEarring); }
                 if (owned.Contains(ItemType.FishFinder) || owned.Contains(ItemType.PDA) || owned.Contains(ItemType.CellPhone)) { owned.Add(ItemType.FishermansGuide); owned.Add(ItemType.WeatherRadio); owned.Add(ItemType.Sextant); }

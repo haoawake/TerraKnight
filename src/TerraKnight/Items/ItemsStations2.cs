@@ -21,6 +21,7 @@ namespace TerraKnight.Items
                 Type = t, Name = name, Texture = "Item_" + id, PlacesStation = kind, Consumable = true, MaxStack = 9999, UseAnimation = 15 * Tick, UseTime = 10 * Tick,
                 Rare = rare, Tooltip = tip,
             };
+            list.Add(S(ItemType.Campfire, "篝火", 966, StationKind.Campfire, 0, "用于烤制焦黑鱼"));
             list.Add(S(ItemType.Hellforge, "地狱熔炉", 221, StationKind.Hellforge, 0, "用于熔炼狱石"));
             list.Add(S(ItemType.AdamantiteForge, "精金熔炉", 524, StationKind.AdamantiteForge, 3, "用于熔炼精金矿和钛金矿"));
             list.Add(S(ItemType.TitaniumForge, "钛金熔炉", 1221, StationKind.TitaniumForge, 3, "用于熔炼精金矿和钛金矿"));
@@ -56,6 +57,7 @@ namespace TerraKnight.Items
         /// <summary>Their stage, source and value (Item.value).</summary>
         static IEnumerable<(ItemType, int, ItemSource, int)> Station2Sources()
         {
+            yield return (ItemType.Campfire, 0, ItemSource.Craft, 0);
             yield return (ItemType.Hellforge, 3, ItemSource.Drop, 3000);
             yield return (ItemType.AdamantiteForge, 4, ItemSource.Craft, 50000);
             yield return (ItemType.TitaniumForge, 4, ItemSource.Craft, 50000);

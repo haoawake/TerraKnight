@@ -114,14 +114,14 @@ namespace TerraKnight.Items
             yield return new Recipe(ItemType.SeafoodDinner, 1, "烹饪锅", 0, (ItemType.VariegatedLardfish, 2)); // Recipe.cs:1504-1508
             yield return new Recipe(ItemType.LobsterTail, 1, "烹饪锅", 0, (ItemType.RockLobster, 1)); // Recipe.cs:1343-1347
             yield return new Recipe(ItemType.MonsterLasagna, 1, "烹饪锅", 0, (ItemType.RottenChunk, 8)); // Recipe.cs:1141-1145
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.Bass, 1)); // Recipe.cs:1509-1513
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.Trout, 1)); // Recipe.cs:1514-1518
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.AtlanticCod, 1)); // Recipe.cs:1519-1523
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.Flounder, 1)); // Recipe.cs:1524-1528
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.NeonTetra, 1)); // Recipe.cs:1529-1533
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.Salmon, 1)); // Recipe.cs:1534-1538
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.Tuna, 1)); // Recipe.cs:1539-1543
-            yield return new Recipe(ItemType.BlackenedFish, 1, "烹饪锅", 0, (ItemType.RedSnapper, 1)); // Recipe.cs:1544-1548
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.Bass, 1)); // Recipe.cs:1509-1513
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.Trout, 1)); // Recipe.cs:1514-1518
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.AtlanticCod, 1)); // Recipe.cs:1519-1523
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.Flounder, 1)); // Recipe.cs:1524-1528
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.NeonTetra, 1)); // Recipe.cs:1529-1533
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.Salmon, 1)); // Recipe.cs:1534-1538
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.Tuna, 1)); // Recipe.cs:1539-1543
+            yield return new Recipe(ItemType.BlackenedFish, 1, "篝火", 0, (ItemType.RedSnapper, 1)); // Recipe.cs:1544-1548
         }
     }
 }

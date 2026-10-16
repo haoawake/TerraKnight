@@ -14,8 +14,6 @@ namespace TerraKnight.Items
     /// </summary>
     internal static partial class Fishing
     {
-        /// <summary>What a crate may hold besides (the pets, light pets and minecarts; filled where they are defined).</summary>
-        internal static readonly List<ItemType> EasterEggs = new List<ItemType>();
         public static int DevOpened;
 
         public static bool IsCrate(ItemType t) => crates.ContainsKey(t);
@@ -121,7 +119,8 @@ namespace TerraKnight.Items
                 Put(got, bait, 1, level == 0 ? 4 : 6);
             }
             // A pet, a light pet or a minecart, now and then.
-            if (EasterEggs.Count > 0 && Random.Range(0, 50) == 0) Put(got, EasterEggs[Random.Range(0, EasterEggs.Count)], 1, 1);
+            var eggs = Pets.Eggs;
+            if (eggs.Count > 0 && Random.Range(0, 50) == 0) Put(got, eggs[Random.Range(0, eggs.Count)], 1, 1);
             if (got.Count == 0) got.Add(ItemStack.Of(ItemType.Geo, Random.Range(5, 21)));
         }
     }

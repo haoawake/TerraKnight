@@ -27,6 +27,8 @@ namespace TerraKnight.Player
             Dash, QuickBuff, MapZoomIn, MapZoomOut, MapAlphaUp, MapAlphaDown, NextLoadout, PreviousLoadout, ArmorSetAbility,
             // Use Item and Interact (Terraria's MouseLeft and MouseRight triggers), the favourite key (config FavoriteKey).
             UseItem, Interact, Favorite,
+            // The mod's own: the shadow dash (the Shade Cloak, the Hallownest Shield).
+            ShadowDash,
         }
 
         /// <summary>
@@ -37,7 +39,7 @@ namespace TerraKnight.Player
         {
             Action.UseItem, Action.Interact, Action.Up, Action.Down, Action.Left, Action.Right, Action.Jump, Action.Grapple, Action.AutoSelect, Action.SmartCursor, Action.Favorite,
             Action.QuickHeal, Action.QuickMana, Action.QuickBuff, Action.Throw, Action.Inventory, Action.Chat,
-            Action.Loadout1, Action.Loadout2, Action.Loadout3, Action.Loadout4, Action.NextLoadout, Action.PreviousLoadout, Action.ArmorSetAbility, Action.Dash,
+            Action.Loadout1, Action.Loadout2, Action.Loadout3, Action.Loadout4, Action.NextLoadout, Action.PreviousLoadout, Action.ArmorSetAbility, Action.Dash, Action.ShadowDash,
             Action.MapZoomIn, Action.MapZoomOut, Action.MapAlphaUp, Action.MapAlphaDown, Action.FullMap, Action.MapStyle,
             Action.Hotbar1, Action.Hotbar2, Action.Hotbar3, Action.Hotbar4, Action.Hotbar5, Action.Hotbar6, Action.Hotbar7, Action.Hotbar8, Action.Hotbar9, Action.Hotbar10,
         };
@@ -82,10 +84,11 @@ namespace TerraKnight.Player
             [Action.Hotbar1] = Key.Digit1, [Action.Hotbar2] = Key.Digit2, [Action.Hotbar3] = Key.Digit3, [Action.Hotbar4] = Key.Digit4, [Action.Hotbar5] = Key.Digit5,
             [Action.Hotbar6] = Key.Digit6, [Action.Hotbar7] = Key.Digit7, [Action.Hotbar8] = Key.Digit8, [Action.Hotbar9] = Key.Digit9, [Action.Hotbar10] = Key.Digit0,
             [Action.Loadout1] = Key.F1, [Action.Loadout2] = Key.F2, [Action.Loadout3] = Key.F3, [Action.Loadout4] = Key.F4,
-            // PlayerInput.Reset (Redigit's Pick): Dash, the loadout cycling and the armor set ability are left unbound.
-            [Action.Dash] = Key.None, [Action.QuickBuff] = Key.B, [Action.MapZoomIn] = Key.NumpadPlus, [Action.MapZoomOut] = Key.NumpadMinus,
+            // PlayerInput.Reset (Redigit's Pick): the loadout cycling and the armor set ability are left unbound; Dash on F
+            // here (Terraria leaves it unbound), the Shadow Dash on X (the user's choice, neither taken by another action).
+            [Action.Dash] = Key.F, [Action.QuickBuff] = Key.B, [Action.MapZoomIn] = Key.NumpadPlus, [Action.MapZoomOut] = Key.NumpadMinus,
             [Action.MapAlphaUp] = Key.PageUp, [Action.MapAlphaDown] = Key.PageDown, [Action.NextLoadout] = Key.None, [Action.PreviousLoadout] = Key.None,
-            [Action.ArmorSetAbility] = Key.None,
+            [Action.ArmorSetAbility] = Key.None, [Action.ShadowDash] = Key.X,
             [Action.UseItem] = MouseLeft, [Action.Interact] = MouseRight, [Action.Favorite] = Key.LeftAlt,
         };
 
@@ -251,7 +254,7 @@ namespace TerraKnight.Player
                 Action.Chat => "聊天", Action.Loadout4 => "配装4", Action.Jump => "跳", Action.Throw => "丢下", Action.Grapple => "抓钩", Action.FullMap => "切换完整地图",
                 Action.MapStyle => "切换地图类型", Action.Dash => "冲刺", Action.QuickBuff => "快速增益", Action.MapZoomIn => "放大", Action.MapZoomOut => "缩小",
                 Action.MapAlphaUp => "降低透明度", Action.MapAlphaDown => "提高透明度", Action.NextLoadout => "下一配装", Action.PreviousLoadout => "上一配装",
-                Action.ArmorSetAbility => "盔甲套装能力", Action.UseItem => "使用物品", Action.Interact => "交互", Action.Favorite => "收藏", _ => a.ToString(),
+                Action.ArmorSetAbility => "盔甲套装能力", Action.ShadowDash => "暗影冲刺", Action.UseItem => "使用物品", Action.Interact => "交互", Action.Favorite => "收藏", _ => a.ToString(),
             };
             return (key != null ? Terraria.TerrariaText.Get(Lang.Culture, key) : null) ?? Lang.T(zh);
         }

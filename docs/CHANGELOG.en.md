@@ -8,6 +8,41 @@
 
 > 2.1.0: **save slots after slot 5 display and load normally after you quit to the main menu**; robust mod save writing (the full file is written before it replaces the old one, a .bak copy is kept, and when a save cannot be read the previous one is used automatically); Life Crystals lie scattered on the ground in early areas (in different places for each save), and every completed mask also gives one; a Stage unlocks when you defeat the final boss of the previous Stage; enemy respawn times are tiered by strength (30 seconds to 4 minutes), and a translucent ghost appears before an enemy respawns; stacks go up to 9999, and worthless items (Dirt Blocks, Stone Blocks, Wood) sell for nothing; Master mode has an extra accessory slot; the Goblin Tinkerer sells the Tinkerer's Workshop; the log records the cause of death of enemies that the player did not kill.
 
+> 3.1.0:
+>
+> - **Crafting as in Terraria**: the 910 recipes of Terraria items match vanilla 1.4.5.8 in materials, amounts, results, stations and environment (water, acid, honey, graveyard); a stage only decides when a recipe opens. Hand-made recipes work anywhere, the rest need their station nearby; the basics bought with Geo are made by a bench or in Dirtmouth. The Demon and Crimson Altars stand either side of Dirtmouth's bench; the Campfire is craftable and placeable (10 wood, 5 torches); every crafting station has a source, the Sky Mill (Vengeflies and their kin), the Ice Machine (Crystal Peak's enemies) and the Ancient Manipulator (always from the Hollow Knight) among them.
+>
+> - **Drops** (every source in [掉落记录.md](../掉落记录.md))
+>   - Accessories from common enemies and elites share one pool, at most one a kill: 2% from a common enemy and 5% from an elite on Normal (2.2%/5.5%, 2.4%/6% and 2.6%/6.5% on Hard, Expert and Master), the item picked by its usual weight.
+>   - Souls of Light, Night and Flight are rolled on their own from Stage 4: 60% for 1 to 3 from their common enemies, always 2 to 4 from elites; common materials drop 50% more.
+>   - Late bosses always give 15 to 25 Hallowed Bars and 20 to 30 of their soul, final bosses also 18 to 26 of their fragment and 4 to 8 Beetle Husks; common enemies in the dreams and similar areas drop Ectoplasm and Spooky Wood.
+>   - Old weapons, armor and accessories that vanilla recipes still use keep their enemy sources, and early materials such as Deathweed, Blinkroot and Mud have sources; a boss reward never exceeds the stage of its fight.
+>   - Accessories have their vanilla values: no stage caps, and the Bone Glove, the Mana Cloak and the like deal their vanilla damage.
+>
+> - **Enemy life by stage**: common enemies and elites have 50% of their 3.0.0 life in Stages 0 to 3, 31.25% in Stage 4 and 20% in Stage 5; bosses have 65% in Stages 0 and 1, 60% in Stage 2, 55% in Stage 3, 50% in Stage 4 and 40% in Stage 5 and Godhome rematches.
+>
+> - **Boss summons**: the 40 summons are made at an anvil from what two kinds of enemy around their boss drop (the False Knight's is 12 Iron Ore and 6 Gel, say); Bee Wax drops from Stage 3, the Hive Knight's.
+>
+> - **Shade Cloak, Crystal Heart and Hallownest Shield**: getting the Shade Cloak or Crystal Heart ability puts the accessory of that name in the bag, reforgeable.
+>   - Shade Cloak: the Shadow Dash key (X by default), or a double tap of a direction while Dash is held, makes a shadow dash with a 10 s cooldown; it passes through enemies, their attacks and shade gates, the body wrapped in black smoke.
+>   - Crystal Heart: holding Dash (F by default) on the ground or a wall charges the vanilla super dash, which stops at a wall; 20 s cooldown; the body glows white while charging and flying.
+>   - Hallownest Shield (Shield of Cthulhu + Shade Cloak + Crystal Heart at the Tinkerer's Workshop, 4 defense): tap Dash for the Shield of Cthulhu's dash, hold it for the Crystal Heart's charge, double-tap a direction while holding it for the shadow dash.
+>   - Dash defaults to F and Shadow Dash to X, both rebindable in "Terraria Settings".
+>
+> - **Water Candle**: sold by the Merchant for 3000 Geo. In the hotbar it brings every enemy but bosses (elites and one-off enemies too) back at once whenever a room is entered; using it cycles the spawn multiplier through ×1, ×2 and ×3 (on top of the usual doubling; one-off enemies still come back alone).
+>
+> - **Buff furniture works carried**: a Campfire, Heart Lantern, Star in a Bottle, Bast Statue, Sunflower or Garden Gnome in the bag gives the buff it gives placed nearby (life regeneration, mana regeneration, +5 defense, movement speed, luck); the Star in a Bottle (Bottle + Fallen Star) and the Heart Lantern (Life Crystal + 4 Chains) are made by hand.
+>
+> - **Tombstones and graveyards**: dying (to spikes too) throws a tombstone as in Terraria; it rolls until it can stand and becomes a dropped item if it finds nowhere within 10 seconds; with over 1000 Geo on you it is a gold one (11 kinds). Seven tombstones nearby make a graveyard (the Resting Grounds are one too): the scene darkens, graveyard recipes open, and Abigail's Flower grows at random by the graves (right-click to pick it).
+>
+> - **Camera lock**: a switch in "Terraria Settings"; on, the character stays in the middle of the screen (Terraria's view), off, Hollow Knight's own camera.
+>
+> - **Inventory and combat**: walking with the inventory open runs at the same frame rate as with it closed; a melee weapon or the Nail deals one hit to each enemy per swing (enemies with several hitboxes too); re-equipping the same accessory keeps its prefix and forge level; returning to the main menu clears the Spiky Balls, projectiles, minions and whips left in the scene; Geo in the coin slot and the bag goes into the Piggy Bank by Quick Stack, the bank's "Quick Stack" and "Deposit All", or Shift+click, onto the Geo already there (favourites stay).
+>
+> - **Hallownest items**: the King's Brand, the lantern and the keys are recognised by vanilla doors, devices and dialogue while held; the moment one is taken in hand, a door or device waiting for it decides again, and the lantern lights the room at once. A Dream Nail received with the main bag full goes in the Hallownest Bag's 21st slot (Dream Nail only); a Dream Nail the save has but the player doesn't carry comes back by itself, prefix and forge level kept.
+>
+> - **Master relics**: one 3-tile-wide pedestal, the statue scaled evenly, floating up and down as in Terraria with a golden glow and sparkles.
+
 > 3.0.0:
 >
 > - **Interface and recall**: the Bestiary switches between area and stages 0–5; the Creative picker pages through all 50 save slots; Recall arrives standing and preserves the original respawn point.

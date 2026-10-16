@@ -505,6 +505,23 @@ namespace TerraKnight.Items
         /// counted in), the hot springs' Spa Region; how many tiles each holds (FishingCheck's pond: its width, and down to
         /// the floor under it at each column).
         /// </summary>
+        internal static bool NearCraftingLiquid(bool acid)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return false;
+            Scan();
+            var position = (Vector2)hero.transform.position;
+            foreach (var p in ponds)
+            {
+                if (p.Acid != acid || (p.Region != null && !p.Region.activeInHierarchy)) continue;
+                var bounds = p.Area;
+                bounds.Expand(new Vector3(10 * CellGrid.CellSize, 8 * CellGrid.CellSize, 0));
+                if (position.x >= bounds.min.x && position.x <= bounds.max.x
+                    && position.y >= bounds.min.y && position.y <= bounds.max.y) return true;
+            }
+            return false;
+        }
+
         static void Scan()
         {
             int sig = 17;

@@ -40,7 +40,7 @@ namespace TerraKnight
                 bool made = InventoryGui.DevCraft(r.Result);
                 return made && inv.Mouse.Type == r.Result && inv.Mouse.Count == r.Count && r.Ingredients.All(g => Recipes.Count(inv, g.Type) == 0);
             }
-            var added = Recipes.SupplementRecipes().Select(r => Recipes.For(r.Result) ?? r).GroupBy(r => r.Result).Select(g => g.First()).ToArray();
+            var added = Recipes.SupplementRecipes();
             foreach (var r in added.Where(r => r.Environment == CraftEnvironment.None))
                 Check("制作 " + r.Result + " " + r.Station, Craft(r), "实际制作入口、产出和材料扣除");
             foreach (var r in added.Where(r => r.Environment != CraftEnvironment.None))
@@ -55,8 +55,7 @@ namespace TerraKnight
             }
             var shop = new HashSet<ItemType>(Town.CraftingSupplementShops.All.Select(s => s.Type));
             var drops = new HashSet<ItemType>();
-            for(int stage=0;stage<6;stage++)
-                foreach (var key in EnemyDrops.DevRecords) foreach (var drop in EnemyDrops.At(key,stage,false,true,true)) drops.Add(drop.Type);
+            foreach (var key in EnemyDrops.DevRecords) foreach (var drop in EnemyDrops.Of(key)) drops.Add(drop.Type);
             bool Sourced(ItemType t, HashSet<ItemType> visited)
             {
                 if (ItemDb.Get(t).Source == ItemSource.Shop)

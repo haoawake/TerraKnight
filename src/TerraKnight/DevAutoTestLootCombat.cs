@@ -10,7 +10,7 @@ namespace TerraKnight
 {
     internal sealed partial class DevAutoTest
     {
-        IEnumerator LootCombatTest(Action<string,bool,string> check,List<object> report,int firstStage=0,int firstClass=0)
+        IEnumerator LootCombatTest(Action<string,bool,string> check,List<object> report,int firstStage=0,int firstClass=0,HashSet<ItemType>[] available=null)
         {
             yield return GoTo("Crossroads_01",EntryGateOf("Crossroads_01"));
             var hero=HeroController.instance;
@@ -25,6 +25,7 @@ namespace TerraKnight
             check("实战有目标",target!=null,"");
             if(target==null) yield break;
             var info=EnemyStats.Of(target);
+            int originalHp=target.hp, originalMaxHp=info.MaxHp;
             // Homing weapons must not choose a different wandering enemy and make this target's
             // damage falsely appear to be zero. This is a single-target fixture, not a live room fight.
             var others=UnityEngine.Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None)
@@ -51,15 +52,18 @@ namespace TerraKnight
                     Minions.Instance.Clear();PlayerBuffs.Clear();SummonTags.Clear();EnemyDebuffs.Clear();
                     TerraProjectiles.Instance.DevClear();Whips.Instance.Clear();
                     for(int i=0;i<inv.Slots.Length;i++) inv.Slots[i]=default;
-                    var p=ProgressionBalance.ArmorPaths.First(p=>p.Stage==s && ProgressionBalance.ClassIndex(p.Class)==cls);
-                    var acc=ProgressionBalance.AccessoryPaths[s][cls];
+                    bool Usable(ItemType t) => ItemDb.Get(t).Stage<=s && (available==null || available[s].Contains(t));
+                    var p=ProgressionBalance.ArmorPaths.Where(p=>p.Stage<=s && ProgressionBalance.ClassIndex(p.Class)==cls && p.Items.All(Usable))
+                        .OrderByDescending(p=>p.Stage).First();
+                    var acc=ProgressionBalance.AccessoryPaths[s][cls].Where(Usable).ToArray();
                     if(cls==3 && s>=1 && s<=3) acc=acc.Concat(new[] {ItemType.PygmyNecklace}).ToArray();
                     Equip(p.Items,acc);
                     Equipment.Update(inv);
                     mod.Stats.ManaCrystals=new[] {1,2,3,5,7,9}[s];
                     mod.Stats.UpdateMaximums(PlayerData.instance,Equipment.Current.ManaMax);
                     mod.Stats.Mana=mod.Stats.ManaMax;
-                    ItemType weapon=ProgressionBalance.Core[s][cls][0];
+                    ItemType weapon=ProgressionBalance.Core.Take(s+1).Reverse().SelectMany(row=>row[cls])
+                        .First(t=>Usable(t) && (cls!=3 || ItemDb.Get(t).IsSummon && !ItemDb.Get(t).Sentry));
                     inv.Slots[0]=ItemStack.Of(weapon);inv.Selected=0;
                     inv.Mouse=default;inv.Override=-1;inv.UseMouse=false;
                     inv.Slots[Inventory.Size-1]=ItemStack.Of(ItemType.WoodenArrow,999);
@@ -82,7 +86,7 @@ namespace TerraKnight
                             yield return null;
                         }
                         mod.DevAimMinions(weapon,aim);
-                        var whip=ProgressionBalance.Core[s][cls].FirstOrDefault(t=>ItemDb.Get(t).IsWhip);
+                        var whip=ProgressionBalance.Core.Take(s+1).Reverse().SelectMany(row=>row[cls]).FirstOrDefault(t=>Usable(t) && ItemDb.Get(t).IsWhip);
                         if(whip!=ItemType.None) {inv.Slots[0]=ItemStack.Of(whip);weapon=whip;aim=centre+Vector2.right*1.2f;}
                     }
                     Pin(target,body,aim-offset);
@@ -121,6 +125,7 @@ namespace TerraKnight
             Minions.Instance.Clear();SummonTags.Clear();TerraProjectiles.Instance.DevClear();Whips.Instance.Clear();
             mod.DevHold=null;mod.DevAim=null;mod.DevNoFallDamage=false;
             foreach(var go in others) if(go!=null) go.SetActive(true);
+            if (target!=null) { target.hp=originalHp; info.MaxHp=originalMaxHp; info.Carry=0; }
         }
     }
 }

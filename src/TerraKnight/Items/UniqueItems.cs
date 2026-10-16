@@ -11,8 +11,8 @@ namespace TerraKnight.Items
         /// <summary>Dev: how many extra ones were taken away.</summary>
         public static int DevRemoved;
 
-        /// <summary>Whether the player has one of the item anywhere, the extra ones taken away first.</summary>
-        public static bool Keep(Inventory inv, ItemType type)
+        /// <summary>Whether the player owns one; optionally exclude ground drops awaiting safe recovery.</summary>
+        public static bool Keep(Inventory inv, ItemType type, bool includeGround = true)
         {
             bool found = false;
             int removed = 0;
@@ -34,6 +34,7 @@ namespace TerraKnight.Items
             }
             for (int i = 0; i < inv.Slots.Length; i++) One(ref inv.Slots[i]);
             One(ref inv.Mouse);
+            for (int i = 0; i < inv.HkBag.Length; i++) One(ref inv.HkBag[i]);
             foreach (var l in inv.Loadouts)
                 for (int i = 0; i < l.Bag.Length; i++) One(ref l.Bag[i]);
             for (int i = 0; i < inv.Bank.Length; i++) One(ref inv.Bank[i]);
@@ -43,7 +44,9 @@ namespace TerraKnight.Items
             else
                 foreach (var slots in World.Chests.AllSlots())
                     for (int i = 0; i < slots.Length; i++) One(ref slots[i]);
-            if (WorldItems.KeepOne(type, found)) found = true;
+            // When recovering, leave drops untouched until storage succeeds. In multiplayer a
+            // shared drop must neither hide nor discard a character's own stranded stack.
+            if ((found || includeGround) && WorldItems.KeepOne(type, found) && includeGround) found = true;
             if (removed > 0)
             {
                 DevRemoved += removed;

@@ -85,10 +85,10 @@ namespace TerraKnight.Items
         }
 
         public static IReadOnlyList<Drop> Of(string record) => record != null && table.TryGetValue(record, out var e)
-            ? ProgressionLoot.Of(record,e,Shop.UnlockedStage(),Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear) : none;
+            ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,e,Shop.UnlockedStage(),Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear)) : none;
 
         internal static IReadOnlyList<Drop> At(string record,int stage,bool first,bool entry,bool final) =>
-            record != null && table.TryGetValue(record,out var e) ? ProgressionLoot.Of(record,e,stage,first,entry,final) : none;
+            record != null && table.TryGetValue(record,out var e) ? EssentialDrops.With(record, stage, ProgressionLoot.Of(record,e,stage,first,entry,final)) : none;
         internal static IReadOnlyList<Drop> LegacyOf(string record) => record!=null && table.TryGetValue(record,out var e) ? e.Drops ?? none : none;
         internal static Entry EntryFor(string record) => record!=null && table.TryGetValue(record,out var e) ? e : default;
 
@@ -272,7 +272,7 @@ namespace TerraKnight.Items
         {
             bool first = firstKill ?? Bestiary.KillsOf(record)==0;
             var drops = record != null && table.TryGetValue(record,out var entry)
-                ? ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear) : none;
+                ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear)) : none;
             if (drops.Count == 0) return;
             // Terraria's boss bags (Expert, Master): the loot goes into one bag left at the boss, rolled when it is opened
             // (fromBag); the relic, the hearts, the potions and the crystals drop beside it as ever.
@@ -317,6 +317,8 @@ namespace TerraKnight.Items
             if (fromBag) return;
             // Fishing bait and moss (FishingCrates.cs).
             Fishing.KillDrops(record, at, direct);
+            // The pets: an easter egg from any enemy.
+            Pets.KillDrop(record, at, direct);
         }
 
         /// <summary>Dev: when set, kills' drops go here (type, count) instead of into the world, for counting them.</summary>

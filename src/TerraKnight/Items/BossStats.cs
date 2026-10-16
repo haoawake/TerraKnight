@@ -173,6 +173,9 @@ namespace TerraKnight.Items
         /// Lunatic Cultist as it was of its own stage's boss, and Ascended's extra health over Attuned
         /// (<paramref name="godhomeTier"/>) is on top.
         /// </summary>
+        internal static float CombatLifeShare(int stage) => stage switch
+            { 0 => .65f, 1 => .65f, 2 => .6f, 3 => .55f, 4 => .5f, _ => .4f };
+
         public static int LifeOf(Ref r, string scene, DifficultyLevel d, float godhomeTier = 1f)
         {
             float t = Tier(d);
@@ -182,6 +185,8 @@ namespace TerraKnight.Items
                 if (r.Stage < 5) life *= GodhomeRematch.LifeAt(t) / (float)stageBoss[r.Stage].LifeAt(t);
                 life *= Mathf.Clamp(godhomeTier, 1f, 2f);
             }
+            // Preserve the native FSM health and phases; reduce only displayed/combat life.
+            life *= CombatLifeShare(InGodhome(scene) ? 5 : r.Stage);
             return Mathf.Max(1, Mathf.RoundToInt(life));
         }
 

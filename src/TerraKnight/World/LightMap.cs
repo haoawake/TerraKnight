@@ -116,7 +116,7 @@ namespace TerraKnight.World
         static void DarknessSet(int darkness) => Darkness = darkness;
 
         /// <summary>The light of the room's own open air: full in a room the game keeps lit, little in a dark one.</summary>
-        public static float Ambient => Darkness <= 0 ? 1f : Darkness == 1 ? 0.45f : 0.08f;
+        public static float Ambient => (Darkness <= 0 ? 1f : Darkness == 1 ? 0.45f : 0.08f) * Items.Tombstones.LightFactor;
 
         void Awake()
         {

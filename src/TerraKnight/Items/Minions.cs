@@ -171,6 +171,8 @@ namespace TerraKnight.Items
             public Vector2 Start;
             /// <summary>The summoning weapon's prefix armour penetration and tag damage (Projectile.ApplyStatsFromSource).</summary>
             public int ItemPen, ItemTag;
+            /// <summary>A pet's projectile (MinionsPets.cs).</summary>
+            public PetProj Pet;
 
             public Vector2 Center
             {
@@ -378,6 +380,7 @@ namespace TerraKnight.Items
             }
             SnapDragons();
             PetTick();
+            PetsTick();
             UpdateAbigailStatus();
             UpdateStormTigerStatus();
             // UpdateMaxTurrets also runs when maxTurrets changes (Pl:25904-25908): gear taken off drops the extra sentries.

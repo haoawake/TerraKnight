@@ -315,10 +315,11 @@ namespace TerraKnight.World
             }
         }
 
-        /// <summary>ChestUI.DepositAll: the inventory below the hotbar, but its favourites, into the chest.</summary>
+        /// <summary>ChestUI.DepositAll: the Geo first (MoveCoins), then the inventory below the hotbar, but its favourites, into the chest.</summary>
         public static void DepositAll(Inventory inv)
         {
             if (!IsOpen) return;
+            MoveGeo(inv, open);
             for (int i = Inventory.Size - 1; i >= Inventory.HotbarSize; i--)
             {
                 ref var s = ref inv.Slots[i];
@@ -327,10 +328,14 @@ namespace TerraKnight.World
             }
         }
 
-        /// <summary>ChestUI.QuickStack: the inventory's items (below the hotbar, not favourites) that the chest already holds go on its stacks.</summary>
+        /// <summary>
+        /// ChestUI.QuickStack: the inventory's items (below the hotbar, not favourites) that the chest already holds go on its
+        /// stacks; the Geo (MoveCoins, the coin slot's too) into the Piggy Bank, or onto a chest's Geo.
+        /// </summary>
         public static void QuickStack(Inventory inv)
         {
             if (!IsOpen) return;
+            if (open.Bank || System.Array.Exists(open.Items, it => !it.IsEmpty && it.Type == ItemType.Geo)) MoveGeo(inv, open);
             for (int i = Inventory.HotbarSize; i < Inventory.Size; i++)
             {
                 ref var s = ref inv.Slots[i];
@@ -392,9 +397,9 @@ namespace TerraKnight.World
         /// Quick Stack to Nearby Chests (QuickStacking.QuickStackToNearbyChests): the bag below the
         /// hotbar, not its favourites, onto every chest within 600 px (NearbyChests.GetChestsInRangeOf)
         /// that already holds that item, a Piggy Bank in range among them (its storage is the player's
-        /// bank). The geo goes too, from anywhere in the bag: into the Piggy Bank when one stands in
-        /// range, else onto the chests in range that hold geo, else into the nearest of them. How many
-        /// stacks moved.
+        /// bank). The geo goes too, from anywhere in the bag and the coin slot: into the Piggy Bank when
+        /// one stands in range, else onto the chests in range that hold geo, else into the nearest of
+        /// them. How many stacks moved.
         /// </summary>
         public static int QuickStackNearby(Inventory inv, Vector2 from)
         {
@@ -409,12 +414,7 @@ namespace TerraKnight.World
             if (near.Count > 0)
             {
                 Chest to = near[0].Bank ? near[0] : near.Find(c => System.Array.Exists(c.Items, it => !it.IsEmpty && it.Type == ItemType.Geo)) ?? near[0];
-                for (int i = 0; i < Inventory.Size; i++)
-                {
-                    ref var s = ref inv.Slots[i];
-                    if (s.IsEmpty || s.Favorite || s.Type != ItemType.Geo) continue;
-                    if (PutIn(to, ref s)) moved++;
-                }
+                moved += MoveGeo(inv, to);
             }
             foreach (var c in near)
             {
@@ -429,6 +429,22 @@ namespace TerraKnight.World
                     PutIn(c, ref s);
                     if (s.IsEmpty || s.Count != before) moved++;
                 }
+            }
+            return moved;
+        }
+
+        /// <summary>
+        /// ChestUI.MoveCoins: the Geo of the whole inventory (the hotbar, the bag, the coin slot; not favourites) onto the
+        /// chest's Geo, else into its first empty slot. How many stacks moved.
+        /// </summary>
+        static int MoveGeo(Inventory inv, Chest to)
+        {
+            int moved = 0;
+            for (int i = 0; i < Inventory.Total; i++)
+            {
+                ref var s = ref inv.Slots[i];
+                if (s.IsEmpty || s.Favorite || s.Type != ItemType.Geo) continue;
+                if (PutIn(to, ref s)) moved++;
             }
             return moved;
         }

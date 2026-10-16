@@ -80,9 +80,9 @@ namespace TerraKnight.Items
                 Sound("Grab");
                 return;
             }
-            if (!inv.Mouse.IsEmpty && !HkItems.Is(inv.Mouse))
+            if (!HkItems.BagAccepts(i, inv.Mouse))
             {
-                NoticeHk("圣巢背包里只能放圣巢的物品");
+                NoticeHk(i == HkItems.DreamNailSlot ? "这个格子专门保管梦之钉" : "圣巢背包里只能放圣巢的物品");
                 return;
             }
             if (inv.Mouse.IsEmpty && slot.IsEmpty) return;
@@ -108,8 +108,14 @@ namespace TerraKnight.Items
         /// <summary>Shift+click on a Hallownest item in the hotbar: into the bag. True when it was one.</summary>
         static bool ShiftHkToBag(ref ItemStack slot)
         {
+            if (slot.Type == ItemType.DreamNail && !slot.IsEmpty)
+            {
+                if (DreamNailItem.TryStoreInBag(inv, slot)) slot = default;
+                Sound("Grab");
+                return true;
+            }
             if (!HkItems.Is(slot)) return false;
-            for (int k = 0; k < inv.HkBag.Length && !slot.IsEmpty; k++)
+            for (int k = 0; k < HkItems.KeyBagSlots && !slot.IsEmpty; k++)
             {
                 ref var b = ref inv.HkBag[k];
                 if (b.IsEmpty) { b = slot; slot = default; }

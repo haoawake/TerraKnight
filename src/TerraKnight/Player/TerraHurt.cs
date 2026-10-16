@@ -352,6 +352,8 @@ namespace TerraKnight.Player
             Net.PvpHits.OnLocalDeath();
             Blood(hero, 100, 2f * lastHitDir, -2f);
             sprite.FallApart(lastHitDir);
+            // Player.KillMe's DropTombstone: away from the blow.
+            Items.Tombstones.OnDeath(hero, lastHitDir);
             slainAt = Time.time;
             lastHitDir = 0;
         }

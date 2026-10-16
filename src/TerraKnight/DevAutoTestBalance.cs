@@ -38,6 +38,7 @@ namespace TerraKnight
         {
             mod.DevNoFallDamage = true;
             var saved = GameDifficulty.Current;
+            int savedStage = Shop.DevStage;
             // Held-down (channel) weapons hit at their own rhythm, not once a use: left out of the estimate.
             var weapons = ItemDb.All.Where(d => d.IsWeapon && !d.GameTool && !d.IsSummon && !d.IsWhip && !d.Channel && d.Class != DamageClass.None && d.PickPower <= 0 && d.Damage > 0).ToList();
             var records = EnemyDrops.DevRecords.Where(r =>
@@ -50,6 +51,7 @@ namespace TerraKnight
 
             for (int s = 0; s <= 5; s++)
             {
+                Shop.DevStage = s;
                 int def = Areas.Defense(s);
                 // The weapons by then: the best of each class, and the typical one (the 70th percentile of all of them).
                 var have = weapons.Where(d => d.Stage <= s).OrderByDescending(d => DpsOf(d, def, s)).ToList();
@@ -96,10 +98,12 @@ namespace TerraKnight
                 // Its own measure on top (BossBalance): the record is the key less any "@stage".
                 string rec = kv.Key.Contains("@") ? kv.Key.Substring(0, kv.Key.IndexOf('@')) : kv.Key;
                 var tune = BossBalance.Of(rec, kv.Key.Contains("@") ? int.Parse(kv.Key.Substring(kv.Key.IndexOf('@') + 1)) : r.Stage);
-                int defense = Mathf.RoundToInt(r.Boss.Defense * tune.Defense);
+                Shop.DevStage = r.Stage;
+                int defense = EnemyStats.BossDefense(r, tune);
                 var have = weapons.Where(d => d.Stage <= r.Stage).OrderByDescending(d => DpsOf(d, defense, r.Stage)).ToList();
                 float dps = have.Count > 0 ? DpsOf(have[0], defense, r.Stage) : 1f;
-                var lives = levels.Select(lv => Mathf.RoundToInt(BossStats.LifeOf(r, null, lv) * tune.Life)).ToList();
+                string bossScene = EnemyDrops.SceneOf(kv.Key);
+                var lives = levels.Select(lv => Mathf.CeilToInt(BossStats.LifeOf(r, bossScene, lv) * tune.Life * BossPhases.WholeFactor(rec, bossScene))).ToList();
                 Plugin.Log.LogInfo($"[平衡] 首领 {Bestiary.NameOf(rec)}（{kv.Key}，阶段 {r.Stage}）= 泰拉 {r.Boss.Name}，{tune.Note ?? "按原样"}：生命 ×{tune.Life:F2} {string.Join("/", lives)}（普通/困难/专家/大师），防御 {defense}（×{tune.Defense:F2}），" +
                                    $"伤害 ×{World.Areas.BossDamage * tune.Damage:F2}（普通敌人的倍数），{(tune.Stun ? "能被打出硬直" : "霸体")}；最强武器 {(have.Count > 0 ? have[0].Name : "无")} {dps:F0}/秒，大师 {lives[3] / dps:F0} 秒；神居重打 大师 {Mathf.RoundToInt(BossStats.LifeOf(r, "GG_", DifficultyLevel.Master) * tune.Life)}");
             }
@@ -115,6 +119,12 @@ namespace TerraKnight
             }
 
             // Live: the starting weapons on King's Pass's crawlids and vengeflies.
+            Shop.DevStage = 0;
+            bool wasInvincible = PlayerData.instance.isInvincible;
+            PlayerData.instance.isInvincible = false;
+            Equip(new ItemType[0], new ItemType[0]);
+            Equipment.Update(mod.Inventory);
+            Player.PlayerBuffs.Clear();
             foreach (var lv in levels)
             {
                 GameDifficulty.Current = lv;
@@ -143,11 +153,14 @@ namespace TerraKnight
                     hero.TakeDamage(crawler.gameObject, GlobalEnums.CollisionSide.left, 1, 1);
                     yield return new WaitForSeconds(0.2f);
                     Plugin.Log.LogInfo($"[平衡] 实测 {GameDifficulty.NameOf(lv)}：被小爬虫碰一下掉 {before - mod.Stats.Life} / {mod.Stats.LifeMax}");
+                    if (before == mod.Stats.Life) Plugin.Log.LogError($"[AutoTest] 平衡实测接触伤害 {lv} 不通过");
                     yield return new WaitForSeconds(2.2f);
                     mod.Stats.Life = mod.Stats.LifeMax;
                 }
             }
             GameDifficulty.Current = saved;
+            Shop.DevStage = savedStage;
+            PlayerData.instance.isInvincible = wasInvincible;
             mod.DevNoFallDamage = false;
         }
     }

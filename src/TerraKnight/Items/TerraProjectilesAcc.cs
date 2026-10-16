@@ -577,7 +577,7 @@ namespace TerraKnight.Items
             k = k * k * 700f;
             target += new Vector2(-n.x * k * 0.2f, n.y * k * 0.2f);
             var v = (target - start).normalized * 10f;
-            Spawn(ProjKind.BoneGloveBone, centreWorld, Flip(v), ProgressionBalance.ProcDamage(ItemType.BoneGlove,.08f), 5f, 0f);
+            Spawn(ProjKind.BoneGloveBone, centreWorld, Flip(v), 25, 5f, 0f);
         }
 
         /// <summary>AI_001 for 532: its counter twice an update, falling past 15; spinning with its speed.</summary>
@@ -1023,7 +1023,7 @@ namespace TerraKnight.Items
                 var from = c + new Vector2(Random.Range(-400, 400), -Random.Range(500, 800));
                 var at = c + new Vector2(Random.Range(-100, 101), 0f);
                 var v = (at - from).normalized * 23f;
-                ShootCloakStar(ProjKind.ManaCloakStar, TerraParticles.ToWorld(from), Flip(v), ProgressionBalance.ProcDamage(ItemType.ManaCloak,.08f,5), p.Pos.y, true);
+                ShootCloakStar(ProjKind.ManaCloakStar, TerraParticles.ToWorld(from), Flip(v), 100, p.Pos.y, true);
             }
         }
 

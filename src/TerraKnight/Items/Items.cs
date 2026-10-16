@@ -263,6 +263,22 @@ namespace TerraKnight.Items
         // Treasure bags (gen_bags.py)
         BagAbsoluteRadiance, BagBigBuzzer, BagBigFly, BagBlackKnight, BagDungDefender, BagEnragedGuardian, BagFalseKnight, BagFalseKnightAt5, BagFinalBoss, BagFlukeMother, BagGhostAladar, BagGhostGalien, BagGhostHu, BagGhostMarkoth, BagGhostMarmu, BagGhostNoEyes, BagGhostXero, BagGreyPrince, BagGrimm, BagHiveKnight, BagHollowKnight, BagHollowKnightPrime, BagHornet, BagHornetAt4, BagInfectedKnight, BagInfectedKnightAt5, BagJarCollector, BagLobsterLancer, BagMageKnight, BagMageLord, BagMageLordAt5, BagMantisLord, BagMawlek, BagMegaBeamMiner, BagMegaJellyfish, BagMegaMossCharger, BagMimicSpider, BagNailBros, BagNailsage, BagNightmareGrimm, BagOblobble, BagPaintmaster, BagPaleLurker, BagSistersOfBattle, BagTraitorLord, BagWhiteDefender, BagWingedNosk, BagZote,
 
+        // Pets (gen_pets.py)
+        ShadowOrb, FairyBell, Carrot, Fish, Seaweed, EatersBone, BoneKey, Nectar, TikiTotem, LizardEgg, ParrotCracker, StrangeGlowingMushroom, Seedling, WispinaBottle, AmberMosquito, EyeSpring, ToySled, SpiderEgg, MagicalPumpkinSeed, UnluckyYarn, CursedSapling, DogWhistle, BabyGrinchMischiefWhistle, ZephyrFish, TartarSauce, MagicLantern, BoneRattle, CrimsonHeart, SuspiciousLookingTentacle, CompanionCube, DD2PetGato, DD2PetGhost, DD2PetDragon, CelestialWand, EucaluptusSap, SharkBait, BambooLeaf, HellCake, BirdieRattle, ExoticEasternChewToy, BedazzledNectar, MudBud, BallOfFuseWire, FullMoonSqueakyToy, OrnateShadowKey, LightningCarrot, KingSlimePetItem, EyeOfCthulhuPetItem, EaterOfWorldsPetItem, BrainOfCthulhuPetItem, SkeletronPetItem, QueenBeePetItem, DestroyerPetItem, TwinsPetItem, SkeletronPrimePetItem, PlanteraPetItem, GolemPetItem, DukeFishronPetItem, LunaticCultistPetItem, MoonLordPetItem, FairyQueenPetItem, PumpkingPetItem, EverscreamPetItem, IceQueenPetItem, MartianPetItem, DD2OgrePetItem, DD2BetsyPetItem, QueenSlimePetItem, BerniePetItem, GlommerPetItem, DeerclopsPetItem, PigPetItem, ChesterPetItem, ResplendentDessert, JunimoPetItem, BlueEgg, SpiffoPlush, GlowTulip, DirtiestBlock, DeadCellsSwarmGrenade, PufferfishPet, AxeFairyPetItem, BoulderPet, RainbowBoulderPet,
+
+        // Append only: vanilla crafting station.
+        Campfire,
+
+        // Append only: the tombstones a death leaves (Items/Tombstones.cs).
+        Tombstone, GraveMarker, CrossGraveMarker, Headstone, Gravestone, Obelisk,
+        RichGravestone1, RichGravestone2, RichGravestone3, RichGravestone4, RichGravestone5,
+
+        // Append only: the Knight's dashes as accessories (Items/AbilityAccessories.cs).
+        ShadeCloak, CrystalHeart, HallownestShield,
+
+        // Append only: buff furniture carried, and the Water Candle (Items/CarriedFurniture.cs).
+        HeartLantern, StarinaBottle, CatBast, Sunflower, GardenGnome, WaterCandle,
+
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -964,6 +980,9 @@ namespace TerraKnight.Items
         public int PrefixTagDamage, PrefixArmorPen;
 
         public ItemDef Clone() => (ItemDef)MemberwiseClone();
+        /// <summary>A pet's buff (Item.DefaultToVanitypet's buffType): used it calls the pet, worn in the misc equipment it stays; a light pet's (Main.lightPet).</summary>
+        public int PetBuff;
+        public bool LightPet;
         /// <summary>Item.hammer shapes tiles and removes walls; Item.axe is shown five times over.</summary>
         public int HammerPower, AxePower;
         /// <summary>Its glowmask (Glow_N), drawn added over it in hand (PlayerDrawLayers: (250,250,250,alpha)).</summary>
@@ -1098,7 +1117,7 @@ namespace TerraKnight.Items
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
         public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || FishingPower > 0 || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
-            || BuffType > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type));
+            || BuffType > 0 || PetBuff > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type) || Type == ItemType.WaterCandle);
 
         /// <summary>
         /// Ammo with no use of its own (Item.useStyle 0: Explosive Jack 'O Lanterns, rockets, darts,
@@ -1518,9 +1537,13 @@ namespace TerraKnight.Items
             AddCraftingSupplement(list);
             AddFishing(list);
             AddFood(list);
+            AddPets(list);
             HkItems.AddItems(list);
             AddInfo(list);
             AddStations2(list);
+            AddTombstones(list);
+            AddAbilityAccessories(list);
+            AddCarriedFurniture(list);
             AddArmor2(list);
             AddHeart(list);
             if (Relics.Enabled) AddRelics(list);
@@ -1552,7 +1575,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(FishingSources(), FoodSources()))))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(AbilityAccessorySources(), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1747,6 +1770,7 @@ namespace TerraKnight.Items
                 ItemType.SilverShield, ItemType.DruidicSerpentCloak, ItemType.HeavySling, ItemType.ScoutSling, ItemType.TemplarSling);
             foreach (var (t, kit) in ArmorKits()) arr[(int)t].Kit = kit;
             ProgressionBalance.ApplyItems(arr);
+            ProgressionBalance.NormalizeRecipeStages(arr, Recipes.BaseRecipes());
             return arr;
         }
 
@@ -2015,8 +2039,16 @@ namespace TerraKnight.Items
         /// <summary>The Hallownest bag: Hallownest's key items not in the hotbar (HkItems).</summary>
         public readonly ItemStack[] HkBag = new ItemStack[HkItems.BagSlots];
 
-        /// <summary>ItemSlot.AccCheck for the misc slots (contexts 19, 20, 18, 17, 16): only the hook's has items here yet.</summary>
-        public static bool FitsMisc(ItemDef d, int slot) => d != null && slot == HookSlot && Player.GrapplingHook.Hooks.ContainsKey(d.Type);
+        /// <summary>ItemSlot.AccCheck for the misc slots (contexts 19, 20, 18, 17, 16): a pet, a light pet, a hook (no minecarts or mounts yet).</summary>
+        public static bool FitsMisc(ItemDef d, int slot) => d != null && (slot == HookSlot ? Player.GrapplingHook.Hooks.ContainsKey(d.Type)
+            : slot == Pets.PetSlot ? d.PetBuff > 0 && !d.LightPet : slot == Pets.LightSlot && d.PetBuff > 0 && d.LightPet);
+
+        /// <summary>The misc slot an item is worn in (a right click puts it there), -1 none.</summary>
+        public static int MiscSlotOf(ItemDef d)
+        {
+            for (int k = 0; k < MiscSlots; k++) if (FitsMisc(d, k)) return k;
+            return -1;
+        }
 
         /// <summary>Four loadouts, one per class (Melee, Ranged, Magic, Summon); vanilla has three.</summary>
         public const int LoadoutCount = 4;

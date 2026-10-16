@@ -71,17 +71,26 @@ namespace TerraKnight.Items
             get
             {
                 if (every != null) return every;
-                every = new List<Recipe>(all);
-                every.AddRange(StationRecipes());
-                every.AddRange(OreRecipes());
-                every.AddRange(ChainRecipes());
-                every.AddRange(SupplementRecipes());
-                every.AddRange(WallRecipes());
-                every.AddRange(FoodRecipes());
-                every.AddRange(BossSummons.Recipes());
+                every = BaseRecipes();
                 ProgressionBalance.ApplyRecipes(every);
                 return every;
             }
+        }
+
+        // No ItemDb lookups: usable while the item table establishes acquisition stages.
+        internal static List<Recipe> BaseRecipes()
+        {
+            var result = new List<Recipe>(all);
+            result.AddRange(StationRecipes());
+            result.AddRange(OreRecipes());
+            result.AddRange(ChainRecipes());
+            result.AddRange(SupplementRecipes());
+            result.AddRange(WallRecipes());
+            result.AddRange(FoodRecipes());
+            result.AddRange(BossSummons.Recipes());
+            result.AddRange(AbilityAccessories.Recipes());
+            result.AddRange(CarriedFurniture.Recipes());
+            return result;
         }
 
         static HashSet<ItemType> worthless;

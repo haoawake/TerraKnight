@@ -38,7 +38,7 @@ namespace TerraKnight.Items
             Type = ItemType.DreamNail, Name = "梦之钉", Texture = Icon, Class = DamageClass.Melee, Damage = DamageByStage[0], Knockback = 2f,
             UseAnimation = 1f, UseTime = 1f, MaxStack = 1, Rare = -11, Value = 0, Stage = 0, Source = ItemSource.Basic,
             NoMelee = true, NoUseGraphic = true, UseSound = null, Permanent = true, GameTool = true,
-            Tooltip = "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升，觉醒后再提高 50%\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n在守梦人的梦里打伤守梦人后，按住左键或右键就是聚集，吸收守梦人\n不能出售、丢弃，也不能扔进垃圾桶",
+            Tooltip = "拿在手上时，左键或右键就是空洞骑士的梦之钉：按住蓄力，松开挥出\n能读出生物的想法，进入梦境，伤害随进度提升，觉醒后再提高 50%\n按住 S 挥出放下梦之门，按住 W 挥出传送到梦之门\n在守梦人的梦里打伤守梦人后，按住左键或右键就是聚集，吸收守梦人\n不能出售、丢弃，也不能扔进垃圾桶\n背包满时安全保管在圣巢背包中",
         };
 
         public static bool Holding()
@@ -275,13 +275,30 @@ namespace TerraKnight.Items
             var def = ItemDb.Get(ItemType.DreamNail);
             def.Damage = DamageNow();
             var pd = PlayerData.instance;
-            if (pd == null || !pd.hasDreamNail || hero == null || UniqueItems.Keep(mod.Inventory, ItemType.DreamNail)) return;
-            int left = mod.Inventory.Pickup(ItemType.DreamNail, 1);
+            if (pd == null || !pd.hasDreamNail || hero == null || UniqueItems.Keep(mod.Inventory, ItemType.DreamNail, includeGround: false)) return;
+            // The pickup's cutscene can leave this scene immediately. A drop in that old scene
+            // is not an owned Dream Nail: recover the actual stack (including its prefix/forge).
+            var stack = WorldItems.PersonalStack(ItemType.DreamNail);
+            if (stack.IsEmpty) stack = ItemStack.Of(ItemType.DreamNail);
+            stack.Count = 1;
+            int left = mod.Inventory.Pickup(stack, stack.Favorite);
+            bool stored = left > 0 && TryStoreInBag(mod.Inventory, stack);
+            if (left > 0 && !stored) return; // Retain the entitlement and retry; never spill a permanent quest tool.
+            UniqueItems.Keep(mod.Inventory, ItemType.DreamNail);
             var at = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
-            if (left > 0) WorldItems.Drop(ItemStack.Of(ItemType.DreamNail), at);
-            else UI.PopupText.Show(def, 1, at);
+            UI.PopupText.Show(def, 1, at);
+            if (stored) UI.CenterNotice.Show(Lang.T("背包已满，梦之钉已放入圣巢背包"));
             mod.PlaySound("Grab");
-            Plugin.Log.LogInfo($"[梦之钉] 给了梦之钉{(left > 0 ? "（背包满了，放在脚下）" : "")}");
+            Plugin.Log.LogInfo($"[梦之钉] 给了梦之钉{(stored ? "（背包满了，已放入圣巢背包）" : "")}");
+        }
+
+        /// <summary>A saved reserved slot, also used when closing a full inventory with the tool on the cursor.</summary>
+        internal static bool TryStoreInBag(Inventory inv, ItemStack stack)
+        {
+            if (stack.IsEmpty || stack.Type != ItemType.DreamNail) return false;
+            if (!inv.HkBag[HkItems.DreamNailSlot].IsEmpty) return false;
+            inv.HkBag[HkItems.DreamNailSlot] = stack;
+            return true;
         }
 
         // ------------------------------------------------------------------ its picture

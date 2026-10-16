@@ -27,6 +27,11 @@ namespace TerraKnight.World
         RelicMageLordAt5, RelicMantisLord, RelicMawlek, RelicMegaBeamMiner, RelicMegaJellyfish, RelicMegaMossCharger,
         RelicMimicSpider, RelicNailBros, RelicNailsage, RelicNightmareGrimm, RelicOblobble, RelicPaintmaster,
         RelicPaleLurker, RelicSistersOfBattle, RelicTraitorLord, RelicWhiteDefender, RelicWingedNosk, RelicZote, DyeVat,
+        Campfire,
+        // Tombstones (Tiles_85's eleven styles, dropped on death: Items.Tombstones) and the Abigail's Flower growing by them.
+        Tombstone, GraveMarker, CrossGraveMarker, Headstone, Gravestone, Obelisk,
+        RichGravestone1, RichGravestone2, RichGravestone3, RichGravestone4, RichGravestone5, AbigailsFlower,
+
     }
 
     /// <summary>
@@ -66,7 +71,7 @@ namespace TerraKnight.World
             public string Custom;
         }
 
-        /// <summary>The relics (Items/Relics.cs): uniform 2x3-cell pictures with the same front-elevation base.</summary>
+        /// <summary>The relics: three-cell pedestals with floating sculptures, occupying 3x4 cells.</summary>
         static Stations()
         {
             foreach (var kv in Items.Relics.Looks)
@@ -77,8 +82,27 @@ namespace TerraKnight.World
             }
         }
 
+        static Spec Grave(int style, ItemType item) =>
+            new Spec { Texture = "Tiles_85", W = 2, H = 2, StyleX = style * 36, Heights = new[] { 16, 16 }, DrawY = 2, Item = item, Counts = new string[0] };
+
+        /// <summary>A tombstone (Tiles_85, any style).</summary>
+        public static bool IsGrave(StationKind k) => k >= StationKind.Tombstone && k <= StationKind.RichGravestone5;
+
         static readonly Dictionary<StationKind, Spec> specs = new Dictionary<StationKind, Spec>
         {
+            [StationKind.Tombstone] = Grave(0, ItemType.Tombstone),
+            [StationKind.GraveMarker] = Grave(1, ItemType.GraveMarker),
+            [StationKind.CrossGraveMarker] = Grave(2, ItemType.CrossGraveMarker),
+            [StationKind.Headstone] = Grave(3, ItemType.Headstone),
+            [StationKind.Gravestone] = Grave(4, ItemType.Gravestone),
+            [StationKind.Obelisk] = Grave(5, ItemType.Obelisk),
+            [StationKind.RichGravestone1] = Grave(6, ItemType.RichGravestone1),
+            [StationKind.RichGravestone2] = Grave(7, ItemType.RichGravestone2),
+            [StationKind.RichGravestone3] = Grave(8, ItemType.RichGravestone3),
+            [StationKind.RichGravestone4] = Grave(9, ItemType.RichGravestone4),
+            [StationKind.RichGravestone5] = Grave(10, ItemType.RichGravestone5),
+            [StationKind.AbigailsFlower] = new Spec { Texture = "Tiles_624", W = 1, H = 1, Heights = new[] { 16 }, Item = ItemType.AbigailsFlower, Counts = new string[0] },
+            [StationKind.Campfire] = new Spec { Texture = "Tiles_215", W = 3, H = 2, Heights = new[] { 16, 16 }, Item = ItemType.Campfire, Counts = new[] { "篝火" } },
             [StationKind.DyeVat] = new Spec { Texture = "Tiles_228", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.DyeVat, Counts = new[] { "染缸" } },
             // TileObjectData: Style2x1 with CoordinateHeights {18} (tiles 18, 16), Style3x2 {16, 18} (17, 114).
             [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" }, SolidTop = true },
@@ -142,6 +166,7 @@ namespace TerraKnight.World
             /// <summary>Set in the world by the mod (the altars): not the player's, never knocked down nor saved.</summary>
             public bool Fixed;
             public SpriteRenderer Renderer;
+            public RelicDisplay Relic;
             /// <summary>Its top, a one-way platform on the terrain layer (the solid-top ones).</summary>
             public GameObject Top;
             public float TopOffUntil;
@@ -245,6 +270,44 @@ namespace TerraKnight.World
             return true;
         }
 
+        /// <summary>
+        /// A station the world sets down where something came to rest (a tombstone rolled to a stop, a flower grown): even
+        /// ground under it and room for it, as for the player's, but no reach; not in a boss's room. The player's own once
+        /// set: saved, knocked down with a pickaxe. True when it stands.
+        /// </summary>
+        public static bool TryPlaceNatural(StationKind kind, Vector2 aim, out Vector2 bottom)
+        {
+            bottom = default;
+            if (!specs.ContainsKey(kind) || !FindSpot(kind, null, aim, out bottom)) return false;
+            if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) return false;
+            var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
+            var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
+            if (region == null) return false;
+            var local = bottom - (Vector2)region.Root.position;
+            if (Net.WorldSync.Guest)
+            {
+                Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "station", Scene = region.SceneName, X = local.x, Y = local.y, Kind = (int)kind, Count = 0 });
+                return true;
+            }
+            stations.Add(new Station { Kind = kind, Region = region, Scene = region.SceneName, Local = local });
+            return true;
+        }
+
+        /// <summary>A station into a scene by its own coordinates, loaded or not (it stands there once the scene comes in).</summary>
+        public static void PlaceIn(StationKind kind, string scene, Vector2 local)
+        {
+            if (specs.ContainsKey(kind) && !string.IsNullOrEmpty(scene)) stations.Add(new Station { Kind = kind, Scene = scene, Local = local });
+        }
+
+        /// <summary>The boxes of the stations of some kinds standing in the loaded scenes (world units).</summary>
+        public static List<(StationKind Kind, Rect Box)> Standing(System.Func<StationKind, bool> which)
+        {
+            var list = new List<(StationKind, Rect)>();
+            foreach (var s in stations)
+                if (s.Region != null && which(s.Kind)) list.Add((s.Kind, s.Box));
+            return list;
+        }
+
         /// <summary>Dev: why the last FindSpot found no spot.</summary>
         public static string DevWhy;
         public static int DevDrops;
@@ -277,7 +340,7 @@ namespace TerraKnight.World
                 if (s.Region != null && s.Box.Overlaps(inner)) { DevWhy = "和别的工作站重叠"; return false; }
             foreach (var c in Chests.Positions())
                 if (box.Contains(c)) { DevWhy = "和箱子重叠"; return false; }
-            if (!Reach(hero).Overlaps(box)) { DevWhy = "够不着"; return false; }
+            if (hero != null && !Reach(hero).Overlaps(box)) { DevWhy = "够不着"; return false; }
             DevWhy = null;
             bottom = new Vector2(x, y);
             return true;
@@ -301,6 +364,18 @@ namespace TerraKnight.World
                     Chests.ToggleBank(s.Scene, s.Region, s.Local);
                     return true;
                 }
+                // Abigail's Flower, picked as a plant is (Main.tileCut): the flower to the bag.
+                if (s.Kind == StationKind.AbigailsFlower && !Net.WorldSync.Guest)
+                {
+                    var at = s.Box.center;
+                    Remove(stations.IndexOf(s));
+                    var inv = TerraMod.Instance?.Inventory;
+                    if (inv == null || inv.Pickup(ItemType.AbigailsFlower, 1) > 0) WorldItems.Drop(ItemStack.Of(ItemType.AbigailsFlower), at);
+                    else UI.PopupText.Show(ItemDb.Get(ItemType.AbigailsFlower), 1, at);
+                    TerraMod.Instance?.PlaySound("Grab");
+                    DevFlowersPicked++;
+                    return true;
+                }
                 if (s.Spec.Buff > 0)
                 {
                     // The buff stations' last until death (the user's: a spike's death too); the cake's Sugar Rush its 2 minutes.
@@ -313,7 +388,7 @@ namespace TerraKnight.World
             return false;
         }
 
-        public static int DevBuffsTaken;
+        public static int DevBuffsTaken, DevFlowersPicked;
 
         /// <summary>Dev: the recipe stations standing within reach.</summary>
         public static string DevNearNames(HeroController hero)
@@ -433,6 +508,7 @@ namespace TerraKnight.World
                 if (s.Region == null)
                 {
                     if (s.Renderer != null) s.Renderer.enabled = false;
+                    if (s.Relic != null) s.Relic.SetVisible(false);
                     continue;
                 }
                 if (s.Renderer == null)
@@ -440,8 +516,14 @@ namespace TerraKnight.World
                     var go = new GameObject("Terra Station " + s.Kind);
                     go.transform.SetParent(s.Region.Root, false);
                     s.Renderer = go.AddComponent<SpriteRenderer>();
+                    if (s.Spec.Custom != null)
+                    {
+                        s.Relic = go.AddComponent<RelicDisplay>();
+                        s.Relic.Init(s.Spec.Custom, s.Renderer);
+                    }
                 }
                 s.Renderer.enabled = true;
+                if (s.Relic != null) s.Relic.SetVisible(true);
                 s.Renderer.sprite = SpriteOf(s.Kind);
                 // A bottom row 18 px tall sinks its last 2 px into the ground; DrawYOffset lowers it more.
                 var spec = s.Spec;
@@ -467,7 +549,8 @@ namespace TerraKnight.World
             if (spec.Custom != null)
             {
                 var pic = Items.Relics.Texture(spec.Custom);
-                sp = Sprite.Create(pic, new Rect(0, 0, pic.width, pic.height), new Vector2(0.5f, 0f), 2f / Px, 0, SpriteMeshType.FullRect);
+                // Only the pedestal stays fixed. RelicDisplay draws and animates the sculpture above it.
+                sp = Sprite.Create(pic, new Rect(0, 0, pic.width, 16), new Vector2(0.5f, 0f), pic.width / (spec.W * 16f * Px), 0, SpriteMeshType.FullRect);
                 sprites[kind] = sp;
                 return sp;
             }
@@ -619,6 +702,17 @@ namespace TerraKnight.World
             foreach (var s in stations)
                 if (s.Kind == StationKind.PiggyBank && s.Region != null && Vector2.Distance(s.Box.center, from) <= range) return true;
             return false;
+        }
+
+        /// <summary>Dev: the right click on the nearest loaded Piggy Bank (the bank opens, or shuts).</summary>
+        public static bool DevToggleBank(Vector2 from)
+        {
+            Station best = null;
+            foreach (var s in stations)
+                if (s.Kind == StationKind.PiggyBank && s.Region != null && (best == null || Vector2.Distance(s.Box.center, from) < Vector2.Distance(best.Box.center, from))) best = s;
+            if (best == null) return false;
+            Chests.ToggleBank(best.Scene, best.Region, best.Local);
+            return true;
         }
 
         /// <summary>A station covers this cell (blocks can't go in it).</summary>

@@ -21,6 +21,11 @@ namespace TerraKnight.Items
         {
             var fx = FxBatch.Instance;
             if (fx == null) return;
+            if (pets[0] != null || pets[1] != null)
+            {
+                RefreshOwner();
+                if (hasOwner) DrawPets(fx);
+            }
             if (live.Count > 0 || Target != null)
             {
                 RefreshOwner();

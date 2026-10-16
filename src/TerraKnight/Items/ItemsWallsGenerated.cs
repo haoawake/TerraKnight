@@ -356,7 +356,7 @@ yield return new Recipe(ItemType.PalmWood, 1, "工作台", 0, (ItemType.PalmWood
 yield return new Recipe(ItemType.CogWall, 4, "工作台", 0, (ItemType.Cog, 1));
 yield return new Recipe(ItemType.Cog, 1, "工作台", 0, (ItemType.CogWall, 4));
 yield return new Recipe(ItemType.OrangeStainedGlass, 20, "工作台", 0, (ItemType.GlassWall, 20), (ItemType.Amber, 1));
-yield return new Recipe(ItemType.Cave8Echo, 4, "工作台", 0, (ItemType.StoneBlock, 1));
+yield return new Recipe(ItemType.Cave8Echo, 4, "工作台", 0, (ItemType.StoneBlock, 1)) { Environment = CraftEnvironment.Graveyard };
 yield return new Recipe(ItemType.StoneBlock, 1, "工作台", 0, (ItemType.Cave8Echo, 4));
 yield return new Recipe(ItemType.AshWoodWall, 4, "工作台", 0, (ItemType.AshWood, 1));
 yield return new Recipe(ItemType.AshWood, 1, "工作台", 0, (ItemType.AshWoodWall, 4));

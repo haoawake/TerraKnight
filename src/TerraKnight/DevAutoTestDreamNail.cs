@@ -128,8 +128,11 @@ namespace TerraKnight
             var saved = (ItemStack[])inv.Slots.Clone();
             for (int i = 0; i < inv.Slots.Length; i++) if (inv.Slots[i].IsEmpty) inv.Slots[i] = ItemStack.Of(ItemType.DirtBlock, 1);
             mod.ReturnOrDropMouseItem();
-            bool keptFull = SlotOf(ItemType.DreamNail) >= 0 && inv.Mouse.IsEmpty;
+            bool keptFull = (SlotOf(ItemType.DreamNail) >= 0 || inv.HkBag[HkItems.DreamNailSlot].Type == ItemType.DreamNail) && inv.Mouse.IsEmpty;
             for (int i = 0; i < inv.Slots.Length; i++) if (inv.Slots[i].Type == ItemType.DirtBlock && saved[i].IsEmpty) inv.Slots[i] = default;
+            // Safekeeping in the Hallownest bag is intentional; move it back after making room.
+            if (inv.HkBag[HkItems.DreamNailSlot].Type == ItemType.DreamNail && inv.Pickup(inv.HkBag[HkItems.DreamNailSlot]) == 0)
+                inv.HkBag[HkItems.DreamNailSlot] = default;
             // Lost (taken out by hand): it comes back within a second or two.
             int s2 = SlotOf(ItemType.DreamNail);
             if (s2 >= 0) inv.Slots[s2] = default;

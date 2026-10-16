@@ -215,6 +215,18 @@ namespace TerraKnight.Town
             return 0;
         }
 
+        internal static IEnumerable<(string Npc, ItemType Type)> DevSourcesAt(int stage)
+        {
+            foreach (var stock in travelPool)
+                if (stock.Stage <= stage && ItemDb.Get(stock.Type).Stage <= stage)
+                    yield return ("TravelingMerchant", stock.Type);
+            foreach (var npc in All)
+                if (npc.Stage <= stage)
+                    foreach (var stock in ProgressionBalance.ShopStock(npc.Internal, npc.Items))
+                        if (stock.Stage <= stage && ItemDb.Get(stock.Type).Stage <= stage)
+                            yield return (npc.Internal, stock.Type);
+        }
+
         public static void Clear()
         {
             npcs.Clear();
@@ -723,10 +735,14 @@ namespace TerraKnight.Town
             var stack = GuideItem;
             GuideItem = default;
             var inv = TerraMod.Instance?.Inventory;
-            int left = inv != null ? inv.AddSome(stack.Type, stack.Count) : stack.Count;
+            // A reforged or forged one goes back whole, its prefix and level kept.
+            bool whole = stack.Prefix != 0 || stack.Forge != 0;
+            int left = inv == null ? stack.Count : whole ? inv.Pickup(stack) : inv.AddSome(stack.Type, stack.Count);
             if (left <= 0) return;
             var hero = HeroController.SilentInstance;
-            if (hero != null) WorldItems.Drop(ItemStack.Of(stack.Type, left), hero.GetComponent<BoxCollider2D>().bounds.center);
+            var rest = stack;
+            rest.Count = left;
+            if (hero != null) WorldItems.Drop(rest, hero.GetComponent<BoxCollider2D>().bounds.center);
         }
 
         /// <summary>Main.CloseNPCChatOrSign (sound Menu_Close).</summary>

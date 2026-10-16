@@ -20,7 +20,9 @@ namespace TerraKnight.Player
             TwinEyesMinion = 134, PirateMinion = 135, StardustDragonMinion = 188, BatOfLight = 213, VampireFrog = 214, BabyBird = 216,
             Ravens = 83, Pygmies = 49, SharknadoMinion = 139, UFOMinion = 140, DeadlySphere = 161, StardustMinion = 182, StormTiger = 263, Smolstar = 271, SwordWhip = 308, ScytheWhip = 311, EmpressBlade = 322, CoolWhip = 312, ThornWhip = 314, FlinxMinion = 325, AbigailMinion = 335, CobWhip = 365,
             Werewolf = 28, Merfolk = 34, IceBarrier = 62, BrainOfConfusion = 321, ManaHeat = 396,
-            MushroomBoiMinion = 355, CattivaMinion = 385, FoxsparksMinion = 386, TrustyCattivaMinion = 389, TrustyFoxsparksMinion = 390, ClayPotMinion = 393, ForbiddenMinion = 394;
+            MushroomBoiMinion = 355, CattivaMinion = 385, FoxsparksMinion = 386, TrustyCattivaMinion = 389, TrustyFoxsparksMinion = 390, ClayPotMinion = 393, ForbiddenMinion = 394,
+            // The buff furniture's (SceneMetrics, here carried: Items.CarriedFurniture) and the Water Candle's.
+            WaterCandle = 86, CozyFire = 87, HeartLamp = 89, Happy = 146, StarInBottle = 158, BastDefense = 215;
 
         public static readonly int[] Type = new int[MaxBuffs];
         public static readonly int[] Time = new int[MaxBuffs];
@@ -35,6 +37,12 @@ namespace TerraKnight.Player
         static readonly Dictionary<int, Info> info = new Dictionary<int, Info>
         {
             [PotionSickness] = new Info { Name = "耐药性", Desc = "不能再消耗治疗物品", Debuff = true },
+            [WaterCandle] = new Info { Name = "水蜡烛", Desc = "提高怪物生成速度", NoTime = true },
+            [CozyFire] = new Info { Name = "温馨之火", Desc = "生命再生速度略有提高", NoTime = true },
+            [HeartLamp] = new Info { Name = "心灯", Desc = "生命再生速度提高", NoTime = true },
+            [Happy] = new Info { Name = "快乐！", Desc = "移动速度提高，怪物生成减少", NoTime = true },
+            [StarInBottle] = new Info { Name = "星星瓶", Desc = "提高魔力再生速度", NoTime = true },
+            [BastDefense] = new Info { Name = "巴斯特防御", Desc = "防御力增加5点", NoTime = true },
             [Honey] = new Info { Name = "蜂蜜", Desc = "生命再生速度提高" },
             [Panic] = new Info { Name = "恐慌！", Desc = "移动速度提高" },
             [Werewolf] = new Info { Name = "狼人", Desc = "体能提高", NoTime = true },
@@ -105,9 +113,9 @@ namespace TerraKnight.Player
         };
 
         /// <summary>A buff's name and tooltip defined from elsewhere (the potions', Player/PotionBuffs.cs).</summary>
-        public static void Define(int type, string name, string desc, bool debuff = false)
+        public static void Define(int type, string name, string desc, bool debuff = false, bool noTime = false)
         {
-            if (!info.ContainsKey(type)) info[type] = new Info { Name = name, Desc = desc, Debuff = debuff };
+            if (!info.ContainsKey(type)) info[type] = new Info { Name = name, Desc = desc, Debuff = debuff, NoTime = noTime };
         }
 
         /// <summary>The minion flags (slime, hornetMinion…), set each tick while the buff holds.</summary>

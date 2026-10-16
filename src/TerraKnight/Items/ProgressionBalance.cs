@@ -103,6 +103,8 @@ namespace TerraKnight.Items
 
         internal static void ApplyItems(ItemDef[] items)
         {
+            foreach (var d in items)
+                if (d != null && d.IsAccessory) OriginalAccessories[d.Type] = (d.Bonus, d.Defense, d.Tooltip, d.Damage);
             var tiers = new Dictionary<ItemType, int>(ResourceStages);
             for (int s = 0; s < Core.Length; s++)
                 foreach (var cls in Core[s]) foreach (var t in cls) tiers[t] = s;
@@ -121,14 +123,25 @@ namespace TerraKnight.Items
             tiers[ItemType.MagicQuiver] = tiers[ItemType.MagicCuffs] = 2;
             tiers[ItemType.Hellforge] = 3;
             tiers[ItemType.MythrilAnvil] = tiers[ItemType.AdamantiteForge] = 4;
+            // Actual world/merchant sources, rather than the old generic material tier.
+            tiers[ItemType.MetalDetector] = 2;
+            tiers[ItemType.ArgonMoss] = 2;
+            tiers[ItemType.VioletMoss] = 3;
+            tiers[ItemType.RainbowMoss] = 4;
+            tiers[ItemType.Honeyfin] = 4;
+            // Hive Knight and its nearby hive enemies are reached at stage 3. Wax must be
+            // obtainable there before stage 4, including for its locally sourced rematch seal.
+            tiers[ItemType.BeeWax] = 3;
+            tiers[ItemType.FishermansGuide] = tiers[ItemType.WeatherRadio] = tiers[ItemType.Sextant] = 2;
+            tiers[ItemType.AnglerHat] = tiers[ItemType.AnglerVest] = tiers[ItemType.AnglerPants] = 2;
             foreach (var d in items)
             {
                 if (d == null || d.Type == ItemType.None) continue;
                 if (tiers.TryGetValue(d.Type, out int stage)) d.Stage = stage;
                 if (d.Stage < 0 || d.Stage > 5) continue;
-                if (d.IsWeapon && !d.GameTool && !d.IsAmmo && d.PickPower == 0 && d.AxePower == 0 && d.HammerPower == 0 && !d.HkItem)
+                if (d.IsWeapon && !d.IsAccessory && !d.GameTool && !d.IsAmmo && d.PickPower == 0 && d.AxePower == 0 && d.HammerPower == 0 && !d.HkItem)
                     TuneWeapon(d);
-                if (d.IsAccessory) TuneAccessory(d);
+                // Accessories retain their original stats; no stage-based caps.
                 if (d.IsArmor)
                 {
                     int cls = Math.Max(0, ClassIndex(d.Kit));
@@ -163,7 +176,7 @@ namespace TerraKnight.Items
                         setBudgets[d.Set] = (p.Stage,p.Class);
                     if (d.SetBonus != ArmorSet.None && p.Stage > 0 && d.Stage == p.Stage)
                         setBudgets[d.SetBonus] = (p.Stage,p.Class);
-                    d.Source = ItemSource.Craft;
+                    // Keep the original acquisition method (some sets are drops or purchases).
                 }
             }
             // Hallowed bodies/legs are shared by ranger and caster heads. Give both branches
@@ -210,8 +223,11 @@ namespace TerraKnight.Items
             { items[(int)t].Stage = 0; items[(int)t].Value = 5; }
             items[(int)ItemType.LesserManaPotion].Value = 100;
             foreach (var d in items)
-                if (d != null && (d.IsArmor || d.IsAccessory)) d.Tooltip = BonusTooltip(d);
+                if (d != null && d.IsArmor) d.Tooltip = BonusTooltip(d);
         }
+
+        internal static readonly Dictionary<ItemType, (Bonuses Bonus, int Defense, string Tooltip, int Damage)> OriginalAccessories
+            = new Dictionary<ItemType, (Bonuses, int, string, int)>();
 
         static void TuneWeapon(ItemDef d)
         {
@@ -260,24 +276,6 @@ namespace TerraKnight.Items
             if (d.Class == DamageClass.Magic && !d.NoUseMana)
                 d.Mana = s == 0 ? 2 : Mathf.Clamp(Mathf.RoundToInt(seconds*(3+s*2)),1,3+s);
         }
-        static void TuneAccessory(ItemDef d)
-        {
-            float cap = .05f + .02f * d.Stage;
-            ref var b = ref d.Bonus;
-            b.MeleeDamage = Mathf.Clamp(b.MeleeDamage,-cap,cap);
-            b.RangedDamage = Mathf.Clamp(b.RangedDamage,-cap,cap);
-            b.MagicDamage = Mathf.Clamp(b.MagicDamage,-cap,cap);
-            b.MinionDamage = Mathf.Clamp(b.MinionDamage,-cap,cap);
-            b.AllCrit = Mathf.Min(b.AllCrit,cap*.5f);
-            b.MeleeCrit = Mathf.Min(b.MeleeCrit,cap*.5f);
-            b.RangedCrit = Mathf.Min(b.RangedCrit,cap*.5f);
-            b.MagicCrit = Mathf.Min(b.MagicCrit,cap*.5f);
-            b.MeleeSpeed = Mathf.Min(b.MeleeSpeed,cap);
-            b.Endurance = Mathf.Min(b.Endurance,.03f + .01f*d.Stage);
-            b.MaxMinions = Math.Min(b.MaxMinions,1);
-            d.Defense = Math.Min(d.Defense, new[] {2,3,4,6,8,10}[d.Stage]);
-        }
-
         static string BonusTooltip(ItemDef d)
         {
             var lines = new List<string>();

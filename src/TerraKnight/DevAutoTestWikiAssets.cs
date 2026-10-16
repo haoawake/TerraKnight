@@ -79,7 +79,7 @@ namespace TerraKnight
             {
                 var ingredients = new List<object>();
                 foreach (var ing in r.Ingredients) ingredients.Add(new { Type = ing.Type.ToString(), ing.Count });
-                recipeData.Add(new { Result = r.Result.ToString(), r.Count, r.Station, r.StationStage, Ingredients = ingredients });
+                recipeData.Add(new { Result = r.Result.ToString(), r.Count, r.Station, r.StationStage, Environment = r.Environment.ToString(), Ingredients = ingredients });
             }
             var dropData = new Dictionary<string, object>();
             foreach (var record in EnemyDrops.DevRecords)

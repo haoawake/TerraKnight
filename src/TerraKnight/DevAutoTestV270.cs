@@ -145,8 +145,8 @@ namespace TerraKnight
             yield return new WaitForSeconds(4f);
             Check("魔镜回家", Pylons.DevRecalls == recalls + 1, $"回家 {Pylons.DevRecalls - recalls} 次，现在在 {GameManager.instance.sceneName}");
 
-            // 8. The altars in the Temple of the Black Egg.
-            yield return GoTo("Room_temple", EntryGateOf("Room_temple"));
+            // 8. The altars beside Dirtmouth's bench.
+            yield return GoTo("Town", EntryGateOf("Town"));
             pd.isInvincible = true;
             yield return new WaitForSeconds(2f);
             hero = HeroController.instance;
@@ -156,8 +156,8 @@ namespace TerraKnight
                 hero.transform.position = demon + new Vector2(-2f, 1f);
                 yield return new WaitForSeconds(1f);
             }
-            Check("黑卵神殿的祭坛", demon != default && Stations.Near("恶魔祭坛 / 猩红祭坛", hero), $"恶魔祭坛 {FixedStations.DevDemon:F1}，猩红祭坛 {FixedStations.DevCrimson:F1}，旁边 {Stations.DevNearNames(hero)}");
-            Shot("Room_temple", "v270_altars");
+            Check("德特茅斯长椅旁的祭坛", demon != default && Stations.Near("恶魔祭坛 / 猩红祭坛", hero), $"恶魔祭坛 {FixedStations.DevDemon:F1}，猩红祭坛 {FixedStations.DevCrimson:F1}，旁边 {Stations.DevNearNames(hero)}");
+            Shot("Town", "v270_altars");
             yield return null;
             mod.DevNoFallDamage = false;
             Plugin.Log.LogInfo($"[AutoTest] 2.7a 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");

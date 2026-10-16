@@ -187,7 +187,9 @@ namespace TerraKnight.World
                 // once it does.
                 var at = CellGrid.WorldToCell(tr.position);
                 bool gridReady = TerraWorld.RegionAt(at.x, at.y) != null;
-                for (int k = 1; k < Multiplier && count < MaxSlotsPerScene; k++)
+                // The Water Candle in the hotbar (Items.CarriedFurniture) sets how many times over.
+                int copies = Multiplier * Items.CarriedFurniture.CandleFactor;
+                for (int k = 1; k < copies && count < MaxSlotsPerScene; k++)
                 {
                     var shift = Vector3.zero;
                     if (gridReady && !Beside(slot, k, out shift))

@@ -618,6 +618,7 @@ namespace TerraKnight.Player
             if (heldItem.gameObject.activeSelf) heldItem.color = new Color(1f, 1f, 1f, alpha);
             if (heldGlow.gameObject.activeInHierarchy) heldGlow.color = new Color(250f / 255f, 250f / 255f, 250f / 255f, 1f) * alpha;
             if (equips.StealthKind != 0 || equips.SocialGhost) StealthTint(equips);
+            if (DashGlow > 0.01f || DashShade > 0.01f) DashTint();
 
             if (equips.BrainCounter > 270) PoseBrainCopies(equips.BrainCounter);
             else PoseGhosts(shadows, equips);
@@ -676,6 +677,42 @@ namespace TerraKnight.Player
                     else if (body.Contains(l) || glows.Contains(l)) c *= s2;
                 }
                 Apply(l, c);
+            }
+        }
+
+        /// <summary>The Crystal Heart's white light on the player (0 none, 1 full) and the Shade Cloak's darkness (Items.AbilityAccessories).</summary>
+        public static float DashGlow, DashShade;
+
+        static readonly Color ShadeColor = new Color(0.05f, 0.03f, 0.09f);
+
+        /// <summary>The player lit white (a Super Dash) or wrapped in shadow (a shadow dash): every layer's colour toward it, its alpha kept.</summary>
+        void DashTint()
+        {
+            var all = new List<Layer>(backLayers);
+            all.AddRange(frontArmLayers);
+            all.AddRange(frontShoulderLayers);
+            all.Add(handsOn);
+            all.Add(frontFront);
+            all.Add(armorFrontArm);
+            all.Add(armorFrontShoulder);
+            all.Add(frontArmGlow);
+            all.Add(frontShoulderGlow);
+            float glow = Mathf.Clamp01(DashGlow) * 0.85f, shade = Mathf.Clamp01(DashShade) * 0.88f;
+            foreach (var l in all)
+            {
+                if (l == null || l.Renderer == null) continue;
+                var c = l.Renderer.color;
+                var rgb = Color.Lerp(new Color(c.r, c.g, c.b), Color.white, glow);
+                rgb = Color.Lerp(rgb, ShadeColor, shade);
+                c = new Color(rgb.r, rgb.g, rgb.b, c.a);
+                l.Renderer.color = c;
+                if (l.Strips != null) foreach (var sr in l.Strips) sr.color = c;
+            }
+            if (heldItem.gameObject.activeSelf)
+            {
+                var h = heldItem.color;
+                var rgb = Color.Lerp(Color.Lerp(new Color(h.r, h.g, h.b), Color.white, glow), ShadeColor, shade);
+                heldItem.color = new Color(rgb.r, rgb.g, rgb.b, h.a);
             }
         }
 

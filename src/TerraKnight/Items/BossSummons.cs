@@ -23,55 +23,62 @@ namespace TerraKnight.Items
             public int Stage;
             public ItemType Material;
             public int Amount;
+            public ItemType SupportMaterial;
+            public int SupportAmount;
+            /// <summary>Repeatable nearby enemies whose actual stage drops supply each ingredient.</summary>
+            public string MaterialSource, SupportSource, Locality;
             public bool Dream;
         }
 
-        static Seal S(ItemType t, string key, string zh, string en, int stage, ItemType mat, int amount, bool dream = false) =>
-            new Seal { Type = t, Key = key, Name = zh, En = en, Stage = stage, Material = mat, Amount = amount, Dream = dream };
+        static Seal S(ItemType t, string key, string zh, string en, int stage, ItemType mat, int amount, string source,
+            ItemType support, int supportAmount, string supportSource, string locality, bool dream = false) =>
+            new Seal { Type = t, Key = key, Name = zh, En = en, Stage = stage, Material = mat, Amount = amount,
+                MaterialSource = source, SupportMaterial = support, SupportAmount = supportAmount,
+                SupportSource = supportSource, Locality = locality, Dream = dream };
 
         // Each entry has a supported full arena in BossArena; the enum IDs are append-only.
         internal static readonly Seal[] All =
         {
-            S(ItemType.BossSigilFalseKnight, "FalseKnight", "空甲战令", "Hollow Armour Writ", 0, ItemType.IronBar, 4),
-            S(ItemType.BossSigilGruzMother, "BigFly", "沉睡母巢", "Slumbering Brood Seal", 0, ItemType.Lens, 6),
-            S(ItemType.BossSigilMawlek, "Mawlek", "躁动爪印", "Restless Claw Seal", 0, ItemType.RottenChunk, 6),
-            S(ItemType.BossSigilHornet, "Hornet", "守护丝结", "Protector's Silken Knot", 1, ItemType.Cobweb, 15),
-            S(ItemType.BossSigilMossCharger, "MegaMossCharger", "巨苔诱饵", "Great Moss Lure", 1, ItemType.Moonglow, 5),
-            S(ItemType.BossSigilGorb, "GhostAladar", "升华梦珠", "Ascending Dream Bead", 1, ItemType.FallenStar, 3, true),
-            S(ItemType.BossSigilNoEyes, "GhostNoEyes", "无目安魂铃", "Sightless Requiem Bell", 1, ItemType.Deathweed, 5, true),
-            S(ItemType.BossSigilDungDefender, "DungDefender", "荣耀土球", "Glorious Earth Orb", 2, ItemType.ClayBlock, 20),
-            S(ItemType.BossSigilTraitorLord, "TraitorLord", "叛离刃契", "Exile's Blade Pact", 5, ItemType.Stinger, 8),
-            S(ItemType.BossSigilMantisLords, "MantisLord", "三刃挑战书", "Three-Blade Challenge", 2, ItemType.Stinger, 6),
-            S(ItemType.BossSigilSoulMaster, "MageLord", "聚魂法印", "Soul Convergence Seal", 2, ItemType.Amethyst, 5),
-            S(ItemType.BossSigilUumuu, "MegaJellyfish", "档案电核", "Archive Storm Core", 2, ItemType.Coral, 8),
-            S(ItemType.BossSigilFlukemarm, "FlukeMother", "吸虫母卵", "Fluke Brood Egg", 2, ItemType.RottenChunk, 10),
-            S(ItemType.BossSigilCrystalGuardian, "MegaBeamMiner", "守卫晶镜", "Guardian's Crystal Lens", 2, ItemType.Diamond, 3),
-            S(ItemType.BossSigilElderHu, "GhostHu", "长老梦环", "Elder's Dream Ring", 2, ItemType.FallenStar, 4, true),
-            S(ItemType.BossSigilMarmu, "GhostMarmu", "翠梦弹珠", "Verdant Dream Marble", 2, ItemType.Moonglow, 6, true),
-            S(ItemType.BossSigilWatcherKnights, "BlackKnight", "守望六印", "Six Watchers' Seal", 3, ItemType.IronBar, 12),
-            S(ItemType.BossSigilHiveKnight, "HiveKnight", "蜂卫蜡章", "Hiveguard Wax Seal", 3, ItemType.BeeWax, 8),
-            S(ItemType.BossSigilCollector, "JarCollector", "空罐收藏契", "Empty Jar Covenant", 3, ItemType.Bottle, 5),
-            S(ItemType.BossSigilNosk, "MimicSpider", "拟形蛛蜕", "Mimic's Spider Husk", 3, ItemType.Cobweb, 30),
-            S(ItemType.BossSigilGalien, "GhostGalien", "旋镰梦符", "Dream Scythe Charm", 3, ItemType.Bone, 12, true),
-            S(ItemType.BossSigilXero, "GhostXero", "双钉残念", "Twin-Nail Reverie", 3, ItemType.IronBar, 8, true),
-            S(ItemType.BossSigilHornetSentinel, "Hornet@4", "哨兵棘丝", "Sentinel's Barbed Thread", 4, ItemType.Silk, 6),
-            S(ItemType.BossSigilMarkoth, "GhostMarkoth", "梦盾残片", "Dreamshield Fragment", 4, ItemType.FallenStar, 6, true),
-            S(ItemType.BossSigilBrokenVessel, "InfectedKnight", "破碎容器印", "Broken Vessel Seal", 4, ItemType.RottenChunk, 15),
-            S(ItemType.BossSigilGrimm, "Grimm", "猩红剧票", "Scarlet Troupe Ticket", 5, ItemType.Fireblossom, 8),
-            S(ItemType.BossSigilHollowKnight, "HollowKnight", "黑卵封契", "Black Egg Covenant", 5, ItemType.Obsidian, 20),
-            S(ItemType.BossSigilFailedChampion, "FalseKnight@5", "失败者王徽", "Fallen Champion's Crest", 2, ItemType.IronBar, 10, true),
-            S(ItemType.BossSigilSoulTyrant, "MageLord@5", "暴君魂匣", "Tyrant's Soul Casket", 3, ItemType.Amethyst, 8, true),
-            S(ItemType.BossSigilLostKin, "InfectedKnight@5", "失亲追忆", "Lost Kin Memento", 4, ItemType.Bone, 15, true),
-            S(ItemType.BossSigilWhiteDefender, "WhiteDefender", "白卫誓章", "White Defender's Oath", 5, ItemType.Pearlwood, 20, true),
-            S(ItemType.BossSigilGreyPrince, "GreyPrince", "灰王妄想册", "Grey Prince's Fantasy", 5, ItemType.Silk, 8, true),
-            S(ItemType.BossSigilNightmareGrimm, "NightmareGrimm", "梦魇心烛", "Nightmare Heart Candle", 5, ItemType.Fireblossom, 12, true),
-            S(ItemType.BossSigilRadiance, "FinalBoss", "曙光梦盘", "Dawn Dream Disc", 5, ItemType.FallenStar, 12, true),
-            S(ItemType.BossSigilPureVessel, "HollowKnightPrime", "无瑕容器印", "Pure Vessel Sigil", 5, ItemType.HallowedBar, 8, true),
-            S(ItemType.BossSigilOroMato, "NailBros", "兄弟双钉契", "Brothers' Nail Pact", 5, ItemType.HallowedBar, 6, true),
-            S(ItemType.BossSigilSheo, "Paintmaster", "绘圣调色印", "Paintmaster's Palette Seal", 5, ItemType.Ruby, 8, true),
-            S(ItemType.BossSigilSly, "Nailsage", "贤者试剑令", "Nailsage's Trial Writ", 5, ItemType.HallowedBar, 8, true),
-            S(ItemType.BossSigilOblobbles, "Oblobble", "双生酸囊", "Twin Acid Sacs", 4, ItemType.Lens, 15, true),
-            S(ItemType.BossSigilGodTamer, "LobsterLancer", "驯神兽笛", "God Tamer's Beast Whistle", 4, ItemType.Bone, 15, true),
+            S(ItemType.BossSigilFalseKnight, "FalseKnight", "空甲战令", "Hollow Armour Writ", 0, ItemType.IronOre, 12, "ZombieShield", ItemType.Gel, 6, "ZombieRunner", "遗忘十字路·假骑士周边"),
+            S(ItemType.BossSigilGruzMother, "BigFly", "沉睡母巢", "Slumbering Brood Seal", 0, ItemType.Lens, 4, "Hatcher", ItemType.Daybloom, 4, "ZombieShield", "遗忘十字路·格鲁兹之母周边"),
+            S(ItemType.BossSigilMawlek, "Mawlek", "躁动爪印", "Restless Claw Seal", 0, ItemType.IronOre, 10, "ZombieShield", ItemType.Deathweed, 4, "ZombieRunner", "遗忘十字路·毛里克周边"),
+            S(ItemType.BossSigilHornet, "Hornet", "守护丝结", "Protector's Silken Knot", 1, ItemType.Vine, 6, "MossCharger", ItemType.Cobweb, 8, "MossmanRunner", "苍绿之径·大黄蜂初战周边"),
+            S(ItemType.BossSigilMossCharger, "MegaMossCharger", "巨苔诱饵", "Great Moss Lure", 1, ItemType.JungleSpores, 6, "MossCharger", ItemType.Moonglow, 4, "MossmanRunner", "苍绿之径·巨型苔藓冲锋者周边"),
+            S(ItemType.BossSigilGorb, "GhostAladar", "升华梦珠", "Ascending Dream Bead", 1, ItemType.Lens, 4, "Buzzer", ItemType.FlinxFur, 6, "Climber", "呼啸悬崖·戈布周边", true),
+            S(ItemType.BossSigilNoEyes, "GhostNoEyes", "无目安魂铃", "Sightless Requiem Bell", 1, ItemType.Moonglow, 4, "PlantShooter", ItemType.JungleSpores, 6, "MossKnight", "苍绿之径·石之庇护所外", true),
+            S(ItemType.BossSigilDungDefender, "DungDefender", "荣耀土球", "Glorious Earth Orb", 2, ItemType.Bone, 10, "Flukeman", ItemType.Obsidian, 6, "Inflater", "皇家水道·粪虫防御者周边"),
+            S(ItemType.BossSigilTraitorLord, "TraitorLord", "叛离刃契", "Exile's Blade Pact", 5, ItemType.Stinger, 10, "HeavyMantis", ItemType.Vine, 8, "HeavyMantis", "王后花园·叛徒领主周边"),
+            S(ItemType.BossSigilMantisLords, "MantisLord", "三刃挑战书", "Three-Blade Challenge", 2, ItemType.Stinger, 8, "Mantis", ItemType.JungleSpores, 6, "MantisFlyerChild", "真菌荒地·螳螂村"),
+            S(ItemType.BossSigilSoulMaster, "MageLord", "聚魂法印", "Soul Convergence Seal", 2, ItemType.Bone, 10, "Mage", ItemType.Book, 2, "MageBlob", "泪水之城·灵魂圣所"),
+            S(ItemType.BossSigilUumuu, "MegaJellyfish", "档案电核", "Archive Storm Core", 2, ItemType.Coral, 4, "Jellyfish", ItemType.Waterleaf, 4, "Jellyfish", "雾之峡谷·教师档案馆外"),
+            S(ItemType.BossSigilFlukemarm, "FlukeMother", "吸虫母卵", "Fluke Brood Egg", 2, ItemType.Gel, 10, "Flukeman", ItemType.Bone, 8, "Flukeman", "皇家水道·吸虫之母周边"),
+            S(ItemType.BossSigilCrystalGuardian, "MegaBeamMiner", "守卫晶镜", "Guardian's Crystal Lens", 2, ItemType.Diamond, 4, "BeamMiner", ItemType.Ruby, 4, "CrystalCrawler", "水晶山峰·水晶守卫周边"),
+            S(ItemType.BossSigilElderHu, "GhostHu", "长老梦环", "Elder's Dream Ring", 2, ItemType.JungleSpores, 8, "MushroomRoller", ItemType.SturdyFossil, 6, "MushroomRoller", "真菌荒地·胡长老周边", true),
+            S(ItemType.BossSigilMarmu, "GhostMarmu", "翠梦弹珠", "Verdant Dream Marble", 2, ItemType.Stinger, 6, "HeavyMantis", ItemType.Vine, 6, "HeavyMantis", "王后花园·马尔穆周边", true),
+            S(ItemType.BossSigilWatcherKnights, "BlackKnight", "守望六印", "Six Watchers' Seal", 3, ItemType.DemoniteOre, 12, "RoyalDandy", ItemType.Bone, 10, "RoyalPlumper", "泪水之城·守望者尖塔周边"),
+            S(ItemType.BossSigilHiveKnight, "HiveKnight", "蜂卫蜡章", "Hiveguard Wax Seal", 3, ItemType.BeeWax, 8, "BeeStinger", ItemType.Stinger, 6, "BeeStinger", "蜂巢·蜂巢骑士周边"),
+            S(ItemType.BossSigilCollector, "JarCollector", "空罐收藏契", "Empty Jar Covenant", 3, ItemType.TissueSample, 6, "RoyalCoward", ItemType.Bone, 8, "RoyalDandy", "泪水之城·爱之塔周边"),
+            S(ItemType.BossSigilNosk, "MimicSpider", "拟形蛛蜕", "Mimic's Spider Husk", 3, ItemType.Cobweb, 12, "MiniSpider", ItemType.SpiderFang, 6, "ShootSpider", "深巢·诺斯克周边"),
+            S(ItemType.BossSigilGalien, "GhostGalien", "旋镰梦符", "Dream Scythe Charm", 3, ItemType.SpiderFang, 8, "SlashSpider", ItemType.Cobweb, 10, "MiniSpider", "深巢·加利安周边", true),
+            S(ItemType.BossSigilXero, "GhostXero", "双钉残念", "Twin-Nail Reverie", 3, ItemType.Waterleaf, 4, "Mummy", ItemType.Fireblossom, 4, "Mummy", "安息之地·泽若与墓地周边", true),
+            S(ItemType.BossSigilHornetSentinel, "Hornet@4", "哨兵棘丝", "Sentinel's Barbed Thread", 4, ItemType.Ichor, 8, "SuperSpitter", ItemType.PixieDust, 8, "Hopper", "王国边缘·大黄蜂哨兵周边"),
+            S(ItemType.BossSigilMarkoth, "GhostMarkoth", "梦盾残片", "Dreamshield Fragment", 4, ItemType.PixieDust, 10, "BlowFly", ItemType.SoulofFlight, 6, "Hopper", "王国边缘·马科斯周边", true),
+            S(ItemType.BossSigilBrokenVessel, "InfectedKnight", "破碎容器印", "Broken Vessel Seal", 4, ItemType.CursedFlame, 8, "LesserMawlek", ItemType.Obsidian, 8, "MawlekTurret", "远古盆地·破碎容器周边"),
+            S(ItemType.BossSigilGrimm, "Grimm", "猩红剧票", "Scarlet Troupe Ticket", 5, ItemType.Lens, 6, "Buzzer", ItemType.Daybloom, 4, "Climber", "德特茅斯剧团帐篷外·呼啸悬崖入口"),
+            S(ItemType.BossSigilHollowKnight, "HollowKnight", "黑卵封契", "Black Egg Covenant", 5, ItemType.IronOre, 16, "ZombieShield", ItemType.Deathweed, 6, "ZombieRunner", "黑卵神殿外·遗忘十字路"),
+            S(ItemType.BossSigilFailedChampion, "FalseKnight@5", "失败者王徽", "Fallen Champion's Crest", 2, ItemType.IronOre, 16, "ZombieGuard", ItemType.Gel, 8, "ZombieRunner", "梦境本体·遗忘十字路假骑士周边", true),
+            S(ItemType.BossSigilSoulTyrant, "MageLord@5", "暴君魂匣", "Tyrant's Soul Casket", 3, ItemType.ShadowScale, 8, "Mage", ItemType.Bone, 12, "MageBlob", "梦境本体·泪水之城灵魂圣所", true),
+            S(ItemType.BossSigilLostKin, "InfectedKnight@5", "失亲追忆", "Lost Kin Memento", 4, ItemType.SoulofNight, 8, "LesserMawlek", ItemType.CursedFlame, 10, "LesserMawlek", "梦境本体·远古盆地破碎容器周边", true),
+            S(ItemType.BossSigilWhiteDefender, "WhiteDefender", "白卫誓章", "White Defender's Oath", 5, ItemType.Obsidian, 10, "Inflater", ItemType.Bone, 12, "Flukeman", "梦境本体·皇家水道粪虫防御者周边", true),
+            S(ItemType.BossSigilGreyPrince, "GreyPrince", "灰王妄想册", "Grey Prince's Fantasy", 5, ItemType.Lens, 6, "Hatcher", ItemType.Gel, 8, "ZombieRunner", "德特茅斯布蕾塔屋外·十字路井口", true),
+            S(ItemType.BossSigilNightmareGrimm, "NightmareGrimm", "梦魇心烛", "Nightmare Heart Candle", 5, ItemType.FlinxFur, 8, "Climber", ItemType.Lens, 8, "Buzzer", "德特茅斯剧团帐篷外·呼啸悬崖入口", true),
+            S(ItemType.BossSigilRadiance, "FinalBoss", "曙光梦盘", "Dawn Dream Disc", 5, ItemType.SilverOre, 18, "BurstingZombie", ItemType.Daybloom, 6, "SpittingZombie", "黑卵神殿外·感染十字路", true),
+            S(ItemType.BossSigilPureVessel, "HollowKnightPrime", "无瑕容器印", "Pure Vessel Sigil", 5, ItemType.Bone, 14, "Flukeman", ItemType.Obsidian, 10, "Inflater", "神居入口·皇家水道垃圾坑", true),
+            S(ItemType.BossSigilOroMato, "NailBros", "兄弟双钉契", "Brothers' Nail Pact", 5, ItemType.IronOre, 12, "Buzzer", ItemType.PixieDust, 8, "Hopper", "马托住所·呼啸悬崖／奥罗住所·王国边缘", true),
+            S(ItemType.BossSigilSheo, "Paintmaster", "绘圣调色印", "Paintmaster's Palette Seal", 5, ItemType.Moonglow, 6, "MossCharger", ItemType.Vine, 8, "MossKnight", "席奥住所·苍绿之径", true),
+            S(ItemType.BossSigilSly, "Nailsage", "贤者试剑令", "Nailsage's Trial Writ", 5, ItemType.IronOre, 14, "ZombieGuard", ItemType.Gel, 10, "ZombieRunner", "斯莱住所·德特茅斯十字路井口", true),
+            S(ItemType.BossSigilOblobbles, "Oblobble", "双生酸囊", "Twin Acid Sacs", 4, ItemType.CobaltOre, 12, "ColShield", ItemType.Fireblossom, 4, "ColShield", "愚人斗兽场·前置勇士试炼", true),
+            S(ItemType.BossSigilGodTamer, "LobsterLancer", "驯神兽笛", "God Tamer's Beast Whistle", 4, ItemType.PalladiumOre, 16, "ColShield", ItemType.Fireblossom, 6, "ColHopper", "愚人斗兽场·前置试炼小怪", true),
         };
 
         internal static Seal Find(ItemType type) { foreach (var s in All) if (s.Type == type) return s; return null; }
@@ -165,7 +172,7 @@ namespace TerraKnight.Items
         {
             foreach (var s in All)
                 yield return new Recipe(s.Type, 1, "砧", s.Stage,
-                    (ItemType.Glass, 2), (ItemType.StoneBlock, 5), (s.Material, s.Amount));
+                    (s.Material, s.Amount), (s.SupportMaterial, s.SupportAmount));
         }
 
         static string Tooltip(Seal s, bool zh)
@@ -175,8 +182,10 @@ namespace TerraKnight.Items
             return zh
                 ? $"首领召唤物：{boss}（{area}）\n首次击败该首领后可在任意地点使用\n打开传送门，把你送到它竞技场的正门外，走进去即开战，跳过剧情\n联机时所有玩家一起传送过去\n成功进入战斗消耗1个；条件不符不消耗\n梦境或神居战后返回出发处；现世战后留在竞技场；走开则召唤物保留"
                     + (s.Dream ? "\n需要梦之钉" : "")
+                    + $"\n材料来源：{s.Locality}（{EnemyDrops.ZhName(s.MaterialSource)}、{EnemyDrops.ZhName(s.SupportSource)}）"
                 : $"Boss summon: {boss} ({area})\nUsable anywhere once this boss is defeated\nA portal takes you to its arena's front door; walk in to fight, the story skipped\nIn a LAN game every player goes too\nConsumes one on battle entry; invalid use costs nothing\nDream/Godhome fights return you; world fights end in the arena; walk away and the seal is kept"
-                    + (s.Dream ? "\nRequires the Dream Nail" : "");
+                    + (s.Dream ? "\nRequires the Dream Nail" : "")
+                    + $"\nIngredients drop from {EnemyDrops.EnglishName(s.MaterialSource)} / {EnemyDrops.EnglishName(s.SupportSource)}";
         }
 
         internal static void Localize(ItemDef def)

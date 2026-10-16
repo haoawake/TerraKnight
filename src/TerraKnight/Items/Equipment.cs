@@ -24,7 +24,6 @@ namespace TerraKnight.Items
             foreach (var a in inv.EffectiveAccessories)
             {
                 if (a.IsEmpty) continue;
-                if (ProgressionBalance.Superseded(a.Type,inv.EffectiveAccessories)) continue;
                 b.Defense += a.Def.Defense;
                 b.Add(a.Def.Bonus);
             }

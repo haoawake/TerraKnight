@@ -29,7 +29,7 @@ namespace TerraKnight.Items
             if (!Eligible(e) || Spawned(key)) return Array.Empty<EnemyDrops.Drop>();
             bool boss = ProgressionBalance.FormalBoss(key);
             if (boss && ProgressionBalance.BossRewards.TryGetValue(key, out var reward))
-                stage = Math.Max(stage, key == "InfectedKnight" ? 4 : reward.Stage);
+                stage = Math.Max(stage, reward.Stage);
             string id = key + ":" + stage + ":" + first + ":" + entry + ":" + final;
             if (!cache.TryGetValue(id, out var result)) cache[id] = result = Build(key,e,stage,first,entry,final,boss);
             return result;
@@ -46,12 +46,20 @@ namespace TerraKnight.Items
             if (ProgressionBalance.BossRewards.TryGetValue(key,out var reward) && (boss || NamedElites.Contains(key)))
             {
                 tier = reward.Stage;
-                if(boss) stage=key=="InfectedKnight" ? 4 : reward.Stage; // An old boss cannot pay endgame resources.
+                if(boss) stage=reward.Stage; // An old boss cannot pay endgame resources.
             }
             // Genuine healing, master relics and first-only permanent upgrades survive outside equipment pools.
             foreach (var d in e.Drops ?? Array.Empty<EnemyDrops.Drop>())
             {
                 var def = ItemDb.Get(d.Type);
+                // Upgrading the area's equipment pool must not erase the original ingredients
+                // of vanilla upgrade recipes (Mace, Compass, old accessories, armour, etc.).
+                if (!d.Master && def.Source == ItemSource.Drop && Recipes.IsMaterial(d.Type)
+                    && ProgressionBalance.Unlocked(d.Type, stage, entry, final) && RegionAllows(d.Type, e.Scene, boss)
+                    && (def.IsWeapon || def.IsArmor || def.IsAccessory))
+                {
+                    rows.Add(Row(d.Type, 0, Mathf.Clamp(d.Chance, .05f, .1f), d.Min, d.Max));
+                }
                 // A Master relic places too, but drops every time (MasterModeCommonDrop), not as a tool.
                 bool utility=!d.Master && (def.PickPower>0 || def.AxePower>0 || def.HammerPower>0 || def.PlacesStation!=World.StationKind.None);
                 if (d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility)
@@ -69,8 +77,10 @@ namespace TerraKnight.Items
                 // Four class branches sum to .25 each even when one has more armour pieces.
                 for (int cls=0;cls<4;cls++)
                 {
-                    var weapon = ProgressionBalance.BossRewards[key].Weapons[cls];
-                    var armor = new List<ItemType>(ProgressionBalance.ArmorFor(key == "InfectedKnight" ? 4 : tier,cls));
+                    var weapon = RewardWeapon(tier, cls, ProgressionBalance.BossRewards[key].Weapons[cls], entry, final);
+                    var armor = new List<ItemType>();
+                    foreach (var t in ProgressionBalance.ArmorFor(tier,cls))
+                        if (ProgressionBalance.Unlocked(t,stage,entry,final)) armor.Add(t);
                     rows.Add(Row(weapon,Main,1,weight: armor.Count==0 ? .25f : .1875f));
                     foreach (var t in armor) rows.Add(Row(t,Main,1,weight:.0625f/armor.Count));
                 }
@@ -80,7 +90,8 @@ namespace TerraKnight.Items
                     var theme=ItemDb.Get(reward.Accessory);
                     if (theme.Kit == Kit.General && ProgressionBalance.Unlocked(theme.Type,Math.Max(stage,tier),entry,final))
                         rows.Add(Row(theme.Type,Function,chance));
-                    else foreach (var t in ProgressionBalance.FunctionPool(tier)) rows.Add(Row(t,Function,chance,weight:.25f));
+                    else foreach (var t in ProgressionBalance.FunctionPool(tier))
+                        if (ProgressionBalance.Unlocked(t,stage,entry,final)) rows.Add(Row(t,Function,chance,weight:.25f));
                 }
             }
             else
@@ -111,13 +122,12 @@ namespace TerraKnight.Items
             }
             if (!boss)
             {
-                // Each biome has several ordinary, repeatable sources. Vital class accessories are
-                // separate from the 1% novelty/rare accessory budget; every one also has a recipe.
+                // Keep the local accessory candidates; all ordinary-enemy accessory routes are
+                // consolidated into one bounded roll below, including legacy crafting inputs.
                 var essentials=new List<ItemType>();
                 for (int cls=0;cls<4;cls++) foreach (var t in ProgressionBalance.AccessoryPaths[tier][cls])
                     if (ProgressionBalance.Unlocked(t,stage,entry,final) && !essentials.Contains(t)) essentials.Add(t);
-                // Two fixed local specialties per species: 8% each, rather than diluting every
-                // accessory into a giant global pool. Stable hashing is independent of process RNG.
+                // Stable local specialties, used as relative weights in the shared accessory pool.
                 if (essentials.Count > 0)
                 {
                     uint hash=2166136261;
@@ -143,6 +153,45 @@ namespace TerraKnight.Items
                 pool[d.Type]=(pool.TryGetValue(d.Type,out float n) ? n : 0)+expected;
             }
             AddRegionalMaterials(e.Scene,stage,entry,final,boss,ores,mats);
+            // Souls need frequent, small drops, not a rare selection from a huge mixed stack.
+            foreach (var soul in new[] {ItemType.SoulofLight,ItemType.SoulofNight,ItemType.SoulofFlight}) mats.Remove(soul);
+            if (ProgressionBalance.Unlocked(ItemType.SoulofLight,stage,entry,final))
+            {
+                bool flight=false;
+                foreach (var d in e.Drops ?? Array.Empty<EnemyDrops.Drop>()) if (d.Type==ItemType.SoulofFlight) {flight=true;break;}
+                void Soul(ItemType t)
+                {
+                    if (boss) rows.Add(Row(t,0,1,5,8));
+                    else rows.Add(Row(t,0,elite ? 1 : .6f,elite ? 2 : 1,elite ? 4 : 3));
+                }
+                if (RegionAllows(ItemType.SoulofLight,e.Scene,boss)) Soul(ItemType.SoulofLight);
+                if (RegionAllows(ItemType.SoulofNight,e.Scene,boss)) Soul(ItemType.SoulofNight);
+                if (flight) Soul(ItemType.SoulofFlight);
+            }
+            if (boss && stage >= 4)
+            {
+                // A hardmode boss must fund a vanilla weapon, not one or two bars/souls.
+                // These are independent guaranteed drops; never diluted into the material pool.
+                foreach (var t in new[] { ItemType.HallowedBar, ItemType.SoulofMight, ItemType.SoulofSight, ItemType.SoulofFright }) mats.Remove(t);
+                rows.Add(Row(ItemType.HallowedBar, 0, 1, 15, 25));
+                ItemType soul = key == "HiveKnight" || key == "LobsterLancer" ? ItemType.SoulofFright
+                    : key.StartsWith("Hornet") || key == "GhostMarkoth" || key == "Oblobble" ? ItemType.SoulofSight : ItemType.SoulofMight;
+                rows.Add(Row(soul, 0, 1, 20, 30));
+            }
+            if (boss && stage >= 5)
+            {
+                foreach (var t in new[] { ItemType.BeetleHusk, ItemType.FragmentSolar, ItemType.FragmentVortex, ItemType.FragmentNebula, ItemType.FragmentStardust }) mats.Remove(t);
+                rows.Add(Row(ItemType.BeetleHusk, 0, 1, 4, 8));
+                ItemType fragment = key == "Grimm" || key == "NightmareGrimm" || key == "HollowKnightPrime" ? ItemType.FragmentSolar
+                    : key == "WhiteDefender" || key == "Nailsage" ? ItemType.FragmentVortex
+                    : key == "GreyPrince" || key == "Paintmaster" ? ItemType.FragmentNebula : ItemType.FragmentStardust;
+                rows.Add(Row(fragment, 0, 1, 18, 26));
+            }
+            if (!boss && key.StartsWith("Zombie"))
+            {
+                mats[ItemType.Deathweed] = Math.Max(Value(mats, ItemType.Deathweed), .3f);
+                if (stage >= 1) mats[ItemType.Blinkroot] = Math.Max(Value(mats, ItemType.Blinkroot), .3f);
+            }
             if(boss && World.Areas.AreaName(e.Scene)=="蜂巢")
             {
                 mats.Remove(ItemType.BeeWax);
@@ -157,11 +206,49 @@ namespace TerraKnight.Items
                 mats[ItemType.Amethyst]=Math.Max(Value(mats,ItemType.Amethyst),.25f);
                 mats[ItemType.Cobweb]=Math.Max(Value(mats,ItemType.Cobweb),.5f);
             }
-            float repeat=boss && !first ? .6f : 1;
-            Pool(rows,ores,Ore,boss || elite ? 1 : .6f,1.2f*repeat);
-            Pool(rows,mats,Material,boss || elite ? 1 : .75f,1.2f*repeat);
+            Pool(rows,ores,Ore,boss || elite ? 1 : .6f,1.2f);
+            Pool(rows,mats,Material,1f,boss ? 1.5f : 1.8f);
             Pool(rows,blocks,Building,.8f,1.2f);
+            if (!boss) ConsolidateAccessories(rows, elite);
             return rows.ToArray();
+        }
+
+        internal static float AccessoryChance(bool elite) => elite ? .05f : .02f;
+
+        static void ConsolidateAccessories(List<EnemyDrops.Drop> rows, bool elite)
+        {
+            var weights = new Dictionary<ItemType, float>();
+            float rareTotal=0, rareRemaining=0;
+            foreach (var d in rows)
+                if (d.Group==Rare)
+                {
+                    rareTotal+=Weight(d);
+                    if (!ItemDb.Get(d.Type).IsAccessory) rareRemaining+=Weight(d);
+                }
+            foreach (var d in rows)
+            {
+                if (!ItemDb.Get(d.Type).IsAccessory) continue;
+                float weight=d.Chance;
+                if (d.Group>0)
+                {
+                    float total=0;
+                    foreach (var option in rows) if (option.Group==d.Group) total+=Weight(option);
+                    weight*=Weight(d)/Math.Max(.00001f,total);
+                }
+                weights[d.Type]=(weights.TryGetValue(d.Type,out float old) ? old : 0)+weight;
+            }
+            rows.RemoveAll(d=>ItemDb.Get(d.Type).IsAccessory);
+            // Moving accessories out of the rare equipment group must not increase weapon/armour rates.
+            if (rareTotal>0)
+                for (int i=0;i<rows.Count;i++)
+                    if (rows[i].Group==Rare)
+                    {
+                        var d=rows[i];
+                        d.Num=Mathf.RoundToInt(d.Num*rareRemaining/rareTotal);
+                        rows[i]=d;
+                    }
+            foreach (var pair in weights)
+                rows.Add(Row(pair.Key,Essential,AccessoryChance(elite),1,1,pair.Value));
         }
         static float Value(Dictionary<ItemType,float> pool, ItemType t) => pool.TryGetValue(t,out float n) ? n : 0;
         internal static bool CombatWeapon(ItemDef d) => d.IsWeapon && !d.IsAmmo && !d.GameTool && !d.HkItem && d.MaxStack==1
@@ -252,8 +339,8 @@ namespace TerraKnight.Items
                 case ItemType.Ectoplasm: case ItemType.BeetleHusk: case ItemType.SpookyWood:
                     return scene.StartsWith("Dream_") || scene.StartsWith("GG_") || scene.StartsWith("Grimm");
                 case ItemType.CrystalShard: return area=="水晶山峰";
-                case ItemType.SoulofLight: return area=="雾之峡谷";
-                case ItemType.SoulofNight: return area=="深渊";
+                case ItemType.SoulofLight: return area=="雾之峡谷" || area=="水晶山峰";
+                case ItemType.SoulofNight: return area=="深渊" || area=="远古盆地" || area=="深巢" || area=="野兽巢穴";
                 case ItemType.SpiderFang: return area=="深巢" || area=="野兽巢穴";
                 default:return true;
             }
@@ -267,6 +354,7 @@ namespace TerraKnight.Items
             if(jungle)
             {
                 Add(mat,ItemType.JungleSpores,.8f); Add(mat,ItemType.Vine,.6f);
+                Add(mat,ItemType.MudBlock,.6f);
                 if(stage>=1) Add(mat,ItemType.Stinger,.6f);
                 if(stage>=4 && entry) Add(ore,ItemType.ChlorophyteOre,.5625f);
             }
@@ -296,6 +384,11 @@ namespace TerraKnight.Items
                 if(entry) { Add(ore,ItemType.MythrilOre,1.2f);Add(ore,ItemType.OrichalcumOre,1.2f);Add(ore,ItemType.AdamantiteOre,.8f);Add(ore,ItemType.TitaniumOre,.8f); }
             }
             if(area=="雾之峡谷") Add(mat,ItemType.SoulofLight,.4f);
+            if (!boss && stage>=5 && (scene.StartsWith("Dream_") || scene.StartsWith("GG_") || scene.StartsWith("Grimm")))
+            {
+                Add(mat,ItemType.Ectoplasm,.8f);
+                Add(mat,ItemType.SpookyWood,3);
+            }
             if(boss && stage>=4)
             {
                 Add(mat,ItemType.SoulofMight,2);Add(mat,ItemType.SoulofSight,2);Add(mat,ItemType.SoulofFright,2);Add(mat,ItemType.HallowedBar,3);
@@ -304,9 +397,21 @@ namespace TerraKnight.Items
             {
                 Add(mat,ItemType.Ectoplasm,4);Add(mat,ItemType.SpookyWood,6);Add(mat,ItemType.BeetleHusk,4);
                 Add(mat,ItemType.FragmentSolar,3);Add(mat,ItemType.FragmentVortex,3);Add(mat,ItemType.FragmentNebula,3);Add(mat,ItemType.FragmentStardust,3);
-                if(final) Add(ore,ItemType.LunarOre,60);
+                if(final && RegionAllows(ItemType.LunarOre,scene,boss)) Add(ore,ItemType.LunarOre,60);
             }
         }
         internal static float Weight(EnemyDrops.Drop d) => d.Weight>0 ? d.Weight : 1;
+
+        static ItemType RewardWeapon(int stage, int cls, ItemType preferred, bool entry, bool final)
+        {
+            if (ProgressionBalance.Unlocked(preferred,stage,entry,final)) return preferred;
+            for (int s=stage;s>=0;s--)
+                for (int i=ProgressionBalance.Core[s][cls].Length-1;i>=0;i--)
+                {
+                    var t=ProgressionBalance.Core[s][cls][i];
+                    if (ProgressionBalance.Unlocked(t,stage,entry,final)) return t;
+                }
+            return ProgressionBalance.Core[0][cls][0];
+        }
     }
 }

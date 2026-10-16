@@ -195,6 +195,7 @@ namespace TerraKnight
             Town.Angler.Clear();
             World.Meteorites.Clear();
             InventoryGui.ClearSold();
+            Pets.Clear();
             Bestiary.Clear();
             Shop.SpareCopper = 0;
             EnemyDebuffs.Clear();
@@ -278,6 +279,9 @@ namespace TerraKnight
                 Town.TownNpcs.Tick(hero);
                 Town.Angler.Tick();
                 Items.HkItems.Tick(this);
+                Items.Tombstones.Start();
+                AbilityAccessories.Tick(hero);
+                CarriedFurniture.Tick(this);
                 Town.TownNpcs.Draw();
                 if (Creative) Shop.KeepCreativeGeo(hero);
                 BossArena.Tick();
@@ -456,8 +460,10 @@ namespace TerraKnight
             }
             // The Dash key (Player.DoCommonDashHandle, Pl:21722-21781): the way faced, or the way held against it; held
             // through the cooldown it goes the moment it may; once a press.
-            if (!TerraKeys.Held(TerraKeys.Action.Dash)) dashKeyArmed = true;
-            else if (dashKeyArmed)
+            // The Crystal Heart worn (AbilityAccessories): a press that may be its long one waits; let go soon, it dashes then.
+            bool tapDash = AbilityAccessories.TapReleased;
+            if (!AbilityAccessories.DashKeyHeld && !tapDash) dashKeyArmed = true;
+            else if (dashKeyArmed && !AbilityAccessories.HoldsDashKey)
             {
                 if (TerraMovement.IsDashing) dashKeyArmed = false;
                 else if (TerraMovement.DashKind != 0)
@@ -809,6 +815,13 @@ namespace TerraKnight
                 return;
             }
 
+            // A pet: called, or sent away if it is out.
+            if (def.PetBuff > 0)
+            {
+                Pets.Use(def);
+                StartSwing(def);
+                return;
+            }
             // Things drunk or used up on the spot.
             if (def.HealLife > 0 || def.HealMana > 0 || def.BuffType > 0)
             {
@@ -833,6 +846,12 @@ namespace TerraKnight
             if (ItemDb.IsMirror(def.Type))
             {
                 if (Pylons.Recall()) PlaySound(def.UseSound ?? "Item_6");
+                return;
+            }
+            // The Water Candle: its spawn setting one up.
+            if (def.Type == ItemType.WaterCandle)
+            {
+                CarriedFurniture.CycleCandle(hero);
                 return;
             }
             if (ItemDb.IsTeleportRod(def.Type))
@@ -1587,6 +1606,13 @@ namespace TerraKnight
         {
             var m = Inventory.Mouse;
             if (m.IsEmpty) return;
+            // The Dream Nail has its own saved safekeeping slot: do not displace another item
+            // or leave the tool in a cutscene's scene when the main inventory is full.
+            if (m.Type == ItemType.DreamNail && Inventory.Room(m.Type) <= 0)
+            {
+                if (DreamNailItem.TryStoreInBag(Inventory, m)) Inventory.Mouse = default;
+                return;
+            }
             // Kept for good with no room for it: it takes the place of the bag's last plain item, which drops instead.
             if (m.Def.Permanent && Inventory.Room(m.Type) <= 0)
             {

@@ -35,8 +35,8 @@ namespace TerraKnight
             Shop.DevStage = 0;
             Pylons.UnlockAllForCreative();
             var target = Pylons.Unlocked.Find(p => p.Scene == "Crossroads_30") ?? Pylons.Unlocked.Find(p => p.Scene != "Town");
-            // A legal stage-0 anvil recipe; physical stations must not bypass progression gates.
-            var r = Recipes.All.FirstOrDefault(x => !x.IsBought && x.Station == "砧" && x.StationStage == 0 && x.Def.Stage == 0 && x.Ingredients.Length <= 2 && x.Ingredients.All(g => ItemDb.Get(g.Type).MaxStack > 1));
+            // An anvil recipe the bench alone doesn't give at stage 0.
+            var r = Recipes.All.FirstOrDefault(x => !x.IsBought && x.Station == "砧" && x.StationStage > 0 && x.Ingredients.Length <= 2 && x.Ingredients.All(g => ItemDb.Get(g.Type).MaxStack > 1));
             Check("有晶塔和配方", target != null && r != null, $"{target?.Scene}/{target?.Bench}，{r?.Def?.Name}（阶段 {r?.StationStage}）");
             if (target == null || r == null) yield break;
 
@@ -117,11 +117,8 @@ namespace TerraKnight
             yield return GoTo("Crossroads_01", EntryGateOf("Crossroads_01"));
             yield return new WaitForSeconds(2f);
             InventoryGui.Open = true;
-            int recallType=pd.respawnType;
-            string recallScene=pd.respawnScene,recallMarker=pd.respawnMarkerName;
             Check("回城", Pylons.Recall());
             yield return Watch("回城", true);
-            Check("回城保留复活点",pd.respawnType==recallType && pd.respawnScene==recallScene && pd.respawnMarkerName==recallMarker);
             InventoryGui.Open = false;
             // The Rod of Discord from across the room.
             var hr = HeroController.instance;

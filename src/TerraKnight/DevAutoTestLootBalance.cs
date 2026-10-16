@@ -55,8 +55,8 @@ namespace TerraKnight
                         foreach(var t in ProgressionBalance.AccessoryPaths[s][cls])
                         {
                             var r=Recipes.For(t);
-                            int sources=drops.Count(pair=>!ProgressionBalance.BossRewards.ContainsKey(pair.Key) && Areas.LevelOf(EnemyDrops.SceneOf(pair.Key))<=s && pair.Value.Any(d=>d.Type==t && d.Group==103 && d.Chance>=.1599f && d.Chance<.1601f));
-                            Check($"关键饰品多来源 {s}/{t}",sources>=3,"普通种类="+sources+"；每来源至少8%");
+                            int sources=drops.Count(pair=>!ProgressionBalance.BossRewards.ContainsKey(pair.Key) && Areas.LevelOf(EnemyDrops.SceneOf(pair.Key))<=s && pair.Value.Any(d=>d.Type==t && d.Group==103 && d.Chance>=.0199f && d.Chance<.0201f));
+                            Check($"关键饰品多来源 {s}/{t}",sources>=3,"普通种类="+sources+"；共享2%饰品池");
                             Check($"关键饰品制作 {s}/{t}",r!=null && r.StationStage<=s && CraftReachable(t,s,drops,false));
                         }
                     }
@@ -133,7 +133,7 @@ namespace TerraKnight
                     float rate=weapons/100000f;
                     float expected=.02f*EnemyDrops.ChanceScale;
                     Check("十万次普通武器总率 "+difficulty,Math.Abs(rate-expected)<.002,rate.ToString("P3"));
-                    Check("基础饰品不是1% "+difficulty,accessories>15000,"件数="+accessories);
+                    Check("普通饰品总率受限 "+difficulty,Math.Abs(accessories/100000f-.02f*EnemyDrops.ChanceScale)<.002,"件数="+accessories);
                     Check("普通矿物有产出 "+difficulty,oreCount>0,"矿数="+oreCount);
                     yield return null;
                 }

@@ -59,6 +59,7 @@ namespace TerraKnight.Items
         /// <summary>Terraria's recipes for the stations and the wood made by hand or at the bench (Recipe.cs, 1.4.5.8).</summary>
         static Recipe[] StationRecipes() => new[]
         {
+            new Recipe(ItemType.Campfire, 1, "徒手", 0, (ItemType.Wood, 10), (ItemType.Torch, 5)),
             new Recipe(ItemType.WorkBench, 1, "徒手", 0, (ItemType.Wood, 10)), // Recipe.cs:4751
             new Recipe(ItemType.WoodPlatform, 2, "徒手", 0, (ItemType.Wood, 1)), // Recipe.cs:2376
             new Recipe(ItemType.Torch, 3, "徒手", 0, (ItemType.Gel, 1), (ItemType.Wood, 1)), // Recipe.cs:610

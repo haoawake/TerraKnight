@@ -132,6 +132,14 @@ namespace TerraKnight.Items
             Spawn(stack, centre, vel, 0, fromSky, personal);
         }
 
+        /// <summary>An item into a scene by its own coordinates, loaded or not: it lies there once the scene comes in.</summary>
+        public static void DropIn(ItemStack stack, string scene, Vector2 local)
+        {
+            if (stack.IsEmpty || string.IsNullOrEmpty(scene)) return;
+            stack.Favorite = false;
+            items.Add(new Item { Stack = stack, Scene = scene, Local = local, Vel = Vector2.zero });
+        }
+
         static void Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false, bool personal = false)
         {
             var region = RegionAt(centre) ?? TerrainSystem.Current?.Region;
@@ -556,6 +564,14 @@ namespace TerraKnight.Items
         {
             foreach (var it in items) if (!it.Stack.IsEmpty && it.Stack.Type == type) return true;
             return false;
+        }
+
+        /// <summary>A recoverable personal drop, including an unloaded scene. Shared network drops remain their owners'.</summary>
+        public static ItemStack PersonalStack(ItemType type)
+        {
+            foreach (var it in items)
+                if (!it.Stack.IsEmpty && it.Stack.Type == type && (it.NetId == null || !Net.NetSession.Active)) return it.Stack;
+            return default;
         }
 
         public static List<Saved> Save()

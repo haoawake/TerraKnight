@@ -18,7 +18,10 @@ namespace TerraKnight.Items
     internal static class HkItems
     {
         public const string TexturePrefix = "HKInv:";
-        public const int BagSlots = 20;
+        public const int KeyBagSlots = 20;
+        /// <summary>A reserved, saved slot: a newly obtained Dream Nail never has to be left on the ground.</summary>
+        public const int DreamNailSlot = KeyBagSlots;
+        public const int BagSlots = KeyBagSlots + 1;
 
         enum Kind { Bool, Int, Royal }
 
@@ -74,6 +77,10 @@ namespace TerraKnight.Items
         public static bool Is(ItemType t) => byType.ContainsKey(t);
         public static bool Is(ItemStack s) => !s.IsEmpty && byType.ContainsKey(s.Type);
 
+        public static bool CanStoreInBag(ItemStack s) => Is(s) || (!s.IsEmpty && s.Type == ItemType.DreamNail);
+        public static bool BagAccepts(int slot, ItemStack s) => s.IsEmpty ||
+            (slot == DreamNailSlot ? s.Type == ItemType.DreamNail : CanStoreInBag(s));
+
         // ------------------------------------------------------------------ the items
 
         internal static void AddItems(List<ItemDef> list)
@@ -108,6 +115,11 @@ namespace TerraKnight.Items
         // ------------------------------------------------------------------ pictures
 
         static readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
+        static readonly Dictionary<string, string> abilitySprites = new Dictionary<string, string>
+        {
+            [nameof(ItemType.ShadeCloak)] = "items__0004_shade_cloak",
+            [nameof(ItemType.CrystalHeart)] = "items__0000_crystal",
+        };
         static readonly Dictionary<string, float> retry = new Dictionary<string, float>();
         static Dictionary<string, Sprite> sprites;
 
@@ -119,6 +131,16 @@ namespace TerraKnight.Items
             Def d = null;
             foreach (var x in all) if (x.Type.ToString() == typeName) d = x;
             Sprite s = null;
+            // The ability accessories (AbilityAccessories) by the game's inventory pictures of them.
+            if (d == null && abilitySprites.TryGetValue(typeName, out string spriteName))
+            {
+                if (sprites == null || !sprites.ContainsKey(spriteName))
+                {
+                    sprites = new Dictionary<string, Sprite>();
+                    foreach (var sp in Resources.FindObjectsOfTypeAll<Sprite>()) if (sp != null && !sprites.ContainsKey(sp.name)) sprites[sp.name] = sp;
+                }
+                sprites.TryGetValue(spriteName, out s);
+            }
             if (d != null)
             {
                 if (d.Kind == Kind.Royal) s = RoyalSprite(d.Royal);
@@ -216,7 +238,7 @@ namespace TerraKnight.Items
                 if (have < want)
                 {
                     int add = want - have;
-                    int left = Put(inv.HkBag, d.Type, add);
+                    int left = Put(inv.HkBag, d.Type, add, KeyBagSlots);
                     if (left > 0) left = Put(inv.Slots, d.Type, left, Inventory.HotbarSize);
                     if (add - left > 0)
                     {
@@ -246,12 +268,13 @@ namespace TerraKnight.Items
             if (chest != null)
                 for (int i = 0; i < chest.Length; i++)
                     if (Is(chest[i])) Return(inv, ref chest[i]);
+            HandChanged(inv);
         }
 
         /// <summary>A stray stack into the Hallownest bag (or an empty hotbar slot when the bag is full).</summary>
         static void Return(Inventory inv, ref ItemStack s)
         {
-            int left = Put(inv.HkBag, s.Type, s.Count);
+            int left = Put(inv.HkBag, s.Type, s.Count, KeyBagSlots);
             if (left > 0) left = Put(inv.Slots, s.Type, left, Inventory.HotbarSize);
             if (left <= 0) s = default;
             else s.Count = left;
@@ -301,23 +324,109 @@ namespace TerraKnight.Items
         /// <summary>PlayerData.GetBool: a key item's record counts only while the item is held (and the charm 36 worn while either royal one is).</summary>
         internal static void GateBool(string name, ref bool result)
         {
-            if (!Gating) return;
+            if (!Gating || PickupAsking()) return;
             var inv = TerraMod.Instance.Inventory;
             if (name == "equippedCharm_36")
             {
                 var pd = PlayerData.instance;
                 bool got = pd != null && Field(pd, "gotCharm_36") is bool g && g && pd.royalCharmState >= 3;
                 result = got && (Held(inv, ItemType.HkKingsoul) || Held(inv, ItemType.HkVoidHeart));
+                if (got && !result) Refused(pd.royalCharmState >= 4 ? ItemType.HkVoidHeart : ItemType.HkKingsoul);
                 return;
             }
-            if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Bool && result) result = Held(inv, d.Type);
+            if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Bool && result)
+            {
+                result = Held(inv, d.Type);
+                if (!result) Refused(d.Type);
+            }
         }
 
         /// <summary>PlayerData.GetInt: a counted item (keys, eggs, ore, relics) counts in full while held, else not at all.</summary>
         internal static void GateInt(string name, ref int result)
         {
-            if (!Gating || result <= 0) return;
-            if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Int && !Held(TerraMod.Instance.Inventory, d.Type)) result = 0;
+            if (!Gating || result <= 0 || PickupAsking()) return;
+            if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Int && !Held(TerraMod.Instance.Inventory, d.Type))
+            {
+                result = 0;
+                Refused(d.Type);
+            }
+        }
+
+        /// <summary>
+        /// A pickup asking whether its item was got already (Shiny Control's "PD Bool?": the King's Brand on its stand):
+        /// the record as it is, or the item would lie there again for the taking whenever it isn't in hand.
+        /// </summary>
+        static bool PickupAsking() => HutongGames.PlayMaker.FsmExecutionStack.ExecutingFsm?.Name == "Shiny Control";
+
+        // ------------------------------------------------------------------ asked again once in hand
+
+        /// <summary>
+        /// A state machine told no because its item wasn't in hand, that waits in the state that asked: the Abyss's gate asks
+        /// for the King's Brand once as its room comes in (abyss_door's Check) and, told no, stays there; the Birthplace's
+        /// floor asks for the Kingsoul so. Taken in hand, the item is asked for again there.
+        /// </summary>
+        sealed class Asker
+        {
+            public HutongGames.PlayMaker.Fsm Fsm;
+            public string State;
+            public ItemType Item;
+        }
+
+        static readonly List<Asker> askers = new List<Asker>();
+        static int heldBefore = -1;
+
+        /// <summary>What a pitch-dark room hid from one without the lantern in hand (DarknessStart): back once it is.</summary>
+        static readonly List<GameObject> hiddenInDark = new List<GameObject>();
+
+        public static int DevAskedAgain;
+        public static string DevLastAskedAgain = "";
+
+        static void Refused(ItemType t)
+        {
+            var fsm = HutongGames.PlayMaker.FsmExecutionStack.ExecutingFsm;
+            var state = fsm?.ActiveState;
+            // A PlayerData action's question (not the mod's own code run from inside a state machine's step).
+            if (state == null || fsm.Owner == null || state.ActiveAction == null || !state.ActiveAction.GetType().Name.Contains("PlayerData")) return;
+            foreach (var a in askers)
+                if (a.Fsm == fsm && a.State == state.Name && a.Item == t) return;
+            if (askers.Count >= 64) askers.RemoveAll(a => a.Fsm.Owner == null || a.Fsm.ActiveStateName != a.State);
+            if (askers.Count >= 64) askers.RemoveAt(0);
+            askers.Add(new Asker { Fsm = fsm, State = state.Name, Item = t });
+        }
+
+        /// <summary>The item in hand changed: a key item taken asked for again where it was refused; the lantern lights (or not) at once.</summary>
+        static void HandChanged(Inventory inv)
+        {
+            int held = inv.Current.IsEmpty ? -1 : (int)inv.Current.Type;
+            if (held == heldBefore) return;
+            bool lantern = held == (int)ItemType.HkLumaflyLantern || heldBefore == (int)ItemType.HkLumaflyLantern;
+            heldBefore = held;
+            var hero = HeroController.SilentInstance;
+            if (lantern && hero != null) hero.SetDarkness(World.LightMap.Darkness);
+            if (held == (int)ItemType.HkLumaflyLantern)
+            {
+                foreach (var go in hiddenInDark) if (go != null) go.SetActive(true);
+                hiddenInDark.Clear();
+            }
+            if (held < 0 || !byType.ContainsKey((ItemType)held)) return;
+            for (int i = askers.Count - 1; i >= 0; i--)
+            {
+                var a = askers[i];
+                var owner = a.Fsm.Owner;
+                if (owner == null)
+                {
+                    askers.RemoveAt(i);
+                    continue;
+                }
+                if ((int)a.Item != held) continue;
+                askers.RemoveAt(i);
+                // Gone on elsewhere (a talk that went on, a spawner at work): left as it is.
+                if (!owner.isActiveAndEnabled || a.Fsm.ActiveStateName != a.State) continue;
+                a.Fsm.SetState(a.State);
+                DevAskedAgain++;
+                DevLastAskedAgain = $"{owner.gameObject.scene.name}/{owner.name} '{a.Fsm.Name}' {a.State} → {a.Fsm.ActiveStateName}";
+                Plugin.Log.LogInfo($"[圣巢物品] 拿起{ItemDb.Get((ItemType)held).Name}：{DevLastAskedAgain}");
+            }
         }
 
         /// <summary>The Knight holds the lantern up in a dark room (HeroController.SetDarkness reads the record itself): from the hotbar.</summary>
@@ -336,7 +445,12 @@ namespace TerraKnight.Items
         static bool DarknessStart(DeactivateInDarknessWithoutLantern __instance)
         {
             var gm = GameManager.instance;
-            if (gm != null && gm.sm != null && gm.sm.darknessLevel == 2 && !gm.playerData.GetBool("hasLantern")) __instance.gameObject.SetActive(false);
+            if (gm != null && gm.sm != null && gm.sm.darknessLevel == 2 && !gm.playerData.GetBool("hasLantern"))
+            {
+                __instance.gameObject.SetActive(false);
+                if (hiddenInDark.Count >= 256) hiddenInDark.RemoveAll(go => go == null);
+                hiddenInDark.Add(__instance.gameObject);
+            }
             return false;
         }
 

@@ -154,6 +154,15 @@ namespace TerraKnight.Player
                 b.MinionDamage += 0.1f;
             }
             if (Has(Warmth)) b.ResistCold = true;
+            // The buff furniture's (Player.UpdateLifeRegen 19286-19293, UpdateBuffs 10018, 10193, 11086): Cozy Fire +1 life
+            // regeneration, Heart Lamp +2, Star in a Bottle +10 mana regeneration, Bast Defense +5 defense, Happy! 10% faster
+            // and then ×1.1 (about +21% here, where speeds add); the Garden Gnome's luck (Player.cs:29380) has no buff.
+            if (Has(PlayerBuffs.CozyFire)) b.LifeRegen += 1;
+            if (Has(PlayerBuffs.HeartLamp)) b.LifeRegen += 2;
+            if (Has(PlayerBuffs.StarInBottle)) b.ManaRegenBonus += 10;
+            if (Has(PlayerBuffs.BastDefense)) b.Defense += 5;
+            if (Has(PlayerBuffs.Happy)) b.MoveSpeed += 0.21f;
+            if (Items.CarriedFurniture.GardenGnome) b.Luck += 0.2f;
             // The fed states (Player.cs:12018-12065): defense, crit, damage, melee speed, minion knockback, speed on foot, mining.
             int tier = Has(ExquisitelyStuffed) ? 3 : Has(PlentySatisfied) ? 2 : Has(WellFed) ? 1 : 0;
             if (tier > 0)

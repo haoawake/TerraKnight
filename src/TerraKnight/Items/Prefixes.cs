@@ -95,6 +95,8 @@ namespace TerraKnight.Items
             // slashes), the Dream Nail with the prefixes every weapon may have (damage, crit, knockback).
             if (d.Type == ItemType.KnightNail) return swords;
             if (d.Type == ItemType.DreamNail) return spears;
+            // The Knight's dashes worn (the game's own pictures): any accessory's prefixes.
+            if (d.Type == ItemType.ShadeCloak || d.Type == ItemType.CrystalHeart || d.Type == ItemType.HallownestShield) return accessories;
             if (d.MaxStack > 1 || d.Permanent || d.HkItem) return null;
             int id = TerrariaId(d);
             if (id <= 0) return null;

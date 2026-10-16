@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using TerraKnight.Terraria;
 using UnityEngine;
@@ -112,6 +113,10 @@ namespace TerraKnight.Items
             if (__instance == null || __instance.isDead || hitInstance.DamageDealt <= 0) return true;
             var col = __instance.GetComponent<Collider2D>() ?? __instance.GetComponentInChildren<Collider2D>();
             if (col == null) return true;
+            // The slash strikes again every physics step it stays on the enemy (DamageEnemies.FixedUpdate), the game's own
+            // evasion after a hit keeping that to one; the hit being the mod's, one a slash is kept here.
+            DevLog?.Invoke($"{hitInstance.Source.name} → {__instance.name} 第 {Time.frameCount} 帧 物理 {Time.fixedTime:F2}");
+            if (!FirstStrike(hitInstance.Source, __instance)) return false;
             ItemDb.Get(ItemType.KnightNail).Damage = DamageNow();
             // The nail in hand: a reforged one hits with its prefix.
             var def = mod.Inventory.Current.Def;
@@ -129,6 +134,45 @@ namespace TerraKnight.Items
             }
             else DevLastRefused = $"{__instance.name}：场地外 {World.ArenaGuard.Outside(__instance)}，唤醒中 {BossWake.Asleep(__instance)}";
             return false;
+        }
+
+        /// <summary>What each of the Knight's slashes has struck since it began (NailSlash.StartSlash).</summary>
+        static readonly Dictionary<GameObject, HashSet<HealthManager>> struck = new Dictionary<GameObject, HashSet<HealthManager>>();
+
+        /// <summary>When something of the nail's that isn't a begun slash last struck each enemy.</summary>
+        static readonly Dictionary<HealthManager, float> struckElse = new Dictionary<HealthManager, float>();
+
+        /// <summary>Dev: hits refused as the same slash's again.</summary>
+        public static int DevRepeatsRefused;
+
+        /// <summary>Dev: when set, hears every hit of the nail's that reaches an enemy (before the one-a-slash rule).</summary>
+        public static System.Action<string> DevLog;
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.StartSlash))]
+        static void NewSlash(NailSlash __instance)
+        {
+            if (struck.Count > 16) struck.Clear();
+            if (!struck.TryGetValue(__instance.gameObject, out var set)) struck[__instance.gameObject] = set = new HashSet<HealthManager>();
+            set.Clear();
+        }
+
+        /// <summary>The slash's first hit on the enemy; anything else of the nail's, once in the game's evasion time (0.2 s).</summary>
+        static bool FirstStrike(GameObject source, HealthManager hm)
+        {
+            bool first;
+            if (struck.TryGetValue(source, out var set)) first = set.Add(hm);
+            else
+            {
+                first = !(struckElse.TryGetValue(hm, out float at) && Time.time - at < 0.2f);
+                if (first)
+                {
+                    if (struckElse.Count > 64) struckElse.Clear();
+                    struckElse[hm] = Time.time;
+                }
+            }
+            if (!first) DevRepeatsRefused++;
+            return first;
         }
 
         /// <summary>

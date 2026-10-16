@@ -204,14 +204,14 @@ namespace TerraKnight.World
         /// <summary>Hallownest's weakest enemies' own health: crawlids, tiktiks, vengeflies.</summary>
         const int WeakestEnemyHp = 8;
 
-        /// <summary>Hallownest's enemies take twice a Master Mode slime's toughness for their size.</summary>
-        const int Toughness = 2;
+        /// <summary>One Master Mode slime's toughness for the weakest ordinary enemy.</summary>
+        const int Toughness = 1;
 
         /// <summary>
         /// Terraria hit points per hit point of an enemy's own, the same everywhere: the weakest
-        /// enemies come out as two Master Mode blue slimes (150), and every other enemy in
+        /// enemies come out as one Master Mode blue slime (75), and every other enemy in
         /// proportion to its own health, so the deeper ones are tougher as they are in the game.
-        /// A husk (15) is 282, Hornet in Greenpath (225) 4219. That is Master; the save's
+        /// A husk (15) is 141 on Master before area scaling. The save's
         /// difficulty takes its share of it (<see cref="GameDifficulty"/>).
         /// </summary>
         public static float HealthScale => MasterHealthScale * GameDifficulty.EnemyFactor;
@@ -219,14 +219,10 @@ namespace TerraKnight.World
         const float MasterHealthScale = MasterSlimeLife * Toughness / (float)WeakestEnemyHp;
 
         /// <summary>
-        /// How much tougher than its own health makes it a level's enemies are: Kingdom's Edge and the
-        /// Abyss (level 4) twice, the endgame's (level 5) common enemies and elites five times. The
-        /// game's enemies there have about the health of earlier ones while the player has hardmode's
-        /// weapons by then: by the balance report the common ones died in a second (level 5 in a
-        /// third of one with the best weapon), quicker than in the Crossroads. The endgame's bosses
-        /// already have the health for its weapons.
+        /// Modest late-game toughness: 1.25 at stage 4 and 2 at stage 5 for ordinary enemies.
+        /// This replaces the old 2/5 multipliers, which also compounded with catch-up scaling.
         /// </summary>
-        public static float LevelHealth(int level, bool boss) => level == 4 ? 2f : level == 5 && !boss ? 5f : 1f;
+        public static float LevelHealth(int level, bool boss) => level == 4 ? 1.25f : level == 5 && !boss ? 2f : 1f;
 
         /// <summary>
         /// The level an area's enemies (not its bosses) are met at: the progress reached once it is past the area's own, so the

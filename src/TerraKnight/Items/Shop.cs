@@ -6,15 +6,27 @@ namespace TerraKnight.Items
     /// <summary>
     /// The geo economy and where crafting happens. Prices are Terraria's own item values with a
     /// geo worth a silver coin (100 copper); what cheap things leave over is kept as spare copper,
-    /// so a 7-copper musket ball costs 0.07 geo. Crafting (recipes, and basic items bought for
-    /// geo) happens at a bench or anywhere in Dirtmouth. While testing (infinite items) the
-    /// crafting column offers everything, free.
+    /// so a 7-copper musket ball costs 0.07 geo. Recipes are made as in Terraria, by hand or at
+    /// their station set down nearby (InventoryGui.CanMakeHere); the basic items bought for geo
+    /// at a bench or anywhere in Dirtmouth. While testing (infinite items) the crafting column
+    /// offers everything, free.
     /// </summary>
     internal static class Shop
     {
         static string benchScene;
+        static int benchScenes;
         static readonly List<Transform> benches = new List<Transform>();
         static float nextBenchScan;
+
+        /// <summary>Which scenes are loaded (their handles together).</summary>
+        static int LoadedScenes()
+        {
+            int sig = 17;
+            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+                sig = sig * 31 + UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).handle;
+            return sig;
+        }
+
         static List<ItemDef> all, basics;
 
         /// <summary>Everything, in kind order as Terraria's recipe list goes (the testing column).</summary>
@@ -58,20 +70,24 @@ namespace TerraKnight.Items
             var gm = GameManager.UnsafeInstance;
             if (gm == null || hero == null) return false;
             if (gm.sceneName == "Town") return true;
-            // Not from a scene still coming in (its bench not up yet); none found, looked for again soon.
+            // Not from a scene still coming in (its bench not up yet).
             if (gm.IsInSceneTransition) return false;
-            if (gm.sceneName != benchScene || Time.unscaledTime > nextBenchScan)
+            // A search of every state machine is a frame's worth of work, and the inventory asks every frame it is open: the
+            // benches of the scenes loaded now, those not up yet too, looked for again when the loaded scenes change.
+            int scenes = LoadedScenes();
+            if (gm.sceneName != benchScene || scenes != benchScenes || Time.unscaledTime > nextBenchScan)
             {
                 benchScene = gm.sceneName;
+                benchScenes = scenes;
                 benches.Clear();
-                foreach (var fsm in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
-                    if (fsm.FsmName == "Bench Control") benches.Add(fsm.transform);
-                nextBenchScan = Time.unscaledTime + (benches.Count > 0 ? 3f : 0.5f);
+                foreach (var fsm in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (fsm.FsmName == "Bench Control" && fsm.gameObject.scene.isLoaded) benches.Add(fsm.transform);
+                nextBenchScan = Time.unscaledTime + 10f;
             }
             // The Artisan Loaf (usedArtisanLoaf): crafting stations reach 4 tiles further (here two units).
             float reach = TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.ArtisanLoaf) ? 10f : 8f;
             foreach (var b in benches)
-                if (b != null && Vector2.Distance(b.position, hero.transform.position) < reach) return true;
+                if (b != null && b.gameObject.activeInHierarchy && Vector2.Distance(b.position, hero.transform.position) < reach) return true;
             return false;
         }
 
@@ -199,7 +215,10 @@ namespace TerraKnight.Items
         /// </summary>
         public static long PriceOf(ItemDef d)
         {
-            if (d == null || d.Value <= 0) return 0;
+            if (d == null) return 0;
+            // The Water Candle at the Merchant's: 3000 geo (the user's price).
+            if (d.Type == ItemType.WaterCandle) return 300000;
+            if (d.Value <= 0) return 0;
             if (d.Value <= 100) return d.Value;
             return (long)System.Math.Round(100.0 * System.Math.Pow(d.Value / 100.0, 0.8));
         }

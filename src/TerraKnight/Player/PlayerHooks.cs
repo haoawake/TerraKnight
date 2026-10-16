@@ -30,6 +30,8 @@ namespace TerraKnight.Player
             ("gotCharm_37", Items.ItemType.HermesBoots),     // Sprintmaster
             ("hasAcidArmour", Items.ItemType.Flipper),       // Isma's Tear
             ("quakeLevel", Items.ItemType.DeadCellsRamRune), // Desolate Dive: the slam breaks the dive floors
+            ("hasShadowDash", Items.ItemType.ShadeCloak),    // Shade Cloak: the dashes go through enemies and shade gates
+            ("hasSuperDash", Items.ItemType.CrystalHeart),   // Crystal Heart: the Super Dash on a long press of Dash
         };
 
         /// <summary>
@@ -57,7 +59,6 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanNailArt))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanCast))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanFocus))]
-        [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanSuperDash))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanBackDash))]
         static bool Disabled(ref bool __result, System.Reflection.MethodBase __originalMethod)
         {

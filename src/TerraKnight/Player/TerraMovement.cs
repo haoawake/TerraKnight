@@ -131,6 +131,16 @@ namespace TerraKnight.Player
         /// <summary>A double tap of a direction (Terraria's dash input); acted on in the next physics step.</summary>
         public static void RequestDash(int direction) => requestedDash = direction;
 
+        static int forcedKind;
+
+        /// <summary>A dash now whatever the last one's cooldown (the Shade Cloak's shadow dash): the worn kind, the Shield's without one.</summary>
+        public static void ForceDash(int direction)
+        {
+            if (DashDelay > 0f) DashDelay = 0f;
+            forcedKind = 2;
+            requestedDash = direction;
+        }
+
         /// <summary>Dev: a held direction (-1/1) and jump button for the autotest, which has no keyboard.</summary>
         public static int DevMove;
         public static bool DevJump;
@@ -605,7 +615,8 @@ namespace TerraKnight.Player
             int request = requestedDash;
             requestedDash = 0;
 
-            if (EocDash > 0f && !eocHit) Bash(hero, rb, ref vx);
+            // A shadow dash (the Shade Cloak) goes through what it meets: no bonk, and none of a bonk's slowing.
+            if (EocDash > 0f && !eocHit) { if (!Items.AbilityAccessories.ShadowDashing) Bash(hero, rb, ref vx); }
             else if (EocDash > 0f && !(left && vx < 0f) && !(right && vx > 0f)) vx *= Mathf.Pow(0.95f, t);
 
             // Pl:21427: the current maxRunSpeed, moveSpeed and all.
@@ -638,9 +649,10 @@ namespace TerraKnight.Player
                     if (vx != 0f) vx = Mathf.Sign(vx) * top;
                 }
             }
-            else if (DashKind != 0 && request != 0)
+            else if ((DashKind != 0 || forcedKind != 0) && request != 0)
             {
-                dashing = DashKind;
+                dashing = DashKind != 0 ? DashKind : forcedKind;
+                forcedKind = 0;
                 vx = (dashing == 3 ? SolarDashSpeed : dashing == 2 ? ShieldDashSpeed : NinjaDashSpeed) * request;
                 // Half speed when starting the dash into a wall.
                 var col = hero.GetComponent<BoxCollider2D>().bounds;
@@ -659,6 +671,7 @@ namespace TerraKnight.Player
                 else if (dashing == 5) CrystalDashStart(hero);
                 else SolarDashStart(hero);
                 Items.ArmorEffects.OnDash(dashing);
+                Items.AbilityAccessories.OnDashStart(hero, request);
                 DevDashes++;
             }
             return vx;

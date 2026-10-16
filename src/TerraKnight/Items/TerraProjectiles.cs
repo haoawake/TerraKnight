@@ -544,6 +544,22 @@ namespace TerraKnight.Items
         void Update()
         {
             var gm = GameManager.UnsafeInstance;
+            // Quit to the title: the world's shots go with it (Spiky Balls lying about for 80 s went on ticking on the
+            // menu, and came back into the next game), and the swords' shots, the whips and the minions too.
+            if (gm != null && (gm.gameState == GlobalEnums.GameState.MAIN_MENU || gm.sceneName == "Menu_Title" || gm.sceneName == "Quit_To_Menu"))
+            {
+                if (!clearedForMenu)
+                {
+                    Clear();
+                    SwordFx.Instance?.Clear();
+                    Whips.Instance?.Clear();
+                    Minions.Instance?.Clear();
+                    clearedForMenu = true;
+                    DevMenuClears++;
+                }
+                return;
+            }
+            clearedForMenu = false;
             if (gm != null && gm.isPaused)
             {
                 Draw();
@@ -3144,6 +3160,11 @@ namespace TerraKnight.Items
             for (int i = live.Count - 1; i >= 0; i--) Remove(i);
             pending.Clear();
         }
+
+        bool clearedForMenu;
+
+        /// <summary>Dev: times everything was cleared for the title screen.</summary>
+        public static int DevMenuClears;
 
         /// <summary>A short-lived light fading out (the flash of an explosion).</summary>
         sealed class FadeOut : MonoBehaviour

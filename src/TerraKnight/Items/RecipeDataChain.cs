@@ -6,7 +6,6 @@ namespace TerraKnight.Items
         /// <summary>The recipes of the craft chain: what Terraria makes by crafting is made here too, from what drops.</summary>
         static Recipe[] ChainRecipes() => new[]
         {
-            new Recipe(ItemType.RodOfHarmony, 1, "远古操纵机", 5, (ItemType.RodofDiscord, 1)), // Recipe.cs:ItemID.Sets.ShimmerTransformToItem (shimmer)
             new Recipe(ItemType.CopperPickaxe, 1, "砧", 0, (ItemType.CopperBar, 8), (ItemType.Wood, 4)), // Recipe.cs:9657
             new Recipe(ItemType.Megashark, 1, "秘银砧", 4, (ItemType.Minishark, 1), (ItemType.IllegalGunParts, 1), (ItemType.SharkFin, 5), (ItemType.SoulofMight, 20)), // Recipe.cs:12503
             new Recipe(ItemType.CrystalStorm, 1, "书架", 0, (ItemType.SpellTome, 1), (ItemType.CrystalShard, 20), (ItemType.SoulofLight, 15)), // Recipe.cs:14344

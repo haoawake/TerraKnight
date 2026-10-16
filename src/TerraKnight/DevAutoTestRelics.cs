@@ -10,7 +10,7 @@ namespace TerraKnight
     /// Dev (suite "relics"): Master Mode relics. A boss's drops paid on Expert give no relic, on Master its own (the False
     /// Knight's); a fight the tables key as another its variant's (the Radiance in GG_Radiance: the Absolute Radiance's);
     /// every boss's table ends with one; a relic sells for a gold's worth; three of them set down in Dirtmouth, each as
-    /// 2 cells wide and 3 cells high, shot. All 48 textures are loaded and checked against the common front base.
+    /// 3 cells wide and 4 cells high, shot. Check the fixed pedestal, floating sculpture, golden glow and reload.
     /// </summary>
     internal sealed partial class DevAutoTest
     {
@@ -58,7 +58,7 @@ namespace TerraKnight
             Color32[] commonBase = null;
             foreach (var kv in Relics.Looks)
             {
-                if (kv.Value.W != 2 || kv.Value.H != 3) wrongSize.Add(kv.Key.ToString());
+                if (kv.Value.W != 3 || kv.Value.H != 4) wrongSize.Add(kv.Key.ToString());
                 var tex = Relics.Texture(kv.Value.Texture);
                 if (tex.width != 64 || tex.height != 96 || tex.filterMode != FilterMode.Point)
                 {
@@ -76,7 +76,7 @@ namespace TerraKnight
                     if (!pixels[i].Equals(commonBase[i])) { sameBase = false; break; }
                 if (!sameBase) wrongBase.Add(kv.Key.ToString());
             }
-            Check("48款统一两格宽三格高", Relics.Looks.Count == 48 && wrongSize.Count == 0, string.Join("、", wrongSize));
+            Check("48款统一三格宽四格高", Relics.Looks.Count == 48 && wrongSize.Count == 0, string.Join("、", wrongSize));
             Check("48款贴图64乘96且像素采样", Relics.Looks.Count == 48 && wrongTexture.Count == 0, string.Join("、", wrongTexture));
             Check("48款共用同一正视底座", commonBase != null && wrongTexture.Count == 0 && wrongBase.Count == 0, string.Join("、", wrongBase));
 
@@ -90,30 +90,80 @@ namespace TerraKnight
             {
                 // Within reach of each: the player stands beside where it goes.
                 hero.transform.position = new Vector3(x - 1.5f, hero.transform.position.y, hero.transform.position.z);
-                for (int k = 0; k < 6 && !Stations.TryPlace(kind, hero, new Vector2(x, feet.min.y + 0.3f)); k++) x += 0.5f;
-                placed++;
+                bool success = false;
+                for (int k = 0; k < 6; k++)
+                {
+                    if (Stations.TryPlace(kind, hero, new Vector2(x, feet.min.y + 0.3f))) { success = true; break; }
+                    x += 0.5f;
+                }
+                if (success) placed++;
                 x += Relics.Looks[kind].W * 0.5f + 0.5f;
             }
             yield return new WaitForSeconds(0.5f);
-            Check("放下三个", Stations.DevBoxOf(StationKind.RelicFalseKnight) != null && Stations.DevBoxOf(StationKind.RelicMantisLord) != null && Stations.DevBoxOf(StationKind.RelicHollowKnight) != null, Stations.DevDescribe());
+            Check("放下三个", placed == 3 && Stations.DevBoxOf(StationKind.RelicFalseKnight) != null && Stations.DevBoxOf(StationKind.RelicMantisLord) != null && Stations.DevBoxOf(StationKind.RelicHollowKnight) != null, Stations.DevDescribe());
             foreach (var kind in new[] { StationKind.RelicFalseKnight, StationKind.RelicMantisLord, StationKind.RelicHollowKnight })
             {
                 var box = Stations.DevBoxOf(kind);
                 var go = GameObject.Find("Terra Station " + kind);
                 var renderer = go != null ? go.GetComponent<SpriteRenderer>() : null;
                 var size = renderer != null && renderer.sprite != null ? renderer.sprite.bounds.size : Vector3.zero;
-                bool geometry = box.HasValue && Mathf.Abs(box.Value.width - 2 * CellGrid.CellSize) < 0.001f
-                    && Mathf.Abs(box.Value.height - 3 * CellGrid.CellSize) < 0.001f;
-                bool picture = Mathf.Abs(size.x - 2 * CellGrid.CellSize) < 0.001f
-                    && Mathf.Abs(size.y - 3 * CellGrid.CellSize) < 0.001f;
+                bool geometry = box.HasValue && Mathf.Abs(box.Value.width - 3 * CellGrid.CellSize) < 0.001f
+                    && Mathf.Abs(box.Value.height - 4 * CellGrid.CellSize) < 0.001f;
+                bool picture = Mathf.Abs(size.x - 3 * CellGrid.CellSize) < 0.001f
+                    && Mathf.Abs(size.y - 0.75f * CellGrid.CellSize) < 0.001f;
                 Check(kind + "放置及显示占格", geometry && picture, $"占格 {box}，显示 {size}");
+                var sculpture = go != null ? go.transform.Find("Floating relic display/Relic sculpture") : null;
+                var sr = sculpture != null ? sculpture.GetComponent<SpriteRenderer>() : null;
+                bool aspect = sr != null && Mathf.Abs(sr.bounds.size.x / sr.bounds.size.y - 64f / 80f) < 0.001f;
+                bool contained = box.HasValue && sr != null && box.Value.Contains((Vector2)sr.bounds.min + Vector2.one * 0.001f)
+                    && box.Value.Contains((Vector2)sr.bounds.max - Vector2.one * 0.001f);
+                Check(kind + "雕像比例及高度", aspect && contained, $"雕像 {sr?.bounds}");
             }
             Shot("Town", "relics_placed");
+            var displays = Object.FindObjectsOfType<RelicDisplay>();
+            var glows = new List<SpriteRenderer>();
+            foreach (var d in displays)
+                foreach (var sr in d.GetComponentsInChildren<SpriteRenderer>())
+                    if (sr.name.StartsWith("Gold")) glows.Add(sr);
+            foreach (var sr in glows) sr.enabled = false;
+            CaptureRelicsCamera("unlit");
+            long unlit = relicCaptureBrightness;
+            foreach (var sr in glows) sr.enabled = true;
             Check("场景内圣物验证画面", CaptureRelicsCamera(), "独立验证相机渲染已放置对象，排除近相机淡出遮罩");
+            Check("金光实际渲染增亮", glows.Count == 33 && relicCaptureBrightness > unlit + 3000,
+                $"33个光晕/闪光渲染器={glows.Count}，关闭 {unlit}，开启 {relicCaptureBrightness}");
+            float before = displays.Length > 0 ? displays[0].FloatHeight : 0f;
+            yield return new WaitForSeconds(1.25f);
+            float after = displays.Length > 0 ? displays[0].FloatHeight : 0f;
+            Check("雕像持续浮动", displays.Length == 3 && Mathf.Abs(after - before) > 0.002f, $"高度 {before:F4} → {after:F4}");
+            Check("动画后实际画面", CaptureRelicsCamera("animated"), "第二个动画时刻");
+            foreach (var d in displays) d.SetVisible(false);
+            bool hidden = true;
+            foreach (var d in displays)
+                foreach (var sr in d.GetComponentsInChildren<SpriteRenderer>(true))
+                    if (sr.gameObject != d.gameObject && sr.gameObject.activeInHierarchy) hidden = false;
+            Check("隐藏时光效同步隐藏", hidden, "雕像、光晕、闪光全部停用");
+            foreach (var d in displays) d.SetVisible(true);
+            var saved = Stations.Save();
+            Stations.Load(saved);
+            yield return new WaitForSeconds(0.3f);
+            Check("重载无光效残留", Object.FindObjectsOfType<RelicDisplay>().Length == 3 && Stations.DevBoxOf(StationKind.RelicFalseKnight).HasValue,
+                $"重载后 {Object.FindObjectsOfType<RelicDisplay>().Length} 个圣物显示对象");
+            var mineBox = Stations.DevBoxOf(StationKind.RelicHollowKnight);
+            bool mined = false;
+            if (mineBox.HasValue)
+            {
+                hero.transform.position = new Vector3(mineBox.Value.center.x - 1.5f, hero.transform.position.y, hero.transform.position.z);
+                mined = Stations.TryMine(new ItemDef { PickPower = 100 }, mineBox.Value.center, hero);
+            }
+            yield return null;
+            Check("挖除时清除全部光效", mined && !Stations.DevBoxOf(StationKind.RelicHollowKnight).HasValue && Object.FindObjectsOfType<RelicDisplay>().Length == 2,
+                $"挖除={mined}，余下 {Object.FindObjectsOfType<RelicDisplay>().Length} 个圣物显示对象");
             Plugin.Log.LogInfo($"[AutoTest] 圣物 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
 
-        bool CaptureRelicsCamera()
+        long relicCaptureBrightness;
+        bool CaptureRelicsCamera(string suffix = null)
         {
             var firstBox = Stations.DevBoxOf(StationKind.RelicFalseKnight);
             var lastBox = Stations.DevBoxOf(StationKind.RelicHollowKnight);
@@ -146,13 +196,15 @@ namespace TerraKnight
                 RenderTexture.active = target;
                 image.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
                 image.Apply();
-                string path = System.IO.Path.Combine(outDir, "Town_relics_camera.png");
+                string path = System.IO.Path.Combine(outDir, "Town_relics_camera" + (suffix == null ? "" : "_" + suffix) + ".png");
                 System.IO.File.WriteAllBytes(path, image.EncodeToPNG());
                 var pixels = image.GetPixels32();
                 var first = pixels[0];
                 int different = 0, gold = 0;
+                relicCaptureBrightness = 0;
                 for (int i = 0; i < pixels.Length; i += 17)
                 {
+                    relicCaptureBrightness += pixels[i].r + pixels[i].g + pixels[i].b;
                     if (!pixels[i].Equals(first)) different++;
                     if (pixels[i].r > 100 && pixels[i].g > 60 && pixels[i].b < pixels[i].g * 0.8f) gold++;
                 }

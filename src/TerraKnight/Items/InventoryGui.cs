@@ -435,13 +435,14 @@ namespace TerraKnight.Items
                 if (press) SwapEquip(i);
                 return;
             }
-            // A hook (the misc equipment's): right click puts it in the hook slot.
-            if ((inv.Mouse.IsEmpty || !CanStack(slot, inv.Mouse)) && slot.Count == 1 && Inventory.FitsMisc(slot.Def, Inventory.HookSlot))
+            // A hook, a pet, a light pet (the misc equipment's): right click puts it in its slot.
+            int misc = slot.Count == 1 ? Inventory.MiscSlotOf(slot.Def) : -1;
+            if ((inv.Mouse.IsEmpty || !CanStack(slot, inv.Mouse)) && misc >= 0)
             {
                 if (press)
                 {
-                    (inv.Misc[Inventory.HookSlot], slot) = (slot, inv.Misc[Inventory.HookSlot]);
-                    inv.Misc[Inventory.HookSlot].Favorite = false;
+                    (inv.Misc[misc], slot) = (slot, inv.Misc[misc]);
+                    inv.Misc[misc].Favorite = false;
                     Sound("Grab");
                 }
                 return;
@@ -540,8 +541,8 @@ namespace TerraKnight.Items
             }
             if (Shift)
             {
-                // Unequip into the inventory.
-                if (!slot.IsEmpty && inv.Add(slot.Type, slot.Count)) slot = default;
+                // Unequip into the inventory (a reforged or forged one whole, its prefix and level kept).
+                if (!slot.IsEmpty && BackToBag(slot)) slot = default;
                 Sound("Menu_Tick");
                 return;
             }
@@ -555,7 +556,10 @@ namespace TerraKnight.Items
             }
             else if (slot.IsEmpty)
             {
-                slot = ItemStack.Of(inv.Mouse.Type);
+                // The cursor's item itself, one of it: its prefix and forging go with it.
+                slot = inv.Mouse;
+                slot.Count = 1;
+                slot.Favorite = false;
                 inv.Mouse.Count--;
                 if (inv.Mouse.Count <= 0) inv.Mouse = default;
             }
@@ -569,6 +573,12 @@ namespace TerraKnight.Items
             Sound("Grab");
         }
 
+        /// <summary>Dev: a click on the trash slot (with whatever Dev modifiers are set).</summary>
+        public static void DevClickTrash() => ClickTrash();
+
+        /// <summary>Into the bag, all or nothing: a plain stack by its type (onto stacks of it), a reforged or forged one whole.</summary>
+        static bool BackToBag(ItemStack s) => s.Prefix == 0 && s.Forge == 0 ? inv.Add(s.Type, s.Count) : inv.Pickup(s) == 0;
+
         /// <summary>Dev: a left click on an equipment slot (with whatever Dev modifiers are set).</summary>
         public static void DevLeftClickEquip(bool armor, int index) => LeftClickEquip(armor, index);
 
@@ -579,6 +589,14 @@ namespace TerraKnight.Items
             var n = new int[5];
             foreach (var r in recipes) n[(int)r.Def.Kit]++;
             return $"共 {recipes.Count}：通用 {n[0]} 近战 {n[1]} 远程 {n[2]} 魔法 {n[3]} 召唤 {n[4]}";
+        }
+
+        /// <summary>Dev: the crafting column's list made n times; milliseconds each.</summary>
+        public static double DevRefreshMs(int n)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < n; i++) RefreshRecipes();
+            return sw.Elapsed.TotalMilliseconds / Mathf.Max(1, n);
         }
 
         /// <summary>Dev: the items the crafting column offers now.</summary>
@@ -612,7 +630,7 @@ namespace TerraKnight.Items
         {
             if (Shift)
             {
-                if (!inv.Trash.IsEmpty && inv.Add(inv.Trash.Type, inv.Trash.Count)) inv.Trash = default;
+                if (!inv.Trash.IsEmpty && BackToBag(inv.Trash)) inv.Trash = default;
                 Sound("Menu_Tick");
                 return;
             }
@@ -661,13 +679,28 @@ namespace TerraKnight.Items
             }
             else
             {
-                // Away from a bench and Dirtmouth: what's made by hand, and at the stations set down nearby (Player.AdjTiles).
+                // Terraria's own conditions: made by hand anywhere, else at its station set down within reach (Player.AdjTiles;
+                // the altars stand in the Black Egg Temple). Only the basic items bought for geo want a bench or Dirtmouth.
+                var hero = HeroController.SilentInstance;
                 bool here = CraftingHere;
                 if (here) foreach (var d in Shop.Basics) recipes.Add(Recipe.Bought(d, false));
+                // The list is made again every frame the column is drawn: what every recipe asks the same of is found once
+                // (the progress, the stations and waters in reach, what the bag and the chests near the player hold), as
+                // CanMakeHere and Recipes.HasIngredients would find it for each.
                 int stage = Shop.UnlockedStage();
-                var near = World.Chests.ForCrafting(HeroController.SilentInstance);
+                bool entry = ProgressionBalance.EntryClear, final = ProgressionBalance.FinalClear;
+                nearStations.Clear();
+                foreach (var s in World.Stations.NearNames(hero)) nearStations.Add(s);
+                System.Array.Clear(environments, 0, environments.Length);
+                CountCarried(World.Chests.ForCrafting(hero));
                 foreach (var r in Recipes.All)
-                    if (CanMakeHere(r, here, stage) && Recipes.HasIngredients(r, inv, near)) recipes.Add(r);
+                {
+                    if (r.StationStage > stage || !ProgressionBalance.Unlocked(r.Result, stage, entry, final)) continue;
+                    if (r.IsBought ? !here : !ByHand(r) && !nearStations.Contains(r.Station)) continue;
+                    if (!EnvironmentHere(r.Environment)) continue;
+                    if (!inv.Infinite && !Carried(r)) continue;
+                    recipes.Add(r);
+                }
                 // A basic item that can be made from what is carried isn't offered for money as well (a torch from wood and gel).
                 var made = new HashSet<ItemType>();
                 foreach (var r in recipes) if (!r.IsBought) made.Add(r.Result);
@@ -678,18 +711,55 @@ namespace TerraKnight.Items
             focus = found >= 0 ? found : Mathf.Clamp(focus, 0, Mathf.Max(0, recipes.Count - 1));
         }
 
+        static readonly HashSet<string> nearStations = new HashSet<string>();
+        static readonly Dictionary<ItemType, int> carried = new Dictionary<ItemType, int>();
+
+        /// <summary>The crafting environments found this refresh (0 not asked yet, 1 here, -1 not).</summary>
+        static readonly sbyte[] environments = new sbyte[16];
+
+        static bool EnvironmentHere(CraftEnvironment e)
+        {
+            if (e == CraftEnvironment.None) return true;
+            int i = (int)e;
+            if (i < 0 || i >= environments.Length) return CraftEnvironments.Available(e);
+            if (environments[i] == 0) environments[i] = (sbyte)(CraftEnvironments.Available(e) ? 1 : -1);
+            return environments[i] > 0;
+        }
+
+        /// <summary>How many of each item the bag and the chests near the player hold (Recipes.Count, all at once).</summary>
+        static void CountCarried(List<ItemStack[]> chests)
+        {
+            carried.Clear();
+            Tally(inv.Slots);
+            if (chests != null) foreach (var slots in chests) Tally(slots);
+        }
+
+        static void Tally(ItemStack[] slots)
+        {
+            foreach (var s in slots)
+                if (!s.IsEmpty) carried[s.Type] = (carried.TryGetValue(s.Type, out int n) ? n : 0) + s.Count;
+        }
+
+        /// <summary>Recipes.HasIngredients' count against what CountCarried found.</summary>
+        static bool Carried(Recipe r)
+        {
+            foreach (var (t, need) in r.Ingredients)
+                if (!carried.TryGetValue(t, out int n) || n < need) return false;
+            return true;
+        }
+
         static bool CraftingHere => Shop.Free || Shop.Available(HeroController.SilentInstance);
 
         /// <summary>Made by hand (Recipe.requiredTile -1): anywhere.</summary>
         static bool ByHand(Recipe r) => !r.IsBought && (string.IsNullOrEmpty(r.Station) || r.Station == "徒手");
 
         /// <summary>
-        /// A recipe can be made: by hand anywhere; at its station set down within reach; or at a
-        /// Hallownest bench or in Dirtmouth once the progress has reached its station's stage.
+        /// A recipe can be made, as in Terraria: by hand anywhere, else at its station set down within reach, once the
+        /// progress has reached its stage. A basic item bought for geo: at a Hallownest bench or in Dirtmouth.
         /// </summary>
         static bool CanMakeHere(Recipe r, bool here, int stage) =>
             ProgressionBalance.Unlocked(r.Result) && r.StationStage <= stage && CraftEnvironments.Available(r.Environment)
-            && (ByHand(r) || here || (!r.IsBought && World.Stations.Near(r.Station, HeroController.SilentInstance)));
+            && (r.IsBought ? here : ByHand(r) || World.Stations.Near(r.Station, HeroController.SilentInstance));
 
         static void Scroll(int delta)
         {
@@ -1114,15 +1184,15 @@ namespace TerraKnight.Items
             var label = P(76f, 414f + adjY);
             DrawGuideSlot(P(73f, 331f + adjY), ui, mouse, ref hovered, ref hoveredKind);
             bool guideShown = Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty;
-            if (!CraftingHere && recipes.Count == 0 && !Town.TownNpcs.GuideCraftOpen)
+            if (recipes.Count == 0 && !Town.TownNpcs.GuideCraftOpen)
             {
-                Outlined(new Rect(label.x, label.y, 400f * ui, 24f * ui), Lang.T("制作（徒手、附近的工作站，或靠近长椅、在德特茅斯）"), labelStyle, new Color(1f, 1f, 1f, 0.6f));
+                Outlined(new Rect(label.x, label.y, 400f * ui, 24f * ui), Lang.T("制作（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.6f));
                 return;
             }
             if (recipes.Count == 0) return;
             Outlined(new Rect(label.x, label.y, 200f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
-            // Only the by-hand ones out here: say where the rest are.
-            if (!CraftingHere && !guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手和附近的工作站；其余要靠近长椅或在德特茅斯）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
+            // Say where the rest are made.
+            if (!guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
 
             if (grid) DrawRecipeGrid(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             else
@@ -1217,7 +1287,7 @@ namespace TerraKnight.Items
                 sb.Append($"{ItemDb.Get(t).Name} ×{n}");
             }
             if (r.Environment != CraftEnvironment.None) sb.Append("\n" + Lang.T(CraftEnvironments.Description(r.Environment)));
-            if (!string.IsNullOrEmpty(r.Station)) sb.Append("\n" + Lang.F("工作站：{0}（放在附近，或在长椅旁、德特茅斯）", Lang.T(r.Station)));
+            if (!ByHand(r)) sb.Append("\n" + Lang.F("工作站：{0}（放在附近）", Lang.T(r.Station)));
             return sb.ToString();
         }
 

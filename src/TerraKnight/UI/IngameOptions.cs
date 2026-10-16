@@ -19,17 +19,27 @@ namespace TerraKnight.UI
     {
         public static bool Open { get; private set; }
 
-        static ConfigEntry<bool> autoReuseSetting, barsSetting;
+        static ConfigEntry<bool> autoReuseSetting, barsSetting, cameraSetting;
         static GUIStyle row, head, keyStyle, section, version;
         static int openedFrame;
         static float openedAt;
 
-        public static void Bind(ConfigEntry<bool> autoReuse, ConfigEntry<bool> bars)
+        public static void Bind(ConfigEntry<bool> autoReuse, ConfigEntry<bool> bars, ConfigEntry<bool> camera)
         {
             autoReuseSetting = autoReuse;
             barsSetting = bars;
+            cameraSetting = camera;
             Items.Equipment.AutoReuseAll = autoReuse.Value;
             EnemyHealthBars.Always = bars.Value;
+            TerraCamera.Enabled = camera.Value;
+        }
+
+        /// <summary>The camera lock: Terraria's view (the player held in the middle of the screen, TerraCamera), or the game's own.</summary>
+        public static void SetCameraLock(bool on)
+        {
+            TerraCamera.Enabled = on;
+            if (cameraSetting != null) cameraSetting.Value = on;
+            Plugin.Log.LogInfo($"[设置] 镜头锁：{(on ? "开" : "关")}");
         }
 
         public static void Show()
@@ -134,6 +144,10 @@ namespace TerraKnight.UI
                 if (barsSetting != null) barsSetting.Value = EnemyHealthBars.Always;
             }
             y += 64f * ui;
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), TerraCamera.Enabled ? Lang.T("镜头锁：开") : Lang.T("镜头锁：关"), ui))
+                SetCameraLock(!TerraCamera.Enabled);
+            CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：泰拉瑞亚的视角，人物始终在画面正中；关：空洞骑士原版镜头"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+            y += 96f * ui;
             if (Net.NetSession.Active)
             {
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.13", "多人模式"), section, new Color(0.75f, 0.85f, 1f));
