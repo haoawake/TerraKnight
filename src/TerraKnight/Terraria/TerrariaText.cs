@@ -139,6 +139,47 @@ namespace TerraKnight.Terraria
         public static string BuffKey(int id) => Ids("BuffID").TryGetValue(id, out var n) ? n : null;
         public static string NpcKey(int id) => Ids("NPCID").TryGetValue(id, out var n) ? n : null;
 
+        /// <summary>
+        /// The housing menu's head sprite for a townsperson's internal name: Terraria's NPCHeadID
+        /// constants, whose names are the townsfolk's (Guide, Merchant, Nurse...), read as the
+        /// Images/NPC_Head_&lt;n&gt; file. -1 when it has none.
+        /// </summary>
+        public static int HeadIndex(string internalName)
+        {
+            if (string.IsNullOrEmpty(internalName)) return -1;
+            if (headAliases.TryGetValue(internalName, out var alias)) internalName = alias;
+            if (headIndexes == null)
+            {
+                headIndexes = new Dictionary<string, int>();
+                foreach (var kv in Ids("NPCHeadID")) headIndexes[kv.Value] = kv.Key;
+            }
+            return headIndexes.TryGetValue(internalName, out var index) ? index : -1;
+        }
+
+        static Dictionary<string, int> headIndexes;
+
+        /// <summary>
+        /// The town pets and the town slimes: Terraria's NPCHeadID spells them differently from NPCID
+        /// (the cats, dogs and bunnies by their coat, the slimes without the "Town" NPCID prefixes them
+        /// with). Without these the housing menu has no head to draw for them and falls back to a crop of
+        /// their walking sheet, which reads as a blob rather than a face.
+        /// </summary>
+        static readonly Dictionary<string, string> headAliases = new Dictionary<string, string>
+        {
+            ["DD2Bartender"] = "Tavernkeep",
+            ["TownCat"] = "CatSiamese",
+            ["TownDog"] = "DogLabrador",
+            ["TownBunny"] = "BunnyWhite",
+            ["TownSlimeBlue"] = "SlimeBlue",
+            ["TownSlimeGreen"] = "SlimeGreen",
+            ["TownSlimeOld"] = "SlimeOld",
+            ["TownSlimePurple"] = "SlimePurple",
+            ["TownSlimeRainbow"] = "SlimeRainbow",
+            ["TownSlimeRed"] = "SlimeRed",
+            ["TownSlimeYellow"] = "SlimeYellow",
+            ["TownSlimeCopper"] = "SlimeCopper",
+        };
+
         public static string ItemName(string culture, int id) { var k = ItemKey(id); return k == null ? null : Get(culture, "ItemName." + k); }
         public static string ItemTooltip(string culture, int id) { var k = ItemKey(id); return k == null ? null : Get(culture, "ItemTooltip." + k); }
         public static string BuffName(string culture, int id) { var k = BuffKey(id); return k == null ? null : Get(culture, "BuffName." + k); }

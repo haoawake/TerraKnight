@@ -183,8 +183,8 @@ namespace TerraKnight.Items
         // </generated>
         // Consumables.
         LesserHealingPotion, HealingPotion, LesserManaPotion, ManaPotion, LifeCrystal, ManaCrystal,
-        // Crafting stations set down, and the wood gear made at the first of them (ItemsStations.cs).
-        WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Chain,
+        // Crafting stations set down, the wooden chair, and the wood gear made at the first of them (ItemsStations.cs).
+        WorkBench, Chair, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Chain,
         WoodHelmet, WoodBreastplate, WoodGreaves,
         // The Knight's own (DreamNailItem.cs, NailItem.cs).
         DreamNail, KnightNail,

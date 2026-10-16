@@ -340,6 +340,10 @@ namespace TerraKnight
             Player.SpotReport.Tick(hero, mouse);
             // Terraria: with the inventory open, the item on the cursor is the one used in the world.
             Inventory.UseMouse = InventoryGui.Open && !Inventory.Mouse.IsEmpty;
+            // The townsfolk panel's placement: a left click on Dirtmouth's street puts the chosen
+            // townsperson there, and that click is not also a use of the item in hand.
+            if (!DevNoRealMouse && !InventoryGui.MouseOverUi && !UI.IngameOptions.MouseOver
+                && TerraKeys.Pressed(TerraKeys.Action.UseItem) && Town.TownNpcs.PlaceClick(mouse, hero)) return;
             var def = Inventory.Current.Def;
             if (!DevNoRealMouse && (!TerraKeys.Held(TerraKeys.Action.UseItem) || TerraKeys.Pressed(TerraKeys.Action.UseItem))) BuildingTools.PoundReady = true;
             // Over the hotbar (closed) or any panel (open), a click is the interface's, not a use.
@@ -2433,6 +2437,9 @@ namespace TerraKnight
 
         void OnGUI()
         {
+            // Ahead of the first inventory open: the item sprites and the text it will need are built
+            // while the menus are up (the same work the first open used to do in one long frame).
+            InventoryGui.WarmIcons();
             try { DrawInterface(); }
             // Terraria's cursor over all of it.
             finally { UI.TerraCursor.Draw(); }
@@ -2448,6 +2455,8 @@ namespace TerraKnight
             // Fifty save slots: the profiles screen's pages.
             SaveSlots.Draw(CreativeMenu.IsOpen || Net.NetMenu.IsOpen);
             if (TerrainSystem.Current == null || !GameHooks.IsGameplay(GameManager.UnsafeInstance)) return;
+            // The text, at the sizes the view is actually laid out at (the menu's scale differs).
+            InventoryGui.WarmText();
             if (FullMap.Open)
             {
                 FullMap.Draw();
@@ -2464,7 +2473,11 @@ namespace TerraKnight
             TerraHurt.DrawDeathText();
             ResourceHud.Draw(Stats);
             InfoAccessories.Draw(Inventory, Stats);
+            // TEMP diagnostics (removed from the delivered build): what the panel costs a frame.
+            var diagUi = System.Diagnostics.Stopwatch.StartNew();
             InventoryGui.Draw(Inventory, SmartCursor);
+            diagUi.Stop();
+            InventoryGui.DiagDraw(diagUi.Elapsed.TotalMilliseconds);
             BestiaryToast.Draw();
             CenterNotice.Draw();
             Net.NetChat.Draw();

@@ -196,6 +196,12 @@ namespace TerraKnight
             hero = HeroController.instance;
             yield return new WaitForSeconds(1f);
             Plugin.Log.LogInfo($"[AutoTest] 德特茅斯（阶段 {Shop.UnlockedStage()}）：{TownNpcs.Count} 位 NPC：{TownNpcs.DevDescribe()}；刷新点 {resp.SlotCount}（国王山道作为邻场景再接入后不应翻倍）");
+            InventoryGui.Open = true;
+            InventoryGui.DevFilterShot("p_filter_button", 8);   // 空筛选：制作栏 + 筛选按钮应当都在
+            yield return new WaitForSeconds(0.4f);
+            InventoryGui.DevFilterShot("p_filter_cleared", -1);
+            InventoryGui.Open = false;
+            yield return new WaitForSeconds(0.2f);
             // --- Recipes (Dirtmouth counts as a station): copper bars make a copper broadsword.
             inv.Pickup(ItemType.CopperBar, 20);
             yield return null;

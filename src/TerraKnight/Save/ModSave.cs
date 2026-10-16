@@ -60,6 +60,12 @@ namespace TerraKnight.Save
             public Dictionary<string, Bestiary.Seen> Seen;
             public Dictionary<string, string> NpcNames;
             public List<string> NpcArrived;
+            /// <summary>Townsfolk the player sent away with a right click in the panel: they stay away.</summary>
+            public List<string> NpcDismissed;
+            /// <summary>Townsfolk the player put down themselves: their internal name and the street x they were put at.</summary>
+            public Dictionary<string, float> NpcHomes;
+            /// <summary>The same spots' heights (so one on a roof stays on the roof).</summary>
+            public Dictionary<string, float> NpcHomeY;
             /// <summary>The Angler: woken at the Blue Lake, today's fish and its day, handed in today, quests done.</summary>
             public bool AnglerSaved;
             public string AnglerQuest;
@@ -258,6 +264,9 @@ namespace TerraKnight.Save
             file.Seen = new Dictionary<string, Bestiary.Seen>(Bestiary.Stats);
             file.NpcNames = new Dictionary<string, string>(Town.TownNpcs.Names);
             file.NpcArrived = new List<string>(Town.TownNpcs.Arrived);
+            file.NpcDismissed = new List<string>(Town.TownNpcs.Dismissed);
+            file.NpcHomes = new Dictionary<string, float>(Town.TownNpcs.Homes);
+            file.NpcHomeY = new Dictionary<string, float>(Town.TownNpcs.HomeY);
             file.AnglerSaved = Town.Angler.Saved;
             file.AnglerQuest = Town.Angler.Quest == ItemType.None ? null : Town.Angler.Quest.ToString();
             file.AnglerDay = Town.Angler.QuestDay;
@@ -440,6 +449,9 @@ namespace TerraKnight.Save
                 foreach (var r in Bestiary.Order) if (!Bestiary.SeenOrder.Contains(r)) Bestiary.SeenOrder.Add(r);
                 if (file.NpcNames != null) foreach (var kv in file.NpcNames) Town.TownNpcs.Names[kv.Key] = kv.Value;
                 if (file.NpcArrived != null) Town.TownNpcs.Arrived.UnionWith(file.NpcArrived);
+                if (file.NpcDismissed != null) Town.TownNpcs.Dismissed.UnionWith(file.NpcDismissed);
+                if (file.NpcHomes != null) foreach (var kv in file.NpcHomes) Town.TownNpcs.Homes[kv.Key] = kv.Value;
+                if (file.NpcHomeY != null) foreach (var kv in file.NpcHomeY) Town.TownNpcs.HomeY[kv.Key] = kv.Value;
                 Town.Angler.Saved = file.AnglerSaved;
                 Town.Angler.Quest = file.AnglerQuest != null && System.Enum.TryParse(file.AnglerQuest, out ItemType aq) ? aq : ItemType.None;
                 Town.Angler.QuestDay = file.AnglerDay;

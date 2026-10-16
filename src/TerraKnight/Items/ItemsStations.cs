@@ -9,7 +9,8 @@ namespace TerraKnight.Items
         /// The crafting stations that are set down (World.Stations) and the wood gear made at the
         /// first of them: as in Terraria, wood from a kill makes a Work Bench by hand, platforms and
         /// torches by hand too, and at the bench the Furnace, an anvil, wooden armor and weapons.
-        /// The placed bottle (the Bottle itself) is the alchemy station.
+        /// The placed bottle (the Bottle itself) is the alchemy station. The Wooden Chair is furniture
+        /// rather than a station: what a townsperson is put on (Town/TownNpcsManage.cs).
         /// </summary>
         static void AddStations(List<ItemDef> list)
         {
@@ -19,6 +20,7 @@ namespace TerraKnight.Items
                 Stage = stage, Source = source, Value = value, Price = UnityEngine.Mathf.Max(1, UnityEngine.Mathf.CeilToInt(value / 100f)), Tooltip = tip,
             };
             list.Add(Station(ItemType.WorkBench, "工作台", 36, StationKind.WorkBench, 0, ItemSource.Craft, 30, "用于基础制作"));
+            list.Add(Station(ItemType.Chair, "木椅", 34, StationKind.Chair, 0, ItemSource.Craft, 30, "居民可以安置在椅子上\n（在房屋菜单里左键点头像，再点椅子）"));
             list.Add(Station(ItemType.Furnace, "熔炉", 33, StationKind.Furnace, 0, ItemSource.Craft, 300, "用于熔炼矿石"));
             list.Add(Station(ItemType.IronAnvil, "铁砧", 35, StationKind.IronAnvil, 0, ItemSource.Craft, 5000, "用于用锭制作物品"));
             list.Add(Station(ItemType.LeadAnvil, "铅砧", 716, StationKind.LeadAnvil, 0, ItemSource.Craft, 5000, "用于用锭制作物品"));
@@ -61,6 +63,7 @@ namespace TerraKnight.Items
         {
             new Recipe(ItemType.Campfire, 1, "徒手", 0, (ItemType.Wood, 10), (ItemType.Torch, 5)),
             new Recipe(ItemType.WorkBench, 1, "徒手", 0, (ItemType.Wood, 10)), // Recipe.cs:4751
+            new Recipe(ItemType.Chair, 1, "工作台", 0, (ItemType.Wood, 4)), // Recipe.cs: 4 wood, at a Work Bench
             new Recipe(ItemType.WoodPlatform, 2, "徒手", 0, (ItemType.Wood, 1)), // Recipe.cs:2376
             new Recipe(ItemType.Torch, 3, "徒手", 0, (ItemType.Gel, 1), (ItemType.Wood, 1)), // Recipe.cs:610
             new Recipe(ItemType.WoodenArrow, 25, "工作台", 0, (ItemType.Wood, 1), (ItemType.StoneBlock, 1)), // Recipe.cs:2077

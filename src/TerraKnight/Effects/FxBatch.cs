@@ -19,6 +19,12 @@ namespace TerraKnight.Effects
         const float Px = TerraParticles.Px;
         /// <summary>Behind the player (projectiles), and over him (hit flashes, as ParticleSystem_World_OverPlayers).</summary>
         public const float BehindZ = 0.0047f, OverZ = 0.0025f;
+        /// <summary>
+        /// Townsfolk: nearer the camera than the furniture they stand beside (World.Stations' 0.0045, the
+        /// chests' 0.0040 — later layers sit nearer the camera, so those are reached by going lower) and
+        /// short of the player's own 0.0039, so the Knight still passes in front of them.
+        /// </summary>
+        public const float TownZ = 0.00395f;
         const float Step = 0.0000005f;
         /// <summary>
         /// How much nearer a draw's added part sits than its covering part. The camera is a
@@ -63,7 +69,7 @@ namespace TerraKnight.Effects
 
         readonly List<SpriteRenderer> alpha = new List<SpriteRenderer>(), additive = new List<SpriteRenderer>(), glows = new List<SpriteRenderer>();
         int alphaUsed, additiveUsed, glowUsed;
-        float behind = BehindZ, over = OverZ;
+        float behind = BehindZ, over = OverZ, townZ = TownZ;
         Material additiveMaterial;
 
         public static FxBatch Create(Transform parent)
@@ -84,7 +90,7 @@ namespace TerraKnight.Effects
         /// <summary>While set, every draw is mirrored top to bottom about this Terraria y (the player turned over by the Gravity Globe).</summary>
         public float? MirrorAboutY;
 
-        public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, Vector2 scale, bool flipY = false, bool flipX = false, bool overPlayer = false)
+        public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, Vector2 scale, bool flipY = false, bool flipX = false, bool overPlayer = false, bool town = false)
         {
             if (sprite == null || (c.a <= 0.001f && c.r <= 0.001f && c.g <= 0.001f && c.b <= 0.001f)) return;
             if (MirrorAboutY.HasValue)
@@ -102,23 +108,23 @@ namespace TerraKnight.Effects
             {
                 // The covering part: straight colour rgb/a at opacity a (black when the rest is added below).
                 var col = needAdd ? new Color(0f, 0f, 0f, a) : new Color(Mathf.Clamp01(c.r / a), Mathf.Clamp01(c.g / a), Mathf.Clamp01(c.b / a), a);
-                Put(Next(alpha, ref alphaUsed, null), sprite, world, deg, scale, col, flipX, flipY, overPlayer);
+            Put(Next(alpha, ref alphaUsed, null), sprite, world, deg, scale, col, flipX, flipY, overPlayer, 0f, town);
             }
             if (needAdd || a <= 0.001f)
             {
                 if (additiveMaterial == null)
                 {
                     // No additive shader: a translucent stand-in.
-                    Put(Next(alpha, ref alphaUsed, null), sprite, world, deg, scale, new Color(c.r, c.g, c.b, Mathf.Clamp01(Mathf.Max(c.r, Mathf.Max(c.g, c.b)))), flipX, flipY, overPlayer);
+                    Put(Next(alpha, ref alphaUsed, null), sprite, world, deg, scale, new Color(c.r, c.g, c.b, Mathf.Clamp01(Mathf.Max(c.r, Mathf.Max(c.g, c.b)))), flipX, flipY, overPlayer, 0f, town);
                     return;
                 }
                 Put(Next(additive, ref additiveUsed, additiveMaterial), sprite, world, deg, scale, new Color(Mathf.Clamp01(c.r), Mathf.Clamp01(c.g), Mathf.Clamp01(c.b), 1f), flipX, flipY, overPlayer,
-                    a > 0.001f ? AddNearer : 0f);
+                    a > 0.001f ? AddNearer : 0f, town);
             }
         }
 
-        public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, float scale, bool flipY = false, bool flipX = false, bool overPlayer = false) =>
-            Draw(sprite, pos, c, rotation, new Vector2(scale, scale), flipY, flipX, overPlayer);
+        public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, float scale, bool flipY = false, bool flipX = false, bool overPlayer = false, bool town = false) =>
+            Draw(sprite, pos, c, rotation, new Vector2(scale, scale), flipY, flipX, overPlayer, town);
 
         /// <summary>Lighting.AddLight at a Terraria position: a soft glow of that colour (radius in tiles).</summary>
         public void Light(Vector2 pos, Color rgb, float radiusTiles = 4f)
@@ -164,7 +170,7 @@ namespace TerraKnight.Effects
             return sr;
         }
 
-        void Put(SpriteRenderer sr, Sprite sprite, Vector2 world, float deg, Vector2 scale, Color color, bool flipX, bool flipY, bool overPlayer, float nearer = 0f)
+        void Put(SpriteRenderer sr, Sprite sprite, Vector2 world, float deg, Vector2 scale, Color color, bool flipX, bool flipY, bool overPlayer, float nearer = 0f, bool town = false)
         {
             if (!sr.enabled) sr.enabled = true;
             sr.sprite = sprite;
@@ -189,7 +195,8 @@ namespace TerraKnight.Effects
             sr.flipX = flipX;
             sr.flipY = flipY;
             float z;
-            if (overPlayer) { z = over; over -= Step; }
+            if (town) { z = townZ; townZ -= Step; }
+            else if (overPlayer) { z = over; over -= Step; }
             else { z = behind; behind -= Step; }
             var t = sr.transform;
             t.position = new Vector3(world.x, world.y, z - nearer);
@@ -206,6 +213,7 @@ namespace TerraKnight.Effects
             alphaUsed = additiveUsed = glowUsed = 0;
             behind = BehindZ;
             over = OverZ;
+            townZ = TownZ;
         }
 
         static readonly Dictionary<(string, int, int, int, int, float, float), Sprite> sprites = new Dictionary<(string, int, int, int, int, float, float), Sprite>();
