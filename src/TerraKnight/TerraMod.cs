@@ -1466,6 +1466,7 @@ namespace TerraKnight
             Stats.Endurance = bonus.Endurance;
             Stats.ShinyStone = bonus.ShinyStone;
             Stats.CrimsonRegen = bonus.CrimsonRegen;
+            Stats.CozyFire = PlayerBuffs.Has(PlayerBuffs.CozyFire);
             Stats.LifeForce = bonus.LifeForce;
             Stats.ManaRegenBuff = bonus.ManaRegenBuff;
             Stats.UpdateMaximums(PlayerData.instance, bonus.ManaMax);

@@ -82,13 +82,36 @@ namespace TerraKnight
                 recipeData.Add(new { Result = r.Result.ToString(), r.Count, r.Station, r.StationStage, Environment = r.Environment.ToString(), Ingredients = ingredients });
             }
             var dropData = new Dictionary<string, object>();
+            int originalStage = Shop.DevStage;
+            Shop.DevStage = 5;
             foreach (var record in EnemyDrops.DevRecords)
             {
                 var rows = new List<object>();
-                foreach (var d in EnemyDrops.Of(record)) rows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage, d.Master });
+                foreach (var d in EnemyDrops.Of(record)) rows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage, d.Master, d.Weight, d.MeanCount });
                 dropData[record] = rows;
             }
-            File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData }, Formatting.Indented));
+            Shop.DevStage = originalStage;
+            var stageDrops = new Dictionary<int, Dictionary<string, object>>();
+            var originalDifficulty = World.GameDifficulty.Current;
+            World.GameDifficulty.Current = World.DifficultyLevel.Normal;
+            for (int stage = 0; stage < 6; stage++)
+            {
+                Shop.DevStage = stage;
+                var records = new Dictionary<string, object>();
+                foreach (var record in EnemyDrops.DevRecords)
+                {
+                    var drops = EnemyDrops.At(record, stage, true, stage >= 4, stage >= 5);
+                    var rows = new List<object>();
+                    foreach (var d in drops)
+                        rows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage, d.Master,
+                            d.Weight, d.MeanCount, Probability = EnemyDrops.MarginalChance(drops, d) });
+                    records[record] = rows;
+                }
+                stageDrops[stage] = records;
+            }
+            Shop.DevStage = originalStage;
+            World.GameDifficulty.Current = originalDifficulty;
+            File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData, drop_stages = stageDrops }, Formatting.Indented));
             Plugin.Log.LogInfo($"[AutoTest] Wiki 资源导出 {count} 张，缺失 {failures} 张{(failures > 0 ? "，不通过" : "")}");
         }
     }

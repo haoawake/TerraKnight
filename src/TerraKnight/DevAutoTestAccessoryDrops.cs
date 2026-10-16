@@ -38,13 +38,16 @@ namespace TerraKnight
                         foreach (var rec in EnemyDrops.DevRecords)
                         {
                             var entry=EnemyDrops.EntryFor(rec);
-                            if (ProgressionBalance.FormalBoss(rec) || !ProgressionLoot.Eligible(entry)) continue;
+                            if (!ProgressionLoot.Eligible(entry)) continue;
                             foreach (bool first in new[] {false,true})
                             {
                                 var rows=EnemyDrops.At(rec,s,first,true,true);
                                 var acc=rows.Where(d=>ItemDb.Get(d.Type).IsAccessory).ToArray();
                                 if (acc.Length==0) continue;
-                                float expected=ProgressionLoot.AccessoryChance(ProgressionLoot.Elite(rec,entry))*EnemyDrops.ChanceScale;
+                                Check($"单件保底 {rec}/{s}/{difficulty}/{first}",
+                                    acc.All(d=>EnemyDrops.MarginalChance(rows,d)>=ProgressionLoot.MinimumAccessoryChance-.000001f));
+                                if (ProgressionBalance.FormalBoss(rec)) continue;
+                                float expected=Mathf.Min(1f,ProgressionLoot.AccessoryPoolChance(ProgressionLoot.Elite(rec,entry),acc.Length)*EnemyDrops.ChanceScale);
                                 Check($"全表 {rec}/{s}/{difficulty}/{first}",
                                     acc.All(d=>d.Group==103 && d.Min==1 && d.Max==1)
                                     && acc.Select(d=>d.Type).Distinct().Count()==acc.Length
@@ -66,7 +69,8 @@ namespace TerraKnight
                             if (n%5000==0) yield return null;
                         }
                         bool elite=ProgressionLoot.Elite(rec,EnemyDrops.EntryFor(rec));
-                        float expected=ProgressionLoot.AccessoryChance(elite)*EnemyDrops.ChanceScale;
+                        var pool=EnemyDrops.Of(rec).Where(d=>ItemDb.Get(d.Type).IsAccessory).ToArray();
+                        float expected=Mathf.Min(1f,ProgressionLoot.AccessoryPoolChance(elite,pool.Length)*EnemyDrops.ChanceScale);
                         float actual=total/(float)trials;
                         float tolerance=Math.Max(.002f,6*Mathf.Sqrt(expected*(1-expected)/trials));
                         bool pass=max<=1 && Math.Abs(actual-expected)<tolerance && materials>0;

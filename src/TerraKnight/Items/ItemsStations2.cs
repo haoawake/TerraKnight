@@ -21,7 +21,7 @@ namespace TerraKnight.Items
                 Type = t, Name = name, Texture = "Item_" + id, PlacesStation = kind, Consumable = true, MaxStack = 9999, UseAnimation = 15 * Tick, UseTime = 10 * Tick,
                 Rare = rare, Tooltip = tip,
             };
-            list.Add(S(ItemType.Campfire, "篝火", 966, StationKind.Campfire, 0, "用于烤制焦黑鱼"));
+            list.Add(S(ItemType.Campfire, "篝火", 966, StationKind.Campfire, 0, "用于烤制焦黑鱼\n带在身上时提高生命再生速度"));
             list.Add(S(ItemType.Hellforge, "地狱熔炉", 221, StationKind.Hellforge, 0, "用于熔炼狱石"));
             list.Add(S(ItemType.AdamantiteForge, "精金熔炉", 524, StationKind.AdamantiteForge, 3, "用于熔炼精金矿和钛金矿"));
             list.Add(S(ItemType.TitaniumForge, "钛金熔炉", 1221, StationKind.TitaniumForge, 3, "用于熔炼精金矿和钛金矿"));

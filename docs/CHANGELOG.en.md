@@ -8,6 +8,12 @@
 
 > 2.1.0: **save slots after slot 5 display and load normally after you quit to the main menu**; robust mod save writing (the full file is written before it replaces the old one, a .bak copy is kept, and when a save cannot be read the previous one is used automatically); Life Crystals lie scattered on the ground in early areas (in different places for each save), and every completed mask also gives one; a Stage unlocks when you defeat the final boss of the previous Stage; enemy respawn times are tiered by strength (30 seconds to 4 minutes), and a translucent ghost appears before an enemy respawns; stacks go up to 9999, and worthless items (Dirt Blocks, Stone Blocks, Wood) sell for nothing; Master mode has an extra accessory slot; the Goblin Tinkerer sells the Tinkerer's Workshop; the log records the cause of death of enemies that the player did not kill.
 
+> 3.1.1:
+>
+> - **Accessory drop floor**: in the accessory pool of common enemies and elites every candidate has at least 1.5% (Normal; higher on Hard, Expert and Master), the candidates sharing equally; the pool is never below 2% for a common enemy or 5% for an elite and grows with more candidates (measured on Normal: about 18% from a Crawlid, 10% from a Wandering Husk, 21% from a Husk Guard), still at most one a kill. Every accessory in a boss's drop table has at least 1.5% too.
+>
+> - **Campfire**: carried in the bag it gives +1 life regeneration and 10% faster natural regeneration (as in Terraria); its tooltip says so.
+
 > 3.1.0:
 >
 > - **Crafting as in Terraria**: the 910 recipes of Terraria items match vanilla 1.4.5.8 in materials, amounts, results, stations and environment (water, acid, honey, graveyard); a stage only decides when a recipe opens. Hand-made recipes work anywhere, the rest need their station nearby; the basics bought with Geo are made by a bench or in Dirtmouth. The Demon and Crimson Altars stand either side of Dirtmouth's bench; the Campfire is craftable and placeable (10 wood, 5 torches); every crafting station has a source, the Sky Mill (Vengeflies and their kin), the Ice Machine (Crystal Peak's enemies) and the Ancient Manipulator (always from the Hollow Knight) among them.

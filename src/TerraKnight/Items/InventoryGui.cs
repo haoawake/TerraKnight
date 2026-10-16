@@ -194,6 +194,7 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: modifier keys held for the autotest, which has no keyboard.</summary>
         public static bool DevShift, DevCtrl, DevAlt;
+        public static string DevModifiers => $"Shift {Shift} Ctrl {Ctrl} Alt {Alt}";
 
         /// <summary>Dev: a left click on an inventory slot (with whatever Dev modifiers are set).</summary>
         public static void DevLeftClick(int slot) => LeftClickSlot(slot);

@@ -96,9 +96,13 @@ namespace TerraKnight
             if (!Chests.BankOpen) Stations.DevToggleBank(feet.center);
             yield return null;
             bool openAtClick = Chests.BankOpen;
+            InventoryGui.DevShift = true;
+            string keys = InventoryGui.DevModifiers;
+            InventoryGui.DevShift = false;
             InventoryGui.DevLeftClick(c, shift: true);
+            string right = $"点完当帧：钱币槽 {(inv.Slots[c].IsEmpty ? "空" : inv.Slots[c].Count + (inv.Slots[c].Favorite ? "（收藏）" : ""))}，按键 {keys}";
             yield return new WaitForSeconds(0.3f);
-            Check("Shift 点钱币槽", inv.Slots[c].IsEmpty && BankGeo() == 600 && BankStacks() == 1 && PlayerData.instance.geo == game0, $"之前开着 {openBefore}，点的时候开着 {openAtClick}，{State()}");
+            Check("Shift 点钱币槽", inv.Slots[c].IsEmpty && BankGeo() == 600 && BankStacks() == 1 && PlayerData.instance.geo == game0, $"之前开着 {openBefore}，点的时候开着 {openAtClick}，{right}，{State()}");
 
             // 5. A favourite coin slot stays.
             yield return Reset();

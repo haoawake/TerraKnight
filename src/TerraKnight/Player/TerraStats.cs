@@ -43,6 +43,8 @@ namespace TerraKnight.Player
         public bool ShinyStone, UsingItem, ShinyStill;
         /// <summary>The Crimson set (crimsonRegen): the clock since a hit runs twice as fast, the natural part ×1.5.</summary>
         public bool CrimsonRegen;
+        /// <summary>Main.SceneMetrics.HasCampfire (here the Cozy Fire, a Campfire carried or nearby): the natural part ×1.1.</summary>
+        public bool CozyFire;
 
         /// <summary>lifeRegenTime: ticks since the last hit (the natural regeneration's clock).</summary>
         public float SinceHitTicks => sinceHit * 60f;
@@ -50,6 +52,13 @@ namespace TerraKnight.Player
         float sinceHit = 10f;
         float regenAccumulator;
         float manaDelay, manaAccumulator;
+
+        /// <summary>Dev: the regeneration clock back to 10 s unhurt, nothing pending (two measurements start alike).</summary>
+        public void DevResetRegen()
+        {
+            sinceHit = 10f;
+            regenAccumulator = 0f;
+        }
 
         public bool IsDead => Life <= 0;
 
@@ -169,6 +178,8 @@ namespace TerraKnight.Player
                     if (ShinyStone) natural *= 1.1f * 1.5f;
                     // The Crimson set (Pl:19359-19362): ×1.5.
                     if (CrimsonRegen) natural *= 1.5f;
+                    // A Campfire nearby (UpdateLifeRegen, SceneMetrics.HasCampfire): ×1.1.
+                    if (CozyFire) natural *= 1.1f;
                     perSecond += natural;
                 }
                 regenAccumulator += perSecond * dt;

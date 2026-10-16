@@ -210,10 +210,14 @@ namespace TerraKnight.Items
             Pool(rows,mats,Material,1f,boss ? 1.5f : 1.8f);
             Pool(rows,blocks,Building,.8f,1.2f);
             if (!boss) ConsolidateAccessories(rows, elite);
+            else EnsureAccessoryFloor(rows);
             return rows.ToArray();
         }
 
         internal static float AccessoryChance(bool elite) => elite ? .05f : .02f;
+        internal const float MinimumAccessoryChance = .015f;
+        internal static float AccessoryPoolChance(bool elite, int count) =>
+            Mathf.Min(1f, Mathf.Max(AccessoryChance(elite), count * MinimumAccessoryChance));
 
         static void ConsolidateAccessories(List<EnemyDrops.Drop> rows, bool elite)
         {
@@ -248,7 +252,68 @@ namespace TerraKnight.Items
                         rows[i]=d;
                     }
             foreach (var pair in weights)
-                rows.Add(Row(pair.Key,Essential,AccessoryChance(elite),1,1,pair.Value));
+                // The floor is per item, not for the whole pool. One common roll still pays
+                // at most one accessory; equal weights give each candidate its full floor.
+                rows.Add(Row(pair.Key,Essential,AccessoryPoolChance(elite, weights.Count),1,1,1f));
+        }
+
+        static void EnsureAccessoryFloor(List<EnemyDrops.Drop> rows)
+        {
+            var groups = new HashSet<int>();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var d = rows[i];
+                if (!ItemDb.Get(d.Type).IsAccessory) continue;
+                if (d.Group > 0) { groups.Add(d.Group); continue; }
+                if (d.Chance < MinimumAccessoryChance)
+                {
+                    d.Num = 1500; d.Den = 100000;
+                    rows[i] = d;
+                }
+            }
+            foreach (int group in groups)
+            {
+                var indices = new List<int>();
+                int accessories = 0;
+                float sum = 0f, probability = 0f;
+                for (int i = 0; i < rows.Count; i++)
+                    if (rows[i].Group == group)
+                    {
+                        indices.Add(i);
+                        sum += Weight(rows[i]);
+                        probability = rows[i].Chance;
+                        if (ItemDb.Get(rows[i].Type).IsAccessory) accessories++;
+                    }
+                bool needed = false;
+                foreach (int i in indices)
+                    if (ItemDb.Get(rows[i].Type).IsAccessory && probability * Weight(rows[i]) / sum < MinimumAccessoryChance) needed = true;
+                if (!needed) continue;
+                probability = Mathf.Min(1f, Mathf.Max(probability, accessories * MinimumAccessoryChance));
+                var fixedRows = new HashSet<int>();
+                float remaining = probability, remainingWeight = sum;
+                bool changed;
+                do
+                {
+                    changed = false;
+                    foreach (int i in indices)
+                        if (!fixedRows.Contains(i) && ItemDb.Get(rows[i].Type).IsAccessory
+                            && remaining * Weight(rows[i]) / Mathf.Max(remainingWeight, .000001f) < MinimumAccessoryChance)
+                        {
+                            fixedRows.Add(i);
+                            remaining -= MinimumAccessoryChance;
+                            remainingWeight -= Weight(rows[i]);
+                            changed = true;
+                        }
+                } while (changed);
+                foreach (int i in indices)
+                {
+                    var d = rows[i];
+                    d.Weight = fixedRows.Contains(i) ? MinimumAccessoryChance
+                        : Mathf.Max(0f, remaining) * Weight(d) / Mathf.Max(remainingWeight, .000001f);
+                    d.Num = Mathf.RoundToInt(probability * 100000); d.Den = 100000;
+                    rows[i] = d;
+                }
+            }
         }
         static float Value(Dictionary<ItemType,float> pool, ItemType t) => pool.TryGetValue(t,out float n) ? n : 0;
         internal static bool CombatWeapon(ItemDef d) => d.IsWeapon && !d.IsAmmo && !d.GameTool && !d.HkItem && d.MaxStack==1
