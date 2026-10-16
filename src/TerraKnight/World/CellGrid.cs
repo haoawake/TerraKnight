@@ -23,13 +23,16 @@ namespace TerraKnight.World
         Rope = 8,
         /// <summary>The Ice Rod's block (tile 127): solid until its bolt thaws it; never kept in the save.</summary>
         MagicIce = 9,
+        /// <summary>Meteorite (tile 37, World.Meteorites): a 50% pickaxe's, glowing, burning to the touch.</summary>
+        Meteorite = 10,
     }
 
     internal static class Cells
     {
         /// <summary>Kinds that block movement as a full block.</summary>
         public static bool Blocks(CellKind k) =>
-            k == CellKind.Original || k == CellKind.Dirt || k == CellKind.Stone || k == CellKind.Wood || k == CellKind.Sand || k == CellKind.MagicIce;
+            k == CellKind.Original || k == CellKind.Dirt || k == CellKind.Stone || k == CellKind.Wood || k == CellKind.Sand || k == CellKind.MagicIce
+            || k == CellKind.Meteorite;
     }
 
     /// <summary>

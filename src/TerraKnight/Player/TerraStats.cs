@@ -53,6 +53,9 @@ namespace TerraKnight.Player
 
         public bool IsDead => Life <= 0;
 
+        /// <summary>Burning (World.Meteorites): lifeRegen held at 0 or under, so no regeneration.</summary>
+        public bool Burning;
+
         /// <summary>Recomputes the maximums from crystals, the Knight's masks and vessels, and equipment.</summary>
         public void UpdateMaximums(PlayerData pd, int manaBonus)
         {
@@ -152,7 +155,7 @@ namespace TerraKnight.Player
                 if (sinceHit > 1.5f && sinceHit < 30f) sinceHit = 30f;
                 sinceHit += dt * 4f;
             }
-            if (Life > 0 && Life < LifeMax)
+            if (Life > 0 && Life < LifeMax && !Burning)
             {
                 // Rapid Healing (Palladium) adds whatever the time since a hit (Pl:19382-19386).
                 float perSecond = (LifeRegenBonus + (honey ? 2 : 0) + (shiny ? 4 : 0) + soul + Items.ArmorEffects.RegenBonus) * 0.5f;

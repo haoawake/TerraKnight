@@ -19,6 +19,7 @@ namespace TerraKnight
     {
         IEnumerator ReforgeTest()
         {
+            mod.DevNoFallDamage = true;
             int ok = 0, all = 0;
             void Check(string what, bool pass, string detail = "")
             {
@@ -113,6 +114,8 @@ namespace TerraKnight
             Shot("Town", "reforge_panel");
             yield return null;
             int prefix = TownNpcs.ReforgeItem.Prefix;
+            // Leave capacity for the returned item; overflow intentionally drops at the feet.
+            inv.Slots[20]=default;inv.Slots[21]=default;
             TownNpcs.Close(false);
             int slot = System.Array.FindIndex(inv.Slots, s => s.Type == sword.Type && s.Prefix == prefix);
             Check("关掉对话剑回到背包、词缀还在", TownNpcs.ReforgeItem.IsEmpty && slot >= 0, $"第 {slot} 格 {(slot >= 0 ? inv.Slots[slot].Def.Name : "")}");
@@ -147,7 +150,7 @@ namespace TerraKnight
                 int back = System.Array.FindIndex(inv.Slots, s => s.Type == ItemType.KnightNail);
                 Check("骨钉回到背包只有一把", back >= 0 && inv.Slots.Count(s => s.Type == ItemType.KnightNail) == 1 && inv.Slots[back].Prefix == nail.Prefix);
                 if (back >= 0 && back != 0) (inv.Slots[0], inv.Slots[back]) = (inv.Slots[back], inv.Slots[0]);
-                inv.Selected = 0;
+                inv.Selected = 0;inv.Override=-1;inv.UseMouse=false;inv.Mouse=default;
                 InventoryGui.Open = false;
                 yield return new WaitForSeconds(0.5f);
                 int s0 = NailItem.DevSwings;
@@ -168,6 +171,7 @@ namespace TerraKnight
 
         IEnumerator QuickSellTest()
         {
+            mod.DevNoFallDamage = true;
             int ok = 0, all = 0;
             void Check(string what, bool pass, string detail = "")
             {

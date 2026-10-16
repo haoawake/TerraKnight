@@ -203,9 +203,10 @@ namespace TerraKnight.Town
             {
                 if (def.Internal != internalName) continue;
                 int n = 0;
-                foreach (var s in def.Items)
+                foreach (var s in ProgressionBalance.ShopStock(def.Internal,def.Items))
                 {
                     if (s.Stage > stage) continue;
+                    if (ItemDb.Get(s.Type).Stage > stage) continue;
                     n++;
                     if (s.Type == type) has = true;
                 }
@@ -639,6 +640,7 @@ namespace TerraKnight.Town
                 shop = false;
                 guideCraft = false;
                 reforge = false;
+                forge = false;
                 ChatText = Chat(n);
                 TerraMod.Instance?.PlaySound("Chat", 0.8f);
                 return true;
@@ -669,8 +671,10 @@ namespace TerraKnight.Town
 
         /// <summary>The Goblin Tinkerer's reforge slot (Main.reforgeItem) and whether his reforging is open (Main.InReforgeMenu).</summary>
         public static ItemStack ReforgeItem;
-        static bool reforge;
+        static bool reforge, forge;
         public static bool ReforgeOpen => talk != null && reforge && InventoryGui.Open;
+        /// <summary>His slot open for forging (Items.Forging) rather than reforging.</summary>
+        public static bool ForgeMode => ReforgeOpen && forge;
         public static bool TalkingIsGoblin => talk != null && talk.Def.Id == 107;
 
         /// <summary>His "Reforge" button: the inventory opens, the chat text goes, the reforge slot shows.</summary>
@@ -678,6 +682,18 @@ namespace TerraKnight.Town
         {
             if (!TalkingIsGoblin) return;
             reforge = true;
+            forge = false;
+            ChatText = "";
+            InventoryGui.Open = true;
+            TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+        }
+
+        /// <summary>His "Forge" button: the same slot, for a weapon to forge (Items.Forging).</summary>
+        public static void OpenForge()
+        {
+            if (!TalkingIsGoblin) return;
+            reforge = true;
+            forge = true;
             ChatText = "";
             InventoryGui.Open = true;
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
@@ -723,6 +739,7 @@ namespace TerraKnight.Town
             shop = false;
             guideCraft = false;
             reforge = false;
+            forge = false;
             ChatText = "";
             for (int i = 0; i < ShopItems.Length; i++)
             {
@@ -741,9 +758,10 @@ namespace TerraKnight.Town
                 BuyBack[i] = false;
             }
             int stage = Shop.UnlockedStage(), phase = MoonPhase, k = 0;
-            foreach (var s in def.Items)
+            foreach (var s in ProgressionBalance.ShopStock(def.Internal,def.Items))
             {
                 if (s.Stage > stage) continue;
+                if (!ProgressionBalance.Unlocked(s.Type)) continue;
                 if (s.Phases != null && System.Array.IndexOf(s.Phases, phase) < 0) continue;
                 if (k >= ShopItems.Length) break;
                 ShopItems[k++] = ItemStack.Of(s.Type);
@@ -754,6 +772,7 @@ namespace TerraKnight.Town
         public static bool Buy(int slot, int count, Inventory inv)
         {
             if (!ShopOpen || slot < 0 || slot >= ShopItems.Length || ShopItems[slot].IsEmpty) return false;
+            if (!ProgressionBalance.Unlocked(ShopItems[slot].Type)) return false;
             int bought = 0;
             for (int k = 0; k < count; k++)
             {
@@ -763,7 +782,7 @@ namespace TerraKnight.Town
                 long price = BuyPrice(slot);
                 // Can't afford it: nothing happens at all (Player.BuyItem).
                 if (!Shop.Spend(price)) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix, Forge = item.Forge };
                 inv.Mouse.Count++;
                 bought++;
                 if (BuyBack[slot])
@@ -828,13 +847,13 @@ namespace TerraKnight.Town
             Shop.Earn(money);
             int at = -1;
             for (int i = 0; i < 39; i++)
-                if (BuyBack[i] && ShopItems[i].Type == stack.Type && ShopItems[i].Prefix == stack.Prefix) { at = i; break; }
+                if (BuyBack[i] && ShopItems[i].Type == stack.Type && ShopItems[i].Prefix == stack.Prefix && ShopItems[i].Forge == stack.Forge) { at = i; break; }
             if (at < 0)
                 for (int i = 0; i < 39; i++)
                     if (ShopItems[i].IsEmpty) { at = i; break; }
             if (at >= 0)
             {
-                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix };
+                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge };
                 ShopItems[at].Count += stack.Count;
                 BuyBack[at] = true;
             }

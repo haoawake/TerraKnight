@@ -59,7 +59,7 @@ namespace TerraKnight.Items
             public ItemType Type;
             public int Count;
             public Vector2 Local;
-            public byte Prefix;
+            public byte Prefix, Forge;
         }
 
         public static WorldItems Instance { get; private set; }
@@ -256,7 +256,7 @@ namespace TerraKnight.Items
                         continue;
                     }
                     int count = it.Stack.Count;
-                    int left = it.Stack.Prefix > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, count);
+                    int left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, count);
                     if (left == count) continue;
                     UI.PopupText.Show(it.Stack.Def, count - left, body.center);
                     TerraMod.Instance.PlaySound("Grab", 0.7f);
@@ -562,7 +562,7 @@ namespace TerraKnight.Items
         {
             var list = new List<Saved>(items.Count);
             foreach (var it in items)
-                if (!it.Stack.IsEmpty) list.Add(new Saved { Scene = it.Scene, Type = it.Stack.Type, Count = it.Stack.Count, Local = it.Local, Prefix = it.Stack.Prefix });
+                if (!it.Stack.IsEmpty) list.Add(new Saved { Scene = it.Scene, Type = it.Stack.Type, Count = it.Stack.Count, Local = it.Local, Prefix = it.Stack.Prefix, Forge = it.Stack.Forge });
             return list;
         }
 
@@ -572,7 +572,7 @@ namespace TerraKnight.Items
             if (saved == null) return;
             foreach (var s in saved)
                 if (s.Type != ItemType.None && s.Count > 0)
-                    items.Add(new Item { Stack = new ItemStack { Type = s.Type, Count = s.Count, Prefix = s.Prefix }, Scene = s.Scene, Local = s.Local });
+                    items.Add(new Item { Stack = new ItemStack { Type = s.Type, Count = s.Count, Prefix = s.Prefix, Forge = s.Forge }, Scene = s.Scene, Local = s.Local });
         }
     }
 }

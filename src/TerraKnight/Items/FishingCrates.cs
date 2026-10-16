@@ -43,7 +43,7 @@ namespace TerraKnight.Items
             return true;
         }
 
-        static bool Unlocked(ItemType t) => t != ItemType.None && ItemDb.Get(t).Stage <= Shop.UnlockedStage();
+        static bool Unlocked(ItemType t) => t != ItemType.None && ProgressionBalance.Unlocked(t);
 
         static ItemType Pick(ItemType[] from, int lo = 0, int hi = 9)
         {
@@ -58,7 +58,7 @@ namespace TerraKnight.Items
 
         static void Put(List<ItemStack> got, ItemType t, int min, int max)
         {
-            if (t == ItemType.None) return;
+            if (t == ItemType.None || t != ItemType.Geo && !Unlocked(t)) return;
             got.Add(ItemStack.Of(t, Random.Range(min, max + 1)));
         }
 

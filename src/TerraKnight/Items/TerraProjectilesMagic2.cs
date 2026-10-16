@@ -1,4 +1,5 @@
 using TerraKnight.Effects;
+using TerraKnight.World;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -165,6 +166,33 @@ namespace TerraKnight.Items
         }
 
         // ------------------------------------------------------------------ 409: Razorblade Typhoon (AI_071)
+
+        // The knight's centre is lower than a Terraria player's firing point. A 30px disc
+        // can start intersecting the floor and bounce in place forever. Move only the initial
+        // spawn to nearby open air, with an unobstructed path; subsequent terrain bounces stay intact.
+        static void ClearTyphoonLaunch(Proj p)
+        {
+            Vector2 half=TileBox(p)*Px*.5f;
+            if(!Blocked(p.Pos,half,false,p)) return;
+            Vector2 origin=p.Pos;
+            var directions=new[] {p.Vel.sqrMagnitude>0 ? p.Vel.normalized : Vector2.right,
+                Vector2.up,Vector2.right,new Vector2(1,1).normalized,
+                Vector2.left,new Vector2(-1,1).normalized,Vector2.down};
+            for(int step=1;step<=8;step++)
+            foreach(var direction in directions)
+            {
+                Vector2 at=origin+direction*(step*4*Px);
+                // Unity reports fraction zero when the firing point already overlaps the
+                // floor. Permit leaving that overlap, but never cross another solid surface.
+                bool crossed=false;
+                foreach(var hit in Physics2D.LinecastAll(origin,at,1<<ChunkColliders.TerrainLayer))
+                    if(hit.fraction>0 && !hit.collider.isTrigger && !hit.collider.usedByEffector) crossed=true;
+                if(crossed) continue;
+                if(Blocked(at,half,false,p)) continue;
+                p.Pos=p.StartPos=at;
+                return;
+            }
+        }
 
         /// <summary>
         /// AI_071: after 10 updates, one time in three, a fan of six sea-blue motes off its front,

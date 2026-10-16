@@ -521,6 +521,7 @@ namespace TerraKnight.Items
                 TimeLeft = spec.Ai == Ai.Thrown ? spec.Fuse : spec.Time, Scale = spec.Scale, Extra = Mathf.Max(spec.Extra, extraUpdates),
                 Alpha = spec.AlphaStart, Collide = spec.TileCollide, LaunchSpeed = velocity.magnitude, StartPos = from, StartVel = velocity,
             };
+            if(kind==ProjKind.RazorbladeTyphoon) ClearTyphoonLaunch(p);
             p.Rot = Angle(velocity);
             p.Class = SpawnClass;
             p.Arrow = IsArrow(kind);

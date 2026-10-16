@@ -66,6 +66,9 @@ namespace TerraKnight.Save
             public int AnglerDay = -1;
             public bool AnglerDone;
             public int AnglerQuests;
+            /// <summary>A meteorite coming at midnight (World.Meteorites.Pending), and how many have come down.</summary>
+            public bool MeteorPending;
+            public int MeteorsLanded;
             /// <summary>Life Fruits eaten and the other permanent boosters used (Player.ConsumedLifeFruit, extraAccessory, usedAegisCrystal...).</summary>
             public int LifeFruits;
             public List<string> Boosts;
@@ -133,9 +136,14 @@ namespace TerraKnight.Save
             public bool Fav;
             /// <summary>A reforged item's prefix (PrefixID), 0 none.</summary>
             public int Prefix;
+            /// <summary>A forged weapon's level (Items.Forging), 0 none.</summary>
+            public int Forge;
         }
 
-        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix };
+        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix, Forge = s.Forge };
+
+        /// <summary>Dev: a stack through the save's packing and back.</summary>
+        internal static ItemStack DevRoundTrip(ItemStack s) => Unpack(Pack(s));
 
         static ItemStack Unpack(SlotItem s)
         {
@@ -144,6 +152,8 @@ namespace TerraKnight.Save
             stack.Favorite = s.Fav;
             // A prefix the item can't have (or one past the list) is dropped.
             if (s.Prefix > 0 && Items.Prefixes.Valid(Items.ItemDb.Get(type), s.Prefix)) stack.Prefix = (byte)s.Prefix;
+            // A weapon's forge level; a treasure bag's first-kill mark in the same byte.
+            if (s.Forge > 0 && (Items.Forging.CanForge(Items.ItemDb.Get(type)) || Items.TreasureBags.Is(type))) stack.Forge = (byte)Mathf.Min(s.Forge, 255);
             return stack;
         }
 
@@ -253,6 +263,8 @@ namespace TerraKnight.Save
             file.AnglerDay = Town.Angler.QuestDay;
             file.AnglerDone = Town.Angler.QuestDone;
             file.AnglerQuests = Town.Angler.QuestsDone;
+            file.MeteorPending = World.Meteorites.Pending;
+            file.MeteorsLanded = World.Meteorites.Landed;
             file.Trash = Pack(inv.Trash);
             file.Granted.AddRange(mod.GrantedAbilities);
             // Creative's pylons not yet placed by their bench are made again when the save is read.
@@ -433,6 +445,8 @@ namespace TerraKnight.Save
                 Town.Angler.QuestDay = file.AnglerDay;
                 Town.Angler.QuestDone = file.AnglerDone;
                 Town.Angler.QuestsDone = file.AnglerQuests;
+                World.Meteorites.Pending = file.MeteorPending;
+                World.Meteorites.Landed = file.MeteorsLanded;
                 inv.Trash = Unpack(file.Trash);
                 inv.Selected = Mathf.Clamp(file.Selected, 0, Inventory.HotbarSize - 1);
                 // Older files kept only the maximums; every 20 above the start was a crystal.

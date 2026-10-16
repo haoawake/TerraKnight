@@ -44,6 +44,8 @@ namespace TerraKnight.Items
             if (TownNpcs.TalkingIsTaxCollector) buttons.Add((TT("LegacyInterface.89", "税金") + (TownNpcs.Taxes > 0 ? " (" + Shop.Money(TownNpcs.Taxes) + ")" : ""), 5));
             // The Goblin Tinkerer's reforging (Lang.inter[19]).
             if (TownNpcs.TalkingIsGoblin) buttons.Add((TT("LegacyInterface.19", "重铸"), 6));
+            // His forging (Items.Forging), the mod's own.
+            if (TownNpcs.TalkingIsGoblin) buttons.Add((Lang.T("锻造"), 7));
             buttons.Add((Lang.T("关闭"), 1));
             float w = 500f * ui, h = (30f + 30f * lines.Count + 30f) * ui;
             var panel = new Rect(view.center.x - w / 2f, view.y + 100f * ui, w, h);

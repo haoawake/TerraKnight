@@ -47,7 +47,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton }
 
         struct Hit
         {
@@ -285,6 +285,7 @@ namespace TerraKnight.Items
                     else if (hit.Index == 4) Town.TownNpcs.NurseHeal();
                     else if (hit.Index == 5) Town.TownNpcs.TaxCollect();
                     else if (hit.Index == 6) Town.TownNpcs.OpenReforge();
+                    else if (hit.Index == 7) Town.TownNpcs.OpenForge();
                     else Town.TownNpcs.Close(true);
                     return;
                 case Kind.GuideSlot:
@@ -310,6 +311,9 @@ namespace TerraKnight.Items
                     return;
                 case Kind.ReforgeButton:
                     if (leftPress) Reforge();
+                    return;
+                case Kind.ForgeButton:
+                    if (leftPress) Forge();
                     return;
                 case Kind.BestiaryButton:
                     if (leftPress) ToggleBestiary();
@@ -422,7 +426,7 @@ namespace TerraKnight.Items
             // ItemSlot.TryOpenContainer: a crate (or an Oyster) opens, one at a time.
             if (slot.Def.Opens && inv.Mouse.IsEmpty)
             {
-                if (press) Fishing.TryOpen(inv, i);
+                if (press && !TreasureBags.TryOpen(inv, i)) Fishing.TryOpen(inv, i);
                 return;
             }
             // A single piece of armor or an accessory: right click puts it on (SwapEquip).
@@ -448,7 +452,7 @@ namespace TerraKnight.Items
                 if (!(inv.Mouse.IsEmpty || (CanStack(inv.Mouse, slot) && inv.Mouse.Count < inv.Mouse.Def.MaxStack))) break;
                 // PickupItemIntoMouse: the cursor copy is a favourite only if the whole (single) item was.
                 bool fav = slot.Favorite && slot.Count == 1;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge };
                 inv.Mouse.Count++;
                 inv.Mouse.Favorite = fav;
                 slot.Count--;
@@ -684,7 +688,8 @@ namespace TerraKnight.Items
         /// Hallownest bench or in Dirtmouth once the progress has reached its station's stage.
         /// </summary>
         static bool CanMakeHere(Recipe r, bool here, int stage) =>
-            CraftEnvironments.Available(r.Environment) && (ByHand(r) || (here && r.StationStage <= stage) || (!r.IsBought && World.Stations.Near(r.Station, HeroController.SilentInstance)));
+            ProgressionBalance.Unlocked(r.Result) && r.StationStage <= stage && CraftEnvironments.Available(r.Environment)
+            && (ByHand(r) || here || (!r.IsBought && World.Stations.Near(r.Station, HeroController.SilentInstance)));
 
         static void Scroll(int delta)
         {
@@ -718,6 +723,7 @@ namespace TerraKnight.Items
             if (Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty) return;
             var r = recipes[i];
             var d = r.Def;
+            if(!Shop.Free && !ProgressionBalance.Unlocked(r.Result)) return;
             // Unstackable results never repeat while held.
             bool blocked = craftingNow != -1 && (craftingNow != i || d.MaxStack == 1);
             // A recipe made by hand (no station) needs no bench, as in Terraria.
@@ -932,6 +938,7 @@ namespace TerraKnight.Items
                 if (sellMode && (World.Chests.IsOpen || Town.TownNpcs.ShopOpen || Town.TownNpcs.ReforgeOpen)) sellMode = false;
                 if (Town.TownNpcs.ShopOpen) DrawShopPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
                 // The Goblin Tinkerer's reforging: its slot in the crafting column's place.
+                else if (Town.TownNpcs.ForgeMode) DrawForge(view, ui, mouse, ref hovered, ref hoveredKind);
                 else if (Town.TownNpcs.ReforgeOpen) DrawReforge(view, ui, mouse, ref hovered, ref hoveredKind);
                 else
                 {
@@ -1513,11 +1520,18 @@ namespace TerraKnight.Items
             if (def.Prefix > 0)
             {
                 lineColors = new Dictionary<int, Color>();
-                foreach (var (text, good) in Prefixes.TooltipLines(def))
+                foreach (var (text, good) in Prefixes.TooltipLines(def.Unforged ?? def))
                 {
                     lineColors[lines.Count] = good ? new Color(120 / 255f, 190 / 255f, 120 / 255f) : new Color(190 / 255f, 120 / 255f, 120 / 255f);
                     lines.Add(text);
                 }
+            }
+            // Its forging: the level and what it adds, in the forge's gold.
+            if (def.Forge > 0)
+            {
+                if (lineColors == null) lineColors = new Dictionary<int, Color>();
+                lineColors[lines.Count] = new Color(1f, 0.82f, 0.35f);
+                lines.Add(Lang.F("锻造 +{0}：伤害 +{1}%", def.Forge, Mathf.RoundToInt(def.Forge * Forging.DamagePerLevel * 100f)));
             }
             if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None
                 && (Equipment.FamilyOf(Equipment.FullSet) == def.Set || (def.Set == ArmorSet.Robe && (Equipment.FullSet == ArmorSet.Wizard || Equipment.FullSet == ArmorSet.MagicHat))))

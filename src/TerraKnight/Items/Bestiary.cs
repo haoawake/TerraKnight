@@ -291,6 +291,8 @@ namespace TerraKnight.Items
             }
             Kills[record]++;
             NameOf(record);
+            // NPC.DoDeathEvents's spawnMeteor: a boss down, a meteorite at midnight.
+            if (EnemyDrops.IsBoss(rec)) World.Meteorites.OnBossDown(firstKill);
             if (firstKill && !AllUnlocked && EnemyDrops.KindOf(rec) != "non_enemy")
             {
                 DevCollected++;
@@ -299,8 +301,8 @@ namespace TerraKnight.Items
             // The fight being paid: its scene and its boss's name tell a variant's relic.
             Relics.ContextScene = __instance.gameObject.scene.name;
             Relics.ContextName = __instance.gameObject.name;
-            if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name));
-            else EnemyDrops.Roll(record, __instance);
+            if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name), firstKill);
+            else EnemyDrops.Roll(record, __instance, firstKill);
             Relics.ContextScene = Relics.ContextName = null;
         }
 

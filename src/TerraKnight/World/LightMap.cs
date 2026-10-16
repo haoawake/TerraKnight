@@ -202,6 +202,8 @@ namespace TerraKnight.World
                     r[i] = g[i] = b[i] = s;
                     // A placed torch: TorchID.TorchColor of the plain torch.
                     if (kind == CellKind.Torch) Put(i, TorchRgb);
+                    // TileLightScanner's Meteorite: (0.56, 0.43, 0.15), five in a hundred either way.
+                    else if (kind == CellKind.Meteorite) Put(i, MeteoriteRgb * Random.Range(0.95f, 1.05f));
                 }
             int count = 0;
             foreach (var s in sources)
@@ -317,6 +319,7 @@ namespace TerraKnight.World
 
         /// <summary>The plain torch's light (TorchID.TorchColor 0).</summary>
         public static readonly Color TorchRgb = new Color(1f, 0.95f, 0.8f);
+        public static readonly Color MeteoriteRgb = new Color(0.56f, 0.43f, 0.15f);
 
         void Put(int i, Color rgb)
         {

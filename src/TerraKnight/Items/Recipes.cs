@@ -79,6 +79,7 @@ namespace TerraKnight.Items
                 every.AddRange(WallRecipes());
                 every.AddRange(FoodRecipes());
                 every.AddRange(BossSummons.Recipes());
+                ProgressionBalance.ApplyRecipes(every);
                 return every;
             }
         }
@@ -158,6 +159,7 @@ namespace TerraKnight.Items
         public static bool HasIngredients(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
             if (inv.Infinite) return true;
+            if (!ProgressionBalance.Unlocked(r.Result) || r.StationStage > Shop.UnlockedStage()) return false;
             foreach (var (t, n) in r.Ingredients)
                 if (Count(inv, t, chests) < n) return false;
             return true;

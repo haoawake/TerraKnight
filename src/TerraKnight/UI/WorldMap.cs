@@ -26,7 +26,7 @@ namespace TerraKnight.UI
         const float C = CellGrid.CellSize;
         const int MapVersion = 2;
 
-        enum Tile : byte { None, Air, Terrain, Structure, Platform, Dirt, Stone, Wood, Sand, Ice, Torch, Rope, Dug }
+        enum Tile : byte { None, Air, Terrain, Structure, Platform, Dirt, Stone, Wood, Sand, Ice, Torch, Rope, Dug, Meteorite }
         enum Wet : byte { None, Water, Spikes, Acid, Lava }
         enum Obj : byte { Bench, Lamp, Door, Lever, Lift, Chest, Stag, Toll, Grub, GeoRock, Totem, Item, BreakableWall, Spring, Npc, Pylon, TerraChest, LifeCrystal }
 
@@ -142,6 +142,7 @@ namespace TerraKnight.UI
                 case CellKind.Platform: return Tile.Platform;
                 case CellKind.Torch: return Tile.Torch;
                 case CellKind.Rope: return Tile.Rope;
+                case CellKind.Meteorite: return Tile.Meteorite;
                 default: return g.IsDug(x, y) ? Tile.Dug : Tile.Air;
             }
         }
@@ -394,6 +395,8 @@ namespace TerraKnight.UI
                 case Tile.Platform: return Rgb(210, 160, 120);
                 case Tile.Torch: return Rgb(253, 221, 3);
                 case Tile.Rope: return Rgb(137, 120, 67);
+                // Bright on the map (MapHelper's 104, 86, 84 lifted to a glow): a meteorite is found by it.
+                case Tile.Meteorite: return Rgb(255, 112, 40);
                 default: return Color.clear;
             }
         }
@@ -829,6 +832,7 @@ namespace TerraKnight.UI
                 case Tile.Ice: return "冰块";
                 case Tile.Torch: return "火把";
                 case Tile.Rope: return "绳";
+                case Tile.Meteorite: return "陨石";
                 case Tile.Dug: return Lang.F("挖开的地方（{0}）", area);
                 default: return null;
             }

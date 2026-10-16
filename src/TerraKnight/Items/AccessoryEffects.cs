@@ -175,9 +175,11 @@ namespace TerraKnight.Items
             if (SnapCooldown > 0 || victim == null || melee == null) return 0;
             var b = Equipment.Current;
             float rangedMult = 1f + b.RangedDamage, meleeMult = 1f + b.MeleeDamage, minionMult = 1f + b.MinionDamage;
-            int chainDmg = type == 0 ? (int)(30 * rangedMult) : type == 1 ? (int)(45 * meleeMult) : (int)(150 * minionMult);
+            var source=type==0 ? ItemType.SnappingStone : type==1 ? ItemType.Pyroclast : ItemType.ArmletOfRuin;
+            int proc=ProgressionBalance.ProcDamage(source,.1f,6,3);
+            int chainDmg = (int)(proc*(type==0 ? rangedMult : type==1 ? meleeMult : minionMult));
             float range = type == 0 ? 120f : type == 1 ? 300f : 400f;
-            int bonusBase = type == 0 ? 40 : type == 1 ? 70 : 150;
+            int bonusBase = proc;
             SnapCooldown = 360;
             skip.Clear();
             skip.Add(victim);

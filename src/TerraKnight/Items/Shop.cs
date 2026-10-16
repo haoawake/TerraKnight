@@ -58,13 +58,15 @@ namespace TerraKnight.Items
             var gm = GameManager.UnsafeInstance;
             if (gm == null || hero == null) return false;
             if (gm.sceneName == "Town") return true;
+            // Not from a scene still coming in (its bench not up yet); none found, looked for again soon.
+            if (gm.IsInSceneTransition) return false;
             if (gm.sceneName != benchScene || Time.unscaledTime > nextBenchScan)
             {
                 benchScene = gm.sceneName;
-                nextBenchScan = Time.unscaledTime + 3f;
                 benches.Clear();
                 foreach (var fsm in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
                     if (fsm.FsmName == "Bench Control") benches.Add(fsm.transform);
+                nextBenchScan = Time.unscaledTime + (benches.Count > 0 ? 3f : 0.5f);
             }
             // The Artisan Loaf (usedArtisanLoaf): crafting stations reach 4 tiles further (here two units).
             float reach = TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.ArtisanLoaf) ? 10f : 8f;
@@ -91,9 +93,7 @@ namespace TerraKnight.Items
             if (Free) return World.Areas.MaxLevel;
             var pd = PlayerData.instance;
             if (pd == null) return 0;
-            int n = 0;
-            foreach (var flag in StageAbilities) if (pd.GetBool(flag)) n++;
-            return n;
+            return ProgressionBalance.AbilityStage(pd.GetBool);
         }
 
         /// <summary>The abilities that open the stages 1 to 5, in the order the Knight gets them.</summary>

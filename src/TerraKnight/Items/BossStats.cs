@@ -123,7 +123,7 @@ namespace TerraKnight.Items
             ["GhostMarmu"] = R(2, BrainOfCthulhu.Of(0.6f, "六成")),
             // Stage 3: the Queen Bee, the underworld, the Wall of Flesh.
             ["BlackKnight"] = R(3, WallOfFlesh),
-            ["HiveKnight"] = R(3, QueenBee),
+            ["HiveKnight"] = R(4, QueenSlime.Of(0.6f, "蜂巢阶段4")),
             ["JarCollector"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
             ["MimicSpider"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
             ["GhostGalien"] = R(3, WallOfFlesh.Of(0.5f, "一半")),

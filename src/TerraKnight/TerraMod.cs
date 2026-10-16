@@ -193,6 +193,7 @@ namespace TerraKnight
             SummonTags.Clear();
             Town.TownNpcs.Clear();
             Town.Angler.Clear();
+            World.Meteorites.Clear();
             InventoryGui.ClearSold();
             Bestiary.Clear();
             Shop.SpareCopper = 0;
@@ -269,6 +270,7 @@ namespace TerraKnight
                 else UpdateFallDamage(hero, box.min.y, rb.linearVelocity.y);
                 SceneMasks.Tick(hero);
                 EnemyDrops.Tick(hero);
+                World.Meteorites.Tick(hero, this);
                 PotionBuffs.Tick(hero);
                 Bestiary.Tick(hero);
                 Pylons.Tick(hero);
@@ -1317,10 +1319,23 @@ namespace TerraKnight
                     return;
                 }
             }
+            // Player.GetPickaxeDamage: Meteorite takes a 50% pickaxe.
+            if (kind == CellKind.Meteorite && pick.PickPower < 50)
+            {
+                PlaySound("Tink_" + Random.Range(0, 3));
+                MineDust(cell, kind, 1);
+                if (Time.time > weakPickNotice)
+                {
+                    weakPickNotice = Time.time + 2f;
+                    var c = CellGrid.CellCenter(cell.x, cell.y);
+                    CombatText.Show(new Vector3(c.x, c.y + 0.4f, 0f), Lang.F("需要 {0}% 镐力", 50), CombatText.Notice);
+                }
+                return;
+            }
             int hardness = ItemDb.Hardness(kind);
             miningDamage += pick.PickPower * hardness;
             // Tile.soundType: rock tinks, the soft blocks and wood dig.
-            PlaySound((kind == CellKind.Original || kind == CellKind.Stone ? "Tink_" : "Dig_") + Random.Range(0, 3));
+            PlaySound((kind == CellKind.Original || kind == CellKind.Stone || kind == CellKind.Meteorite ? "Tink_" : "Dig_") + Random.Range(0, 3));
             // WorldGen.KillTile with fail: a few dust of the tile's kind on every hit, more when it breaks.
             if (miningDamage < MineThreshold)
             {
@@ -1354,7 +1369,9 @@ namespace TerraKnight
         /// <summary>The dust a block of this kind gives (WorldGen.KillTile_MakeTileDust).</summary>
         internal static int TileDustType(CellKind kind) =>
             kind == CellKind.Dirt ? 0 : kind == CellKind.Wood || kind == CellKind.Platform || kind == CellKind.Rope ? 7
-            : kind == CellKind.Sand ? 32 : kind == CellKind.Torch ? 6 : kind == CellKind.MagicIce ? 67 : 1;
+            : kind == CellKind.Sand ? 32 : kind == CellKind.Torch ? 6 : kind == CellKind.MagicIce ? 67
+            // WorldGen's Meteorite: fire or its own dust, half and half.
+            : kind == CellKind.Meteorite ? (Random.Range(0, 2) == 0 ? 23 : 6) : 1;
 
         /// <summary>
         /// Terraria's placement rules. A plain block: the cell is free and either touches a tile
@@ -1591,7 +1608,7 @@ namespace TerraKnight
             if (left < m.Count) PlaySound("Grab", 0.7f);
             Inventory.Mouse = default;
             var hero = HeroController.SilentInstance;
-            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix };
+            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix, Forge = m.Forge };
             if (left > 0 && hero != null) WorldItems.Drop(rest, hero.GetComponent<BoxCollider2D>().bounds.center);
             else if (left > 0) Inventory.Mouse = rest;
         }

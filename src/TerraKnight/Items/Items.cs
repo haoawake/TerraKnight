@@ -260,6 +260,9 @@ namespace TerraKnight.Items
         // Food (gen_food.py)
         PumpkinPie, CookedFish, CookedShrimp, Sashimi, GrubSoup, Escargot, GoldenDelight, SeafoodDinner, LobsterTail, MonsterLasagna, BlackenedFish,
 
+        // Treasure bags (gen_bags.py)
+        BagAbsoluteRadiance, BagBigBuzzer, BagBigFly, BagBlackKnight, BagDungDefender, BagEnragedGuardian, BagFalseKnight, BagFalseKnightAt5, BagFinalBoss, BagFlukeMother, BagGhostAladar, BagGhostGalien, BagGhostHu, BagGhostMarkoth, BagGhostMarmu, BagGhostNoEyes, BagGhostXero, BagGreyPrince, BagGrimm, BagHiveKnight, BagHollowKnight, BagHollowKnightPrime, BagHornet, BagHornetAt4, BagInfectedKnight, BagInfectedKnightAt5, BagJarCollector, BagLobsterLancer, BagMageKnight, BagMageLord, BagMageLordAt5, BagMantisLord, BagMawlek, BagMegaBeamMiner, BagMegaJellyfish, BagMegaMossCharger, BagMimicSpider, BagNailBros, BagNailsage, BagNightmareGrimm, BagOblobble, BagPaintmaster, BagPaleLurker, BagSistersOfBattle, BagTraitorLord, BagWhiteDefender, BagWingedNosk, BagZote,
+
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -955,6 +958,9 @@ namespace TerraKnight.Items
         /// <summary>A prefixed copy's prefix and the plain definition it came from (Prefixes.Apply); a summon weapon's prefix tag damage and armour penetration, its minions'.</summary>
         public byte Prefix;
         public ItemDef Unprefixed;
+        /// <summary>A forged copy's level (Forging), and the definition it was forged from.</summary>
+        public byte Forge;
+        public ItemDef Unforged;
         public int PrefixTagDamage, PrefixArmorPen;
 
         public ItemDef Clone() => (ItemDef)MemberwiseClone();
@@ -1506,6 +1512,7 @@ namespace TerraKnight.Items
             list.Add(DreamNailItem.Def());
             list.Add(NailItem.Def());
             AddOres(list);
+            MeteoriteBlock(list);
             AddMoney(list);
             AddCraftChain(list);
             AddCraftingSupplement(list);
@@ -1517,6 +1524,7 @@ namespace TerraKnight.Items
             AddArmor2(list);
             AddHeart(list);
             if (Relics.Enabled) AddRelics(list);
+            TreasureBags.AddItems(list);
             AddWalls(list);
             BossSummons.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
@@ -1544,7 +1552,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>()), System.Linq.Enumerable.Concat(FishingSources(), FoodSources()))))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(FishingSources(), FoodSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1738,6 +1746,7 @@ namespace TerraKnight.Items
                 ItemType.SilverBracer, ItemType.SnakeBand, ItemType.MobiusStrip, ItemType.WickedArmlet, ItemType.OuroborosRing, ItemType.TwilightGrasp, ItemType.ArmletOfRuin,
                 ItemType.SilverShield, ItemType.DruidicSerpentCloak, ItemType.HeavySling, ItemType.ScoutSling, ItemType.TemplarSling);
             foreach (var (t, kit) in ArmorKits()) arr[(int)t].Kit = kit;
+            ProgressionBalance.ApplyItems(arr);
             return arr;
         }
 
@@ -1876,6 +1885,7 @@ namespace TerraKnight.Items
                 case CellKind.Platform: return ItemType.WoodPlatform;
                 case CellKind.Torch: return ItemType.Torch;
                 case CellKind.Rope: return ItemType.Rope;
+                case CellKind.Meteorite: return ItemType.Meteorite;
                 default: return ItemType.None;
             }
         }
@@ -1931,8 +1941,10 @@ namespace TerraKnight.Items
         public bool Favorite;
         /// <summary>Its prefix (PrefixID, a reforge's: Prefixes), 0 none; its definition is then the prefixed copy.</summary>
         public byte Prefix;
+        /// <summary>Its forge level (the Goblin Tinkerer's forging: Forging), 0 none; its definition is then the forged copy.</summary>
+        public byte Forge;
         public bool IsEmpty => Type == ItemType.None || Count <= 0;
-        public ItemDef Def => IsEmpty ? ItemDb.Get(ItemType.None) : Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix);
+        public ItemDef Def => IsEmpty ? ItemDb.Get(ItemType.None) : Forging.Apply(Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix), Forge);
 
         public static ItemStack Of(ItemType type, int count = 1) => new ItemStack { Type = type, Count = count };
     }
@@ -2191,7 +2203,7 @@ namespace TerraKnight.Items
         public int Pickup(ItemStack s, bool favorite = false)
         {
             if (s.IsEmpty) return 0;
-            if (s.Prefix == 0) return Pickup(s.Type, s.Count, favorite);
+            if (s.Prefix == 0 && s.Forge == 0) return Pickup(s.Type, s.Count, favorite);
             s.Favorite = favorite;
             for (int i = 0; i < Size; i++)
                 if (Slots[i].IsEmpty)

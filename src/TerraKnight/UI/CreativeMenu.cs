@@ -24,6 +24,8 @@ namespace TerraKnight.UI
 
         static Step step;
         static int chosen;
+        static int choosePage;
+        static int FirstChoice => choosePage*SaveSlots.PerPage+1;
         static int pendingSlot;
         /// <summary>The difficulty step is the creative panel's (else an ordinary new game's, started with these).</summary>
         static bool forCreative, askPermaDeath, askBossRush;
@@ -49,9 +51,9 @@ namespace TerraKnight.UI
         {
             float ui = Screen.height / 1080f;
             if (what == "creative") return new Rect(Screen.width - 300f * ui, Screen.height - 120f * ui, 240f * ui, 58f * ui);
-            float w = 760f * ui, h = 560f * ui;
+            float w = 760f * ui, h = (step==Step.Choose ? 620f : 560f) * ui;
             var p = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
-            if (what == "slot") return new Rect(p.x + 80f * ui, p.y + (180f + (i - SaveSlots.FirstOfPage) * 72f) * ui, w - 160f * ui, 58f * ui);
+            if (what == "slot") return new Rect(p.x + 80f * ui, p.y + (224f + (i - FirstChoice) * 72f) * ui, w - 160f * ui, 58f * ui);
             if (what == "confirm") return new Rect(p.x + w / 2f - 230f * ui, p.y + 330f * ui, 210f * ui, 56f * ui);
             return new Rect(p.x + 70f * ui, p.y + (178f + (i - 1) * 74f) * ui, p.width - 140f * ui, 64f * ui);
         }
@@ -177,7 +179,7 @@ namespace TerraKnight.UI
             }
             // The panel over the menu.
             Fill(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0f, 0f, 0f, 0.55f));
-            float w = 760f * ui, h = 560f * ui;
+            float w = 760f * ui, h = (step==Step.Choose ? 620f : 560f) * ui;
             var p = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
             Fill(p, Back);
             Rim(p, Line, 2f * ui);
@@ -190,10 +192,12 @@ namespace TerraKnight.UI
             if (step == Step.Choose)
             {
                 Shadowed(new Rect(p.x + 48f * ui, p.y + 140f * ui, w - 96f * ui, 30f * ui), Lang.T("选择一个存档位来创建创造模式存档（已有的存档会被覆盖）："), text, new Color(0.8f, 0.8f, 0.85f));
-                // The save screen's page: its four slots.
-                for (int s = SaveSlots.FirstOfPage; s < SaveSlots.FirstOfPage + 4 && s <= SaveSlots.Max; s++)
+                // The modal owns its page: canceling must not leave the covered profiles' cached slots stale.
+                SaveSlots.DrawPager(new Rect(p.x+80f*ui,p.y+176f*ui,w-160f*ui,36f*ui),ui,choosePage,
+                    page=>choosePage=Mathf.Clamp(page,0,SaveSlots.Pages-1));
+                for (int s = FirstChoice; s < FirstChoice + SaveSlots.PerPage && s <= SaveSlots.Max; s++)
                 {
-                    var r = new Rect(p.x + 80f * ui, p.y + (180f + (s - SaveSlots.FirstOfPage) * 72f) * ui, w - 160f * ui, 58f * ui);
+                    var r = new Rect(p.x + 80f * ui, p.y + (224f + (s - FirstChoice) * 72f) * ui, w - 160f * ui, 58f * ui);
                     string state = Lang.T(!hasSave[s] ? "空" : creative[s] ? "创造模式存档（将被覆盖）" : "已有存档（将被覆盖）");
                     if (Button(r, Lang.F("存档 {0}", s) + "　·　" + state, ui, hasSave[s] ? new Color(1f, 0.75f, 0.6f) : Color.white)) Choose(s);
                 }
@@ -251,6 +255,7 @@ namespace TerraKnight.UI
 
         static void Open()
         {
+            choosePage=SaveSlots.Page;
             for (int s = 1; s <= SaveSlots.Max; s++)
             {
                 hasSave[s] = File.Exists(Path.Combine(TerraMod.SaveDir, $"user{s}.dat"));

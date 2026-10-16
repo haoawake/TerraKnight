@@ -159,13 +159,13 @@ namespace TerraKnight.Items
                 if (!Live(s.Tag, id)) continue;
                 tagged = true;
                 var e = effects[s.Whip];
-                tag += (int)(e.TagDamage * tagMult);
+                tag += (int)(ProgressionBalance.TagDamage(s.Whip,e.TagDamage) * tagMult);
                 if (Random.Range(0, 100) < e.CritChance) crit = true;
                 if (!Live(s.Proc, id)) continue;
-                if (s.Whip == WhipKind.Firecracker) mult *= 2.75f;
+                if (s.Whip == WhipKind.Firecracker) mult *= 2f;
                 if (s.Whip == WhipKind.Durendal)
                 {
-                    flat += 30;
+                    flat += ProgressionBalance.WhipProcDamage;
                     SwordFx.Instance?.ProcFlash(hm);
                 }
                 if (s.Whip == WhipKind.EelWhip) flat += EelZap(hm);
@@ -198,7 +198,7 @@ namespace TerraKnight.Items
             {
                 if (!Live(s.Tag, id)) continue;
                 var w = s.Whip;
-                if (w == WhipKind.DarkHarvest) TerraProjectiles.Instance?.ShootScytheLightning(hm, effects[w].TagDamage);
+                if (w == WhipKind.DarkHarvest) TerraProjectiles.Instance?.ShootScytheLightning(hm, ProgressionBalance.TagDamage(w,effects[w].TagDamage));
                 if (w == WhipKind.Kaleidoscope) Effects.FxParticles.RainbowRodHit(minionPx);
                 // WhipTagEffect_Constellation.OnTaggedHit: the cosmic energy grows on it (480 ticks); minions never spend it.
                 if (w == WhipKind.ConstellationWhip)
@@ -208,7 +208,7 @@ namespace TerraKnight.Items
                     continue;
                 }
                 if (!Live(s.Proc, id)) continue;
-                if (w == WhipKind.Firecracker) Minions.Instance?.FireBlast(hm, (int)(num7 * 2.75f));
+                if (w == WhipKind.Firecracker) Minions.Instance?.FireBlast(hm, num7 * 2);
                 // WhipTagEffect_Starcrash: a meteor falls on it (1.33× the minion's hit); the flowers burst into petals (2.25× split);
                 // the Moon Lord whip's phantom slashes it (20, up to three in a chain).
                 if (w == WhipKind.MeteorWhip) TerraProjectiles.Instance?.ShootWhipMeteor(hm, (int)(num7 * 1.33f), minionKb);

@@ -25,6 +25,10 @@ namespace TerraKnight.Items
             public int Min, Max;
             /// <summary>Above 0: one roll for all the drops of this group, at its first's chance, that gives one of them.</summary>
             public int Group;
+            /// <summary>Relative weight inside a group; legacy zero means one.</summary>
+            public float Weight;
+            /// <summary>Exact mean count for calibrated material pools; zero uses the legacy uniform range.</summary>
+            public float MeanCount;
             /// <summary>
             /// The stage it unlocks at: above the unlocked one, it doesn't drop. An enemy's own rows from before the
             /// rework are 0 (they drop as they always have); the rest take their item's stage (a bar's, before it
@@ -80,7 +84,13 @@ namespace TerraKnight.Items
             return typicalHp[Mathf.Clamp(level, 0, typicalHp.Length - 1)];
         }
 
-        public static IReadOnlyList<Drop> Of(string record) => record != null && table.TryGetValue(record, out var e) && e.Drops != null ? e.Drops : none;
+        public static IReadOnlyList<Drop> Of(string record) => record != null && table.TryGetValue(record, out var e)
+            ? ProgressionLoot.Of(record,e,Shop.UnlockedStage(),Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear) : none;
+
+        internal static IReadOnlyList<Drop> At(string record,int stage,bool first,bool entry,bool final) =>
+            record != null && table.TryGetValue(record,out var e) ? ProgressionLoot.Of(record,e,stage,first,entry,final) : none;
+        internal static IReadOnlyList<Drop> LegacyOf(string record) => record!=null && table.TryGetValue(record,out var e) ? e.Drops ?? none : none;
+        internal static Entry EntryFor(string record) => record!=null && table.TryGetValue(record,out var e) ? e : default;
 
         /// <summary>The table key for a kill: "Record@stage" where that stage has its own table (Hornet in Kingdom's Edge), else the record.</summary>
         public static string KeyFor(string record, int stage)
@@ -234,18 +244,22 @@ namespace TerraKnight.Items
         /// <summary>The most a drop gives on the current difficulty (a single item stays one).</summary>
         public static int EffectiveMax(Drop d)
         {
+            if(d.MeanCount>0) return Mathf.CeilToInt(d.MeanCount*(1+AmountBonus*.5f));
             var def = ItemDb.Get(d.Type);
             if (def == null || def.MaxStack <= 1 || d.Max <= 0) return d.Max;
             int span = d.Max - d.Min + 1;
             return d.Max + Mathf.FloorToInt(span * AmountBonus);
         }
 
+        public static int EffectiveMin(Drop d) => d.MeanCount>0
+            ? Mathf.FloorToInt(d.MeanCount*(1+AmountBonus*.5f)) : d.Min;
+
         /// <summary>Rolls a kill's drops, each on its own, and drops what came up at the enemy.</summary>
-        public static void Roll(string record, HealthManager hm)
+        public static void Roll(string record, HealthManager hm, bool? firstKill = null)
         {
             if (hm == null) return;
             var col = hm.GetComponent<Collider2D>();
-            Roll(record, col != null ? (Vector2)col.bounds.center : (Vector2)hm.transform.position, LeavesOnItsOwn(hm.gameObject.scene.name));
+            Roll(record, col != null ? (Vector2)col.bounds.center : (Vector2)hm.transform.position, LeavesOnItsOwn(hm.gameObject.scene.name), firstKill);
         }
 
         /// <summary>
@@ -254,10 +268,15 @@ namespace TerraKnight.Items
         /// time to pick anything up: there the drops go straight into the inventory, and what
         /// doesn't fit falls at the player's feet once back in the world.
         /// </summary>
-        public static void Roll(string record, Vector2 at, bool direct = false)
+        public static void Roll(string record, Vector2 at, bool direct = false, bool? firstKill = null, bool fromBag = false)
         {
-            var drops = Of(record);
+            bool first = firstKill ?? Bestiary.KillsOf(record)==0;
+            var drops = record != null && table.TryGetValue(record,out var entry)
+                ? ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear) : none;
             if (drops.Count == 0) return;
+            // Terraria's boss bags (Expert, Master): the loot goes into one bag left at the boss, rolled when it is opened
+            // (fromBag); the relic, the hearts, the potions and the crystals drop beside it as ever.
+            var bag = !fromBag && IsBoss(record) && TreasureBags.Active ? TreasureBags.For(record, Relics.ContextScene, Relics.ContextName) : ItemType.None;
             // A boss can go down inside a wall, under the floor or high over the arena (burrowing, flying): its loot
             // comes down beside the player then, not out of sight in the ground.
             if (IsBoss(record) && !direct) at = SafeBossDropPoint(at);
@@ -266,6 +285,8 @@ namespace TerraKnight.Items
             {
                 if (Locked(d)) continue;
                 if (d.Master && World.GameDifficulty.Current != World.DifficultyLevel.Master) continue;
+                if (bag != ItemType.None && !TreasureBags.Outside(d)) continue;
+                if (fromBag && TreasureBags.Outside(d)) continue;
                 if (d.Group > 0)
                 {
                     // A group: one roll, at its first drop's chance, for one of its unlocked drops.
@@ -276,7 +297,7 @@ namespace TerraKnight.Items
                     var options = new List<Drop>();
                     foreach (var o in drops) if (o.Group == d.Group && !Locked(o)) options.Add(o);
                     if (options.Count == 0) continue;
-                    var pick = options[Random.Range(0, options.Count)];
+                    var pick = Pick(options);
                     Put(pick, at, direct);
                     DevGroupPicks++;
                     continue;
@@ -291,6 +312,9 @@ namespace TerraKnight.Items
                 }
                 Put(relic, at, direct);
             }
+            if (bag != ItemType.None) TreasureBags.Leave(bag, at, direct, first);
+            // What a bag holds is the boss's; the kill's own extras came with the kill.
+            if (fromBag) return;
             // Fishing bait and moss (FishingCrates.cs).
             Fishing.KillDrops(record, at, direct);
         }
@@ -298,9 +322,34 @@ namespace TerraKnight.Items
         /// <summary>Dev: when set, kills' drops go here (type, count) instead of into the world, for counting them.</summary>
         public static System.Action<ItemType, int> DevSink;
 
+        internal static Drop Pick(IReadOnlyList<Drop> options)
+        {
+            float total=0;
+            foreach(var d in options) total+=ProgressionLoot.Weight(d);
+            float roll=Random.value*total;
+            foreach(var d in options)
+            { roll-=ProgressionLoot.Weight(d); if(roll<0) return d; }
+            return options[options.Count-1];
+        }
+
+        public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d)
+        {
+            if(d.Group<=0) return EffectiveChance(d);
+            float total=0;
+            foreach(var other in drops) if(other.Group==d.Group && !Locked(other)) total+=ProgressionLoot.Weight(other);
+            return total>0 ? EffectiveChance(d)*ProgressionLoot.Weight(d)/total : 0;
+        }
+
         static void Put(Drop d, Vector2 at, bool direct)
         {
-            int n = Random.Range(d.Min, EffectiveMax(d) + 1);
+            int n;
+            if(d.MeanCount>0)
+            {
+                float mean=d.MeanCount*(1+AmountBonus*.5f);
+                n=Mathf.FloorToInt(mean);
+                if(Random.value<mean-n) n++;
+            }
+            else n = Random.Range(d.Min, EffectiveMax(d) + 1);
             if (n <= 0) return;
             if (DevSink != null) { DevSink(d.Type, n); DevDropped++; return; }
             // A boss's hearts: each its own, never into the bag.
@@ -391,6 +440,7 @@ namespace TerraKnight.Items
         /// <summary>Each frame in play: what didn't fit falls at the player's feet once they're somewhere the game doesn't take them from, and their own.</summary>
         public static void Tick(HeroController hero)
         {
+            ProgressionBalance.TickGifts(hero);
             if (waiting.Count == 0 || hero == null || !GameHooks.PlayerHasControl()) return;
             var gm = GameManager.UnsafeInstance;
             if (gm == null || gm.IsInSceneTransition || (LeavesOnItsOwn(gm.sceneName) && !GodhomeHall(gm.sceneName))) return;

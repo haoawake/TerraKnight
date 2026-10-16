@@ -63,6 +63,7 @@ namespace TerraKnight.Player
             D(BallistaPanic, "弩车恐慌！", "你的弩车在恐慌之中快速射击！");
             D(WellFed, "吃得好", "所有属性小幅提升"); D(PlentySatisfied, "很满意", "所有属性中幅提升"); D(ExquisitelyStuffed, "酒足饭饱", "所有属性大幅提升");
             D(Tipsy, "醉醺醺", "近战能力提升，防御力降低");
+            PlayerBuffs.Define(World.Meteorites.Burning, "燃烧", "正在损失生命值且移动已放缓", debuff: true);
             return true;
         }
 
@@ -171,6 +172,8 @@ namespace TerraKnight.Player
                 b.MoveSpeed += 0.1f * (1 + tier);
                 b.PickSpeed -= 0.05f * tier;
             }
+            // Burning (Player.cs:26141-26144): half speed on foot.
+            if (Has(World.Meteorites.Burning)) b.MoveSpeed -= 0.5f;
             // Tipsy (12005-12017): 4 defense less, melee crit +2%, melee damage and speed +10%.
             if (Has(Tipsy))
             {

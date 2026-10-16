@@ -154,6 +154,7 @@ namespace TerraKnight.World
                 case CellKind.Wood: return "Tiles_30";
                 case CellKind.Sand: return "Tiles_53";
                 case CellKind.MagicIce: return "Tiles_127";
+                case CellKind.Meteorite: return "Tiles_37";
                 default: return null;
             }
         }

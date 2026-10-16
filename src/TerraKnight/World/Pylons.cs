@@ -453,7 +453,25 @@ namespace TerraKnight.World
             hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
             gm.cameraCtrl.FadeOut(GlobalEnums.CameraFadeType.HERO_DEATH);
             yield return new WaitForSeconds(0.6f);
-            gm.ReadyForRespawn(false);
+            // Recall arrives standing. The bench respawn branch leaves the player sitting
+            // with input relinquished until its own get-up interaction, unlike a teleport.
+            int savedType=pd.respawnType;
+            string savedScene=pd.respawnScene,savedMarker=pd.respawnMarkerName;
+            pd.atBench=false;
+            pd.respawnType=0;
+            try
+            {
+                gm.ReadyForRespawn(false);
+                float until=Time.realtimeSinceStartup+40f;
+                yield return null;
+                while(Time.realtimeSinceStartup<until && (gm.IsInSceneTransition || gm.sceneName!=savedScene || !GameHooks.PlayerHasControl()))
+                    yield return null;
+            }
+            finally
+            {
+                if(pd.respawnScene==savedScene && pd.respawnMarkerName==savedMarker && pd.respawnType==0)
+                    pd.respawnType=savedType;
+            }
         }
 
         /// <summary>The player has come into a scene: a teleport that didn't arrive there is dropped (its scene failed to load).</summary>

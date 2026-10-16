@@ -24,6 +24,7 @@ namespace TerraKnight.Items
             foreach (var a in inv.EffectiveAccessories)
             {
                 if (a.IsEmpty) continue;
+                if (ProgressionBalance.Superseded(a.Type,inv.EffectiveAccessories)) continue;
                 b.Defense += a.Def.Defense;
                 b.Add(a.Def.Bonus);
             }
@@ -146,7 +147,9 @@ namespace TerraKnight.Items
         public static float ManaHeat => 1f + 0.2f * Player.PlayerBuffs.TimeLeft(Player.PlayerBuffs.ManaHeat) / 120f;
 
         /// <summary>Terraria 1.4's set bonuses for these sets.</summary>
-        public static Bonuses SetBonus(ArmorSet set)
+        public static Bonuses SetBonus(ArmorSet set) => ProgressionBalance.SetBonus(set, OriginalSetBonus(set));
+
+        static Bonuses OriginalSetBonus(ArmorSet set)
         {
             switch (set)
             {
@@ -230,7 +233,9 @@ namespace TerraKnight.Items
             }
         }
 
-        public static string SetBonusText(ArmorSet set)
+        public static string SetBonusText(ArmorSet set) => ProgressionBalance.SetDescription(set,OriginalSetBonusText(set));
+
+        static string OriginalSetBonusText(ArmorSet set)
         {
             switch (set)
             {

@@ -154,25 +154,31 @@ namespace TerraKnight.UI
         {
             if (!CreativeMenu.ProfilesShown() || covered) return;
             float ui = Screen.height / 1080f;
+            float w = 520f * ui, h = 44f * ui;
+            DrawPager(new Rect((Screen.width - w) / 2f, 236f * ui, w, h),ui,Page,p=>SetPage(p));
+        }
+
+        /// <summary>The same pager in the profiles screen and a modal slot picker. The owner keeps its page.</summary>
+        internal static void DrawPager(Rect r,float ui,int page,System.Action<int> select)
+        {
             CreativeMenu.Styles(ui);
             if (pageStyle == null) pageStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
             pageStyle.fontSize = Mathf.RoundToInt(24 * ui);
-            float w = 520f * ui, h = 44f * ui;
-            var r = new Rect((Screen.width - w) / 2f, 236f * ui, w, h);
-            string label = Lang.F("第 {0} / {1} 页", Page + 1, Pages) + "　" + Lang.F("存档 {0}-{1}", FirstOfPage, Mathf.Min(Max, FirstOfPage + PerPage - 1));
+            int first=page*PerPage+1;
+            string label = Lang.F("第 {0} / {1} 页", page + 1, Pages) + "　" + Lang.F("存档 {0}-{1}", first, Mathf.Min(Max, first + PerPage - 1));
             CreativeMenu.Shadowed(new Rect(r.x + 60f * ui, r.y, r.width - 120f * ui, r.height), label, pageStyle, new Color(0.92f, 0.92f, 0.95f));
-            if (Page > 0 && CreativeMenu.Button(new Rect(r.x, r.y, 52f * ui, h), "‹", ui)) SetPage(Page - 1);
-            if (Page < Pages - 1 && CreativeMenu.Button(new Rect(r.xMax - 52f * ui, r.y, 52f * ui, h), "›", ui)) SetPage(Page + 1);
+            if (page > 0 && CreativeMenu.Button(new Rect(r.x, r.y, 52f * ui, r.height), "‹", ui)) select(page - 1);
+            if (page < Pages - 1 && CreativeMenu.Button(new Rect(r.xMax - 52f * ui, r.y, 52f * ui, r.height), "›", ui)) select(page + 1);
             var e = Event.current;
             if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.PageDown || e.keyCode == KeyCode.PageUp))
             {
                 e.Use();
-                SetPage(Page + (e.keyCode == KeyCode.PageDown ? 1 : -1));
+                select(Mathf.Clamp(page + (e.keyCode == KeyCode.PageDown ? 1 : -1),0,Pages-1));
             }
             else if (e.type == EventType.ScrollWheel && Mathf.Abs(e.delta.y) > 0.01f)
             {
                 e.Use();
-                SetPage(Page + (e.delta.y > 0f ? 1 : -1));
+                select(Mathf.Clamp(page + (e.delta.y > 0f ? 1 : -1),0,Pages-1));
             }
         }
 

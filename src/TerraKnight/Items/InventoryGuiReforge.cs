@@ -60,7 +60,8 @@ namespace TerraKnight.Items
         static void ActReforgeSlot(bool leftPress)
         {
             if (!leftPress || !TownNpcs.ReforgeOpen) return;
-            if (!inv.Mouse.IsEmpty && !Prefixes.CanHave(ItemDb.Get(inv.Mouse.Type))) return;
+            // His forging takes a weapon only; his reforging what can have a prefix.
+            if (!inv.Mouse.IsEmpty && (TownNpcs.ForgeMode ? !Forging.CanForge(ItemDb.Get(inv.Mouse.Type)) : !Prefixes.CanHave(ItemDb.Get(inv.Mouse.Type)))) return;
             var held = inv.Mouse;
             inv.Mouse = TownNpcs.ReforgeItem;
             TownNpcs.ReforgeItem = held;

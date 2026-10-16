@@ -21,6 +21,13 @@ namespace TerraKnight.Items
     {
         static bool bestiaryOpen;
         static int bestiaryScroll, bestiaryFilter = -1;
+        static bool bestiaryByStage;
+        static int bestiaryStageFilter = -1;
+        static int ActiveBookFilter => bestiaryByStage ? bestiaryStageFilter : bestiaryFilter;
+        static int BookStageOf(string record) => ProgressionBalance.BossRewards.TryGetValue(record,out var boss)
+            ? boss.Stage : Mathf.Clamp(World.Areas.LevelOf(EnemyDrops.SceneOf(record)),0,5);
+        static int BookGroupOf(string record) => bestiaryByStage ? BookStageOf(record) : BestiaryRoute.Of(record).Area;
+        static string BookGroupName(int group) => bestiaryByStage ? Lang.F("阶段 {0}",group) : World.Areas.Display(BestiaryRoute.Areas[group]);
         static string bestiaryChosen, bestiaryScrollTo;
         static readonly List<string> bestiaryRows = new List<string>();
         static List<string> bestiaryAll;
@@ -46,6 +53,7 @@ namespace TerraKnight.Items
             bestiaryOpen = open;
             var all = AllBookRecords();
             bestiaryFilter = -1;
+            bestiaryByStage = false;
             bestiaryScroll = 0;
             bestiaryChosen = all.Count > 0 ? all[Mathf.Clamp(select, 0, all.Count - 1)] : null;
         }
@@ -55,6 +63,7 @@ namespace TerraKnight.Items
         {
             bestiaryOpen = true;
             bestiaryFilter = -1;
+            bestiaryStageFilter = -1;
             bestiaryChosen = record;
             bestiaryScrollTo = record;
         }
@@ -104,6 +113,14 @@ namespace TerraKnight.Items
         {
             bestiaryFilter = filter;
             bestiaryScroll = 0;
+        }
+
+        public static void DevBestiarySelect(int index) => SelectBestiary(index);
+        public static bool DevBestiaryByStage => bestiaryByStage;
+        public static List<string> DevBestiaryFiltered()
+        {
+            BuildBookLines(AllBookRecords());
+            return new List<string>(bestiaryRows);
         }
 
         /// <summary>Dev: what the grid shows now, a line per section ("heading: names").</summary>
@@ -164,14 +181,28 @@ namespace TerraKnight.Items
         {
             bestiaryRows.Clear();
             bookLines.Clear();
-            var areas = BestiaryRoute.Areas;
+            if(bestiaryByStage)
+            {
+                all=new List<string>(all);
+                all.Sort((a,b)=>
+                {
+                    int c=BookStageOf(a).CompareTo(BookStageOf(b));
+                    if(c!=0) return c;
+                    c=CategoryOf(a).CompareTo(CategoryOf(b));
+                    if(c!=0) return c;
+                    var ra=BestiaryRoute.Of(a);var rb=BestiaryRoute.Of(b);
+                    c=ra.Area.CompareTo(rb.Area);
+                    if(c!=0) return c;
+                    return ra.Order!=rb.Order ? ra.Order.CompareTo(rb.Order) : string.CompareOrdinal(a,b);
+                });
+            }
             int i = 0;
             while (i < all.Count)
             {
-                int area = BestiaryRoute.Of(all[i]).Area, cat = CategoryOf(all[i]);
+                int area = BookGroupOf(all[i]), cat = CategoryOf(all[i]);
                 int j = i;
-                while (j < all.Count && BestiaryRoute.Of(all[j]).Area == area && CategoryOf(all[j]) == cat) j++;
-                if (bestiaryFilter < 0 || area == bestiaryFilter)
+                while (j < all.Count && BookGroupOf(all[j]) == area && CategoryOf(all[j]) == cat) j++;
+                if (ActiveBookFilter < 0 || area == ActiveBookFilter)
                 {
                     int first = bestiaryRows.Count, seen = 0;
                     for (int k = i; k < j; k++)
@@ -180,7 +211,7 @@ namespace TerraKnight.Items
                         if (Bestiary.IsSeen(all[k])) seen++;
                     }
                     int n = j - i;
-                    string head = (bestiaryFilter < 0 ? World.Areas.Display(areas[area]) + " · " : "") + Lang.T(sectionNames[cat]) + $"  {seen}/{n}";
+                    string head = (ActiveBookFilter < 0 ? BookGroupName(area) + " · " : "") + Lang.T(sectionNames[cat]) + $"  {seen}/{n}";
                     bookLines.Add(new BookLine { Head = head, Color = CategoryColor(cat), First = -1 });
                     for (int k = 0; k < n; k += BookColumns)
                         bookLines.Add(new BookLine { First = first + k, Count = Mathf.Min(BookColumns, n - k) });
@@ -199,12 +230,24 @@ namespace TerraKnight.Items
         /// <summary>A click in the book: an entry (its index in the rows), or an area (-100 - area, -99 for all).</summary>
         static void SelectBestiary(int i)
         {
+            if(i==-2 || i==-3)
+            {
+                bool byStage=i==-3;
+                if(bestiaryByStage==byStage) return;
+                bestiaryByStage=byStage;
+                bestiaryScroll=dropScroll=0;
+                bestiaryScrollTo=null;
+                Sound("Menu_Tick");
+                return;
+            }
             if (i <= -99)
             {
                 int f = -100 - i;
-                if (f == bestiaryFilter) return;
-                bestiaryFilter = f;
+                if (f == ActiveBookFilter) return;
+                if(bestiaryByStage) bestiaryStageFilter=f; else bestiaryFilter = f;
                 bestiaryScroll = 0;
+                dropScroll=0;
+                bestiaryScrollTo=null;
                 Sound("Menu_Tick");
                 return;
             }
@@ -311,6 +354,7 @@ namespace TerraKnight.Items
             BookStyles(ui);
             var all = AllBookRecords();
             var areas = BestiaryRoute.Areas;
+            int groups=bestiaryByStage ? 6 : areas.Count;
             if (bestiaryFilter >= areas.Count) bestiaryFilter = -1;
             BuildBookLines(all);
             if (bestiaryChosen == null || !bestiaryRows.Contains(bestiaryChosen))
@@ -362,20 +406,30 @@ namespace TerraKnight.Items
             var side = new Rect(sx - 6f * ui, sy - 6f * ui, sw + 12f * ui, panel.yMax - sy - 4f * ui);
             Fill(side, BookInner);
             Rim(side, new Color(BookRim.r, BookRim.g, BookRim.b, 0.6f), 1.5f * ui);
-            float rh = Mathf.Min(27f * ui, (side.height - 8f * ui) / (areas.Count + 1));
-            for (int f = -1; f < areas.Count; f++)
+            for(int mode=0;mode<2;mode++)
+            {
+                var button=new Rect(sx+mode*(sw+4f*ui)/2f,sy,(sw-4f*ui)/2f,27f*ui);
+                bool on=bestiaryByStage==(mode==1);
+                Fill(button,on ? BookRim : button.Contains(mouse) ? BookHeadColor : BookBack);
+                Rim(button,on ? Gold : BookRim,1f*ui);
+                Outlined(button,Lang.T(mode==0 ? "按地区" : "按阶段"),bookCentre,on ? Gold : Color.white);
+                Add(button,Kind.BestiaryEntry,mode==0 ? -2 : -3);
+            }
+            float listY=sy+34f*ui;
+            float rh = Mathf.Min(27f * ui, (side.yMax-listY-8f*ui) / (groups + 1));
+            for (int f = -1; f < groups; f++)
             {
                 int total = 0, s = 0;
                 foreach (var r in all)
-                    if (f < 0 || BestiaryRoute.Of(r).Area == f) { total++; if (Bestiary.IsSeen(r)) s++; }
+                    if (f < 0 || BookGroupOf(r) == f) { total++; if (Bestiary.IsSeen(r)) s++; }
                 if (total == 0) continue;
-                var row = new Rect(sx, sy + (f + 1) * rh, sw, rh - 2f * ui);
-                bool on = f == bestiaryFilter, over = row.Contains(mouse);
+                var row = new Rect(sx, listY + (f + 1) * rh, sw, rh - 2f * ui);
+                bool on = f == ActiveBookFilter, over = row.Contains(mouse);
                 if (on) Fill(row, new Color(89 / 255f, 116 / 255f, 213 / 255f, 0.75f));
                 else if (over) Fill(row, new Color(1f, 1f, 1f, 0.12f));
                 if (on) Rim(row, Gold, 1.5f * ui);
                 bool full = s == total;
-                Outlined(new Rect(row.x + 8f * ui, row.y, row.width - 50f * ui, row.height), f < 0 ? Lang.T("全部地区") : World.Areas.Display(areas[f]), bookSmall,
+                Outlined(new Rect(row.x + 8f * ui, row.y, row.width - 50f * ui, row.height), f < 0 ? Lang.T(bestiaryByStage ? "全部阶段" : "全部地区") : BookGroupName(f), bookSmall,
                     on ? Color.white : full ? Gold : s > 0 ? new Color(0.88f, 0.9f, 1f) : new Color(0.6f, 0.62f, 0.75f));
                 Outlined(new Rect(row.x, row.y, row.width - 6f * ui, row.height), $"{s}/{total}", bookCount, full ? Gold : new Color(0.7f, 0.75f, 0.9f));
                 Add(row, Kind.BestiaryEntry, -100 - f);
@@ -660,12 +714,13 @@ namespace TerraKnight.Items
                 DrawIconOnly(s, ItemStack.Of(dr.Type));
                 // On the save's difficulty (EnemyDrops.EffectiveChance / EffectiveMax).
                 int most = EnemyDrops.EffectiveMax(dr);
-                string count = dr.Min == most ? (dr.Min > 1 ? $" ×{dr.Min}" : "") : $" ×{dr.Min}-{most}";
+                int least = EnemyDrops.EffectiveMin(dr);
+                string count = least == most ? (least > 1 ? $" ×{least}" : "") : $" ×{least}-{most}";
                 float eff = EnemyDrops.EffectiveChance(dr);
                 string chance = eff >= 1f ? Lang.T("必定掉落") : $"{eff * 100f:0.##}%";
                 // One of a sure pick: one of the group's unlocked drops comes, at the group's chance.
                 int of = EnemyDrops.GroupSize(drops, dr.Group);
-                if (of > 0) chance = eff >= 1f ? Lang.F("{0} 选 1 必掉", of) : Lang.F("{0}% 掉 {1} 选 1", (eff * 100f).ToString("0.##"), of);
+                if (of > 0) chance = (EnemyDrops.MarginalChance(drops,dr)*100f).ToString("0.##") + "%";
                 if (dr.Master) chance = Lang.T("大师模式必掉");
                 var def = ItemDb.Get(dr.Type);
                 Outlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), def.Name + count, bookSmall, ItemDb.RarityColor(def.Rare));
