@@ -20,6 +20,7 @@ namespace TerraKnight.World
             public GameObject Go;
             public CompositeCollider2D Composite;
             public readonly List<BoxCollider2D> Boxes = new List<BoxCollider2D>();
+            public readonly List<PolygonCollider2D> Shapes = new List<PolygonCollider2D>();
             public GameObject PlatformGo;
             public CompositeCollider2D Platforms;
             public readonly List<BoxCollider2D> PlatformBoxes = new List<BoxCollider2D>();
@@ -96,17 +97,17 @@ namespace TerraKnight.World
         /// <summary>Cells the grid leaves to the game's own colliders (a boss's arena, TerrainRegion.SetOwnZone).</summary>
         public System.Func<int, int, bool> Skip;
 
-        bool Blocks(int x, int y) => grid.InClip(x, y) && Cells.Blocks(grid.Get(x, y)) && (Skip == null || !Skip(x, y));
+        bool Blocks(int x, int y) => grid.InClip(x, y) && grid.IsFullSolid(x, y) && (Skip == null || !Skip(x, y));
 
         // Only flat platforms collide here; a stair is walked by StairCollision instead.
-        bool IsPlatform(int x, int y) => grid.InClip(x, y) && grid.Get(x, y) == CellKind.Platform && grid.GetSlope(x, y) == 0 && (Skip == null || !Skip(x, y));
+        bool IsPlatform(int x, int y) => grid.InClip(x, y) && grid.Get(x, y) == CellKind.Platform && (grid.GetSlope(x, y) == 0 || grid.GetSlope(x, y) == CellGrid.HalfBrick) && (Skip == null || !Skip(x, y));
 
         void Rebuild(int cx, int cy)
         {
             int x0 = cx * ChunkCells, y0 = cy * ChunkCells;
             int x1 = Mathf.Min(x0 + ChunkCells, grid.Width), y1 = Mathf.Min(y0 + ChunkCells, grid.Height);
             var chunk = chunks[cy * cols + cx];
-            int boxes = 0, platforms = 0;
+            int boxes = 0, platforms = 0, shapes = 0;
             const float c = CellGrid.CellSize;
 
             greedy.Run(x0, y0, x1, y1, Blocks, (x, y, w, h) =>
@@ -118,25 +119,59 @@ namespace TerraKnight.World
                 box.enabled = true;
                 boxes++;
             });
-            // Platforms: one box per horizontal run, a full cell tall (only the top surface collides).
+            // Shaped solids keep their solid side and underside. Top slopes sit a pixel below
+            // the walking surface; StairCollision supplies the horizontal ledge HK stands on.
+            for (int y = y0; y < y1; y++)
+            for (int x = x0; x < x1; x++)
+            {
+                if (!grid.InClip(x, y) || !Cells.Blocks(grid.Get(x, y)) || (Skip != null && Skip(x, y))) continue;
+                int s = grid.GetSlope(x, y);
+                if (s == 0) continue;
+                if (chunk == null) chunk = CreateChunk(cx, cy);
+                float l = (x - x0) * c, b = (y - y0) * c;
+                if (s == CellGrid.HalfBrick)
+                {
+                    var half = boxes < chunk.Boxes.Count ? chunk.Boxes[boxes] : AddBox(chunk.Go, chunk.Boxes);
+                    half.size = new Vector2(c, c / 2);
+                    half.offset = new Vector2(l + c / 2, b + c / 4);
+                    half.enabled = true;
+                    boxes++;
+                    continue;
+                }
+                var poly = shapes < chunk.Shapes.Count ? chunk.Shapes[shapes] : chunk.Go.AddComponent<PolygonCollider2D>();
+                if (shapes == chunk.Shapes.Count) chunk.Shapes.Add(poly);
+                poly.compositeOperation = Collider2D.CompositeOperation.Merge;
+                float t = b + c, r = l + c, inset = 1f / 32f;
+                poly.points = s == 1 ? new[] { new Vector2(l,b), new Vector2(l,t-inset), new Vector2(r-inset,b) } :
+                    s == 2 ? new[] { new Vector2(l+inset,b), new Vector2(r,t-inset), new Vector2(r,b) } :
+                    s == 3 ? new[] { new Vector2(l,b), new Vector2(l,t), new Vector2(r,t) } :
+                    new[] { new Vector2(l,t), new Vector2(r,t), new Vector2(r,b) };
+                poly.enabled = true;
+                shapes++;
+            }
+            // Only the top four pixels of a platform have a collider, including half platforms.
             for (int y = y0; y < y1; y++)
                 for (int x = x0; x < x1; x++)
                 {
                     if (!IsPlatform(x, y)) continue;
                     int start = x;
-                    while (x + 1 < x1 && IsPlatform(x + 1, y)) x++;
+                    int shape = grid.GetSlope(x, y);
+                    while (x + 1 < x1 && IsPlatform(x + 1, y) && grid.GetSlope(x + 1, y) == shape) x++;
                     if (chunk == null) chunk = CreateChunk(cx, cy);
                     if (chunk.PlatformGo == null) CreatePlatforms(chunk);
                     var box = platforms < chunk.PlatformBoxes.Count ? chunk.PlatformBoxes[platforms] : AddBox(chunk.PlatformGo, chunk.PlatformBoxes, platform: true);
                     int w = x - start + 1;
-                    box.size = new Vector2(w * c, c);
-                    box.offset = new Vector2((start - x0 + w * 0.5f) * c, (y - y0 + 0.5f) * c);
+                    const float thickness = 4f / 32f;
+                    float top = (y - y0 + (shape == CellGrid.HalfBrick ? 0.5f : 1f)) * c;
+                    box.size = new Vector2(w * c, thickness);
+                    box.offset = new Vector2((start - x0 + w * 0.5f) * c, top - thickness / 2);
                     box.enabled = true;
                     platforms++;
                 }
 
             if (chunk == null) return;
             for (int i = boxes; i < chunk.Boxes.Count; i++) chunk.Boxes[i].enabled = false;
+            for (int i = shapes; i < chunk.Shapes.Count; i++) chunk.Shapes[i].enabled = false;
             chunk.Composite.GenerateGeometry();
             if (chunk.Platforms != null)
             {

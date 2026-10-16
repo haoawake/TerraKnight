@@ -172,10 +172,15 @@ namespace TerraKnight.UI
             return null;
         }
 
+        /// <summary>Enemies with no journal entry but a name of their own (the Shade's death effects carry another enemy's record).</summary>
+        static readonly (string Prefix, string Name)[] ownNames = { ("Hollow Shade", "阴影") };
+
         static string JournalName(HealthManager hm)
         {
             string dream = DreamTitle(hm.gameObject.name);
             if (dream != null) return dream;
+            foreach (var (prefix, own) in ownNames)
+                if (hm.gameObject.name.StartsWith(prefix)) return Lang.T(own);
             foreach (var (prefix, rec) in nameToRecord)
                 if (hm.gameObject.name.StartsWith(prefix) && rec != null) return NameOfRecord(rec);
             var death = hm.GetComponent<EnemyDeathEffects>();

@@ -82,6 +82,7 @@ namespace TerraKnight.World
             Holes = new HoleCutter(root, art);
             visuals = new CellVisuals(grid, root, Holes, fill) { DugWallSheet = Areas.WallFor(sceneName) };
             grid.CellChanged += OnCellChanged;
+            grid.WallChanged += OnWallChanged;
             if (buildNow) Build();
             else pendingBuild = true;
         }
@@ -97,6 +98,7 @@ namespace TerraKnight.World
             colliders.BuildAll();
             fill.BuildAll();
             foreach (int i in edits.Keys) visuals.MarkDirty(i % Grid.Width, i / Grid.Width);
+            foreach (int i in WorldWalls.For(SceneName).Keys) visuals.MarkDirty(i % Grid.Width, i / Grid.Width);
             visuals.RefreshDirty();
             fill.RebuildDirty();
         }
@@ -105,6 +107,7 @@ namespace TerraKnight.World
         public static void ReplayEdits(CellGrid grid, string sceneName)
         {
             grid.CaptureNetworkBase();
+            foreach (var w in WorldWalls.For(sceneName)) grid.RestoreWall(w.Key, w.Value);
             foreach (var e in WorldEdits.For(sceneName))
             {
                 WorldEdits.Unpack(e.Value, out var kind, out bool wasDug, out int slope);
@@ -144,6 +147,15 @@ namespace TerraKnight.World
         /// <summary>Any region's cell changed and was recorded in the save's edits (local cells): what a LAN game passes on.</summary>
         public static event System.Action<TerrainRegion, int, int> Edited;
 
+        public static event System.Action<TerrainRegion, int, int> WallEdited;
+        void OnWallChanged(int x, int y)
+        {
+            int i = y * Grid.Width + x;
+            WorldWalls.For(SceneName)[i] = Grid.WallAt(i);
+            visuals.MarkDirty(x, y);
+            WallEdited?.Invoke(this, x, y);
+        }
+
         void OnCellChanged(int x, int y)
         {
             int i = y * Grid.Width + x;
@@ -166,6 +178,7 @@ namespace TerraKnight.World
         public void Destroy()
         {
             Grid.CellChanged -= OnCellChanged;
+            Grid.WallChanged -= OnWallChanged;
             fill.DestroyMeshes();
             if (Root != null) Object.Destroy(Root.gameObject);
         }

@@ -59,6 +59,7 @@ namespace TerraKnight.Items
 
         static readonly System.Reflection.MethodInfo doAttack = AccessTools.Method(typeof(HeroController), "DoAttack");
         static readonly System.Reflection.MethodInfo canAttack = AccessTools.Method(typeof(HeroController), "CanAttack");
+        static readonly System.Reflection.FieldInfo attackCooldown = AccessTools.Field(typeof(HeroController), "attack_cooldown");
         static float nextCheck;
         static bool suppressed;
 
@@ -75,9 +76,14 @@ namespace TerraKnight.Items
             if (!raw) suppressed = false;
             // A press that lands on the inventory or the hotbar is the interface's.
             if (raw && !suppressed && mouse != null && mouse.leftButton.wasPressedThisFrame && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver)) suppressed = true;
-            if (raw && !suppressed && Holding() && GameHooks.PlayerHasControl() && !InventoryGui.Open && (bool)canAttack.Invoke(hero, null))
+            // The inventory open, it swings as Terraria's held item does; an item on the cursor is the one used instead.
+            if (raw && !suppressed && Holding() && GameHooks.PlayerHasControl() && !(InventoryGui.Open && !mod.Inventory.Mouse.IsEmpty) && (bool)canAttack.Invoke(hero, null))
             {
                 doAttack.Invoke(hero, null);
+                // A reforged nail's speed (its use time against the plain one's) scales the wait before the next slash.
+                var held = mod.Inventory.Current.Def;
+                if (held?.Unprefixed != null && held.Unprefixed.UseAnimation > 0f && attackCooldown != null)
+                    attackCooldown.SetValue(hero, (float)attackCooldown.GetValue(hero) * held.UseAnimation / held.Unprefixed.UseAnimation);
                 DevSwings++;
             }
             if (Time.unscaledTime < nextCheck) return;
@@ -106,8 +112,9 @@ namespace TerraKnight.Items
             if (__instance == null || __instance.isDead || hitInstance.DamageDealt <= 0) return true;
             var col = __instance.GetComponent<Collider2D>() ?? __instance.GetComponentInChildren<Collider2D>();
             if (col == null) return true;
-            var def = ItemDb.Get(ItemType.KnightNail);
-            def.Damage = DamageNow();
+            ItemDb.Get(ItemType.KnightNail).Damage = DamageNow();
+            // The nail in hand: a reforged one hits with its prefix.
+            var def = mod.Inventory.Current.Def;
             Vector2 from = hero.GetComponent<BoxCollider2D>().bounds.center;
             float facing = col.bounds.center.x >= from.x ? 1f : -1f;
             // The slash hears that it struck (its "DEALT DAMAGE"), as from the game's own hit.
@@ -127,6 +134,25 @@ namespace TerraKnight.Items
         /// Terraria's movement the recoil's speed would carry on and slide the player far back, the run
         /// taking it off only a little each tick: the horizontal speed stops there, and the keys take over.
         /// </summary>
+        /// <summary>A reforged nail's size (Large, Massive…) on the Knight's slash, over the charms' own scale.</summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.StartSlash))]
+        static void SlashSize(NailSlash __instance)
+        {
+            var hero = HeroController.SilentInstance;
+            var mod = TerraMod.Instance;
+            if (hero == null || mod == null || !Holding() || !__instance.transform.IsChildOf(hero.transform)) return;
+            var held = mod.Inventory.Current.Def;
+            if (held?.Unprefixed == null || held.Unprefixed.Scale <= 0f) return;
+            float k = held.Scale / held.Unprefixed.Scale;
+            var s = __instance.transform.localScale;
+            __instance.transform.localScale = new Vector3(s.x * k, s.y * k, s.z);
+            DevSlashScale = k;
+        }
+
+        /// <summary>Dev: the last slash's prefix size.</summary>
+        public static float DevSlashScale = 1f;
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "CancelRecoilHorizontal")]
         static void StopAfterRecoil(Rigidbody2D ___rb2d)

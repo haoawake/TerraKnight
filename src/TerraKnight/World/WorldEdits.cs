@@ -33,8 +33,8 @@ namespace TerraKnight.World
             return edits;
         }
 
-        /// <summary>The kind in bits 0-3, a platform's slope in bits 4-5, dug in bit 7 (older saves read back as flat).</summary>
-        public static byte Pack(CellKind kind, bool dug, int slope = 0) => (byte)((byte)kind | (slope & 3) << 4 | (dug ? DugFlag : 0));
+        /// <summary>The kind in bits 0-3, shape in bits 4-6, dug in bit 7 (older saves read back as flat).</summary>
+        public static byte Pack(CellKind kind, bool dug, int slope = 0) => (byte)((byte)kind | (slope & 7) << 4 | (dug ? DugFlag : 0));
 
         public static void Unpack(byte value, out CellKind kind, out bool dug) => Unpack(value, out kind, out dug, out _);
 
@@ -43,7 +43,7 @@ namespace TerraKnight.World
             kind = (CellKind)(value & 0x0F);
             // The Ice Rod's ice melts with its bolt; a scene left before it thawed comes back without it.
             if (kind == CellKind.MagicIce) kind = CellKind.Empty;
-            slope = (value >> 4) & 3;
+            slope = (value >> 4) & 7;
             dug = (value & DugFlag) != 0;
         }
     }

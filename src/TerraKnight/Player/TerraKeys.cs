@@ -23,7 +23,22 @@ namespace TerraKnight.Player
         {
             Up, Down, Left, Right, Jump, Throw, Inventory, Grapple, QuickHeal, QuickMana, AutoSelect, SmartCursor, FullMap, MapStyle, Chat,
             Hotbar1, Hotbar2, Hotbar3, Hotbar4, Hotbar5, Hotbar6, Hotbar7, Hotbar8, Hotbar9, Hotbar10, Loadout1, Loadout2, Loadout3, Loadout4,
+            // 1.4.4-1.4.5: the Dash key, Quick Buff, the map's zoom and opacity, cycling the loadouts, the armor set ability.
+            Dash, QuickBuff, MapZoomIn, MapZoomOut, MapAlphaUp, MapAlphaDown, NextLoadout, PreviousLoadout, ArmorSetAbility,
         }
+
+        /// <summary>
+        /// The list as Terraria's Keybindings menu orders it (UIManageControls.AssembleBindPanels): the gameplay controls,
+        /// the map's, the hotbar's; the mod's own (Chat, the fourth loadout) among them.
+        /// </summary>
+        public static readonly Action[] Ordered =
+        {
+            Action.Up, Action.Down, Action.Left, Action.Right, Action.Jump, Action.Grapple, Action.AutoSelect, Action.SmartCursor,
+            Action.QuickHeal, Action.QuickMana, Action.QuickBuff, Action.Throw, Action.Inventory, Action.Chat,
+            Action.Loadout1, Action.Loadout2, Action.Loadout3, Action.Loadout4, Action.NextLoadout, Action.PreviousLoadout, Action.ArmorSetAbility, Action.Dash,
+            Action.MapZoomIn, Action.MapZoomOut, Action.MapAlphaUp, Action.MapAlphaDown, Action.FullMap, Action.MapStyle,
+            Action.Hotbar1, Action.Hotbar2, Action.Hotbar3, Action.Hotbar4, Action.Hotbar5, Action.Hotbar6, Action.Hotbar7, Action.Hotbar8, Action.Hotbar9, Action.Hotbar10,
+        };
 
         public static readonly Action[] All = (Action[])Enum.GetValues(typeof(Action));
 
@@ -40,7 +55,7 @@ namespace TerraKnight.Player
         }
 
         /// <summary>A binding as the config writes it: the key's name, or Terraria's Mouse3 / Mouse4 / Mouse5.</summary>
-        static string Id(Key k) => k == MouseMiddle ? "Mouse3" : k == MouseBack ? "Mouse4" : k == MouseForward ? "Mouse5" : k.ToString();
+        static string Id(Key k) => k == MouseMiddle ? "Mouse3" : k == MouseBack ? "Mouse4" : k == MouseForward ? "Mouse5" : k == Key.None ? "None" : k.ToString();
 
         static bool TryParse(string s, out Key k)
         {
@@ -49,6 +64,7 @@ namespace TerraKnight.Player
                 case "mouse3": case "middlebutton": k = MouseMiddle; return true;
                 case "mouse4": case "backbutton": k = MouseBack; return true;
                 case "mouse5": case "forwardbutton": k = MouseForward; return true;
+                case "none": k = Key.None; return true;
             }
             return Enum.TryParse(s, true, out k) && k != Key.None && !IsMouse(k);
         }
@@ -61,6 +77,10 @@ namespace TerraKnight.Player
             [Action.Hotbar1] = Key.Digit1, [Action.Hotbar2] = Key.Digit2, [Action.Hotbar3] = Key.Digit3, [Action.Hotbar4] = Key.Digit4, [Action.Hotbar5] = Key.Digit5,
             [Action.Hotbar6] = Key.Digit6, [Action.Hotbar7] = Key.Digit7, [Action.Hotbar8] = Key.Digit8, [Action.Hotbar9] = Key.Digit9, [Action.Hotbar10] = Key.Digit0,
             [Action.Loadout1] = Key.F1, [Action.Loadout2] = Key.F2, [Action.Loadout3] = Key.F3, [Action.Loadout4] = Key.F4,
+            // PlayerInput.Reset (Redigit's Pick): Dash, the loadout cycling and the armor set ability are left unbound.
+            [Action.Dash] = Key.None, [Action.QuickBuff] = Key.B, [Action.MapZoomIn] = Key.NumpadPlus, [Action.MapZoomOut] = Key.NumpadMinus,
+            [Action.MapAlphaUp] = Key.PageUp, [Action.MapAlphaDown] = Key.PageDown, [Action.NextLoadout] = Key.None, [Action.PreviousLoadout] = Key.None,
+            [Action.ArmorSetAbility] = Key.None,
         };
 
         static readonly Dictionary<Action, Key> keys = new Dictionary<Action, Key>(defaults);
@@ -69,8 +89,21 @@ namespace TerraKnight.Player
         /// <summary>Bumped whenever a binding changes (the movement bindings are put on the game's actions again).</summary>
         public static int Version { get; private set; }
 
+        static ConfigEntry<bool> doubleTapDash;
+
+        /// <summary>Double Tap Dashing (Player.Settings.DashControl, on by default): a dash also on tapping a direction twice; off, only the Dash key dashes.</summary>
+        public static bool DoubleTapDash
+        {
+            get => doubleTapDash == null || doubleTapDash.Value;
+            set
+            {
+                if (doubleTapDash != null) doubleTapDash.Value = value;
+            }
+        }
+
         public static void Bind(ConfigFile cfg)
         {
+            doubleTapDash = cfg.Bind("Keys", "DoubleTapDash", true, "双击方向键冲刺（泰拉瑞亚按键设置里的“双击冲刺”）；关掉后只能用冲刺键冲刺。");
             foreach (var a in All)
             {
                 var e = cfg.Bind("Keys", a.ToString(), defaults[a].ToString(), $"{a} 的按键（Unity Input System 的键名，如 W、Space、LeftShift、Digit1、F1；鼠标中键 Mouse3，侧键 Mouse4 / Mouse5）。游戏里物品栏右下角“泰拉瑞亚设置”里可以直接改。");
@@ -98,6 +131,7 @@ namespace TerraKnight.Player
         public static void ResetAll()
         {
             foreach (var a in All) Set(a, defaults[a]);
+            DoubleTapDash = true;
         }
 
         static ButtonControl Control(Action a)
@@ -161,7 +195,8 @@ namespace TerraKnight.Player
                 foreach (var c in kb.allKeys)
                 {
                     if (c == null || !c.wasPressedThisFrame || c.keyCode == Key.None) continue;
-                    Set(Listening.Value, c.keyCode);
+                    // PlayerInput.ListenFor: the key it already has takes it off (unbound).
+                    Set(Listening.Value, c.keyCode == Get(Listening.Value) ? Key.None : c.keyCode);
                     StopListening();
                     return;
                 }
@@ -170,7 +205,7 @@ namespace TerraKnight.Player
             {
                 var b = MouseButton(k);
                 if (b == null || !b.wasPressedThisFrame) continue;
-                Set(Listening.Value, k);
+                Set(Listening.Value, k == Get(Listening.Value) ? Key.None : k);
                 StopListening();
                 return;
             }
@@ -180,6 +215,7 @@ namespace TerraKnight.Player
         public static bool Clashes(Action a)
         {
             var k = Get(a);
+            if (k == Key.None) return false;
             foreach (var b in All)
                 if (b != a && Get(b) == k) return true;
             return false;
@@ -197,13 +233,18 @@ namespace TerraKnight.Player
                 Action.QuickMana => "LegacyMenu.156", Action.QuickHeal => "LegacyMenu.159", Action.AutoSelect => "LegacyMenu.160", Action.SmartCursor => "LegacyMenu.161",
                 Action.MapStyle => "LegacyMenu.172", Action.FullMap => "LegacyMenu.173",
                 Action.Loadout1 => "UI.Loadout1", Action.Loadout2 => "UI.Loadout2", Action.Loadout3 => "UI.Loadout3",
+                Action.Dash => "UI.Dash", Action.QuickBuff => "LegacyMenu.157", Action.MapZoomIn => "LegacyMenu.168", Action.MapZoomOut => "LegacyMenu.169",
+                Action.MapAlphaUp => "LegacyMenu.171", Action.MapAlphaDown => "LegacyMenu.170", Action.NextLoadout => "UI.NextLoadout",
+                Action.PreviousLoadout => "UI.PreviousLoadout", Action.ArmorSetAbility => "UI.ArmorSetAbility",
                 _ => null,
             };
             if (IsHotbar(a)) key = "LegacyMenu." + (176 + (a - Action.Hotbar1));
             string zh = a switch
             {
                 Action.Chat => "聊天", Action.Loadout4 => "配装4", Action.Jump => "跳", Action.Throw => "丢下", Action.Grapple => "抓钩", Action.FullMap => "切换完整地图",
-                Action.MapStyle => "切换地图类型", _ => a.ToString(),
+                Action.MapStyle => "切换地图类型", Action.Dash => "冲刺", Action.QuickBuff => "快速增益", Action.MapZoomIn => "放大", Action.MapZoomOut => "缩小",
+                Action.MapAlphaUp => "降低透明度", Action.MapAlphaDown => "提高透明度", Action.NextLoadout => "下一配装", Action.PreviousLoadout => "上一配装",
+                Action.ArmorSetAbility => "盔甲套装能力", _ => a.ToString(),
             };
             return (key != null ? Terraria.TerrariaText.Get(Lang.Culture, key) : null) ?? Lang.T(zh);
         }
@@ -211,6 +252,8 @@ namespace TerraKnight.Player
         /// <summary>A key as the keyboard shows it.</summary>
         public static string KeyName(Key k)
         {
+            // LegacyMenu.195: "<Unbound>"
+            if (k == Key.None) return Terraria.TerrariaText.Get(Lang.Culture, "LegacyMenu.195") ?? Lang.T("<未绑定>");
             if (k == MouseMiddle) return Lang.T("鼠标中键");
             if (k == MouseBack) return Lang.T("鼠标侧键（后）");
             if (k == MouseForward) return Lang.T("鼠标侧键（前）");

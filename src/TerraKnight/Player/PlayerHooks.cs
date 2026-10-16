@@ -42,6 +42,8 @@ namespace TerraKnight.Player
         static void EquipmentFlags(string boolName, ref bool __result)
         {
             if (!Active) return;
+            // Hallownest's key items work from the hotbar (Items.HkItems).
+            Items.HkItems.GateBool(boolName, ref __result);
             // The mining helmet, and the Night Owl potion (nightVision: the dark is seen through), light the dark rooms as the lantern does.
             if (boolName == "hasLantern") __result |= Items.Equipment.Current.Light || Items.Equipment.Current.NightVision;
             else if (boolName == "hasAcidArmour") __result |= Items.Equipment.Current.Swim;

@@ -296,8 +296,12 @@ namespace TerraKnight.Items
                 DevCollected++;
                 UI.BestiaryToast.Show(record, true);
             }
+            // The fight being paid: its scene and its boss's name tell a variant's relic.
+            Relics.ContextScene = __instance.gameObject.scene.name;
+            Relics.ContextName = __instance.gameObject.name;
             if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name));
             else EnemyDrops.Roll(record, __instance);
+            Relics.ContextScene = Relics.ContextName = null;
         }
 
         /// <summary>Dev: a boss's bodies that fell while another was still up (not counted on their own).</summary>

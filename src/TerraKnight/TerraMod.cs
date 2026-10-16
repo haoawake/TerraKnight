@@ -192,6 +192,8 @@ namespace TerraKnight
             PlayerBuffs.Clear();
             SummonTags.Clear();
             Town.TownNpcs.Clear();
+            Town.Angler.Clear();
+            InventoryGui.ClearSold();
             Bestiary.Clear();
             Shop.SpareCopper = 0;
             EnemyDebuffs.Clear();
@@ -240,6 +242,7 @@ namespace TerraKnight
             if (gameplay && !gm.isPaused && TerrainSystem.Current != null) InventoryGui.Tick();
             if (gameplay) World.BossPlatforms.Tick();
             if (gameplay) AcidLiquid.Tick();
+            if (gm == null || !gm.isPaused) Fishing.Tick(gameplay ? hero : null);
             if (gameplay) BossPhases.Tick();
             if (gameplay)
             {
@@ -270,6 +273,8 @@ namespace TerraKnight
                 Pylons.Tick(hero);
                 InfoAccessories.Tick(Inventory, hero);
                 Town.TownNpcs.Tick(hero);
+                Town.Angler.Tick();
+                Items.HkItems.Tick(this);
                 Town.TownNpcs.Draw();
                 if (Creative) Shop.KeepCreativeGeo(hero);
                 BossArena.Tick();
@@ -310,7 +315,7 @@ namespace TerraKnight
             if (!Net.NetChat.BlocksKeys) ReadKeys();
             if (!MouseWorld(out var mouse)) return;
             // A right click on a townsperson in reach starts talking to it (Main.HoverOverNPCs).
-            bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Town.TownNpcs.TryRightClick(mouse);
+            bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && (Town.TownNpcs.TryRightClick(mouse) || Town.Angler.TryRightClick(mouse));
             // A right click on an own sentry in reach puts it away (TryDespawningProjectile, 1.4).
             talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && Mouse.current.rightButton.wasPressedThisFrame && Minions.Instance != null && Minions.Instance.TryDespawnSentry(mouse));
             // A right click on a chest in reach opens it (Player.TileInteractionsUse); on the pet Pal, a pat (Player.PetAnimal).
@@ -321,10 +326,13 @@ namespace TerraKnight
             GrapplingHook.Instance?.ReadKey(hero, GrapplingHook.HookItem(Inventory), mouse);
 
             AutoSelect(hero, DevAim ?? mouse);
+            // TileObject.DrawPreview: the furniture in hand drawn where it would go.
+            PlacementGhost.Tick(hero, Inventory.Current.IsEmpty ? null : Inventory.Current.Def, DevAim ?? mouse, InventoryGui.MouseOverUi);
             Player.SpotReport.Tick(hero, mouse);
             // Terraria: with the inventory open, the item on the cursor is the one used in the world.
             Inventory.UseMouse = InventoryGui.Open && !Inventory.Mouse.IsEmpty;
             var def = Inventory.Current.Def;
+            if (!DevNoRealMouse && (!Mouse.current.leftButton.isPressed || Mouse.current.leftButton.wasPressedThisFrame)) BuildingTools.PoundReady = true;
             // Over the hotbar (closed) or any panel (open), a click is the interface's, not a use.
             bool overUi = InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver;
             if (!DevNoRealMouse && !overUi && !talked && Mouse.current.rightButton.wasPressedThisFrame) MeleeSpecials.RightLatch = true;
@@ -334,7 +342,7 @@ namespace TerraKnight
             AimPoint = mouse;
             // A pickaxe aimed at a geo rock knocks geo out of it, the way it would break a pot.
             Collider2D rock = !overUi && def.PickPower > 0 ? GeoRockAt(mouse, bounds, def) : null;
-            if (!overUi && rock == null && (def.PickPower > 0 || def.Places != CellKind.Empty))
+            if (!overUi && rock == null && (def.PickPower > 0 || def.HammerPower > 0 || def.PlacesWall > 0 || def.Places != CellKind.Empty))
                 usable = FindTarget(hero, def, mouse, out cell, out smart);
             // Terraria marks only the smart cursor's pick.
             highlight.gameObject.SetActive(usable && smart);
@@ -345,7 +353,7 @@ namespace TerraKnight
             }
 
             if (!overUi && !talked && !usable && rock == null && !DevNoRealMouse && Mouse.current.leftButton.isPressed
-                && (def.PickPower > 0 || def.Places != CellKind.Empty || def.PlacesChest || def.PlacesStation != StationKind.None) && BossRooms.Locked(mouse))
+                && (def.PickPower > 0 || def.HammerPower > 0 || def.PlacesWall > 0 || def.Places != CellKind.Empty || def.PlacesChest || def.PlacesStation != StationKind.None) && BossRooms.Locked(mouse))
                 BossRooms.Notice(mouse);
             // Potions and crystals take a click each; everything else keeps going while held.
             bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def);
@@ -434,15 +442,32 @@ namespace TerraKnight
             if (scroll > 0.1f) Inventory.Selected = (Inventory.Selected + Inventory.HotbarSize - 1) % Inventory.HotbarSize;
             else if (scroll < -0.1f) Inventory.Selected = (Inventory.Selected + 1) % Inventory.HotbarSize;
 
-            // Shield of Cthulhu: double-tap a direction to dash, as in Terraria.
+            // Shield of Cthulhu: double-tap a direction to dash, as in Terraria (unless Double Tap Dashing is off).
             int tap = TerraKeys.Pressed(TerraKeys.Action.Left) || kb.leftArrowKey.wasPressedThisFrame ? -1
                     : TerraKeys.Pressed(TerraKeys.Action.Right) || kb.rightArrowKey.wasPressedThisFrame ? 1 : 0;
-            if (tap != 0)
+            if (tap != 0 && TerraKeys.DoubleTapDash)
             {
                 if (tap == lastTapDirection && Time.unscaledTime - lastTapTime < DoubleTapWindow) TerraMovement.RequestDash(tap);
                 lastTapDirection = tap;
                 lastTapTime = Time.unscaledTime;
             }
+            // The Dash key (Player.DoCommonDashHandle, Pl:21722-21781): the way faced, or the way held against it; held
+            // through the cooldown it goes the moment it may; once a press.
+            if (!TerraKeys.Held(TerraKeys.Action.Dash)) dashKeyArmed = true;
+            else if (dashKeyArmed)
+            {
+                if (TerraMovement.IsDashing) dashKeyArmed = false;
+                else if (TerraMovement.DashKind != 0)
+                {
+                    var dh = HeroController.SilentInstance;
+                    int dir = dh != null && dh.cState.facingRight ? 1 : -1;
+                    int held = (TerraKeys.Held(TerraKeys.Action.Right) ? 1 : 0) - (TerraKeys.Held(TerraKeys.Action.Left) ? 1 : 0);
+                    if (held == -dir) dir = held;
+                    TerraMovement.RequestDash(dir);
+                }
+            }
+            // The Armor Set Ability key (Pl:25210-25213): as double-tapping down.
+            if (TerraKeys.Pressed(TerraKeys.Action.ArmorSetAbility)) ArmorEffects.KeyDoubleTapDown();
             // The armor set key: double-tapping down (KeyDoubleTap, Pl:25245-25254), the Vortex stealth and the Forbidden storm.
             if (TerraKeys.Pressed(TerraKeys.Action.Down) || kb.downArrowKey.wasPressedThisFrame)
             {
@@ -461,6 +486,11 @@ namespace TerraKnight
             // Throw (T, the old default and the usual binding): the held stack, or the cursor's.
             if (TerraKeys.Pressed(TerraKeys.Action.Throw)) ThrowHeld(false);
             if (TerraKeys.Pressed(TerraKeys.Action.QuickMana)) QuickUse(d => d.HealMana > 0);
+            // Quick Buff (Player.QuickBuff): every buff potion and food carried whose buff isn't on.
+            if (TerraKeys.Pressed(TerraKeys.Action.QuickBuff)) QuickBuff();
+            // Next and Previous Loadout (Pl:5643-5653), round the four.
+            if (TerraKeys.Pressed(TerraKeys.Action.NextLoadout)) TrySwitchLoadout((Inventory.CurrentLoadout + 1) % Inventory.LoadoutCount);
+            if (TerraKeys.Pressed(TerraKeys.Action.PreviousLoadout)) TrySwitchLoadout((Inventory.CurrentLoadout + Inventory.LoadoutCount - 1) % Inventory.LoadoutCount);
             // Loadouts 1-4 (vanilla F1-F3; F4 for the fourth), with the inventory open or not.
             for (int i = 0; i < 4; i++)
                 if (TerraKeys.Pressed(TerraKeys.Action.Loadout1 + i)) TrySwitchLoadout(i);
@@ -510,6 +540,31 @@ namespace TerraKnight
         }
 
         /// <summary>Drinks the strongest potion of a kind from the inventory (Player.QuickHeal / QuickMana).</summary>
+        bool dashKeyArmed = true;
+
+        /// <summary>
+        /// Player.QuickBuff: each buff potion and food in the bag whose buff isn't on yet (not healing ones), drunk and used
+        /// up; one sound for all. How many.
+        /// </summary>
+        public int QuickBuff()
+        {
+            int drunk = 0;
+            var on = new HashSet<int>();
+            for (int i = 0; i < Inventory.Size; i++)
+            {
+                var s = Inventory.Slots[i];
+                if (s.IsEmpty) continue;
+                var d = s.Def;
+                if (d.BuffType <= 0 || d.HealLife > 0 || d.HealMana > 0 || Player.PlayerBuffs.Has(d.BuffType) || on.Contains(d.BuffType)) continue;
+                if (!Drink(d)) continue;
+                on.Add(d.BuffType);
+                Inventory.ConsumeAt(i);
+                drunk++;
+            }
+            DevLastQuickUse = $"快速增益 {drunk} 瓶";
+            return drunk;
+        }
+
         void QuickUse(System.Func<ItemDef, bool> kind)
         {
             int best = -1;
@@ -598,6 +653,23 @@ namespace TerraKnight
                 // TileTargetDesired: while a line is locked, nothing goes where the mouse is instead.
                 if (PlatformStairs.Locked) return false;
             }
+            if (SmartCursor && (def.HammerPower > 0 || def.PlacesWall > 0))
+            {
+                float best = float.PositiveInfinity;
+                bool found = false;
+                var reach = ReachBox(bounds, def);
+                for (int x = reach.xMin; x < reach.xMax; x++)
+                for (int y = reach.yMin; y < reach.yMax; y++)
+                {
+                    var candidate = new Vector2Int(x, y);
+                    bool valid = def.HammerPower > 0 ? BuildingTools.CanHammerWall(candidate) : BuildingTools.CanPlaceWall(candidate);
+                    if (!valid) continue;
+                    float distance = ((Vector2)CellGrid.CellCenter(x, y) - mouse).sqrMagnitude;
+                    if (distance < best) { best = distance; cell = candidate; found = true; }
+                }
+                smart = found;
+                return found;
+            }
             if (SmartCursor && def.PickPower > 0
                 && Items.SmartCursor.PickaxeTarget(bounds, mouse, c => InReach(bounds, def, c), out var target))
             {
@@ -667,18 +739,18 @@ namespace TerraKnight
         {
             const float c = CellGrid.CellSize;
             // blockRange (the Builder potion) reaches further only with blocks.
-            int extra = def.Places != CellKind.Empty ? Equipment.Current.BlockRange : 0;
+            int extra = (def.Places != CellKind.Empty || def.PlacesWall > 0) ? Equipment.Current.BlockRange : 0;
             int rx = 5 + def.TileBoost + extra, ry = 3 + def.TileBoost + extra;
             int lx = Mathf.FloorToInt(hitbox.min.x / c) - rx, hx = Mathf.CeilToInt(hitbox.max.x / c) - 1 + rx;
             int ly = Mathf.FloorToInt(hitbox.min.y / c) - ry, hy = Mathf.CeilToInt(ReachTop(hitbox) / c) - 1 + ry;
             return new RectInt(lx, ly, hx - lx + 1, hy - ly + 1);
         }
 
-        static bool InReach(Bounds hitbox, ItemDef def, Vector2Int cell)
+        internal static bool InReach(Bounds hitbox, ItemDef def, Vector2Int cell)
         {
             const float c = CellGrid.CellSize;
             // blockRange (the Builder potion) reaches further only with blocks.
-            int extra = def.Places != CellKind.Empty ? Equipment.Current.BlockRange : 0;
+            int extra = (def.Places != CellKind.Empty || def.PlacesWall > 0) ? Equipment.Current.BlockRange : 0;
             int rx = 5 + def.TileBoost + extra, ry = 3 + def.TileBoost + extra;
             int lx = Mathf.FloorToInt(hitbox.min.x / c) - rx, hx = Mathf.CeilToInt(hitbox.max.x / c) - 1 + rx;
             int ly = Mathf.FloorToInt(hitbox.min.y / c) - ry, hy = Mathf.CeilToInt(ReachTop(hitbox) / c) - 1 + ry;
@@ -689,7 +761,9 @@ namespace TerraKnight
         static float ReachTop(Bounds hitbox) => hitbox.max.y + (TerraMovement.StoolActive ? TerraMovement.StoolLift : 0f);
 
         static bool CanAct(ItemDef def, Vector2Int cell) =>
-            def.PickPower > 0 ? TerraWorld.CanDig(cell.x, cell.y) : def.Places != CellKind.Empty && CanPlace(cell, def.Places);
+            def.PickPower > 0 ? TerraWorld.CanDig(cell.x, cell.y) :
+            def.HammerPower > 0 ? BuildingTools.CanShape(cell) || BuildingTools.CanHammerWall(cell) :
+            def.PlacesWall > 0 ? BuildingTools.CanPlaceWall(cell) : def.Places != CellKind.Empty && CanPlace(cell, def.Places);
 
         void Use(ItemDef def, Vector2Int cell, bool usable, Vector2 mouse, Collider2D rock)
         {
@@ -763,6 +837,11 @@ namespace TerraKnight
                 if (TeleportRods.Use(this, hero, DevAim ?? mouse, def.Type == ItemType.RodofDiscord)) PlaySound(def.UseSound ?? "Item_8");
                 return;
             }
+            if (def.FishingPower > 0)
+            {
+                Fishing.Use(hero, DevAim ?? mouse, def);
+                return;
+            }
             if (def.PlacesChest)
             {
                 if (Chests.TryPlace(hero, DevAim ?? mouse)) Inventory.ConsumeSelected();
@@ -807,10 +886,23 @@ namespace TerraKnight
                 useCooldown *= Equipment.PickTime;
                 Mine(def, cell);
             }
+            else if (def.HammerPower > 0)
+            {
+                if (!usable) BuildingTools.PoundReady = false;
+                else if (BuildingTools.Hammer(def, cell, SmartCursor)) useCooldown *= 0.5f;
+            }
+            else if (def.PlacesWall > 0 && usable)
+            {
+                TerraWorld.SetWall(cell.x, cell.y, def.PlacesWall);
+                Inventory.ConsumeSelected();
+                PlaySound("Dig_" + Random.Range(0, 3));
+                useCooldown /= 1f + Equipment.Current.TileSpeed + Equipment.Current.WallSpeed;
+            }
             else if (def.Places != CellKind.Empty && usable)
             {
                 // tileSpeed (the Builder potion, Ambrosia): blocks go down faster (itemTime = useTime / tileSpeed).
-                useCooldown /= 1f + Equipment.Current.TileSpeed;
+                useCooldown /= 1f + Equipment.Current.TileSpeed + Equipment.Current.BlockSpeed;
+                BuildingTools.UnslopeForPlacement(cell, def.Places);
                 TerraWorld.Set(cell.x, cell.y, def.Places);
                 Inventory.ConsumeSelected();
                 PlaySound("Dig_" + Random.Range(0, 3));
@@ -1267,16 +1359,16 @@ namespace TerraKnight
             switch (kind)
             {
                 case CellKind.Torch:
-                    if (!(TerraWorld.IsSolid(x, y - 1) || TerraWorld.IsSolid(x - 1, y) || TerraWorld.IsSolid(x + 1, y) || TerraWorld.IsDug(x, y))) return false;
+                    if (!(TerraWorld.IsSolid(x, y - 1) || TerraWorld.IsSolid(x - 1, y) || TerraWorld.IsSolid(x + 1, y) || TerraWorld.HasWall(x, y))) return false;
                     return true; // nothing collides with a torch
                 case CellKind.Rope:
                     return TerraWorld.IsSolid(x, y + 1) || TerraWorld.IsSolid(x, y - 1)
                         || TerraWorld.Get(x, y + 1) == CellKind.Rope || TerraWorld.Get(x, y - 1) == CellKind.Rope
-                        || TerraWorld.IsDug(x, y);
+                        || TerraWorld.HasWall(x, y);
             }
             bool anchored = TerraWorld.IsOccupied(x - 1, y) || TerraWorld.IsOccupied(x + 1, y)
                             || TerraWorld.IsOccupied(x, y - 1) || TerraWorld.IsOccupied(x, y + 1)
-                            || TerraWorld.IsDug(x, y);
+                            || TerraWorld.HasWall(x, y);
             // Platforms (PlaceThing_Tiles_BlockPlacementForAssortedThings' fallback): anything in
             // the 3×3 around, diagonals and torches included, or a wall behind a side neighbour.
             if (kind == CellKind.Platform && !anchored)
@@ -1284,7 +1376,7 @@ namespace TerraKnight
                 for (int dx = -1; dx <= 1 && !anchored; dx++)
                     for (int dy = -1; dy <= 1 && !anchored; dy++)
                         if ((dx != 0 || dy != 0) && TerraWorld.IsOccupied(x + dx, y + dy)) anchored = true;
-                anchored |= TerraWorld.IsDug(x - 1, y) || TerraWorld.IsDug(x + 1, y) || TerraWorld.IsDug(x, y - 1) || TerraWorld.IsDug(x, y + 1);
+                anchored |= TerraWorld.HasWall(x - 1, y) || TerraWorld.HasWall(x + 1, y) || TerraWorld.HasWall(x, y - 1) || TerraWorld.HasWall(x, y + 1);
             }
             if (!anchored) return false;
             // Never place a block inside the hero (layer 9) or an enemy (layer 11).
@@ -1432,7 +1524,7 @@ namespace TerraKnight
             // Kept for good (the Dream Nail): never thrown; a right click only puts it back in the bag.
             if (stack.Def.Permanent)
             {
-                if (rightClick && fromMouse && Inventory.Pickup(stack.Type, stack.Count, stack.Favorite) <= 0)
+                if (rightClick && fromMouse && Inventory.Pickup(stack, stack.Favorite) <= 0)
                 {
                     stack = default;
                     PlaySound("Grab", 0.7f);
@@ -1442,7 +1534,7 @@ namespace TerraKnight
             if (stack.Favorite)
             {
                 if (!rightClick) return;
-                int left = Inventory.Pickup(stack.Type, stack.Count, true);
+                int left = Inventory.Pickup(stack, true);
                 if (left < stack.Count) PlaySound("Grab", 0.7f);
                 stack.Count = left;
                 if (left <= 0)
@@ -1481,12 +1573,13 @@ namespace TerraKnight
                     return;
                 }
             }
-            int left = Inventory.Pickup(m.Type, m.Count, m.Favorite);
+            int left = Inventory.Pickup(m, m.Favorite);
             if (left < m.Count) PlaySound("Grab", 0.7f);
             Inventory.Mouse = default;
             var hero = HeroController.SilentInstance;
-            if (left > 0 && hero != null) WorldItems.Drop(ItemStack.Of(m.Type, left), hero.GetComponent<BoxCollider2D>().bounds.center);
-            else if (left > 0) Inventory.Mouse = ItemStack.Of(m.Type, left);
+            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix };
+            if (left > 0 && hero != null) WorldItems.Drop(rest, hero.GetComponent<BoxCollider2D>().bounds.center);
+            else if (left > 0) Inventory.Mouse = rest;
         }
 
         /// <summary>The inventory's Settings button: Terraria's in-game settings (UI.IngameOptions).</summary>
@@ -1586,8 +1679,9 @@ namespace TerraKnight
             Inventory.Override = -1;
             AimPoint = aim;
             var cell = CellGrid.WorldToCell(aim);
-            bool usable = (def.PickPower > 0 || def.Places != CellKind.Empty) && FindTarget(hero, def, aim, out cell, out _);
+            bool usable = (def.PickPower > 0 || def.HammerPower > 0 || def.PlacesWall > 0 || def.Places != CellKind.Empty) && FindTarget(hero, def, aim, out cell, out _);
             useCooldown = 0f;
+            BuildingTools.PoundReady = true;
             Use(def, cell, usable, aim, null);
             Inventory.Slots[slot] = saved;
             Inventory.Selected = savedSelected;
@@ -1607,7 +1701,7 @@ namespace TerraKnight
             useCooldown = 0f;
             AltFunction = alt && def.AltUse;
             var cell = CellGrid.WorldToCell(aim);
-            bool usable = target && (def.PickPower > 0 || def.Places != CellKind.Empty) && FindTarget(hero, def, aim, out cell, out _);
+            bool usable = target && (def.PickPower > 0 || def.HammerPower > 0 || def.PlacesWall > 0 || def.Places != CellKind.Empty) && FindTarget(hero, def, aim, out cell, out _);
             Use(def, cell, usable, aim, null);
         }
 
@@ -1690,12 +1784,15 @@ namespace TerraKnight
 
         /// <summary>
         /// Terraria's Auto Select (Player.SmartSelectLookup with the selection override, 1.4.5):
-        /// while Shift is held the hand takes the tool for what the cursor is on. A block in a
-        /// pickaxe's reach: the first pickaxe. Anything else, the air or a block out of reach: the
-        /// first torch, or past 200 px (12.5 tiles, height counted 1.3 times) the last one unless a
-        /// torch is selected already. Nothing to take: the selected item stays. It changes only
-        /// between uses (CanChangeSelectedItemImmediately) and lets go with Shift; the item on the
-        /// cursor (inventory open) comes first, and over the interface Shift is the interface's.
+        /// while Shift is held the hand takes the tool for what the cursor is on
+        /// (SmartSelect_GetToolStrategy, each in its own tool's reach: SmartSelect_GetAvailableToolRanges).
+        /// A piece of furniture the game smashes with a hammer (Main.tileHammer: the altars): the first
+        /// hammer. Any other block or furniture (a station, a chest, a relic): the first pickaxe. The
+        /// air or anything out of reach: the first torch; past 200 px (12.5 tiles, height counted 1.3
+        /// times) the Flare Gun when it has flares, else the last torch unless a torch is held already.
+        /// Nothing to take: the selected item stays. It changes only between uses
+        /// (CanChangeSelectedItemImmediately) and lets go with Shift; the item on the cursor
+        /// (inventory open) comes first, and over the interface Shift is the interface's.
         /// </summary>
         void AutoSelect(HeroController hero, Vector2 mouse)
         {
@@ -1707,12 +1804,14 @@ namespace TerraKnight
                 Inventory.Override = -1;
                 return;
             }
-            int pick = -1, firstTorch = -1, lastTorch = -1;
+            int pick = -1, hammer = -1, firstTorch = -1, lastTorch = -1, flareGun = -1;
             for (int i = 0; i < Inventory.Size; i++)
             {
                 var s = Inventory.Slots[i];
                 if (s.IsEmpty) continue;
                 if (pick < 0 && s.Def.PickPower > 0) pick = i;
+                if (hammer < 0 && s.Def.HammerPower > 0) hammer = i;
+                if (flareGun < 0 && s.Type == ItemType.FlareGun && HasAmmo(s.Def)) flareGun = i;
                 if (s.Def.Places == CellKind.Torch)
                 {
                     if (firstTorch < 0) firstTorch = i;
@@ -1722,13 +1821,19 @@ namespace TerraKnight
             var bounds = hero.GetComponent<BoxCollider2D>().bounds;
             var cell = CellGrid.WorldToCell(mouse);
             int slot = Inventory.Selected;
-            if (TerraWorld.Get(cell.x, cell.y) != CellKind.Empty && pick >= 0 && InReach(bounds, Inventory.Slots[pick].Def, cell)) slot = pick;
+            // The furniture under the cursor: the altars want a hammer, the rest a pickaxe.
+            var furniture = Stations.KindAt(mouse);
+            bool chest = furniture == StationKind.None && Chests.At(mouse);
+            if ((furniture == StationKind.DemonAltar || furniture == StationKind.CrimsonAltar) && hammer >= 0 && InReach(bounds, Inventory.Slots[hammer].Def, cell)) slot = hammer;
+            else if ((furniture != StationKind.None || chest || TerraWorld.Get(cell.x, cell.y) != CellKind.Empty) && pick >= 0 && InReach(bounds, Inventory.Slots[pick].Def, cell)) slot = pick;
+            else if (TerraWorld.HasWall(cell.x, cell.y) && hammer >= 0 && InReach(bounds, Inventory.Slots[hammer].Def, cell)) slot = hammer;
             else
             {
                 float dx = (mouse.x - bounds.center.x) * 32f, dy = (mouse.y - bounds.center.y) * 32f * 1.3f;
                 bool far = dx * dx + dy * dy > 200f * 200f;
                 var selected = Inventory.Slots[Inventory.Selected];
                 if (!far && firstTorch >= 0) slot = firstTorch;
+                else if (far && flareGun >= 0) slot = flareGun;
                 else if (far && lastTorch >= 0 && (selected.IsEmpty || selected.Def.Places != CellKind.Torch)) slot = lastTorch;
             }
             Inventory.Override = slot == Inventory.Selected ? -1 : slot;

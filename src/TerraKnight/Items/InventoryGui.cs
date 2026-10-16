@@ -45,7 +45,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton }
 
         struct Hit
         {
@@ -278,6 +278,10 @@ namespace TerraKnight.Items
                         stackSplit = 9999;
                     }
                     else if (hit.Index == 2) Town.TownNpcs.OpenGuideCraft();
+                    else if (hit.Index == 3) Town.TownNpcs.AnglerQuest();
+                    else if (hit.Index == 4) Town.TownNpcs.NurseHeal();
+                    else if (hit.Index == 5) Town.TownNpcs.TaxCollect();
+                    else if (hit.Index == 6) Town.TownNpcs.OpenReforge();
                     else Town.TownNpcs.Close(true);
                     return;
                 case Kind.GuideSlot:
@@ -285,6 +289,24 @@ namespace TerraKnight.Items
                     return;
                 case Kind.ShopSlot:
                     ActShop(hit.Index, leftPress, rightPress, leftHeld, rightHeld);
+                    return;
+                case Kind.HkButton:
+                    if (leftPress) ToggleHkBag();
+                    return;
+                case Kind.HkBag:
+                    if (leftPress) ClickHkBag(hit.Index);
+                    return;
+                case Kind.SellButton:
+                    if (leftPress) ToggleSellMode();
+                    return;
+                case Kind.SellSlot:
+                    ActSold(hit.Index, leftPress);
+                    return;
+                case Kind.ReforgeSlot:
+                    ActReforgeSlot(leftPress);
+                    return;
+                case Kind.ReforgeButton:
+                    if (leftPress) Reforge();
                     return;
                 case Kind.BestiaryButton:
                     if (leftPress) ToggleBestiary();
@@ -340,6 +362,8 @@ namespace TerraKnight.Items
                 Sound("Menu_Tick");
                 return;
             }
+            // Quick selling on: the click sells the stack (InventoryGuiSell.cs).
+            if (SellFromSlot(ref slot)) return;
             // ItemSlot.OverrideHover / SellOrTrash: with an NPC's shop open, Shift+click sells the stack too.
             if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.Permanent)
             {
@@ -361,6 +385,9 @@ namespace TerraKnight.Items
                 Sound("Grab");
                 return;
             }
+            // A Hallownest item: Shift+click sends it to its bag; put down only in the hotbar.
+            if (Shift && ShiftHkToBag(ref slot)) return;
+            if (i >= Inventory.HotbarSize && RefuseHkOutside()) return;
             // ItemSlot.ShiftClick with a chest open: the stack goes into it.
             if (Shift && World.Chests.IsOpen && !slot.IsEmpty && !slot.Favorite)
             {
@@ -388,6 +415,12 @@ namespace TerraKnight.Items
             if (slot.IsEmpty) return;
             // ItemSlot.TryItemSwap (IS:1645-1652, 1951-1986): a Chaos Cylinder turns to its next mode.
             if (press && TrySwapItem(ref slot)) return;
+            // ItemSlot.TryOpenContainer: a crate (or an Oyster) opens, one at a time.
+            if (slot.Def.Opens && inv.Mouse.IsEmpty)
+            {
+                if (press) Fishing.TryOpen(inv, i);
+                return;
+            }
             // A single piece of armor or an accessory: right click puts it on (SwapEquip).
             if ((inv.Mouse.IsEmpty || !CanStack(slot, inv.Mouse)) && slot.Count == 1 && (slot.Def.IsArmor || slot.Def.IsAccessory))
             {
@@ -411,7 +444,7 @@ namespace TerraKnight.Items
                 if (!(inv.Mouse.IsEmpty || (CanStack(inv.Mouse, slot) && inv.Mouse.Count < inv.Mouse.Def.MaxStack))) break;
                 // PickupItemIntoMouse: the cursor copy is a favourite only if the whole (single) item was.
                 bool fav = slot.Favorite && slot.Count == 1;
-                if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(slot.Type, 0);
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix };
                 inv.Mouse.Count++;
                 inv.Mouse.Favorite = fav;
                 slot.Count--;
@@ -647,7 +680,7 @@ namespace TerraKnight.Items
         /// Hallownest bench or in Dirtmouth once the progress has reached its station's stage.
         /// </summary>
         static bool CanMakeHere(Recipe r, bool here, int stage) =>
-            ByHand(r) || (here && r.StationStage <= stage) || (!r.IsBought && World.Stations.Near(r.Station, HeroController.SilentInstance));
+            CraftEnvironments.Available(r.Environment) && (ByHand(r) || (here && r.StationStage <= stage) || (!r.IsBought && World.Stations.Near(r.Station, HeroController.SilentInstance)));
 
         static void Scroll(int delta)
         {
@@ -738,6 +771,7 @@ namespace TerraKnight.Items
             if (e.type != EventType.Repaint) return;
             panels.Clear();
             hits.Clear();
+            if (!Open) sellMode = false;
 
             float slot = SlotSize * ui, step = SlotStep * ui;
             float x0 = view.x + Margin * ui, y0 = view.y + Margin * ui + 18f * ui;
@@ -764,7 +798,7 @@ namespace TerraKnight.Items
                 {
                     hovered = st;
                     hoveredKind = Kind.Slot;
-                    if (Town.TownNpcs.ShopOpen && !st.IsEmpty) hoveredExtra = SellLine(st);
+                    if ((Town.TownNpcs.ShopOpen || sellMode) && !st.IsEmpty) hoveredExtra = SellLine(st);
                 }
             }
 
@@ -824,7 +858,7 @@ namespace TerraKnight.Items
                     {
                         hovered = st;
                         hoveredKind = Kind.Slot;
-                        if (Town.TownNpcs.ShopOpen && !st.IsEmpty) hoveredExtra = SellLine(st);
+                        if ((Town.TownNpcs.ShopOpen || sellMode) && !st.IsEmpty) hoveredExtra = SellLine(st);
                         if (st.IsEmpty) DrawLines(mouse, new List<string> { Lang.T("弹药") }, Color.white);
                     }
                 }
@@ -872,13 +906,20 @@ namespace TerraKnight.Items
 
                 // The crafting column gives way to an open shop; beside an open chest it stays (Main.DrawInventory draws the
                 // recipes whatever chest is open, under its rows), the chest's items counted.
+                // Quick selling's row takes the chest's place; a chest or a shop opened ends it.
+                if (sellMode && (World.Chests.IsOpen || Town.TownNpcs.ShopOpen || Town.TownNpcs.ReforgeOpen)) sellMode = false;
                 if (Town.TownNpcs.ShopOpen) DrawShopPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                // The Goblin Tinkerer's reforging: its slot in the crafting column's place.
+                else if (Town.TownNpcs.ReforgeOpen) DrawReforge(view, ui, mouse, ref hovered, ref hoveredKind);
                 else
                 {
                     if (World.Chests.IsOpen) DrawChestPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                    else if (sellMode) DrawSellRow(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
                     DrawCrafting(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
                 }
                 DrawBestiaryButton(view, ui, mouse);
+                DrawHkButton(view, ui, mouse);
+                DrawSellButton(view, ui, mouse);
 
                 // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
                 // Terraria's (the autoswing switch, the key bindings).
@@ -895,6 +936,7 @@ namespace TerraKnight.Items
             DrawChat(view, ui, mouse);
             BookHint = null;
             if (Open && bestiaryOpen) DrawBestiary(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+            if (Open && hkOpen && !bestiaryOpen) DrawHkBag(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             MouseOverUi = UI.WorldMap.MouseOnMinimap(mouse);
             foreach (var p in panels)
                 if (p.Contains(mouse)) MouseOverUi = true;
@@ -985,6 +1027,9 @@ namespace TerraKnight.Items
             return n == 0 ? 0 : (n - 1) / 11 + 1;
         }
 
+        /// <summary>Dev: whether a point (GUI coordinates) is on the interface as last drawn.</summary>
+        public static bool DevOverUi(Vector2 p) => UI.WorldMap.MouseOnMinimap(p) || panels.Exists(r => r.Contains(p));
+
         static void Add(Rect rect, Kind kind, int index)
         {
             panels.Add(rect);
@@ -1000,6 +1045,7 @@ namespace TerraKnight.Items
             else if (kind == Kind.Slot && hovered.Favorite) return;
             else if (kind == Kind.Slot && Ctrl) icon = Town.TownNpcs.ShopOpen ? "UI/Cursor_10" : "UI/Cursor_6";
             else if (kind == Kind.Slot && Shift && Town.TownNpcs.ShopOpen) icon = "UI/Cursor_10";
+            else if (kind == Kind.Slot && sellMode && inv.Mouse.IsEmpty && Sellable(hovered, out _)) icon = "UI/Cursor_10";
             else if ((kind == Kind.Armor || kind == Kind.Accessory) && Alt) icon = "UI/Cursor_3";
             else if ((kind == Kind.Armor || kind == Kind.Accessory || kind == Kind.Trash) && Shift) icon = "UI/Cursor_7";
             if (icon == null) return;
@@ -1135,6 +1181,7 @@ namespace TerraKnight.Items
                 if (k > 0) sb.Append("、");
                 sb.Append($"{ItemDb.Get(t).Name} ×{n}");
             }
+            if (r.Environment != CraftEnvironment.None) sb.Append("\n" + Lang.T(CraftEnvironments.Description(r.Environment)));
             if (!string.IsNullOrEmpty(r.Station)) sb.Append("\n" + Lang.F("工作站：{0}（放在附近，或在长椅旁、德特茅斯）", Lang.T(r.Station)));
             return sb.ToString();
         }
@@ -1410,6 +1457,9 @@ namespace TerraKnight.Items
             if (def.PickPower > 0) lines.Add(Lang.F("{0}% 镐力", def.PickPower));
             if (def.AxePower > 0) lines.Add(Lang.F("{0}% 斧力", def.AxePower * 5));
             if (def.HammerPower > 0) lines.Add(Lang.F("{0}% 锤力", def.HammerPower));
+            if (def.FishingPower > 0) lines.Add(Lang.F("{0}% 渔力", def.FishingPower));
+            if (def.BaitPower > 0) lines.Add(Lang.F("{0}% 鱼饵力", def.BaitPower));
+            if (def.QuestFish) lines.Add(Lang.T("任务物品"));
             if (def.Mana > 0) lines.Add(Lang.F("消耗 {0} 魔力", Equipment.ManaCost(def)));
             if (def.UseAmmo != AmmoKind.None)
                 lines.Add(Lang.T(def.UseAmmo switch
@@ -1430,14 +1480,25 @@ namespace TerraKnight.Items
             if (!string.IsNullOrEmpty(def.Tooltip))
                 foreach (var l in def.Tooltip.Split('\n'))
                     if (l != "材料" && l != Lang.T("材料")) lines.Add(l);
+            // Main.MouseText_DrawItemTooltip's prefix lines: green what the prefix adds, red what it takes.
+            Dictionary<int, Color> lineColors = null;
+            if (def.Prefix > 0)
+            {
+                lineColors = new Dictionary<int, Color>();
+                foreach (var (text, good) in Prefixes.TooltipLines(def))
+                {
+                    lineColors[lines.Count] = good ? new Color(120 / 255f, 190 / 255f, 120 / 255f) : new Color(190 / 255f, 120 / 255f, 120 / 255f);
+                    lines.Add(text);
+                }
+            }
             if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None
                 && (Equipment.FamilyOf(Equipment.FullSet) == def.Set || (def.Set == ArmorSet.Robe && (Equipment.FullSet == ArmorSet.Wizard || Equipment.FullSet == ArmorSet.MagicHat))))
                 lines.Add(Lang.T("套装奖励：") + Lang.T(Equipment.SetBonusText(Equipment.FullSet)));
             if (extra != null) lines.AddRange(extra.Split('\n'));
-            DrawLines(mouse, lines, ItemDb.RarityColor(def.Rare));
+            DrawLines(mouse, lines, ItemDb.RarityColor(def.Rare), lineColors);
         }
 
-        static void DrawLines(Vector2 mouse, List<string> lines, Color first)
+        static void DrawLines(Vector2 mouse, List<string> lines, Color first, Dictionary<int, Color> colors = null)
         {
             float ui = GameView.Scale;
             // Right of the cursor and level with its tip, clear of the arrow.
@@ -1451,7 +1512,7 @@ namespace TerraKnight.Items
             y = Mathf.Max(4f, y);
             for (int i = 0; i < lines.Count; i++)
             {
-                Outlined(new Rect(x, y, width + 20f * ui, 22f * ui), lines[i], tipStyle, i == 0 ? first : new Color(0.85f, 0.85f, 0.85f));
+                Outlined(new Rect(x, y, width + 20f * ui, 22f * ui), lines[i], tipStyle, i == 0 ? first : colors != null && colors.TryGetValue(i, out var lc) ? lc : new Color(0.85f, 0.85f, 0.85f));
                 y += 22f * ui;
             }
         }

@@ -510,7 +510,7 @@ namespace TerraKnight.Items
         Proj Spawn(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int extraUpdates = 0, int useTicks = 0)
         {
             if (!specs.TryGetValue(kind, out var spec)) return null;
-            if (spec.Ai == Ai.Boomerang && Holds(kind)) return null; // one out at a time
+            if ((spec.Ai == Ai.Boomerang || kind == ProjKind.HallowLance) && Holds(kind)) return null; // one out at a time
             // AI_001's launch clamp: no faster than 16 px an update on either axis.
             if (spec.Ai == Ai.Arrow)
                 for (int g = 0; g < 100 && (Mathf.Abs(velocity.x) >= 16f || Mathf.Abs(velocity.y) >= 16f); g++) velocity *= 0.97f;

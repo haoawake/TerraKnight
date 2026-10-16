@@ -192,6 +192,7 @@ namespace TerraKnight.Items
         static void ToggleBestiary()
         {
             bestiaryOpen = !bestiaryOpen;
+            if (bestiaryOpen) hkOpen = false;
             Sound(bestiaryOpen ? "Menu_Open" : "Menu_Close");
         }
 
@@ -665,6 +666,7 @@ namespace TerraKnight.Items
                 // One of a sure pick: one of the group's unlocked drops comes, at the group's chance.
                 int of = EnemyDrops.GroupSize(drops, dr.Group);
                 if (of > 0) chance = eff >= 1f ? Lang.F("{0} 选 1 必掉", of) : Lang.F("{0}% 掉 {1} 选 1", (eff * 100f).ToString("0.##"), of);
+                if (dr.Master) chance = Lang.T("大师模式必掉");
                 var def = ItemDb.Get(dr.Type);
                 Outlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), def.Name + count, bookSmall, ItemDb.RarityColor(def.Rare));
                 Outlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), chance, bookSmall, new Color(0.8f, 0.8f, 0.85f));

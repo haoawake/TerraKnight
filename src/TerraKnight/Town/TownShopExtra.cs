@@ -34,7 +34,7 @@ namespace TerraKnight.Town
         public static Stock[] With(string npc, Stock[] items)
         {
             List<Stock> more = null;
-            foreach (var (n, t, stage) in extra)
+            foreach (var (n, t, stage) in System.Linq.Enumerable.Concat(extra, CraftingSupplementShops.All))
             {
                 if (n != npc) continue;
                 if (more == null) more = new List<Stock>(items);

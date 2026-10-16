@@ -70,7 +70,10 @@ namespace TerraKnight
             File.WriteAllText(Path.Combine(folder, "manifest.json"), JsonConvert.SerializeObject(manifest, Formatting.Indented));
             var itemData = new Dictionary<string, object>();
             foreach (var def in ItemDb.All)
-                if (def.Type != ItemType.None) itemData[def.Type.ToString()] = new { def.Stage, Source = def.Source.ToString(), def.MaxStack, def.Texture };
+                if (def.Type != ItemType.None) itemData[def.Type.ToString()] = new { def.Stage, Source = def.Source.ToString(), def.MaxStack, def.Texture,
+                    def.Name, def.Tooltip, def.Value, def.Price, def.Damage, def.Defense, def.Mana, def.PickPower, def.HealLife, def.HealMana,
+                    Class = def.Class.ToString(), Accessory = def.Accessory.ToString(),
+                    Places = def.Places.ToString(), PlacesStation = def.PlacesStation.ToString(), def.PlacesWall };
             var recipeData = new List<object>();
             foreach (var r in Recipes.All)
             {
@@ -82,7 +85,7 @@ namespace TerraKnight
             foreach (var record in EnemyDrops.DevRecords)
             {
                 var rows = new List<object>();
-                foreach (var d in EnemyDrops.Of(record)) rows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage });
+                foreach (var d in EnemyDrops.Of(record)) rows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage, d.Master });
                 dropData[record] = rows;
             }
             File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData }, Formatting.Indented));

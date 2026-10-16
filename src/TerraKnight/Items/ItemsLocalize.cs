@@ -25,6 +25,17 @@ namespace TerraKnight.Items
                     d.ZhTooltip = d.Tooltip ?? "";
                 }
                 if (d.BossSummonKey != null) { BossSummons.Localize(d); done++; continue; }
+                if (Relics.Is(d.Type)) { Relics.Localize(d); done++; continue; }
+                if (d.HkItem) { HkItems.Localize(d); done++; continue; }
+                // A quest fish's "Caught in ...": Hallownest's areas where it is.
+                if (d.QuestFish)
+                {
+                    int qid = TerrariaId(d);
+                    d.Name = Lang.IsSource ? d.ZhName : Lang.Pick(d.ZhName, TerrariaText.ItemName(Lang.Source, qid), TerrariaText.ItemName(c, qid));
+                    d.Tooltip = Fishing.QuestTooltip(d.Type);
+                    done++;
+                    continue;
+                }
                 int id = TerrariaId(d);
                 if (Lang.IsSource || id <= 0)
                 {

@@ -122,7 +122,7 @@ namespace TerraKnight
                 yield return null;
 
                 // World multi-pool, dream return setup, and Godhome controller, through the real item-use route.
-                foreach (var type in new[] { ItemType.BossSigilFalseKnight, ItemType.BossSigilFailedChampion, ItemType.BossSigilPureVessel })
+                foreach (var type in new[] { ItemType.BossSigilFalseKnight, ItemType.BossSigilHornet, ItemType.BossSigilFailedChampion, ItemType.BossSigilPureVessel })
                 {
                     var s = BossSummons.Find(type);
                     Bestiary.Kills[s.Key] = 1;
@@ -134,6 +134,22 @@ namespace TerraKnight
                     Check(BossSummons.Refusal(s) == null, "入场条件 " + s.Key + " " + BossSummons.Refusal(s));
                     int consumed = BossSummons.DevConsumed;
                     mod.DevUseSelected(HeroController.instance.transform.position);
+                    if (!s.Dream)
+                    {
+                        // A world arena: brought to its front door, the room before it; walked in, the fight on.
+                        string door = BossArena.ArrivalScene(s.Key);
+                        float there = Time.realtimeSinceStartup + 30f;
+                        while ((GameManager.instance.sceneName != door || GameManager.instance.IsInSceneTransition || Player.OpeningPortal.Active
+                                || !GameHooks.PlayerHasControl()) && Time.realtimeSinceStartup < there) yield return null;
+                        yield return new WaitForSecondsRealtime(0.5f);
+                        Check(door != BossArena.SceneOf(s.Key) && GameManager.instance.sceneName == door && BossArena.Visiting && !BossArena.Arrived(s.Key)
+                              && inv.Slots[0].Count == 3 && BossSummons.DevArrivals > 0,
+                              $"送到正门外 {s.Key}：{GameManager.instance.sceneName}（首领房 {BossArena.SceneOf(s.Key)}），未扣 {inv.Slots[0].Count == 3}，{BossSummons.DevLast}");
+                        Shot(door, "boss_seal_door_" + type);
+                        string gate = BossArena.DevDoorGate(s.Key);
+                        int dir = gate != null && gate.StartsWith("left") ? -1 : 1;
+                        yield return WalkOn(HeroController.instance, dir, 6f, "走进首领房 " + s.Key);
+                    }
                     float until = Time.realtimeSinceStartup + 45f;
                     while (BossSummons.Pending && Time.realtimeSinceStartup < until) yield return null;
                     Check(BossSummons.DevConsumed == consumed + 1 && inv.Slots[0].Count == 2
@@ -155,6 +171,29 @@ namespace TerraKnight
                     yield return new WaitForSecondsRealtime(0.2f);
                     yield return SealTravel("Town", "left1");
                     Check(!BossArena.Visiting && !BossSummons.Pending, "离场清理 " + s.Key);
+                }
+
+                // Brought to the door and gone elsewhere without going in: nothing spent, all put back.
+                {
+                    var s = BossSummons.Find(ItemType.BossSigilMawlek);
+                    Bestiary.Kills[s.Key] = 1;
+                    inv.Slots[0] = ItemStack.Of(s.Type, 3);
+                    inv.Selected = 0;
+                    inv.Override = -1;
+                    float ready = Time.realtimeSinceStartup + 15f;
+                    while (!GameHooks.PlayerHasControl() && Time.realtimeSinceStartup < ready) yield return null;
+                    int refunded = BossSummons.DevRefunded;
+                    mod.DevUseSelected(HeroController.instance.transform.position);
+                    string door = BossArena.ArrivalScene(s.Key);
+                    float there = Time.realtimeSinceStartup + 30f;
+                    while ((GameManager.instance.sceneName != door || GameManager.instance.IsInSceneTransition || Player.OpeningPortal.Active
+                            || !GameHooks.PlayerHasControl()) && Time.realtimeSinceStartup < there) yield return null;
+                    yield return new WaitForSecondsRealtime(0.5f);
+                    yield return SealTravel("Town", "left1");
+                    float done = Time.realtimeSinceStartup + 10f;
+                    while (BossSummons.Pending && Time.realtimeSinceStartup < done) yield return null;
+                    Check(!BossArena.Visiting && !BossSummons.Pending && inv.Slots[0].Count == 3 && BossSummons.DevRefunded == refunded + 1,
+                          $"正门外走开保留 {s.Key}：剩 {inv.Slots[0].Count}，{BossSummons.DevLast}");
                 }
             }
             finally

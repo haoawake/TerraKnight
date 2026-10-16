@@ -61,6 +61,12 @@ namespace TerraKnight
             yield return new WaitForSeconds(0.3f);
             Check("手动看深层", UI.WorldMap.DevViewDeep && !UI.WorldMap.DevShown("Town"), $"深={UI.WorldMap.DevViewDeep}");
             Shot("Room_Town_Stag_Station", "maplayers_full_deep");
+            yield return null;
+            // The right click flips the layer, and back.
+            UI.WorldMap.FlipLayer();
+            bool flippedShallow = !UI.WorldMap.DevViewDeep;
+            UI.WorldMap.FlipLayer();
+            Check("右键切换深浅层", flippedShallow && UI.WorldMap.DevViewDeep, $"切一次 浅={flippedShallow}，再切 深={UI.WorldMap.DevViewDeep}");
             UI.FullMap.DevSetOpen(false);
             yield return new WaitForSeconds(0.3f);
             UI.WorldMap.DevPickLayer(1);

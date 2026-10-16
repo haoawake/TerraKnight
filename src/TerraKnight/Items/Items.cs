@@ -232,6 +232,31 @@ namespace TerraKnight.Items
         UpgradedFishingHead, UpgradedFishingBody, UpgradedFishingLegs, Robe, PinkThread, Pumpkin,
         // The bosses' hearts (BossPotions).
         Heart,
+        // Master Mode relics (Relics.cs).
+        RelicAbsoluteRadiance, RelicBigBuzzer, RelicBigFly, RelicBlackKnight, RelicDungDefender, RelicEnragedGuardian,
+        RelicFalseKnight, RelicFalseKnightAt5, RelicFinalBoss, RelicFlukeMother, RelicGhostAladar, RelicGhostGalien,
+        RelicGhostHu, RelicGhostMarkoth, RelicGhostMarmu, RelicGhostNoEyes, RelicGhostXero, RelicGreyPrince,
+        RelicGrimm, RelicHiveKnight, RelicHollowKnight, RelicHollowKnightPrime, RelicHornet, RelicHornetAt4,
+        RelicInfectedKnight, RelicInfectedKnightAt5, RelicJarCollector, RelicLobsterLancer, RelicMageKnight, RelicMageLord,
+        RelicMageLordAt5, RelicMantisLord, RelicMawlek, RelicMegaBeamMiner, RelicMegaJellyfish, RelicMegaMossCharger,
+        RelicMimicSpider, RelicNailBros, RelicNailsage, RelicNightmareGrimm, RelicOblobble, RelicPaintmaster,
+        RelicPaleLurker, RelicSistersOfBattle, RelicTraitorLord, RelicWhiteDefender, RelicWingedNosk, RelicZote,
+        // Generated wall items BEGIN
+        StoneWall, DirtWall, WoodWall, GrayBrickWall, RedBrickWall, BlueBrickWall, GreenBrickWall, PinkBrickWall, GoldBrickWall, SilverBrickWall, CopperBrickWall, ObsidianBrickWall, GlassWall, PearlstoneBrickWall, IridescentBrickWall, MudstoneBrickWall, CobaltBrickWall, MythrilBrickWall, PlankedWall, CandyCaneWall, GreenCandyCaneWall, SnowBrickWall, AdamantiteBeamWall, DemoniteBrickWall, SandstoneBrickWall, EbonstoneBrickWall, RedStuccoWall, YellowStuccoWall, GreenStuccoWall, GrayStuccoWall, EbonwoodWall, RichMahoganyWall, PearlwoodWall, RainbowBrickWall, TinBrickWall, TungstenBrickWall, PlatinumBrickWall, GrassWall, JungleWall, FlowerWall, CactusWall, CloudWall, MushroomWall, BoneBlockWall, SlimeBlockWall, FleshBlockWall, DiscWall, IceBrickWall, ShadewoodWall, LihzahrdBrickWall, HiveWall, PurpleStainedGlass, YellowStainedGlass, BlueStainedGlass, GreenStainedGlass, RedStainedGlass, MulticoloredStainedGlass, BlueSlabWall, BlueTiledWall, PinkSlabWall, PinkTiledWall, GreenSlabWall, GreenTiledWall, WoodenFence, LeadFence, PalladiumColumnWall, BubblegumBlockWall, TitanstoneBlockWall, LivingWoodWall, PumpkinWall, HayWall, SpookyWoodWall, ChristmasTreeWallpaper, OrnamentWallpaper, CandyCaneWallpaper, FestiveWallpaper, StarsWallpaper, SquigglesWallpaper, SnowflakeWallpaper, KrampusHornWallpaper, BluegreenWallpaper, GrinchFingerWallpaper, FancyGreyWallpaper, IceFloeWallpaper, MusicWallpaper, PurpleRainWallpaper, RainbowWallpaper, SparkleStoneWallpaper, StarlitHeavenWallpaper, BubbleWallpaper, CopperPipeWallpaper, DuckyWallpaper, WaterfallWall, LavafallWall, EbonwoodFence, RichMahoganyFence, PearlwoodFence, ShadewoodFence, WhiteDynastyWall, BlueDynastyWall, ArcaneRuneWall, IronFence, CopperPlatingWall, StoneSlabWall, Sail, BorealWoodWall, PalmWoodWall, BorealWoodFence, PalmWoodFence, AmberGemsparkWall, AmberGemsparkWallOff, AmethystGemsparkWall, AmethystGemsparkWallOff, DiamondGemsparkWall, DiamondGemsparkWallOff, EmeraldGemsparkWall, EmeraldGemsparkWallOff, RubyGemsparkWall, RubyGemsparkWallOff, SapphireGemsparkWall, SapphireGemsparkWallOff, TopazGemsparkWall, TopazGemsparkWallOff, TinPlatingWall, ConfettiWall, ConfettiWallBlack, HoneyfallWall, ChlorophyteBrickWall, CrimtaneBrickWall, ShroomitePlatingWall, MartianConduitWall, HellstoneBrickWall, MarbleWall, MarbleBlockWall, GraniteWall, GraniteBlockWall, MeteoriteBrickWall, CrystalBlockWall, SandstoneWall, HardenedSandWall, CorruptHardenedSandWall, CrimsonHardenedSandWall, HallowHardenedSandWall, CorruptSandstoneWall, CrimsonSandstoneWall, HallowSandstoneWall, DesertFossilWall, LunarBrickWall, LivingLeafWall, CogWall, SandFallWall, SnowFallWall, SillyBalloonPinkWall, SillyBalloonPurpleWall, SillyBalloonGreenWall, IronBrickWall, LeadBrickWall, LesionBlockWall, CrimstoneBrickWall, SmoothSandstoneWall, SpiderWall, SolarBrickWall, VortexBrickWall, NebulaBrickWall, StardustBrickWall, OrangeStainedGlass, GoldStarryGlassWall, BlueStarryGlassWall, WroughtIronFence, EbonstoneEcho, MudWallEcho, PearlstoneEcho, SnowWallEcho, AmethystEcho, TopazEcho, SapphireEcho, EmeraldEcho, RubyEcho, DiamondEcho, Cave1Echo, Cave2Echo, Cave3Echo, Cave4Echo, Cave5Echo, Cave6Echo, Cave7Echo, SpiderEcho, CorruptGrassEcho, HallowedGrassEcho, IceEcho, ObsidianBackEcho, CrimsonGrassEcho, CrimstoneEcho, CaveWall1Echo, CaveWall2Echo, Cave8Echo, Corruption1Echo, Corruption2Echo, Corruption3Echo, Corruption4Echo, Crimson1Echo, Crimson2Echo, Crimson3Echo, Crimson4Echo, Dirt1Echo, Dirt2Echo, Dirt3Echo, Dirt4Echo, Hallow1Echo, Hallow2Echo, Hallow3Echo, Hallow4Echo, Jungle1Echo, Jungle2Echo, Jungle3Echo, Jungle4Echo, Lava1Echo, Lava2Echo, Lava3Echo, Lava4Echo, Rocks1Echo, Rocks2Echo, Rocks3Echo, Rocks4Echo, LargeBambooBlockWall, BambooBlockWall, AmberStoneWallEcho, BambooFence, AshWoodWall, AshWoodFence, EchoWall, ReefWall, SpiderWallUnsafe, BlueBrickWallUnsafe, BlueSlabWallUnsafe, BlueTiledWallUnsafe, PinkBrickWallUnsafe, PinkSlabWallUnsafe, PinkTiledWallUnsafe, GreenBrickWallUnsafe, GreenSlabWallUnsafe, GreenTiledWallUnsafe, SandstoneWallUnsafe, HardenedSandWallUnsafe, LihzahrdWallUnsafe, PoopWall, ShimmerWall, ShimmerBrickWall, LunarRustBrickWall, DarkCelestialBrickWall, AstraBrickWall, CosmicEmberBrickWall, CryocoreBrickWall, MercuryBrickWall, StarRoyaleBrickWall, HeavenforgeBrickWall, AncientBlueDungeonBrickWall, AncientGreenDungeonBrickWall, AncientPinkDungeonBrickWall, AncientGoldBrickWall, AncientSilverBrickWall, AncientCopperBrickWall, AncientCobaltBrickWall, AncientMythrilBrickWall, AncientObsidianBrickWall, AncientHellstoneBrickWall, LavaMossBlockWall, ArgonMossBlockWall, KryptonMossBlockWall, XenonMossBlockWall, VioletMossBlockWall, RainbowMossBlockWall, ShimmerFallWall, LivingWoodWallUnsafe, DirtWallUnsafe, FallenStarWall, FeywoodWall, HallowedBrickWall, PineTreeBlockWall, EasterBlockWall, GothicBrickWall, FlinxFurBlockWall, JellyfishBlockWall, PineWoodBlockWall, HarpyBlockWall, MoonplateBlockWall, LibrarianBlockWall, SpikeBlockWall, OfficeBlockWall, ForbiddenBlockWall, WaterBlockWall, BoulderBlockWall,
+        // Generated wall items END
+
+        // Audited crafting supplement (append only).
+        BonePlatform, RedDye, OrangeDye, YellowDye, LimeDye, GreenDye, TealDye, CyanDye, SkyBlueDye, BlueDye, PurpleDye, VioletDye, PinkDye, BlackDye, RainbowDye, BrickLayer, ExtendoGrip, PaintSprayer, PortableCementMixer, WoodFishingPole, ReinforcedFishingPole, FisherofSouls, HighTestFishingLine, AnglerEarring, TackleBox, Fleshcatcher, BrownDye, ArchitectGizmoPack, AnglerTackleBag, FossilPickaxe, ThunderStaff, LavaMoss, KryptonMoss, XenonMoss, ArgonMoss, HallowJoustingLance, LavaFishingHook, LavaproofTackleBag, HandOfCreation, VioletMoss, RainbowMoss, Flymeal, Stinkbug, FishingBobber, FishingBobberGlowingStar, FishingBobberGlowingLava, FishingBobberGlowingKrypton, FishingBobberGlowingXenon, FishingBobberGlowingArgon, FishingBobberGlowingViolet, FishingBobberGlowingRainbow, HeroicisWingsInactive, ChippysWingsInactive, LightningStrike,
+
+        // Audited crafting supplement (append only).
+        DyeVat, Worm, Bass,
+
+        // Fishing (gen_fishing.py)
+        BloodFishingRod, FiberglassFishingPole, ScarabFishingRod, MechanicsRod, SittingDucksFishingRod, HotlineFishingHook, GoldenFishingRod, MonarchButterfly, SulphurButterfly, Snail, Scorpion, Grasshopper, ZebraSwallowtailButterfly, GlowingSnail, BlackScorpion, ApprenticeBait, Grubby, HellButterfly, WaterStrider, Firefly, UlyssesButterfly, BlackDragonfly, BlueDragonfly, GreenDragonfly, OrangeDragonfly, RedDragonfly, YellowDragonfly, Maggot, JuliaButterfly, Sluggy, Lavafly, RedAdmiralButterfly, JourneymanBait, PurpleEmperorButterfly, LightningBug, EnchantedNightcrawler, MagmaSnail, Buggy, TreeNymphButterfly, MasterBait, GoldButterfly, GoldGrasshopper, GoldWorm, GoldDragonfly, GoldLadyBug, GoldWaterStrider, BlueJellyfish, GreenJellyfish, PinkJellyfish, Batfish, Catfish, Cloudfish, Cursedfish, Dirtfish, DynamiteFish, EaterofPlankton, FallenStarfish, TheFishofCthulu, Fishotron, Harpyfish, Hungerfish, Ichorfish, Jewelfish, Pengfish, Pixiefish, Spiderfish, TundraTrout, UnicornFish, GuideVoodooFish, Wyverntail, ZombieFish, AmanitaFungifin, Angelfish, BloodyManowar, Bonefish, Bunnyfish, CapnTunabeard, Clownfish, DemonicHellfish, Derpfish, InfectedScabbardfish, Mudfish, Slimefish, TropicalBarracuda, ScarabFish, ScorpioFish, WoodenCrate, WoodenCrateHard, IronCrate, IronCrateHard, GoldenCrate, GoldenCrateHard, DungeonFishingCrate, DungeonFishingCrateHard, OceanCrate, OceanCrateHard, CorruptFishingCrate, CorruptFishingCrateHard, CrimsonFishingCrate, CrimsonFishingCrateHard, HallowedFishingCrate, HallowedFishingCrateHard, JungleFishingCrate, JungleFishingCrateHard, FrozenCrate, FrozenCrateHard, OasisCrate, OasisCrateHard, FloatingIslandFishingCrate, FloatingIslandFishingCrateHard, LavaCrate, LavaCrateHard, Trout, Salmon, AtlanticCod, Tuna, RedSnapper, NeonTetra, PrincessFish, GoldenCarp, Honeyfin, Shrimp, Rockfish, Stinkfish, OldShoe, FishingSeaweed, TinCan, BombFish, Flounder, RockLobster, Oyster, JojaCola, ShuckedOyster,
+
+        // Hallownest's key items (HkItems.cs)
+        HkLumaflyLantern, HkCityCrest, HkSimpleKey, HkElegantKey, HkLoveKey, HkShopkeepersKey, HkTramPass, HkKingsBrand, HkDelicateFlower, HkRancidEgg, HkPaleOre, HkWanderersJournal, HkHallownestSeal, HkKingsIdol, HkArcaneEgg, HkKingsoul, HkVoidHeart,
+
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -677,6 +702,7 @@ namespace TerraKnight.Items
         MineWet, MineLava, MineHoney, MineDry, SnowmanWet, SnowmanLava, SnowmanHoney, SnowmanDry, // 786 789 792 801 805 806 807 810
         SpilledLiquid, FlaironHead, // (a pool where a liquid rocket burst) 404
         FallingStar, // 12 (the night sky's)
+        HallowLance, ThunderBolt, LightningStrikeBolt,
     }
 
     /// <summary>
@@ -700,7 +726,9 @@ namespace TerraKnight.Items
         public bool LavaImmune, SlowFall, KbBuff, ManaRegenBuff, LifeForce, Inferno, Archery, ResistCold, FindTreasure, DetectCreature, DangerSense,
             Calm, Battle, Invisible, Shine, NightVision, LifeMagnet, AmmoPotion;
         /// <summary>thorns (share of a contact hit sent back), luck, tileSpeed (placing faster), blockRange (reach), meleeEnchant (the flask, 1-8).</summary>
-        public float Thorns, Luck, TileSpeed;
+        public float Thorns, Luck, TileSpeed, WallSpeed, BlockSpeed;
+        public int FishingSkill, BobberKind;
+        public bool FishingLine, TackleBox, AcidFishing;
         public int BlockRange, MeleeEnchant;
         /// <summary>The boots' top speed (accRunSpeed, the strongest boots'); 0 = none.</summary>
         public float AccRunSpeed;
@@ -808,6 +836,11 @@ namespace TerraKnight.Items
 
         public void Add(in Bonuses b)
         {
+            BlockSpeed = System.Math.Max(BlockSpeed, b.BlockSpeed);
+            WallSpeed = System.Math.Max(WallSpeed, b.WallSpeed);
+            FishingSkill += b.FishingSkill;
+            if (b.BobberKind > 0) BobberKind = b.BobberKind;
+            FishingLine |= b.FishingLine; TackleBox |= b.TackleBox; AcidFishing |= b.AcidFishing;
             Defense += b.Defense; LifeRegen += b.LifeRegen; ManaMax += b.ManaMax;
             MoveSpeed += b.MoveSpeed; MeleeSpeed += b.MeleeSpeed;
             MeleeDamage += b.MeleeDamage; RangedDamage += b.RangedDamage; MagicDamage += b.MagicDamage; ArrowDamage += b.ArrowDamage;
@@ -905,7 +938,24 @@ namespace TerraKnight.Items
         public int Crit;
         /// <summary>Pickaxe power in Terraria's percent units; 0 for non-pickaxes.</summary>
         public int PickPower;
-        /// <summary>Item.hammer (percent) and Item.axe (shown five times over): only the tooltip's here, nothing to chop or knock down.</summary>
+        /// <summary>Item.fishingPole (fishing power) and Item.bait (bait power).</summary>
+        public int FishingPower, BaitPower;
+        /// <summary>A pole's bobber (Projectile_N); ItemID.Sets.CanFishInLava for a pole (the Acidline), IsLavaBait for bait: acid here.</summary>
+        public int Bobber;
+        public bool AcidPole, AcidBait;
+        /// <summary>Item.questItem: one of the Angler's fish (rare -11, never worth money, one carried at a time).</summary>
+        public bool QuestFish;
+        /// <summary>Opened by a right click in the bag (a fishing crate, an Oyster).</summary>
+        public bool Opens;
+        /// <summary>One of Hallownest's key items (HkItems): in the hotbar or the Hallownest bag only, working from the hotbar.</summary>
+        public bool HkItem;
+        /// <summary>A prefixed copy's prefix and the plain definition it came from (Prefixes.Apply); a summon weapon's prefix tag damage and armour penetration, its minions'.</summary>
+        public byte Prefix;
+        public ItemDef Unprefixed;
+        public int PrefixTagDamage, PrefixArmorPen;
+
+        public ItemDef Clone() => (ItemDef)MemberwiseClone();
+        /// <summary>Item.hammer shapes tiles and removes walls; Item.axe is shown five times over.</summary>
         public int HammerPower, AxePower;
         /// <summary>Its glowmask (Glow_N), drawn added over it in hand (PlayerDrawLayers: (250,250,250,alpha)).</summary>
         public string Glow;
@@ -916,6 +966,7 @@ namespace TerraKnight.Items
         /// <summary>Drawing scale of the held item.</summary>
         public float Scale = 1f;
         public CellKind Places = CellKind.Empty;
+        public int PlacesWall;
         public int MaxStack = 1;
         public AccessoryEffect Accessory;
         public int Defense;
@@ -1037,7 +1088,7 @@ namespace TerraKnight.Items
         public bool IsAmmo => Ammo != AmmoKind.None;
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
-        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || PickPower > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
+        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || FishingPower > 0 || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
             || BuffType > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type));
 
         /// <summary>
@@ -1454,10 +1505,15 @@ namespace TerraKnight.Items
             AddOres(list);
             AddMoney(list);
             AddCraftChain(list);
+            AddCraftingSupplement(list);
+            AddFishing(list);
+            HkItems.AddItems(list);
             AddInfo(list);
             AddStations2(list);
             AddArmor2(list);
             AddHeart(list);
+            if (Relics.Enabled) AddRelics(list);
+            AddWalls(list);
             BossSummons.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
@@ -1484,7 +1540,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), HeartSources()))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), Station2Sources()), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>()), FishingSources())))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1856,6 +1912,8 @@ namespace TerraKnight.Items
                 case -11: return new UnityEngine.Color(1f, 175 / 255f, 0f);
                 // Expert (rare -12): Main.DiscoColor, cycling through the rainbow.
                 case -12: return UnityEngine.Color.HSVToRGB(UnityEngine.Time.unscaledTime * 0.2f % 1f, 1f, 1f);
+                // Master (rare -13): Main.masterColor, red to gold and back (±0.05 a tick, green 200 at most).
+                case -13: return new UnityEngine.Color(1f, UnityEngine.Mathf.PingPong(UnityEngine.Time.unscaledTime * 3f, 1f) * 200f / 255f, 0f);
                 default: return UnityEngine.Color.white;
             }
         }
@@ -1867,8 +1925,10 @@ namespace TerraKnight.Items
         public int Count;
         /// <summary>Terraria's favourite mark (Alt+click): kept out of the trash and the shop.</summary>
         public bool Favorite;
+        /// <summary>Its prefix (PrefixID, a reforge's: Prefixes), 0 none; its definition is then the prefixed copy.</summary>
+        public byte Prefix;
         public bool IsEmpty => Type == ItemType.None || Count <= 0;
-        public ItemDef Def => ItemDb.Get(IsEmpty ? ItemType.None : Type);
+        public ItemDef Def => IsEmpty ? ItemDb.Get(ItemType.None) : Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix);
 
         public static ItemStack Of(ItemType type, int count = 1) => new ItemStack { Type = type, Count = count };
     }
@@ -1894,14 +1954,14 @@ namespace TerraKnight.Items
         public static bool IsAmmoSlot(int i) => i >= Size && i < Total;
 
         /// <summary>Item.FitsAmmoSlot: what an ammo slot takes (ammo of any kind, the Ale too).</summary>
-        public static bool FitsAmmoSlot(ItemDef d) => d != null && d.Ammo != AmmoKind.None;
+        public static bool FitsAmmoSlot(ItemDef d) => d != null && (d.Ammo != AmmoKind.None || d.BaitPower > 0);
 
         /// <summary>
         /// Item.CanFillEmptyAmmoSlot: a pickup goes into an empty ammo slot by itself when it is ammo
         /// first of all; sand, Fallen Stars, gel and Ale (mostly something else) only top up a stack
         /// already there.
         /// </summary>
-        public static bool FillsEmptyAmmoSlot(ItemDef d) => FitsAmmoSlot(d) && d.Type != ItemType.SandBlock && d.Type != ItemType.FallenStar &&
+        public static bool FillsEmptyAmmoSlot(ItemDef d) => FitsAmmoSlot(d) && d.BaitPower <= 0 && d.Type != ItemType.SandBlock && d.Type != ItemType.FallenStar &&
             d.Type != ItemType.Gel && d.Type != ItemType.PearlsandBlock && d.Type != ItemType.EbonsandBlock && d.Type != ItemType.CrimsandBlock && d.Type != ItemType.Ale;
         /// <summary>
         /// Five accessory slots, Master Mode's own one more (Player.IsItemSlotUnlockedAndUsable: slot 9,
@@ -1928,6 +1988,9 @@ namespace TerraKnight.Items
         /// <summary>Player.bank: the Piggy Bank's 40 slots, the same in every one set down.</summary>
         public const int BankSlots = 40;
         public readonly ItemStack[] Bank = new ItemStack[BankSlots];
+
+        /// <summary>The Hallownest bag: Hallownest's key items not in the hotbar (HkItems).</summary>
+        public readonly ItemStack[] HkBag = new ItemStack[HkItems.BagSlots];
 
         /// <summary>ItemSlot.AccCheck for the misc slots (contexts 19, 20, 18, 17, 16): only the hook's has items here yet.</summary>
         public static bool FitsMisc(ItemDef d, int slot) => d != null && slot == HookSlot && Player.GrapplingHook.Hooks.ContainsKey(d.Type);
@@ -2064,6 +2127,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < ArmorSlots; i++) Armor[i] = default;
             for (int i = 0; i < MiscSlots; i++) Misc[i] = default;
             for (int i = 0; i < BankSlots; i++) Bank[i] = default;
+            for (int i = 0; i < HkBag.Length; i++) HkBag[i] = default;
             foreach (var l in Loadouts)
             {
                 for (int i = 0; i < ArmorSlots; i++) l.Armor[i] = default;
@@ -2109,6 +2173,21 @@ namespace TerraKnight.Items
                 count -= moved;
             }
             return count;
+        }
+
+        /// <summary>A stack picked up whole when it has a prefix (into the first empty bag slot, the hotbar first), else as its type is. Returns how many didn't fit.</summary>
+        public int Pickup(ItemStack s, bool favorite = false)
+        {
+            if (s.IsEmpty) return 0;
+            if (s.Prefix == 0) return Pickup(s.Type, s.Count, favorite);
+            s.Favorite = favorite;
+            for (int i = 0; i < Size; i++)
+                if (Slots[i].IsEmpty)
+                {
+                    Slots[i] = s;
+                    return 0;
+                }
+            return s.Count;
         }
 
         /// <summary>

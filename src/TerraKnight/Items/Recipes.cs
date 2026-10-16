@@ -18,6 +18,7 @@ namespace TerraKnight.Items
         public readonly (ItemType Type, int Count)[] Ingredients;
         /// <summary>A basic item's price in copper (a geo is 100); 0 for a real recipe.</summary>
         public readonly int Cost;
+        public CraftEnvironment Environment;
 
         public Recipe(ItemType result, int count, string station, int stationStage, params (ItemType, int)[] ingredients)
         {
@@ -74,6 +75,8 @@ namespace TerraKnight.Items
                 every.AddRange(StationRecipes());
                 every.AddRange(OreRecipes());
                 every.AddRange(ChainRecipes());
+                every.AddRange(SupplementRecipes());
+                every.AddRange(WallRecipes());
                 every.AddRange(BossSummons.Recipes());
                 return every;
             }

@@ -283,7 +283,7 @@ namespace TerraKnight.World
             {
                 ref var s = ref open.Items[i];
                 if (s.IsEmpty) continue;
-                int left = inv.Pickup(s.Type, s.Count);
+                int left = inv.Pickup(s);
                 if (left <= 0) s = default;
                 else s.Count = left;
             }

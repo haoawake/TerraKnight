@@ -63,12 +63,24 @@ namespace TerraKnight.Terraria
             new[] { (0, 0), (0, 1), (0, 2) },
             new[] { (1, 0), (2, 0), (3, 0) },
             new[] { (1, 1), (2, 1), (3, 1) },
+            new[] { (6, 1), (7, 1), (8, 1) },
+            new[] { (6, 2), (7, 2), (8, 2) },
+            new[] { (10, 0), (10, 1), (10, 2) },
+            new[] { (11, 0), (11, 1), (11, 2) },
         };
 
+        static readonly int[,] centerWallFrames = { { 2, 0, 0 }, { 0, 1, 4 }, { 0, 3, 0 } };
+
         /// <summary>Top-left pixel of a wall frame inside a Wall_N sheet.</summary>
-        public static (int x, int y) WallFrame(bool up, bool down, bool left, bool right, int variant)
+        public static (int x, int y) WallFrame(bool up, bool down, bool left, bool right, int variant, int cellX = 0, int cellY = 0)
         {
             int index = (up ? 1 : 0) | (left ? 2 : 0) | (right ? 4 : 0) | (down ? 8 : 0);
+            if (index == 15)
+            {
+                // Framing.centerWallFrameLookup: repeat the vanilla 3x3 interior pattern.
+                int x = (cellX % 3 + 3) % 3, y = ((-cellY - 1) % 3 + 3) % 3;
+                index += centerWallFrames[x, y];
+            }
             var f = wallTable[index][variant];
             return (f.x * WallFrameStride, f.y * WallFrameStride);
         }

@@ -33,6 +33,17 @@ namespace TerraKnight.Items
             if (TownNpcs.TalkingHasShop) buttons.Add((Lang.T("商店"), 0));
             // The Guide's crafting (Lang.inter[25]).
             if (TownNpcs.TalkingIsGuide) buttons.Add((TT("LegacyInterface.25", "制作"), 2));
+            // The Angler's quest (Lang.inter[64]).
+            if (TownNpcs.TalkingIsAngler) buttons.Add((TT("LegacyInterface.64", "任务"), 3));
+            // The Nurse's healing with its price (Lang.inter[54]), the Tax Collector's taxes (Lang.inter[89]).
+            if (TownNpcs.TalkingIsNurse)
+            {
+                long price = TownNpcs.NursePrice();
+                buttons.Add((TT("LegacyInterface.54", "治疗") + (price > 0 ? " (" + Shop.Money(price) + ")" : ""), 4));
+            }
+            if (TownNpcs.TalkingIsTaxCollector) buttons.Add((TT("LegacyInterface.89", "税金") + (TownNpcs.Taxes > 0 ? " (" + Shop.Money(TownNpcs.Taxes) + ")" : ""), 5));
+            // The Goblin Tinkerer's reforging (Lang.inter[19]).
+            if (TownNpcs.TalkingIsGoblin) buttons.Add((TT("LegacyInterface.19", "重铸"), 6));
             buttons.Add((Lang.T("关闭"), 1));
             float w = 500f * ui, h = (30f + 30f * lines.Count + 30f) * ui;
             var panel = new Rect(view.center.x - w / 2f, view.y + 100f * ui, w, h);

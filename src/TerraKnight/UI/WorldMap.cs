@@ -543,6 +543,9 @@ namespace TerraKnight.UI
             if (mouse == null) return;
             Vector2 m = TerraCursor.ScreenMouse(mouse);
             var gui = new Vector2(m.x, Screen.height - m.y);
+            // The map keys zoom about the middle, 1.05 a tick (Player.cs's full map).
+            float keyZoom = (Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomIn) ? 1f : 0f) - (Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomOut) ? 1f : 0f);
+            if (keyZoom != 0f) zoom = Mathf.Clamp(zoom * Mathf.Pow(keyZoom > 0f ? 1.05f : 0.95f, Time.unscaledDeltaTime * 60f), 0.3f, 32f);
             // The wheel zooms about the cursor: the cell under it stays put.
             float wheel = mouse.scroll.ReadValue().y;
             if (Mathf.Abs(wheel) > 0.1f)
@@ -569,6 +572,12 @@ namespace TerraKnight.UI
             if (pressed && FullMap.CloseButton().Contains(gui))
             {
                 Close();
+                return;
+            }
+            // A right click flips the layer drawn: the shallow world and the deep rooms.
+            if (mouse.rightButton.wasPressedThisFrame)
+            {
+                FlipLayer();
                 return;
             }
             if (pressed) dragging = true;
@@ -742,6 +751,9 @@ namespace TerraKnight.UI
                 GUI.color = prev;
                 FullMap.Outlined(new Rect(r.x + 9f * ui, r.y + 2f * ui, r.width, r.height), text, picked ? new Color(1f, 0.9f, 0.5f) : hover ? Color.white : new Color(1f, 1f, 1f, 0.75f));
             }
+            // The right click's hint after the tabs.
+            string hint = Lang.T("右键切换");
+            FullMap.Outlined(new Rect(x + 6f * ui, close.y - 34f * ui, tabStyle.CalcSize(new GUIContent(hint)).x + 12f * ui, 28f * ui), hint, new Color(1f, 1f, 1f, 0.85f));
         }
 
         static GUIStyle otherStyle;
@@ -1138,6 +1150,13 @@ namespace TerraKnight.UI
         public static bool DevDeep(string scene) => IsDeep(scene);
         public static bool DevViewDeep => ViewDeep;
         public static void DevPickLayer(int layer) => layerChoice = (MapLayer)layer;
+
+        /// <summary>The full map's right click: the other layer drawn (shallow from deep, deep from shallow).</summary>
+        public static void FlipLayer()
+        {
+            layerChoice = ViewDeep ? MapLayer.Shallow : MapLayer.Deep;
+            TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+        }
         public static Rect DevLayerTab(int i) => layerTabs[i];
 
         /// <summary>Dev: the player's place on the map, in global cells.</summary>

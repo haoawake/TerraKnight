@@ -169,6 +169,8 @@ namespace TerraKnight.Items
             /// <summary>The bat's prey and the snowflake's (by enemy id), and the blast's spared enemy.</summary>
             public int TargetId = -1;
             public Vector2 Start;
+            /// <summary>The summoning weapon's prefix armour penetration and tag damage (Projectile.ApplyStatsFromSource).</summary>
+            public int ItemPen, ItemTag;
 
             public Vector2 Center
             {
@@ -889,6 +891,7 @@ namespace TerraKnight.Items
             {
                 Kind = kind, S = s, Staff = staff != null ? staff.Type : ItemType.None, W = s.W, H = s.H,
                 OriginalDamage = damage, Damage = damage, Knockback = 0f, Serial = serial++,
+                ItemPen = staff != null ? staff.PrefixArmorPen : 0, ItemTag = staff != null ? staff.PrefixTagDamage : 0,
             };
             m.Center = centerPx;
             m.OldPos = m.Pos;
@@ -1439,12 +1442,12 @@ namespace TerraKnight.Items
                 bool crit = false;
                 int dmg = num7;
                 // SummonTagDamageMultiplier: the Blade Staff's daggers take two thirds of the tag (0.669).
-                if (m.S.Minion || m.S.Sentry || m.S.Shot) dmg = SummonTags.Modify(hm, num7, out crit, m.Kind == Kind.BladeStaff ? 0.669f : 1f, m.S.Sentry || IsSentryChild(m.Kind), m.Center);
+                if (m.S.Minion || m.S.Sentry || m.S.Shot) dmg = SummonTags.Modify(hm, num7, out crit, m.Kind == Kind.BladeStaff ? 0.669f : 1f, m.S.Sentry || IsSentryChild(m.Kind), m.Center, m.ItemTag);
                 // StatusNPC: the spiders' Venom (and the Queen Spider's babies', P:11497).
                 if (IsSpider(m.Kind) || m.Kind == Kind.BabySpider) EnemyDebuffs.Add(hm, EnemyDebuffs.Venom, 60 * Random.Range(2, 5));
                 // The Huntress's sets (P:11440-11443): the trap's blast oils what it hits for 4-8.5 s.
                 if (IsTrapBlast(m.Kind) && (Equipment.Current.Ooa & OoaSet.HuntressT2) != 0) EnemyDebuffs.Add(hm, EnemyDebuffs.Oiled, Random.Range(8, 18) * 30);
-                int pen = Equipment.Current.ArmorPen + (m.Kind == Kind.Snowflake ? 30 : m.Kind == Kind.BladeStaff ? 25 : 0);
+                int pen = Equipment.Current.ArmorPen + m.ItemPen + (m.Kind == Kind.Snowflake ? 30 : m.Kind == Kind.BladeStaff ? 25 : 0);
                 melee.HitWith(col, dmg, kb, crit ? 100f : 0f, facing, TerraParticles.ToWorld(m.Center), pen);
                 // P:14492-14499: the Cattiva's punch glitters.
                 if (m.Kind == Kind.Cattiva || m.Kind == Kind.TrustyCattiva) FxParticles.CattivaHit(m.Center + new Vector2(m.Dir * 8f, 0f) + Random.insideUnitCircle * 4f);

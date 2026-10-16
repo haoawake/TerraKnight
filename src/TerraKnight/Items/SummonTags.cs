@@ -145,7 +145,7 @@ namespace TerraKnight.Items
         /// or for a sentry the Templar's Sling's one in ten. The Armlet of Ruin's strike on a
         /// tagged hit (P:13447-13450), from the minion (else the enemy).
         /// </summary>
-        public static int Modify(HealthManager hm, int num7, out bool crit, float tagMult = 1f, bool sentry = false, Vector2 fromPx = default)
+        public static int Modify(HealthManager hm, int num7, out bool crit, float tagMult = 1f, bool sentry = false, Vector2 fromPx = default, int bonusTag = 0)
         {
             crit = false;
             if (hm == null) return num7;
@@ -171,6 +171,8 @@ namespace TerraKnight.Items
                 if (s.Whip == WhipKind.EelWhip) flat += EelZap(hm);
             }
             if (!tagged) return num7;
+            // The summoning weapon's prefix tag damage (Projectile.bonusTagDamage), added to a tagged hit's.
+            tag += (int)(bonusTag * tagMult);
             int dmg = num7 + tag + flat;
             if (Equipment.Current.ArmletOfRuin)
             {

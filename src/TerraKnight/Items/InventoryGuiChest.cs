@@ -166,13 +166,14 @@ namespace TerraKnight.Items
                 if (Shift && !slot.IsEmpty)
                 {
                     // ItemSlot.ShiftClick in a chest: the stack goes into the inventory, as much as fits.
-                    int left = inv.Pickup(slot.Type, slot.Count);
+                    int left = inv.Pickup(slot);
                     if (left != slot.Count) Sound("Grab");
                     if (left <= 0) slot = default;
                     else slot.Count = left;
                     return;
                 }
                 if (inv.Mouse.IsEmpty && slot.IsEmpty) return;
+                if (RefuseHkOutside()) return;
                 if (CanStack(inv.Mouse, slot) && slot.Count < slot.Def.MaxStack && inv.Mouse.Count < inv.Mouse.Def.MaxStack)
                 {
                     int moved = Mathf.Min(inv.Mouse.Count, slot.Def.MaxStack - slot.Count);
@@ -189,7 +190,7 @@ namespace TerraKnight.Items
             for (int k = 0; k <= superFastStack && !slot.IsEmpty; k++)
             {
                 if (!(inv.Mouse.IsEmpty || (CanStack(inv.Mouse, slot) && inv.Mouse.Count < inv.Mouse.Def.MaxStack))) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(slot.Type, 0);
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix };
                 inv.Mouse.Count++;
                 slot.Count--;
                 if (slot.Count <= 0) slot = default;

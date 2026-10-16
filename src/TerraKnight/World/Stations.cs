@@ -18,6 +18,15 @@ namespace TerraKnight.World
         AmmoBox, BewitchingTable, SharpeningStation, WarTable, SliceOfCake,
         /// <summary>Fixed in the world (FixedStations), not an item: the altars.</summary>
         DemonAltar, CrimsonAltar,
+        // Master Mode relics (Items/Relics.cs): to look at, nothing made at them.
+        RelicAbsoluteRadiance, RelicBigBuzzer, RelicBigFly, RelicBlackKnight, RelicDungDefender, RelicEnragedGuardian,
+        RelicFalseKnight, RelicFalseKnightAt5, RelicFinalBoss, RelicFlukeMother, RelicGhostAladar, RelicGhostGalien,
+        RelicGhostHu, RelicGhostMarkoth, RelicGhostMarmu, RelicGhostNoEyes, RelicGhostXero, RelicGreyPrince,
+        RelicGrimm, RelicHiveKnight, RelicHollowKnight, RelicHollowKnightPrime, RelicHornet, RelicHornetAt4,
+        RelicInfectedKnight, RelicInfectedKnightAt5, RelicJarCollector, RelicLobsterLancer, RelicMageKnight, RelicMageLord,
+        RelicMageLordAt5, RelicMantisLord, RelicMawlek, RelicMegaBeamMiner, RelicMegaJellyfish, RelicMegaMossCharger,
+        RelicMimicSpider, RelicNailBros, RelicNailsage, RelicNightmareGrimm, RelicOblobble, RelicPaintmaster,
+        RelicPaleLurker, RelicSistersOfBattle, RelicTraitorLord, RelicWhiteDefender, RelicWingedNosk, RelicZote, DyeVat,
     }
 
     /// <summary>
@@ -53,10 +62,24 @@ namespace TerraKnight.World
             public bool SolidTop;
             /// <summary>The buff a right click on it gives (Player.TileInteractionsUse: Crystal Ball 29, Ammo Box 93, ...) and for how long, ticks.</summary>
             public int Buff, BuffTicks;
+            /// <summary>A picture of the mod's own (a relic's), whole, 32 px a cell, instead of a Terraria sheet's tiles.</summary>
+            public string Custom;
+        }
+
+        /// <summary>The relics (Items/Relics.cs): uniform 2x3-cell pictures with the same front-elevation base.</summary>
+        static Stations()
+        {
+            foreach (var kv in Items.Relics.Looks)
+            {
+                var h = new int[kv.Value.H];
+                for (int i = 0; i < h.Length; i++) h[i] = 16;
+                specs[kv.Key] = new Spec { Custom = kv.Value.Texture, W = kv.Value.W, H = kv.Value.H, Heights = h, Item = kv.Value.Item, Counts = new string[0] };
+            }
         }
 
         static readonly Dictionary<StationKind, Spec> specs = new Dictionary<StationKind, Spec>
         {
+            [StationKind.DyeVat] = new Spec { Texture = "Tiles_228", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.DyeVat, Counts = new[] { "染缸" } },
             // TileObjectData: Style2x1 with CoordinateHeights {18} (tiles 18, 16), Style3x2 {16, 18} (17, 114).
             [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" }, SolidTop = true },
             [StationKind.Furnace] = new Spec { Texture = "Tiles_17", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Furnace, Counts = new[] { "熔炉" } },
@@ -440,6 +463,13 @@ namespace TerraKnight.World
         {
             if (sprites.TryGetValue(kind, out var sp) && sp != null) return sp;
             var spec = specs[kind];
+            if (spec.Custom != null)
+            {
+                var pic = Items.Relics.Texture(spec.Custom);
+                sp = Sprite.Create(pic, new Rect(0, 0, pic.width, pic.height), new Vector2(0.5f, 0f), 2f / Px, 0, SpriteMeshType.FullRect);
+                sprites[kind] = sp;
+                return sp;
+            }
             var src = TerrariaAssets.Pixels(spec.Texture, out int sw, out int sh);
             int w = spec.W * 16, h = 0;
             foreach (var th in spec.Heights) h += th;

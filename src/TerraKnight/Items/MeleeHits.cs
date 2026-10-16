@@ -23,6 +23,7 @@ namespace TerraKnight.Items
         readonly HashSet<GameObject> hitThisSwing = new HashSet<GameObject>();
         readonly HashSet<GameObject> struckThisSwing = new HashSet<GameObject>();
         readonly HashSet<string> logged = new HashSet<string>();
+        readonly HashSet<string> flymealHit = new HashSet<string>();
         readonly GameObject source;
         readonly NailAttackProxy props;
         readonly List<Collider2D> overlaps = new List<Collider2D>();
@@ -49,6 +50,7 @@ namespace TerraKnight.Items
             hitThisSwing.Clear();
             struckThisSwing.Clear();
             logged.Clear();
+            flymealHit.Clear();
             hitEnemyThisSwing = false;
             MeleeSpecials.OnSwingStart(item);
             // Re-arming the prop trigger each swing lets a lever or pot register every swing.
@@ -93,6 +95,7 @@ namespace TerraKnight.Items
         void Sweep(Vector2 center, Vector2 size)
         {
             SwingBox = new Rect(center - size / 2f, size);
+            if (weapon.Type == ItemType.Flymeal) Town.TownNpcs.FlymealStrike(SwingBox, flymealHit);
             props.Tick(center, size);
 
             var filter = new ContactFilter2D { useTriggers = true, useLayerMask = true, layerMask = HitMask };

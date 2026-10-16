@@ -22,7 +22,7 @@ namespace TerraKnight
             foreach (bool open in new[] { false, true })
             {
                 pd.SetBool("openedWaterwaysManhole", open);
-                if (open) pd.SetInt("simpleKeys", Mathf.Max(1, pd.GetInt("simpleKeys")));
+                if (open) { pd.simpleKeys = Mathf.Max(1, pd.simpleKeys); Items.HkItemsDev.ToHotbar(Items.ItemType.HkSimpleKey); }
                 yield return GoTo("Ruins1_05b", EntryGateOf("Ruins1_05b"));
                 pd.isInvincible = true;
                 var gate = Object.FindObjectsByType<TransitionPoint>(FindObjectsSortMode.None).FirstOrDefault(t => t.name == "bot1" && t.gameObject.scene.name == "Ruins1_05b");
@@ -68,7 +68,9 @@ namespace TerraKnight
             }
             // Shut, with a Simple Key: stand on it and press W (the mod's up), Space through any prompt.
             pd.SetBool("openedWaterwaysManhole", false);
-            pd.SetInt("simpleKeys", 1);
+            // The Simple Key in the hotbar, where Hallownest's items work (Items.HkItems).
+            pd.simpleKeys = 1;
+            Items.HkItemsDev.ToHotbar(Items.ItemType.HkSimpleKey);
             yield return GoTo("Ruins1_05b", EntryGateOf("Ruins1_05b"));
             pd.isInvincible = true;
             PlayMakerFSM manhole = null;

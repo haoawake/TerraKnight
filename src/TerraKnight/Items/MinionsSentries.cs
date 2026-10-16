@@ -678,7 +678,7 @@ namespace TerraKnight.Items
             foreach (var n in npcs)
             {
                 if (n.Hm == null || n.Hm.isDead || m.Immune.ContainsKey(n.Id) || !AuraReaches(m, n)) continue;
-                int dmg = SummonTags.Modify(n.Hm, m.Damage, out bool crit, 1f, true, m.Center);
+                int dmg = SummonTags.Modify(n.Hm, m.Damage, out bool crit, 1f, true, m.Center, m.ItemTag);
                 // The Monk's sets (P:12930-12943): a crit one time in four (tier 3), one in six (tier 2).
                 if ((Ooa & OoaSet.MonkT3) != 0 ? Random.Range(0, 4) == 0 : (Ooa & OoaSet.MonkT2) != 0 && Random.Range(0, 6) == 0) crit = true;
                 if (crit) DevAuraCrits++;

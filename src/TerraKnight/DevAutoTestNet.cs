@@ -470,6 +470,7 @@ namespace TerraKnight
             pt.W.Write((ushort)1);
             pt.W.Write(ly * region.Grid.Width + lx);
             pt.W.Write(WorldEdits.Pack(CellKind.Wood, false));
+            pt.W.Write(TerraWorld.GetWall(cell.x, cell.y));
             bot.Send(pt);
             yield return new WaitForSeconds(0.4f);
             NetCheck(TerraWorld.Get(cell.x, cell.y) == CellKind.Wood, $"机器人放的木块出现在这边：{was} -> {TerraWorld.Get(cell.x, cell.y)}，收到 {TileSync.DevApplied} 格");

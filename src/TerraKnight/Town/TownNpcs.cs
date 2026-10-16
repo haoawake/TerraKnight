@@ -22,13 +22,27 @@ namespace TerraKnight.Town
         }
     }
 
+    /// <summary>
+    /// When a townsperson is in Dirtmouth: from its stage on (a resident, a town pet or slime), woken at the Blue Lake (the
+    /// Angler), in December (Santa Claus), every other townsperson home (the Princess), some days from dawn to dusk (the
+    /// Traveling Merchant).
+    /// </summary>
+    internal enum NpcKind : byte { Resident, Angler, Santa, Princess, Visitor, Pet }
+
     /// <summary>A Terraria town NPC: its id, internal and Chinese names, its profile texture, the stage it moves in at, and its shop.</summary>
     internal sealed class NpcDef
     {
         public readonly int Id;
         public readonly string Internal, Zh, Profile;
         public readonly int Stage;
-        public readonly Stock[] Items;
+        /// <summary>What it sells (the Traveling Merchant's changes every visit).</summary>
+        public Stock[] Items;
+        /// <summary>The generated townsfolk's (TownNpcsMore.cs): the texture (under Images), Main.npcFrameCount and
+        /// NPCID.Sets.ExtraFramesCount, the given names, the dialogue's text keys, and when it is in town.</summary>
+        public string Texture;
+        public int Frames, Extra;
+        public string[] Names, Chat;
+        public NpcKind Kind;
 
         public NpcDef(int id, string internalName, string zh, string profile, int stage, Stock[] items)
         {
@@ -77,6 +91,34 @@ namespace TerraKnight.Town
         }
 
         static readonly List<Npc> npcs = new List<Npc>();
+
+        static NpcDef[] all;
+        /// <summary>Every townsperson: the first eleven (TownShopData.cs) and the rest (TownNpcsMore.cs).</summary>
+        static NpcDef[] All
+        {
+            get
+            {
+                if (all != null) return all;
+                var list = new List<NpcDef>(roster);
+                list.AddRange(more);
+                return all = list.ToArray();
+            }
+        }
+
+        static string TextureOf(NpcDef d) => d.Texture ?? "TownNPCs/" + d.Profile + "_Default";
+        static int FramesOf(NpcDef d) => d.Frames > 0 ? d.Frames : FrameCount(d.Id);
+        // Town residents have no HealthManager. Flymeal gives them a flee reaction without touching quest FSMs.
+        public static int FlymealStrikes { get; private set; }
+        internal static void FlymealStrike(Rect box, HashSet<string> hit)
+        {
+            foreach (var n in npcs)
+            {
+                if (!box.Overlaps(new Rect(n.X - .35f, n.FeetY, .7f, 1.4f)) || !hit.Add(n.Def.Internal)) continue;
+                n.Dir = n.X < box.center.x ? -1 : 1;
+                n.Vx = n.Dir * 3f; n.Ai0 = 1; n.Ai1 = 180;
+                FlymealStrikes++;
+            }
+        }
         static TerrainRegion placedFor;
         static float streetMin, streetMax, benchX, benchY;
         static float tickAccumulator;
@@ -100,14 +142,27 @@ namespace TerraKnight.Town
         /// <summary>The chat box's text (empty while the shop is open, as Main.npcChatText).</summary>
         public static string ChatText { get; private set; } = "";
         public static string TalkingName => talk?.Name;
-        public static bool ChatOpen => talk != null && !shop && !guideCraft;
+        public static bool ChatOpen => talk != null && !shop && !guideCraft && !reforge;
         /// <summary>Talking to the Guide, whose chat has the crafting button.</summary>
         public static bool TalkingIsGuide => talk != null && talk.Def.Internal == "Guide";
         /// <summary>The Guide's crafting menu: talking to him with the inventory open after his crafting button.</summary>
         public static bool GuideCraftOpen => talk != null && guideCraft && InventoryGui.Open;
         /// <summary>A shop is open: talking with the inventory open (Main.npcShop).</summary>
         public static bool ShopOpen => talk != null && shop && InventoryGui.Open;
-        public static bool TalkingHasShop => talk != null && talk.Def.Items.Length > 0;
+        public static bool TalkingHasShop => talk != null && talk.Def.Items != null && talk.Def.Items.Length > 0;
+        /// <summary>Talking to the Nurse (her healing) or the Tax Collector (his taxes).</summary>
+        public static bool TalkingIsNurse => talk != null && talk.Def.Id == 18;
+        public static bool TalkingIsTaxCollector => talk != null && talk.Def.Id == 441;
+        /// <summary>Talking to the Angler, whose chat has the "Quest" button.</summary>
+        public static bool TalkingIsAngler => talk != null && talk.Def.Internal == "Angler";
+
+        /// <summary>The Angler's "Quest" button (Lang.inter[64]): today's fish, or handing it in.</summary>
+        public static void AnglerQuest()
+        {
+            if (!TalkingIsAngler || TerraMod.Instance == null) return;
+            ChatText = Angler.QuestButton(TerraMod.Instance.Inventory, talk.Name);
+            TerraMod.Instance.PlaySound("Menu_Tick", 0.7f);
+        }
 
         /// <summary>The open shop's 40 slots, and which hold bought-back items (buyOnce).</summary>
         public static readonly ItemStack[] ShopItems = new ItemStack[40];
@@ -144,7 +199,7 @@ namespace TerraKnight.Town
         public static int DevStockAt(string internalName, int stage, ItemType type, out bool has)
         {
             has = false;
-            foreach (var def in roster)
+            foreach (var def in All)
             {
                 if (def.Internal != internalName) continue;
                 int n = 0;
@@ -166,9 +221,11 @@ namespace TerraKnight.Town
             // Another save is coming in: what the Guide held is in the last save's bag already
             // (ModSave.Write put it back), so it goes, rather than into the next save's bag.
             GuideItem = default;
+            ReforgeItem = default;
             talk = null;
             shop = false;
             guideCraft = false;
+            reforge = false;
             Names.Clear();
             Arrived.Clear();
             lastStage = -1;
@@ -188,7 +245,12 @@ namespace TerraKnight.Town
                 return;
             }
             int stage = Shop.UnlockedStage();
-            if (region != placedFor || stage != lastStage) Place(region, stage, hero);
+            if (region != placedFor || stage != lastStage || Time.unscaledTime >= nextRecheck)
+            {
+                nextRecheck = Time.unscaledTime + 3f;
+                Place(region, stage, hero);
+            }
+            CollectTaxTime();
             tickAccumulator += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
             while (tickAccumulator >= 1f)
             {
@@ -197,8 +259,64 @@ namespace TerraKnight.Town
             }
             // Main.HoverOverNPCs's reach: leaving it closes the chat (and the shop).
             if (talk != null && !InReach(talk, hero)) Close(true);
-            if ((shop || guideCraft) && talk != null && !InventoryGui.Open) Close(true);
+            if ((shop || guideCraft || reforge) && talk != null && !InventoryGui.Open) Close(true);
         }
+
+        /// <summary>
+        /// Main.UpdateTime_SpawnTownNPCs read in Hallownest: once moved in a resident stays (even if the progress reads lower
+        /// than when it came); the Angler once woken; Santa in December (Main.xMas: the 15th on); the Princess with every
+        /// other resident home; the Traveling Merchant on his days, by day.
+        /// </summary>
+        static bool InTown(NpcDef def, int stage)
+        {
+            switch (def.Kind)
+            {
+                case NpcKind.Angler: return Angler.Saved;
+                case NpcKind.Santa: return stage >= def.Stage && System.DateTime.Now.Month == 12 && System.DateTime.Now.Day >= 15;
+                case NpcKind.Visitor: return stage >= def.Stage && TravelerVisiting();
+                case NpcKind.Princess:
+                    if (Arrived.Contains(def.Internal)) return true;
+                    if (stage < def.Stage) return false;
+                    foreach (var o in All)
+                        if (o != def && o.Kind == NpcKind.Resident && o.Stage <= stage && !npcs.Exists(n => n.Def == o)) return false;
+                    return true;
+                default: return def.Stage <= stage || Arrived.Contains(def.Internal);
+            }
+        }
+
+        /// <summary>
+        /// The Traveling Merchant's days (Main.UpdateTime: at dawn, some days): one day in three, by the day's number, from
+        /// dawn to dusk. His stock (Chest.SetupTravelShop) is chosen for the day from what he may bring: four to six things.
+        /// </summary>
+        static bool TravelerVisiting()
+        {
+            if (PlayerData.instance == null || !World.TerraTime.IsDay) return false;
+            int day = (int)((PlayerData.instance.playTime + World.TerraTime.NetOffset) / World.TerraTime.FullDaySeconds);
+            return new System.Random(day * 7919 + 17).Next(3) == 0;
+        }
+
+        static int travelDay = -1;
+
+        static void StockTraveler(NpcDef def, int stage)
+        {
+            int day = PlayerData.instance == null ? 0 : (int)((PlayerData.instance.playTime + World.TerraTime.NetOffset) / World.TerraTime.FullDaySeconds);
+            if (day == travelDay && def.Items != null && def.Items.Length > 0) return;
+            travelDay = day;
+            var rng = new System.Random(day * 104729 + 3);
+            var pool = new List<(ItemType Type, int Stage)>();
+            foreach (var t in travelPool) if (t.Stage <= stage) pool.Add(t);
+            var pick = new List<Stock>();
+            int n = 4 + rng.Next(3);
+            while (pick.Count < n && pool.Count > 0)
+            {
+                int k = rng.Next(pool.Count);
+                pick.Add(new Stock(pool[k].Type, 0, null));
+                pool.RemoveAt(k);
+            }
+            def.Items = pick.ToArray();
+        }
+
+        static float nextRecheck;
 
         /// <summary>Puts every townsperson who has moved in on the street round Dirtmouth's bench.</summary>
         static void Place(TerrainRegion region, int stage, HeroController hero)
@@ -227,39 +345,55 @@ namespace TerraKnight.Town
                 Survey();
                 HideStreetForeground(scene, Ground(benchX) ?? benchY);
             }
-            // Homes alternate left and right of the bench, past the pylon beside it.
-            var homes = new List<float>();
-            for (int k = 0; homes.Count < 16 && k < 40; k++)
+            // Who has left (the Traveling Merchant at dusk, Santa after December): "{0} has departed!" (LegacyMisc.35).
+            for (int k = npcs.Count - 1; k >= 0; k--)
             {
-                float off = 5f + 4.5f * (k / 2);
+                var gone = npcs[k];
+                if (InTown(gone.Def, stage)) continue;
+                if (talk == gone) Close(false);
+                npcs.RemoveAt(k);
+                Arrived.Remove(gone.Def.Internal);
+                string left = Terraria.TerrariaText.Get(Lang.Culture, "LegacyMisc.35");
+                Net.NetChat.Add(left != null ? left.Replace("{0}", gone.Name) : Lang.F("{0}已离去！", gone.Name), new Color(50 / 255f, 125 / 255f, 255 / 255f));
+            }
+            // Homes alternate left and right of the bench, past the pylon beside it: room for all forty.
+            var homes = new List<float>();
+            for (int k = 0; homes.Count < 40 && k < 120; k++)
+            {
+                float off = 5f + 3f * (k / 2);
                 float x = benchX + (k % 2 == 0 ? -off : off + 2f);
                 if (x > streetMin + 1f && x < streetMax - 1f) homes.Add(x);
             }
             int i = 0;
-            foreach (var def in roster)
+            foreach (var def in All)
             {
                 // Once moved in, a townsperson stays (as in Terraria), even if the progress reads lower than when it came.
-                if (def.Stage > stage && !Arrived.Contains(def.Internal)) continue;
+                if (!InTown(def, stage)) continue;
                 if (npcs.Exists(n => n.Def == def))
                 {
                     i++;
                     continue;
                 }
-                if (i >= homes.Count) break;
+                if (homes.Count == 0) break;
+                if (def.Kind == NpcKind.Visitor) StockTraveler(def, stage);
                 if (!Names.TryGetValue(def.Internal, out var given))
                 {
                     var pool = GivenNames(def.Internal);
                     given = pool[Random.Range(0, pool.Length)];
                     Names[def.Internal] = given;
                 }
-                var n = new Npc { Def = def, Given = given, HomeX = homes[i], X = homes[i], Dir = Random.Range(0, 2) == 0 ? -1 : 1, Ai1 = Random.Range(60, 300) };
+                // More townsfolk than homes along the street: they share, a little apart.
+                float home = homes[i % homes.Count] + 1.2f * (i / homes.Count) * ((i / homes.Count) % 2 == 0 ? 1f : -1f);
+                var n = new Npc { Def = def, Given = given, HomeX = home, X = home, Dir = Random.Range(0, 2) == 0 ? -1 : 1, Ai1 = Random.Range(60, 300) };
                 n.FeetY = Ground(n.X) ?? benchY;
                 n.LastX = n.X;
                 npcs.Add(n);
                 i++;
                 if (Arrived.Add(def.Internal) && !fresh)
                 {
-                    UI.CombatText.Show(hero.transform.position + Vector3.up * 1.6f, Lang.F("{0}已到达！", n.Name), new Color(50 / 255f, 125 / 255f, 255 / 255f), true);
+                    // Main.NewText(Language.GetTextValue("Announcement.HasArrived", FullName), 50, 125, 255): in the chat at the bottom left.
+                    string line = Terraria.TerrariaText.Get(Lang.Culture, "Announcement.HasArrived");
+                    Net.NetChat.Add(line != null ? line.Replace("{0}", n.Name) : Lang.F("{0}已到达！", n.Name), new Color(50 / 255f, 125 / 255f, 255 / 255f));
                     Plugin.Log.LogInfo($"[城镇] {n.Name} 已到达");
                 }
             }
@@ -401,7 +535,7 @@ namespace TerraKnight.Town
             }
             n.LastX = n.X;
             // NPC.FindFrame for town NPCs on the ground: 0 standing, 2.. walking.
-            int frames = FrameCount(n.Def.Id), extra = ExtraFrames(n.Def.Id);
+            int frames = FramesOf(n.Def), extra = n.Def.Extra > 0 ? n.Def.Extra : ExtraFrames(n.Def.Id);
             if (n.Vx == 0f)
             {
                 n.Frame = 0;
@@ -442,9 +576,9 @@ namespace TerraKnight.Town
             Vector2? mouse = TerraMod.MouseWorld(out var m) ? m : (Vector2?)null;
             foreach (var n in npcs)
             {
-                string tex = "TownNPCs/" + n.Def.Profile + "_Default";
+                string tex = TextureOf(n.Def);
                 var t = Terraria.TerrariaAssets.Texture(tex);
-                int frames = FrameCount(n.Def.Id), fh = t.height / frames;
+                int frames = FramesOf(n.Def), fh = t.height / frames;
                 var feet = TerraParticles.ToPx(new Vector2(n.X, n.FeetY)) + new Vector2(0f, AddHeight(n.Def.Id));
                 fx.Draw(FxBatch.Frame(tex, 0, fh * n.Frame, t.width, fh, t.width / 2f, fh - 4f), feet, new Color(L, L, L, 1f), 0f, 1f, flipX: n.Dir == 1);
                 // The chat bubble over a townsperson the cursor is on and the player can reach.
@@ -470,8 +604,8 @@ namespace TerraKnight.Town
 
         static Rect FrameRect(Npc n)
         {
-            var t = Terraria.TerrariaAssets.Texture("TownNPCs/" + n.Def.Profile + "_Default");
-            float w = t.width * Px, h = t.height / (float)FrameCount(n.Def.Id) * Px;
+            var t = Terraria.TerrariaAssets.Texture(TextureOf(n.Def));
+            float w = t.width * Px, h = t.height / (float)FramesOf(n.Def) * Px;
             return new Rect(n.X - w / 2f, n.FeetY - 4f * Px, w, h);
         }
 
@@ -491,14 +625,20 @@ namespace TerraKnight.Town
         {
             var hero = HeroController.SilentInstance;
             if (hero == null) return false;
+            // Several under the cursor (a crowded street): the one nearest it.
+            Npc pick = null;
+            foreach (var c in npcs)
+                if (FrameRect(c).Contains(mouseWorld) && InReach(c, hero) && (pick == null || Mathf.Abs(c.X - mouseWorld.x) < Mathf.Abs(pick.X - mouseWorld.x))) pick = c;
             foreach (var n in npcs)
             {
-                if (!FrameRect(n).Contains(mouseWorld) || !InReach(n, hero)) continue;
+                if (n != pick) continue;
                 if (talk == n) return true;
                 ReturnGuideItem();
+                ReturnReforgeItem();
                 talk = n;
                 shop = false;
                 guideCraft = false;
+                reforge = false;
                 ChatText = Chat(n);
                 TerraMod.Instance?.PlaySound("Chat", 0.8f);
                 return true;
@@ -527,6 +667,36 @@ namespace TerraKnight.Town
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
         }
 
+        /// <summary>The Goblin Tinkerer's reforge slot (Main.reforgeItem) and whether his reforging is open (Main.InReforgeMenu).</summary>
+        public static ItemStack ReforgeItem;
+        static bool reforge;
+        public static bool ReforgeOpen => talk != null && reforge && InventoryGui.Open;
+        public static bool TalkingIsGoblin => talk != null && talk.Def.Id == 107;
+
+        /// <summary>His "Reforge" button: the inventory opens, the chat text goes, the reforge slot shows.</summary>
+        public static void OpenReforge()
+        {
+            if (!TalkingIsGoblin) return;
+            reforge = true;
+            ChatText = "";
+            InventoryGui.Open = true;
+            TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+        }
+
+        /// <summary>Player.dropItemCheck for the reforge slot: back into the bag whole (its prefix kept), else at the player's feet. Also before every save.</summary>
+        internal static void ReturnReforgeItem()
+        {
+            if (ReforgeItem.IsEmpty) return;
+            var stack = ReforgeItem;
+            ReforgeItem = default;
+            var inv = TerraMod.Instance?.Inventory;
+            int left = inv != null ? inv.Pickup(stack) : stack.Count;
+            if (left <= 0) return;
+            stack.Count = left;
+            var hero = HeroController.SilentInstance;
+            if (hero != null) WorldItems.Drop(stack, hero.GetComponent<BoxCollider2D>().bounds.center);
+        }
+
         /// <summary>
         /// Player.dropItemCheck for the Guide's slot: back into the bag, or dropped at the player's
         /// feet if it won't fit. Also before every save (ModSave.Write), so a save never misses it.
@@ -548,9 +718,11 @@ namespace TerraKnight.Town
         {
             if (talk == null) return;
             ReturnGuideItem();
+            ReturnReforgeItem();
             talk = null;
             shop = false;
             guideCraft = false;
+            reforge = false;
             ChatText = "";
             for (int i = 0; i < ShopItems.Length; i++)
             {
@@ -591,7 +763,7 @@ namespace TerraKnight.Town
                 long price = BuyPrice(slot);
                 // Can't afford it: nothing happens at all (Player.BuyItem).
                 if (!Shop.Spend(price)) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(item.Type, 0);
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix };
                 inv.Mouse.Count++;
                 bought++;
                 if (BuyBack[slot])
@@ -623,7 +795,7 @@ namespace TerraKnight.Town
         {
             checkedCount = 0;
             var sb = new System.Text.StringBuilder();
-            foreach (var def in roster)
+            foreach (var def in All)
                 foreach (var st in def.Items)
                 {
                     checkedCount++;
@@ -656,13 +828,13 @@ namespace TerraKnight.Town
             Shop.Earn(money);
             int at = -1;
             for (int i = 0; i < 39; i++)
-                if (BuyBack[i] && ShopItems[i].Type == stack.Type) { at = i; break; }
+                if (BuyBack[i] && ShopItems[i].Type == stack.Type && ShopItems[i].Prefix == stack.Prefix) { at = i; break; }
             if (at < 0)
                 for (int i = 0; i < 39; i++)
                     if (ShopItems[i].IsEmpty) { at = i; break; }
             if (at >= 0)
             {
-                if (ShopItems[at].IsEmpty) ShopItems[at] = ItemStack.Of(stack.Type, 0);
+                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix };
                 ShopItems[at].Count += stack.Count;
                 BuyBack[at] = true;
             }
@@ -674,6 +846,8 @@ namespace TerraKnight.Town
 
         static string Chat(Npc n)
         {
+            if (n.Def.Internal == "Angler") return Angler.Chat(n.Name);
+            if (n.Def.Chat != null && n.Def.Chat.Length > 0) return ChatOf(n);
             var lines = Dialog(n.Def.Internal);
             string line = Lang.T(lines[Random.Range(0, lines.Length)]).Replace("{PlayerName}", Lang.T("小骑士"));
             // The Guide's advice on what comes next (Main.HelpText): the ability that opens the next stage.
@@ -705,6 +879,8 @@ namespace TerraKnight.Town
         /// <summary>The given-name pools (NPC.getNewNPCNameInner; zh keeps the Latin names).</summary>
         static string[] GivenNames(string npc)
         {
+            foreach (var d in more)
+                if (d.Internal == npc) return d.Names != null && d.Names.Length > 0 ? d.Names : new[] { "" };
             switch (npc)
             {
                 case "Guide": return new[] { "Joe", "Connor", "Tanner", "Wyatt", "Cody", "Levi", "Luke", "Jack", "Scott", "Logan", "Cole", "Asher", "Bradley", "Jacob", "Garrett", "Dylan", "Maxwell", "Steve", "Brett", "Andrew" };
@@ -717,13 +893,14 @@ namespace TerraKnight.Town
                 case "BestiaryGirl": return new[] { "Maria", "MacKenzie", "Azaria", "Juanita", "Astra", "Hayley", "Becca", "Veronica", "Tia", "Robyn", "Arien", "Jane", "Bindi", "Dian", "Lori", "Mardy", "Mollie", "Lizzy", "Daphne", "Ellen", "Lilith" };
                 case "PartyGirl": return new[] { "Candy", "Isis", "Trixy", "Destiny", "Lexus", "Bambi", "Bailey", "Glitter", "Sparkle", "Paris", "Dazzle", "Fantasy", "Bunny", "Sugar", "Fantasia", "Star", "Cherry", "Amanda" };
                 case "Steampunker": return new[] { "Whitney", "Verity", "Ada", "Cornelia", "Lydia", "Leila", "Minerva", "Emeline", "Cynthia", "Fidelia", "Lilly", "Phoebe", "Zylphia", "Zelda", "Selina", "Hope", "Isabella", "Judith", "Savannah", "Vivian" };
+                case "Angler": return new[] { "Bobby", "Sammy", "Jimmy", "Danny", "Timmy", "Simon", "Johnny", "Billy", "Matty", "Bart", "Phillip", "Spencer", "Nathan", "Grayson", "Miles", "Charles", "Adam", "Tyler", "Jey", "Ivan", "Izzy" };
                 case "Cyborg": return new[] { "Alpha", "Beta", "Delta", "Omega", "Gamma", "Theta", "Kappa", "Omicron", "Sigma", "Upsilon", "Phi", "Zeta", "Lambda", "Nu", "Ci", "Rho", "Fender", "T-3E0", "Niner-7", "A.N.D.Y.", "Syn-X", "Mu", "Raynbro" };
                 default: return new[] { "" };
             }
         }
 
         /// <summary>Main.npcFrameCount (spec-townnpc 3.1).</summary>
-        static int FrameCount(int id) => id switch { 22 => 26, 17 => 25, 19 => 25, 38 => 25, 107 => 25, 228 => 26, 633 => 23, 453 => 26, 208 => 23, 178 => 23, 209 => 26, _ => 25 };
+        static int FrameCount(int id) => id switch { 369 => 23, 22 => 26, 17 => 25, 19 => 25, 38 => 25, 107 => 25, 228 => 26, 633 => 23, 453 => 26, 208 => 23, 178 => 23, 209 => 26, _ => 25 };
 
         /// <summary>NPCID.Sets.ExtraFramesCount: the sitting, talking and attack frames after the walk.</summary>
         static int ExtraFrames(int id) => id switch { 22 => 10, 228 => 10, 209 => 10, _ => 9 };

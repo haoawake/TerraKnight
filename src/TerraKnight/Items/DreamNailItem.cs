@@ -249,7 +249,8 @@ namespace TerraKnight.Items
             if (hm == null || hm.isDead) return;
             var col = hm.GetComponent<Collider2D>() ?? target.GetComponent<Collider2D>();
             if (col == null) return;
-            var def = ItemDb.Get(ItemType.DreamNail);
+            // The Dream Nail in hand: a reforged one hits with its prefix.
+            var def = mod.Inventory.Current.Type == ItemType.DreamNail ? mod.Inventory.Current.Def : ItemDb.Get(ItemType.DreamNail);
             Vector2 from = hero.GetComponent<BoxCollider2D>().bounds.center;
             float facing = col.bounds.center.x >= from.x ? 1f : -1f;
             mod.Melee.HitWith(col, Equipment.Damage(def), def.Knockback, Equipment.Crit(def), facing, from);

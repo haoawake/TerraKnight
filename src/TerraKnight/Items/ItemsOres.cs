@@ -157,6 +157,7 @@ namespace TerraKnight.Items
         static EnemyDrops()
         {
             AddBossHealing();
+            AddRelicRows();
             int changed = 0;
             foreach (var e in table.Values)
             {

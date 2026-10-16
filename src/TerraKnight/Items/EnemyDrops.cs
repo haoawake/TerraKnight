@@ -31,6 +31,8 @@ namespace TerraKnight.Items
             /// turns into its ore), set when the table is first read (-1 until then).
             /// </summary>
             public int LockStage;
+            /// <summary>Master Mode only (ItemDropRule.MasterModeCommonDrop: a boss's relic).</summary>
+            public bool Master;
 
             public float Chance => Mathf.Clamp01(Num / (float)Den);
         }
@@ -233,6 +235,7 @@ namespace TerraKnight.Items
             foreach (var d in drops)
             {
                 if (Locked(d)) continue;
+                if (d.Master && World.GameDifficulty.Current != World.DifficultyLevel.Master) continue;
                 if (d.Group > 0)
                 {
                     // A group: one roll, at its first drop's chance, for one of its unlocked drops.
@@ -249,8 +252,17 @@ namespace TerraKnight.Items
                     continue;
                 }
                 if (Random.value >= EffectiveChance(d)) continue;
-                Put(d, at, direct);
+                var relic = d;
+                if (d.Master)
+                {
+                    // A relic: the variant's, for a fight keyed as another.
+                    relic.Type = Relics.Swap(d.Type, record);
+                    Relics.DevDropped++;
+                }
+                Put(relic, at, direct);
             }
+            // Fishing bait and moss (FishingCrates.cs).
+            Fishing.KillDrops(record, at, direct);
         }
 
         /// <summary>Dev: when set, kills' drops go here (type, count) instead of into the world, for counting them.</summary>

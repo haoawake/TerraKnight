@@ -295,7 +295,7 @@ namespace TerraKnight.UI
             if (s.Watch > 0) lines.Add((0, WatchText(s.Watch), Color.white));
             if (s.Weather) lines.Add((1, Weather(scene), Color.white));
             if (s.Calendar) lines.Add((7, Moon(), Color.white));
-            if (s.Fish) lines.Add((2, G("FishingPower", "{0} 渔力", 0), Grey));
+            if (s.Fish) lines.Add((2, Items.Fishing.InfoLine() ?? G("FishingPower", "{0} 渔力", 0), Grey));
             if (s.Ore) lines.Add((10, ore != null ? G("OreDetected", "附近有{0}！", ore) : G("NoTreasureNearby", "附近没有宝藏"), ore != null ? Color.white : Grey));
             if (s.Critter) lines.Add((11, rare ?? G("NoRareCreatures", "附近没有稀有生物"), rare != null ? Color.white : Grey));
             if (s.ThirdEye)

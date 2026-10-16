@@ -125,7 +125,8 @@ namespace TerraKnight.Net
 
         public static void Draw()
         {
-            if (NetSession.State == NetSession.Phase.Off) return;
+            // Alone the game's own lines (a townsperson come, Main.NewText) show all the same, while fresh.
+            if (NetSession.State == NetSession.Phase.Off && (lines.Count == 0 || Time.unscaledTime - lines[lines.Count - 1].Time > LineSeconds)) return;
             var e = Event.current;
             float ui = UI.GameView.Scale;
             var view = UI.GameView.Rect;

@@ -25,7 +25,7 @@ namespace TerraKnight.Net
         public const int MaxSlots = 16;
         /// <summary>What a client must say in its Hello (Terraria: "Terraria" + curRelease).</summary>
         public static string Protocol => "TerraKnight" + Plugin.Version + "/net" + NetVersion;
-        const int NetVersion = 2;
+        const int NetVersion = 3;
         /// <summary>RemoteClient's timeout: two minutes without a word (a scene loading on the other end can stall it for seconds).</summary>
         const double TimeoutSeconds = 120;
 

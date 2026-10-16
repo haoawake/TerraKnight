@@ -534,8 +534,8 @@ namespace TerraKnight.Items
                 if (n.Hm == null || n.Hm.isDead || m.Immune.ContainsKey(n.Id)) continue;
                 var box = new Rect(n.Box.x - half, n.Box.y - half, n.Box.width + half * 2f, n.Box.height + half * 2f);
                 if (!SegmentHitsRect(a, b, box)) continue;
-                int dmg = SummonTags.Modify(n.Hm, m.Damage, out bool crit, 1f, true, m.Center);
-                melee.HitWith(n.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen);
+                int dmg = SummonTags.Modify(n.Hm, m.Damage, out bool crit, 1f, true, m.Center, m.ItemTag);
+                melee.HitWith(n.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen + m.ItemPen);
                 DevHits++;
                 DevHitDamage += dmg;
                 SummonTags.OnHit(n.Hm, m.Damage, m.Center);
@@ -679,8 +679,8 @@ namespace TerraKnight.Items
             foreach (var npc in npcs)
             {
                 if (npc.Hm == null || npc.Hm.isDead || !npc.Box.Overlaps(box)) continue;
-                int dmg = SummonTags.Modify(npc.Hm, m.Damage, out bool crit, 1f, true, m.Center);
-                melee.HitWith(npc.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen);
+                int dmg = SummonTags.Modify(npc.Hm, m.Damage, out bool crit, 1f, true, m.Center, m.ItemTag);
+                melee.HitWith(npc.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen + m.ItemPen);
                 DevHits++;
                 DevHitDamage += dmg;
                 SummonTags.OnHit(npc.Hm, m.Damage, m.Center);

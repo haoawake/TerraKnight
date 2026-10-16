@@ -95,11 +95,11 @@ namespace TerraKnight.World
             holes.SetCut(i, x, y, cut);
 
             // Wall behind any cell that was dug out of the original terrain.
-            if (grid.IsDug(x, y))
+            if (grid.HasWall(x, y))
             {
-                var (fx, fy) = TileFraming.WallFrame(grid.IsDug(x, y + 1), grid.IsDug(x, y - 1),
-                    grid.IsDug(x - 1, y), grid.IsDug(x + 1, y), TileFraming.Variant(x, y));
-                Show(walls, i, x, y, WallZ, GetSprite(DugWallSheet, fx, fy, TileFraming.WallFrameSize), WallTint);
+                var (fx, fy) = TileFraming.WallFrame(grid.HasWall(x, y + 1), grid.HasWall(x, y - 1),
+                    grid.HasWall(x - 1, y), grid.HasWall(x + 1, y), TileFraming.Variant(x, y), x, y);
+                Show(walls, i, x, y, WallZ, GetSprite(grid.GetWall(x, y) > 0 ? "Wall_" + grid.GetWall(x, y) : DugWallSheet, fx, fy, TileFraming.WallFrameSize), WallTint);
             }
             else
             {
@@ -110,14 +110,16 @@ namespace TerraKnight.World
             string sheet = SheetFor(kind);
             if (sheet != null)
             {
-                var (fx, fy) = TileFraming.Frame(Solid(x, y + 1), Solid(x, y - 1), Solid(x - 1, y), Solid(x + 1, y),
+                var (fx, fy) = TileFraming.Frame(Connects(x, y, 0, 1), Connects(x, y, 0, -1), Connects(x, y, -1, 0), Connects(x, y, 1, 0),
                     TileFraming.Variant(x, y));
-                Show(blocks, i, x, y, BlockZ, GetSprite(sheet, fx, fy, TileFraming.FrameSize), BlockTint);
+                Show(blocks, i, x, y, BlockZ, GetShapedSprite(sheet, fx, fy, grid.GetSlope(x, y)), BlockTint);
             }
             else if (kind == CellKind.Platform)
             {
                 // Tiles_19, wood (row 0): the frame its neighbours call for, flat or stair.
-                Show(blocks, i, x, y, BlockZ, GetSprite("Tiles_19", PlatformStairs.FrameX(grid, x, y), 0, TileFraming.FrameSize), BlockTint);
+                int fx = PlatformStairs.FrameX(grid, x, y);
+                var sprite = grid.GetSlope(x, y) == CellGrid.HalfBrick ? GetShapedSprite("Tiles_19", fx, 0, CellGrid.HalfBrick) : GetSprite("Tiles_19", fx, 0, TileFraming.FrameSize);
+                Show(blocks, i, x, y, BlockZ, sprite, BlockTint);
             }
             else if (kind == CellKind.Rope)
             {
@@ -207,16 +209,28 @@ namespace TerraKnight.World
 
         bool Solid(int x, int y) => Cells.Blocks(grid.Get(x, y));
 
+        bool Connects(int x, int y, int dx, int dy)
+        {
+            if (!Solid(x + dx, y + dy)) return false;
+            int s = grid.GetSlope(x, y), n = grid.GetSlope(x + dx, y + dy);
+            if (s == CellGrid.HalfBrick && (dy > 0 || (dx != 0 && n != CellGrid.HalfBrick))) return false;
+            if (dx > 0 && (s == 1 || s == 3 || n == 2 || n == 4)) return false;
+            if (dx < 0 && (s == 2 || s == 4 || n == 1 || n == 3)) return false;
+            if (dy > 0 && (s == 1 || s == 2 || n == 3 || n == 4 || n == CellGrid.HalfBrick)) return false;
+            if (dy < 0 && (s == 3 || s == 4 || n == 1 || n == 2)) return false;
+            return true;
+        }
+
         void Show(Dictionary<int, SpriteRenderer> layer, int i, int x, int y, float z, Sprite sprite, Color tint)
         {
             if (!layer.TryGetValue(i, out var sr))
             {
                 sr = pool.Count > 0 ? pool.Pop() : CreateRenderer();
                 sr.gameObject.SetActive(true);
-                var center = CellGrid.CellCenter(x, y);
-                sr.transform.localPosition = new Vector3(center.x, center.y, z);
                 layer[i] = sr;
             }
+            var center = CellGrid.CellCenter(x, y);
+            sr.transform.localPosition = new Vector3(center.x, center.y, z);
             sr.sprite = sprite;
             sr.color = tint;
         }
@@ -242,6 +256,42 @@ namespace TerraKnight.World
             s = TerrariaAssets.Sprite(sheet, fx, fy, size, size, PixelsPerUnit, new Vector2(0.5f, 0.5f));
             sprites[(sheet, fx, fy)] = s;
             return s;
+        }
+
+        static readonly Dictionary<(string, int, int, int), Sprite> shaped = new Dictionary<(string, int, int, int), Sprite>();
+        static Sprite GetShapedSprite(string sheet, int fx, int fy, int shape)
+        {
+            if (shape == 0) return GetSprite(sheet, fx, fy, TileFraming.FrameSize);
+            var key = (sheet, fx, fy, shape);
+            if (shaped.TryGetValue(key, out var sprite)) return sprite;
+            var src = TerrariaAssets.Pixels(sheet, out int w, out int h);
+            var dst = new Color32[16 * 16];
+            // TileDrawing.DrawBasicTile: translate each two-pixel strip, retaining the frame's
+            // top/bottom edge. Merely masking a square cuts away that edge on the diagonal.
+            void Copy(int x, int fromY, int toY)
+            {
+                dst[(15 - toY) * 16 + x] = src[(h - fy - 1 - fromY) * w + fx + x];
+            }
+            if (shape == CellGrid.HalfBrick)
+            {
+                for (int x = 0; x < 16; x++) for (int y = 0; y < 8; y++) Copy(x, y, y + 8);
+            }
+            else
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    int x = shape == 1 || shape == 3 ? 2 * i : 14 - 2 * i;
+                    int from = shape <= 2 ? 0 : 2 * i, to = shape <= 2 ? 2 * i : 0;
+                    int length = shape <= 2 ? 14 - 2 * i : 16 - 2 * i;
+                    for (int y = 0; y < length; y++) { Copy(x, from + y, to + y); Copy(x + 1, from + y, to + y); }
+                }
+                int edge = shape <= 2 ? 14 : 0;
+                for (int x = 0; x < 16; x++) for (int y = edge; y < edge + 2; y++) Copy(x, y, y);
+            }
+            var tex = TerrariaAssets.Make(sheet + "#shape" + shape, dst, 16, 16);
+            sprite = Sprite.Create(tex, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0.5f), PixelsPerUnit, 0, SpriteMeshType.FullRect);
+            shaped[key] = sprite;
+            return sprite;
         }
     }
 }

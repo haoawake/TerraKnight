@@ -231,7 +231,7 @@ namespace TerraKnight.World
         public static int SupportFrameX(CellGrid g, int x, int y)
         {
             int s = g.GetSlope(x, y);
-            if (s == 0 || !g.InBounds(x, y - 1) || Cells.Blocks(g.Get(x, y - 1))) return -1;
+            if ((s != 1 && s != 2) || !g.InBounds(x, y - 1) || Cells.Blocks(g.Get(x, y - 1))) return -1;
             int nx = s == 1 ? x + 1 : x - 1;
             var n = g.Get(nx, y - 1);
             bool solid = Cells.Blocks(n) || n == CellKind.Platform;

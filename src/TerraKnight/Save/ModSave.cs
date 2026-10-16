@@ -16,7 +16,7 @@ namespace TerraKnight.Save
     {
         sealed class SaveFile
         {
-            public int Version = 6;
+            public int Version = 7;
             /// <summary>A creative-mode save (UI.CreativeMenu): items never run out, anything can be made.</summary>
             public bool Creative;
             /// <summary>World.DifficultyLevel (1 Normal to 4 Master); 0, from before the choice, is Master.</summary>
@@ -29,6 +29,8 @@ namespace TerraKnight.Save
             public List<SlotItem> Misc;
             /// <summary>The Piggy Bank's slots; GeoItems: the save's geo is the Geo item already (Items.GeoWallet).</summary>
             public List<SlotItem> Bank;
+            /// <summary>The Hallownest bag (Items.HkItems).</summary>
+            public List<SlotItem> HkBag;
             public bool GeoItems;
             /// <summary>Version 4: the worn loadout and the four loadouts' stored sets (the worn one's is empty). Fav marks a shared item.</summary>
             public int CurrentLoadout;
@@ -58,6 +60,12 @@ namespace TerraKnight.Save
             public Dictionary<string, Bestiary.Seen> Seen;
             public Dictionary<string, string> NpcNames;
             public List<string> NpcArrived;
+            /// <summary>The Angler: woken at the Blue Lake, today's fish and its day, handed in today, quests done.</summary>
+            public bool AnglerSaved;
+            public string AnglerQuest;
+            public int AnglerDay = -1;
+            public bool AnglerDone;
+            public int AnglerQuests;
             /// <summary>Life Fruits eaten and the other permanent boosters used (Player.ConsumedLifeFruit, extraAccessory, usedAegisCrystal...).</summary>
             public int LifeFruits;
             public List<string> Boosts;
@@ -69,6 +77,7 @@ namespace TerraKnight.Save
             public int CrystalSeed;
             public List<CrystalSave> Crystals;
             /// <summary>Scene name -> packed cell edits (index &lt;&lt; 8 | value, see <see cref="World.WorldEdits"/>).</summary>
+            public Dictionary<string, Dictionary<int, int>> Walls = new Dictionary<string, Dictionary<int, int>>();
             public Dictionary<string, List<long>> Scenes = new Dictionary<string, List<long>>();
         }
 
@@ -120,15 +129,19 @@ namespace TerraKnight.Save
             public string Type;
             public int Count;
             public bool Fav;
+            /// <summary>A reforged item's prefix (PrefixID), 0 none.</summary>
+            public int Prefix;
         }
 
-        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite };
+        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix };
 
         static ItemStack Unpack(SlotItem s)
         {
             if (s == null || !Enum.TryParse(s.Type, out ItemType type)) return default;
             var stack = ItemStack.Of(type, s.Count);
             stack.Favorite = s.Fav;
+            // A prefix the item can't have (or one past the list) is dropped.
+            if (s.Prefix > 0 && Items.Prefixes.Valid(Items.ItemDb.Get(type), s.Prefix)) stack.Prefix = (byte)s.Prefix;
             return stack;
         }
 
@@ -180,6 +193,9 @@ namespace TerraKnight.Save
         /// </summary>
         static int stateOf = -1;
 
+        /// <summary>Dev: the slot the mod's state belongs to.</summary>
+        public static int DevStateSlot => stateOf;
+
         /// <summary>A new game begins in a slot: the mod's fresh state is that slot's.</summary>
         public static void BeganNewGame(int slot) => stateOf = slot;
 
@@ -195,6 +211,7 @@ namespace TerraKnight.Save
             mod.ReturnOrDropMouseItem();
             // The Guide's slot too: an item shown to him belongs to the bag.
             Town.TownNpcs.ReturnGuideItem();
+            Town.TownNpcs.ReturnReforgeItem();
             var file = new SaveFile { Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
             foreach (var s in inv.Slots) file.Inventory.Add(Pack(s));
             foreach (var s in inv.Accessories) file.Accessories.Add(Pack(s));
@@ -203,6 +220,8 @@ namespace TerraKnight.Save
             foreach (var s in inv.Misc) file.Misc.Add(Pack(s));
             file.Bank = new List<SlotItem>();
             foreach (var s in inv.Bank) file.Bank.Add(Pack(s));
+            file.HkBag = new List<SlotItem>();
+            foreach (var s in inv.HkBag) file.HkBag.Add(Pack(s));
             file.GeoItems = GeoWallet.Migrated;
             file.CurrentLoadout = inv.CurrentLoadout;
             file.Loadouts = new List<LoadoutSave>();
@@ -227,6 +246,11 @@ namespace TerraKnight.Save
             file.Seen = new Dictionary<string, Bestiary.Seen>(Bestiary.Stats);
             file.NpcNames = new Dictionary<string, string>(Town.TownNpcs.Names);
             file.NpcArrived = new List<string>(Town.TownNpcs.Arrived);
+            file.AnglerSaved = Town.Angler.Saved;
+            file.AnglerQuest = Town.Angler.Quest == ItemType.None ? null : Town.Angler.Quest.ToString();
+            file.AnglerDay = Town.Angler.QuestDay;
+            file.AnglerDone = Town.Angler.QuestDone;
+            file.AnglerQuests = Town.Angler.QuestsDone;
             file.Trash = Pack(inv.Trash);
             file.Granted.AddRange(mod.GrantedAbilities);
             // Creative's pylons not yet placed by their bench are made again when the save is read.
@@ -249,6 +273,7 @@ namespace TerraKnight.Save
             foreach (var c in Net.WorldSync.SaveCrystals()) file.Crystals.Add(new CrystalSave { Scene = c.Scene, Placed = c.Placed, Taken = c.Taken, X = c.Local.x, Y = c.Local.y });
             // Items lying in the world aren't kept (Terraria saves none with the world): quitting clears them,
             // so they never pile up from one session to the next.
+            foreach (var kv in Net.WorldSync.SaveWalls()) file.Walls[kv.Key] = new Dictionary<int, int>(kv.Value);
             foreach (var kv in Net.WorldSync.SaveEdits())
             {
                 var cells = new List<long>(kv.Value.Count);
@@ -311,6 +336,7 @@ namespace TerraKnight.Save
         public static void Read(int slot, TerraMod mod)
         {
             World.WorldEdits.Clear();
+            World.WorldWalls.Clear();
             mod.ResetPlayer();
             stateOf = slot;
             string path = PathFor(slot);
@@ -343,6 +369,7 @@ namespace TerraKnight.Save
                 Load(file.Armor, inv.Armor);
                 Load(file.Misc, inv.Misc);
                 Load(file.Bank, inv.Bank);
+                if (file.HkBag != null) Load(file.HkBag, inv.HkBag);
                 GeoWallet.Reset(file.GeoItems);
                 if (file.Version >= 4 && file.Loadouts != null)
                 {
@@ -376,8 +403,8 @@ namespace TerraKnight.Save
                     }
                     // The worn loadout's storage is empty; anything there (a damaged file) goes back into the bag.
                     var own = inv.Loadouts[inv.CurrentLoadout];
-                    for (int i = 0; i < own.Armor.Length; i++) { if (!own.Armor[i].IsEmpty) inv.Pickup(own.Armor[i].Type, own.Armor[i].Count); own.Armor[i] = default; }
-                    for (int i = 0; i < own.Accessories.Length; i++) { if (!own.Accessories[i].IsEmpty) inv.Pickup(own.Accessories[i].Type, own.Accessories[i].Count); own.Accessories[i] = default; }
+                    for (int i = 0; i < own.Armor.Length; i++) { if (!own.Armor[i].IsEmpty) inv.Pickup(own.Armor[i]); own.Armor[i] = default; }
+                    for (int i = 0; i < own.Accessories.Length; i++) { if (!own.Accessories[i].IsEmpty) inv.Pickup(own.Accessories[i]); own.Accessories[i] = default; }
                     InventoryGui.ShareHintSeen = file.ShareHintSeen;
                 }
                 else
@@ -399,6 +426,11 @@ namespace TerraKnight.Save
                 foreach (var r in Bestiary.Order) if (!Bestiary.SeenOrder.Contains(r)) Bestiary.SeenOrder.Add(r);
                 if (file.NpcNames != null) foreach (var kv in file.NpcNames) Town.TownNpcs.Names[kv.Key] = kv.Value;
                 if (file.NpcArrived != null) Town.TownNpcs.Arrived.UnionWith(file.NpcArrived);
+                Town.Angler.Saved = file.AnglerSaved;
+                Town.Angler.Quest = file.AnglerQuest != null && System.Enum.TryParse(file.AnglerQuest, out ItemType aq) ? aq : ItemType.None;
+                Town.Angler.QuestDay = file.AnglerDay;
+                Town.Angler.QuestDone = file.AnglerDone;
+                Town.Angler.QuestsDone = file.AnglerQuests;
                 inv.Trash = Unpack(file.Trash);
                 inv.Selected = Mathf.Clamp(file.Selected, 0, Inventory.HotbarSize - 1);
                 // Older files kept only the maximums; every 20 above the start was a crystal.
@@ -438,6 +470,9 @@ namespace TerraKnight.Save
                     }
                     World.Chests.Load(chests);
                 }
+                if (file.Walls != null)
+                    foreach (var scene in file.Walls)
+                        foreach (var wall in scene.Value) World.WorldWalls.For(scene.Key)[wall.Key] = wall.Value;
                 foreach (var scene in file.Scenes)
                 {
                     var edits = World.WorldEdits.For(scene.Key);

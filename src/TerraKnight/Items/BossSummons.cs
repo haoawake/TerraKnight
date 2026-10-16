@@ -121,7 +121,7 @@ namespace TerraKnight.Items
                     if (BossArena.Arrived(s.Key) || pending) yield break;
                     if (BossArena.Visiting) BossArena.AbortEntry(s.Key);
                     arriving = BossArena.DevWorldArena(s.Key, out _, out _) ? s : null;
-                    if (!BossArena.Fight(s.Key, true)) { arriving = null; yield break; }
+                    if (!BossArena.Fight(s.Key, true, atDoor: true)) { arriving = null; yield break; }
                     PylonObject.TeleportEffect(hero);
                     TerraMod.Instance?.PlaySound("Custom/dd2_etherian_portal_open", 0.8f);
                     DevFollowed++;
@@ -142,7 +142,7 @@ namespace TerraKnight.Items
             var s = arriving;
             var gm = GameManager.UnsafeInstance;
             if (s == null || hero == null || gm == null) return false;
-            if (gm.sceneName != BossArena.SceneOf(s.Key)) return false;
+            if (gm.sceneName != BossArena.ArrivalScene(s.Key)) return false;
             arriving = null;
             DevArrivals++;
             Player.OpeningPortal.SummonAfterEntry(hero, Areas.AreaName(gm.sceneName));
@@ -173,9 +173,9 @@ namespace TerraKnight.Items
             string boss = zh ? EnemyDrops.ZhName(s.Key) : EnemyDrops.EnglishName(s.Key);
             string area = Areas.AreaName(EnemyDrops.SceneOf(s.Key));
             return zh
-                ? $"首领召唤物：{boss}（{area}）\n首次击败该首领后可在任意地点使用\n打开传送门，把你送进它的竞技场，跳过剧情直接开战\n联机时所有玩家一起传送过去\n成功进入战斗消耗1个；条件不符不消耗\n梦境或神居战后返回出发处；现世战后留在竞技场"
+                ? $"首领召唤物：{boss}（{area}）\n首次击败该首领后可在任意地点使用\n打开传送门，把你送到它竞技场的正门外，走进去即开战，跳过剧情\n联机时所有玩家一起传送过去\n成功进入战斗消耗1个；条件不符不消耗\n梦境或神居战后返回出发处；现世战后留在竞技场；走开则召唤物保留"
                     + (s.Dream ? "\n需要梦之钉" : "")
-                : $"Boss summon: {boss} ({area})\nUsable anywhere once this boss is defeated\nA portal takes you to its native arena, straight into the fight, the story skipped\nIn a LAN game every player goes too\nConsumes one on battle entry; invalid use costs nothing\nDream/Godhome fights return you; world fights end in the arena"
+                : $"Boss summon: {boss} ({area})\nUsable anywhere once this boss is defeated\nA portal takes you to its arena's front door; walk in to fight, the story skipped\nIn a LAN game every player goes too\nConsumes one on battle entry; invalid use costs nothing\nDream/Godhome fights return you; world fights end in the arena; walk away and the seal is kept"
                     + (s.Dream ? "\nRequires the Dream Nail" : "");
         }
 
@@ -224,7 +224,7 @@ namespace TerraKnight.Items
             {
                 // The portal: the teleport's light and the portal's sound where the player stands; out of it in the arena.
                 arriving = BossArena.DevWorldArena(s.Key, out _, out _) ? s : null;
-                if (!BossArena.Fight(s.Key)) { pending = false; arriving = null; Notice(Text("战斗入口暂不可用", "Battle entrance unavailable")); return false; }
+                if (!BossArena.Fight(s.Key, false, atDoor: true)) { pending = false; arriving = null; Notice(Text("战斗入口暂不可用", "Battle entrance unavailable")); return false; }
                 if (hero != null) PylonObject.TeleportEffect(hero);
                 TerraMod.Instance?.PlaySound("Custom/dd2_etherian_portal_open", 0.8f);
             }
@@ -252,7 +252,8 @@ namespace TerraKnight.Items
             int run = generation;
             try
             {
-            float until = Time.realtimeSinceStartup + 40f;
+            // From the front door the player walks in when ready: up to five minutes.
+            float until = Time.realtimeSinceStartup + 300f;
             bool found = false;
             string scene = BossArena.SceneOf(s.Key), record = s.Key.Split('@')[0];
             while (Time.realtimeSinceStartup < until)

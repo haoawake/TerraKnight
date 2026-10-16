@@ -39,7 +39,18 @@ namespace TerraKnight.Terraria
         {
             // Generated from this player's Hollow Knight portraits, used everywhere an item draws.
             if (name != null && name.StartsWith(Items.BossSummons.IconPrefix)) return Items.BossSummons.Icon(name);
+            // A relic's picture: the mod's own (Resources/relic_*.png).
+            if (name != null && name.StartsWith(Items.Relics.TexturePrefix)) return Items.Relics.Texture(name);
+            // Hallownest's key items: the game's own inventory pictures.
+            if (name != null && name.StartsWith(Items.HkItems.TexturePrefix)) return Items.HkItems.Texture(name);
             if (textures.TryGetValue(name, out var tex)) return tex;
+            // The mod's own picture for a Terraria one (Resources/hk_<name>.png), drawn in its place.
+            tex = Override(name);
+            if (tex != null)
+            {
+                textures[name] = tex;
+                return tex;
+            }
 
             var img = XnbTexture.Load(Path.Combine(ImagesDir, name + ".xnb"));
             tex = new Texture2D(img.Width, img.Height, TextureFormat.RGBA32, false)
@@ -54,6 +65,26 @@ namespace TerraKnight.Terraria
             return tex;
         }
 
+        /// <summary>The mod's replacement for a Terraria texture: the embedded Resources/hk_&lt;name&gt;.png (point-filtered pixel art), or null.</summary>
+        static Texture2D Override(string name)
+        {
+            using (var s = typeof(TerrariaAssets).Assembly.GetManifestResourceStream("TerraKnight.hk_" + name + ".png"))
+            {
+                if (s == null) return null;
+                var bytes = new byte[s.Length];
+                int read = 0;
+                while (read < bytes.Length)
+                {
+                    int n = s.Read(bytes, read, bytes.Length - read);
+                    if (n <= 0) break;
+                    read += n;
+                }
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false) { name = "TerraKnight/hk_" + name, filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+                ImageConversion.LoadImage(tex, bytes, false);
+                return tex;
+            }
+        }
+
         /// <summary>A texture made here (a recoloured copy, say) kept under a name, so it is drawn like any of Terraria's.</summary>
         public static void Put(string name, Texture2D tex) => textures[name] = tex;
 
@@ -62,6 +93,15 @@ namespace TerraKnight.Terraria
         /// <summary>A texture's pixels (bottom row first, as Unity keeps them), to build another texture from.</summary>
         public static Color32[] Pixels(string name, out int width, out int height)
         {
+            var own = Override(name);
+            if (own != null)
+            {
+                width = own.width;
+                height = own.height;
+                var copy = own.GetPixels32();
+                Object.Destroy(own);
+                return copy;
+            }
             var img = XnbTexture.Load(Path.Combine(ImagesDir, name + ".xnb"));
             var raw = FlipRows(img);
             width = img.Width;

@@ -39,6 +39,7 @@ namespace TerraKnight.Net
             public bool Placed, Taken, Sky;
             public Stack[] Slots;
             public long[] Cells;
+            public long[] Walls;
         }
 
         internal sealed class Action
@@ -105,6 +106,21 @@ namespace TerraKnight.Net
                 {
                     chunk.Value.Sort();
                     list.Add(new Record { Key = "t:" + scene.Key + ":" + chunk.Key, Scene = scene.Key, Cells = chunk.Value.ToArray() });
+                }
+            }
+            foreach (var scene in WorldWalls.All)
+            {
+                var chunks = new Dictionary<int, List<long>>();
+                foreach (var wall in scene.Value)
+                {
+                    int chunk = wall.Key / 512;
+                    if (!chunks.TryGetValue(chunk, out var cells)) chunks[chunk] = cells = new List<long>();
+                    cells.Add(((long)wall.Key << 16) | (ushort)(wall.Value + 1));
+                }
+                foreach (var chunk in chunks)
+                {
+                    chunk.Value.Sort();
+                    list.Add(new Record { Key = "w:" + scene.Key + ":" + chunk.Key, Scene = scene.Key, Walls = chunk.Value.ToArray() });
                 }
             }
             return list;
@@ -201,7 +217,8 @@ namespace TerraKnight.Net
                 Stations.Clear();
                 LifeCrystals.Clear();
                 WorldItems.NetClear();
-                foreach (var t in TerrainSystem.All) t?.Region?.Grid.ResetNetworkEdits();
+                foreach (var t in TerrainSystem.All) { t?.Region?.Grid.ResetNetworkEdits(); t?.Region?.Grid.ResetWalls(); }
+                WorldWalls.ClearInPlace();
                 WorldEdits.ClearInPlace();
                 foreach (var record in records) Apply(record);
             }
@@ -220,6 +237,16 @@ namespace TerraKnight.Net
                     WorldEdits.For(record.Scene)[index] = value;
                     WorldEdits.Unpack(value, out var kind, out bool dug, out int slope);
                     region?.Grid.ApplyNetwork(index, kind, dug, slope);
+                }
+            }
+            else if (record.Key.StartsWith("w:", StringComparison.Ordinal))
+            {
+                var region = TerrainSystem.Find(record.Scene);
+                foreach (long packed in record.Walls)
+                {
+                    int index = (int)(packed >> 16), wall = (int)(packed & 65535) - 1;
+                    WorldWalls.For(record.Scene)[index] = wall;
+                    if (region != null) region.Grid.SetWall(index % region.Grid.Width, index / region.Grid.Width, wall);
                 }
             }
             else if (record.Key.StartsWith("s:", StringComparison.Ordinal)) Stations.NetApply(record);
@@ -443,6 +470,18 @@ namespace TerraKnight.Net
             return list;
         }
         public static int SaveSeed => personal == null ? LifeCrystals.Seed : personal.Find(r => r.Key == "l:seed")?.Seed ?? 0;
+        public static IEnumerable<KeyValuePair<string, Dictionary<int, int>>> SaveWalls()
+        {
+            if (personal == null) return WorldWalls.All;
+            var scenes = new Dictionary<string, Dictionary<int, int>>();
+            foreach (var r in personal)
+                if (r.Walls != null)
+                {
+                    if (!scenes.TryGetValue(r.Scene, out var cells)) scenes[r.Scene] = cells = new Dictionary<int, int>();
+                    foreach (long cell in r.Walls) cells[(int)(cell >> 16)] = (int)(cell & 65535) - 1;
+                }
+            return scenes;
+        }
         public static IEnumerable<KeyValuePair<string, Dictionary<int, byte>>> SaveEdits()
         {
             if (personal == null) return WorldEdits.All;

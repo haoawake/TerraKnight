@@ -87,6 +87,31 @@ namespace TerraKnight.Items
             ["LobsterLancer"] = G("GG_God_Tamer"),
         };
 
+        /// <summary>
+        /// Each world arena's front door from outside (arenadoors: the arena gate's targetScene and entryPoint): the room
+        /// before the fight and its gate into the arena. A seal brings the player there, to walk in. The Troupe Master's
+        /// tent has none: Dirtmouth's tent door is only there while the troupe is.
+        /// </summary>
+        static readonly Dictionary<string, (string Scene, string Gate)> frontDoors = new Dictionary<string, (string, string)>
+        {
+            ["FalseKnight"] = ("Crossroads_06", "right1"), ["BigFly"] = ("Crossroads_50", "left1"), ["Mawlek"] = ("Crossroads_33", "left1"),
+            ["Hornet"] = ("Fungus1_25", "right1"), ["MegaMossCharger"] = ("Fungus1_12", "right1"), ["GhostAladar"] = ("Cliffs_01", "right1"),
+            ["GhostNoEyes"] = ("Fungus1_34", "door1"), ["DungDefender"] = ("Waterways_02", "top2"), ["TraitorLord"] = ("Fungus3_48", "right1"),
+            ["MantisLord"] = ("Fungus2_14", "bot1"), ["MageLord"] = ("Ruins1_32", "right1"), ["MegaJellyfish"] = ("Fungus3_archive", "bot1"),
+            ["FlukeMother"] = ("Waterways_08", "left1"), ["MegaBeamMiner"] = ("Mines_11", "right1"), ["GhostHu"] = ("Fungus2_08", "right1"),
+            ["GhostMarmu"] = ("Fungus3_13", "left2"), ["BlackKnight"] = ("Ruins2_Watcher_Room", "bot1"), ["HiveKnight"] = ("Hive_04", "right1"),
+            ["JarCollector"] = ("Ruins2_11_b", "left1"), ["MimicSpider"] = ("Deepnest_31", "right2"), ["GhostGalien"] = ("Deepnest_35", "left1"),
+            ["GhostXero"] = ("Crossroads_46b", "right1"), ["Hornet@4"] = ("Deepnest_East_12", "right1"), ["GhostMarkoth"] = ("Deepnest_East_18", "right2"),
+            ["InfectedKnight"] = ("Abyss_18", "left1"), ["HollowKnight"] = ("Room_Final_Boss_atrium", "right1"),
+        };
+
+        /// <summary>Dev: the front door's gate in the room before the arena.</summary>
+        internal static string DevDoorGate(string key) => frontDoors.TryGetValue(key, out var d) ? d.Gate : null;
+
+        /// <summary>The room a seal brings the player to for this fight: the front door's, else the arena itself.</summary>
+        internal static string ArrivalScene(string key) =>
+            visit != null && visit.Key == key && visit.Door != null ? visit.Door : SceneOf(key);
+
         static Arena Set(Arena a, (string, bool)[] beaten = null, (string, int)[] beatenInts = null, string[] states = null,
                          (string, bool)[] needs = null, (string, int)[] needInts = null)
         {
@@ -137,6 +162,9 @@ namespace TerraKnight.Items
             public readonly Dictionary<string, bool> Now = new Dictionary<string, bool>(), NowStates = new Dictionary<string, bool>();
             public readonly Dictionary<string, int> NowInts = new Dictionary<string, int>();
             public bool Arrived;
+            /// <summary>Brought to the arena's front door (a seal): the room before it, until the player walks in.</summary>
+            public string Door;
+            public bool AtDoor;
         }
 
         static Visit visit;
@@ -151,6 +179,8 @@ namespace TerraKnight.Items
         public static bool DevActive => visit != null;
 
         public static bool Has(string key) => key != null && arenas.ContainsKey(key);
+        /// <summary>Dev: every arena's key.</summary>
+        internal static IEnumerable<string> DevKeys() => arenas.Keys;
         internal static string SceneOf(string key) => key != null && arenas.TryGetValue(key, out var a) ? a.Scene : null;
         internal static bool Arrived(string key) => visit != null && visit.Key == key && visit.Arrived;
         internal static void AbortEntry(string key)
@@ -164,8 +194,11 @@ namespace TerraKnight.Items
         /// <summary>Takes the player to the boss's arena for its fight; false when this boss has none (a copy is spawned then).</summary>
         public static bool Fight(string key) => Fight(key, false);
 
-        /// <summary>The fight, as a rematch whatever this save has beaten (a LAN game's follower of another's seal).</summary>
-        public static bool Fight(string key, bool rematch)
+        /// <summary>
+        /// The fight, as a rematch whatever this save has beaten (a LAN game's follower of another's seal). At the door
+        /// (a seal's): a world arena is come to by its front door, from the room before it, and walked into.
+        /// </summary>
+        public static bool Fight(string key, bool rematch, bool atDoor = false)
         {
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
@@ -174,6 +207,13 @@ namespace TerraKnight.Items
             if (visit != null) Restore(keepWins: true);
             var a = arenas[key];
             var v = new Visit { Key = key, Arena = a };
+            string scene = a.Scene, gate = a.Gate;
+            if (atDoor && a.Kind == Kind.World && frontDoors.TryGetValue(key, out var door))
+            {
+                v.Door = door.Scene;
+                scene = door.Scene;
+                gate = door.Gate;
+            }
             // Beaten before (as a seal needs): the fight straight away, the story skipped, its "encountered" record kept on
             // (the game's own way back into a fight it has seen); never beaten (the Creative book's button): met as the
             // first time, intro and all.
@@ -212,14 +252,14 @@ namespace TerraKnight.Items
                 };
             InventoryGui.Open = false;
             UI.HudDialogue.Close();
-            DevLast = $"{key} → {a.Scene}（{a.Gate}）";
+            DevLast = $"{key} → {scene}（{gate}）" + (v.Door != null ? $"，正门外，首领房 {a.Scene}" : "");
             Plugin.Log.LogInfo($"[图鉴] 挑战 {DevLast}：开打前的记录 {string.Join("，", Describe(v))}");
             // An arena laid over its room only for one who came in by its door (the Watcher Knights':
             // SceneAdditiveLoadConditional.doorTrigger against the last gate walked through) has it walked.
-            if (a.Kind == Kind.World) TransitionPoint.lastEntered = a.Gate;
+            if (a.Kind == Kind.World && v.Door == null) TransitionPoint.lastEntered = a.Gate;
             gm.BeginSceneTransition(new GameManager.SceneLoadInfo
             {
-                SceneName = a.Scene, EntryGateName = a.Gate, HeroLeaveDirection = GatePosition.unknown, EntryDelay = 0f,
+                SceneName = scene, EntryGateName = gate, HeroLeaveDirection = GatePosition.unknown, EntryDelay = 0f,
                 WaitForSceneTransitionCameraFade = true,
                 Visualization = a.Kind == Kind.World ? GameManager.SceneLoadVisualizations.Default : GameManager.SceneLoadVisualizations.Dream,
             });
@@ -256,6 +296,14 @@ namespace TerraKnight.Items
                 {
                     if (!visit.Arrived && visit.Arena.Kind != Kind.World) TerraMod.Instance?.StartCoroutine(FadeIn());
                     visit.Arrived = true;
+                }
+                else if (!visit.Arrived && visit.Door != null && gm.sceneName == visit.Door)
+                {
+                    // At the front door: the records stay set for the fight inside. An arena laid over its room only
+                    // for one who comes in by its door (the Watcher Knights') takes the walk in as that.
+                    visit.AtDoor = true;
+                    TransitionPoint.lastEntered = visit.Arena.Gate;
+                    Plugin.Log.LogInfo($"[图鉴] 挑战 {visit.Key}：到了正门外 {visit.Door}，首领房 {visit.Arena.Scene}");
                 }
                 else if (visit.Arrived || !gm.IsInSceneTransition)
                 {
@@ -302,7 +350,23 @@ namespace TerraKnight.Items
         /// <summary>Every frame: walked out of the arena into the next room (the seamless world enters no scene for it), all put back.</summary>
         public static void Tick()
         {
-            if (visit == null || !visit.Arrived) return;
+            if (visit == null) return;
+            if (!visit.Arrived && visit.AtDoor)
+            {
+                // From the front door: walked into the arena (the seamless world's next room) is the fight on; walked
+                // off another way, all put back.
+                var g = GameManager.UnsafeInstance;
+                var here = World.TerraWorld.Live?.SceneName;
+                if (g == null || g.IsInSceneTransition || here == null) return;
+                if (InFight(here))
+                {
+                    visit.Arrived = true;
+                    Plugin.Log.LogInfo($"[图鉴] 挑战 {visit.Key}：走进首领房 {here}");
+                }
+                else if (here != visit.Door) Restore(keepWins: true);
+                return;
+            }
+            if (!visit.Arrived) return;
             var gm = GameManager.UnsafeInstance;
             var live = World.TerraWorld.Live?.SceneName;
             if (gm == null || gm.IsInSceneTransition || live == null || InFight(live)) return;

@@ -504,6 +504,15 @@ namespace TerraKnight.Items
             loc = default;
             rot = 0f;
             body = 0;
+            // A fishing pole while its bobber is out (ItemCheck_HackHoldStyles: holdStyle 1), a little in front (Pl:51000-51002, +4 down).
+            if (w != null && w.FishingPower > 0)
+            {
+                if (!Fishing.Active) return false;
+                var pole = TerrariaAssets.Texture(w.Texture);
+                loc = new Vector2(10f + (int)(pole.width * 0.18f), 28f);
+                body = 3;
+                return true;
+            }
             if (w == null || w.HoldStyle == 0) return false;
             if (w.Type == ItemType.Umbrella || w.Type == ItemType.TragicUmbrella)
             {

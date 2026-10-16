@@ -153,9 +153,10 @@ namespace TerraKnight.UI
             // UI.Keybindings: "Keybindings"
             CreativeMenu.Shadowed(new Rect(rx, ry, rw, 34f * ui), TT("UI.Keybindings", "按键绑定"), section, new Color(0.75f, 0.85f, 1f));
             ry += 44f * ui;
-            var all = TerraKeys.All;
-            int perColumn = (all.Length + 1) / 2;
-            float colW = (rw - 20f * ui) / 2f, rh = Mathf.Min(38f * ui, (p.yMax - 150f * ui - ry) / perColumn);
+            var all = TerraKeys.Ordered;
+            int columns = all.Length > 30 ? 3 : 2;
+            int perColumn = (all.Length + columns - 1) / columns;
+            float colW = (rw - 20f * (columns - 1) * ui) / columns, rh = Mathf.Min(38f * ui, (p.yMax - 200f * ui - ry) / perColumn);
             var mouse = TerraCursor.GuiMouse();
             for (int i = 0; i < all.Length; i++)
             {
@@ -175,6 +176,12 @@ namespace TerraKnight.UI
                     TerraKeys.Listen(a);
                 }
             }
+            // UIManageControls sp20: Double Tap Dashing, on or off.
+            if (CreativeMenu.Button(new Rect(rx, p.yMax - 190f * ui, 300f * ui, 44f * ui), Lang.T("双击冲刺") + "：" + Lang.T(TerraKeys.DoubleTapDash ? "开" : "关"), ui))
+            {
+                TerraKeys.DoubleTapDash = !TerraKeys.DoubleTapDash;
+                TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+            }
             // LegacyMenu.86: "Reset to Default"
             if (CreativeMenu.Button(new Rect(rx, p.yMax - 140f * ui, 300f * ui, 44f * ui), TT("LegacyMenu.86", "重置为默认"), ui))
             {
@@ -182,7 +189,7 @@ namespace TerraKnight.UI
                 if (TerraKeys.Listening.HasValue) TerraKeys.StopListening();
             }
             CreativeMenu.Shadowed(new Rect(rx + 320f * ui, p.yMax - 140f * ui, rw - 320f * ui, 44f * ui),
-                Lang.T("点一个动作，再按新的键（Esc 取消）。红色表示有几个动作用了同一个键。"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+                Lang.T("点一个动作，再按新的键（Esc 取消，再按一次原来的键是解除绑定）。红色表示有几个动作用了同一个键。"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
 
             // LegacyMenu.5: "Back"
             if (CreativeMenu.Button(new Rect(p.center.x - 130f * ui, p.yMax - 76f * ui, 260f * ui, 50f * ui), TT("LegacyMenu.5", "返回"), ui)) Hide();

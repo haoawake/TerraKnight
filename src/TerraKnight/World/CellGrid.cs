@@ -48,8 +48,30 @@ namespace TerraKnight.World
         // Original cells that come from the scene's hand-placed colliders rather than its tilemap:
         // the scene's own art draws them, so the grid's black fill leaves them alone.
         readonly bool[] art;
-        // Platforms only: Tile.slope(), 0 flat, 1 "\" (high on the left), 2 "/" (high on the right).
+        // Tile shape: 0 full/flat, 1 "\" (high on the left), 2 "/" (high on the right).
         readonly byte[] slopes;
+
+        readonly Dictionary<int, int> walls = new Dictionary<int, int>();
+        public event Action<int, int> WallChanged;
+        public int WallAt(int index) => walls.TryGetValue(index, out var wall) ? wall : -1;
+        public int GetWall(int x, int y) => InBounds(x, y) ? WallAt(y * Width + x) : -1;
+        public bool HasWall(int x, int y) => InBounds(x, y) && (GetWall(x, y) > 0 || (GetWall(x, y) < 0 && IsDug(x, y)));
+        public void RestoreWall(int index, int wall)
+        {
+            if (index < 0 || index >= cells.Length) return;
+            if (wall < 0) walls.Remove(index); else walls[index] = wall;
+        }
+        public void SetWall(int x, int y, int wall)
+        {
+            if (!InBounds(x, y) || GetWall(x, y) == wall) return;
+            RestoreWall(y * Width + x, wall);
+            WallChanged?.Invoke(x, y);
+        }
+        public void ResetWalls()
+        {
+            var indices = new List<int>(walls.Keys);
+            foreach (int i in indices) SetWall(i % Width, i / Width, -1);
+        }
 
         public event Action<int, int> CellChanged;
 
@@ -120,7 +142,7 @@ namespace TerraKnight.World
             if (index < 0 || index >= cells.Length) return;
             cells[index] = kind;
             dug[index] = wasDug;
-            slopes[index] = kind == CellKind.Platform ? (byte)slope : (byte)0;
+            slopes[index] = ValidShape(kind, slope);
         }
 
         CellKind[] networkBase;
@@ -135,7 +157,7 @@ namespace TerraKnight.World
         public void ApplyNetwork(int index, CellKind kind, bool wasDug, int slope)
         {
             if (index < 0 || index >= cells.Length) return;
-            byte s = kind == CellKind.Platform ? (byte)slope : (byte)0;
+            byte s = ValidShape(kind, slope);
             if (cells[index] == kind && dug[index] == wasDug && slopes[index] == s) return;
             Restore(index, kind, wasDug, slope);
             CellChanged?.Invoke(index % Width, index / Width);
@@ -145,16 +167,24 @@ namespace TerraKnight.World
         public bool IsDugAt(int index) => dug[index];
         public int SlopeAt(int index) => slopes[index];
 
-        /// <summary>A platform's slope (0 flat, 1 "\", 2 "/"); 0 for anything else.</summary>
+        /// <summary>Shape 5 is a lower half brick; 1..4 are Terraria slope values.</summary>
+        public const int HalfBrick = 5;
+        static byte ValidShape(CellKind kind, int shape) =>
+            kind == CellKind.Platform ? (byte)(shape == 1 || shape == 2 || shape == HalfBrick ? shape : 0) :
+            Cells.Blocks(kind) && kind != CellKind.Original && shape >= 0 && shape <= HalfBrick ? (byte)shape : (byte)0;
+
+        public bool IsFullSolid(int x, int y) => IsSolid(x, y) && GetSlope(x, y) == 0;
+
         public int GetSlope(int x, int y) => InBounds(x, y) ? slopes[y * Width + x] : 0;
 
-        /// <summary>WorldGen.SlopeTile on a platform: raises the change even though the kind stays.</summary>
+        /// <summary>WorldGen.SlopeTile: raises the change even though the kind stays.</summary>
         public void SetSlope(int x, int y, int slope)
         {
             if (!InBounds(x, y)) return;
             int i = y * Width + x;
-            if (cells[i] != CellKind.Platform || slopes[i] == slope) return;
-            slopes[i] = (byte)slope;
+            byte shape = ValidShape(cells[i], slope);
+            if (slopes[i] == shape) return;
+            slopes[i] = shape;
             CellChanged?.Invoke(x, y);
         }
 
@@ -166,6 +196,7 @@ namespace TerraKnight.World
             Array.Copy(dug, copy.dug, dug.Length);
             Array.Copy(art, copy.art, art.Length);
             Array.Copy(slopes, copy.slopes, slopes.Length);
+            foreach (var wall in walls) copy.walls[wall.Key] = wall.Value;
             copy.networkBase = networkBase != null ? (CellKind[])networkBase.Clone() : null;
             return copy;
         }

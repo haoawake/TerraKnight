@@ -2,8 +2,8 @@ namespace TerraKnight.Items
 {
     /// <summary>
     /// The rest of the bows, and the hammers, axes, hamaxes and pickaxes (sweep R1), with
-    /// Terraria's own numbers (Item.SetDefaults). In Hallownest hammers and axes have no walls or
-    /// trees to work on: they swing as the weapons they also are; their power shows on the tooltip.
+    /// Terraria's own numbers (Item.SetDefaults). Hammers shape blocks and remove background
+    /// walls; axes retain their weapon swing in Hallownest, which has no editable trees.
     /// </summary>
     internal static partial class ItemDb
     {
@@ -51,8 +51,8 @@ namespace TerraKnight.Items
             list.Add(Tool(ItemType.PearlwoodHammer, "珍珠木锤", 660, 10, 5.5f, 29, 19, hammer: 55));
             list.Add(Tool(ItemType.TheBreaker, "魔锤", 104, 24, 6f, 45, 19, rare: 1, hammer: 55));
             list.Add(Tool(ItemType.FleshGrinder, "血肉锤", 797, 23, 6f, 40, 19, rare: 1, hammer: 55));
-            list.Add(Tool(ItemType.Pwnhammer, "神锤", 367, 26, 7.5f, 27, 14, rare: 4, hammer: 80, tip: "强大到足以摧毁恶魔祭坛"));
-            list.Add(Tool(ItemType.Hammush, "蘑菇锤", 787, 26, 7.5f, 27, 14, 1.1f, rare: 7, hammer: 85, tip: "强大到足以摧毁恶魔祭坛"));
+            list.Add(Tool(ItemType.Pwnhammer, "神锤", 367, 26, 7.5f, 27, 14, rare: 4, hammer: 80, tip: "可塑形物块和平台、拆除背景墙\n黑卵神殿的固定祭坛无法拆除"));
+            list.Add(Tool(ItemType.Hammush, "蘑菇锤", 787, 26, 7.5f, 27, 14, 1.1f, rare: 7, hammer: 85, tip: "可塑形物块和平台、拆除背景墙\n黑卵神殿的固定祭坛无法拆除"));
             list.Add(Tool(ItemType.ChlorophyteWarhammer, "叶绿战锤", 1234, 80, 8f, 35, 14, rare: 7, hammer: 90));
             // Axes (I:1914-1926, 10742-10754, 12788-12836, 15058-15106, 15254-15268, 16131-16144, 31314-31670, 42128-42137).
             list.Add(Tool(ItemType.CopperAxe, "铜斧", 3506, 3, 4.5f, 30, 21, axe: 7, boost: -1));

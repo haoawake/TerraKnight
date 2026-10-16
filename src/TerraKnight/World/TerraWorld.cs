@@ -63,6 +63,23 @@ namespace TerraKnight.World
 
         internal static void RaiseChanged(int gx, int gy, CellKind kind) => Changed?.Invoke(gx, gy, kind);
 
+        public static int GetWall(int gx, int gy)
+        {
+            var r = RegionAt(gx, gy);
+            return r == null ? -1 : r.Grid.GetWall(gx - r.CellOffset.x, gy - r.CellOffset.y);
+        }
+        public static bool HasWall(int gx, int gy)
+        {
+            var r = RegionAt(gx, gy);
+            return r != null && r.Grid.HasWall(gx - r.CellOffset.x, gy - r.CellOffset.y);
+        }
+        public static void SetWall(int gx, int gy, int wall)
+        {
+            var r = RegionAt(gx, gy);
+            r?.Grid.SetWall(gx - r.CellOffset.x, gy - r.CellOffset.y, wall);
+        }
+        public static bool IsFullSolid(int gx, int gy) => IsSolid(gx, gy) && GetSlope(gx, gy) == 0;
+
         public static bool IsDug(int gx, int gy)
         {
             var r = RegionAt(gx, gy);

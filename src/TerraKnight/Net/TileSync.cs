@@ -16,7 +16,7 @@ namespace TerraKnight.Net
     internal static class TileSync
     {
         static bool hooked, applying;
-        static readonly Dictionary<string, List<(int Index, byte Packed)>> pending = new Dictionary<string, List<(int, byte)>>();
+        static readonly Dictionary<string, List<(int Index, byte Packed, int Wall)>> pending = new Dictionary<string, List<(int, byte, int)>>();
 
         public static int DevSent, DevApplied;
 
@@ -27,14 +27,15 @@ namespace TerraKnight.Net
             if (hooked) return;
             hooked = true;
             TerrainRegion.Edited += OnEdited;
+            TerrainRegion.WallEdited += OnEdited;
         }
 
         static void OnEdited(TerrainRegion region, int x, int y)
         {
             if (applying || WorldSync.Applying || !NetSession.Active || !WorldSync.Ready || region == null || string.IsNullOrEmpty(region.SceneName)) return;
             int i = y * region.Grid.Width + x;
-            if (!pending.TryGetValue(region.SceneName, out var list)) pending[region.SceneName] = list = new List<(int, byte)>();
-            list.Add((i, WorldEdits.Pack(region.Grid.GetAt(i), region.Grid.IsDugAt(i), region.Grid.SlopeAt(i))));
+            if (!pending.TryGetValue(region.SceneName, out var list)) pending[region.SceneName] = list = new List<(int, byte, int)>();
+            list.Add((i, WorldEdits.Pack(region.Grid.GetAt(i), region.Grid.IsDugAt(i), region.Grid.SlopeAt(i)), region.Grid.WallAt(i)));
         }
 
         /// <summary>Once a frame: this frame's changes, a message per scene.</summary>
@@ -45,9 +46,9 @@ namespace TerraKnight.Net
             foreach (var kv in pending)
             {
                 var list = kv.Value;
-                for (int start = 0; start < list.Count; start += 8000)
+                for (int start = 0; start < list.Count; start += 6000)
                 {
-                    int n = Mathf.Min(8000, list.Count - start);
+                    int n = Mathf.Min(6000, list.Count - start);
                     var p = NetSession.Mine(Msg.TileChange);
                     p.W.Write(kv.Key);
                     p.W.Write((ushort)n);
@@ -55,6 +56,7 @@ namespace TerraKnight.Net
                     {
                         p.W.Write(list[k].Index);
                         p.W.Write(list[k].Packed);
+                        p.W.Write(list[k].Wall);
                     }
                     NetSession.Send(p.Done());
                     DevSent += n;
@@ -76,11 +78,12 @@ namespace TerraKnight.Net
             {
                 int i = r.ReadInt32();
                 byte packed = r.ReadByte();
+                int wall = r.ReadInt32();
                 WorldEdits.Unpack(packed, out var kind, out bool dug, out int slope);
                 if (region == null || i < 0 || i >= region.Grid.Width * region.Grid.Height)
                 {
                     // Not loaded here: kept with the save's edits of that scene, replayed when it loads.
-                    if (i >= 0) WorldEdits.For(scene)[i] = packed;
+                    if (i >= 0) { WorldEdits.For(scene)[i] = packed; WorldWalls.For(scene)[i] = wall; }
                     continue;
                 }
                 int x = i % region.Grid.Width, y = i / region.Grid.Width;
@@ -89,6 +92,7 @@ namespace TerraKnight.Net
                 try
                 {
                     region.Grid.ApplyNetwork(i, kind, dug, slope);
+                    region.Grid.SetWall(x, y, wall);
                 }
                 finally
                 {

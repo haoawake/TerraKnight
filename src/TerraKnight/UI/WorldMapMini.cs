@@ -42,9 +42,10 @@ namespace TerraKnight.UI
             int ticks = Mathf.Min(4, (int)keyTicks);
             keyTicks -= (int)keyTicks;
             if (ticks == 0 || Style == 0) return;
-            bool zoomIn = kb.numpadPlusKey.isPressed || kb.equalsKey.isPressed;
-            bool zoomOut = kb.numpadMinusKey.isPressed || kb.minusKey.isPressed;
-            bool alphaUp = kb.pageUpKey.isPressed, alphaDown = kb.pageDownKey.isPressed;
+            // The map keys (Terraria's Map Controls: Zoom In/Out, Decrease/Increase Transparency); = and - zoom as well.
+            bool zoomIn = Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomIn) || kb.equalsKey.isPressed;
+            bool zoomOut = Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomOut) || kb.minusKey.isPressed;
+            bool alphaUp = Player.TerraKeys.Held(Player.TerraKeys.Action.MapAlphaUp), alphaDown = Player.TerraKeys.Held(Player.TerraKeys.Action.MapAlphaDown);
             var mouse = Mouse.current;
             if (Style == 1 && mouse != null && mouse.leftButton.isPressed)
             {

@@ -10,6 +10,7 @@ namespace TerraKnight.Items
         {
             RegisterSwords();
             RegisterSpears();
+            RegisterCraftingSupplement();
             RegisterBoomerangs();
             RegisterRanged();
             RegisterMagic();
