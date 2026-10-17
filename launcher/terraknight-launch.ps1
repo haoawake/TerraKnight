@@ -35,9 +35,9 @@ foreach ($pattern in 'MonoMod*.dll', 'Mono.Cecil*.dll', 'MMHOOK_*.dll', '0Harmon
 if ($conflicts.Count -gt 0) {
     $list = ($conflicts | Sort-Object -Unique) -join ', '
     Show-Message ("检测到空洞骑士的 Modding API（Scarab、Lumafly 等模组管理器安装的）。它放进 hollow_knight_Data\Managed 的这些文件和 BepInEx 冲突，BepInEx 会启动失败：`r`n$list`r`n`r`n" +
-        "处理办法：在模组管理器里关闭 Modding API；或者在 Steam 里对空洞骑士「验证游戏文件的完整性」，再删掉上面这些文件。然后重新双击 泰拉圣巢.bat。`r`n`r`n" +
+        "处理办法：在模组管理器里关闭 Modding API；或者在 Steam 里对空洞骑士「验证游戏文件的完整性」，再删掉上面这些文件。然后重新双击 空洞泰拉.bat。`r`n`r`n" +
         "The Hollow Knight Modding API (installed by a mod manager such as Scarab or Lumafly) is present. These files it put into hollow_knight_Data\Managed conflict with BepInEx, which fails to start:`r`n$list`r`n`r`n" +
-        "Turn the Modding API off in the mod manager, or verify Hollow Knight's game files in Steam and then delete the files above. Then double-click 泰拉圣巢.bat again.")
+        "Turn the Modding API off in the mod manager, or verify Hollow Knight's game files in Steam and then delete the files above. Then double-click 空洞泰拉.bat again.")
     exit 1
 }
 

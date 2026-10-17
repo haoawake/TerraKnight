@@ -35,7 +35,7 @@ namespace TerraKnight
             string unity = Application.unityVersion ?? "";
             bool hook = typeof(HeroController).GetMethod("SendHeroInPosition", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic) != null;
             if (unity.StartsWith("6000") && hook) return true;
-            Log.LogError($"泰拉圣巢 {Version} 需要空洞骑士 1.5.12620（Steam 当前正式版，Unity 6000），这台电脑上的游戏是 Unity {unity}" +
+            Log.LogError($"空洞泰拉 {Version} 需要空洞骑士 1.5.12620（Steam 当前正式版，Unity 6000），这台电脑上的游戏是 Unity {unity}" +
                          $"（{(unity.StartsWith("2020") ? "1.5.78 旧版本" : "版本不对")}），mod 没有加载。请在 Steam 库里右键空洞骑士 → 属性 → 测试版，选“无”，等它更新到当前版本后再启动。");
             Log.LogError($"TerraKnight {Version} needs Hollow Knight 1.5.12620 (Steam's current version, Unity 6000); this game runs Unity {unity}. " +
                          "Nothing was loaded. In Steam: Hollow Knight > Properties > Betas > None, let it update, then start it again.");

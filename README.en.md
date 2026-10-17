@@ -113,7 +113,7 @@ You need the Steam versions of **Hollow Knight** and **Terraria** installed on t
 1. Download **BepInEx 5.4.23.x win_x64** from [BepInEx Releases](https://github.com/BepInEx/BepInEx/releases) and extract it into the Hollow Knight game directory.
 2. Launch Hollow Knight once, reach the main menu, and then quit to initialize BepInEx.
 3. Download the latest ZIP from [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases) and extract it into the same game directory, replacing files as prompted.
-4. Double-click **`泰拉圣巢.bat`** in the game directory to launch the mod.
+4. Double-click **`空洞泰拉.bat`** in the game directory to launch the mod.
 
 > [!IMPORTANT]
 > **Use a fresh save slot when possible and back up your original saves beforehand.**
@@ -174,7 +174,7 @@ The following documents provide details on gameplay mechanics, progression, and 
 <details>
 <summary><strong>Why am I still playing as the original Knight?</strong></summary>
 
-Make sure to launch through `泰拉圣巢.bat` and check `BepInEx/LogOutput.log` for TerraKnight loading messages.
+Make sure to launch through `空洞泰拉.bat` and check `BepInEx/LogOutput.log` for TerraKnight loading messages.
 
 </details>
 

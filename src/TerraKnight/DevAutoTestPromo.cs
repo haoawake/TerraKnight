@@ -27,7 +27,7 @@ namespace TerraKnight
         /// <summary>
         /// The game switched to Simplified Chinese for this session only: the language the game saves
         /// (gameSettings.gameLanguage, written by the options menu) is left as the player set it. The
-        /// menu's texts, fonts and title (the mod's 泰拉圣巢) are refreshed for it.
+        /// menu's texts, fonts and title (the mod's 空洞泰拉) are refreshed for it.
         /// </summary>
         static void PromoChinese(GameManager gm)
         {

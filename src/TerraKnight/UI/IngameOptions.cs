@@ -127,7 +127,7 @@ namespace TerraKnight.UI
             CreativeMenu.Rim(p, new Color(0.05f, 0.05f, 0.12f, 0.95f), 3f * ui);
             CreativeMenu.Shadowed(new Rect(p.x, p.y + 12f * ui, p.width, 44f * ui), Lang.T("泰拉瑞亚设置"), head, Color.white);
             // The mod's version, in gold at the top right, so it is seen at a glance.
-            CreativeMenu.Shadowed(new Rect(p.xMax - 430f * ui, p.y + 12f * ui, 400f * ui, 44f * ui), Lang.F("泰拉圣巢 v{0}", Plugin.Version), version, Gold);
+            CreativeMenu.Shadowed(new Rect(p.xMax - 430f * ui, p.y + 12f * ui, 400f * ui, 44f * ui), Lang.F("空洞泰拉 v{0}", Plugin.Version), version, Gold);
 
             // General, down the left.
             float lx = p.x + 30f * ui, lw = 380f * ui, y = p.y + 70f * ui;

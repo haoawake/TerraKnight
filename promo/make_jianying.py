@@ -1,4 +1,4 @@
-"""Builds the trailer as a JianyingPro draft ("泰拉圣巢宣传片") with the jianying-editor skill, from the
+"""Builds the trailer as a JianyingPro draft ("空洞泰拉宣传片") with the jianying-editor skill, from the
 same edit as the render (edl.py): every shot on the video track with its speed, its crop as the
 segment's scale and position (pushing in by keyframes), Jianying transitions where the render has
 its own, the captions as text segments, music.wav, and the title card (endcard.mp4, rendered by
@@ -50,7 +50,7 @@ def placement(cx, cy, z):
 
 
 def main():
-    project = JyProject("泰拉圣巢宣传片" + ("（中文版）" if edl.LANG == 'zh' else ""), width=edl.W, height=edl.H, overwrite=True)
+    project = JyProject("空洞泰拉宣传片" + ("（中文版）" if edl.LANG == 'zh' else ""), width=edl.W, height=edl.H, overwrite=True)
     project._ensure_track(draft.TrackType.video, "VideoTrack")
     materials = {}
     segments = []

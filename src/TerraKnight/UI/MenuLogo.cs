@@ -7,7 +7,7 @@ using UnityEngine;
 namespace TerraKnight.UI
 {
     /// <summary>
-    /// The title screen's big logo reads 泰拉圣巢 (泰拉聖巢 in traditional Chinese) instead of
+    /// The title screen's big logo reads 空洞泰拉 (空洞泰拉 in traditional Chinese) instead of
     /// 空洞骑士. MenuStyleTitle puts the menu style's title picture for the language on screen;
     /// for Chinese this swaps in the mod's own picture, made from that very sprite with only the
     /// four characters redrawn (embedded title_*.png), the same size and in the same place, so

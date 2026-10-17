@@ -9,11 +9,11 @@
 <div align="center">
   <img
     src="./images/banner.png"
-    alt="泰拉圣巢 · TerraKnight"
+    alt="空洞泰拉 · TerraKnight"
     width="100%"
   />
 
-  <h1>泰拉圣巢 · TerraKnight</h1>
+  <h1>空洞泰拉 · TerraKnight</h1>
 
   <p>
     <strong>把《泰拉瑞亚》带进《空洞骑士》：在圣巢挖矿、建造、探索、战斗。</strong>
@@ -113,7 +113,7 @@
 1. 从 [BepInEx Releases](https://github.com/BepInEx/BepInEx/releases) 下载对应的 **5.4.23.x win_x64** 版本，解压至空洞骑士游戏目录。
 2. 启动一次空洞骑士，进入主菜单后退出，以初始化 BepInEx。
 3. 从 [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases) 下载最新版压缩包，解压覆盖至同一个游戏目录。
-4. 双击游戏目录中的 **`泰拉圣巢.bat`** 启动 Mod。
+4. 双击游戏目录中的 **`空洞泰拉.bat`** 启动 Mod。
 
 > [!IMPORTANT]
 > **建议使用新存档，并提前备份原版存档。**
@@ -174,7 +174,7 @@
 <details>
 <summary><strong>进入游戏后还是原版小骑士？</strong></summary>
 
-确认通过 `泰拉圣巢.bat` 启动，并查看 `BepInEx/LogOutput.log` 是否存在 TerraKnight 加载记录。
+确认通过 `空洞泰拉.bat` 启动，并查看 `BepInEx/LogOutput.log` 是否存在 TerraKnight 加载记录。
 
 </details>
 
@@ -238,4 +238,4 @@ TerraKnight 基于 **BepInEx**，运行空洞骑士本体，并在运行时实�
   <p><strong>TerraKnight 为非官方粉丝创作项目，与 Re-Logic 或 Team Cherry 无官方关联。</strong></p>
 </div>
 
-[⬆ 返回顶部](#泰拉圣巢--terraknight)
+[⬆ 返回顶部](#空洞泰拉--terraknight)

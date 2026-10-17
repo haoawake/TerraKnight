@@ -1,6 +1,6 @@
 ## Launching
 
-- **Playing the mod**: double-click `泰拉圣巢.bat` (the TerraKnight launcher) in the Hollow Knight game folder.
+- **Playing the mod**: double-click `空洞泰拉.bat` (the TerraKnight launcher) in the Hollow Knight game folder.
 - **Playing vanilla**: launch the game from Steam as usual; the mod is not loaded.
 
 The launcher first turns on BepInEx's master switch (`enabled` in `doorstop_config.ini`), starts the game through Steam, and switches it back off ten seconds after the game is up. Doorstop reads this switch only at the moment the game starts, so closing the launcher window partway through never leaves the mod switched on.

@@ -67,7 +67,7 @@ namespace TerraKnight
                 Application.Quit();
                 yield break;
             }
-            // The title screen: its logo (the mod's 泰拉圣巢 for Chinese) and the pictures behind it.
+            // The title screen: its logo (the mod's 空洞泰拉 for Chinese) and the pictures behind it.
             UI.MenuLogo.DevDump(outDir);
             Shot("Menu_Title", "menu");
             yield return null;
