@@ -516,7 +516,7 @@ namespace TerraKnight.World
 
         /// <summary>
         /// The chair a click landed on (a Wooden Chair the player set down), and where on it: a
-        /// townsperson put there stands on the chair's own spot. False when the click wasn't on a chair —
+        /// townsperson put there stands on the chair's seat. False when the click wasn't on a chair —
         /// the street or the air, which means its usual place along the street instead.
         /// </summary>
         public static bool ChairNear(Vector2 at, out float x, out float y)
@@ -539,7 +539,9 @@ namespace TerraKnight.World
                 if (d >= best) continue;
                 best = d;
                 x = b.center.x;
-                y = b.yMin;
+                // The seat, not the floor at the chair's feet: the top of the chair's lower cell.
+                // Standing at b.yMin put the townsperson on the ground underneath the chair.
+                y = b.yMin + CellGrid.CellSize;
                 found = true;
             }
             return found;

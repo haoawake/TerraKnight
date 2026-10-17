@@ -151,22 +151,25 @@ namespace TerraKnight.Town
         }
 
         /// <summary>
-        /// A townsperson stands in the spot its chair has: when a wall is in the way there (a chair jammed
-        /// against one), it is nudged half a tile or so to a side that has the same floor, so it never ends
-        /// up standing inside a block.
+        /// A townsperson stands on the chair's seat. When a wall is in the way there (a chair jammed
+        /// against one), it steps down to the floor at the chair's base and is nudged half a tile or so
+        /// to a side that has the same floor, so it never ends up standing inside a block.
         /// </summary>
         static void FitBeside(ref float x, ref float y)
         {
             if (Standable(x, y)) return;
+            float baseY = y - CellGrid.CellSize;
             for (float d = 0.5f; d <= 1.5f; d += 0.5f)
                 foreach (float side in new[] { -1f, 1f })
                 {
                     float nx = x + side * d;
-                    if (!GridGround(nx, y + 0.5f, out float ground) || Mathf.Abs(ground - y) > 0.3f || !Standable(nx, ground)) continue;
+                    if (!GridGround(nx, baseY + 0.5f, out float ground) || Mathf.Abs(ground - baseY) > 0.3f || !Standable(nx, ground)) continue;
                     x = nx;
                     y = ground;
                     return;
                 }
+            // Nowhere beside it is clear: stand at the chair's base rather than in the wall.
+            y = baseY;
         }
 
         /// <summary>
@@ -205,6 +208,19 @@ namespace TerraKnight.Town
                 for (int cy = lo.y; cy <= hi.y; cy++)
                     if (GridBlocks(cx, cy)) return false;
             return true;
+        }
+
+        /// <summary>
+        /// The floor a townsperson stands on at x, read from just above its feet: a chair's seat when
+        /// it is on one, else the cell grid's floor (a roof, an upper storey, the street). Ground(x)
+        /// alone only knows the street, so a townsperson put on a chair above the street used to sink
+        /// to the ground underneath it.
+        /// </summary>
+        static float? StandingFloor(float x, float feetY)
+        {
+            if (World.Stations.ChairNear(new Vector2(x, feetY), out _, out float seat) && Standable(x, seat)) return seat;
+            if (GridGround(x, feetY + 0.5f, out float floor)) return floor;
+            return Ground(x);
         }
 
         /// <summary>

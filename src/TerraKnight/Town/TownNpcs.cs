@@ -410,7 +410,8 @@ namespace TerraKnight.Town
                     // Already standing here: the ground under it may have changed since (dug out by the
                     // player, or a position saved before the panel learned to stand them on the floor).
                     var have = npcs.Find(n => n.Def == def);
-                    if (GridGround(have.X, have.FeetY + 0.5f, out float under)) have.FeetY = under;
+                    var under = StandingFloor(have.X, have.FeetY);
+                    if (under.HasValue) have.FeetY = under.Value;
                     i++;
                     continue;
                 }
@@ -427,8 +428,12 @@ namespace TerraKnight.Town
                 // that has no ground any more (or was saved by a build that let them float) is given up.
                 float home;
                 float put, putY = 0f;
-                bool placed = Homes.TryGetValue(def.Internal, out put) && HomeY.TryGetValue(def.Internal, out putY)
-                    && GridGround(put, putY + 0.5f, out _);
+                bool hasHome = Homes.TryGetValue(def.Internal, out put) && HomeY.TryGetValue(def.Internal, out putY);
+                // A chair home is the chair's seat: the chair itself is furniture, not a cell in the
+                // grid, and the floor under it may be the street while the seat is an upper storey.
+                float seatY = putY;
+                bool onChair = hasHome && World.Stations.ChairNear(new Vector2(put, putY), out _, out seatY);
+                bool placed = hasHome && (onChair || GridGround(put, putY + 0.5f, out _));
                 if (placed) home = put;
                 else
                 {
@@ -438,7 +443,15 @@ namespace TerraKnight.Town
                 }
                 var n = new Npc { Def = def, Given = given, HomeX = home, X = home, Dir = Random.Range(0, 2) == 0 ? -1 : 1, Ai1 = Random.Range(60, 300) };
                 n.FeetY = Ground(n.X) ?? benchY;
-                if (placed && GridGround(n.X, putY + 0.5f, out float putGround)) n.FeetY = putGround;
+                if (placed)
+                {
+                    if (onChair)
+                    {
+                        n.FeetY = seatY;
+                        HomeY[def.Internal] = seatY;   // an older save may hold the chair's base
+                    }
+                    else if (GridGround(n.X, putY + 0.5f, out float putGround)) n.FeetY = putGround;
+                }
                 n.LastX = n.X;
                 // Where it lives says how far it may wander: a chair the player set it on keeps it close,
                 // everything else (the town's own bench) is one spot for everybody and roams the street.
@@ -623,7 +636,7 @@ namespace TerraKnight.Town
                 }
             }
             n.X += n.Vx * Px;
-            var g = Ground(n.X);
+            var g = StandingFloor(n.X, n.FeetY);
             if (g.HasValue) n.FeetY = Mathf.MoveTowards(n.FeetY, g.Value, 0.25f);
             // Stuck for half a second while walking: turn round.
             if (n.Ai0 == 1 && Mathf.Abs(n.X - n.LastX) < 0.001f && ++n.StuckTicks >= 30)
@@ -661,7 +674,7 @@ namespace TerraKnight.Town
             float lo = streetMin + 0.5f, hi = streetMax - 0.5f;
             if (hi - lo < 4f) { lo = n.HomeX - n.Range; hi = n.HomeX + n.Range; }
             if (nx < lo || nx > hi || Mathf.Abs(nx - n.HomeX) > n.Range) return false;
-            var g = Ground(nx);
+            var g = StandingFloor(nx, n.FeetY);
             if (g == null || Mathf.Abs(g.Value - n.FeetY) > 0.7f) return false;
             int c = Physics2D.Raycast(new Vector2(n.X, n.FeetY + 0.6f), new Vector2(dir, 0f), terrain, hits, 0.7f);
             for (int i = 0; i < c; i++) if (!hits[i].collider.usedByEffector) return false;
