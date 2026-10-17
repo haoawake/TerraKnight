@@ -31,7 +31,12 @@ namespace TerraKnight.World
         // Tombstones (Tiles_85's eleven styles, dropped on death: Items.Tombstones) and the Abigail's Flower growing by them.
         Tombstone, GraveMarker, CrossGraveMarker, Headstone, Gravestone, Obelisk,
         RichGravestone1, RichGravestone2, RichGravestone3, RichGravestone4, RichGravestone5, AbigailsFlower,
-
+        /// <summary>
+        /// Not a crafting station either: Terraria's Wooden Chair (tile 15, ItemID 34), the furniture a
+        /// townsperson is put on. It stands where the player set it and is knocked back into its item like
+        /// any other furniture; the housing menu binds a townsperson to one (ChairNear).
+        /// </summary>
+        Chair,
     }
 
     /// <summary>
@@ -106,6 +111,8 @@ namespace TerraKnight.World
             [StationKind.DyeVat] = new Spec { Texture = "Tiles_228", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.DyeVat, Counts = new[] { "染缸" } },
             // TileObjectData: Style2x1 with CoordinateHeights {18} (tiles 18, 16), Style3x2 {16, 18} (17, 114).
             [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" }, SolidTop = true },
+            // Tile 15 (TileID.Chairs): Style1x2, CoordinateHeights {16, 18}, styles 18 px apart across the sheet.
+            [StationKind.Chair] = new Spec { Texture = "Tiles_15", W = 1, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Chair, Counts = new string[0] },
             [StationKind.Furnace] = new Spec { Texture = "Tiles_17", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Furnace, Counts = new[] { "熔炉" } },
             [StationKind.IronAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.IronAnvil, Counts = new[] { "砧" }, SolidTop = true },
             [StationKind.LeadAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, StyleX = 36, Heights = new[] { 18 }, Item = ItemType.LeadAnvil, Counts = new[] { "砧" }, SolidTop = true },
@@ -312,6 +319,45 @@ namespace TerraKnight.World
         public static string DevWhy;
         public static int DevDrops;
 
+        /// <summary>
+        /// The floor under a point: the scene's own colliders first (the exact contact point a raycast
+        /// gives), and where the scene has none, the cell grid — the grid holds the player's own blocks
+        /// the moment they are laid, while their colliders are only rebuilt per chunk later.
+        /// </summary>
+        static bool SpotGround(float x, float fromY, out float y)
+        {
+            const int mask = 1 << ChunkColliders.TerrainLayer;
+            var hit = Physics2D.Raycast(new Vector2(x, fromY), Vector2.down, 1.5f, mask);
+            if (hit.collider != null) { y = hit.point.y; return true; }
+            y = 0f;
+            var cell = CellGrid.WorldToCell(new Vector2(x, fromY));
+            for (int i = 0; i < 60; i++)
+            {
+                int cy = cell.y - i;
+                if (TerraWorld.RegionAt(cell.x, cy) == null || (!TerraWorld.IsSolid(cell.x, cy) && !TerraWorld.IsPlatform(cell.x, cy))) continue;
+                y = CellGrid.CellCenter(cell.x, cy).y + CellGrid.CellSize / 2f;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whether the cell grid holds a block in any cell this box covers. Outside the loaded regions
+        /// nothing is read as solid (the same rule the grid itself is read by).
+        /// </summary>
+        static bool GridInside(Rect box)
+        {
+            var lo = CellGrid.WorldToCell(new Vector2(box.xMin, box.yMin));
+            var hi = CellGrid.WorldToCell(new Vector2(box.xMax, box.yMax));
+            for (int cx = lo.x; cx <= hi.x; cx++)
+                for (int cy = lo.y; cy <= hi.y; cy++)
+                {
+                    if (TerraWorld.RegionAt(cx, cy) == null) continue;
+                    if (TerraWorld.IsSolid(cx, cy) || TerraWorld.IsPlatform(cx, cy)) return true;
+                }
+            return false;
+        }
+
         public static bool FindSpot(StationKind kind, HeroController hero, Vector2 aim, out Vector2 bottom)
         {
             bottom = default;
@@ -321,14 +367,11 @@ namespace TerraKnight.World
             float w = spec.W * cell, h = spec.H * cell;
             // An odd width centres on a cell, an even one on a cell edge.
             float x = spec.W % 2 == 1 ? (Mathf.Floor(aim.x / cell) + 0.5f) * cell : Mathf.Round(aim.x / cell) * cell;
-            var down = Physics2D.Raycast(new Vector2(x, aim.y + 0.25f), Vector2.down, 1.5f, mask);
-            if (down.collider == null) { DevWhy = "下面没有地"; return false; }
-            float y = down.point.y;
+            if (!SpotGround(x, aim.y + 0.25f, out float y)) { DevWhy = "下面没有地"; return false; }
             for (int i = 0; i < spec.W; i++)
             {
                 float cx = x - w / 2f + (i + 0.5f) * cell;
-                var side = Physics2D.Raycast(new Vector2(cx, y + 0.1f), Vector2.down, 0.2f, mask);
-                if (side.collider == null || Mathf.Abs(side.point.y - y) > 0.06f) { DevWhy = $"第 {i + 1} 格下面不平（{(side.collider != null ? side.collider.name + " " + side.point.y.ToString("F2") : "无")}，地面 {y:F2}）"; return false; }
+                if (!SpotGround(cx, y + 0.1f, out float gy) || Mathf.Abs(gy - y) > 0.06f) { DevWhy = $"第 {i + 1} 格下面不平（地面 {y:F2}）"; return false; }
             }
             var centre = new Vector2(x, y + h / 2f + 0.02f);
             var inWay = Physics2D.OverlapBox(centre, new Vector2(w, h) * 0.9f, 0f, mask);
@@ -336,10 +379,16 @@ namespace TerraKnight.World
             var box = new Rect(x - w / 2f, y, w, h);
             // Inset a little: one standing on another's top only touches it.
             var inner = new Rect(box.x + 0.02f, box.y + 0.02f, box.width - 0.04f, box.height - 0.04f);
+            // And the cell grid: the player's own walls are in it the moment they are laid, while their
+            // colliders are only rebuilt later, so the overlap above can still look straight through a
+            // wall that has just been built and set the furniture down inside it.
+            if (GridInside(inner)) { DevWhy = "那格里有方块"; return false; }
             foreach (var s in stations)
                 if (s.Region != null && s.Box.Overlaps(inner)) { DevWhy = "和别的工作站重叠"; return false; }
-            foreach (var c in Chests.Positions())
-                if (box.Contains(c)) { DevWhy = "和箱子重叠"; return false; }
+            // The chest's own box, not its middle: a chest is two cells wide, so one set down in the cell
+            // beside it used to slip through the point test while the two pictures overlapped.
+            foreach (var c in Chests.Boxes())
+                if (c.Overlaps(inner)) { DevWhy = "和箱子重叠"; return false; }
             if (hero != null && !Reach(hero).Overlaps(box)) { DevWhy = "够不着"; return false; }
             DevWhy = null;
             bottom = new Vector2(x, y);
@@ -460,9 +509,42 @@ namespace TerraKnight.World
             var p = Effects.TerraParticles.Instance;
             if (p == null) return;
             // Wood for the wooden ones, stone and metal sparks for the rest.
-            int dust = s.Kind == StationKind.WorkBench || s.Kind == StationKind.Loom || s.Kind == StationKind.Sawmill ? 7 : 1;
+            int dust = s.Kind == StationKind.WorkBench || s.Kind == StationKind.Chair || s.Kind == StationKind.Loom || s.Kind == StationKind.Sawmill ? 7 : 1;
             float hw = s.Spec.W * 8f, hh = s.Spec.H * 8f;
             for (int k = 0; k < n; k++) p.NewDust(px - new Vector2(hw, hh), (int)(hw * 2f), (int)(hh * 2f), dust);
+        }
+
+        /// <summary>
+        /// The chair a click landed on (a Wooden Chair the player set down), and where on it: a
+        /// townsperson put there stands on the chair's seat. False when the click wasn't on a chair —
+        /// the street or the air, which means its usual place along the street instead.
+        /// </summary>
+        public static bool ChairNear(Vector2 at, out float x, out float y)
+        {
+            x = at.x;
+            y = at.y;
+            float best = float.MaxValue;
+            bool found = false;
+            foreach (var s in stations)
+            {
+                if (s.Kind != StationKind.Chair || s.Region == null) continue;
+                var b = s.Box;
+                // The chair's own box, a little wider all round: the whole seat is clickable, the tiles
+                // beside it are not.
+                // Its own box and a hand's width around it: the seat is clickable, the street and the
+                // bench below it are not (a chair standing over the bench must not swallow its clicks).
+                var reach = new Rect(b.xMin - 0.15f, b.yMin - 0.1f, b.width + 0.3f, b.height + 0.2f);
+                if (!reach.Contains(at)) continue;
+                float d = Vector2.Distance(b.center, at);
+                if (d >= best) continue;
+                best = d;
+                x = b.center.x;
+                // The seat, not the floor at the chair's feet: the top of the chair's lower cell.
+                // Standing at b.yMin put the townsperson on the ground underneath the chair.
+                y = b.yMin + CellGrid.CellSize;
+                found = true;
+            }
+            return found;
         }
 
         // ------------------------------------------------------------------ each frame

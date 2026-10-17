@@ -117,6 +117,13 @@ namespace TerraKnight.World
                 if (c.Region != null) yield return c.Box.center;
         }
 
+        /// <summary>The box each chest in a loaded scene takes up (for what is put down beside them).</summary>
+        public static IEnumerable<Rect> Boxes()
+        {
+            foreach (var c in chests)
+                if (c.Region != null) yield return c.Box;
+        }
+
         // ------------------------------------------------------------------ placing
 
         /// <summary>

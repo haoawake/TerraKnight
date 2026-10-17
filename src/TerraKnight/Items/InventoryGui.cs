@@ -40,6 +40,7 @@ namespace TerraKnight.Items
             set
             {
                 if (value && !open) bestiaryOpen = false;
+                if (value && !open) Town.TownNpcs.ClosePanel();
                 open = value;
             }
         }
@@ -47,7 +48,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridRecipe, GridToggle, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead }
 
         struct Hit
         {
@@ -56,7 +57,7 @@ namespace TerraKnight.Items
             public int Index;
         }
 
-        static GUIStyle labelStyle, nameStyle, tipStyle, buttonStyle;
+        static GUIStyle labelStyle, nameStyle, tipStyle, buttonStyle, chipStyle;
         static readonly List<Rect> panels = new List<Rect>();
         static readonly List<Hit> hits = new List<Hit>();
         static string notice;
@@ -102,6 +103,13 @@ namespace TerraKnight.Items
                     }
                     else if (wheel > 0.1f) ScrollBestiary(-1);
                     else if (wheel < -0.1f) ScrollBestiary(1);
+                }
+                else if (Town.TownNpcs.PanelOpen)
+                {
+                    // The housing column is a list: the wheel walks it, as Terraria's own does.
+                    if (wheel > 0.1f) npcScroll--;
+                    else if (wheel < -0.1f) npcScroll++;
+                    npcScroll = Mathf.Max(0, npcScroll);
                 }
                 else if (wheel > 0.1f) Scroll(grid ? -1 : 1);
                 else if (wheel < -0.1f) Scroll(grid ? 1 : -1);
@@ -242,21 +250,13 @@ namespace TerraKnight.Items
                 case Kind.Recipe:
                     ClickRecipe(hit.Index, leftPress || rightPress, leftHeld || rightHeld);
                     return;
-                case Kind.GridRecipe:
-                    if (leftPress)
-                    {
-                        // The classic grid: clicking a recipe brings it to the column and closes the grid.
-                        focus = hit.Index;
-                        focusY = 0f;
-                        grid = false;
-                        Sound("Menu_Tick");
-                    }
+                case Kind.FilterEntry:
+                    ClickFilter(hit.Index, leftPress, rightPress);
                     return;
                 case Kind.GridToggle:
                     if (leftPress)
                     {
                         grid = !grid;
-                        gridRow = Mathf.Max(0, focus / Mathf.Max(1, gridColumns) - 1);
                         Sound("Menu_Tick");
                     }
                     return;
@@ -318,6 +318,12 @@ namespace TerraKnight.Items
                     return;
                 case Kind.BestiaryButton:
                     if (leftPress) ToggleBestiary();
+                    return;
+                case Kind.NpcButton:
+                    if (leftPress) { if (hit.Index == 0) ToggleNpcPanel(); else Town.TownNpcs.ClosePanel(); }
+                    return;
+                case Kind.NpcHead:
+                    Town.TownNpcs.ClickHead(Town.TownNpcs.AllDefs[hit.Index], leftPress, rightPress);
                     return;
                 case Kind.BestiaryEntry:
                     if (leftPress) SelectBestiary(hit.Index);
@@ -707,6 +713,9 @@ namespace TerraKnight.Items
                 foreach (var r in recipes) if (!r.IsBought) made.Add(r.Result);
                 recipes.RemoveAll(r => r.IsBought && made.Contains(r.Result));
             }
+            // NewCraftingUI.UpdateContents: then the list is cut down to the chosen filter
+            // (RecipeFilter.Accepts); the window offers the categories alone, nothing else.
+            ApplyFilter();
             // TryRefocusingRecipe: stay on the same item when the list changes.
             int found = recipes.FindIndex(r => (int)r.Result == keep);
             focus = found >= 0 ? found : Mathf.Clamp(focus, 0, Mathf.Max(0, recipes.Count - 1));
@@ -766,7 +775,7 @@ namespace TerraKnight.Items
         {
             if (grid)
             {
-                gridRow = Mathf.Clamp(gridRow + delta, 0, Mathf.Max(0, (recipes.Count - 1) / Mathf.Max(1, gridColumns)));
+                gridRow = Mathf.Clamp(gridRow + delta, 0, Mathf.Max(0, (recipes.Count - 1) / CraftWindowColumns));
                 return;
             }
             if (recipes.Count == 0) return;
@@ -840,8 +849,6 @@ namespace TerraKnight.Items
         }
 
         // ------------------------------------------------------------------ drawing
-
-        static int gridColumns = 1;
 
         public static void Draw(Inventory inv, bool smartCursor)
         {
@@ -964,6 +971,15 @@ namespace TerraKnight.Items
 
                 // Equipment column on the right, under the life and mana display: armor, then accessories.
                 float ax = view.xMax - 120f * ui, ay = view.y + 230f * ui;
+                if (Town.TownNpcs.PanelOpen)
+                {
+                    // Terraria's housing menu takes the equipment column's place when it is open: the same
+                    // slots, the same spacing, one townsperson's head in each (Main.DrawNPCHousesInUI does
+                    // exactly this to the armor and accessory slots), the wheel walking down the list.
+                    DrawNpcColumn(ax, ay, slot, step, view, ui, mouse);
+                }
+                else
+                {
                 DrawEquipPageIcon(new Vector2(ax + 52f * ui, ay - 46f * ui), ui, mouse);
                 if (equipPage == 2) DrawMiscEquips(ax, ay, slot, step, ui, mouse, ref hovered, ref hoveredKind);
                 else {
@@ -1002,6 +1018,7 @@ namespace TerraKnight.Items
                 loadoutHover = overLoadout;
                 if (overLoadout >= 0 && hovered.IsEmpty) DrawLines(mouse, new List<string> { Lang.F("配装{0}（{1}）", overLoadout + 1, Lang.T(loadoutClass[overLoadout])) + (inv.BagPerLoadout ? Lang.T("：盔甲、饰品和背包") : "") }, Color.white);
                 }
+                }
 
                 // The crafting column gives way to an open shop; beside an open chest it stays (Main.DrawInventory draws the
                 // recipes whatever chest is open, under its rows), the chest's items counted.
@@ -1020,6 +1037,7 @@ namespace TerraKnight.Items
                 DrawBestiaryButton(view, ui, mouse);
                 DrawHkButton(view, ui, mouse);
                 DrawSellButton(view, ui, mouse);
+                DrawNpcButton(view, ui, mouse);
 
                 // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
                 // Terraria's (the autoswing switch, the key bindings).
@@ -1185,17 +1203,15 @@ namespace TerraKnight.Items
             var label = P(76f, 414f + adjY);
             DrawGuideSlot(P(73f, 331f + adjY), ui, mouse, ref hovered, ref hoveredKind);
             bool guideShown = Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty;
-            if (recipes.Count == 0 && !Town.TownNpcs.GuideCraftOpen)
-            {
-                Outlined(new Rect(label.x, label.y, 400f * ui, 24f * ui), Lang.T("制作（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.6f));
-                return;
-            }
-            if (recipes.Count == 0) return;
-            Outlined(new Rect(label.x, label.y, 200f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
-            // Say where the rest are made.
-            if (!guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
+            // The window carries its own title; the column's is only for the column, so it doesn't show
+            // through the window's translucent panel. Nothing to make is still drawn as an empty column
+            // (the hammer that opens the window lives past this, and has to stay reachable either way).
+            if (!grid) Outlined(new Rect(label.x, label.y, 300f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
+            // Only the by-hand ones out here: say where the rest are.
+            if (!grid && !CraftingHere && !guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
 
-            if (grid) DrawRecipeGrid(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+            // The hammer beside the column switches between the column and Terraria's crafting window.
+            if (grid) DrawCraftWindow(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             else
             {
                 for (int i = 0; i < recipes.Count; i++)
@@ -1266,6 +1282,9 @@ namespace TerraKnight.Items
                 }
             }
 
+            // The hammer beside the column opens the crafting window (UI/Craft_Toggle_{2 normal, 0 open});
+            // while the window is up it has its own close button instead, so nothing shows through it.
+            if (grid) return;
             // The grid toggle (UI/Craft_Toggle_{2 normal, 0 grid open}, +1 under the mouse).
             var tc = P(94f, 450f + adjY);
             var toggle = TerrariaAssets.Texture("UI/Craft_Toggle_2");
@@ -1274,6 +1293,7 @@ namespace TerraKnight.Items
             GUI.DrawTexture(tr, TerrariaAssets.Texture("UI/Craft_Toggle_" + ((grid ? 0 : 2) + (over ? 1 : 0))));
             Add(tr, Kind.GridToggle, 0);
             if (over) DrawLines(mouse, new List<string> { grid ? Lang.T("关闭制作窗口") : Lang.T("打开制作窗口") }, Color.white);
+
         }
 
         static string RecipeExtra(Recipe r)
@@ -1291,36 +1311,6 @@ namespace TerraKnight.Items
             if (r.Environment != CraftEnvironment.None) sb.Append("\n" + Lang.T(CraftEnvironments.Description(r.Environment)));
             if (!ByHand(r)) sb.Append("\n" + Lang.F("工作站：{0}（放在附近）", Lang.T(r.Station)));
             return sb.ToString();
-        }
-
-        /// <summary>The classic recipe grid (CraftingUI): 42 px apart at three-quarter size, paged by the wheel.</summary>
-        static void DrawRecipeGrid(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string hoveredExtra, ref Kind hoveredKind)
-        {
-            float W = view.width / ui, H = view.height / ui;
-            gridColumns = Mathf.Max(1, (int)((W - 310f - 280f) / 42f));
-            int gridRows = Mathf.Max(1, (int)((H - 340f - 20f) / 42f));
-            gridRow = Mathf.Clamp(gridRow, 0, Mathf.Max(0, (recipes.Count - 1) / gridColumns));
-            var bg = new Rect(view.x + 300f * ui, view.y + 330f * ui, (gridColumns * 42f + 20f) * ui, (gridRows * 42f + 20f) * ui);
-            var prev = GUI.color;
-            GUI.color = new Color(0.1f, 0.12f, 0.25f, 0.6f);
-            GUI.DrawTexture(bg, Texture2D.whiteTexture);
-            GUI.color = prev;
-            panels.Add(bg);
-            for (int k = 0; k < gridColumns * gridRows; k++)
-            {
-                int i = gridRow * gridColumns + k;
-                if (i >= recipes.Count) break;
-                var rect = new Rect(view.x + (310f + (k % gridColumns) * 42f) * ui, view.y + (340f + (k / gridColumns) * 42f) * ui, 52f * 0.75f * ui, 52f * 0.75f * ui);
-                GUI.DrawTexture(rect, TerrariaAssets.Texture(i == focus ? "Inventory_Back14" : "Inventory_Back4"));
-                DrawIconOnly(rect, ItemStack.Of(recipes[i].Result, recipes[i].Count));
-                Add(rect, Kind.GridRecipe, i);
-                if (rect.Contains(mouse))
-                {
-                    hovered = ItemStack.Of(recipes[i].Result);
-                    hoveredKind = Kind.GridRecipe;
-                    hoveredExtra = Shop.Free ? Lang.T("点击选中") : RecipeExtra(recipes[i]);
-                }
-            }
         }
 
         static GUIStyle nameLeft;
@@ -1653,10 +1643,12 @@ namespace TerraKnight.Items
                 nameStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
                 tipStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperLeft, wordWrap = false };
                 buttonStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight, wordWrap = false };
+                chipStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = false };
             }
             labelStyle.fontSize = Mathf.RoundToInt(15 * ui);
             nameStyle.fontSize = Mathf.RoundToInt(20 * ui);
             tipStyle.fontSize = Mathf.RoundToInt(18 * ui);
+            chipStyle.fontSize = Mathf.RoundToInt(14 * ui);
         }
 
         /// <summary>Dev: takes one of an item from the crafting column onto the cursor, as a click on it would.</summary>
