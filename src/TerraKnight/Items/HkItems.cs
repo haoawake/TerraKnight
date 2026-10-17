@@ -118,7 +118,7 @@ namespace TerraKnight.Items
         static readonly Dictionary<string, string> abilitySprites = new Dictionary<string, string>
         {
             [nameof(ItemType.ShadeCloak)] = "items__0004_shade_cloak",
-            [nameof(ItemType.CrystalHeart)] = "items__0000_crystal",
+            [nameof(ItemType.CrystalHeart)] = "items__0000_crystal-heart",
         };
         static readonly Dictionary<string, float> retry = new Dictionary<string, float>();
         static Dictionary<string, Sprite> sprites;

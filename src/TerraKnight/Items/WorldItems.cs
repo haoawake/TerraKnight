@@ -71,6 +71,17 @@ namespace TerraKnight.Items
             get { foreach (var it in items) if (it.Renderer != null) yield return it.Renderer; }
         }
 
+        /// <summary>Dev: the items lying now: their network key (null: this game's own), stack, place, and whether drawn.</summary>
+        public static IEnumerable<(string NetId, ItemStack Stack, Vector2 At, bool Drawn)> DevItems
+        {
+            get
+            {
+                foreach (var it in items)
+                    if (!it.Stack.IsEmpty)
+                        yield return (it.NetId, it.Stack, it.World, it.Renderer != null && it.Renderer.enabled && it.Renderer.gameObject.activeInHierarchy);
+            }
+        }
+
         /// <summary>Dev: every lying item gone.</summary>
         public static void DevClear() => Clear();
 
@@ -100,6 +111,9 @@ namespace TerraKnight.Items
             foreach (var it in items)
                 if (it.Region != null && !it.Stack.IsEmpty) yield return it.World;
         }
+
+        /// <summary>Dev: nothing picked up (to see where drops come to rest).</summary>
+        public static bool DevNoGrab;
 
         /// <summary>Dev: where the first item lies (box centre), if any.</summary>
         public static Vector2? DevFirst => items.Count > 0 ? items[0].World : (Vector2?)null;
@@ -148,7 +162,7 @@ namespace TerraKnight.Items
             {
                 var local = centre - (Vector2)region.Root.position;
                 var action = new Net.WorldSync.Action { Op = "drop", Scene = region.SceneName, X = local.x, Y = local.y,
-                    Vx = vel.x, Vy = vel.y, Power = grabDelay, Sky = fromSky, Kind = (int)stack.Type, Count = stack.Count };
+                    Vx = vel.x, Vy = vel.y, Power = grabDelay, Sky = fromSky, Kind = (int)stack.Type, Count = stack.Count, Prefix = stack.Prefix, Forge = stack.Forge };
                 if (Net.NetSession.Hosting) NetSpawn(action, Net.NetSession.MySlot);
                 else Net.WorldSync.Submit(action);
                 return;
@@ -189,7 +203,7 @@ namespace TerraKnight.Items
         {
             for (int i = 0; i < items.Count; i++) items[i].Region = RegionNamed(items[i].Scene);
             var inv = TerraMod.Instance.Inventory;
-            if (!hero.cState.dead) GrabItems(hero, inv);
+            if (!hero.cState.dead && !DevNoGrab) GrabItems(hero, inv);
             for (int i = 0; i < items.Count; i++)
             {
                 var it = items[i];
@@ -234,6 +248,12 @@ namespace TerraKnight.Items
             // The hearts reach 250 px further with the Heartreach potion (lifeMagnet, Item.lifeGrabRange).
             float heartRange = range + (Player.PlayerBuffs.Has(Player.PotionBuffs.Heartreach) ? 250f * Px : 0f);
             var heartReach = new Bounds(body.center, body.size + Vector3.one * (heartRange * 2f));
+            // Stars come 300 px further with a mana magnet (manaMagnet, Item.manaGrabRange); without one they come only
+            // while the mana is short of full or a magic weapon is held (Player.GrabItems).
+            var stats = TerraMod.Instance.Stats;
+            float starRange = range + (Equipment.Current.ManaMagnet ? 300f * Px : 0f);
+            var starReach = new Bounds(body.center, body.size + Vector3.one * (starRange * 2f));
+            bool starsCome = Equipment.Current.ManaMagnet || stats.Mana < stats.ManaMax || inv.Current.Def?.Class == DamageClass.Magic;
             Vector2 heroVel = hero.GetComponent<Rigidbody2D>().linearVelocity / Player.TerraMovement.PxT;
             for (int i = 0; i < items.Count; i++)
             {
@@ -242,8 +262,16 @@ namespace TerraKnight.Items
                 var c = it.World;
                 var box = new Bounds(new Vector3(c.x, c.y, body.center.z), new Vector3(Half * 2f, Half * 2f, 1f));
                 bool heart = it.Stack.Type == ItemType.Heart;
+                bool star = it.Stack.Type == ItemType.Star;
                 if (box.Intersects(body))
                 {
+                    if (star && it.NetId == null)
+                    {
+                        // Player.PickupItem: a star gives 100 mana and is gone (taken at full mana too), never carried.
+                        ManaStars.Give(it.Stack.Count);
+                        it.Stack = default;
+                        continue;
+                    }
                     if (heart && it.NetId == null)
                     {
                         // Player.PickupItem: a heart heals 20 and is gone (taken at full life too), never carried.
@@ -272,7 +300,8 @@ namespace TerraKnight.Items
                     if (left <= 0) it.Stack = default;
                     continue;
                 }
-                if (!box.Intersects(heart ? heartReach : reach) || (!heart && inv.Room(it.Stack.Type) <= 0)) continue;
+                if (star && !starsCome) continue;
+                if (!box.Intersects(heart ? heartReach : star ? starReach : reach) || (!heart && !star && inv.Room(it.Stack.Type) <= 0)) continue;
                 if (it.NetId != null && Net.WorldSync.Guest)
                 {
                     // The authority may have no local hero near this item. Request the same
@@ -456,14 +485,17 @@ namespace TerraKnight.Items
                     if (it.Renderer != null) it.Renderer.enabled = false;
                     continue;
                 }
+                // Beside the terrain, not under it: a boss room keeping the game's own ground switches the terrain root off.
+                var holder = it.Region.Props ?? it.Region.Root;
                 if (it.Renderer == null)
                 {
                     var go = new GameObject("Terra World Item " + it.Stack.Type);
-                    go.transform.SetParent(it.Region.Root, false);
+                    go.transform.SetParent(holder, false);
                     it.Renderer = go.AddComponent<SpriteRenderer>();
                     // Over the scenery (its foreground and the black of its ground draw nearer than z 0) and under the light map.
                     it.Renderer.sortingOrder = World.LightMap.Order - 5;
                 }
+                else if (it.Renderer.transform.parent != holder) it.Renderer.transform.SetParent(holder, false);
                 // An animated sheet's frame of the moment (the Fallen Star twinkles, souls pulse).
                 it.Renderer.sprite = SpriteOf(it.Stack.Type, ItemFrames.FrameNow(ItemDb.Get(it.Stack.Type).Texture));
                 it.Renderer.enabled = true;

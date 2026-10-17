@@ -285,8 +285,28 @@ namespace TerraKnight.Items
             return hm != null;
         }
 
-        /// <summary>Returns the hit's rolled damage (crit doubled), 0 when nothing took it.</summary>
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, PlayMakerFSM> stunFsm = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, PlayMakerFSM>("stunControlFSM");
+        static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, bool> preventBlockFx = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, bool>("preventInvincibleEffect");
+
+        /// <summary>How often a shield shows a blocked hit (s): about a nail swing.</summary>
+        const float BlockFxGap = 0.35f;
+        static readonly System.Collections.Generic.Dictionary<int, float> blockFxAt = new System.Collections.Generic.Dictionary<int, float>();
+
+        /// <summary>Dev: hits a shield or shell stopped.</summary>
+        public static int DevBlocked;
+
+        /// <summary>Terraria's magic against a shield only the Knight's spells get past ("Spell Vulnerable"): dealt as a spell.</summary>
+        static bool IsSpellOn(HealthManager hm, DamageClass cls) => hm != null && cls == DamageClass.Magic && EnemyStats.ShellOnlySpells(hm);
+
+        /// <summary>
+        /// Whether a hit of this class going this way (facing: +1 rightwards) is stopped by the enemy's shield or shell,
+        /// as the nail is (HealthManager.IsBlockingByDirection). Another player's enemy in a LAN game is judged there.
+        /// </summary>
+        public static bool Blocks(HealthManager hm, float facing, DamageClass cls) =>
+            hm != null && !hm.isDead && !Net.Enemies.IsPuppet(hm)
+            && hm.IsBlockingByDirection(DirectionUtils.GetCardinalDirection(facing > 0f ? 0f : 180f), IsSpellOn(hm, cls) ? AttackTypes.Spell : AttackTypes.Generic);
+
+        /// <summary>Returns the hit's rolled damage (crit doubled), 0 when nothing took it.</summary>
 
         int Deal(Collider2D col, HealthManager hm, GameObject target, int baseDamage, float knockback, float critChance, float facing, int armorPen, int addAfterVariation = 0)
         {
@@ -308,6 +328,12 @@ namespace TerraKnight.Items
             EnemyStats.Info info = null;
             // Props (levers, breakables) take the old push; enemies Terraria's.
             float magnitude = knockback / 4f;
+            // Shields and shells hold as they do against the nail (HealthManager.IsBlockingByDirection): a shielded husk
+            // from the side its shield faces, a curled-up Elder Baldur all round. Terraria's magic is the Knight's spells
+            // against a shield only spells get past ("Spell Vulnerable"); every other weapon, whip and minion is stopped.
+            // A blocked hit takes nothing, not even towards the enemy's next point of health, and shows no number.
+            bool spell = IsSpellOn(hm, armorCtx.Class);
+            bool blocked = Blocks(hm, facing, armorCtx.Class);
             if (hm != null)
             {
                 info = EnemyStats.Of(hm);
@@ -320,7 +346,7 @@ namespace TerraKnight.Items
                 // slide is left out, only its hit events (an FSM's HIT LEFT / RIGHT) still go.
                 magnitude = 0f;
                 // The enemy's own health counts for several Terraria points each, more the deeper it lives.
-                dealtHk = EnemyStats.ToGameDamage(info, damage);
+                dealtHk = blocked ? 1 : EnemyStats.ToGameDamage(info, damage);
                 // Terraria's own immunity rules apply (one hit per swing or projectile); the
                 // Knight's short dodge after each nail hit would swallow fast weapons' hits.
                 evasion(hm) = 0f;
@@ -348,9 +374,11 @@ namespace TerraKnight.Items
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;
             }
-            // An Elder Baldur's shell keeps out everything but spells: Terraria's hits get through it.
-            bool shell = EnemyStats.Shelled(hm);
-            if (shell) hm.IsInvincible = false;
+            // A blocked hit's spark, clank and hit-stop (HealthManager.Invincible) once in BlockFxGap per enemy: a fast
+            // weapon would freeze the game on each shot the shield takes.
+            bool quietBlock = blocked && blockFxAt.TryGetValue(hm.GetInstanceID(), out float lastFx) && Time.time - lastFx < BlockFxGap;
+            bool keptPrevent = hm != null && preventBlockFx(hm);
+            if (quietBlock) preventBlockFx(hm) = true;
             try
             {
                 // A puppet's hit always goes to its owner, who turns the Terraria damage into health with its own carry.
@@ -358,8 +386,7 @@ namespace TerraKnight.Items
                     HitTaker.Hit(target, new HitInstance
                     {
                         Source = source,
-                        // A shell only spells get through (a curled-up Elder Baldur): Terraria's weapons and minions do too.
-                        AttackType = EnemyStats.ShellOnlySpells(hm) ? AttackTypes.Spell : AttackTypes.Generic,
+                        AttackType = spell ? AttackTypes.Spell : AttackTypes.Generic,
                         DamageDealt = Mathf.Max(1, dealtHk),
                         Direction = facing > 0f ? 0f : 180f,
                         Multiplier = 1f,
@@ -370,13 +397,20 @@ namespace TerraKnight.Items
             finally
             {
                 if (heldStun != null) stunFsm(hm) = heldStun;
-                if (shell && hm != null && !hm.isDead) hm.IsInvincible = true;
+                if (quietBlock) preventBlockFx(hm) = keptPrevent;
             }
 
             var mod = TerraMod.Instance;
             if (hm == null) return rolled;
             int dealt = hpBefore - Mathf.Max(0, hm.hp);
-            if (dealtHk > 0 && dealt <= 0 && !hm.isDead && !puppet) return 0; // blocked (a shell, a shield)
+            // The False Knight's raging armor at its last point takes the blow without going lower: not a block.
+            if ((blocked || (dealtHk > 0 && !SpecialDeaths.Raging(hm))) && dealt <= 0 && !hm.isDead && !puppet)
+            {
+                // Blocked (a shell, a shield): nothing taken, nothing pushed.
+                DevBlocked++;
+                if (!quietBlock) blockFxAt[hm.GetInstanceID()] = Time.time;
+                return 0;
+            }
             // Terraria's knockback: launched back and up (bosses and elites have no push speed).
             if (pushSpeed > 0f && !hm.isDead && !puppet)
             {
@@ -424,7 +458,7 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// A LAN game: another player's hit on an enemy this game runs (DamageNPC), dealt as theirs was rolled: the
-        /// game's hit for its damage (no stagger for a boss or elite, through an Elder Baldur's shell), Terraria's
+        /// game's hit for its damage (no stagger for a boss or elite; shields and shells hold as for a hit here), Terraria's
         /// knockback, the number, the blood and the sound.
         /// </summary>
         public static void ApplyNetHit(HealthManager hm, int dealtHk, float direction, AttackTypes type, float push, int terra, bool crit, bool bigHit, bool dot, Vector2 from)
@@ -467,8 +501,6 @@ namespace TerraKnight.Items
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;
             }
-            bool shell = EnemyStats.Shelled(hm);
-            if (shell) hm.IsInvincible = false;
             try
             {
                 HitTaker.Hit(hm.gameObject, new HitInstance
@@ -485,7 +517,6 @@ namespace TerraKnight.Items
             finally
             {
                 if (heldStun != null) stunFsm(hm) = heldStun;
-                if (shell && !hm.isDead) hm.IsInvincible = true;
             }
             float facing = Mathf.Abs(Mathf.DeltaAngle(direction, 180f)) < 90f ? -1f : 1f;
             if (push > 0f && !hm.isDead) TerraKnockback.Push(hm, push, facing, bigHit, World.Areas.KnockbackTaken(info.Level));

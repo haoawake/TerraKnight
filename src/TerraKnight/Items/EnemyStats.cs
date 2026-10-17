@@ -136,20 +136,20 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// Behind a shield only spells get past (the game's "Spell Vulnerable" ones: the shielded husks,
-        /// the God Tamer's beast): Terraria's attacks get through as a spell does, so arrows and minions hurt it too.
+        /// the God Tamer's beast). Terraria's magic is the Knight's spells there (<see cref="MeleeHits"/> deals it
+        /// as one while the shield is up); swords, arrows, bullets, whips and minions are stopped by the shield
+        /// from the side it faces, as the nail is.
         /// </summary>
         public static bool ShellOnlySpells(HealthManager hm) =>
             hm != null && hm.IsInvincible && hm.gameObject.CompareTag("Spell Vulnerable");
 
-        /// <summary>NPC.CanBeChasedBy's dontTakeDamage: nothing can hurt it now (invincible all round, and not to spells either, nor a shell Terraria's attacks get through).</summary>
+        /// <summary>NPC.CanBeChasedBy's dontTakeDamage: nothing can hurt it now (invincible all round, and not to spells either).</summary>
         public static bool Untouchable(HealthManager hm) =>
-            hm.IsInvincible && hm.InvincibleFromDirection == 0 && !hm.gameObject.CompareTag("Spell Vulnerable") && !Shelled(hm);
+            hm.IsInvincible && hm.InvincibleFromDirection == 0 && !hm.gameObject.CompareTag("Spell Vulnerable");
 
         /// <summary>
         /// An Elder Baldur shut in its shell: its own FSM ("Blocker Control") makes it invincible all
-        /// round while the player is near, and only its open mouth or a spell hurts it in the game.
-        /// Terraria has no shells: its arrows, bullets, magic and minions hurt it as they would any
-        /// enemy (<see cref="MeleeHits"/> lifts the shell for the hit).
+        /// round while the player is near; only its open mouth can be hurt, by everything alike.
         /// </summary>
         public static bool Shelled(HealthManager hm) => hm != null && hm.IsInvincible && IsElderBaldur(hm);
 

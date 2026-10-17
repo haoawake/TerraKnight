@@ -577,7 +577,7 @@ namespace TerraKnight.World
                 if (c.Renderer == null)
                 {
                     var go = new GameObject("Terra Chest");
-                    go.transform.SetParent(c.Region.Root, false);
+                    go.transform.SetParent(c.Region.Props ?? c.Region.Root, false);
                     c.Renderer = go.AddComponent<SpriteRenderer>();
                 }
                 c.Renderer.enabled = true;

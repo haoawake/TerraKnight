@@ -23,13 +23,13 @@ namespace TerraKnight.Items
             list.Add(new ItemDef
             {
                 Type = ItemType.CrystalHeart, Name = "水晶之心", Texture = HkItems.TexturePrefix + ItemType.CrystalHeart, Accessory = AccessoryEffect.Passive, Rare = 5,
-                Tooltip = "在地上或贴着墙长按冲刺键：蓄力后松开，像原版那样超级冲刺\n轻点冲刺键仍是普通冲刺\n冷却 20 秒",
+                Tooltip = "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺\n冷却 20 秒",
             });
             list.Add(new ItemDef
             {
                 Type = ItemType.HallownestShield, Name = "圣巢之盾", Texture = Relics.TexturePrefix + "item_hallownest_shield", Accessory = AccessoryEffect.ShieldDash,
                 Bonus = new Bonuses { DashKind = 2 }, Defense = 4, Rare = 8,
-                Tooltip = "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n在地上或贴着墙长按冲刺键：水晶之心蓄力，松开超级冲刺（冷却 20 秒）\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却 10 秒）",
+                Tooltip = "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n长按冲刺键（空中也行）：水晶之心蓄力，松开超级冲刺（冷却 20 秒）\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却 10 秒）",
             });
         }
 
@@ -56,9 +56,9 @@ namespace TerraKnight.Items
     /// is broken off for it): a dash of the worn kind (the Shield's without one) during which the game's own
     /// cState.shadowDashing is set, so enemies and their attacks pass through the player (TakeDamage, HeroBox) while spikes
     /// still hurt, the Shield of Cthulhu doesn't bounce off what it meets, and the shade gates (ShadowGateColliderControl)
-    /// open as in the game. The Crystal Heart worn turns a long press of the Dash key, on the ground or on a wall, into the
-    /// game's own Super Dash (the hero's "Superdash" FSM: charge, release, fly until a wall), once in 20 s; a short press
-    /// is still a dash. The Hallownest Shield is all three: the Shield's dash on a tap.
+    /// open as in the game. The Crystal Heart worn turns a long press of the Dash key, on the ground, on a wall or in the
+    /// air (held where it is while it charges), into the game's own Super Dash (the hero's "Superdash" FSM: charge,
+    /// release, fly until a wall), once in 20 s; a short press is still a dash. The Hallownest Shield is all three: the Shield's dash on a tap.
     /// </summary>
     [HarmonyPatch]
     internal static partial class AbilityAccessories
@@ -324,6 +324,8 @@ namespace TerraKnight.Items
         static bool keyWasHeld, deferring, superHeld, superPrev, tapReleased;
         static float holdTime;
         static bool wasSuperDashing;
+        /// <summary>The frame the Dash key went down.</summary>
+        static int pressedFrame = -10;
 
         /// <summary>Dev: what the last press of the Dash key was taken for.</summary>
         public static string DevPress = "";
@@ -343,10 +345,11 @@ namespace TerraKnight.Items
             bool key = DashKeyHeld;
             if (key && !keyWasHeld)
             {
+                pressedFrame = Time.frameCount;
                 holdTime = 0f;
-                // A press that may become the Super Dash: the heart worn and back, standing or on a wall, not mid-dash.
+                // A press that may become the Super Dash: the heart worn and back, not mid-dash (standing, on a wall or in the air).
                 deferring = hero != null && CrystalWorn && Time.time >= superReady && !TerraMovement.IsDashing
-                            && (hero.cState.onGround || hero.cState.wallSliding) && GameHooks.PlayerHasControl();
+                            && GameHooks.PlayerHasControl();
                 DevPress = $"按下：等长按 {deferring}（戴着 {CrystalWorn}，冷却剩 {SuperCooldownLeft:F1}，冲刺中 {TerraMovement.IsDashing}，地上 {hero?.cState.onGround}，墙上 {hero?.cState.wallSliding}，控制 {GameHooks.PlayerHasControl()}：输入 {hero?.acceptingInput} 放手 {hero?.controlReqlinquished} 暂停 {GameManager.UnsafeInstance?.isPaused} {GameManager.UnsafeInstance?.gameState} 切换 {GameManager.UnsafeInstance?.IsInSceneTransition} 时速 {Time.timeScale} 场景 {GameManager.UnsafeInstance?.sceneName}）";
             }
             if (key) holdTime += Time.deltaTime;
@@ -379,6 +382,13 @@ namespace TerraKnight.Items
             var gm = GameManager.UnsafeInstance;
             if (gm == null || gm.isPaused) return false;
             Compute();
+            // In flight: a fresh press of the Dash key stops it, as the game's own button does once it can be stopped.
+            if (pressedFrame == Time.frameCount && __instance.State != null && __instance.State.Name == "Cancelable" && __instance.wasPressed != null)
+            {
+                __instance.Fsm.Event(__instance.wasPressed);
+                DevStopped++;
+                return false;
+            }
             if (superHeld && !superPrev) __instance.Fsm.Event(__instance.wasPressed);
             if (!superHeld && superPrev) __instance.Fsm.Event(__instance.wasReleased);
             if (superHeld) __instance.Fsm.Event(__instance.isPressed);
@@ -386,12 +396,15 @@ namespace TerraKnight.Items
             return false;
         }
 
-        /// <summary>HeroController.CanSuperDash with the heart worn and its time come instead of the save's Crystal Heart.</summary>
+        /// <summary>
+        /// HeroController.CanSuperDash with the heart worn and its time come instead of the save's Crystal Heart; in the air as
+        /// well as on the ground or a wall (the game's own asks for one of the two: it is asked as if standing).
+        /// </summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanSuperDash))]
         static bool CanSuperDash(HeroController __instance, ref bool __result, out int __state)
         {
-            // -1: the record untouched; else what it was, put back after.
+            // -1: the record untouched; else bit 0 what it was, bit 1 set when asked as if standing; put back after.
             __state = -1;
             if (TerraMod.Instance == null) return true;
             var pd = PlayerData.instance;
@@ -402,20 +415,101 @@ namespace TerraKnight.Items
             }
             __state = pd.hasSuperDash ? 1 : 0;
             pd.hasSuperDash = true;
+            if (!__instance.cState.onGround && !__instance.cState.wallSliding)
+            {
+                __instance.cState.onGround = true;
+                __state |= 2;
+                airStartFrame = Time.frameCount;
+            }
             return true;
+        }
+
+        /// <summary>The frame a Super Dash was let start in the air (its FSM's "On Ground?" asked as standing then).</summary>
+        static int airStartFrame = -10;
+
+        /// <summary>
+        /// The Superdash FSM's "On Ground?" right after a start in the air: standing (its ground charge, held in place by
+        /// TickSuper), not on a wall (its wall charge finds no wall and gives up). The ground charge's own looks for the
+        /// floor (rays down, the falling speed, "On Ground") are set aside until the charge is over: with none below it
+        /// would give up at once, charged it would go without waiting for the key.
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.GetState))]
+        static void AirChargeAsGround(HeroController __instance, string stateName, ref bool __result)
+        {
+            if (__result || stateName != "onGround" || Time.frameCount - airStartFrame > 2 || TerraMod.Instance == null) return;
+            var fsm = HeroFsm(__instance, "Superdash");
+            if (fsm == null || fsm.ActiveStateName != "On Ground?") return;
+            __result = true;
+            airStartFrame = -10;
+            FloorChecks(fsm, false);
+            var rb = __instance.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                airCharge = (Vector2)__instance.transform.position;
+                rb.linearVelocity = Vector2.zero;
+                DevAirCharges++;
+            }
+        }
+
+        /// <summary>The floor checks of the ground charge set aside for a charge in the air.</summary>
+        static readonly List<HutongGames.PlayMaker.FsmStateAction> floorChecks = new List<HutongGames.PlayMaker.FsmStateAction>();
+
+        static void FloorChecks(PlayMakerFSM fsm, bool on)
+        {
+            if (on)
+            {
+                foreach (var a in floorChecks) a.Enabled = true;
+                floorChecks.Clear();
+                return;
+            }
+            foreach (var st in fsm.FsmStates)
+            {
+                if (st.Name != "Ground Charge" && st.Name != "Ground Charged") continue;
+                foreach (var a in st.Actions)
+                {
+                    bool floor = a is HutongGames.PlayMaker.Actions.BoolTest bt && bt.boolVariable != null && bt.boolVariable.Name == "On Ground"
+                                 || st.Name == "Ground Charge" && (a is HutongGames.PlayMaker.Actions.BoolNoneTrue || a is HutongGames.PlayMaker.Actions.FloatCompare);
+                    if (!floor || !a.Enabled) continue;
+                    a.Enabled = false;
+                    floorChecks.Add(a);
+                }
+            }
         }
 
         [HarmonyFinalizer]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.CanSuperDash))]
-        static void AfterCanSuperDash(int __state)
+        static void AfterCanSuperDash(HeroController __instance, int __state)
         {
+            if (__state < 0) return;
             var pd = PlayerData.instance;
-            if (__state >= 0 && pd != null) pd.hasSuperDash = __state == 1;
+            if (pd != null) pd.hasSuperDash = (__state & 1) == 1;
+            if ((__state & 2) != 0 && __instance != null) __instance.cState.onGround = false;
         }
+
+        /// <summary>Where a charge begun in the air holds the player (null: not one).</summary>
+        static Vector2? airCharge;
+        public static int DevAirCharges;
 
         static void TickSuper(HeroController hero)
         {
             Compute();
+            // A charge begun in the air: held where it began until it goes or is let go.
+            var fsm = HeroFsm(hero, "Superdash");
+            string st = fsm != null ? fsm.ActiveStateName : "Inactive";
+            bool charging = st.Contains("Charge") && !st.Contains("Cancel") && !hero.cState.superDashing && !hero.cState.dead;
+            var rb = hero.GetComponent<Rigidbody2D>();
+            if (!charging)
+            {
+                airCharge = null;
+                if (floorChecks.Count > 0 && st != "On Ground?") FloorChecks(fsm, true);
+            }
+            if (airCharge != null && rb != null)
+            {
+                rb.position = airCharge.Value;
+                hero.transform.position = new Vector3(airCharge.Value.x, airCharge.Value.y, hero.transform.position.z);
+                rb.linearVelocity = Vector2.zero;
+            }
             bool now = hero.cState.superDashing;
             // Its cooldown from the moment it is launched.
             if (now && !wasSuperDashing)
@@ -427,7 +521,7 @@ namespace TerraKnight.Items
             if (now) SuperDashWall(hero);
         }
 
-        public static int DevWallHits;
+        public static int DevWallHits, DevStopped;
 
         /// <summary>
         /// The game ends a Super Dash at a wall from the hero's collision callbacks (OnCollisionEnter2D/Stay2D: "HIT WALL"

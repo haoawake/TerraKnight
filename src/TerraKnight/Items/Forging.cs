@@ -5,7 +5,7 @@ namespace TerraKnight.Items
 {
     /// <summary>
     /// The Goblin Tinkerer's forging (the mod's own, beside Terraria's reforging): a weapon in his slot, paid for in Geo,
-    /// goes up a level, each level +10% of its damage (on its damage before forging, prefix included). Each stage unlocked
+    /// goes up a level, each level +5% of its damage (on its damage before forging, prefix included). Each stage unlocked
     /// allows five levels more (+5 at the start, +30 at the last). The price rises with the weapon's worth (its plain
     /// reforge price) and its level; a forging takes one time in two,
     /// the money gone and the level kept. Each weapon carries its own level (ItemStack.Forge, kept in the save); a reforge
@@ -14,7 +14,7 @@ namespace TerraKnight.Items
     internal static class Forging
     {
         public const int LevelsPerStage = 5;
-        public const float DamagePerLevel = 0.1f;
+        public const float DamagePerLevel = 0.05f;
 
         /// <summary>The highest level the stage reached allows.</summary>
         public static int MaxLevel => LevelsPerStage * (Mathf.Clamp(Shop.UnlockedStage(), 0, 5) + 1);
@@ -100,7 +100,7 @@ namespace TerraKnight.Items
         static readonly Dictionary<(ItemDef, byte), Entry> cache = new Dictionary<(ItemDef, byte), Entry>();
         static string cacheCulture;
 
-        /// <summary>The forged copy of a definition (its prefix's, if any): its damage up 10% a level, " +N" after its name.</summary>
+        /// <summary>The forged copy of a definition (its prefix's, if any): its damage up 5% a level, " +N" after its name.</summary>
         public static ItemDef Apply(ItemDef b, byte level)
         {
             // Only a weapon is forged (a treasure bag keeps a mark in the same byte: TreasureBags).

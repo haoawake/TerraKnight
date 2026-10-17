@@ -111,6 +111,8 @@ namespace TerraKnight
             // The LAN game's menu and server, before the game starts (DevAutoTestNet).
             if (suite == "net" || suite == "netsummon") yield return NetBoot();
             if (suite == "net2host" || suite == "net2client" || suite == "networldhost" || suite == "networldclient") yield return Net2Boot();
+            if (suite == "netloothost" || suite == "netlootclient") yield return NetLootBoot();
+            if (suite == "netaudit_host" || suite == "netaudit_client") yield return NetAuditBoot();
             if (suite == "slots") yield return SlotsBoot();
             if (suite == "menuflow")
             {
@@ -293,6 +295,90 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 进场时本场景已有 {World.WorldEdits.For(scene).Count} 处存档改动");
             Shot(scene, "1_start");
             yield return new WaitForSeconds(0.3f);
+            if (suite.StartsWith("fx_"))
+            {
+                yield return Fix1016(suite.Substring(3));
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "crystalair")
+            {
+                yield return CrystalAirTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "lifeblood")
+            {
+                yield return LifebloodTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "maskhearts")
+            {
+                yield return MaskHeartsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "dreamwake")
+            {
+                yield return DreamWakeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "dreamexitprobe")
+            {
+                yield return DreamExitProbe();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "dreamfk")
+            {
+                yield return DreamFkTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "wallswing")
+            {
+                yield return WallSwingTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "dreamfinalprobe")
+            {
+                yield return DreamFinalProbe();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite.StartsWith("sealprobe_"))
+            {
+                yield return SealProbe(suite.Substring(10));
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "bossdropvis" || suite.StartsWith("bossdropvis_"))
+            {
+                yield return BossDropVisTest(suite.Length > 12 ? suite.Substring(12) : null);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "sealstart" || suite.StartsWith("sealstart_"))
+            {
+                yield return SealStartTest(suite.Length > 10 ? suite.Substring(10) : null);
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "bossseals")
             {
                 yield return BossSealsTest();
@@ -347,6 +433,15 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "craftprogression")
+            {
+                yield return CraftProgressionTest();
+                yield return ProgressionAuditTest(false);
+                yield return VanillaRecipesTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "accessorydrops")
             {
                 yield return AccessoryDropsTest();
@@ -374,6 +469,27 @@ namespace TerraKnight
             if (suite == "lootbalance")
             {
                 yield return LootBalanceTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "bossloadouts" || suite == "bossloadoutsendgame")
+            {
+                yield return BossLoadoutTest(suite == "bossloadoutsendgame");
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "armorrestore")
+            {
+                yield return ArmorRestoreTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "weaponbalance" || suite == "weaponintegration")
+            {
+                yield return WeaponBalanceTest(suite=="weaponintegration");
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
@@ -923,6 +1039,22 @@ namespace TerraKnight
             {
                 if (suite == "networldhost") yield return NetWorldHost(scene, hero);
                 else yield return NetWorldClient(scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
+                Finish();
+                yield break;
+            }
+            if (suite == "netaudit_host" || suite == "netaudit_client")
+            {
+                if (suite == "netaudit_host") yield return NetAuditHost(scene, hero);
+                else yield return NetAuditClient(scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
+                Finish();
+                yield break;
+            }
+            if (suite == "netloothost" || suite == "netlootclient")
+            {
+                if (suite == "netloothost") yield return NetLootHost(scene, hero);
+                else yield return NetLootClient(scene, hero);
                 Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
                 Finish();
                 yield break;

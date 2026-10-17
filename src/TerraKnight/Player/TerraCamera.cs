@@ -27,10 +27,16 @@ namespace TerraKnight.Player
         static readonly System.Action<CameraController> getTilemapInfo =
             AccessTools.MethodDelegate<System.Action<CameraController>>(AccessTools.Method(typeof(CameraController), "GetTilemapInfo"));
 
+        /// <summary>
+        /// The player's middle as drawn this frame: the box's centre carried by his transform, which his rigidbody
+        /// interpolates between physics steps. The box's own bounds stand still between steps (50 a second, the screen
+        /// drawn at 144 or more): a camera on them moved in jerks under a smoothly drawn player, and the scenery nearest
+        /// the camera, the foreground, shook worst.
+        /// </summary>
         static Vector2 HeroCenter(HeroController hero)
         {
             var col = hero.GetComponent<BoxCollider2D>();
-            return col != null ? (Vector2)col.bounds.center : (Vector2)hero.transform.position;
+            return col != null ? (Vector2)hero.transform.TransformPoint(col.offset) : (Vector2)hero.transform.position;
         }
 
         /// <summary>The player's centre now, as the camera puts it in the middle of the screen; dev: how far off it the camera is.</summary>

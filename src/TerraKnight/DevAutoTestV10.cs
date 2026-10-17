@@ -178,7 +178,7 @@ namespace TerraKnight
             foreach (var c in baldur.GetComponentsInChildren<Collider2D>(true))
                 parts.Append($" {c.name}:{LayerMask.LayerToName(c.gameObject.layer)}:{(c.isTrigger ? "触发" : "实心")}:{(c.enabled && c.gameObject.activeInHierarchy ? "开" : "关")}:命中层{((MeleeHits.HitMask >> c.gameObject.layer) & 1) == 1}");
             Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者 碰撞体：{parts}");
-            Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者：无敌 {baldur.IsInvincible}，缩壳 {EnemyStats.Shelled(baldur)}，打不到 {EnemyStats.Untouchable(baldur)}（应为 False），血 {baldur.hp}");
+            Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者：无敌 {baldur.IsInvincible}，缩壳 {EnemyStats.Shelled(baldur)}，打不到 {EnemyStats.Untouchable(baldur)}（缩壳时应为 True），血 {baldur.hp}");
 
             var inv = mod.Inventory;
             int slot = Inventory.HotbarSize - 1, ammoSlot = Inventory.Size - 1;
@@ -198,7 +198,7 @@ namespace TerraKnight
                 yield return new WaitForSeconds(0.35f);
             }
             yield return new WaitForSeconds(0.8f);
-            Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者 缩壳时用木弓射 8 箭：血 {hp0} -> {baldur.hp}（应减少），还无敌 {baldur.IsInvincible}");
+            Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者 缩壳时用木弓射 8 箭：血 {hp0} -> {baldur.hp}（壳挡住，应不变），还无敌 {baldur.IsInvincible}");
             Shot("Crossroads_11_alt", "v10_2_baldur_arrows");
             yield return null;
 
@@ -217,7 +217,7 @@ namespace TerraKnight
                     baldur.hp = Mathf.Max(baldur.hp, 500);
                     yield return null;
                 }
-                Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者 {ItemDb.Get(staff).Name}：10 秒召唤物命中 {Minions.DevHits - hits0} 次（应大于 0），血 {before} -> {baldur.hp}");
+                Plugin.Log.LogInfo($"[AutoTest] 巴德尔长者 {ItemDb.Get(staff).Name}：10 秒召唤物命中 {Minions.DevHits - hits0} 次（缩壳时不追，张嘴时才打），血 {before} -> {baldur.hp}");
                 if (staff == ItemType.CattivaStaff) Shot("Crossroads_11_alt", "v10_3_baldur_minions");
             }
             Minions.Instance.Clear();

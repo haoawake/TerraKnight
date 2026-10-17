@@ -73,6 +73,28 @@ namespace TerraKnight.World
             return false;
         }
 
+        /// <summary>
+        /// The foreground scenery that can be drawn over a part of the gameplay plane from where the camera goes near it:
+        /// each sprite's own place widened by how far its depth carries it across the screen (the nearer the camera, the
+        /// more it slides) over half a view's width. Fog, haze and the like, and sprites as big as a room, are left out.
+        /// </summary>
+        public List<SpriteRenderer> CoverOver(Rect area, float cameraZ, float reach = 16f)
+        {
+            var found = new List<SpriteRenderer>();
+            foreach (var sr in cover)
+            {
+                if (sr == null || !sr.enabled || !sr.gameObject.activeInHierarchy || IsGlow(sr)) continue;
+                var b = sr.bounds;
+                if (b.size.x > 40f || b.size.y > 40f) continue;
+                float toPlane = -cameraZ, toSprite = b.center.z - cameraZ;
+                if (toSprite <= 0.5f) continue;
+                float slide = Mathf.Abs(toPlane / toSprite - 1f) * reach;
+                var r = Rect.MinMaxRect(b.min.x - slide, b.min.y - slide, b.max.x + slide, b.max.y + slide);
+                if (r.Overlaps(area)) found.Add(sr);
+            }
+            return found;
+        }
+
         static readonly string[] glowWords = { "light", "glow", "haze", "fog", "mist", "beam", "shine", "blur", "shadow", "vignette", "dust", "particle", "ray" };
 
         /// <summary>Soft see-through dressing (light, haze, glows): drawn over the player but not hiding him.</summary>

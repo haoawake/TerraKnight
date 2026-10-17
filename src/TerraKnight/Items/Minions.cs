@@ -1079,13 +1079,18 @@ namespace TerraKnight.Items
         static readonly ContactFilter2D terrainFilter = new ContactFilter2D { useTriggers = false, useLayerMask = true, layerMask = 1 << ChunkColliders.TerrainLayer };
         static readonly Dictionary<int, bool> ownedCache = new Dictionary<int, bool>();
 
+        /// <summary>
+        /// What doesn't block a minion's sight: triggers, effectors, the mod's own blocks (walked on the grid instead) and an
+        /// enemy's own solid parts (an Elder Baldur is a wall across its tunnel on the terrain layer): Terraria's
+        /// Collision.CanHitLine looks at tiles only, never at NPCs.
+        /// </summary>
         static bool Ignored(Collider2D col)
         {
             if (col.isTrigger || col.usedByEffector) return true;
             int id = col.GetInstanceID();
             if (!ownedCache.TryGetValue(id, out bool owned))
             {
-                owned = col.GetComponentInParent<TerraOwned>() != null;
+                owned = col.GetComponentInParent<TerraOwned>() != null || col.GetComponentInParent<HealthManager>() != null;
                 if (ownedCache.Count > 4000) ownedCache.Clear();
                 ownedCache[id] = owned;
             }

@@ -91,8 +91,8 @@ namespace TerraKnight.Items
             else p.TRot = ToRot(v) + 1.57f;
             if (p.Kind == ProjKind.IchorDartProj)
             {
-                if (p.Ai1 >= 0f) p.Penetrate = -1;
-                else if (p.Penetrate < 0) p.Penetrate = 1;
+                if (p.Ai1 >= 0f) p.Penetrate = p.MaxPenetrate = -1;
+                else if (p.Penetrate < 0) p.Penetrate = p.MaxPenetrate = 1;
                 if (p.Ai1 >= 0f) p.Ai1++;
                 if (p.Ai1 > Random.Range(5, 30))
                 {
@@ -110,7 +110,7 @@ namespace TerraKnight.Items
                         if (q != null)
                         {
                             q.Ai1 = -1000f;
-                            q.Penetrate = 1;
+                            q.Penetrate = q.MaxPenetrate = 1;
                             q.Class = p.Class;
                             DevIchorSplits++;
                         }

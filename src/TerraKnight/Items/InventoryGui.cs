@@ -1230,8 +1230,8 @@ namespace TerraKnight.Items
                         hoveredExtra = RecipeExtra(recipes[i]);
                     }
                 }
-                // The focused recipe's ingredients beside it (or its price, for a basic item).
-                if (!Shop.Free && focus < recipes.Count && Mathf.Abs(focusY) < 1f)
+                // The focused recipe's ingredients beside it (or its price, for a basic item); the Guide's always (all free or not).
+                if ((!Shop.Free || guideShown) && focus < recipes.Count && Mathf.Abs(focusY) < 1f)
                 {
                     var r = recipes[focus];
                     if (r.IsBought)
@@ -1278,7 +1278,8 @@ namespace TerraKnight.Items
 
         static string RecipeExtra(Recipe r)
         {
-            if (Shop.Free) return Lang.T("点击拿取，按住连续拿取");
+            bool guide = Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty;
+            if (Shop.Free && !guide) return Lang.T("点击拿取，按住连续拿取");
             if (r.IsBought) return r.Cost > 0 ? Lang.F("购买（不用材料）：{0}", Shop.Money(r.Cost)) : Lang.T("免费拿取（不用材料）");
             var sb = new System.Text.StringBuilder(Lang.T("需要："));
             for (int k = 0; k < r.Ingredients.Length; k++)
@@ -1672,6 +1673,13 @@ namespace TerraKnight.Items
             int before = inv.Mouse.Type == type ? inv.Mouse.Count : 0;
             ClickRecipe(i, true, true);
             return inv.Mouse.Type == type && inv.Mouse.Count > before;
+        }
+
+        /// <summary>Dev: the focused recipe's hover text (what it needs, or how it's taken).</summary>
+        public static string DevFocusedExtra()
+        {
+            RefreshRecipes();
+            return focus >= 0 && focus < recipes.Count ? RecipeExtra(recipes[focus]) : null;
         }
 
         /// <summary>Dev: the crafting column's recipes and the focused one.</summary>

@@ -10,8 +10,8 @@ namespace TerraKnight.Items
     /// and the body counts as dead (no health bar over the corpse, the boss room open). Any other
     /// boss the game records as killed (a "killed..." journal flag turning on, or the flag of a fight
     /// won without a death: Hornet's at Kingdom's Edge) without the mod having counted it is counted
-    /// then, from its health manager in a loaded scene. The False Knight's armor also holds through
-    /// his rage, so his third stun comes where his FSM looks for it.
+    /// then, from its health manager in a loaded scene. Through the False Knight's rage his armor takes every
+    /// blow but keeps one point of health (<see cref="Raging"/>), so his next stun comes where his FSM looks for it.
     /// </summary>
     [HarmonyPatch]
     internal static class SpecialDeaths
@@ -21,16 +21,31 @@ namespace TerraKnight.Items
         /// <summary>Dev: every state the False Knight's FSM enters, with his armor's and his head's health.</summary>
         public static bool DevTrace;
 
-        /// <summary>Out of the rage: the armor given back before the next state's own actions (which may set it themselves).</summary>
+        /// <summary>Out of the rage: his armor's last point can go again.</summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HutongGames.PlayMaker.FsmState), nameof(HutongGames.PlayMaker.FsmState.OnEnter))]
         static void Entering(HutongGames.PlayMaker.FsmState __instance)
         {
-            if (armored.Count == 0 || Rage(__instance.Name)) return;
+            if (raging.Count == 0 || Rage(__instance.Name)) return;
             var fsm = __instance.Fsm;
             if (fsm == null || fsm.Name != "FalseyControl" || fsm.GameObject == null) return;
             var hm = fsm.GameObject.GetComponent<HealthManager>();
-            if (hm != null && armored.Remove(hm.GetInstanceID())) hm.IsInvincible = false;
+            if (hm != null) raging.Remove(hm.GetInstanceID());
+        }
+
+        /// <summary>Whether the False Knight is in his rage now: his armor keeps its last point of health.</summary>
+        public static bool Raging(HealthManager hm) => hm != null && raging.Count > 0 && raging.Contains(hm.GetInstanceID());
+
+        public static int DevHeldAtOne;
+
+        /// <summary>Every blow on the raging armor (a weapon's, a minion's, a burn's) leaves it one point at least.</summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HealthManager), "TakeDamage")]
+        static void KeepLastPoint(HealthManager __instance, ref HitInstance hitInstance)
+        {
+            if (!Raging(__instance) || hitInstance.DamageDealt < __instance.hp) return;
+            hitInstance.DamageDealt = Mathf.Max(0, __instance.hp - 1);
+            DevHeldAtOne++;
         }
 
         [HarmonyPostfix]
@@ -46,25 +61,21 @@ namespace TerraKnight.Items
             {
                 HealthManager head = null;
                 foreach (var c in hm.GetComponentsInChildren<HealthManager>(true)) if (c != hm) head = c;
-                Plugin.Log.LogInfo($"[假骑士] {Time.time:F1} 进入 {__instance.Name}：盔甲 血 {hm.hp} 无敌 {hm.IsInvincible}{(armored.Contains(hm.GetInstanceID()) ? "（mod 加的）" : "")}，" +
+                Plugin.Log.LogInfo($"[假骑士] {Time.time:F1} 进入 {__instance.Name}：盔甲 血 {hm.hp} 无敌 {hm.IsInvincible}{(raging.Contains(hm.GetInstanceID()) ? "（暴怒，留一点血）" : "")}，" +
                     (head != null ? $"头 血 {head.hp} 在场 {head.gameObject.activeInHierarchy} 无敌 {head.IsInvincible} 位置 {(Vector2)head.transform.position:F1}" : "没有头"));
             }
             if (__instance.Name == "Death Anim Start") Credit(hm, "FalseyControl/Death Anim Start");
-            // The False Knight's rage after each stun (the leap, the slams) can't be cut short: his
-            // armor holds through it. His third stun breaks the floor only where the rage ends (Rage
-            // Check); a Terraria weapon empties his armor long before a nail could, stunning him again
-            // mid-rage, every time, so the fight never ended.
-            if (Rage(__instance.Name) && !hm.IsInvincible)
-            {
-                hm.IsInvincible = true;
-                armored.Add(hm.GetInstanceID());
-            }
+            // The False Knight's rage after each stun (the leap, the slams) can't be cut short: his third stun breaks the
+            // floor only where the rage ends (Rage Check), and a Terraria weapon empties his armor long before a nail could,
+            // stunning him again mid-rage, every time, so the fight never ended. He takes the blows meanwhile (their
+            // numbers show), his armor down to its last point; the stun comes with the first blow after the rage.
+            if (Rage(__instance.Name)) raging.Add(hm.GetInstanceID());
         }
 
         static bool Rage(string state) => state == "Rage Jump Antic" || state == "Rise 2" || state == "Fall 2" || state == "State 2" || state == "R Attack Antic"
             || state == "Rage Begin" || state == "Rage" || state == "Particle Pause" || state == "Anim End";
 
-        static readonly System.Collections.Generic.HashSet<int> armored = new System.Collections.Generic.HashSet<int>();
+        static readonly System.Collections.Generic.HashSet<int> raging = new System.Collections.Generic.HashSet<int>();
 
         /// <summary>
         /// Bosses beaten without a journal kill of their own, by the flag their FSM sets: Hornet at
@@ -141,6 +152,25 @@ namespace TerraKnight.Items
             DevCredited++;
             DevLast = $"{hm.gameObject.scene.name}/{hm.name}（{why}）";
             Plugin.Log.LogInfo($"[首领] {DevLast} 由它自己的死亡流程打倒：记入图鉴、掉落");
+            // A LAN game whose fight ran here: the others in the room count it too (their copy is a puppet, Net.Enemies).
+            Net.Enemies.SendBeaten(hm.gameObject.scene.name, UI.EnemyHover.RecordOf(hm), why);
+        }
+
+        /// <summary>
+        /// A LAN game: the boss beaten in the game that ran its fight (Net.Enemies.ReceiveBeaten). Its copy here, a puppet
+        /// whose scripts stand still, counted the same way (the book, the treasure bag, a rematch's win); the arena's own
+        /// records of the win written in this save (BossArena.WriteBeaten).
+        /// </summary>
+        internal static void CreditFromNet(string record, string scene, string why)
+        {
+            HealthManager best = null;
+            foreach (var hm in Object.FindObjectsByType<HealthManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (hm == null || hm.gameObject.scene.name != scene || UI.EnemyHover.RecordOf(hm) != record) continue;
+                if (best == null || (hm.gameObject.activeInHierarchy && !best.gameObject.activeInHierarchy)) best = hm;
+            }
+            if (best != null) Credit(best, "联机 " + why);
+            BossArena.WriteBeaten(record, scene);
         }
     }
 }

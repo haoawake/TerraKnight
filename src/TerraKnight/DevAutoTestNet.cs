@@ -239,7 +239,8 @@ namespace TerraKnight
 
             // --- The Terraria settings: the panel, autoswing, a key rebound and back. ---
             UI.IngameOptions.Show();
-            yield return new WaitForSeconds(0.5f);
+            // The settings stop a single-player game (Terraria's ingameOptionsWindow pause): real time.
+            yield return new WaitForSecondsRealtime(0.5f);
             Shot(scene, "net_5_options");
             yield return null;
             yield return null;
@@ -256,7 +257,7 @@ namespace TerraKnight
             bool hasK = acts.jump.HasBinding(new InControl.KeyBindingSource(InControl.Key.K));
             bool hasSpace = acts.jump.HasBinding(new InControl.KeyBindingSource(InControl.Key.Space)) && !TerraControls.DevGameOwns(acts.jump, InControl.Key.Space);
             TerraKeys.Listen(TerraKeys.Action.Throw);
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSecondsRealtime(0.2f);
             Shot(scene, "net_6_options_listen");
             yield return null;
             yield return null;

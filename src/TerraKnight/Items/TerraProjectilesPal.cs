@@ -35,10 +35,10 @@ namespace TerraKnight.Items
                 Update = (t, p) => t.StepFoxFireball(p), Draw = (t, fx, p, px) => DrawFoxFireball(fx, p, px), OnKill = (t, p) => t.KillFoxFireball(p),
                 OnHit = (t, p, hm) => EnemyDebuffs.Add(hm, p.Ai1 > 0f ? EnemyDebuffs.Hellfire : EnemyDebuffs.OnFire, Random.Range(300, 600)),
             };
-            // P:10305-10314: the Foxsparks' breath (the Flamethrower's flame, through four, each 10 ticks shared); 15% weaker a hit; hellfire when fast (P:11665).
+            // P:10305-10316: the Foxsparks' breath (the Flamethrower's flame, through four, 15 ticks shared by the kind); 15% weaker a hit; hellfire when fast (P:11665).
             specs[ProjKind.FoxFlame] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_1106", W = 6, H = 6, Time = 3600, Extra = 2, Penetrate = 4, TypeCooldown = 10, AlphaStart = 1f, Frames = 7,
+                Ai = Ai.Custom, Texture = "Projectile_1106", W = 6, H = 6, Time = 3600, Extra = 2, Penetrate = 4, TypeCooldown = 15, AlphaStart = 1f, Frames = 7,
                 CanDamage = p => p.LocalAi0 < 54f, Update = (t, p) => t.StepFlame(p), Draw = (t, fx, p, px) => DrawFoxFlame(fx, p, px), OnKill = (t, p) => { },
                 OnHit = (t, p, hm) =>
                 {

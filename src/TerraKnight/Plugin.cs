@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "3.1.1";
+        public const string Version = "3.2.0";
 
         internal static ManualLogSource Log;
 
@@ -75,6 +75,8 @@ namespace TerraKnight
             var autoReuse = Config.Bind("Gameplay", "AutoReuseAllItems", false,
                 "泰拉瑞亚设置里的“自动开火”（自动挥舞）：开启时所有武器按住鼠标就一直挥舞、射击。游戏里物品栏右下角的“设置”里也能切换。\nAuto Reuse from Terraria's settings: with it on, every weapon keeps swinging and firing while the mouse button is held. It can also be switched in \"Settings\" at the bottom right of the inventory.");
             UI.IngameOptions.Bind(autoReuse, barsAlways, centeredCamera);
+            UI.AutoPause.Bind(Config.Bind("Gameplay", "AutoPause", false,
+                "泰拉瑞亚设置里的“自动暂停”：开启时单人游戏打开背包会暂停游戏（泰拉瑞亚设置窗口本身总会暂停）。多人模式不暂停。\nAutopause from Terraria's settings: with it on, opening the inventory pauses a single-player game (the settings window itself always pauses). Never in multiplayer."));
             Net.NetSettings.Bind(Config);
             Player.TerraKeys.Bind(Config);
             var multiplier = Config.Bind("Gameplay", "EnemyMultiplier", 2,

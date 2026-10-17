@@ -286,10 +286,11 @@ namespace TerraKnight.Net
             }
             if (Hosting && inGame && now >= nextTime)
             {
-                // SetTime (18): the host's world clock is everyone's.
+                // SetTime (18): the host's world clock is everyone's, the time of day and the day's number.
                 nextTime = now + 2f;
                 var p = Mine(Msg.SetTime);
                 p.W.Write(World.TerraTime.Now);
+                p.W.Write(World.TerraTime.Clock);
                 Send(p.Done());
             }
             if (inGame)
@@ -450,6 +451,9 @@ namespace TerraKnight.Net
                     case Msg.EnemyDeath:
                         Enemies.ReceiveDeath(slot, r);
                         return;
+                    case Msg.BossBeaten:
+                        Enemies.ReceiveBeaten(slot, r);
+                        return;
                     case Msg.EnemyHit:
                         Enemies.ReceiveHit(slot, r);
                         return;
@@ -486,7 +490,8 @@ namespace TerraKnight.Net
                     {
                         float hostNow = r.ReadSingle();
                         World.TerraTime.NetOffset = 0f;
-                        World.TerraTime.NetOffset = hostNow - World.TerraTime.Now;
+                        if (r.BaseStream.Position + 4 <= r.BaseStream.Length) World.TerraTime.NetOffset = r.ReadSingle() - World.TerraTime.PlayTime;
+                        else World.TerraTime.NetOffset = hostNow - World.TerraTime.Now;
                         return;
                     }
                 }

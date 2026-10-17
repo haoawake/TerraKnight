@@ -312,7 +312,9 @@ namespace TerraKnight
             if (gameplay && terrain != null && !gm.isPaused && !Net.NetChat.BlocksKeys && !UI.IngameOptions.Open) HandleEscape();
             // The Dream Nail item's button (the game's FSM reads it, in control or not).
             DreamNailItem.Sample();
-            if (terrain == null || !GameHooks.PlayerHasControl() || Mouse.current == null)
+            // The game showing the Knight by a stand-in of its own (his renderer off: a cutscene) uses nothing either;
+            // its attack prompts take the use button (Player.CutsceneAttack).
+            if (terrain == null || !GameHooks.PlayerHasControl() || Mouse.current == null || CutsceneAttack.KnightHidden())
             {
                 highlight.gameObject.SetActive(false);
                 return;
@@ -346,6 +348,7 @@ namespace TerraKnight
             bool usable = false, smart = false;
             var cell = CellGrid.WorldToCell(mouse);
             var bounds = hero.GetComponent<BoxCollider2D>().bounds;
+            mouse = AwayFromWall(hero, def, mouse);
             AimPoint = mouse;
             // A pickaxe aimed at a geo rock knocks geo out of it, the way it would break a pot.
             Collider2D rock = !overUi && def.PickPower > 0 ? GeoRockAt(mouse, bounds, def) : null;
@@ -392,6 +395,25 @@ namespace TerraKnight
 
         /// <summary>Where the held item points (the mouse on the gameplay plane).</summary>
         public Vector2 AimPoint { get; private set; }
+
+        public static int DevWallMirrored;
+
+        /// <summary>
+        /// Sliding down a wall, a weapon aimed into it is aimed out from it instead: the aim mirrored across the player, its
+        /// height kept, so the swing and what it throws or shoots go the open way (a boomerang thrown into the wall the player
+        /// holds on only bounced straight back). Tools and things to place keep the cursor: the wall itself can be dug.
+        /// </summary>
+        static Vector2 AwayFromWall(HeroController hero, ItemDef def, Vector2 aim)
+        {
+            int wall = TerraMovement.WallSide(hero);
+            if (wall == 0 || def == null || def.PickPower > 0 || def.HammerPower > 0 || def.AxePower > 0
+                || def.Places != CellKind.Empty || def.PlacesStation != StationKind.None || def.PlacesWall > 0) return aim;
+            if (def.Damage <= 0 && def.Shoot == ProjKind.None) return aim;
+            float cx = hero.GetComponent<BoxCollider2D>().bounds.center.x;
+            if ((aim.x - cx) * wall <= 0f) return aim;
+            DevWallMirrored++;
+            return new Vector2(2f * cx - aim.x, aim.y);
+        }
 
         /// <summary>A geo rock under the mouse and within the pickaxe's reach.</summary>
         static Collider2D GeoRockAt(Vector2 mouse, Bounds hitbox, ItemDef pick)
@@ -780,6 +802,7 @@ namespace TerraKnight
             var hero = HeroController.SilentInstance;
             float scale = Equipment.UseScale(def);
             useCooldown = (def.ShootsOnSwingStart ? def.UseAnimation : def.UseTime) * scale;
+            mouse = AwayFromWall(hero, def, mouse);
             UseDirection = mouse.x < hero.transform.position.x ? -1f : 1f;
 
             if (def.BossSummonKey != null)
@@ -1271,8 +1294,8 @@ namespace TerraKnight
         {
             if (def.LifeCrystal && Stats.LifeCrystals < TerraStats.MaxLifeCrystals && Stats.LifeCrystals >= LifeCrystals.Allowance())
             {
-                // More crystals than masks and bosses allow yet: kept for later.
-                UI.CenterNotice.Show(Lang.T("要集齐更多面具或击败更多首领，才能再吃生命水晶"));
+                // More crystals than the bosses beaten allow yet: kept for later.
+                UI.CenterNotice.Show(Lang.T("要击败更多首领，才能再吃生命水晶"));
                 DevCrystalRefused++;
                 return;
             }
@@ -1469,6 +1492,7 @@ namespace TerraKnight
             Stats.CozyFire = PlayerBuffs.Has(PlayerBuffs.CozyFire);
             Stats.LifeForce = bonus.LifeForce;
             Stats.ManaRegenBuff = bonus.ManaRegenBuff;
+            Lifeblood.Tick(Stats, PlayerData.instance);
             Stats.UpdateMaximums(PlayerData.instance, bonus.ManaMax);
             // Panic! (the Panic Necklace after a hit) adds 1 to moveSpeed.
             TerraMovement.MoveSpeed = 1f + bonus.MoveSpeed + (PanicTicks > 0f ? 1f : 0f);
@@ -1673,6 +1697,8 @@ namespace TerraKnight
             abilityCheckTimer = 1f;
             var pd = PlayerData.instance;
             if (pd == null) return;
+            // A save from before the masks were life of their own: the crystals they gave back (once).
+            MaskCrystalReturn.Run(this);
             foreach (var (flag, item) in PlayerHooks.AbilityItems)
             {
                 // Isma's tear read as the save has it: GetBool also counts worn flippers (PlayerHooks.EquipmentFlags).
@@ -1686,29 +1712,6 @@ namespace TerraKnight
                 if (hero != null) PopupText.Show(ItemDb.Get(item), 1, hero.GetComponent<BoxCollider2D>().bounds.center);
                 PlaySound("Grab");
                 Plugin.Log.LogInfo($"{flag} -> {ItemDb.Get(item).Name}");
-            }
-            GrantMaskCrystals(pd);
-        }
-
-        /// <summary>
-        /// Each mask the Knight completes beyond the first five (four shards) also gives a Life
-        /// Crystal, once: masks got before this counted too, the first time a save is played.
-        /// </summary>
-        void GrantMaskCrystals(PlayerData pd)
-        {
-            for (int mask = 6; mask <= pd.maxHealthBase; mask++)
-            {
-                string key = "Mask" + mask;
-                if (GrantedAbilities.Contains(key)) continue;
-                GrantedAbilities.Add(key);
-                // Creative has every crystal used already.
-                if (Creative) continue;
-                var hero = HeroController.SilentInstance;
-                int left = Inventory.Pickup(ItemType.LifeCrystal, 1);
-                if (left > 0 && hero != null) WorldItems.Drop(ItemStack.Of(ItemType.LifeCrystal, left), hero.GetComponent<BoxCollider2D>().bounds.center);
-                if (hero != null) PopupText.Show(ItemDb.Get(ItemType.LifeCrystal), 1, hero.GetComponent<BoxCollider2D>().bounds.center);
-                PlaySound("Grab");
-                Plugin.Log.LogInfo($"[生命水晶] 第 {mask} 个面具 -> 生命水晶");
             }
         }
 

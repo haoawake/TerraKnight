@@ -279,6 +279,9 @@ namespace TerraKnight.Items
         // Append only: buff furniture carried, and the Water Candle (Items/CarriedFurniture.cs).
         HeartLantern, StarinaBottle, CatBast, Sunflower, GardenGnome, WaterCandle,
 
+        // Append only: the star a kill leaves for mana (Items/ManaStars.cs).
+        Star,
+
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -931,7 +934,7 @@ namespace TerraKnight.Items
     [System.Flags]
     internal enum DebuffImmunity : uint
     {
-        None = 0, Poisoned = 1, Darkness = 2, Cursed = 4, Bleeding = 8, Confused = 16, Slow = 32, Weak = 64, Silenced = 128, BrokenArmor = 256, Chilled = 512, Frozen = 1024, Stoned = 2048,
+        None = 0, Poisoned = 1, Darkness = 2, Cursed = 4, Bleeding = 8, Confused = 16, Slow = 32, Weak = 64, Silenced = 128, BrokenArmor = 256, Chilled = 512, Frozen = 1024, Stoned = 2048, OnFire = 4096,
     }
 
     /// <summary>When the sky stone works: the Sun Stone by day, the Moon Stone at night, the Celestial Stone always.</summary>
@@ -1771,6 +1774,7 @@ namespace TerraKnight.Items
             foreach (var (t, kit) in ArmorKits()) arr[(int)t].Kit = kit;
             ProgressionBalance.ApplyItems(arr);
             ProgressionBalance.NormalizeRecipeStages(arr, Recipes.BaseRecipes());
+            ProgressionBalance.ApplyWeaponBalance(arr);
             return arr;
         }
 

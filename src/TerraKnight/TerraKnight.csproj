@@ -33,7 +33,7 @@
     <Reference Include="$(ManagedDir)\UnityEngine.dll" Private="false" />
   </ItemGroup>
 
-  <!-- 标题画面的“泰拉圣巢”标题图（scratchpad 的 logo/make_logo.py 从原版标题图改出来的） -->
+  <!-- 标题画面的“空洞泰拉”标题图（scratchpad 的 logo/make_logo.py 从原版标题图改出来的） -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\*.png" LogicalName="TerraKnight.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Resources\lang.json" LogicalName="TerraKnight.lang.json" />
@@ -43,7 +43,7 @@
   <Target Name="InstallPlugin" AfterTargets="Build" Condition="Exists('$(BepInExDir)') and '$(SkipPluginInstall)' != 'true'">
     <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" />
     <!-- 启动器放在游戏根目录：双击进 mod 版，Steam 里启动仍是原版 -->
-    <Copy SourceFiles="..\..\launcher\泰拉圣巢.bat;..\..\launcher\terraknight-launch.ps1" DestinationFolder="$(HollowKnightDir)" />
+    <Copy SourceFiles="..\..\launcher\空洞泰拉.bat;..\..\launcher\terraknight-launch.ps1" DestinationFolder="$(HollowKnightDir)" />
     <Message Importance="high" Text="TerraKnight -> $(PluginInstallDir)" />
   </Target>
 

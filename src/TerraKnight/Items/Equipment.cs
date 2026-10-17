@@ -146,7 +146,7 @@ namespace TerraKnight.Items
         public static float ManaHeat => 1f + 0.2f * Player.PlayerBuffs.TimeLeft(Player.PlayerBuffs.ManaHeat) / 120f;
 
         /// <summary>Terraria 1.4's set bonuses for these sets.</summary>
-        public static Bonuses SetBonus(ArmorSet set) => ProgressionBalance.SetBonus(set, OriginalSetBonus(set));
+        public static Bonuses SetBonus(ArmorSet set) => OriginalSetBonus(set);
 
         static Bonuses OriginalSetBonus(ArmorSet set)
         {
@@ -159,11 +159,11 @@ namespace TerraKnight.Items
                 case ArmorSet.Tin: return new Bonuses { Defense = 2 };
                 case ArmorSet.Lead: case ArmorSet.Silver: case ArmorSet.Tungsten: return new Bonuses { Defense = 3 };
                 case ArmorSet.Platinum: return new Bonuses { Defense = 4 };
-                case ArmorSet.Shadow: return new Bonuses { MoveSpeed = 0.15f };
-                case ArmorSet.Necro: return new Bonuses { AmmoSave = 0.2f };
+                case ArmorSet.Shadow: return default; // Run-speed/acceleration multipliers are applied in TerraMovement.
+                case ArmorSet.Necro: return new Bonuses { RangedCrit = 0.1f };
                 case ArmorSet.Jungle: return new Bonuses { ManaCost = 0.16f };
                 // 1.4.5: +10% (ArmorSetBonuses:283-291).
-                case ArmorSet.Molten: return new Bonuses { MeleeDamage = 0.1f };
+                case ArmorSet.Molten: return new Bonuses { MeleeDamage = 0.1f, FireWalk = true, DebuffImmune = DebuffImmunity.OnFire };
                 case ArmorSet.Bee: return new Bonuses { MinionDamage = 0.1f };
                 case ArmorSet.Spider: return new Bonuses { MinionDamage = 0.12f };
                 case ArmorSet.Wood: return new Bonuses { Defense = 1 };
@@ -232,7 +232,7 @@ namespace TerraKnight.Items
             }
         }
 
-        public static string SetBonusText(ArmorSet set) => ProgressionBalance.SetDescription(set,OriginalSetBonusText(set));
+        public static string SetBonusText(ArmorSet set) => OriginalSetBonusText(set);
 
         static string OriginalSetBonusText(ArmorSet set)
         {
@@ -244,10 +244,10 @@ namespace TerraKnight.Items
                 case ArmorSet.Tin: return "防御力 +2";
                 case ArmorSet.Lead: case ArmorSet.Silver: case ArmorSet.Tungsten: return "防御力 +3";
                 case ArmorSet.Platinum: return "防御力 +4";
-                case ArmorSet.Shadow: return "移动速度提高15%";
-                case ArmorSet.Necro: return "20%几率不消耗弹药";
+                case ArmorSet.Shadow: return "最高跑速提高15%，加速度和减速能力提高75%";
+                case ArmorSet.Necro: return "远程暴击率提高10%";
                 case ArmorSet.Jungle: return "魔力消耗降低16%";
-                case ArmorSet.Molten: return "10%额外近战伤害";
+                case ArmorSet.Molten: return "近战伤害提高10%\n免疫火块和着火";
                 case ArmorSet.Bee: return "召唤伤害提高10%";
                 case ArmorSet.Spider: return "召唤伤害提高12%";
                 case ArmorSet.Wood: return "防御力 +1";

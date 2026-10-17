@@ -6,15 +6,24 @@ namespace TerraKnight.Player
     /// Terraria health and mana. The game's own masks stay full in the background; every hit
     /// that would cost masks is converted to Terraria damage here, and only when Life runs out
     /// is the game allowed to kill the hero, so its death, shade and respawn flow still runs.
-    /// Maximum life grows with life crystals and with the Knight's own masks, maximum mana with
-    /// mana crystals and soul vessels.
+    /// Maximum life: Terraria's hearts (100, the Life Crystals, the Life Fruits), then the Knight's
+    /// own Mask Shards beyond the first five masks, half a heart each, drawn as cyan hearts after
+    /// them (UI.ResourceHud); maximum mana with mana crystals and soul vessels.
     /// </summary>
     internal sealed class TerraStats
     {
         public const int BaseLife = 100, BaseMana = 20;
         public const int MaxLifeCrystals = 15, MaxManaCrystals = 9;
-        /// <summary>Terraria life per mask beyond the Knight's first five.</summary>
-        public const int LifePerMask = 40;
+        /// <summary>Terraria life per Mask Shard beyond the Knight's first five masks: half a heart.</summary>
+        public const int LifePerShard = 10;
+
+        /// <summary>The share of the maximum the Mask Shards give (the cyan hearts at the end).</summary>
+        public int MaskLife;
+
+        /// <summary>Lifeblood's silver hearts (Player.Lifeblood): over the life, taken first by a hit, gone once broken.</summary>
+        public int Shield;
+        /// <summary>Lifeblood's two mana stars, kept until death (past the 400 cap).</summary>
+        public int TempMana;
 
         public int LifeMax = BaseLife;
         public int Life = BaseLife;
@@ -68,12 +77,15 @@ namespace TerraKnight.Player
         /// <summary>Recomputes the maximums from crystals, the Knight's masks and vessels, and equipment.</summary>
         public void UpdateMaximums(PlayerData pd, int manaBonus)
         {
-            int masks = pd != null ? Mathf.Max(0, pd.maxHealthBase - 5) : 0;
+            // The shards of the masks made beyond the first five, and of the one in the making.
+            int shards = pd != null ? Mathf.Max(0, (pd.maxHealthBase - 5) * 4 + Mathf.Clamp(pd.heartPieces, 0, 3)) : 0;
             int vessels = pd != null ? Mathf.Max(0, pd.MPReserveMax / 33) : 0;
-            LifeMax = Mathf.Min(700, BaseLife + LifeCrystals * 20 + LifeFruits * 5 + masks * LifePerMask);
+            MaskLife = shards * LifePerShard;
+            int hearts = BaseLife + LifeCrystals * 20 + LifeFruits * 5;
             // Lifeforce (Pl:10343-10347): statLifeMax / 5 / 20 * 20 more.
-            if (LifeForce) LifeMax += LifeMax / 5 / 20 * 20;
-            ManaMax = Mathf.Min(400, BaseMana + ManaCrystals * 20 + vessels * 20 + manaBonus);
+            if (LifeForce) hearts += hearts / 5 / 20 * 20;
+            LifeMax = Mathf.Min(700, hearts + MaskLife);
+            ManaMax = Mathf.Min(400, BaseMana + ManaCrystals * 20 + vessels * 20 + manaBonus) + TempMana;
             if (Life > LifeMax) Life = LifeMax;
             if (Mana > ManaMax) Mana = ManaMax;
         }
@@ -84,7 +96,7 @@ namespace TerraKnight.Player
             // Terraria: damage minus half the defense, never below 1, then the endurance's share off. The
             // difficulty's share is taken of what is left after defense (perMask is Master's).
             int damage = Items.ArmorEffects.ModifyHurt(Endure(Mathf.Max(1, Mathf.RoundToInt((masks * perMask - Defense / 2) * share))));
-            Life = Mathf.Max(0, Life - damage);
+            Life = Mathf.Max(0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
             return damage;
@@ -94,10 +106,18 @@ namespace TerraKnight.Player
         public int TakeDirect(int raw)
         {
             int damage = Items.ArmorEffects.ModifyHurt(Endure(Mathf.Max(1, raw - Defense / 2)));
-            Life = Mathf.Max(0, Life - damage);
+            Life = Mathf.Max(0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
             return damage;
+        }
+
+        /// <summary>What of a hit gets past lifeblood's silver hearts (they take it first).</summary>
+        int Shielded(int damage)
+        {
+            int held = Mathf.Min(Shield, damage);
+            Shield -= held;
+            return damage - held;
         }
 
         /// <summary>Player.Hurt: (int)((1 - endurance) * damage), at least 1.</summary>

@@ -6,8 +6,8 @@ namespace TerraKnight.World
     /// <summary>
     /// Bosses are fought where the game made them: nothing is dug, placed, blown up or frozen where a
     /// boss fights. A boss room is the room of every boss of the monster book's table (its "_boss" scene
-    /// belongs to the room it is loaded into), the Greenpath Hornet's, the Grimm Troupe's tent and the
-    /// Colosseum; what stays as it is there is the part the boss reaches (BossArenaZone: what the camera
+    /// belongs to the room it is loaded into), the Greenpath Hornet's, the Grimm Troupe's tent, the
+    /// Colosseum and every fight of Godhome (its statues' and pantheons' rooms); what stays as it is there is the part the boss reaches (BossArenaZone: what the camera
     /// shows while the fight's lock holds), the rest of the room is changed like any other. A boss up in
     /// any room (a warrior's ghost dreamt up, a Godhome fight) keeps what it reaches the same way, while
     /// it lives. A try there says so over the cursor.
@@ -50,7 +50,29 @@ namespace TerraKnight.World
         }
 
         /// <summary>A boss room for good (not one only while a boss is up in it): its ground is never changed.</summary>
-        public static bool IsRoom(string scene) => !string.IsNullOrEmpty(scene) && Rooms().Contains(Room(scene));
+        public static bool IsRoom(string scene) => !string.IsNullOrEmpty(scene) && (Rooms().Contains(Room(scene)) || GodhomeFight(scene));
+
+        static readonly Dictionary<string, bool> godhome = new Dictionary<string, bool>();
+        /// <summary>Dev: Godhome's fights not counted (as before they were), to compare.</summary>
+        internal static bool DevNoGodhome;
+
+        /// <summary>
+        /// A room of Godhome's with a fight in it (its boss scene controller): the Hall of Gods' statues and the
+        /// pantheons bring their bosses there, the book's own scenes being the world's. Their ground is the game's,
+        /// as the bosses' runs, leaps and dives were made for (on the grid's they ended up in a wall or up in the air).
+        /// Known once loaded.
+        /// </summary>
+        static bool GodhomeFight(string scene)
+        {
+            if (DevNoGodhome || !scene.StartsWith("GG_")) return false;
+            if (godhome.TryGetValue(scene, out bool yes)) return yes;
+            var s = UnityEngine.SceneManagement.SceneManager.GetSceneByName(scene);
+            if (!s.IsValid() || !s.isLoaded) return false;
+            foreach (var root in s.GetRootGameObjects())
+                if (root.GetComponentInChildren<BossSceneController>(true) != null) { yes = true; break; }
+            godhome[scene] = yes;
+            return yes;
+        }
 
         /// <summary>Whether this cell may not be changed: in a boss room's fight, or within reach of a boss up.</summary>
         public static bool Locked(int gx, int gy)

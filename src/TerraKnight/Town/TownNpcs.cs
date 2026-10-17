@@ -168,8 +168,8 @@ namespace TerraKnight.Town
         public static readonly ItemStack[] ShopItems = new ItemStack[40];
         public static readonly bool[] BuyBack = new bool[40];
 
-        /// <summary>Main.moonPhase: a new phase every Terraria day (24 minutes of play), eight in all.</summary>
-        public static int MoonPhase => PlayerData.instance == null ? 0 : (int)(PlayerData.instance.playTime / (24f * 60f)) % 8;
+        /// <summary>Main.moonPhase: a new phase every Terraria day (24 minutes of play), eight in all; in a LAN game the host's.</summary>
+        public static int MoonPhase => PlayerData.instance == null ? 0 : ((World.TerraTime.Day % 8) + 8) % 8;
 
         public static int Count => npcs.Count;
         public static string DevDescribe()
@@ -304,7 +304,7 @@ namespace TerraKnight.Town
         static bool TravelerVisiting()
         {
             if (PlayerData.instance == null || !World.TerraTime.IsDay) return false;
-            int day = (int)((PlayerData.instance.playTime + World.TerraTime.NetOffset) / World.TerraTime.FullDaySeconds);
+            int day = World.TerraTime.Day;
             return new System.Random(day * 7919 + 17).Next(3) == 0;
         }
 
@@ -312,7 +312,7 @@ namespace TerraKnight.Town
 
         static void StockTraveler(NpcDef def, int stage)
         {
-            int day = PlayerData.instance == null ? 0 : (int)((PlayerData.instance.playTime + World.TerraTime.NetOffset) / World.TerraTime.FullDaySeconds);
+            int day = PlayerData.instance == null ? 0 : World.TerraTime.Day;
             if (day == travelDay && def.Items != null && def.Items.Length > 0) return;
             travelDay = day;
             var rng = new System.Random(day * 104729 + 3);

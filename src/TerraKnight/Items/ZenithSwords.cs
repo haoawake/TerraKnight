@@ -329,6 +329,12 @@ namespace TerraKnight.Items
             }
         }
 
+        internal void DevClear()
+        {
+            foreach(var sword in swords) Stop(sword);
+            tickAccumulator=0;
+        }
+
         static void Stop(Sword s)
         {
             s.Active = false;

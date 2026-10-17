@@ -127,10 +127,8 @@ namespace TerraKnight.Items
                     // Already there (two seals at once): nothing to do.
                     if (BossArena.Arrived(s.Key) || pending) yield break;
                     if (BossArena.Visiting) BossArena.AbortEntry(s.Key);
-                    arriving = BossArena.DevWorldArena(s.Key, out _, out _) ? s : null;
-                    if (!BossArena.Fight(s.Key, true, atDoor: true)) { arriving = null; yield break; }
-                    PylonObject.TeleportEffect(hero);
-                    TerraMod.Instance?.PlaySound("Custom/dd2_etherian_portal_open", 0.8f);
+                    if (!BossArena.Fight(s.Key, true)) yield break;
+                    TerraMod.Instance?.StartCoroutine(StartOnArrival(s));
                     DevFollowed++;
                     DevLast = s.Key + " followed";
                     Plugin.Log.LogInfo($"[首领召唤物] 跟随 {who} 的召唤去 {s.Key}");
@@ -144,6 +142,13 @@ namespace TerraKnight.Items
         /// The arena reached (HeroController.SendHeroInPosition): its portal opens once the game has brought the player
         /// in by the arena's door (Player.OpeningPortal.SummonAfterEntry). False when no seal is arriving here.
         /// </summary>
+        static IEnumerator StartOnArrival(Seal s)
+        {
+            float until = Time.realtimeSinceStartup + 30f;
+            while (Time.realtimeSinceStartup < until && BossArena.Visiting && !BossArena.Arrived(s.Key)) yield return new WaitForSecondsRealtime(0.1f);
+            if (BossArena.Arrived(s.Key)) yield return BossSummonStart.Begin(s.Key);
+        }
+
         internal static bool Arrive(HeroController hero)
         {
             var s = arriving;
@@ -178,12 +183,13 @@ namespace TerraKnight.Items
         static string Tooltip(Seal s, bool zh)
         {
             string boss = zh ? EnemyDrops.ZhName(s.Key) : EnemyDrops.EnglishName(s.Key);
-            string area = Areas.AreaName(EnemyDrops.SceneOf(s.Key));
+            // Where its arena is: a record fought twice (Hornet) has one scene in the book, its last.
+            string area = Areas.AreaName(BossArena.WorldSceneOf(s.Key) ?? EnemyDrops.SceneOf(s.Key));
             return zh
-                ? $"首领召唤物：{boss}（{area}）\n首次击败该首领后可在任意地点使用\n打开传送门，把你送到它竞技场的正门外，走进去即开战，跳过剧情\n联机时所有玩家一起传送过去\n成功进入战斗消耗1个；条件不符不消耗\n梦境或神居战后返回出发处；现世战后留在竞技场；走开则召唤物保留"
+                ? $"首领召唤物：{boss}（{area}）\n首次击败该首领后可在任意地点使用\n直接传送进它的竞技场，立刻开战，跳过剧情\n联机时所有玩家一起传送过去\n到达竞技场时消耗1个；条件不符不消耗\n梦境或神居战后返回出发处；现世战后留在竞技场"
                     + (s.Dream ? "\n需要梦之钉" : "")
                     + $"\n材料来源：{s.Locality}（{EnemyDrops.ZhName(s.MaterialSource)}、{EnemyDrops.ZhName(s.SupportSource)}）"
-                : $"Boss summon: {boss} ({area})\nUsable anywhere once this boss is defeated\nA portal takes you to its arena's front door; walk in to fight, the story skipped\nIn a LAN game every player goes too\nConsumes one on battle entry; invalid use costs nothing\nDream/Godhome fights return you; world fights end in the arena; walk away and the seal is kept"
+                : $"Boss summon: {boss} ({area})\nUsable anywhere once this boss is defeated\nTakes you straight into its arena, the fight on at once, the story skipped\nIn a LAN game every player goes too\nConsumes one on reaching the arena; invalid use costs nothing\nDream/Godhome fights return you; world fights end in the arena"
                     + (s.Dream ? "\nRequires the Dream Nail" : "")
                     + $"\nIngredients drop from {EnemyDrops.EnglishName(s.MaterialSource)} / {EnemyDrops.EnglishName(s.SupportSource)}";
         }
@@ -231,11 +237,9 @@ namespace TerraKnight.Items
             var hero = HeroController.SilentInstance;
             try
             {
-                // The portal: the teleport's light and the portal's sound where the player stands; out of it in the arena.
-                arriving = BossArena.DevWorldArena(s.Key, out _, out _) ? s : null;
-                if (!BossArena.Fight(s.Key, false, atDoor: true)) { pending = false; arriving = null; Notice(Text("战斗入口暂不可用", "Battle entrance unavailable")); return false; }
+                // Straight into the arena by its own way in; the fight begins there at once (BossSummonStart).
+                if (!BossArena.Fight(s.Key, false)) { pending = false; Notice(Text("战斗入口暂不可用", "Battle entrance unavailable")); return false; }
                 if (hero != null) PylonObject.TeleportEffect(hero);
-                TerraMod.Instance?.PlaySound("Custom/dd2_etherian_portal_open", 0.8f);
             }
             catch (Exception e)
             {
@@ -250,8 +254,7 @@ namespace TerraKnight.Items
             DevLast = s.Key + " requested";
             // A LAN game: everyone goes with the player.
             Net.NetSession.SendBossSummon(s.Key);
-            // The stack is not spent until an actual living boss is present. No inventory/UI mutation
-            // is possible during transition; checking the captured slot also prevents charging another item.
+            // One spent once the arena is reached (the slot captured: no other stack charged); kept if it never is.
             TerraMod.Instance.StartCoroutine(Complete(s, inv, slot, mouse));
             return true;
         }
@@ -261,23 +264,13 @@ namespace TerraKnight.Items
             int run = generation;
             try
             {
-            // From the front door the player walks in when ready: up to five minutes.
-            float until = Time.realtimeSinceStartup + 300f;
+            // The scene change: up to thirty seconds to be in the arena.
+            float until = Time.realtimeSinceStartup + 30f;
             bool found = false;
-            string scene = BossArena.SceneOf(s.Key), record = s.Key.Split('@')[0];
             while (Time.realtimeSinceStartup < until)
             {
                 if (run != generation) yield break;
-                if (BossArena.Arrived(s.Key))
-                {
-                    foreach (var hm in UnityEngine.Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
-                    {
-                        string room = hm.gameObject.scene.name;
-                        if (hm.isDead || hm.hp <= 0 || (room != scene && !room.StartsWith(scene + "_boss"))) continue;
-                        if (EnemyHover.RecordOf(hm) == record) { found = true; break; }
-                    }
-                }
-                if (found) break;
+                if (BossArena.Arrived(s.Key)) { found = true; break; }
                 if (!BossArena.Visiting) break;
                 yield return new WaitForSecondsRealtime(0.1f);
             }
@@ -292,14 +285,15 @@ namespace TerraKnight.Items
                     else Plugin.Log.LogWarning("[首领召唤物] 入场时原物品栏已变化，未扣除其他物品：" + s.Key);
                 }
                 DevLast = s.Key + " entered";
-                Plugin.Log.LogInfo("[首领召唤物] 已进入完整战斗：" + s.Key + ", creative=" + inv.Infinite);
+                Plugin.Log.LogInfo("[首领召唤物] 到达竞技场：" + s.Key + ", creative=" + inv.Infinite);
+                TerraMod.Instance?.StartCoroutine(BossSummonStart.Begin(s.Key));
             }
             else
             {
                 DevRefunded++;
                 DevLast = s.Key + " failed; retained";
-                Plugin.Log.LogWarning("[首领召唤物] 未确认活体首领，物品保留：" + s.Key);
-                Notice(Text("未能确认首领入场，召唤物已保留", "Boss entry unconfirmed; seal retained"));
+                Plugin.Log.LogWarning("[首领召唤物] 没有到达竞技场，物品保留：" + s.Key);
+                Notice(Text("没能进入竞技场，召唤物已保留", "The arena wasn't reached; seal retained"));
             }
             }
             finally { if (run == generation) pending = false; }

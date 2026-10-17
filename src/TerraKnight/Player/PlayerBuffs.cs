@@ -313,6 +313,7 @@ namespace TerraKnight.Player
                 case 20: b = DebuffImmunity.Poisoned; break;
                 case 22: b = DebuffImmunity.Darkness; break;
                 case 23: b = DebuffImmunity.Cursed; break;
+                case 24: b = DebuffImmunity.OnFire; break;
                 case 30: b = DebuffImmunity.Bleeding; break;
                 case 31: b = DebuffImmunity.Confused; break;
                 case 32: b = DebuffImmunity.Slow; break;

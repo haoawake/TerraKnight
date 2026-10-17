@@ -149,13 +149,17 @@ namespace TerraKnight.UI
         static string chartedKey = "";
         public static int DevCharted;
 
-        /// <summary>The areas whose map the save has bought.</summary>
+        /// <summary>
+        /// The areas whose map the save has bought. A new game already has mapDirtmouth (PlayerData.SetupNewPlayerData):
+        /// the game shows King's Pass and Dirtmouth only once there is a map at all (hasMap, the first one bought).
+        /// </summary>
         static HashSet<string> BoughtAreas()
         {
             var set = new HashSet<string>();
             var pd = PlayerData.instance;
             if (pd == null) return set;
-            foreach (var kv in AreaMaps) if (pd.GetBool(kv.Value)) set.Add(kv.Key);
+            foreach (var kv in AreaMaps)
+                if (pd.GetBool(kv.Value) && (kv.Value != "mapDirtmouth" || pd.GetBool("hasMap"))) set.Add(kv.Key);
             return set;
         }
 

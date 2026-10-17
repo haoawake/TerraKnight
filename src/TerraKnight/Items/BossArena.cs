@@ -123,6 +123,20 @@ namespace TerraKnight.Items
             return a;
         }
 
+        /// <summary>A boss of this record beaten in this scene's arena: its beaten records written as a win writes them (a LAN partner's fight).</summary>
+        internal static void WriteBeaten(string record, string scene)
+        {
+            var pd = PlayerData.instance;
+            if (pd == null || record == null || scene == null) return;
+            string room = scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
+            foreach (var kv in arenas)
+            {
+                if (kv.Key.Split('@')[0] != record || kv.Value.Scene != room) continue;
+                foreach (var (name, v) in kv.Value.Beaten) if (pd.GetBool(name) == v) pd.SetBool(name, !v);
+                foreach (var (name, v) in kv.Value.BeatenInts) if (pd.GetInt(name) <= v) pd.SetInt(name, v + 1);
+            }
+        }
+
         /// <summary>Dev: every world boss beaten, as the game records it (each arena's beaten flags the other way from a visit's).</summary>
         internal static void DevAllBeaten()
         {
@@ -169,6 +183,11 @@ namespace TerraKnight.Items
             public int KillsBefore;
             public float WonAt = -1f;
             public bool GatesOpened;
+            /// <summary>The arena scenes' solid colliders (not their ground, not a gate) off when first seen in the visit: true
+            /// when their own object was switched off then (not only the collider, or a parent).</summary>
+            public readonly Dictionary<Collider2D, bool> OffAtStart = new Dictionary<Collider2D, bool>();
+            public readonly HashSet<string> Looked = new HashSet<string>();
+            public float NextLook;
         }
 
         static Visit visit;
@@ -177,6 +196,12 @@ namespace TerraKnight.Items
         public static bool Visiting => visit != null;
         /// <summary>Where a dream's or Godhome's fight sends the player back to: the scene and the spot they left from.</summary>
         static string returnScene;
+        /// <summary>
+        /// The gate back into <see cref="returnScene"/> when it has no dream-return door of its own (a dream left from
+        /// anywhere): its gate nearest the spot left from. Null: the room's own door_dreamReturn.
+        /// </summary>
+        static string returnGate;
+        public static int DevReturnGates;
         static Vector2 returnSpot;
 
         public static string DevLast = "";
@@ -186,13 +211,15 @@ namespace TerraKnight.Items
         /// <summary>Dev: every arena's key.</summary>
         internal static IEnumerable<string> DevKeys() => arenas.Keys;
         internal static string SceneOf(string key) => key != null && arenas.TryGetValue(key, out var a) ? a.Scene : null;
+        /// <summary>A world arena's scene by the book's key ("Hornet" Greenpath's, "Hornet@4" Kingdom's Edge's); null for a dream's or Godhome's.</summary>
+        internal static string WorldSceneOf(string key) => key != null && arenas.TryGetValue(key, out var a) && a.Kind == Kind.World ? a.Scene : null;
         internal static bool Arrived(string key) => visit != null && visit.Key == key && visit.Arrived;
         internal static void AbortEntry(string key)
         {
             if (visit == null || visit.Key != key || visit.Arrived) return;
             if (visit.Arena.Kind == Kind.Godhome) BossSceneController.SetupEvent = null;
             Restore(keepWins: true);
-            returnScene = null;
+            returnScene = null; returnGate = null;
         }
 
         /// <summary>Takes the player to the boss's arena for its fight; false when this boss has none (a copy is spawned then).</summary>
@@ -246,6 +273,7 @@ namespace TerraKnight.Items
                 returnScene = region?.SceneName ?? gm.sceneName;
                 returnSpot = (Vector2)hero.transform.position - (region != null ? (Vector2)region.CellOffset * World.CellGrid.CellSize : Vector2.zero);
                 pd.dreamReturnScene = returnScene;
+                returnGate = ReturnGate(returnScene, hero.transform.position);
                 pd.bossReturnEntryGate = "";
             }
             if (a.Kind == Kind.Godhome)
@@ -270,6 +298,48 @@ namespace TerraKnight.Items
             return true;
         }
 
+        /// <summary>
+        /// The waking's way back into a room: its own door_dreamReturn (null), else its gate nearest the spot (a room the
+        /// game never wakes the player into: Crossroads_01, Greenpath... a wake to a door the room hasn't left the player
+        /// nowhere, a white screen with no control).
+        /// </summary>
+        static string ReturnGate(string scene, Vector2 near)
+        {
+            string best = null;
+            float bestD = float.MaxValue;
+            foreach (var tp in Object.FindObjectsByType<TransitionPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (tp == null || tp.gameObject.scene.name != scene) continue;
+                if (tp.name == "door_dreamReturn") return null;
+                if (tp.name.StartsWith("door_dream") || tp.name.StartsWith("dream")) continue;
+                float d = Vector2.Distance(tp.transform.position, near);
+                if (d < bestD) { bestD = d; best = tp.name; }
+            }
+            return best;
+        }
+
+        /// <summary>The waking sent into the room left from by its own gate when it has no dream-return door.</summary>
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(GameManager), nameof(GameManager.BeginSceneTransition))]
+        static void WakeByGate(GameManager.SceneLoadInfo info)
+        {
+            if (info == null || returnGate == null || returnScene == null) return;
+            if (info.SceneName != returnScene || info.EntryGateName != "door_dreamReturn") return;
+            info.EntryGateName = returnGate;
+            DevReturnGates++;
+            // In by an ordinary gate, an ordinary entry: not the Knight lying where the dream's door would be, waiting for
+            // jump (his "Dream Return" left in "Ready" while he walks, the next waking stuck in "Get Up").
+            var hero = HeroController.SilentInstance;
+            if (hero != null)
+                foreach (var f in hero.GetComponents<PlayMakerFSM>())
+                    if (f.FsmName == "Dream Return" || f.FsmName == "Dream Nail")
+                    {
+                        var returning = f.FsmVariables.FindFsmBool("Dream Returning");
+                        if (returning != null) returning.Value = false;
+                    }
+            Plugin.Log.LogInfo($"[图鉴] 梦醒回到 {returnScene}：那里没有梦醒的门，从 {returnGate} 进去，再回到出发的地方");
+        }
+
         /// <summary>A record of the boss met (its intro seen), not of it beaten (Nosk's "encountered" is his defeat).</summary>
         static bool Encountered(string flag) => flag.IndexOf("ncountered", System.StringComparison.Ordinal) >= 0 && flag != "encounteredMimicSpider";
 
@@ -288,7 +358,9 @@ namespace TerraKnight.Items
 
         /// <summary>The scenes the fight goes on in: the arena, the scene it adds for the boss, the dream.</summary>
         static bool InFight(string scene) =>
-            visit != null && scene != null && (scene == visit.Arena.Scene || scene.StartsWith(visit.Arena.Scene + "_boss"));
+            visit != null && scene != null && (scene == visit.Arena.Scene || scene.StartsWith(visit.Arena.Scene + "_boss")
+                // GameManager.sceneName is the base name: the Radiance's Dream_Final_Boss goes by Dream_Final.
+                || scene + "_Boss" == visit.Arena.Scene || scene + "_boss" == visit.Arena.Scene);
 
         /// <summary>A scene entered: the arena (the fight is on), or away from it (all put back), or back from a dream (to the spot left).</summary>
         public static void OnSceneReady(GameManager gm)
@@ -313,7 +385,7 @@ namespace TerraKnight.Items
                 {
                     Restore(keepWins: true);
                     // Left some other way (a death, a door): no spot to go back to later.
-                    if (gm.sceneName != returnScene) returnScene = null;
+                    if (gm.sceneName != returnScene) returnScene = null; returnGate = null;
                 }
             }
             if (returnScene != null && gm.sceneName == returnScene && visit == null)
@@ -326,7 +398,7 @@ namespace TerraKnight.Items
                     if (rb != null) { rb.position = returnSpot; rb.linearVelocity = Vector2.zero; }
                     Plugin.Log.LogInfo($"[图鉴] 挑战结束，回到 {returnScene} {returnSpot:F1}");
                 }
-                returnScene = null;
+                returnScene = null; returnGate = null;
             }
         }
 
@@ -351,9 +423,33 @@ namespace TerraKnight.Items
             Plugin.Log.LogInfo($"[图鉴] 挑战：{gm.sceneName} 的入口不自己淡入（镜头停在 {state}），补一次淡入");
         }
 
+        public static int DevReadyReset;
+        static float readyFree;
+
+        /// <summary>
+        /// The Knight's "Dream Return" waiting for him to get up ("Ready") while he already walks about with control: a
+        /// waking that ended some other way. Put back to its idle (a second of it), so the next waking isn't caught in its
+        /// "Get Up" waiting on a lying Knight's clip.
+        /// </summary>
+        static void UnstickWaking()
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null || !GameHooks.PlayerHasControl()) { readyFree = 0f; return; }
+            PlayMakerFSM ret = null;
+            foreach (var f in hero.GetComponents<PlayMakerFSM>()) if (f.FsmName == "Dream Return") ret = f;
+            if (ret == null || ret.ActiveStateName != "Ready") { readyFree = 0f; return; }
+            if (readyFree <= 0f) { readyFree = Time.unscaledTime; return; }
+            if (Time.unscaledTime - readyFree < 1f) return;
+            ret.SetState("Idle");
+            readyFree = 0f;
+            DevReadyReset++;
+            Plugin.Log.LogInfo("[图鉴] 骑士能动了，梦醒还停在等起身：复位");
+        }
+
         /// <summary>Every frame: walked out of the arena into the next room (the seamless world enters no scene for it), all put back.</summary>
         public static void Tick()
         {
+            UnstickWaking();
             if (visit == null) return;
             if (!visit.Arrived && visit.AtDoor)
             {
@@ -376,10 +472,92 @@ namespace TerraKnight.Items
             if (gm == null || gm.IsInSceneTransition || live == null) return;
             if (InFight(live))
             {
+                if (visit.WonAt < 0f && Time.time >= visit.NextLook) LookForWalls();
                 OpenGatesAfterWin(gm);
+                KeepGatesOpen();
                 return;
             }
             Restore(keepWins: true);
+        }
+
+        /// <summary>
+        /// A collider that can wall the player in: solid, on the terrain layer, not the room's ground (its tilemap), not
+        /// a battle gate (opened by its event), not an enemy's body, not the mod's own.
+        /// </summary>
+        static bool WallLike(Collider2D c)
+        {
+            if (c == null || c.isTrigger || c.gameObject.layer != World.ChunkColliders.TerrainLayer) return false;
+            if (c.GetComponentInParent<World.TerraOwned>() != null || c.GetComponentInParent<HealthManager>() != null) return false;
+            for (var t = c.transform; t != null; t = t.parent)
+                if (t.name == "TileMap Render Data" || t.GetComponent<tk2dTileMap>() != null) return false;
+            foreach (var f in c.GetComponentsInParent<PlayMakerFSM>(true)) if (f.FsmName == "BG Control") return false;
+            return true;
+        }
+
+        /// <summary>The arena's scenes looked at once each as they come in (a boss scene loads beside its room): their walls switched off then.</summary>
+        static void LookForWalls()
+        {
+            visit.NextLook = Time.time + 0.5f;
+            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            {
+                var sc = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (!sc.isLoaded || !InFight(sc.name) || !visit.Looked.Add(sc.name)) continue;
+                foreach (var root in sc.GetRootGameObjects())
+                    foreach (var c in root.GetComponentsInChildren<Collider2D>(true))
+                        if (!(c.enabled && c.gameObject.activeInHierarchy) && WallLike(c)) visit.OffAtStart[c] = !c.gameObject.activeSelf;
+            }
+        }
+
+        public static int DevGatesReopened;
+
+        /// <summary>
+        /// For half a minute after a rematch's gates were opened, a gate shut again (Nosk's: his arena closes one behind
+        /// the player once more) opened again once it can take it (its state listens for BG OPEN).
+        /// </summary>
+        static void KeepGatesOpen()
+        {
+            if (!visit.GatesOpened || Time.time - visit.WonAt > 40f || Time.time < visit.NextLook) return;
+            visit.NextLook = Time.time + 1f;
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+            {
+                if (f == null || f.FsmName != "BG Control" || !InFight(f.gameObject.scene.name)) continue;
+                var c = f.GetComponent<Collider2D>();
+                if (c == null || !c.enabled) continue;
+                var st = f.Fsm.ActiveState;
+                bool listens = false;
+                if (st != null) foreach (var t in st.Transitions) if (t.EventName == "BG OPEN") listens = true;
+                foreach (var t in f.FsmGlobalTransitions) if (t.EventName == "BG OPEN") listens = true;
+                if (!listens) continue;
+                f.SendEvent("BG OPEN");
+                DevGatesReopened++;
+                Plugin.Log.LogInfo($"[图鉴] 挑战 {visit.Key}：{f.gameObject.name} 又关上了（{st?.Name}），再打开");
+            }
+        }
+
+        public static int DevWallsOff;
+        public static string DevWallsOffNames = "";
+
+        /// <summary>
+        /// A rematch won: the walls its fight put up taken down, as its own ending would (Hornet's in Greenpath: her
+        /// refight's "Hornet Saver" stands by both gates and nothing of the refight takes it away; Hornet's in Kingdom's
+        /// Edge, its battle scene's). Off when the visit came in, on now: put back the way they were off (their object
+        /// switched off, picture and all, or just the collider), as the room was before the rematch.
+        /// </summary>
+        static void TakeDownFightWalls()
+        {
+            var names = new List<string>();
+            foreach (var kv in visit.OffAtStart)
+            {
+                var c = kv.Key;
+                if (c == null || !c.enabled || !c.gameObject.activeInHierarchy) continue;
+                if (kv.Value) c.gameObject.SetActive(false);
+                else c.enabled = false;
+                names.Add(c.transform.parent != null ? c.transform.parent.name + "/" + c.name : c.name);
+            }
+            DevWallsOff += names.Count;
+            if (names.Count == 0) return;
+            DevWallsOffNames = string.Join("、", names);
+            Plugin.Log.LogInfo($"[图鉴] 挑战 {visit.Key}：战斗竖起的 {names.Count} 道墙撤掉：{DevWallsOffNames}");
         }
 
         /// <summary>
@@ -405,6 +583,7 @@ namespace TerraKnight.Items
             }
             DevGatesOpened += n;
             Plugin.Log.LogInfo($"[图鉴] 挑战 {visit.Key}：赢了，打开 {n} 道战斗门");
+            TakeDownFightWalls();
         }
 
         public static int DevGatesOpened;

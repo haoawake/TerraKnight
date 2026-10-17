@@ -37,7 +37,7 @@ namespace TerraKnight.Town
             HideSleeper();
         }
 
-        static int Today => PlayerData.instance == null ? 0 : (int)((PlayerData.instance.playTime + World.TerraTime.NetOffset) / World.TerraTime.FullDaySeconds);
+        static int Today => PlayerData.instance == null ? 0 : World.TerraTime.Day;
 
         /// <summary>Main.AnglerQuestSwap at dawn: a new fish, today's quest open again.</summary>
         static void Refresh()

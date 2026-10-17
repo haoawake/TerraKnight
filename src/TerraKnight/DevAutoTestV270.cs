@@ -61,7 +61,8 @@ namespace TerraKnight
 
             // 3. The version in the settings.
             UI.IngameOptions.Show();
-            yield return new WaitForSeconds(0.5f);
+            // The settings stop the game (Terraria's ingameOptionsWindow pause): real time.
+            yield return new WaitForSecondsRealtime(0.5f);
             Shot("Town", "v270_settings");
             yield return null;
             UI.IngameOptions.Hide();

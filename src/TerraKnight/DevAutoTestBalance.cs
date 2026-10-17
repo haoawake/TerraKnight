@@ -11,7 +11,7 @@ namespace TerraKnight
     /// Dev (suite "balance"): the numbers a fight comes to, stage by stage and difficulty by
     /// difficulty, from the game's own data and formulas. Enemies: the roster's own health times
     /// Areas.HealthScale, the stage's defense, a mask's damage (elites x1.5, bosses x2). The
-    /// player: the weapons on offer by then (ItemDef.Stage) at their single-hit rate against that
+    /// player: the weapons on offer by then (ItemDef.Stage) at their volley/continuous hit rate against that
     /// defense (StrikeNPC: damage less half the defense; crit chance on top), the best armor by
     /// then, life from the masks and crystals a player has around then. Then live: King's Pass's
     /// crawlids and vengeflies fought with the starting weapons at each difficulty. Lines start
@@ -22,16 +22,14 @@ namespace TerraKnight
         /// <summary>A typical player's masks beyond the first five and life crystals by stage (assumed; the report says so).</summary>
         static readonly (int Masks, int Crystals, int Fruits)[] lifeByStage = { (0, 1, 0), (1, 3, 0), (2, 6, 0), (3, 10, 0), (4, 15, 4), (4, 15, 20) };
 
-        static float RateOf(ItemDef d) => 1f / Mathf.Max(1f / 60f, d.Class == DamageClass.Melee && d.Shoot == ProjKind.None ? d.UseAnimation : d.UseTime);
+        static float RateOf(ItemDef d) => ProgressionBalance.OutputOf(d).Hits;
 
-        /// <summary>A weapon's damage per second against a defense, one target, one hit a use (StrikeNPC; crit as its chance).</summary>
+        /// <summary>Single-target output estimate including volleys, delayed bursts and sustained hit cadence.</summary>
         static float DpsOf(ItemDef d, int defense, int stage)
         {
             // A bow or a gun hits for its own damage and its ammo's: the best ammo of the kind by then.
             int ammo = d.UseAmmo == AmmoKind.None ? 0 : ItemDb.All.Where(a => a.Ammo == d.UseAmmo && a.Stage <= stage).Select(a => a.Damage).DefaultIfEmpty(0).Max();
-            float hit = Mathf.Max(1f, Mathf.Round(d.Damage + ammo - defense * 0.5f));
-            float crit = Mathf.Clamp01((d.Crit + 4) / 100f);
-            return hit * (1f + crit) * RateOf(d);
+            return ProgressionBalance.WeaponDps(d,defense,ammo);
         }
 
         IEnumerator BalanceTest(string scene, HeroController hero)
@@ -39,8 +37,8 @@ namespace TerraKnight
             mod.DevNoFallDamage = true;
             var saved = GameDifficulty.Current;
             int savedStage = Shop.DevStage;
-            // Held-down (channel) weapons hit at their own rhythm, not once a use: left out of the estimate.
-            var weapons = ItemDb.All.Where(d => d.IsWeapon && !d.GameTool && !d.IsSummon && !d.IsWhip && !d.Channel && d.Class != DamageClass.None && d.PickPower <= 0 && d.Damage > 0).ToList();
+            // The shared output model includes held weapons and autonomous summon attacks.
+            var weapons = ItemDb.All.Where(ProgressionBalance.BalancedWeapon).ToList();
             var records = EnemyDrops.DevRecords.Where(r =>
             {
                 var k = EnemyDrops.KindOf(r);
@@ -68,9 +66,19 @@ namespace TerraKnight
                 // The best armor by then.
                 int armor = 0;
                 foreach (var slot in new[] { ArmorSlot.Head, ArmorSlot.Body, ArmorSlot.Legs })
-                    armor += ItemDb.All.Where(d => d.Armor == slot && d.Stage <= s).Select(d => d.Defense).DefaultIfEmpty(0).Max();
+                    armor += ItemDb.All.Where(d => d.Armor == slot && d.Stage <= s).Select(d => d.Defense + d.Bonus.Defense).DefaultIfEmpty(0).Max();
+                // Original metal/wood set defence is additional to the pieces. Compare
+                // complete sets with the strongest mixed outfit instead of dropping it.
+                var obtainableArmor=ItemDb.All.Where(d=>d.IsArmor && d.Stage<=s).ToArray();
+                foreach(var head in obtainableArmor.Where(d=>d.Armor==ArmorSlot.Head && d.Set!=ArmorSet.None))
+                foreach(var body in obtainableArmor.Where(d=>d.Armor==ArmorSlot.Body && d.Set==head.Set))
+                foreach(var legs in obtainableArmor.Where(d=>d.Armor==ArmorSlot.Legs && d.Set==head.Set))
+                {
+                    var set=head.Set==ArmorSet.Beetle ? body.SetBonus : head.SetBonus!=ArmorSet.None ? head.SetBonus : head.Set;
+                    armor=Mathf.Max(armor,head.Defense+head.Bonus.Defense+body.Defense+body.Bonus.Defense+legs.Defense+legs.Bonus.Defense+Equipment.SetBonus(set).Defense);
+                }
                 var (masks, crystals, fruits) = lifeByStage[s];
-                int life = Mathf.Min(700, Player.TerraStats.BaseLife + crystals * 20 + fruits * 5 + masks * Player.TerraStats.LifePerMask);
+                int life = Mathf.Min(700, Player.TerraStats.BaseLife + crystals * 20 + fruits * 5 + masks * 4 * Player.TerraStats.LifePerShard);
                 Plugin.Log.LogInfo($"[平衡] 阶段 {s}：敌人防御 {def}；可用武器 {have.Count} 把，最强 {string.Join("、", best)}，典型 {typicalDps:F0}/秒；最好的护甲合计防御 {armor}；假设生命 {life}（额外面具 {masks}、生命水晶 {crystals}、生命果 {fruits}）");
                 foreach (var lv in levels)
                 {

@@ -6,6 +6,8 @@ namespace TerraKnight.UI
     internal static class MapExploration
     {
         public const int Radius = 8;
+        /// <summary>The reach above and below the player: five cells more than to the sides (an upright ellipse).</summary>
+        public const int RadiusY = Radius + 5;
         // 70% transparent = 30% opaque, rounded to an RGBA byte.
         public const byte ChartedAlpha = 77;
 
@@ -15,11 +17,12 @@ namespace TerraKnight.UI
         {
             if (ox < 0 || oy < 0 || ox >= width || oy >= height) return 0;
             int changed = 0;
-            for (int y = Math.Max(0, oy - Radius); y <= Math.Min(height - 1, oy + Radius); y++)
+            const int rx2 = Radius * Radius, ry2 = RadiusY * RadiusY;
+            for (int y = Math.Max(0, oy - RadiusY); y <= Math.Min(height - 1, oy + RadiusY); y++)
                 for (int x = Math.Max(0, ox - Radius); x <= Math.Min(width - 1, ox + Radius); x++)
                 {
                     int dx = x - ox, dy = y - oy;
-                    if (dx * dx + dy * dy > Radius * Radius || !Visible(ox, oy, x, y, blocks)) continue;
+                    if (dx * dx * ry2 + dy * dy * rx2 > rx2 * ry2 || !Visible(ox, oy, x, y, blocks)) continue;
                     if (mark(x, y)) changed++;
                 }
             return changed;

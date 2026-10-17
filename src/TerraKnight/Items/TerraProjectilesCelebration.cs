@@ -336,7 +336,7 @@ namespace TerraKnight.Items
                     if (t >= 20f)
                     {
                         v.y += 0.12f;
-                        p.Penetrate = -1;
+                        p.Penetrate = p.MaxPenetrate = -1;
                     }
                     if (t > 20f && t % 20f == 0f) Celeb2Burst(p);
                     break;

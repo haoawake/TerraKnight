@@ -8,6 +8,49 @@
 
 > 2.1.0: **save slots after slot 5 display and load normally after you quit to the main menu**; robust mod save writing (the full file is written before it replaces the old one, a .bak copy is kept, and when a save cannot be read the previous one is used automatically); Life Crystals lie scattered on the ground in early areas (in different places for each save), and every completed mask also gives one; a Stage unlocks when you defeat the final boss of the previous Stage; enemy respawn times are tiered by strength (30 seconds to 4 minutes), and a translucent ghost appears before an enemy respawns; stacks go up to 9999, and worthless items (Dirt Blocks, Stone Blocks, Wood) sell for nothing; Master mode has an extra accessory slot; the Goblin Tinkerer sells the Tinkerer's Workshop; the log records the cause of death of enemies that the player did not kill.
 
+> 3.2.0:
+>
+> - **Renamed 空洞泰拉**: the Chinese name is 空洞泰拉 on the main-menu title (the same in Traditional), in the in-game version label and in the launcher `空洞泰拉.bat` in the game folder. The English name TerraKnight, saves and settings stay; an old `泰拉圣巢.bat` still works.
+>
+> - **Multiplayer**
+>   - A boss fight runs in the game of the player in charge of the boss until it ends: it is not handed over while they are still in the boss room with the fight on. Everyone else's copy of the boss follows their position and animation, its own scripts still. The False Knight and other bosses can be fought to the end together, with one head at a time.
+>   - When a boss is beaten (including those like the False Knight whose own death sequence ends the fight), teammates in the room get the bestiary entry and the treasure bag and have it recorded as beaten in their own save; after a seal rematch their battle gates open too.
+>   - Enemy loot is shared as in Terraria. The game that runs the enemy drops it once, everyone sees it, and whoever picks it up keeps it. A boss's treasure bag and the Geo are each player's own. Items on the ground, in chests and picked up keep their prefix and forge level.
+>   - Day, night and the day count follow the host, so the moon phase, the Angler's quest and the Traveling Merchant go by the host's days.
+>
+> - **Bosses**
+>   - Boss seals take you straight into the boss's arena and start the fight at once; one is used on arrival. The Radiance skips its intro and appears after about a second. If the start leaves you held, control is handed back. Waking from a dream boss (e.g. the Failed Champion) returns you to where the seal was used.
+>   - After a seal rematch the walls the fight put up come down with the battle gates (beside both gates of Hornet Protector's and Hornet Sentinel's arenas); the gate that closes again after Nosk opens again.
+>   - The Hall of Gods' challenge rooms keep the game's own ground, so the bosses dash and land on the floors and walls they were made for.
+>   - Boss loot shows in every boss room, including those that keep the game's own ground such as the Mantis Lords'. Seal fights set you on the arena floor, never above the view (Hive Knight, Collector).
+>   - Hits on the False Knight during his rage deal damage; his armour keeps its last point and his next stun comes as usual. The Radiance's last blow works with the attack key or the use key.
+>   - Protector's Silken Knot names Greenpath as its area.
+>
+> - **Combat**
+>   - Shielded enemies block melee, projectiles, whips and minions from the side their shield faces; Terraria's magic counts as the Knight's spells. A curled-up Baldur can be hit only with its mouth open. Of the blocked projectiles, the ones Terraria can reflect come back at half speed as enemy shots.
+>   - An enemy knocked back or launched 5 times within 3 seconds is immune to knockback for 3 seconds.
+>   - Minions attack every enemy, including those that lie still such as the Elder Baldur.
+>   - Enemies drop stars at Terraria's chances, restoring 100 mana when picked up (mana magnets widen the pickup range); hearts, potions and stars drop from the enemy itself.
+>   - The Charged Blaster Cannon's full-charge orb leaves the enemy's immunity as in Terraria: it hits one enemy at most once every 10 ticks. The Foxsparks' breath has Terraria's 15-tick per-kind cooldown.
+>   - Weapons are rebalanced across the six stages from Terraria's per-hit damage, attack cycle and projectile count; armour, set bonuses and accessories have their Terraria stats (including the Necro, Molten and Shadow set bonuses and the Star Cloak's and Honeycomb's damage); the materials for the Imp Staff, the Spider set and others come at their own stage.
+>   - Forging adds +5% damage a level.
+>   - Falling stalactite traps deal Terraria's Boulder damage.
+>
+> - **World and interface**
+>   - With the camera lock on, the camera moves with the character as drawn each frame, smoothly, and the foreground stays steady.
+>   - The meteorite falls once per save. It shows on the map as soon as it lands, the foreground scenery over its crater is blown away with it, and the Meteorite in the pit is fully visible.
+>   - The character lights the map 5 more cells up and down; the map starts dark, and Dirtmouth shows once its map is bought.
+>   - Terraria Settings have Terraria's Autopause switch: with it on, opening the inventory pauses the game (not in multiplayer).
+>   - Terraria's clock runs throughout play.
+>   - One click on the Water Candle toggles it once; its tooltip says its use switches the spawn multiplier between 1 and 3.
+>   - Cutscene moments that wait for an attack (caught in Deepnest's web, the Radiance's last blow) take the attack key or the use key.
+>   - Boomerangs and other weapons swung while clinging to a wall swing away from the wall, as Terraria aims at the cursor.
+>   - Masks and Life Crystals count apart: each mask shard adds half a cyan heart (10 life) after your life; Life Crystals work as usual, up to 15 counting bosses; Life Fruit hearts are golden. An old save's Life Crystals from masks are taken back once.
+>   - Lifeblood gives a two-silver-heart shield that lasts until broken, plus two temporary mana stars that last until death.
+>   - Crystal Heart: shows its own icon; the Super Dash charges in mid-air too, holding you in place, and a fresh Dash press stops it in flight.
+>   - The Guide shows the Hallownest Shield needing the Shield of Cthulhu, Shade Cloak and Crystal Heart together, in every mode.
+>   - F8's spot report lists the collision state of the platforms around the character, to find a platform that can't be stood on.
+
 > 3.1.1:
 >
 > - **Accessory drop floor**: in the accessory pool of common enemies and elites every candidate has at least 1.5% (Normal; higher on Hard, Expert and Master), the candidates sharing equally; the pool is never below 2% for a common enemy or 5% for an elite and grows with more candidates (measured on Normal: about 18% from a Crawlid, 10% from a Wandering Husk, 21% from a Husk Guard), still at most one a kill. Every accessory in a boss's drop table has at least 1.5% too.

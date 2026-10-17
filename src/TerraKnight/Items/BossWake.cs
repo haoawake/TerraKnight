@@ -55,6 +55,9 @@ namespace TerraKnight.Items
         /// <summary>A boss asleep, waiting to be woken by a blow: fair game for minions and homing shots although shielded.</summary>
         public static bool Asleep(HealthManager hm) => hm != null && IsBoss(hm) && Sleeper(hm) != null;
 
+        /// <summary>A boss asleep woken as the Knight's coming and his blow would (a seal's fight begins at once); false when it wasn't asleep.</summary>
+        public static bool Rouse(HealthManager hm) => Asleep(hm) && Hit(hm) == Result.Woke;
+
         /// <summary>
         /// A Terraria blow about to land on an enemy: Woke (it woke a boss: one point and no more),
         /// Held (a boss still waking, or in a scene: nothing), or Normal.

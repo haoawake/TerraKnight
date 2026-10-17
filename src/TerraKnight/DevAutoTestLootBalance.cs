@@ -35,7 +35,6 @@ namespace TerraKnight
                 UnityEngine.Random.InitState(10162026);
                 string[] records=EnemyDrops.DevRecords.ToArray();
                 exports["sourceLevels"]=records.ToDictionary(r=>r,r=>Areas.LevelOf(EnemyDrops.SceneOf(r)));
-                var targetArmor=new int[,] {{10,9,8,8},{18,16,14,14},{28,25,22,22},{40,36,32,32},{56,50,44,44},{74,66,58,58}};
                 for(int s=0;s<6;s++)
                 {
                     Shop.DevStage=s;
@@ -63,7 +62,7 @@ namespace TerraKnight
                     foreach(var p in ProgressionBalance.ArmorPaths.Where(p=>p.Stage==s))
                     {
                         int def=p.Items.Sum(t=>ItemDb.Get(t).Defense);
-                        Check($"整套防御 {s}/{p.Class}",def==targetArmor[s,ProgressionBalance.ClassIndex(p.Class)],"实际="+def);
+                        Check($"整套防御 {s}/{p.Class}",def==p.Items.Sum(t=>VanillaArmorBonuses.Values[int.Parse(ItemDb.Get(t).Texture.Substring(5))].Defense),"实际="+def);
                         Check($"整套可制作 {s}/{p.Class}",p.Items.All(t=>CraftReachable(t,s,drops,true)));
                     }
                     // A future boss's own reward is indexed in the export; ordinary rows must never leak.
@@ -81,14 +80,13 @@ namespace TerraKnight
                 Check("丛林后期保留老料并加叶绿",jungle4.Any(d=>d.Type==ItemType.JungleSpores) && jungle4.Any(d=>d.Type==ItemType.Vine) && jungle4.Any(d=>d.Type==ItemType.ChlorophyteOre));
                 Check("蜂蜡地域限制",!EnemyDrops.At("AbyssCrawler",4,false,true,false).Any(d=>d.Type==ItemType.BeeWax));
                 Check("蜂巢骑士阶段4",BossStats.Of("HiveKnight",4).Stage==4);
-                Check("蜂套固定防御44",new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves}.Sum(t=>ItemDb.Get(t).Defense)==44);
-                Check("蜂套24%召唤增伤",Mathf.Abs(new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves}.Sum(t=>ItemDb.Get(t).Bonus.MinionDamage)+Equipment.SetBonus(ArmorSet.Bee).MinionDamage-.24f)<.0001f);
-                Check("蜂套额外3仆从",new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves}.Sum(t=>ItemDb.Get(t).Bonus.MaxMinions)+Equipment.SetBonus(ArmorSet.Bee).MaxMinions==3);
+                Check("蜂套原版防御13",new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves}.Sum(t=>ItemDb.Get(t).Defense)==13);
+                Check("蜂套原版23%召唤增伤",Mathf.Abs(new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves}.Sum(t=>ItemDb.Get(t).Bonus.MinionDamage)+Equipment.SetBonus(ArmorSet.Bee).MinionDamage-.23f)<.0001f);
+                Check("蜂套原版额外2仆从",new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves}.Sum(t=>ItemDb.Get(t).Bonus.MaxMinions)+Equipment.SetBonus(ArmorSet.Bee).MaxMinions==2);
                 Check("同源升级饰品不叠加",ProgressionBalance.Superseded(ItemType.BandofStarpower,new[] {ItemStack.Of(ItemType.BandofStarpower),ItemStack.Of(ItemType.MagicCuffs)}));
                 Check("独立饰品不互相屏蔽",!ProgressionBalance.Superseded(ItemType.PygmyNecklace,new[] {ItemStack.Of(ItemType.PygmyNecklace),ItemStack.Of(ItemType.SummonerEmblem)}));
-                int bone=ProgressionBalance.ProcDamage(ItemType.BoneGlove,.08f);
                 Shop.DevStage=0;
-                Check("饰品触发伤害固定于装备阶段",bone==ProgressionBalance.ProcDamage(ItemType.BoneGlove,.08f));
+                Check("普通模式斗篷原版伤害",Player.TerraHurt.CloakDamage==75);
                 var crawler=EnemyDrops.At("Crawler",0,false,false,false);
                 float oreMean=crawler.Where(d=>ItemDb.IsOre(d.Type)).Sum(d=>EnemyDrops.MarginalChance(crawler,d)*d.MeanCount);
                 Check("小爬虫矿量比基线提高20%",Mathf.Abs(oreMean-7.2f)<.01f,"平均矿数="+oreMean);

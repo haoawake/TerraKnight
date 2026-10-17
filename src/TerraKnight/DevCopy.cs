@@ -42,7 +42,19 @@ namespace TerraKnight
                 return;
             }
             if (string.IsNullOrEmpty(SaveDir)) SaveDir = Path.Combine(Paths.BepInExRootPath, "TerraKnight", "dev", "saves_" + Name);
-            Directory.CreateDirectory(SaveDir);
+            // A test copy whose own save folder can't be had quits: going on, it would be the player's own game on the
+            // player's saves (the mod not even loaded if this throws).
+            try
+            {
+                Directory.CreateDirectory(SaveDir);
+                SaveDir = Path.GetFullPath(SaveDir);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogError($"[副本] 测试副本 {Name} 的存档目录不能用（{SaveDir}）：{e.Message}。退出游戏，不用玩家的存档");
+                Application.Quit();
+                throw;
+            }
             if (Slot < 1 || Slot > 4) Slot = 1;
             BepInEx.Logging.Logger.Listeners.Add(new FileListener(Path.Combine(Paths.BepInExRootPath, "TerraKnight", "dev", Name + ".log")));
             Plugin.Log.LogInfo($"[副本] 测试副本 {Name}：存档在 {SaveDir}，测试 {Suite}，存档位 {Slot}");

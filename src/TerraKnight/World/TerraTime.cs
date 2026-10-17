@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace TerraKnight.World
 {
     /// <summary>
@@ -13,11 +15,32 @@ namespace TerraKnight.World
         /// <summary>Dev: forces day (true) or night (false).</summary>
         public static bool? DevForceDay;
 
-        /// <summary>In a LAN game, how far the host's clock is ahead of this save's (SetTime): everyone has the host's day.</summary>
+        /// <summary>In a LAN game, how far the host's clock is ahead of this save's (SetTime): everyone has the host's day and its number.</summary>
         public static float NetOffset;
 
+        /// <summary>
+        /// The save's play time now, in seconds: GameManager.PlayTime (the time at loading plus this session's, running
+        /// while the game is played). PlayerData.playTime takes the session in only when the game saves.
+        /// </summary>
+        public static float PlayTime
+        {
+            get
+            {
+                var pd = PlayerData.instance;
+                if (pd == null) return 0f;
+                var gm = GameManager.UnsafeInstance;
+                return gm != null && gm.playerData == pd ? gm.PlayTime : pd.playTime;
+            }
+        }
+
+        /// <summary>The world's clock: this save's play time, or in a LAN game the host's.</summary>
+        public static float Clock => PlayerData.instance == null ? 0f : PlayTime + NetOffset;
+
         /// <summary>Seconds into the current Terraria day.</summary>
-        public static float Now => PlayerData.instance == null ? 0f : ((PlayerData.instance.playTime + NetOffset) % FullDaySeconds + FullDaySeconds) % FullDaySeconds;
+        public static float Now => PlayerData.instance == null ? 0f : (Clock % FullDaySeconds + FullDaySeconds) % FullDaySeconds;
+
+        /// <summary>The day's number (the moon phase, the angler's quest, the travelling merchant go by it).</summary>
+        public static int Day => Mathf.FloorToInt(Clock / FullDaySeconds);
 
         /// <summary>Main.dayTime.</summary>
         public static bool IsDay => DevForceDay ?? Now < DaySeconds;

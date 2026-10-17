@@ -1,4 +1,40 @@
 {
+ "使用后在 1～3 倍之间切换刷怪倍率（在原本的翻倍上再乘，只出现一次的敌人仍只出一只）": {
+  "en-US": "Use it to switch the spawn multiplier between 1 and 3 times (on top of the usual doubling; one-off enemies still come back alone)",
+  "zh-Hant": "使用後在 1～3 倍之間切換刷怪倍率（在原本的翻倍上再乘，只出現一次的敵人仍只出一隻）",
+  "ja-JP": "使うと敵の出現倍率を1～3倍で切り替える（通常の2倍にさらに掛かる。一度きりの敵は1体のまま）",
+  "ko-KR": "사용하면 적 출현 배율을 1~3배로 바꾼다 (기본 2배에 곱해지며, 한 번만 나오는 적은 여전히 1마리)",
+  "de-DE": "Benutzen schaltet den Spawn-Multiplikator zwischen 1- und 3-fach um (zusätzlich zur üblichen Verdopplung; einmalige Gegner kommen weiter allein zurück)",
+  "fr-FR": "L'utiliser fait passer le multiplicateur d'apparition entre 1 et 3 fois (en plus du doublement habituel ; les ennemis uniques reviennent toujours seuls)",
+  "es-ES": "Úsala para cambiar el multiplicador de aparición entre 1 y 3 veces (además de la duplicación habitual; los enemigos únicos siguen volviendo solos)",
+  "it-IT": "Usala per cambiare il moltiplicatore di comparsa tra 1 e 3 volte (oltre al solito raddoppio; i nemici unici tornano comunque da soli)",
+  "pt-BR": "Use para alternar o multiplicador de surgimento entre 1 e 3 vezes (além da duplicação normal; inimigos únicos continuam voltando sozinhos)",
+  "ru-RU": "При использовании переключает множитель появления врагов от 1 до 3 раз (поверх обычного удвоения; одноразовые враги по-прежнему возвращаются по одному)"
+ },
+ "要击败更多首领，才能再吃生命水晶": {
+  "en-US": "Beat more bosses to use another Life Crystal",
+  "zh-Hant": "要擊敗更多首領，才能再吃生命水晶",
+  "ja-JP": "ボスをもっと倒すと、ライフクリスタルをまた使える",
+  "ko-KR": "보스를 더 쓰러뜨려야 생명 크리스탈을 더 쓸 수 있다",
+  "de-DE": "Mehr Bosse besiegen, um einen weiteren Lebenskristall zu nutzen",
+  "fr-FR": "Battez plus de boss pour utiliser un autre cristal de vie",
+  "es-ES": "Derrota a más jefes para usar otro cristal de vida",
+  "it-IT": "Sconfiggi altri boss per usare un altro cristallo di vita",
+  "pt-BR": "Derrote mais chefes para usar outro cristal da vida",
+  "ru-RU": "Победите больше боссов, чтобы использовать ещё один кристалл жизни"
+ },
+ "生命血：获得两颗银心护盾和两颗临时魔力星": {
+  "en-US": "Lifeblood: two silver hearts of shield and two temporary mana stars",
+  "zh-Hant": "生命血：獲得兩顆銀心護盾和兩顆臨時魔力星",
+  "ja-JP": "ライフブラッド：銀のハート2つ分のシールドと一時的なマナスター2つ",
+  "ko-KR": "생명혈: 은빛 하트 2개의 보호막과 임시 마나 별 2개",
+  "de-DE": "Lebensblut: zwei silberne Herzen Schild und zwei vorübergehende Manasterne",
+  "fr-FR": "Sang de vie : deux cœurs d'argent de bouclier et deux étoiles de mana temporaires",
+  "es-ES": "Sangre vital: dos corazones de plata de escudo y dos estrellas de maná temporales",
+  "it-IT": "Linfa vitale: due cuori d'argento di scudo e due stelle di mana temporanee",
+  "pt-BR": "Sangue vital: dois corações de prata de escudo e duas estrelas de mana temporárias",
+  "ru-RU": "Живая кровь: щит в два серебряных сердца и две временные звезды маны"
+ },
  "暗影冲刺": {
   "en-US": "Shadow Dash",
   "zh-Hant": "暗影衝刺",
@@ -47,29 +83,29 @@
   "pt-BR": "Tecla Investida sombria, ou toque duplo numa direção segurando Investida: uma investida sombria\nAtravessa inimigos, seus ataques e portões sombrios\nRecarga de 10 segundos",
   "ru-RU": "Клавиша теневого рывка или двойное нажатие направления при зажатом рывке: теневой рывок\nПроходит сквозь врагов, их атаки и теневые врата\nПерезарядка 10 секунд"
  },
- "在地上或贴着墙长按冲刺键：蓄力后松开，像原版那样超级冲刺\n轻点冲刺键仍是普通冲刺\n冷却 20 秒": {
-  "en-US": "Hold Dash on the ground or on a wall: charge, then let go for a Super Dash as in the game\nA tap of Dash is still a dash\n20 second cooldown",
-  "zh-Hant": "在地上或貼著牆長按衝刺鍵：蓄力後放開，像原版那樣超級衝刺\n輕點衝刺鍵仍是普通衝刺\n冷卻 20 秒",
-  "ja-JP": "地面か壁でダッシュを長押し：溜めて離すと原作のようなスーパーダッシュ\n短く押すと通常のダッシュ\nクールダウン20秒",
-  "ko-KR": "땅이나 벽에서 대시 길게 누르기: 충전 후 놓으면 원작처럼 슈퍼 대시\n짧게 누르면 일반 대시\n재사용 대기 20초",
-  "de-DE": "Spurt am Boden oder an einer Wand halten: aufladen, loslassen für einen Superspurt wie im Spiel\nKurz gedrückt bleibt es ein Spurt\n20 Sekunden Abklingzeit",
-  "fr-FR": "Maintenir Ruée au sol ou contre un mur : charger, puis relâcher pour une Super Ruée comme dans le jeu\nUn appui bref reste une ruée\nRecharge de 20 secondes",
-  "es-ES": "Mantén Embestida en el suelo o en una pared: carga y suelta para una Superembestida como en el juego\nUn toque breve sigue siendo una embestida\nEnfriamiento de 20 segundos",
-  "it-IT": "Tieni premuto Scatto a terra o su un muro: carica e rilascia per uno Super Scatto come nel gioco\nUn tocco breve resta uno scatto\nRicarica di 20 secondi",
-  "pt-BR": "Segure Investida no chão ou numa parede: carregue e solte para uma Superinvestida como no jogo\nUm toque rápido continua sendo uma investida\nRecarga de 20 segundos",
-  "ru-RU": "Удерживайте рывок на земле или на стене: заряд, затем отпустите для суперрывка как в игре\nКороткое нажатие — обычный рывок\nПерезарядка 20 секунд"
+ "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺\n冷却 20 秒": {
+  "en-US": "Hold Dash: charge, then let go for a Super Dash as in the game\nWorks in mid-air too, holding you in place while it charges\nA tap of Dash is still a dash\n20 second cooldown",
+  "zh-Hant": "長按衝刺鍵：蓄力後放開，像原版那樣超級衝刺\n在空中也能用，蓄力時停在原處\n輕點衝刺鍵仍是普通衝刺\n冷卻 20 秒",
+  "ja-JP": "ダッシュを長押し：溜めて離すと原作のようなスーパーダッシュ\n空中でも使え、溜めている間はその場に留まる\n短く押すと通常のダッシュ\nクールダウン20秒",
+  "ko-KR": "대시 길게 누르기: 충전 후 놓으면 원작처럼 슈퍼 대시\n공중에서도 쓸 수 있고, 충전하는 동안 제자리에 멈춘다\n짧게 누르면 일반 대시\n재사용 대기 20초",
+  "de-DE": "Spurt halten: aufladen, loslassen für einen Superspurt wie im Spiel\nGeht auch in der Luft; beim Aufladen bleibst du in der Schwebe\nKurz gedrückt bleibt es ein Spurt\n20 Sekunden Abklingzeit",
+  "fr-FR": "Maintenir Ruée : charger, puis relâcher pour une Super Ruée comme dans le jeu\nMarche aussi en l'air, en vous gardant sur place pendant la charge\nUn appui bref reste une ruée\nRecharge de 20 secondes",
+  "es-ES": "Mantén Embestida: carga y suelta para una Superembestida como en el juego\nTambién funciona en el aire, y te mantiene en el sitio mientras carga\nUn toque breve sigue siendo una embestida\nEnfriamiento de 20 segundos",
+  "it-IT": "Tieni premuto Scatto: carica e rilascia per uno Super Scatto come nel gioco\nFunziona anche a mezz'aria, tenendoti fermo mentre carica\nUn tocco breve resta uno scatto\nRicarica di 20 secondi",
+  "pt-BR": "Segure Investida: carregue e solte para uma Superinvestida como no jogo\nFunciona também no ar, mantendo você parado enquanto carrega\nUm toque rápido continua sendo uma investida\nRecarga de 20 segundos",
+  "ru-RU": "Удерживайте рывок: заряд, затем отпустите для суперрывка как в игре\nРаботает и в воздухе — во время заряда вы зависаете на месте\nКороткое нажатие — обычный рывок\nПерезарядка 20 секунд"
  },
- "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n在地上或贴着墙长按冲刺键：水晶之心蓄力，松开超级冲刺（冷却 20 秒）\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却 10 秒）": {
-  "en-US": "Tap Dash: the Shield of Cthulhu’s dash, ramming enemies\nHold Dash on the ground or on a wall: the Crystal Heart’s charge, let go for a Super Dash (20 s cooldown)\nDouble-tap a direction while holding Dash, or press Shadow Dash: a shadow dash through enemies, attacks and shade gates (10 s cooldown)",
-  "zh-Hant": "點按衝刺鍵：克蘇魯護盾的衝刺，撞擊敵人\n在地上或貼著牆長按衝刺鍵：水晶之心蓄力，放開超級衝刺（冷卻 20 秒）\n按住衝刺鍵時雙擊方向鍵，或按暗影衝刺鍵：暗影衝刺，穿過敵人、攻擊和暗影之門（冷卻 10 秒）",
-  "ja-JP": "ダッシュを短く押す：クトゥルフの盾の突進\n地面か壁でダッシュを長押し：クリスタルハートの溜め、離すとスーパーダッシュ（クールダウン20秒）\nダッシュを押しながら方向を2回、またはシャドウダッシュキー：敵・攻撃・影の門をすり抜けるシャドウダッシュ（クールダウン10秒）",
-  "ko-KR": "대시 짧게: 크툴루의 방패 돌진\n땅이나 벽에서 대시 길게: 수정 심장 충전, 놓으면 슈퍼 대시 (재사용 대기 20초)\n대시를 누른 채 방향키 두 번, 또는 그림자 대시 키: 적·공격·그림자 문을 통과하는 그림자 대시 (재사용 대기 10초)",
-  "de-DE": "Spurt antippen: der Spurt des Schilds von Cthulhu, rammt Gegner\nSpurt am Boden oder an einer Wand halten: Kristallherz aufladen, loslassen für einen Superspurt (20 s Abklingzeit)\nBei gehaltenem Spurt zweimal eine Richtung oder Schattenspurt-Taste: ein Schattenspurt durch Gegner, Angriffe und Schattentore (10 s Abklingzeit)",
-  "fr-FR": "Appui bref sur Ruée : la ruée du Bouclier de Cthulhu, qui percute les ennemis\nMaintenir Ruée au sol ou contre un mur : charge du Cœur de cristal, relâcher pour une Super Ruée (recharge 20 s)\nDouble appui sur une direction en maintenant Ruée, ou touche Ruée de l’ombre : une ruée de l’ombre à travers ennemis, attaques et portes d’ombre (recharge 10 s)",
-  "es-ES": "Toque de Embestida: la embestida del Escudo de Cthulhu, que embiste enemigos\nMantén Embestida en el suelo o en una pared: carga del Corazón de cristal, suelta para una Superembestida (enfriamiento 20 s)\nDoble toque de dirección manteniendo Embestida, o tecla Embestida sombría: embestida sombría a través de enemigos, ataques y puertas sombrías (enfriamiento 10 s)",
-  "it-IT": "Tocco di Scatto: lo scatto dello Scudo di Cthulhu, che travolge i nemici\nTieni premuto Scatto a terra o su un muro: carica del Cuore di cristallo, rilascia per uno Super Scatto (ricarica 20 s)\nDoppio tocco di una direzione tenendo Scatto, o tasto Scatto d’ombra: uno scatto d’ombra attraverso nemici, attacchi e porte d’ombra (ricarica 10 s)",
-  "pt-BR": "Toque em Investida: a investida do Escudo de Cthulhu, atropelando inimigos\nSegure Investida no chão ou numa parede: carga do Coração de cristal, solte para uma Superinvestida (recarga 20 s)\nToque duplo numa direção segurando Investida, ou tecla Investida sombria: investida sombria através de inimigos, ataques e portões sombrios (recarga 10 s)",
-  "ru-RU": "Короткое нажатие рывка: рывок Щита Ктулху, таранящий врагов\nУдержание рывка на земле или на стене: заряд Кристального сердца, отпустите для суперрывка (перезарядка 20 с)\nДвойное нажатие направления при зажатом рывке или клавиша теневого рывка: теневой рывок сквозь врагов, атаки и теневые врата (перезарядка 10 с)"
+ "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n长按冲刺键（空中也行）：水晶之心蓄力，松开超级冲刺（冷却 20 秒）\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却 10 秒）": {
+  "en-US": "Tap Dash: the Shield of Cthulhu’s dash, ramming enemies\nHold Dash (in mid-air too): the Crystal Heart’s charge, let go for a Super Dash (20 s cooldown)\nDouble-tap a direction while holding Dash, or press Shadow Dash: a shadow dash through enemies, attacks and shade gates (10 s cooldown)",
+  "zh-Hant": "點按衝刺鍵：克蘇魯護盾的衝刺，撞擊敵人\n長按衝刺鍵（空中也行）：水晶之心蓄力，放開超級衝刺（冷卻 20 秒）\n按住衝刺鍵時雙擊方向鍵，或按暗影衝刺鍵：暗影衝刺，穿過敵人、攻擊和暗影之門（冷卻 10 秒）",
+  "ja-JP": "ダッシュを短く押す：クトゥルフの盾の突進\nダッシュを長押し（空中でも可）：クリスタルハートの溜め、離すとスーパーダッシュ（クールダウン20秒）\nダッシュを押しながら方向を2回、またはシャドウダッシュキー：敵・攻撃・影の門をすり抜けるシャドウダッシュ（クールダウン10秒）",
+  "ko-KR": "대시 짧게: 크툴루의 방패 돌진\n대시 길게 (공중에서도 가능): 수정 심장 충전, 놓으면 슈퍼 대시 (재사용 대기 20초)\n대시를 누른 채 방향키 두 번, 또는 그림자 대시 키: 적·공격·그림자 문을 통과하는 그림자 대시 (재사용 대기 10초)",
+  "de-DE": "Spurt antippen: der Spurt des Schilds von Cthulhu, rammt Gegner\nSpurt halten (auch in der Luft): Kristallherz aufladen, loslassen für einen Superspurt (20 s Abklingzeit)\nBei gehaltenem Spurt zweimal eine Richtung oder Schattenspurt-Taste: ein Schattenspurt durch Gegner, Angriffe und Schattentore (10 s Abklingzeit)",
+  "fr-FR": "Appui bref sur Ruée : la ruée du Bouclier de Cthulhu, qui percute les ennemis\nMaintenir Ruée (en l’air aussi) : charge du Cœur de cristal, relâcher pour une Super Ruée (recharge 20 s)\nDouble appui sur une direction en maintenant Ruée, ou touche Ruée de l’ombre : une ruée de l’ombre à travers ennemis, attaques et portes d’ombre (recharge 10 s)",
+  "es-ES": "Toque de Embestida: la embestida del Escudo de Cthulhu, que embiste enemigos\nMantén Embestida (también en el aire): carga del Corazón de cristal, suelta para una Superembestida (enfriamiento 20 s)\nDoble toque de dirección manteniendo Embestida, o tecla Embestida sombría: embestida sombría a través de enemigos, ataques y puertas sombrías (enfriamiento 10 s)",
+  "it-IT": "Tocco di Scatto: lo scatto dello Scudo di Cthulhu, che travolge i nemici\nTieni premuto Scatto (anche a mezz’aria): carica del Cuore di cristallo, rilascia per uno Super Scatto (ricarica 20 s)\nDoppio tocco di una direzione tenendo Scatto, o tasto Scatto d’ombra: uno scatto d’ombra attraverso nemici, attacchi e porte d’ombra (ricarica 10 s)",
+  "pt-BR": "Toque em Investida: a investida do Escudo de Cthulhu, atropelando inimigos\nSegure Investida (também no ar): carga do Coração de cristal, solte para uma Superinvestida (recarga 20 s)\nToque duplo numa direção segurando Investida, ou tecla Investida sombria: investida sombria através de inimigos, ataques e portões sombrios (recarga 10 s)",
+  "ru-RU": "Короткое нажатие рывка: рывок Щита Ктулху, таранящий врагов\nУдержание рывка (и в воздухе): заряд Кристального сердца, отпустите для суперрывка (перезарядка 20 с)\nДвойное нажатие направления при зажатом рывке или клавиша теневого рывка: теневой рывок сквозь врагов, атаки и теневые врата (перезарядка 10 с)"
  },
  "带在身上时提高生命再生速度": {
   "en-US": "Increases life regeneration while carried",
@@ -5078,5 +5114,65 @@
     "it-IT": "Prima vittoria: arma del boss garantita",
     "pt-BR": "Primeira vitória: arma do chefe garantida",
     "ru-RU": "Первая победа: оружие босса гарантировано"
+  },
+  "星星": {
+    "en-US": "Star",
+    "zh-Hant": "星星",
+    "ja-JP": "スター",
+    "ko-KR": "스타",
+    "de-DE": "Stern",
+    "fr-FR": "Étoile",
+    "es-ES": "Estrella",
+    "it-IT": "Stella",
+    "pt-BR": "Estrela",
+    "ru-RU": "Звезда"
+  },
+  "拾取后恢复100点魔力": {
+    "en-US": "Restores 100 mana when picked up",
+    "zh-Hant": "拾取後恢復100點魔力",
+    "ja-JP": "拾うとマナが100回復する",
+    "ko-KR": "주우면 마나 100 회복",
+    "de-DE": "Stellt beim Aufheben 100 Mana wieder her",
+    "fr-FR": "Rend 100 points de mana une fois ramassé",
+    "es-ES": "Restaura 100 de maná al recogerlo",
+    "it-IT": "Ripristina 100 punti mana quando raccolto",
+    "pt-BR": "Restaura 100 de mana ao ser coletado",
+    "ru-RU": "Восстанавливает 100 маны при подборе"
+  },
+  "自动暂停: 开": {
+    "en-US": "Autopause On",
+    "zh-Hant": "自動暫停開啟",
+    "ja-JP": "オートポーズ：オン",
+    "ko-KR": "자동 일시정지 켜기",
+    "de-DE": "Autopause EIN",
+    "fr-FR": "Pause auto activée",
+    "es-ES": "Pausa automática activada",
+    "it-IT": "Pausa automatica: sì",
+    "pt-BR": "Pausa Automática Ligada",
+    "ru-RU": "Автоматическая пауза ВКЛ."
+  },
+  "自动暂停: 关": {
+    "en-US": "Autopause Off",
+    "zh-Hant": "自動暫停關閉",
+    "ja-JP": "オートポーズ：オフ",
+    "ko-KR": "자동 일시정지 끄기",
+    "de-DE": "Autopause AUS",
+    "fr-FR": "Pause auto désactivée",
+    "es-ES": "Pausa automática desactivada",
+    "it-IT": "Pausa automatica: no",
+    "pt-BR": "Pausa Automática Desligada",
+    "ru-RU": "Автоматическая пауза ВЫКЛ."
+  },
+  "旧版本中面具换来的 {0} 颗生命水晶已收回：面具现在是单独的青蓝色生命": {
+    "en-US": "The {0} Life Crystal(s) older versions gave for masks have been taken back: masks are now life of their own (the cyan hearts)",
+    "zh-Hant": "舊版本中面具換來的 {0} 顆生命水晶已收回：面具現在是單獨的青藍色生命",
+    "ja-JP": "旧バージョンで仮面と引き換えに得た {0} 個のライフクリスタルを回収しました：仮面は独立した水色のライフになりました",
+    "ko-KR": "이전 버전에서 가면으로 얻은 생명 수정 {0}개를 회수했습니다: 이제 가면은 별도의 청록색 생명입니다",
+    "de-DE": "Die {0} Lebenskristall(e), die ältere Versionen für Masken gaben, wurden zurückgenommen: Masken sind jetzt eigenes Leben (die türkisen Herzen)",
+    "fr-FR": "Les {0} cristaux de vie donnés pour les masques par les anciennes versions ont été repris : les masques sont désormais une vie à part (les cœurs cyan)",
+    "es-ES": "Se han retirado los {0} cristales de vida que las versiones antiguas daban por las máscaras: ahora las máscaras son vida propia (los corazones cian)",
+    "it-IT": "I {0} cristalli di vita dati dalle vecchie versioni per le maschere sono stati ripresi: ora le maschere sono vita a sé (i cuori ciano)",
+    "pt-BR": "Os {0} cristais de vida que versões antigas davam pelas máscaras foram recolhidos: as máscaras agora são vida própria (os corações ciano)",
+    "ru-RU": "Кристаллы жизни ({0}), которые старые версии давали за маски, забраны: маски теперь отдельная жизнь (бирюзовые сердца)"
   }
 }

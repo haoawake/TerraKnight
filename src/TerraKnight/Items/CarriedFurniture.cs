@@ -23,7 +23,10 @@ namespace TerraKnight.Items
             list.Add(F(ItemType.CatBast, "巴斯特雕像", 4276, 1, "带在身上时防御力增加5"));
             list.Add(F(ItemType.Sunflower, "向日葵", 63, 0, "带在身上时移动速度提高"));
             list.Add(F(ItemType.GardenGnome, "花园侏儒", 4609, 1, "带在身上时运气提高"));
-            list.Add(F(ItemType.WaterCandle, "水蜡烛", 148, 1, "放在快捷栏里：每次进入场景，除首领外的敌人（包括精英和只出现一次的敌人）都会立刻重新出现"));
+            list.Add(F(ItemType.WaterCandle, "水蜡烛", 148, 1, "放在快捷栏里：每次进入场景，除首领外的敌人（包括精英和只出现一次的敌人）都会立刻重新出现\n使用后在 1～3 倍之间切换刷怪倍率（在原本的翻倍上再乘，只出现一次的敌人仍只出一只）"));
+            // A switch, not a tile to place: one setting a click (Terraria places furniture on, every tick of a held button).
+            list[list.Count - 1].AutoReuse = false;
+            list[list.Count - 1].UseTime = list[list.Count - 1].UseAnimation = 15 * Tick;
         }
 
         /// <summary>Their stage, source and value (Item.value, copper).</summary>

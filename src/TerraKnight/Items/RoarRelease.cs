@@ -73,6 +73,9 @@ namespace TerraKnight.Items
         public static void Tick(HeroController hero)
         {
             if (hero == null || GameHooks.PlayerHasControl()) { deadSince = -1f; goneSince = -1f; return; }
+            // A cutscene that shows the Knight by a stand-in of its own (the Radiance's end, the Beast's Den web) holds him
+            // on purpose, its boss's death included: it lets go by itself.
+            if (Player.CutsceneAttack.KnightHidden()) { deadSince = -1f; goneSince = -1f; return; }
             // The taker destroyed (its scene unloaded) with the Knight still held, out of any transition.
             var gm = GameManager.UnsafeInstance;
             bool gone = taker is object && taker == null && hero.controlReqlinquished && gm != null && !gm.IsInSceneTransition

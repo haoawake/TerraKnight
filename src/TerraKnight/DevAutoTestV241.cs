@@ -109,11 +109,9 @@ namespace TerraKnight
             bool refused = TerraMod.DevCrystalRefused > refused0 && mod.Stats.LifeCrystals == allowance && inv.Slots[1].Count == 3;
             pd.maxHealthBase = 6;
             int allowance2 = LifeCrystals.Allowance();
-            for (float t = 0f; t < 0.8f && mod.Stats.LifeCrystals < allowance2; t += Time.deltaTime) { if (mod.DevReady && !mod.IsUsingItem) mod.DevUseSelected(at); yield return null; }
-            // The sixth mask also gives a crystal (GrantMaskCrystals): count what was eaten, not the bag.
-            bool eatenMore = mod.Stats.LifeCrystals == allowance2;
-            Check(refused && eatenMore && allowance2 == allowance + 1,
-                $"生命水晶上限：5 个面具、已击败首领 {allowance - LifeCrystals.GroundAllowance} 个时能吃 {allowance} 个，再吃被拒绝 {refused}；多一个面具后上限 {allowance2}，吃下 {eatenMore}（背包剩 {inv.Slots[1].Count}）");
+            // A mask is life of its own (cyan hearts), not more crystals: the allowance stays.
+            Check(refused && allowance2 == allowance,
+                $"生命水晶上限：已击败首领 {allowance - LifeCrystals.GroundAllowance} 个时能吃 {allowance} 个，再吃被拒绝 {refused}；多一个面具后上限仍是 {allowance2}");
             pd.maxHealthBase = masks0;
             mod.Stats.LifeCrystals = eaten0;
             inv.Slots[1] = default;

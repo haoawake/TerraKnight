@@ -40,7 +40,6 @@ namespace TerraKnight.Player
         static float tickAccumulator;
         static bool wasDead;
         static float slainAt = -1f;
-        static float nextCloakVolley, nextHoneyVolley;
 
         /// <summary>
         /// Terraria checks the Shield of Cthulhu's bonk before an enemy's touch can hurt (and the
@@ -231,9 +230,8 @@ namespace TerraKnight.Player
             // The Brain of Confusion (Pl:38690-38724): enemies about confused, and its illusion.
             if (b.BrainOfConfusion) BrainRetaliate(hero, damage);
             // One volley of the Star Cloak family's stars, the strongest override's kind (Pl:38725-38776).
-            if (b.StarCloak && projectiles != null && Time.time>=nextCloakVolley)
+            if (b.StarCloak && projectiles != null)
             {
-                nextCloakVolley=Time.time+1;
                 var kind = Items.TerraProjectiles.CloakStarKind(b.StarKind);
                 for (int i = 0; i < 3; i++)
                 {
@@ -241,25 +239,27 @@ namespace TerraKnight.Player
                     var from = topLeft + new Vector2(Random.Range(-400, 400), Random.Range(500, 800)) * TerraParticles.Px;
                     var at = new Vector2(col.center.x + Random.Range(-100, 101) * TerraParticles.Px, topLeft.y - 21f * TerraParticles.Px);
                     projectiles.ShootCloakStar(kind, from, (at - from).normalized * 23f,
-                        Items.ProgressionBalance.EquippedProcDamage(q=>q.StarCloak,.08f,3), topLeft.y);
+                        CloakDamage, topLeft.y);
                 }
             }
-            if (b.HoneyComb && Time.time>=nextHoneyVolley)
+            if (b.HoneyComb)
             {
-                nextHoneyVolley=Time.time+1;
                 // The Hive Pack's strong bees (Pl:38789-38800, 12505-12530): a fourth a third of the time, 18 for 13, half of them giant.
                 bool strong = b.StrongBees;
                 int bees = 1 + (Random.Range(0, 3) == 0 ? 1 : 0) + (Random.Range(0, 3) == 0 ? 1 : 0) + (strong && Random.Range(0, 3) == 0 ? 1 : 0);
-                int dmg = Items.ProgressionBalance.EquippedProcDamage(q=>q.HoneyComb,.08f,bees);
+                int dmg = HoneyDamage(strong);
                 for (int i = 0; i < bees; i++)
                 {
                     var kind = strong && Random.Range(0, 2) == 0 ? Items.ProjKind.GiantBee : Items.ProjKind.Bee;
                     projectiles?.Shoot(kind, topLeft, new Vector2(Random.Range(-35, 36) * 0.02f, -Random.Range(-35, 36) * 0.02f),
-                        dmg, strong ? 0.5f : 0f, 4f);
+                        dmg + (kind == Items.ProjKind.GiantBee ? Random.Range(1,4) : Random.Range(0,2)), kind == Items.ProjKind.GiantBee ? 0.5f : 0f, 4f);
                 }
                 mod.Stats.HoneyTicks = 300f;
             }
         }
+
+        internal static int CloakDamage => 75 * (World.GameDifficulty.Current == World.DifficultyLevel.Master ? 3 : World.GameDifficulty.Current == World.DifficultyLevel.Expert ? 2 : 1);
+        internal static int HoneyDamage(bool strong) => (int)((strong ? 18 : 13) * (World.GameDifficulty.Current == World.DifficultyLevel.Master ? 2f : World.GameDifficulty.Current == World.DifficultyLevel.Expert ? 1.5f : 1f));
 
         /// <summary>
         /// Each enemy, by chance (300 + 2·damage in 500), is confused for 1.5-5 s if within a
@@ -354,6 +354,7 @@ namespace TerraKnight.Player
             sprite.FallApart(lastHitDir);
             // Player.KillMe's DropTombstone: away from the blow.
             Items.Tombstones.OnDeath(hero, lastHitDir);
+            Lifeblood.OnDeath(TerraMod.Instance.Stats);
             slainAt = Time.time;
             lastHitDir = 0;
         }

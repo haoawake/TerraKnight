@@ -12,11 +12,13 @@ namespace TerraKnight.Net
     /// in each game, so one player's game runs a scene's enemies: its owner, the first player in
     /// it (<see cref="Server"/> decides). The owner sends where each of them is, how it is turned,
     /// what it is playing and its health fifteen times a second; in everyone else's game the same
-    /// enemies become puppets: their scripts and AI switched off, their bodies kinematic, moved and
-    /// animated as the owner's are. They still touch: a puppet's body hurts the player it touches.
-    /// A hit on a puppet goes to the owner, whose game deals it (knockback and all); a death there
-    /// kills the puppets too, so everyone gets the drops (instanced loot, as Terraria's boss bags).
-    /// When the owner leaves, the next player in the scene takes over from where things are.
+    /// enemies become puppets: their scripts and AI switched off and deaf to events, their bodies
+    /// kinematic, moved and animated as the owner's are. They still touch: a puppet's body hurts the
+    /// player it touches. A hit on a puppet goes to the owner, whose game deals it (knockback and
+    /// all); a death there kills the puppets too. The loot lies once, shared, from the owner's game
+    /// (as Terraria's server drops an NPC's); only a boss's treasure bag is each player's own.
+    /// When the owner leaves, the next player in the scene takes over from where things are; a boss
+    /// room's owner keeps it while still in the room with its fight on (NetScenes.Collect).
     /// What doesn't carry over: the shots and spawned attacks of an enemy's scripts (only the
     /// owner's game has them), and enemies go after their owner, who is the only one they see.
     /// </summary>
@@ -30,6 +32,9 @@ namespace TerraKnight.Net
             NetSession.Active && Enabled && scene != null && NetSession.Owners.TryGetValue(scene, out int o) && o != NetSession.MySlot;
 
         static bool Owned(string scene) => NetSession.Active && Enabled && scene != null && NetSession.Owners.TryGetValue(scene, out int o) && o == NetSession.MySlot;
+
+        /// <summary>Whether this game runs the scene's enemies.</summary>
+        public static bool Owns(string scene) => Owned(scene);
 
         public static bool IsPuppet(HealthManager hm) => hm != null && puppetOf.ContainsKey(hm);
 
@@ -52,7 +57,6 @@ namespace TerraKnight.Net
             public string Scene;
             public int Id, Owner;
             public PlayMakerFSM[] Fsms;
-            public bool[] FsmOn;
             public Behaviour[] Parts;
             public bool[] PartOn;
             public Rigidbody2D Body;
@@ -75,6 +79,52 @@ namespace TerraKnight.Net
         static readonly Dictionary<string, float> sceneScanned = new Dictionary<string, float>();
         static int nextId = 1;
 
+        /// <summary>
+        /// The FSMs of puppets: switched off, and deaf to events too. PlayMaker runs an event on a switched-off FSM all the
+        /// same (Fsm.Active doesn't look at the component; ProcessEvent even starts one never started), entering states and
+        /// running what they do: the room's battle scene, a seal's fight start or the enemy's own trigger relays would drive
+        /// it in this game beside the owner's. One record per FSM, however many puppets hold it (a body and its parts:
+        /// the False Knight's Head is under him), so it comes back on as it was when the last of them lets go.
+        /// </summary>
+        static readonly Dictionary<PlayMakerFSM, (bool On, int Holds, HutongGames.PlayMaker.Fsm Fsm)> frozen = new Dictionary<PlayMakerFSM, (bool, int, HutongGames.PlayMaker.Fsm)>();
+        static readonly HashSet<HutongGames.PlayMaker.Fsm> frozenFsms = new HashSet<HutongGames.PlayMaker.Fsm>();
+        public static int DevEventsHeld;
+
+        static void Freeze(PlayMakerFSM f)
+        {
+            if (f == null) return;
+            if (frozen.TryGetValue(f, out var r)) { frozen[f] = (r.On, r.Holds + 1, r.Fsm); return; }
+            frozen[f] = (f.enabled, 1, f.Fsm);
+            f.enabled = false;
+            if (f.Fsm != null) frozenFsms.Add(f.Fsm);
+        }
+
+        /// <summary>One hold let go; the last one puts it back (an FSM destroyed with its scene just leaves the records).</summary>
+        static void Thaw(PlayMakerFSM f)
+        {
+            if (ReferenceEquals(f, null) || !frozen.TryGetValue(f, out var r)) return;
+            if (r.Holds > 1 && f != null) { frozen[f] = (r.On, r.Holds - 1, r.Fsm); return; }
+            frozen.Remove(f);
+            if (r.Fsm != null) frozenFsms.Remove(r.Fsm);
+            if (f != null) f.enabled = r.On;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HutongGames.PlayMaker.Fsm), nameof(HutongGames.PlayMaker.Fsm.ProcessEvent))]
+        static bool PuppetDeaf(HutongGames.PlayMaker.Fsm __instance, HutongGames.PlayMaker.FsmEvent fsmEvent)
+        {
+            if (frozenFsms.Count == 0 || !frozenFsms.Contains(__instance)) return true;
+            DevEventsHeld++;
+            if (devHeld.Count < 12)
+            {
+                string k = $"{__instance.GameObject?.name}/{__instance.Name}:{fsmEvent?.Name}";
+                if (!devHeld.Contains(k)) devHeld.Add(k);
+            }
+            return false;
+        }
+
+        static readonly List<string> devHeld = new List<string>();
+
         public static int DevPuppets => puppets.Count;
         public static int DevTracked => tracked.Count;
         public static int DevForwarded, DevApplied, DevDeathsSent, DevDeathsReceived, DevHidden;
@@ -84,6 +134,9 @@ namespace TerraKnight.Net
             foreach (var p in new List<Puppet>(puppets.Values)) Release(p);
             puppets.Clear();
             puppetOf.Clear();
+            foreach (var kv in frozen) if (kv.Key != null) kv.Key.enabled = kv.Value.On;
+            frozen.Clear();
+            frozenFsms.Clear();
             Unhide(null);
             tracked.Clear();
             trackedById.Clear();
@@ -467,12 +520,7 @@ namespace TerraKnight.Net
         {
             var p = new Puppet { Hm = hm, Scene = scene, Id = id, Owner = owner, Anim = hm.GetComponent<tk2dSpriteAnimator>(), Rend = hm.GetComponent<Renderer>() };
             p.Fsms = hm.GetComponentsInChildren<PlayMakerFSM>(true);
-            p.FsmOn = new bool[p.Fsms.Length];
-            for (int i = 0; i < p.Fsms.Length; i++)
-            {
-                p.FsmOn[i] = p.Fsms[i].enabled;
-                p.Fsms[i].enabled = false;
-            }
+            foreach (var f in p.Fsms) Freeze(f);
             var parts = new List<Behaviour>();
             foreach (var b in hm.GetComponents<MonoBehaviour>())
                 if (b != null && !(b is PlayMakerFSM) && !Keep(b)) parts.Add(b);
@@ -502,9 +550,8 @@ namespace TerraKnight.Net
             puppets.Remove((p.Scene, p.Id));
             // By reference: a destroyed enemy (its scene unloaded) goes from the table too.
             puppetOf.Remove(p.Hm);
+            foreach (var f in p.Fsms) Thaw(f);
             if (p.Hm == null) return;
-            for (int i = 0; i < p.Fsms.Length; i++)
-                if (p.Fsms[i] != null) p.Fsms[i].enabled = p.FsmOn[i];
             for (int i = 0; i < p.Parts.Length; i++)
                 if (p.Parts[i] != null) p.Parts[i].enabled = p.PartOn[i];
             if (p.Body != null) p.Body.bodyType = p.BodyType;
@@ -559,6 +606,50 @@ namespace TerraKnight.Net
         }
 
         public static void ReceiveHit(int from, BinaryReader r) { }
+
+        public static int DevBeatenSent, DevBeatenReceived;
+
+        /// <summary>
+        /// A boss beaten by its own death in this game, which runs its fight (SpecialDeaths: the False Knight's fall, a
+        /// journal or beaten record set, a rematch's win). The others in its room are told: their copy is a puppet, which
+        /// never goes down the game's way, so neither its count nor the arena's end would come there.
+        /// </summary>
+        public static void SendBeaten(string scene, string record, string why)
+        {
+            if (!NetSession.Active || !Enabled || record == null || !Owned(scene)) return;
+            DevBeatenSent++;
+            var p = NetSession.Mine(Msg.BossBeaten);
+            p.W.Write(scene);
+            p.W.Write(record);
+            p.W.Write(why ?? "");
+            NetSession.Send(p.Done());
+        }
+
+        /// <summary>
+        /// BossBeaten from the game that ran the fight: a player in that room counts it as won here too (SpecialDeaths
+        /// .CreditFromNet: the book, the treasure bag, a rematch's battle gates; the boss beaten in their own save).
+        /// </summary>
+        public static void ReceiveBeaten(int from, BinaryReader r)
+        {
+            string scene = r.ReadString();
+            string record = r.ReadString();
+            string why = r.ReadString();
+            if (PlayerData.instance == null || !RemoteOwned(scene) || !NetScenes.IsLoaded(scene) || !InRoomOf(scene)) return;
+            DevBeatenReceived++;
+            Plugin.Log.LogInfo($"[联机] {NetSession.Player(from)?.Name} 那边打倒了首领 {record}（{scene}，{why}）：这边也记下");
+            Items.SpecialDeaths.CreditFromNet(record, scene, why);
+        }
+
+        static string Room(string scene) => scene != null && scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
+
+        /// <summary>The hero within the ground of that scene's room (its arena or its way in).</summary>
+        static bool InRoomOf(string scene)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return false;
+            var cell = World.CellGrid.WorldToCell(hero.transform.position);
+            return Room(World.TerraWorld.RegionAt(cell.x, cell.y)?.SceneName) == Room(scene);
+        }
 
         /// <summary>Ownership moved: the scene's puppets and hidden ones are this game's again (the new owner's numbers come with its snapshots).</summary>
         public static void OwnerChanged(string scene)
@@ -642,7 +733,7 @@ namespace TerraKnight.Net
         {
             int vis = 0;
             foreach (var p in puppets.Values) if (p.Hm != null && p.Hm.gameObject.activeInHierarchy) vis++;
-            return $"傀儡 {puppets.Count}（显示 {vis}），藏起 {hidden.Count}，自己负责的 {tracked.Count}，转交伤害 {DevForwarded}，结算别人的伤害 {DevApplied}，发出死亡 {DevDeathsSent}，收到死亡 {DevDeathsReceived}";
+            return $"傀儡 {puppets.Count}（显示 {vis}），藏起 {hidden.Count}，自己负责的 {tracked.Count}，转交伤害 {DevForwarded}，结算别人的伤害 {DevApplied}，发出死亡 {DevDeathsSent}，收到死亡 {DevDeathsReceived}，挡下傀儡的状态机事件 {DevEventsHeld}（{string.Join("、", devHeld)}），首领打倒 发出 {DevBeatenSent} 收到 {DevBeatenReceived}";
         }
     }
 }

@@ -331,7 +331,7 @@ namespace TerraKnight.UI
             style.fontSize = Mathf.RoundToInt(18 * ui);
             // GetInfoAccIconPosition: X = screenWidth - 280, Y = -32 (+261 under the minimap in its frame); a line's icon at Y + 74 + 52 + 22 i, its text 4 px higher, 20 px right.
             float x = view.xMax - 280f * ui;
-            float y0 = view.y + ((WorldMap.MinimapVisible ? -32f + 261f : -32f) + 74f + 52f) * ui;
+            float y0 = view.y + ((WorldMap.MinimapVisible ? -32f + 261f : -32f) + 74f + 52f + ResourceHud.ExtraHeartRows * ResourceHud.RowStep) * ui;
             float step = (Screen.height < 650 ? 20f : 22f) * ui;
             for (int i = 0; i < lines.Count; i++)
             {

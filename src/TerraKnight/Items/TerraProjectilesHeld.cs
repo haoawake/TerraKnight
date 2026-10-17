@@ -496,7 +496,7 @@ namespace TerraKnight.Items
             int size = (int)(22f * p.Scale);
             p.HitSize = new Vector2(size, size);
             int n = p.Scale < 0.85f ? (Random.Range(0, 3) == 0 ? 1 : 0) : 1;
-            if (p.Scale >= 0.85f) p.Penetrate = -1;
+            if (p.Scale >= 0.85f) p.Penetrate = p.MaxPenetrate = -1;
             var c = CenterPx(p);
             for (int k = 0; k < n; k++)
             {

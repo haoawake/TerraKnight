@@ -246,9 +246,9 @@ namespace TerraKnight.World
         static PylonObject Spawn(Pylon p, TerrainRegion region)
         {
             foreach (var o in spawned)
-                if (o != null && o.Pylon == p && o.transform.parent == region.Root) return o;
+                if (o != null && o.Pylon == p && o.transform.parent == (region.Props ?? region.Root)) return o;
             var go = new GameObject("Terra Pylon " + p.Name);
-            go.transform.SetParent(region.Root, false);
+            go.transform.SetParent(region.Props ?? region.Root, false);
             go.transform.localPosition = new Vector3(p.Local.x, p.Local.y, 0f);
             var obj = go.AddComponent<PylonObject>();
             obj.Init(p);

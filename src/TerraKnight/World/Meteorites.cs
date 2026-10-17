@@ -5,7 +5,7 @@ namespace TerraKnight.World
 {
     /// <summary>
     /// Terraria's meteorite (1.4.5: NPC.DoDeathEvents's spawnMeteor, Main.HandleMeteorFall, WorldGen.dropMeteor and
-    /// meteor). A boss beaten queues one, its first defeat always, a later one half the time; it comes down at the next
+    /// meteor). One for the whole save: the first boss beaten queues it (none after one has come down); it comes down at the next
     /// midnight (Main.time 16200 into the night: 1170 s into the day here) in a room the player has been through, never
     /// the one they stand in, Dirtmouth, a boss's room, a dream, Godhome or the White Palace. It lands on a floor the player
     /// has seen there, with room to stand above it, deep rock below and nothing of the room's (a bench, a door, a lever, a
@@ -42,20 +42,55 @@ namespace TerraKnight.World
             burnSum = 0;
         }
 
-        /// <summary>A boss's kill counted (Items.Bestiary.Credit).</summary>
+        /// <summary>A boss's kill counted (Items.Bestiary.Credit): the save's one meteorite queued, unless it has come down already.</summary>
         public static void OnBossDown(bool firstKill)
         {
-            if (Net.WorldSync.Guest) return;
-            if (!firstKill && Random.Range(0, 2) != 0) return;
+            if (Net.WorldSync.Guest || Landed > 0) return;
             if (!Pending) Plugin.Log.LogInfo("[陨石] 首领倒下：今晚午夜有陨石落下");
             Pending = true;
             DevQueued++;
         }
 
-        /// <summary>Each frame in play: the burning, and a pending meteorite at midnight.</summary>
+        static readonly HashSet<TerrainRegion> cleared = new HashSet<TerrainRegion>();
+        public static int DevCoverCleared;
+
+        /// <summary>
+        /// A room with a meteorite in it, once loaded: the foreground scenery over the crater blown away with it (the
+        /// game's leaves and rocks in front of the gameplay plane hid the Meteorite to dig).
+        /// </summary>
+        static void ClearCover()
+        {
+            if (TerrainSystem.All.Count == 0) return;
+            cleared.RemoveWhere(r => r == null || r.Root == null);
+            var cam = GameCameras.instance != null ? GameCameras.instance.mainCamera : null;
+            if (cam == null) return;
+            foreach (var ts in TerrainSystem.All)
+            {
+                var region = ts?.Region;
+                if (region == null || region.Root == null || region.Holes == null || !cleared.Add(region)) continue;
+                var g = region.Grid;
+                int x0 = int.MaxValue, y0 = int.MaxValue, x1 = int.MinValue, y1 = int.MinValue, n = 0;
+                for (int y = 0; y < g.Height; y++)
+                    for (int x = 0; x < g.Width; x++)
+                        if (g.Get(x, y) == CellKind.Meteorite) { n++; x0 = Mathf.Min(x0, x); y0 = Mathf.Min(y0, y); x1 = Mathf.Max(x1, x); y1 = Mathf.Max(y1, y); }
+                // A crater's worth (a few Meteorite blocks the player set down elsewhere leave the scenery be).
+                if (n < 20) continue;
+                const float c = CellGrid.CellSize;
+                Vector2 origin = (Vector2)region.CellOffset * c;
+                // The crater and a little round it (the pit's lip, where the player stands to dig).
+                var area = Rect.MinMaxRect(origin.x + (x0 - 2) * c, origin.y + (y0 - 2) * c, origin.x + (x1 + 3) * c, origin.y + (y1 + 5) * c);
+                var over = region.Holes.CoverOver(area, cam.transform.position.z);
+                foreach (var sr in over) sr.enabled = false;
+                DevCoverCleared += over.Count;
+                if (over.Count > 0) Plugin.Log.LogInfo($"[陨石] {region.SceneName} 的陨石坑上有 {over.Count} 块前景，撤掉：{string.Join("、", over.ConvertAll(s => s.name))}");
+            }
+        }
+
+        /// <summary>Each frame in play: the burning, the foreground over a crater, and a pending meteorite at midnight.</summary>
         public static void Tick(HeroController hero, TerraMod mod)
         {
             Burn(hero, mod);
+            if (Landed > 0 && Time.frameCount % 30 == 0) ClearCover();
             if (!Pending || hero == null || Net.WorldSync.Guest) return;
             if (!DevAtMidnight && (TerraTime.IsDay || TerraTime.Now < Midnight)) return;
             var gm = GameManager.UnsafeInstance;

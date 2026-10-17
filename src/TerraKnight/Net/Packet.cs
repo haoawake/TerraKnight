@@ -49,6 +49,8 @@ namespace TerraKnight.Net
         WorldResult = 206,
         /// <summary>The mod's: a boss seal used (its arena's key): everyone goes to the arena.</summary>
         BossSummon = 207,
+        /// <summary>The mod's: a boss beaten in the game that runs its fight (the game's record of it): the others in its room write it too.</summary>
+        BossBeaten = 208,
     }
 
     /// <summary>

@@ -6,12 +6,16 @@ namespace TerraKnight.Items
     internal static partial class ItemDb
     {
         /// <summary>Terraria's heart (item 58): picked up, it heals 20 life at once and is never carried (WorldItems).</summary>
-        static void AddHeart(List<ItemDef> list) =>
+        static void AddHeart(List<ItemDef> list)
+        {
             list.Add(new ItemDef { Type = ItemType.Heart, Name = "心", Texture = "Item_58", MaxStack = 9999, Tooltip = "拾取后恢复20点生命", UseSound = null });
+            AddManaStar(list);
+        }
 
         static IEnumerable<(ItemType, int, ItemSource, int)> HeartSources()
         {
             yield return (ItemType.Heart, 0, ItemSource.Drop, 0);
+            yield return (ItemType.Star, 0, ItemSource.Drop, 0);
         }
     }
 
@@ -63,6 +67,8 @@ namespace TerraKnight.Items
         {
             if (info == null || info.Ref == null) return;
             DevPhases++;
+            // Shared in a LAN game, from the game that runs the boss (the puppet's copy crosses the phase too).
+            EnemyDrops.LootScene = info.Scene;
             bool direct = EnemyDrops.LeavesOnItsOwn(info.Scene);
             DevLastPotion = BossStats.PotionOf(info.Ref);
             EnemyDrops.Spill(ItemStack.Of(DevLastPotion, Random.Range(2, 6)), at, direct);

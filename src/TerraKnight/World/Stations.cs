@@ -514,7 +514,7 @@ namespace TerraKnight.World
                 if (s.Renderer == null)
                 {
                     var go = new GameObject("Terra Station " + s.Kind);
-                    go.transform.SetParent(s.Region.Root, false);
+                    go.transform.SetParent(s.Region.Props ?? s.Region.Root, false);
                     s.Renderer = go.AddComponent<SpriteRenderer>();
                     if (s.Spec.Custom != null)
                     {

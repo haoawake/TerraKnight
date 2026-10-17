@@ -379,6 +379,7 @@ namespace TerraKnight.Net
                     case Msg.PlayerHurt:
                     case Msg.EnemyHit:
                     case Msg.EnemyDeath:
+                    case Msg.BossBeaten:
                         Relay(c, body);
                         return;
                 }

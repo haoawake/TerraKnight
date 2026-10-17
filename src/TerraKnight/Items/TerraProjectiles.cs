@@ -241,6 +241,12 @@ namespace TerraKnight.Items
             public ProjKind Kind;
             public Spec Spec;
             public int Damage, Penetrate, TimeLeft, Ticks, Bounces, Extra;
+            /// <summary>
+            /// Projectile.maxPenetrate: its pierce as made (SetDefaults), not as it is used up; changed only where Terraria's AI
+            /// changes it too (the charged blaster's big orb, the Celebration Mk2's rocket, the ichor dart). A shot of
+            /// maxPenetrate 1 hits once and dies, past every immunity; any other keeps the enemy's.
+            /// </summary>
+            public int MaxPenetrate;
             public float Knockback, Crit, Scale, Alpha, Ai0, Ai1;
             public Vector2 Pos, Vel; // world centre; Terraria px per update, y up
             public float Rot;        // degrees, Unity's (counter-clockwise)
@@ -308,6 +314,8 @@ namespace TerraKnight.Items
             public float Timer2;
             /// <summary>Its number in a LAN game's snapshots (0 until first sent).</summary>
             public int NetId;
+            /// <summary>Sent back by a shield (TerraProjectilesReflect): it hurts the player now, never an enemy.</summary>
+            public bool Hostile;
         }
 
         sealed class Pending
@@ -471,7 +479,7 @@ namespace TerraKnight.Items
             p.Gem = fx;
             DevLastGem = fx;
             int more = Mathf.Max((fx & GemFx.Bounce) != 0 ? 2 : 0, (fx & (GemFx.FastSlow | GemFx.Bigger)) != 0 ? 1 : 0);
-            p.Penetrate = 1 + more;
+            p.Penetrate = p.MaxPenetrate = 1 + more;
             p.TimeLeft = (fx & GemFx.FastSlow) != 0 ? 600 : 300;
             p.GemArmorPen = (fx & GemFx.ArPen) != 0 ? 4 : 0;
         }
@@ -483,7 +491,7 @@ namespace TerraKnight.Items
             if (p == null) return;
             p.MinionShot = true;
             // Its own pierce instead of the kind's (the Ballista's bolt through 7 with the Squire's sets).
-            if (penetrate != 0) p.Penetrate = penetrate;
+            if (penetrate != 0) p.Penetrate = p.MaxPenetrate = penetrate;
         }
 
         /// <summary>A Star Cloak star, through everything until below topY (the player's top when it was called down).</summary>
@@ -517,7 +525,7 @@ namespace TerraKnight.Items
             var p = new Proj
             {
                 Kind = kind, Spec = spec, Damage = damage, Knockback = knockback, Crit = crit,
-                Pos = from, Vel = velocity, Penetrate = spec.Penetrate,
+                Pos = from, Vel = velocity, Penetrate = spec.Penetrate, MaxPenetrate = spec.Penetrate,
                 TimeLeft = spec.Ai == Ai.Thrown ? spec.Fuse : spec.Time, Scale = spec.Scale, Extra = Mathf.Max(spec.Extra, extraUpdates),
                 Alpha = spec.AlphaStart, Collide = spec.TileCollide, LaunchSpeed = velocity.magnitude, StartPos = from, StartVel = velocity,
             };
@@ -620,7 +628,13 @@ namespace TerraKnight.Items
                 int updates = p.Extra;
                 // What it makes as it goes is of its class.
                 SpawnClass = ClassOf(p);
+                DevCurrentKind = p.Kind;
+                DevCurrentId = p.GetHashCode();
+                devCurrent = p;
                 for (int u = 0; u <= updates && !p.Dead; u++) Step(p, u == 0);
+                DevCurrentKind = ProjKind.None;
+                DevCurrentId = 0;
+                devCurrent = null;
             }
             SpawnClass = DamageClass.None;
             for (int i = live.Count - 1; i >= 0; i--)
@@ -1290,6 +1304,11 @@ namespace TerraKnight.Items
 
         void HitEnemies(Proj p)
         {
+            if (p.Hostile)
+            {
+                HitPlayer(p);
+                return;
+            }
             var s = p.Spec;
             // SetDefaults scales the hitbox once and truncates it (the laser keeps its 2×2 as it grows).
             var size = (p.HitSize != Vector2.zero ? p.HitSize : new Vector2((int)(s.W * s.Scale), (int)(s.H * s.Scale))) * Px;
@@ -1346,7 +1365,7 @@ namespace TerraKnight.Items
                 // any such hit. A shot that hits once and dies ignores both and leaves none behind.
                 int localCooldown = p.Cooldown > 0 ? p.Cooldown : s.LocalCooldown;
                 bool local = localCooldown > 0 || s.OncePerNpc, typed = s.TypeCooldown > 0;
-                bool single = s.Penetrate == 1 && !local && !typed && s.OwnerImmune == 0;
+                bool single = p.MaxPenetrate == 1 && !local && !typed && s.OwnerImmune == 0;
                 var typeKey = (s.TypeGroup != ProjKind.None ? s.TypeGroup : p.Kind, id);
                 if (p.Immune.ContainsKey(id)) continue;
                 if (typed && typeImmune.ContainsKey(typeKey)) continue;
@@ -1358,6 +1377,22 @@ namespace TerraKnight.Items
                 if (s.PushFromCentre) facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
                 // Yoyos and flails push away from the player (P:13304-13311, 13664-13679).
                 if (s.PushFromPlayer) facing = col.bounds.center.x >= ownerCentre.x ? 1f : -1f;
+                // A shield or a shell that stops the shot (MeleeHits.Blocks): nothing of the hit lands, its debuffs neither;
+                // one Terraria reflects comes back at the player (TerraProjectilesReflect), the rest are spent on it.
+                if (MeleeHits.Blocks(hm, facing, ClassOf(p)))
+                {
+                    ArmorEffects.Context = default;
+                    melee.HitWith(col, Mathf.Max(1, p.Damage), 0f, 0f, facing, p.Pos - p.Vel.normalized * 0.3f);
+                    if (CanReflect(p))
+                    {
+                        Reflect(p, ownerCentre);
+                        return;
+                    }
+                    p.Immune[id] = 10;
+                    if (s.DieOnHit || (p.Penetrate > 0 && --p.Penetrate == 0)) Kill(p);
+                    if (p.Dead || s.OneHitPerUpdate) return;
+                    continue;
+                }
                 // StatusNPC runs before the damage: the debuffs of the shot.
                 if (p.Kind == ProjKind.DarkLance) EnemyDebuffs.Add(hm, EnemyDebuffs.Shadowflame, Random.Range(240, 300));
                 if (p.Kind == ProjKind.Flamelash && Random.Range(0, 2) == 0) EnemyDebuffs.Add(hm, EnemyDebuffs.OnFire, Random.Range(240, 480));

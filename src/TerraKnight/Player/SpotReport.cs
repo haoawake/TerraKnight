@@ -9,7 +9,8 @@ namespace TerraKnight.Player
     /// To find a place the player is talking about. F8 writes what is at the player's spot to the
     /// log: the scene and position, what the cursor is on (the cell and its kind, every collider
     /// under it and what it is: its components and FSMs), what touches the hero on either side,
-    /// the cells round the cursor, and what the held item would act on there. The position is
+    /// the cells round the cursor, what the held item would act on there, and the hero against the platforms built
+    /// near him (collision, his body, the cells round his feet). The position is
     /// also logged every few seconds while the player moves. Lines start "[现场]" and "[位置]".
     /// </summary>
     internal static class SpotReport
@@ -55,6 +56,45 @@ namespace TerraKnight.Player
             return p;
         }
 
+        /// <summary>
+        /// The hero against the platforms built (for a platform that can't be stood on, placed on, or holds his head): each
+        /// platform composite near him (collision with him ignored or not, switched off or suspended), his body, the stair
+        /// walker's state, what overlaps his box, and the cells round his feet (p platform, s stair, b block, # ground).
+        /// </summary>
+        static void Platforms(HeroController hero, BoxCollider2D col, StringBuilder sb)
+        {
+            var b = col.bounds;
+            var rb = hero.GetComponent<Rigidbody2D>();
+            sb.Append("\n  平台：");
+            int near = 0;
+            foreach (var p in ChunkColliders.AllPlatforms)
+            {
+                if (p == null || Vector2.Distance(p.bounds.center, b.center) > 30f) continue;
+                near++;
+                bool ignored = Physics2D.GetIgnoreCollision(col, p);
+                bool off = !p.enabled || !p.gameObject.activeInHierarchy;
+                if (ignored || off || p.bounds.Intersects(b))
+                    sb.Append($"\n    {Path(p.transform)} {p.bounds.min.x:F2},{p.bounds.min.y:F2}..{p.bounds.max.x:F2},{p.bounds.max.y:F2}：忽略主角 {ignored}，关着 {off}，形状 {p.shapeCount}，压着主角 {p.bounds.Intersects(b)}");
+            }
+            sb.Append($"\n    附近平台组 {near}；主角刚体 {(rb != null ? $"{rb.bodyType}/模拟 {rb.simulated}/重力 {rb.gravityScale:F2}/速度 {rb.linearVelocity.x:F1},{rb.linearVelocity.y:F1}" : "无")}，碰撞体 开 {col.enabled} 触发 {col.isTrigger} 层 {hero.gameObject.layer}，与地形层忽略 {Physics2D.GetIgnoreLayerCollision(hero.gameObject.layer, ChunkColliders.TerrainLayer)}");
+            sb.Append($"\n    可操作 {GameHooks.PlayerHasControl()}，坐着 {PlayerData.instance?.atBench}，过场 {hero.cState.transitioning}，按下 {TerraMovement.DownHeld}，在绳上 {TerraMovement.OnRope}，台阶 {StairCollision.DevState} {StairCollision.DevLedge}");
+            sb.Append("\n    压着主角的：");
+            foreach (var c in Physics2D.OverlapBoxAll(b.center, b.size * 0.98f, 0f))
+                if (c != col && !c.isTrigger) sb.Append("\n      ").Append(Describe(c));
+            var feet = CellGrid.WorldToCell(new Vector2(b.center.x, b.min.y + 0.01f));
+            sb.Append("\n    主角周围的格子（p 平台，s 锤过的平台，b 放的方块，# 原地形，. 空，大写是脚所在的格）：");
+            for (int y = feet.y + 4; y >= feet.y - 2; y--)
+            {
+                sb.Append("\n      ");
+                for (int x = feet.x - 4; x <= feet.x + 4; x++)
+                {
+                    var k = TerraWorld.Get(x, y);
+                    char ch = TerraWorld.IsPlatform(x, y) ? (TerraWorld.GetSlope(x, y) == 0 ? 'p' : 's') : k == CellKind.Empty ? '.' : k == CellKind.Original ? '#' : 'b';
+                    sb.Append(x == feet.x && y == feet.y ? char.ToUpper(ch == '.' ? 'o' : ch) : ch);
+                }
+            }
+        }
+
         static void Report(HeroController hero, Vector2 mouse)
         {
             DevReports++;
@@ -83,6 +123,7 @@ namespace TerraKnight.Player
                 foreach (var c in Physics2D.OverlapBoxAll(new Vector2(x, b.center.y), new Vector2(0.14f, b.size.y * 0.9f), 0f))
                     if (c != col) sb.Append("\n    ").Append(Describe(c));
             }
+            Platforms(hero, col, sb);
             sb.Append("\n  鼠标周围的格子（# 原地形，a 手放碰撞体，b 放的方块，. 空，? 不在场景里，中间是鼠标格）：");
             for (int y = cell.y + 4; y >= cell.y - 4; y--)
             {

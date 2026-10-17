@@ -13,6 +13,7 @@ namespace TerraKnight.Items
         const int Main = 100, Function = 101, Rare = 102, Essential = 103, Ore = 200, Material = 201, Building = 202;
         static readonly Dictionary<string, EnemyDrops.Drop[]> cache = new Dictionary<string, EnemyDrops.Drop[]>();
         static readonly Dictionary<string,List<ItemType>> catalogues = new Dictionary<string,List<ItemType>>();
+        static readonly Dictionary<string,Dictionary<string,List<ItemType>>> sources = new Dictionary<string,Dictionary<string,List<ItemType>>>();
         static HashSet<ItemType> legacyItems;
         static Dictionary<string,int> ordinals;
         internal static readonly HashSet<string> NamedElites = new HashSet<string> { "BigBuzzer","MageKnight","PaleLurker" };
@@ -42,7 +43,7 @@ namespace TerraKnight.Items
             var rows = new List<EnemyDrops.Drop>();
             if (key == "Zote") return new[] {Row(ItemType.Wood,Building,1,2,4)};
             bool elite = Elite(key,e);
-            int tier = Mathf.Clamp(stage,0,5);
+            int tier = Mathf.Clamp(Math.Max(stage, NativeTier(key)),0,5);
             if (ProgressionBalance.BossRewards.TryGetValue(key,out var reward) && (boss || NamedElites.Contains(key)))
             {
                 tier = reward.Stage;
@@ -55,6 +56,7 @@ namespace TerraKnight.Items
                 // Upgrading the area's equipment pool must not erase the original ingredients
                 // of vanilla upgrade recipes (Mace, Compass, old accessories, armour, etc.).
                 if (!d.Master && def.Source == ItemSource.Drop && Recipes.IsMaterial(d.Type)
+                    && def.Stage >= NativeTier(key)
                     && ProgressionBalance.Unlocked(d.Type, stage, entry, final) && RegionAllows(d.Type, e.Scene, boss)
                     && (def.IsWeapon || def.IsArmor || def.IsAccessory))
                 {
@@ -62,11 +64,17 @@ namespace TerraKnight.Items
                 }
                 // A Master relic places too, but drops every time (MasterModeCommonDrop), not as a tool.
                 bool utility=!d.Master && (def.PickPower>0 || def.AxePower>0 || def.HammerPower>0 || def.PlacesStation!=World.StationKind.None);
-                if (d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility)
+                // Hooks, fishing poles and other single items are not stackable resources.
+                // Preserve their original roll instead of pooling their expectation into a
+                // large material stack (which can otherwise produce dozens of hooks).
+                bool single=def.MaxStack==1 && !def.IsWeapon && !def.IsArmor && !def.IsAccessory;
+                if (d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility && def.Stage >= NativeTier(key) || single && !utility)
                 {
                     var copy=d;
                     copy.LockStage=0;
                     copy.Group=0;
+                    if(def.MaxStack==1 || def.LifeCrystal || def.ManaCrystal || def.Boost!=PermanentBoost.None)
+                    {copy.Min=copy.Max=1;copy.MeanCount=0;}
                     if(utility && copy.Chance>.05f) {copy.Num=1;copy.Den=20;}
                     if(d.Type==ItemType.DemonHeart && !first) continue;
                     if (d.Master || d.Type == ItemType.Heart || ProgressionBalance.Unlocked(d.Type,stage,entry,final)) rows.Add(copy);
@@ -101,26 +109,27 @@ namespace TerraKnight.Items
                 for (int cls=0;cls<4;cls++)
                 {
                     var weapons=new List<ItemType>();
-                    for(int n=0;n<2;n++)
+                    for(int n=0;n<(MainRoute(key) ? 1 : 0);n++)
                     {
-                        var t=ProgressionBalance.Core[tier][cls][n];
+                        int local=(int)(StableHash(BestiaryRoute.AreaOf(key)+cls)%2);
+                        var t=ProgressionBalance.Core[tier][cls][local];
                         if (ProgressionBalance.Unlocked(t,stage,entry,final)) weapons.Add(t);
                     }
                     AddExtras(weapons,key,tier,cls,0,entry,final);
                     var armor=new List<ItemType>();
-                    foreach (var t in ProgressionBalance.ArmorFor(tier,cls))
+                    foreach (var t in MainRoute(key) ? ProgressionBalance.ArmorFor(tier,cls) : Array.Empty<ItemType>())
                         if (ProgressionBalance.Unlocked(t,stage,entry,final)) armor.Add(t);
                     AddExtras(armor,key,tier,cls,1,entry,final);
                     foreach (var t in weapons) rows.Add(Row(t,Rare,chance,weight:.125f/Math.Max(1,weapons.Count)));
                     foreach (var t in armor) rows.Add(Row(t,Rare,chance,weight:.0625f/Math.Max(1,armor.Count)));
                     var accessories=new List<ItemType>();
                     var acc=ProgressionBalance.AccessoryPaths[tier][cls][1];
-                    if (ProgressionBalance.Unlocked(acc,stage,entry,final)) accessories.Add(acc);
+                    if (MainRoute(key) && ProgressionBalance.Unlocked(acc,stage,entry,final)) accessories.Add(acc);
                     AddExtras(accessories,key,tier,cls,2,entry,final);
                     foreach(var t in accessories) rows.Add(Row(t,Rare,chance,weight:.0625f/Math.Max(1,accessories.Count)));
                 }
             }
-            if (!boss)
+            if (!boss && MainRoute(key))
             {
                 // Keep the local accessory candidates; all ordinary-enemy accessory routes are
                 // consolidated into one bounded roll below, including legacy crafting inputs.
@@ -138,13 +147,19 @@ namespace TerraKnight.Items
                 }
             }
 
+            if (!boss)
+            {
+                var inputs=new List<ItemType>();
+                AddExtras(inputs,key,stage,-1,3,entry,final);
+                foreach(var t in inputs) rows.Add(Row(t,Rare,elite ? .12f : .04f,weight:.025f));
+            }
             var ores=new Dictionary<ItemType,float>();
             var mats=new Dictionary<ItemType,float>();
             var blocks=new Dictionary<ItemType,float>();
             foreach (var d in e.Drops ?? Array.Empty<EnemyDrops.Drop>())
             {
                 var def=ItemDb.Get(d.Type);
-                if (d.Group>0 || d.Master || def.IsAccessory || def.IsArmor || def.Boost!=PermanentBoost.None || def.HkItem ||
+                if (d.Group>0 || d.Master || def.MaxStack==1 || def.IsAccessory || def.IsArmor || def.Boost!=PermanentBoost.None || def.HkItem ||
                     def.HealLife>0 || def.HealMana>0 || def.LifeCrystal || def.ManaCrystal || d.Type==ItemType.Heart || def.PickPower>0 || def.AxePower>0 || def.HammerPower>0 ||
                     def.GameTool || def.IsWeapon && def.MaxStack==1 || def.PlacesStation != World.StationKind.None) continue;
                 if (!ProgressionBalance.Unlocked(d.Type,stage,entry,final) || !RegionAllows(d.Type,e.Scene,boss)) continue;
@@ -153,6 +168,26 @@ namespace TerraKnight.Items
                 pool[d.Type]=(pool.TryGetValue(d.Type,out float n) ? n : 0)+expected;
             }
             AddRegionalMaterials(e.Scene,stage,entry,final,boss,ores,mats);
+            if(!boss && (key=="Mosquito" || key=="BlobFlyer" || key=="LazyFlyer" || key=="BigBuzzer")
+                && ProgressionBalance.Unlocked(ItemType.BeeWax,stage,entry,final))
+                mats[ItemType.BeeWax]=Math.Max(Value(mats,ItemType.BeeWax),.8f);
+            // The stage-2 smelting chain has an accessible exploration source as well
+            // as the merchant fallback. A whole station is always one item.
+            if(ProgressionBalance.Unlocked(ItemType.Hellforge,stage,entry,final))
+            {
+                if(key=="ZombieMiner" || key=="BeamMiner") rows.Add(Row(ItemType.Hellforge,0,.05f));
+                if(key=="MegaBeamMiner") rows.Add(Row(ItemType.Hellforge,0,first ? 1f : .2f));
+            }
+            // Phase-defining ingredients should arrive steadily, not as a 30-ore
+            // jackpot diluted by every older ore in the region's generic pool.
+            if(!boss && ores.ContainsKey(ItemType.MythrilOre) && ores.ContainsKey(ItemType.OrichalcumOre))
+            {
+                ores.Remove(ItemType.MythrilOre);ores.Remove(ItemType.OrichalcumOre);
+                rows.Add(Row(ItemType.MythrilOre,203,elite ? 1f : .8f,elite ? 3 : 2,elite ? 5 : 4));
+                rows.Add(Row(ItemType.OrichalcumOre,203,elite ? 1f : .8f,elite ? 3 : 2,elite ? 5 : 4));
+            }
+            if(!boss && mats.Remove(ItemType.SpiderFang))
+                rows.Add(Row(ItemType.SpiderFang,0,elite ? 1f : .75f,elite ? 2 : 1,elite ? 4 : 3));
             // Souls need frequent, small drops, not a rare selection from a huge mixed stack.
             foreach (var soul in new[] {ItemType.SoulofLight,ItemType.SoulofNight,ItemType.SoulofFlight}) mats.Remove(soul);
             if (ProgressionBalance.Unlocked(ItemType.SoulofLight,stage,entry,final))
@@ -208,18 +243,24 @@ namespace TerraKnight.Items
             }
             Pool(rows,ores,Ore,boss || elite ? 1 : .6f,1.2f);
             Pool(rows,mats,Material,1f,boss ? 1.5f : 1.8f);
-            Pool(rows,blocks,Building,.8f,1.2f);
+            // Common construction stock belongs to early-route farming, not advanced fights.
+            if (!boss && NativeTier(key)<2) Pool(rows,blocks,Building,.8f,1.2f);
+            // Resource ingredients keep their local sources; obsolete equipment never leaks
+            // back in through a legacy crafting-input or first-kill reward route.
+            if (!boss) rows.RemoveAll(d => {
+                var def=ItemDb.Get(d.Type);
+                return !d.Master && !ProgressionBalance.Unlocked(d.Type,stage,entry,final)
+                    || (CombatWeapon(def) || def.IsArmor || def.IsAccessory) && def.Stage < NativeTier(key);
+            });
             if (!boss) ConsolidateAccessories(rows, elite);
-            else EnsureAccessoryFloor(rows);
+            else ConsolidateAccessories(rows, elite, first ? 1f : .2f);
             return rows.ToArray();
         }
 
         internal static float AccessoryChance(bool elite) => elite ? .05f : .02f;
-        internal const float MinimumAccessoryChance = .015f;
-        internal static float AccessoryPoolChance(bool elite, int count) =>
-            Mathf.Min(1f, Mathf.Max(AccessoryChance(elite), count * MinimumAccessoryChance));
+        internal static float AccessoryPoolChance(bool elite, int count) => count > 0 ? AccessoryChance(elite) : 0f;
 
-        static void ConsolidateAccessories(List<EnemyDrops.Drop> rows, bool elite)
+        static void ConsolidateAccessories(List<EnemyDrops.Drop> rows, bool elite, float bossChance = -1f)
         {
             var weights = new Dictionary<ItemType, float>();
             float rareTotal=0, rareRemaining=0;
@@ -252,69 +293,11 @@ namespace TerraKnight.Items
                         rows[i]=d;
                     }
             foreach (var pair in weights)
-                // The floor is per item, not for the whole pool. One common roll still pays
-                // at most one accessory; equal weights give each candidate its full floor.
-                rows.Add(Row(pair.Key,Essential,AccessoryPoolChance(elite, weights.Count),1,1,1f));
+                // One fixed pool roll, followed by an equal N-way choice. Adding candidates
+                // must never increase the chance that a kill pays an accessory.
+                rows.Add(Row(pair.Key,Essential,bossChance >= 0 ? bossChance : AccessoryPoolChance(elite, weights.Count),1,1,1f));
         }
 
-        static void EnsureAccessoryFloor(List<EnemyDrops.Drop> rows)
-        {
-            var groups = new HashSet<int>();
-            for (int i = 0; i < rows.Count; i++)
-            {
-                var d = rows[i];
-                if (!ItemDb.Get(d.Type).IsAccessory) continue;
-                if (d.Group > 0) { groups.Add(d.Group); continue; }
-                if (d.Chance < MinimumAccessoryChance)
-                {
-                    d.Num = 1500; d.Den = 100000;
-                    rows[i] = d;
-                }
-            }
-            foreach (int group in groups)
-            {
-                var indices = new List<int>();
-                int accessories = 0;
-                float sum = 0f, probability = 0f;
-                for (int i = 0; i < rows.Count; i++)
-                    if (rows[i].Group == group)
-                    {
-                        indices.Add(i);
-                        sum += Weight(rows[i]);
-                        probability = rows[i].Chance;
-                        if (ItemDb.Get(rows[i].Type).IsAccessory) accessories++;
-                    }
-                bool needed = false;
-                foreach (int i in indices)
-                    if (ItemDb.Get(rows[i].Type).IsAccessory && probability * Weight(rows[i]) / sum < MinimumAccessoryChance) needed = true;
-                if (!needed) continue;
-                probability = Mathf.Min(1f, Mathf.Max(probability, accessories * MinimumAccessoryChance));
-                var fixedRows = new HashSet<int>();
-                float remaining = probability, remainingWeight = sum;
-                bool changed;
-                do
-                {
-                    changed = false;
-                    foreach (int i in indices)
-                        if (!fixedRows.Contains(i) && ItemDb.Get(rows[i].Type).IsAccessory
-                            && remaining * Weight(rows[i]) / Mathf.Max(remainingWeight, .000001f) < MinimumAccessoryChance)
-                        {
-                            fixedRows.Add(i);
-                            remaining -= MinimumAccessoryChance;
-                            remainingWeight -= Weight(rows[i]);
-                            changed = true;
-                        }
-                } while (changed);
-                foreach (int i in indices)
-                {
-                    var d = rows[i];
-                    d.Weight = fixedRows.Contains(i) ? MinimumAccessoryChance
-                        : Mathf.Max(0f, remaining) * Weight(d) / Mathf.Max(remainingWeight, .000001f);
-                    d.Num = Mathf.RoundToInt(probability * 100000); d.Den = 100000;
-                    rows[i] = d;
-                }
-            }
-        }
         static float Value(Dictionary<ItemType,float> pool, ItemType t) => pool.TryGetValue(t,out float n) ? n : 0;
         internal static bool CombatWeapon(ItemDef d) => d.IsWeapon && !d.IsAmmo && !d.GameTool && !d.HkItem && d.MaxStack==1
             && d.PickPower==0 && d.AxePower==0 && d.HammerPower==0 && d.FishingPower==0 && d.PlacesStation==World.StationKind.None;
@@ -341,8 +324,9 @@ namespace TerraKnight.Items
                 foreach(var t in legacyItems)
                 {
                     var d=ItemDb.Get(t);
-                    if(d.Stage!=stage || !ProgressionBalance.Unlocked(t,stage,entry,final)) continue;
-                    bool match=category==0 ? CombatWeapon(d) && ProgressionBalance.ClassIndex(d.Class)==cls
+                    if((category==3 ? d.Stage>stage : d.Stage!=stage) || !ProgressionBalance.Unlocked(t,stage,entry,final)) continue;
+                    bool match=category==3 ? Recipes.IsMaterial(t) && (CombatWeapon(d) || d.IsArmor || d.IsAccessory)
+                        : category==0 ? CombatWeapon(d) && ProgressionBalance.ClassIndex(d.Class)==cls
                         : category==1 ? d.IsArmor && (d.Kit==Kit.General || ProgressionBalance.ClassIndex(d.Kit)==cls)
                         : d.IsAccessory && (d.Kit==Kit.General || ProgressionBalance.ClassIndex(d.Kit)==cls);
                     if(match) candidates.Add(t);
@@ -351,13 +335,94 @@ namespace TerraKnight.Items
                 catalogues[id]=candidates;
             }
             if(candidates.Count==0) return;
-            int start=ordinals[record]*2;
-            for(int n=0;n<2 && n<candidates.Count;n++)
+            if(sources.TryGetValue(id,out var assigned))
             {
-                var t=candidates[(start+n)%candidates.Count];
-                if(!pool.Contains(t)) pool.Add(t);
+                if(assigned.TryGetValue(record,out var local)) foreach(var t in local) if(!pool.Contains(t)) pool.Add(t);
+                return;
+            }
+            sources[id]=assigned=new Dictionary<string,List<ItemType>>();
+            void Assign(string rec,ItemType t)
+            {
+                if(!assigned.TryGetValue(rec,out var list)) assigned[rec]=list=new List<ItemType>();
+                list.Add(t);
+            }
+            // Assign every catalogue item to a stable regional source. Main-route enemies
+            // carry progression staples and recipe inputs; side routes carry optional variants.
+            // Build the eligible roster for this tier so future-area enemies cannot strand gear.
+            foreach (var t in candidates)
+            {
+                string theme=category==3 ? null : SpecialtyArea(t);
+                // Before the first ability there is no side-route roster: keep starter variants reachable.
+                bool main=stage==0 || category==3 || (theme!=null ? MainArea(theme) : Recipes.IsMaterial(t) || StableHash(t.ToString())%4 != 0);
+                var areas=new SortedDictionary<string,List<string>>(StringComparer.Ordinal);
+                foreach (var rec in ordinals.Keys)
+                {
+                    // Named elites use fixed boss-style reward tiers, including a separate
+                    // first-kill branch; they cannot own a scaling catalogue's sole source.
+                    if (NamedElites.Contains(rec)) continue;
+                    int sourceStage=category==3 ? ItemDb.Get(t).Stage : stage;
+                    if (NativeTier(rec)>sourceStage || World.Areas.LevelOf(EnemyDrops.SceneOf(rec))>sourceStage || MainRoute(rec)!=main) continue;
+                    string area=BestiaryRoute.AreaOf(rec);
+                    if (!areas.TryGetValue(area,out var members)) areas[area]=members=new List<string>();
+                    members.Add(rec);
+                }
+                if (areas.Count==0) continue;
+                if (theme!=null && areas.TryGetValue(theme,out var themed))
+                {
+                    themed.Sort(StringComparer.Ordinal);
+                    Assign(themed[(int)(StableHash(t.ToString())%(uint)themed.Count)],t);
+                    continue;
+                }
+                var regionNames=new List<string>(areas.Keys);
+                uint hash=StableHash(t.ToString());
+                var roster=areas[regionNames[(int)(hash%(uint)regionNames.Count)]];
+                roster.Sort(StringComparer.Ordinal);
+                string source=roster[(int)((hash/(uint)regionNames.Count)%(uint)roster.Count)];
+                Assign(source,t);
+            }
+            if(assigned.TryGetValue(record,out var selected)) foreach(var t in selected) if(!pool.Contains(t)) pool.Add(t);
+        }
+        static uint StableHash(string text)
+        {
+            uint hash=2166136261;
+            foreach(char c in text) hash=unchecked((hash^c)*16777619);
+            return hash;
+        }
+        internal static bool MainRoute(string record)
+            => MainArea(BestiaryRoute.AreaOf(record));
+        static string SpecialtyArea(ItemType type)
+        {
+            string name=type.ToString();
+            if(name.Contains("Bee") || name.StartsWith("Hive")) return "蜂巢";
+            if(name.Contains("Spider")) return "深巢";
+            if(name.Contains("Crystal")) return "水晶山峰";
+            if(name.Contains("Jungle") || name.Contains("Thorn") || name.Contains("Spore")) return "真菌荒地";
+            if(name.Contains("Spooky") || name.Contains("Bat") || name.Contains("Vampire")) return "格林剧团";
+            return null;
+        }
+        static bool MainArea(string area)
+        {
+            switch (area)
+            {
+                case "国王山道": case "遗忘十字路": case "苍绿之径": case "真菌荒地":
+                case "泪水之城": case "水晶山峰": case "远古盆地": case "王国边缘":
+                case "深巢": case "深渊": case "黑卵神殿": return true;
+                default: return false;
             }
         }
+        internal static int NativeTier(string record)
+        {
+            switch (BestiaryRoute.AreaOf(record))
+            {
+                case "国王山道": case "遗忘十字路": return 0;
+                case "苍绿之径": case "真菌荒地": case "雾之峡谷": case "呼啸悬崖": return 1;
+                case "泪水之城": case "水晶山峰": case "皇家水道": case "安息之地": return 2;
+                case "远古盆地": case "深巢": case "野兽巢穴": case "王后花园": return 3;
+                case "王国边缘": case "蜂巢": case "愚人斗兽场": case "深渊": return 4;
+                default: return 5;
+            }
+        }
+
         static void Pool(List<EnemyDrops.Drop> rows,Dictionary<ItemType,float> pool,int group,float probability,float boost)
         {
             float total=0;
@@ -389,13 +454,17 @@ namespace TerraKnight.Items
                     return area=="真菌荒地" || area=="呼啸悬崖" || area=="水晶山峰";
                 case ItemType.JungleSpores: case ItemType.Vine: case ItemType.Stinger: case ItemType.ChlorophyteOre:
                     return jungle || (t==ItemType.Stinger && area=="蜂巢");
-                case ItemType.BeeWax: return area=="蜂巢";
-                case ItemType.Hellstone: return area=="深渊" || area=="远古盆地" || scene.StartsWith("Grimm");
+                case ItemType.BeeWax: return area=="蜂巢" || area=="苍绿之径";
+                case ItemType.Hellstone: return area=="水晶山峰" || area=="深渊" || area=="远古盆地" || scene.StartsWith("Grimm");
                 case ItemType.Obsidian: return area=="深渊" || area=="远古盆地" || area=="皇家水道" || area=="水晶山峰";
-                case ItemType.DemoniteOre: case ItemType.CrimtaneOre: case ItemType.ShadowScale: case ItemType.TissueSample:
+                case ItemType.DemoniteOre: case ItemType.CrimtaneOre:
+                    return area=="真菌荒地" || area=="泪水之城" || area=="皇家水道";
+                case ItemType.ShadowScale: case ItemType.TissueSample:
                     return area=="泪水之城" || area=="皇家水道";
                 case ItemType.Meteorite: return area=="水晶山峰" || area=="泪水之城";
-                case ItemType.CobaltOre: case ItemType.PalladiumOre: case ItemType.MythrilOre: case ItemType.OrichalcumOre:
+                case ItemType.MythrilOre: case ItemType.OrichalcumOre:
+                    return area=="水晶山峰" || area=="泪水之城" || area=="王国边缘" || area=="愚人斗兽场";
+                case ItemType.CobaltOre: case ItemType.PalladiumOre:
                 case ItemType.AdamantiteOre: case ItemType.TitaniumOre: return area=="王国边缘" || area=="愚人斗兽场";
                 case ItemType.LunarOre: return boss && (scene.Contains("Final") || scene.StartsWith("GG_"));
                 case ItemType.SoulofMight: case ItemType.SoulofSight: case ItemType.SoulofFright: case ItemType.HallowedBar:
@@ -432,13 +501,17 @@ namespace TerraKnight.Items
             {
                 if(ore.Count==0) {Add(ore,ItemType.GoldOre,1.8f);Add(ore,ItemType.PlatinumOre,1.8f);Add(ore,ItemType.TungstenOre,1.8f);}
                 Add(mat,ItemType.SturdyFossil,.6f);Add(mat,ItemType.FlinxFur,.6f);
+                Add(mat,ItemType.Amber,.3f);
             }
+            if(area=="真菌荒地") {Add(ore,ItemType.DemoniteOre,.9f);Add(ore,ItemType.CrimtaneOre,.9f);}
             if(area=="泪水之城" || area=="皇家水道")
             {
                 Add(ore,ItemType.DemoniteOre,1.5f);Add(ore,ItemType.CrimtaneOre,1.5f);
                 Add(mat,ItemType.ShadowScale,.6f);Add(mat,ItemType.TissueSample,.6f);Add(mat,ItemType.Bone,1.5f);
             }
             if(area=="水晶山峰") { Add(ore,ItemType.Meteorite,1.5f);Add(mat,ItemType.Amethyst,.8f);Add(mat,ItemType.Ruby,.6f);Add(mat,ItemType.Diamond,.5f);Add(mat,ItemType.CrystalShard,.8f); }
+            if(area=="水晶山峰") Add(ore,ItemType.Hellstone,2f);
+            if(area=="水晶山峰" || area=="泪水之城") {Add(ore,ItemType.MythrilOre,1.2f);Add(ore,ItemType.OrichalcumOre,1.2f);}
             if(area=="皇家水道" || area=="水晶山峰") Add(mat,ItemType.Obsidian,.6f);
             if(area=="深渊" || area=="远古盆地") { Add(ore,ItemType.Hellstone,2);Add(mat,ItemType.Obsidian,1);Add(mat,ItemType.SoulofNight,.4f); }
             if(area=="深巢" || area=="野兽巢穴") { Add(mat,ItemType.SpiderFang,.8f);Add(mat,ItemType.Cobweb,2); }

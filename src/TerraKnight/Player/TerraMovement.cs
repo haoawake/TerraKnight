@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using TerraKnight.Effects;
@@ -143,6 +143,13 @@ namespace TerraKnight.Player
 
         /// <summary>Dev: a held direction (-1/1) and jump button for the autotest, which has no keyboard.</summary>
         public static int DevMove;
+
+        static readonly HarmonyLib.AccessTools.FieldRef<HeroController, bool> slidingL = HarmonyLib.AccessTools.FieldRefAccess<HeroController, bool>("wallSlidingL");
+        static readonly HarmonyLib.AccessTools.FieldRef<HeroController, bool> slidingR = HarmonyLib.AccessTools.FieldRefAccess<HeroController, bool>("wallSlidingR");
+
+        /// <summary>The wall the player slides down: 1 on the right, -1 on the left, 0 none.</summary>
+        public static int WallSide(HeroController hero) =>
+            hero == null || !hero.cState.wallSliding ? 0 : slidingR(hero) ? 1 : slidingL(hero) ? -1 : 0;
         public static bool DevJump;
         /// <summary>Dev: the last look for a gap in a wall alongside.</summary>
         public static string DevLastOpening = "";
@@ -435,6 +442,14 @@ namespace TerraKnight.Player
             if (EmpressBrooch) accel *= 1.75f;
             // Magiluminescence on the ground (Pl:26702-26708): acceleration and slowdown ×1.75, both run speeds ×1.15.
             if (Magiluminescence && grounded)
+            {
+                accel *= 1.75f;
+                maxRun *= 1.15f;
+                accRun *= 1.15f;
+                slowdown *= 1.75f;
+            }
+            // Terraria shadowArmor: multiply both run-speed caps, acceleration and slowdown.
+            if (Items.Equipment.FullSet == Items.ArmorSet.Shadow)
             {
                 accel *= 1.75f;
                 maxRun *= 1.15f;

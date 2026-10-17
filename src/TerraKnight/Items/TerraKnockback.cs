@@ -10,6 +10,7 @@ namespace TerraKnight.Items
     /// less than a fifteenth of its life (Master Mode) loses the resistance a second time, so light
     /// hits barely move it. Hollow Knight's recoil instead slides the enemy at a set speed for a set
     /// time; the multiplier here makes that slide as long as the Terraria push would carry it.
+    /// Five knockbacks within three seconds make an enemy steady: no knockback for the next three.
     /// </summary>
     internal static class TerraKnockback
     {
@@ -91,7 +92,7 @@ namespace TerraKnight.Items
             var info = EnemyStats.Of(hm);
             if (info == null || EnemyStats.NoKnockback(info)) return;
             float speed = Launch(knockBack, World.Areas.KnockbackTaken(info.Level), false);
-            if (speed <= 0f) return;
+            if (speed <= 0f || !CountPush(hm)) return;
             DevPushUps++;
             var body = hm.GetComponent<Rigidbody2D>();
             if (body != null && body.bodyType == RigidbodyType2D.Dynamic && body.gravityScale > 0.01f)
@@ -145,6 +146,59 @@ namespace TerraKnight.Items
         public static float DevPushSpeed;
         public static float DevLastOwnPush, DevLastLaunch;
 
+        /// <summary>Knockbacks within this many seconds (on the game's clock) that make an enemy steady.</summary>
+        public const float SteadyWindow = 3f;
+        /// <summary>How many knockbacks in that window: the last of them still moves it.</summary>
+        public const int SteadyAfter = 5;
+        /// <summary>How long it then takes no knockback at all (s); after that the count starts again.</summary>
+        public const float SteadyFor = 3f;
+
+        sealed class Recent
+        {
+            public readonly float[] At = new float[SteadyAfter];
+            public int Count, Next;
+            public float SteadyUntil = -1f;
+        }
+
+        static readonly System.Collections.Generic.Dictionary<int, Recent> recent = new System.Collections.Generic.Dictionary<int, Recent>();
+
+        public static int DevSteadied, DevHeldBySteady;
+
+        /// <summary>Whether an enemy knocked back and launched too often just now takes no more knockback (for <see cref="SteadyFor"/>).</summary>
+        public static bool Steady(HealthManager hm) =>
+            hm != null && recent.TryGetValue(hm.GetInstanceID(), out var r) && Time.time < r.SteadyUntil;
+
+        /// <summary>
+        /// A knockback about to move an enemy: false (and nothing moves) while it is steady. Five within three seconds
+        /// make it steady for three, so a stream of hits can't pin it to a wall or juggle it in the air.
+        /// </summary>
+        static bool CountPush(HealthManager hm)
+        {
+            int id = hm.GetInstanceID();
+            if (!recent.TryGetValue(id, out var r))
+            {
+                if (recent.Count > 2048) recent.Clear();
+                recent[id] = r = new Recent();
+            }
+            float now = Time.time;
+            if (now < r.SteadyUntil)
+            {
+                DevHeldBySteady++;
+                return false;
+            }
+            r.At[r.Next] = now;
+            r.Next = (r.Next + 1) % SteadyAfter;
+            r.Count = Mathf.Min(r.Count + 1, SteadyAfter);
+            // The oldest of the last five, within the window: steady from now on.
+            if (r.Count == SteadyAfter && now - r.At[r.Next] <= SteadyWindow)
+            {
+                r.SteadyUntil = now + SteadyFor;
+                r.Count = 0;
+                DevSteadied++;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Terraria's knockback on an enemy. One with a body of its own is launched: thrown back at
         /// the push speed and up at three quarters of it (half for a flyer), carried by Terraria's
@@ -172,6 +226,7 @@ namespace TerraKnight.Items
                 DevImmune++;
                 return;
             }
+            if (!CountPush(hm)) return;
             if (body != null && body.bodyType == RigidbodyType2D.Dynamic)
             {
                 var flight = hm.GetComponent<KnockFlight>() ?? hm.gameObject.AddComponent<KnockFlight>();

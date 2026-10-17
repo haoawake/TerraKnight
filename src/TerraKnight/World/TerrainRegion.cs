@@ -16,6 +16,30 @@ namespace TerraKnight.World
         public readonly string SceneName;
         public readonly CellGrid Grid;
         public readonly Transform Root;
+
+        /// <summary>
+        /// Where what the mod lays in the room is drawn (drops): beside <see cref="Root"/>, at its place, in its scene, never
+        /// switched off. A boss room that keeps the game's own ground whole switches the terrain root off (TerrainSystem),
+        /// and all under it with it.
+        /// </summary>
+        public Transform Props
+        {
+            get
+            {
+                if (props == null && Root != null)
+                {
+                    var go = new GameObject("TerraKnight Props");
+                    go.AddComponent<TerraOwned>();
+                    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, Root.gameObject.scene);
+                    props = go.transform;
+                }
+                if (props != null && Root != null && (props.position != Root.position || props.rotation != Root.rotation))
+                    props.SetPositionAndRotation(Root.position, Root.rotation);
+                return props;
+            }
+        }
+        Transform props;
+
         public readonly bool IsLive;
         public readonly PhysicsMaterial2D Material;
         /// <summary>A boss room's: the game's own colliders stand and this grid is solid to nothing (TerrainSystem); with

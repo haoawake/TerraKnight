@@ -21,12 +21,16 @@ namespace TerraKnight.Net
         {
             public int Type, Count;
             public bool Favorite;
-            public static Stack From(ItemStack s) => new Stack { Type = (int)s.Type, Count = s.Count, Favorite = s.Favorite };
+            /// <summary>Its reforge and its forge level (a reforged or forged item keeps them through a shared chest).</summary>
+            public byte Prefix, Forge;
+            public static Stack From(ItemStack s) => new Stack { Type = (int)s.Type, Count = s.Count, Favorite = s.Favorite, Prefix = s.Prefix, Forge = s.Forge };
             public ItemStack Item()
             {
                 if (!ItemDb.Has((ItemType)Type) || Count <= 0) return default;
                 var s = ItemStack.Of((ItemType)Type, Count);
                 s.Favorite = Favorite;
+                s.Prefix = Prefix;
+                s.Forge = Forge;
                 return s;
             }
         }
@@ -36,6 +40,8 @@ namespace TerraKnight.Net
             public string Key, Scene;
             public float X, Y, Vx, Vy;
             public int Kind, Seed, Age, Delay, Dropper = -1, Owner = -1;
+            /// <summary>A dropped item's reforge and forge level.</summary>
+            public byte Prefix, Forge;
             public bool Placed, Taken, Sky;
             public Stack[] Slots;
             public long[] Cells;
@@ -45,6 +51,8 @@ namespace TerraKnight.Net
         internal sealed class Action
         {
             public int Id, Kind, Power, Count;
+            /// <summary>A dropped item's reforge and forge level.</summary>
+            public byte Prefix, Forge;
             public string Op, Key, Scene;
             public float X, Y, Vx, Vy;
             public bool Placed, Sky;
@@ -55,6 +63,8 @@ namespace TerraKnight.Net
         sealed class Result
         {
             public int Id, Type, Count;
+            /// <summary>A claimed item's reforge and forge level.</summary>
+            public byte Prefix, Forge;
             public string Op, Key;
             public bool Ok;
             public Stack[] Slots;
@@ -313,7 +323,7 @@ namespace TerraKnight.Net
                     result.Ok = WorldItems.NetMotion(a.Motion, slot);
                     break;
                 case "claim":
-                    WorldItems.NetClaim(a, slot, out result.Type, out result.Count);
+                    WorldItems.NetClaim(a, slot, out result.Type, out result.Count, out result.Prefix, out result.Forge);
                     result.Ok = result.Count > 0;
                     break;
                 case "lease":
@@ -374,7 +384,14 @@ namespace TerraKnight.Net
             else if (result.Op == "claim")
             {
                 WorldItems.NetClaimDone(result.Key);
-                if (result.Ok) { Give((ItemType)result.Type, result.Count); DevPickups++; }
+                if (result.Ok)
+                {
+                    var got = ItemStack.Of((ItemType)result.Type, result.Count);
+                    got.Prefix = result.Prefix;
+                    got.Forge = result.Forge;
+                    Give(got);
+                    DevPickups++;
+                }
             }
             else if (!result.Ok && action.Count > 0 && (result.Op == "station" || result.Op == "chest"))
             {
@@ -384,15 +401,24 @@ namespace TerraKnight.Net
             }
         }
 
-        static void Give(ItemType type, int count)
+        static void Give(ItemType type, int count) => Give(ItemStack.Of(type, count));
+
+        /// <summary>A stack into the bag (its prefix and forge level kept); what doesn't fit falls at the player's feet.</summary>
+        static void Give(ItemStack stack)
         {
-            if (count <= 0 || !ItemDb.Has(type) || TerraMod.Instance == null) return;
-            int left = TerraMod.Instance.Inventory.Pickup(type, count);
+            if (stack.Count <= 0 || !ItemDb.Has(stack.Type) || TerraMod.Instance == null) return;
+            int count = stack.Count;
+            int left = TerraMod.Instance.Inventory.Pickup(stack);
             var hero = HeroController.SilentInstance;
             if (hero != null)
             {
-                if (left < count) UI.PopupText.Show(ItemDb.Get(type), count - left, hero.transform.position);
-                if (left > 0) WorldItems.Drop(ItemStack.Of(type, left), hero.transform.position);
+                if (left < count) UI.PopupText.Show(stack.Def, count - left, hero.transform.position);
+                if (left > 0)
+                {
+                    var rest = stack;
+                    rest.Count = left;
+                    WorldItems.Drop(rest, hero.transform.position);
+                }
             }
         }
 

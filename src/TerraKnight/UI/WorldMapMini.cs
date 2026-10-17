@@ -85,7 +85,8 @@ namespace TerraKnight.UI
         static Rect MinimapRect()
         {
             float ui = GameView.Scale;
-            return new Rect(Screen.width - (52f + 240f) * ui, 90f * ui, 240f * ui, 240f * ui);
+            // Below the hearts: a row lower for each row of hearts past two (the masks' cyan ones).
+            return new Rect(Screen.width - (52f + 240f) * ui, (90f + ResourceHud.ExtraHeartRows * ResourceHud.RowStep) * ui, 240f * ui, 240f * ui);
         }
 
         /// <summary>The frame's place (MinimapFrame: the picture's corner + 4, then the Default frame's offset -8, -15).</summary>

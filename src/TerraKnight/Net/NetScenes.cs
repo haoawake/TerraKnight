@@ -83,6 +83,9 @@ namespace TerraKnight.Net
             // Loading a boss room (including its additive boss scene) is not participation.
             // Otherwise a player waiting outside the arena can retain enemy authority forever,
             // and the boss's local intro tries to stage that waiting player for somebody else's fight.
+            // But the one whose game runs a fight that is on keeps it while still in the room: the boss's state is in that
+            // game alone (a puppet's scripts stand still), and handed over mid-fight it would start again from the other
+            // game's stale copy (the False Knight's head left out at 1 hp, his armour back on).
             var hero = HeroController.SilentInstance;
             if (hero != null)
                 for (int i = inScenes.Count - 1; i >= 0; i--)
@@ -92,9 +95,37 @@ namespace TerraKnight.Net
                     string room = scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
                     var region = TerrainSystem.Find(room) ?? TerrainSystem.Find(scene);
                     if (region?.OwnZone == null || region.OwnZone.Value.Contains(hero.transform.position)) continue;
+                    if (Enemies.Owns(scene) && InRoom(hero, room) && FightOn(room)) continue;
                     inScenes.RemoveAt(i);
                     if (!loaded.Contains(scene)) loaded.Add(scene);
                 }
+        }
+
+        static string RoomOf(string scene) => scene != null && scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
+
+        /// <summary>The hero within the room's own ground (anywhere in it, the arena or its way in).</summary>
+        static bool InRoom(HeroController hero, string room)
+        {
+            var cell = CellGrid.WorldToCell(hero.transform.position);
+            return RoomOf(TerraWorld.RegionAt(cell.x, cell.y)?.SceneName) == room;
+        }
+
+        /// <summary>A boss room's fight on in this game: a battle gate of it shut, or one of its bosses alive and hit in the last minute.</summary>
+        static bool FightOn(string room)
+        {
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+            {
+                if (f.FsmName != "BG Control" || RoomOf(f.gameObject.scene.name) != room) continue;
+                var c = f.GetComponent<Collider2D>();
+                if (c != null && c.enabled) return true;
+            }
+            foreach (var info in Items.EnemyStats.All)
+            {
+                var hm = info.Hm;
+                if (!info.Boss || hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy) continue;
+                if (RoomOf(hm.gameObject.scene.name) == room && Time.time - info.LastHit < 60f) return true;
+            }
+            return false;
         }
 
         static readonly Dictionary<int, bool> gameplay = new Dictionary<int, bool>();

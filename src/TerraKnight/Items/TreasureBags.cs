@@ -69,7 +69,8 @@ namespace TerraKnight.Items
             if (first) s.Forge = 1;
             DevLeft++;
             if (EnemyDrops.DevSink != null) { EnemyDrops.DevSink(bag, 1); return; }
-            EnemyDrops.Spill(s, at, direct);
+            // Each player's own in a LAN game (DropLocalPerClient).
+            EnemyDrops.Spill(s, at, direct, perPlayer: true);
         }
 
         /// <summary>ItemSlot.TryOpenContainer for a bag: one opened, its boss's drops rolled into the bag (what won't fit at the feet).</summary>

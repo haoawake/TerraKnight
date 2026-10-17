@@ -7,7 +7,7 @@ namespace TerraKnight
 {
     /// <summary>
     /// Dev (suite "forge"): the Goblin Tinkerer's forging. He is in Dirtmouth at stage 0; his "Forge" button opens his slot
-    /// for a weapon only; a forging pays its price and, when it takes, adds a level (+10% damage, " +N" on the name, the
+    /// for a weapon only; a forging pays its price and, when it takes, adds a level (+5% damage, " +N" on the name, the
     /// tooltip's line), when it fails keeps the level and the money spent; the cap is five levels a stage; the price and the
     /// odds follow the weapon and its level; the level stays through a reforge and the save's packing.
     /// </summary>
@@ -49,7 +49,7 @@ namespace TerraKnight
             long cost = Forging.Cost(TownNpcs.ReforgeItem);
             Forging.DevOutcome = true;
             InventoryGui.DevForge();
-            Check("成功：+1 级、伤害 +10%、名字带 +1", TownNpcs.ReforgeItem.Forge == 1 && TownNpcs.ReforgeItem.Def.Damage == Mathf.RoundToInt(dmg0 * 1.1f) && TownNpcs.ReforgeItem.Def.Name.EndsWith("+1") && money0 - Shop.Purse == cost,
+            Check("成功：+1 级、伤害 +5%、名字带 +1", TownNpcs.ReforgeItem.Forge == 1 && TownNpcs.ReforgeItem.Def.Damage == Mathf.RoundToInt(dmg0 * (1f + Forging.DamagePerLevel)) && TownNpcs.ReforgeItem.Def.Name.EndsWith("+1") && money0 - Shop.Purse == cost,
                 $"{TownNpcs.ReforgeItem.Def.Name}，伤害 {dmg0}→{TownNpcs.ReforgeItem.Def.Damage}，花了 {money0 - Shop.Purse}（应 {cost}）");
             long cost1 = Forging.Cost(TownNpcs.ReforgeItem);
             Forging.DevOutcome = false;

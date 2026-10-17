@@ -48,9 +48,11 @@ def main():
     shutil.rmtree(stage, ignore_errors=True)
     plugin_dir = os.path.join(stage, 'BepInEx', 'plugins', 'TerraKnight')
     os.makedirs(plugin_dir)
-    r = subprocess.run(['dotnet', 'build', os.path.join(ROOT, 'src', 'TerraKnight'), '-c', 'Release', f'-p:PluginInstallDir={plugin_dir}'])
+    build_dir = os.path.join(ROOT, 'artifacts', f'release-v{version}', 'build')
+    r = subprocess.run(['dotnet', 'build', os.path.join(ROOT, 'src', 'TerraKnight'), '-c', 'Release', '-p:SkipPluginInstall=true', '-o', build_dir])
     if r.returncode != 0:
         sys.exit('build failed')
+    shutil.copy2(os.path.join(build_dir, 'TerraKnight.dll'), plugin_dir)
     for f in os.listdir(plugin_dir):
         if not f.endswith('.dll'):
             os.remove(os.path.join(plugin_dir, f))

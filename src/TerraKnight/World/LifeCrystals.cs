@@ -26,17 +26,15 @@ namespace TerraKnight.World
         public const int GroundAllowance = 6;
 
         /// <summary>
-        /// How many Life Crystals the player can have eaten by now: six, one more for each mask made
-        /// beyond the first five (Mask Shards), one more for each boss beaten (the Bestiary's kills),
-        /// up to Terraria's fifteen.
+        /// How many Life Crystals the player can have eaten by now: six, one more for each boss beaten
+        /// (the Bestiary's kills), up to Terraria's fifteen. The Knight's masks are life of their own
+        /// (TerraStats.MaskLife), not crystals.
         /// </summary>
         public static int Allowance()
         {
-            var pd = PlayerData.instance;
-            int masks = pd != null ? Mathf.Max(0, pd.maxHealthBase - 5) : 0;
             int bosses = 0;
             foreach (var r in EnemyDrops.BossRecords()) if (Bestiary.IsDefeated(r)) bosses++;
-            return Mathf.Min(Player.TerraStats.MaxLifeCrystals, GroundAllowance + masks + bosses);
+            return Mathf.Min(Player.TerraStats.MaxLifeCrystals, GroundAllowance + bosses);
         }
         const float Px = Effects.TerraParticles.Px;
         const float Z = 0.0045f;
@@ -440,13 +438,15 @@ namespace TerraKnight.World
                     Break(c, box);
                     continue;
                 }
+                // Beside the terrain, not under it (a boss room keeping the game's own ground switches the terrain root off).
+                var holder = region.Props ?? region.Root;
                 if (c.Renderer == null)
                 {
                     var go = new GameObject("Terra Life Crystal");
-                    go.transform.SetParent(region.Root, false);
+                    go.transform.SetParent(holder, false);
                     c.Renderer = go.AddComponent<SpriteRenderer>();
                 }
-                if (c.Renderer.transform.parent != region.Root) c.Renderer.transform.SetParent(region.Root, false);
+                if (c.Renderer.transform.parent != holder) c.Renderer.transform.SetParent(holder, false);
                 var sprites = Frames();
                 c.Renderer.enabled = sprites != null;
                 if (sprites == null) continue;

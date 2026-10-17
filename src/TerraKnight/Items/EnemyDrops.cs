@@ -244,6 +244,7 @@ namespace TerraKnight.Items
         /// <summary>The most a drop gives on the current difficulty (a single item stays one).</summary>
         public static int EffectiveMax(Drop d)
         {
+            if(SingleQuantity(ItemDb.Get(d.Type))) return 1;
             if(d.MeanCount>0) return Mathf.CeilToInt(d.MeanCount*(1+AmountBonus*.5f));
             var def = ItemDb.Get(d.Type);
             if (def == null || def.MaxStack <= 1 || d.Max <= 0) return d.Max;
@@ -251,7 +252,8 @@ namespace TerraKnight.Items
             return d.Max + Mathf.FloorToInt(span * AmountBonus);
         }
 
-        public static int EffectiveMin(Drop d) => d.MeanCount>0
+        internal static bool SingleQuantity(ItemDef def) => def!=null && (def.MaxStack<=1 || def.LifeCrystal || def.ManaCrystal || def.Boost!=PermanentBoost.None);
+        public static int EffectiveMin(Drop d) => SingleQuantity(ItemDb.Get(d.Type)) ? 1 : d.MeanCount>0
             ? Mathf.FloorToInt(d.MeanCount*(1+AmountBonus*.5f)) : d.Min;
 
         /// <summary>Rolls a kill's drops, each on its own, and drops what came up at the enemy.</summary>
@@ -270,6 +272,9 @@ namespace TerraKnight.Items
         /// </summary>
         public static void Roll(string record, Vector2 at, bool direct = false, bool? firstKill = null, bool fromBag = false)
         {
+            // Whose loot it is in a LAN game: the kill's enemy's scene (Bestiary.Credit sets it just before); a bag's own
+            // contents are the opener's.
+            LootScene = fromBag ? null : Relics.ContextScene;
             bool first = firstKill ?? Bestiary.KillsOf(record)==0;
             var drops = record != null && table.TryGetValue(record,out var entry)
                 ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear)) : none;
@@ -277,10 +282,20 @@ namespace TerraKnight.Items
             // Terraria's boss bags (Expert, Master): the loot goes into one bag left at the boss, rolled when it is opened
             // (fromBag); the relic, the hearts, the potions and the crystals drop beside it as ever.
             var bag = !fromBag && IsBoss(record) && TreasureBags.Active ? TreasureBags.For(record, Relics.ContextScene, Relics.ContextName) : ItemType.None;
-            // A boss can go down inside a wall, under the floor or high over the arena (burrowing, flying): its loot
-            // comes down beside the player then, not out of sight in the ground.
+            // A boss can go down inside a wall or under the floor (burrowing): its loot comes out of the ground above it,
+            // not out of sight in it.
             if (IsBoss(record) && !direct) at = SafeBossDropPoint(at);
             List<int> rolled = null;
+            HashSet<ItemType> paidSingles=null;
+            void Pay(Drop drop)
+            {
+                if(SingleQuantity(ItemDb.Get(drop.Type)))
+                {
+                    if(paidSingles==null) paidSingles=new HashSet<ItemType>();
+                    if(!paidSingles.Add(drop.Type)) return;
+                }
+                Put(drop,at,direct);
+            }
             foreach (var d in drops)
             {
                 if (Locked(d)) continue;
@@ -298,7 +313,7 @@ namespace TerraKnight.Items
                     foreach (var o in drops) if (o.Group == d.Group && !Locked(o)) options.Add(o);
                     if (options.Count == 0) continue;
                     var pick = Pick(options);
-                    Put(pick, at, direct);
+                    Pay(pick);
                     DevGroupPicks++;
                     continue;
                 }
@@ -310,7 +325,7 @@ namespace TerraKnight.Items
                     relic.Type = Relics.Swap(d.Type, record);
                     Relics.DevDropped++;
                 }
-                Put(relic, at, direct);
+                Pay(relic);
             }
             if (bag != ItemType.None) TreasureBags.Leave(bag, at, direct, first);
             // What a bag holds is the boss's; the kill's own extras came with the kill.
@@ -345,7 +360,8 @@ namespace TerraKnight.Items
         static void Put(Drop d, Vector2 at, bool direct)
         {
             int n;
-            if(d.MeanCount>0)
+            if(SingleQuantity(ItemDb.Get(d.Type))) n=1;
+            else if(d.MeanCount>0)
             {
                 float mean=d.MeanCount*(1+AmountBonus*.5f);
                 n=Mathf.FloorToInt(mean);
@@ -364,32 +380,67 @@ namespace TerraKnight.Items
             var stack = ItemStack.Of(d.Type, n);
             // Item.NewItem's prefixGiven -1 for an enemy's loot (Item.Prefix(-1)): a weapon or an accessory now and then reforged.
             if (n == 1) stack.Prefix = (byte)Prefixes.RollNatural(ItemDb.Get(d.Type));
-            if (direct) Give(stack);
-            else WorldItems.Drop(stack, at, personal: true);
+            Place(stack, at, direct, false);
             DevDropped++;
         }
 
-        /// <summary>Where a boss's loot comes down: where it died, unless that is inside the ground or far off (then by the player).</summary>
+        /// <summary>
+        /// A LAN game: the scene of the enemy whose loot is being made (a kill's, from Bestiary.Credit through
+        /// Relics.ContextScene; a boss phase's, BossPotions). Terraria's NPCLoot runs on the server: each item once, in
+        /// everyone's world, seen and taken by anyone. Here that is the game that runs the enemy (Net.Enemies' scene
+        /// owner): its loot is shared. Another player's game holds that enemy's puppet, whose death is the owner's told
+        /// over: it makes none of it. The boss's treasure bag is each player's own (Terraria's DropLocalPerClient).
+        /// </summary>
+        internal static string LootScene;
+
+        /// <summary>The enemy whose loot this is runs in another player's game (here it is a puppet).</summary>
+        static bool PuppetsLoot => Net.NetSession.Active && Net.Enemies.RemoteOwned(LootScene);
+
+        public static int DevPuppetSkipped;
+
+        /// <summary>A stack of loot: into the bag (no time to pick it up), into the world for all (a LAN game), or the player's own.</summary>
+        static void Place(ItemStack stack, Vector2 at, bool direct, bool perPlayer)
+        {
+            if (direct) { Give(stack); return; }
+            if (perPlayer) { WorldItems.Drop(stack, at, personal: true); return; }
+            if (PuppetsLoot) { DevPuppetSkipped++; return; }
+            WorldItems.Drop(stack, at);
+        }
+
+        /// <summary>
+        /// Where a boss's loot comes out: from its body, wherever it died. Sunk in the ground (a burrower, a body in the
+        /// floor), from the nearest open spot above it (then beside it); by the player only if there is none.
+        /// </summary>
         static Vector2 SafeBossDropPoint(Vector2 at)
         {
+            if (!Buried(at)) return at;
+            for (float dy = 0.5f; dy <= 12f; dy += 0.5f)
+                foreach (float dx in new[] { 0f, -1f, 1f, -2f, 2f })
+                {
+                    var p = at + new Vector2(dx, dy);
+                    if (Buried(p)) continue;
+                    DevBossDropMoved++;
+                    return p;
+                }
             var hero = HeroController.SilentInstance;
             if (hero == null) return at;
-            Vector2 h = hero.GetComponent<BoxCollider2D>().bounds.center;
-            bool buried = Physics2D.OverlapPoint(at, 1 << World.ChunkColliders.TerrainLayer) != null || World.TerraWorld.IsSolidAt(at);
-            if (!buried && Vector2.Distance(at, h) <= 14f) return at;
             DevBossDropMoved++;
-            return h + new Vector2(0f, 0.5f);
+            return (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center + new Vector2(0f, 0.5f);
         }
+
+        static bool Buried(Vector2 p) => Physics2D.OverlapPoint(p, 1 << World.ChunkColliders.TerrainLayer) != null || World.TerraWorld.IsSolidAt(p);
 
         public static int DevBossDropMoved;
 
-        /// <summary>A stack from a kill: into the world at the spot, or straight into the bag where there's no time to pick it up.</summary>
-        internal static void Spill(ItemStack stack, Vector2 at, bool direct)
+        /// <summary>
+        /// A stack from a kill: into the world at the spot, or straight into the bag where there's no time to pick it up;
+        /// perPlayer for what each player of a LAN game gets their own of (a treasure bag).
+        /// </summary>
+        internal static void Spill(ItemStack stack, Vector2 at, bool direct, bool perPlayer = false)
         {
             if (stack.IsEmpty) return;
             if (DevSink != null) { DevSink(stack.Type, stack.Count); return; }
-            if (direct) Give(stack);
-            else WorldItems.Drop(stack, at, personal: true);
+            Place(stack, at, direct, perPlayer);
         }
 
         /// <summary>Dev: sure picks made out of groups so far.</summary>

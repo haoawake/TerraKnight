@@ -681,7 +681,8 @@ namespace TerraKnight
             int had = Recipes.Count(inv, ItemType.AbigailsFlower), picked0 = Stations.DevFlowersPicked;
             if (grew && flower.width > 0f)
             {
-                hero.transform.position = Clear(hero, flower.center + new Vector2(-1f, 0.5f));
+                // Beside it on the scene's side (one by the left edge of Dirtmouth has no room to its left).
+                hero.transform.position = Clear(hero, flower.center + new Vector2(flower.center.x < 3f ? 1f : -1f, 0.5f));
                 hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
                 yield return new WaitForSeconds(0.5f);
                 Shot("Town", "tomb_3_flower");

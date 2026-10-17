@@ -9,7 +9,8 @@ namespace TerraKnight.UI
     /// "泰拉瑞亚设置", the inventory's second button beside the game's Settings: Terraria's in-game
     /// settings (IngameOptions) for what the mod adds. General: the "Autoswing" switch
     /// (UI.AutoReuseAllOn / Off, Main.SettingsEnabled_AutoReuseAllItems: every weapon goes on being
-    /// used while the button is held) and the enemy health bars; in a LAN game where it is, who is
+    /// used while the button is held), the enemy health bars, the camera lock and Autopause (UI.AutoPause:
+    /// the inventory stops a single-player game); in a LAN game where it is, who is
     /// in it and a way out. Keybindings (Terraria's Controls menu): every Terraria action with its
     /// key, a click and a key press to change one (Escape keeps it), "Reset to Default". Choices are
     /// saved in the mod's config. The mod's version stands in gold at the top right. Escape or a
@@ -148,6 +149,10 @@ namespace TerraKnight.UI
                 SetCameraLock(!TerraCamera.Enabled);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：泰拉瑞亚的视角，人物始终在画面正中；关：空洞骑士原版镜头"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
             y += 96f * ui;
+            // LegacyMenu.69 / 70: "Autopause On" / "Autopause Off" (Main.autoPause).
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), TT(AutoPause.On ? "LegacyMenu.69" : "LegacyMenu.70", AutoPause.On ? "自动暂停: 开" : "自动暂停: 关"), ui))
+                AutoPause.Set(!AutoPause.On);
+            y += 64f * ui;
             if (Net.NetSession.Active)
             {
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.13", "多人模式"), section, new Color(0.75f, 0.85f, 1f));
