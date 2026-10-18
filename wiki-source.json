@@ -1,0 +1,8 @@
+{
+  "kind": "release",
+  "version": "4.1.0",
+  "tag": "v4.1.0",
+  "commit": "e657374eed7d097e48a4ca220e5022a4f42374aa",
+  "source_hashes": "tools/encyclopedia_runtime.json",
+  "date": "2026-10-18"
+}
