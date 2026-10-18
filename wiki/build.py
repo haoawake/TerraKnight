@@ -24,7 +24,7 @@ SOURCE = CATALOG_ROOT / '泰拉圣巢本地百科全书.md'
 VERSION = json.loads((CATALOG_ROOT/'wiki-source.json').read_text(encoding='utf-8')) if (CATALOG_ROOT/'wiki-source.json').exists() else {}
 TITLE = '空洞泰拉wiki'
 RELEASES_FILE = ROOT / 'wiki/releases.json'
-BUILD = hashlib.sha256(SOURCE.read_bytes() + RELEASES_FILE.read_bytes() + json.dumps(VERSION, sort_keys=True).encode('utf-8') + Path(__file__).read_bytes() + b''.join(p.read_bytes() for p in sorted((ROOT/'wiki/assets').glob('*')) if p.is_file()) + (ROOT/'wiki/world_map_page.py').read_bytes() + (ROOT/'artifacts/wiki-world-map/map.json').read_bytes()).hexdigest()[:12]
+BUILD = hashlib.sha256(SOURCE.read_bytes() + RELEASES_FILE.read_bytes() + json.dumps(VERSION, sort_keys=True).encode('utf-8') + Path(__file__).read_bytes() + b''.join(p.read_bytes() for p in sorted((ROOT/'wiki/assets').glob('*')) if p.is_file()) + (ROOT/'wiki/world_map_page.py').read_bytes() + (ROOT/'artifacts/wiki-world-map/map.json').read_bytes() + (ROOT/'artifacts/wiki-illustrations/manifest.json').read_bytes()).hexdigest()[:12]
 NAV = [('map', '世界地图'), ('progress', '阶段与解锁'), ('items', '物品图鉴'), ('enemies', '怪物图鉴'),
        ('npcs', 'NPC 与商店'), ('recipes', '合成配方'), ('fishing', '钓鱼与宝匣'), ('boss-summons', 'Boss 召唤物'), ('systems', '玩法系统'), ('changelog', '更新日志')]
 

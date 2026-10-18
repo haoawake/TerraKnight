@@ -104,7 +104,7 @@ def main():
                     raise SystemExit('Could not verify pre-update backup for ' + name)
         payload = a.bundle.read_bytes()
         print(json.dumps({'backup_directory': backup, 'total_bytes': len(payload)}), flush=True)
-        for offset in range(0, len(payload), 64 * 1024):
+        for offset in range(0, len(payload), 512 * 1024):
             timestamp = str(int(time.time()))
             form = {'request_time': timestamp, 'request_token': hashlib.md5(
                 (timestamp + hashlib.md5(key.encode()).hexdigest()).encode()).hexdigest(),
@@ -113,7 +113,7 @@ def main():
             chunks = []
             for name, value in form.items():
                 chunks.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
-            block = payload[offset:offset + 64 * 1024]
+            block = payload[offset:offset + 512 * 1024]
             chunks.append(f'--{boundary}\r\nContent-Disposition: form-data; name="blob"; filename="site.zip"\r\nContent-Type: application/octet-stream\r\n\r\n'.encode())
             chunks.append(block)
             chunks.append(f'\r\n--{boundary}--\r\n'.encode())
