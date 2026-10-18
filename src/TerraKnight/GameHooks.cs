@@ -67,14 +67,17 @@ namespace TerraKnight
             {
                 World.LiveWorld.Instance?.ClearAll();
                 World.WorldEdits.Clear();
+                World.RegionalTorches.Clear();
+                Items.BreakableDrops.Load(null);
             });
             Safely("重置角色", () => TerraMod.Instance?.ResetPlayer());
             // Creative if the creative mode button asked for this slot, else an ordinary game; at
             // the difficulty chosen for it (Master when none was, as for the autotests' games).
             var gm = GameManager.instance;
             if (gm != null) Save.ModSave.BeganNewGame(gm.profileID);
-            // A new game's geo is the item from the start.
+            // A new game's geo and essence are the items from the start.
             Items.GeoWallet.Reset(true);
+            Items.EssenceWallet.Reset(true);
             Safely("模式和难度", () =>
             {
                 TerraMod.Instance?.ApplyCreative(gm != null && UI.CreativeMenu.TakePending(gm.profileID));
@@ -86,6 +89,8 @@ namespace TerraKnight
             Safely("地图", () => UI.WorldMap.Reset());
             // Its own Life Crystals in the early areas.
             Safely("生命水晶", () => World.LifeCrystals.NewWorld());
+            // Its own chests in every area (World.RegionalChests).
+            Safely("地区储物箱", () => World.RegionalChests.NewWorld());
             Safely("创造模式的世界", () => TerraMod.Instance?.ApplyCreativeWorld());
         }
 

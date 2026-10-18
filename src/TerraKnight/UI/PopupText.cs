@@ -27,6 +27,8 @@ namespace TerraKnight.UI
             public int Life;
             public float Scale, Alpha;
             public int AlphaDir;
+            /// <summary>PopupTextContext.ItemReforge_Best: its colour cycles round the hues.</summary>
+            public bool Best;
             public string Text => Stack > 1 ? $"{Name} ({Stack})" : Name;
             /// <summary>A rough size in Terraria px, for the overlap test.</summary>
             public Vector2 Size => new Vector2(Mathf.Max(20f, Text.Length * 10f), 22f);
@@ -35,13 +37,17 @@ namespace TerraKnight.UI
         static readonly Popup[] popups = new Popup[MaxPopups];
         static GUIStyle style;
 
-        /// <summary>PopupText.NewText(ItemPickup, item, player.Center, added).</summary>
-        public static void Show(ItemDef def, int added, Vector2 at)
+        /// <summary>
+        /// PopupText.NewText(ItemPickup, item, player.Center, added); a reforge's (ItemReforge, noStack: one of its own each
+        /// time), the best prefix's in cycling colours (ItemReforge_Best).
+        /// </summary>
+        public static void Show(ItemDef def, int added, Vector2 at, bool best = false, bool noStack = false)
         {
             if (def == null || added <= 0) return;
             var color = ItemDb.RarityColor(def.Rare);
             foreach (var p in popups)
             {
+                if (noStack) break;
                 if (p == null || !p.Active || p.Name != def.Name) continue;
                 p.Stack += added;
                 if (p.Life < 0) p.Scale = 1f;
@@ -62,7 +68,7 @@ namespace TerraKnight.UI
             }
             popups[slot] = new Popup
             {
-                Active = true, Name = def.Name, Stack = added, Color = color, Pos = at,
+                Active = true, Name = def.Name, Stack = noStack ? 1 : added, Color = color, Pos = at, Best = best,
                 Vel = new Vector2(0f, 7f), Life = 60, Scale = 0f, Alpha = 1f, AlphaDir = -1,
             };
         }
@@ -144,7 +150,8 @@ namespace TerraKnight.UI
                 GUI.Label(new Rect(r.x + o, r.y, r.width, r.height), text, style);
                 GUI.Label(new Rect(r.x, r.y - o, r.width, r.height), text, style);
                 GUI.Label(new Rect(r.x, r.y + o, r.width, r.height), text, style);
-                var c = p.Color;
+                // PopupText.Draw for ItemReforge_Best: hslToRgb(time x 0.6 % 1, 1, 0.6).
+                var c = p.Best ? Effects.FxParticles.HslToRgb(Time.unscaledTime * 0.6f % 1f, 1f, 0.6f) : p.Color;
                 style.normal.textColor = new Color(c.r, c.g, c.b, a);
                 GUI.Label(r, text, style);
             }

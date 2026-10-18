@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -24,6 +24,41 @@ namespace TerraKnight.Items
         static readonly string[] wakeEvents = { "HERO ENTER", "TAKE DAMAGE", "BLOCKED HIT" };
         static readonly Dictionary<int, float> waking = new Dictionary<int, float>();
         public static int DevWoken, DevHeld;
+        static readonly Dictionary<int, PlayMakerFSM> introOwners = new Dictionary<int, PlayMakerFSM>();
+        static readonly HashSet<int> ready = new HashSet<int>();
+
+        internal static bool Primary(string name) => name == "Control" || name == "Mantis" ||
+            name == "FalseyControl" || name == "Movement" || name == "Hornet" || name == "Mage Lord" ||
+            name == "Big Fly Control" || name == "Mawlek Control" || name == "Black Knight" ||
+            name == "Mossy Control" || name == "Mantis Throne Main" || name == "Beam Miner" ||
+            name == "Mimic Spider" || name == "IK Control" || name == "Dung Defender" || name == "Fluke Mother";
+        internal static bool Intro(string name) => name != null && (name.Contains("Wake") ||
+            name.Contains("Roar") || name.Contains("Startle") || name.Contains("Intro") || name.Contains("Title"));
+        internal static bool Combat(string name) => name != null &&
+            (name.Contains("Idle") || name == "Active" || name == "Hover");
+
+        static PlayMakerFSM IntroOf(HealthManager hm)
+        {
+            if (ready.Contains(hm.GetInstanceID())) return null;
+            foreach (var f in hm.GetComponents<PlayMakerFSM>())
+                if (Primary(f.FsmName) && Intro(f.ActiveStateName)) return f;
+            return null;
+        }
+
+        // The native dream-entry interaction must remain in charge of this window.
+        internal static bool DreamWindow(HealthManager hm)
+        {
+            if (hm == null || hm.gameObject.scene.name != "Room_Final_Boss_Core") return false;
+            foreach (var f in hm.GetComponents<PlayMakerFSM>())
+                if (f.FsmName == "Control" && (f.ActiveStateName == "H Collapsed" ||
+                    (f.ActiveStateName ?? "").StartsWith("H Scene") || f.ActiveStateName == "H Collapse")) return true;
+            return false;
+        }
+
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(HealthManager), "TakeDamage")]
+        static bool NativeHit(HealthManager __instance) => Hit(__instance) == Result.Normal;
+
 
         static bool Has(HutongGames.PlayMaker.FsmState st, string ev)
         {
@@ -66,10 +101,18 @@ namespace TerraKnight.Items
         {
             if (hm == null || !IsBoss(hm)) return Result.Normal;
             int id = hm.GetInstanceID();
+            var intro = IntroOf(hm);
+            if (intro != null && !waking.ContainsKey(id))
+            {
+                waking[id] = Time.time;
+                introOwners[id] = intro;
+            }
             if (waking.TryGetValue(id, out float since))
             {
                 if (StillWaking(hm, since)) { DevHeld++; return Result.Held; }
                 waking.Remove(id);
+                introOwners.Remove(id);
+                if (Sleeper(hm) == null) ready.Add(id);
             }
             var f = Sleeper(hm);
             if (f == null)
@@ -90,8 +133,10 @@ namespace TerraKnight.Items
             else if (st != null && Has(st, "BLOCKED HIT")) f.SendEvent("BLOCKED HIT");
             else if (st != null && Has(st, "TOOK DAMAGE")) f.SendEvent("TOOK DAMAGE");
             waking[id] = Time.time;
+            introOwners[id] = f;
+            ready.Remove(id);
             DevWoken++;
-            Plugin.Log.LogInfo($"[叫醒] {hm.gameObject.scene.name}/{hm.name} 的 {f.FsmName} 在 {from} 被泰拉攻击叫醒（现在 {f.ActiveStateName}）：这一下只掉 1 点，醒完之前不掉血");
+            Plugin.Log.LogInfo($"[叫醒] {hm.gameObject.scene.name}/{hm.name} 的 {f.FsmName} 在 {from} 被泰拉攻击叫醒（现在 {f.ActiveStateName}）：唤醒和出场期间不掉血");
             return Result.Woke;
         }
 
@@ -104,13 +149,25 @@ namespace TerraKnight.Items
         static void Entered(HutongGames.PlayMaker.FsmState __instance)
         {
             DevEntered?.Invoke(__instance);
-            if (waking.Count == 0 || __instance.Name == null || !__instance.Name.Contains("Idle")) return;
+            if (waking.Count == 0 && !Intro(__instance.Name)) return;
             var go = __instance.Fsm != null ? __instance.Fsm.GameObject : null;
             var hm = go != null ? go.GetComponent<HealthManager>() : null;
-            if (hm == null) return;
+            if (hm == null || !IsBoss(hm)) return;
             int id = hm.GetInstanceID();
-            if (!waking.TryGetValue(id, out float since) || Time.time - since < 0.5f) return;
+            PlayMakerFSM owner = null;
+            foreach (var f in hm.GetComponents<PlayMakerFSM>())
+                if (f.Fsm == __instance.Fsm) { owner = f; break; }
+            if (owner == null) return;
+            if (!ready.Contains(id) && Primary(owner.FsmName) && Intro(__instance.Name))
+            {
+                if (!waking.ContainsKey(id)) waking[id] = Time.time;
+                introOwners[id] = owner;
+            }
+            if (!waking.ContainsKey(id) || !Combat(__instance.Name) ||
+                !introOwners.TryGetValue(id, out var primary) || primary != owner) return;
             waking.Remove(id);
+            introOwners.Remove(id);
+            ready.Add(id);
             DevAwake++;
         }
 
@@ -126,14 +183,10 @@ namespace TerraKnight.Items
         static bool StillWaking(HealthManager hm, float since)
         {
             float t = Time.time - since;
-            if (t > 20f) return false;
+            if (t > 20f && IntroOf(hm) == null) return false;
             if (Sleeper(hm) != null) return false;
             if (t < 0.5f || !GameHooks.PlayerHasControl() || hm.IsInvincible) return true;
-            foreach (var f in hm.GetComponents<PlayMakerFSM>())
-            {
-                string n = f.ActiveStateName ?? "";
-                if (n.Contains("Wake") || n.Contains("Roar") || n.Contains("Startle") || n.Contains("Intro") || n.Contains("Title")) return true;
-            }
+            if (introOwners.TryGetValue(hm.GetInstanceID(), out var owner) && owner != null && Intro(owner.ActiveStateName)) return true;
             return false;
         }
     }

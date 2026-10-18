@@ -250,6 +250,7 @@ namespace TerraKnight.Items
         public static void Credit(HealthManager __instance, Vector2? dropAt = null, bool whole = false)
         {
             if (TerraMod.Instance == null || __instance == null) return;
+            Net.BossLifeRewards.InitializeClaims(TerraMod.Instance);
             if (counted.Contains(__instance.GetInstanceID())) return;
             string rec = UI.EnemyHover.RecordOf(__instance);
             if (rec == null || rec == "Dummy" || !EnemyDrops.Known(rec)) return;
@@ -301,8 +302,12 @@ namespace TerraKnight.Items
             // The fight being paid: its scene and its boss's name tell a variant's relic.
             Relics.ContextScene = __instance.gameObject.scene.name;
             Relics.ContextName = __instance.gameObject.name;
-            if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name), firstKill);
+            // A boss's loot waits for its death to play out (its body bursting or gone: BossLootTiming).
+            if (BossLootTiming.Waits(rec, __instance.gameObject.scene.name)) BossLootTiming.Defer(__instance, record, dropAt, firstKill);
+            else if (dropAt.HasValue) EnemyDrops.Roll(record, dropAt.Value, EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name), firstKill,scene:__instance.gameObject.scene.name);
             else EnemyDrops.Roll(record, __instance, firstKill);
+            // Every 20th kill of a record its banner (BannerSystem.AddNPCKillBy).
+            Banners.OnKill(record, __instance, dropAt);
             Relics.ContextScene = Relics.ContextName = null;
         }
 
@@ -313,9 +318,9 @@ namespace TerraKnight.Items
         {
             other = null;
             // A body's second HealthManager (the Mantis Lords', the Soul Tyrant's) takes no hits: not a body still up.
-            foreach (var o in Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
+            foreach (var o in Object.FindObjectsByType<HealthManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (o != null && o != hm && o.gameObject != hm.gameObject && o.GetComponent<HealthManager>() == o && !o.isDead && o.hp > 0
-                    && o.gameObject.activeInHierarchy && !counted.Contains(o.GetInstanceID()) && !EnemyStats.Defeated(o) && UI.EnemyHover.RecordOf(o) == rec)
+                    && o.gameObject.scene == hm.gameObject.scene && !counted.Contains(o.GetInstanceID()) && !EnemyStats.Defeated(o) && UI.EnemyHover.RecordOf(o) == rec)
                 {
                     other = o.name;
                     return true;

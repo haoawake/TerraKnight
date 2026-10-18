@@ -47,6 +47,7 @@ namespace TerraKnight.Items
         static void ToggleSellMode()
         {
             sellMode = !sellMode;
+            if (sellMode) blacklistOpen = hkOpen = bestiaryOpen = false;
             if (sellMode)
             {
                 if (World.Chests.IsOpen) World.Chests.Close(false);
@@ -61,7 +62,7 @@ namespace TerraKnight.Items
             why = null;
             if (s.IsEmpty) return false;
             if (s.Favorite) why = "收藏的物品不会卖出";
-            else if (s.Def.Permanent || s.Def.HkItem || s.Type == ItemType.Geo) why = "这件不能卖";
+            else if (s.Def.Permanent || s.Def.HkItem || Currencies.Is(s.Type)) why = "这件不能卖";
             return why == null;
         }
 
@@ -117,7 +118,7 @@ namespace TerraKnight.Items
         static void DrawSellRow(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string hoveredExtra, ref Kind hoveredKind)
         {
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
-            float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f) * ui;
+            float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f + SlotStep) * ui;   // a slot lower than Terraria's: the trash slot stays clear
             Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T("出售栏"), nameStyleLeft(ui), Color.white);
             var style = nameStyleLeft(ui);
             int size = style.fontSize;

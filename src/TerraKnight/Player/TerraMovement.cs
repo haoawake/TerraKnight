@@ -34,7 +34,9 @@ namespace TerraKnight.Player
         const float SlideSpeed = 0.5f, SlideDownSpeed = 4f, WallJumpPush = 3f;
         // Shield of Cthulhu, dashType 2; Tabi's ninja dash, dashType 1.
         const float ShieldDashSpeed = 14.5f, NinjaDashSpeed = 16.9f, SolarDashSpeed = 21.9f;
-        const int ShieldBashDamage = 30;
+        // The bonk's hit (Pl: eocHit): 30 damage, knockback 9, 4% crit; the Super Dash and the shadow dash strike with it too (AbilityAccessories).
+        internal const int ShieldBashDamage = 30;
+        internal const float ShieldBashKnockback = 9f, ShieldBashCrit = 4f;
         // Terraria's player hitbox, centred on the hero's collider and standing on its bottom.
         const int Width = 20, Height = 42;
 
@@ -96,7 +98,53 @@ namespace TerraKnight.Player
         /// through the ninja dash (armorEffectDrawShadow, Pl:37387-37394) and the Ram Rune's.
         /// </summary>
         public static int ShadowCount => DownDashing || (dashing != 2 && IsDashing) ? 3 : Mathf.Min(3, (int)(EocDash / 4f));
-        public static bool IsDashing => DashDelay < 0f;
+        public static bool IsDashing => DashDelay < 0f || hkDashLeft > 0f;
+
+        static float hkDashLeft, hkDashSpeed, hkDashGravity, hkDashEndsAt;
+
+        /// <summary>Each physics step: a shadow dash the movement step didn't see through (no Move called) ends by its time, its gravity given back.</summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
+        static void HkDashGuard(Rigidbody2D ___rb2d)
+        {
+            if (hkDashLeft <= 0f || Time.time < hkDashEndsAt + 0.1f) return;
+            hkDashLeft = 0f;
+            if (___rb2d != null) ___rb2d.gravityScale = hkDashGravity;
+        }
+        static int hkDashDir;
+
+        /// <summary>The shadow dash running (Hollow Knight's own dash: straight, no fall).</summary>
+        public static bool HkDashing => hkDashLeft > 0f;
+
+        /// <summary>Dev: the last shadow dash's speed (units/s), time (s), and how far it rose or fell on the way.</summary>
+        public static float DevHkDashSpeed, DevHkDashTime, DevHkDashDrop;
+        static float hkDashStartY;
+
+        /// <summary>
+        /// Hollow Knight's dash for the Shade Cloak (HeroController.HeroDash, cState.shadowDashing): the game's own DASH_SPEED
+        /// straight the way given for its DASH_TIME, no gravity on it, then the run speed. Not a Terraria dash: those
+        /// burst and bleed off with the player falling as ever.
+        /// </summary>
+        public static void HkShadowDash(HeroController hero, int direction)
+        {
+            hkDashDir = direction < 0 ? -1 : 1;
+            hkDashLeft = hero.DASH_TIME > 0f ? hero.DASH_TIME : 0.25f;
+            hkDashSpeed = hero.DASH_SPEED > 0f ? hero.DASH_SPEED : 20f;
+            DevHkDashSpeed = hkDashSpeed;
+            DevHkDashTime = hkDashLeft;
+            hkDashStartY = hero.transform.position.y;
+            hkDashEndsAt = Time.time + hkDashLeft;
+
+            var body = hero.GetComponent<Rigidbody2D>();
+
+            // No gravity on it while it lasts (HeroDash: AffectedByGravity(false)); given back as it was after.
+
+            if (hkDashLeft > 0f && body != null) { hkDashGravity = body.gravityScale; body.gravityScale = 0f; }
+            if (hkDashDir > 0 && !hero.cState.facingRight) hero.FaceRight();
+            else if (hkDashDir < 0 && hero.cState.facingRight) hero.FaceLeft();
+            requestedDash = 0;
+            DevDashes++;
+        }
         /// <summary>The few ticks of immunity after a bonk; not a hit, so no blinking.</summary>
         public static bool IsBonkImmune => setInvulnerable;
         /// <summary>The Shield of Cthulhu dash, before it has bonked anything: the next enemy touched gets bonked.</summary>
@@ -224,6 +272,12 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "Move")]
         static void AfterMove(HeroController __instance, float move_direction, Rigidbody2D ___rb2d, float __state)
         {
+            // A shadow dash cut short (control taken, a death, a scene change): its gravity given back.
+            if (hkDashLeft > 0f && (!Active || !__instance.acceptingInput || __instance.cState.dead || __instance.cState.transitioning))
+            {
+                hkDashLeft = 0f;
+                if (___rb2d != null) ___rb2d.gravityScale = hkDashGravity;
+            }
             if (!Active || !__instance.acceptingInput) return;
             float ticks = Time.fixedDeltaTime * 60f;
             var cs = __instance.cState;
@@ -241,6 +295,23 @@ namespace TerraKnight.Player
             bool left = move_direction < -0.1f, right = move_direction > 0.1f;
             if (!cs.wallSliding) vx = Horizontal(__instance, vx, left, right, cs.onGround, ticks);
             vx = Dash(__instance, ___rb2d, vx, left, right, ticks);
+            if (hkDashLeft > 0f)
+            {
+                // The shadow dash: straight across, the fall held off every step until it ends.
+                hkDashLeft -= Time.fixedDeltaTime;
+                if (hkDashLeft > 0f)
+                {
+                    ___rb2d.gravityScale = 0f;
+                    ___rb2d.linearVelocity = new Vector2(hkDashDir * hkDashSpeed, 0f);
+                    DevHkDashDrop = __instance.transform.position.y - hkDashStartY;
+                    return;
+                }
+                hkDashLeft = 0f;
+                ___rb2d.gravityScale = hkDashGravity;
+                float run = Mathf.Max(AccRunSpeed, MaxRunSpeed * MoveSpeed);
+                vx = hkDashDir * Mathf.Min(Mathf.Abs(vx), run);
+                if ((hkDashDir > 0 && right) || (hkDashDir < 0 && left)) vx = hkDashDir * run;
+            }
             if (cs.onGround && (left || right)) StepUp(__instance, ___rb2d, left ? -1 : 1);
             // In the air beside a wall, holding towards it: slip into a gap in it. Not only while
             // wall sliding: the Knight's own wall check lets go as soon as its rays reach the gap.
@@ -822,7 +893,7 @@ namespace TerraKnight.Player
                 var hm = h.GetComponentInParent<HealthManager>();
                 if (hm == null || hm.isDead || !bashed.Add(hm)) continue;
                 // A Terraria hit like any other (scaled to the enemy's health, numbers and blood included).
-                TerraMod.Instance.Melee.HitWith(h, ShieldBashDamage, 9f, 4f, dir, col.center);
+                TerraMod.Instance.Melee.HitWith(h, ShieldBashDamage, ShieldBashKnockback, ShieldBashCrit, dir, col.center);
                 eocHit = true;
             }
             if (!eocHit) return;
@@ -949,6 +1020,23 @@ namespace TerraKnight.Player
         static bool UpHeld => GameHooks.Input.inputActions.up.IsPressed || DevUp;
         /// <summary>Dev: held up/down for the autotest.</summary>
         public static bool DevDown, DevUp;
+
+        /// <summary>
+        /// A one-way platform met from below or from the side: its effector lets the hero through
+        /// (Collision2D.enabled is off), yet the game's collision callbacks still take it for a
+        /// ceiling, and a head bump ends the jump halfway up to it. Terraria's platforms never stop
+        /// anything going up through them, so such a pass is no collision for the game either.
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HeroController), "OnCollisionEnter2D")]
+        static bool PlatformPassEnter(Collision2D collision) => !Passing(collision);
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HeroController), "OnCollisionStay2D")]
+        static bool PlatformPassStay(Collision2D collision) => !Passing(collision);
+
+        static bool Passing(Collision2D collision) =>
+            Active && collision != null && !collision.enabled && collision.collider != null && collision.collider.usedByEffector;
 
         /// <summary>
         /// Standing on platforms and holding down drops through them (Terraria lets the player

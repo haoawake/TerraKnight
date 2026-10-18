@@ -364,8 +364,10 @@ namespace TerraKnight.Items
             if (Random.Range(0, 100) > (fl + 75) / 2) return;
             ulong flags = Flags(area, tiles, rod, inv, junk, crate);
             ItemType quest = Town.Angler.QuestFishToCatch(inv);
-            var got = Roll(flags, quest, common, uncommon, rare, veryRare, legendary);
+            var got = Roll(flags, quest, common, uncommon, rare, veryRare, legendary, Areas.AreaName(pond.Scene));
             if (got == ItemType.None) return;
+            // Now and then the Fishing Chest on the line instead (never in place of the Angler's fish).
+            if (got != quest && FishingChest.Caught(PlayerBuffs.Has(PotionBuffs.Crate))) got = FishingChest.Type;
             catchType = got;
             catchStack = Stack(got, FishingLevel(rod, inv));
             Biting = true;
@@ -421,11 +423,15 @@ namespace TerraKnight.Items
             return f;
         }
 
-        /// <summary>The rules in order (FishDropRuleList.TryGetItemDropType): conditions, the rule's own chance, the rarity roll.</summary>
-        static ItemType Roll(ulong flags, ItemType quest, bool common, bool uncommon, bool rare, bool veryRare, bool legendary)
+        /// <summary>
+        /// The rules in order (FishDropRuleList.TryGetItemDropType): conditions, the rule's own chance, the rarity roll. Where
+        /// Terraria's biome crates stand, the area's own crate (its coffer in hardmode): the crate roll on a rare catch.
+        /// </summary>
+        static ItemType Roll(ulong flags, ItemType quest, bool common, bool uncommon, bool rare, bool veryRare, bool legendary, string area)
         {
             bool acid = (flags & InLava) != 0 && (flags & CanFishInLava) != 0;
             int stage = Shop.UnlockedStage();
+            bool areaCrateAsked = false;
             foreach (var r in rules)
             {
                 ulong f = flags;
@@ -434,6 +440,15 @@ namespace TerraKnight.Items
                 {
                     if (r.Lava && r.Stopper) continue;
                     if (!r.Lava) f &= ~InLava;
+                }
+                if (r.Items.Length == 1 && biomeCrates.Contains(r.Items[0]))
+                {
+                    if (areaCrateAsked) continue;
+                    areaCrateAsked = true;
+                    if ((f & CrateRoll) == 0 || (f & InLava) != 0 || !rare) continue;
+                    var own = AreaCrateFor(area, (f & HardMode) != 0);
+                    if (own != ItemType.None) return own;
+                    continue;
                 }
                 if ((r.Mask & ~f) != 0) continue;
                 if (r.Quest != ItemType.None && r.Quest != quest) continue;
@@ -646,7 +661,7 @@ namespace TerraKnight.Items
                 if (Random.Range(0, 100) > (f + 75) / 2) { Add(ItemType.None); continue; }
                 ulong flags = Flags(a, tiles, ItemDb.Get(ItemType.GoldenFishingRod), inv, junk, crate);
                 if (acid) flags |= InLava | CanFishInLava;
-                Add(Roll(flags, Town.Angler.QuestFishToCatch(inv), common, uncommon, rare, veryRare, legendary));
+                Add(Roll(flags, Town.Angler.QuestFishToCatch(inv), common, uncommon, rare, veryRare, legendary, area));
             }
             pond = saved;
             return counts;

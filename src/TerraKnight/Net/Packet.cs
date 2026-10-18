@@ -51,6 +51,8 @@ namespace TerraKnight.Net
         BossSummon = 207,
         /// <summary>The mod's: a boss beaten in the game that runs its fight (the game's record of it): the others in its room write it too.</summary>
         BossBeaten = 208,
+        /// <summary>Register a completed fight's reward, then release it after the death animation, to all players.</summary>
+        BossLifeReward = 209,
     }
 
     /// <summary>

@@ -14,7 +14,7 @@ namespace TerraKnight.Items
         const int HkColumns = 5;
 
         static Rect HkButtonRect(Rect view, float ui) =>
-            new Rect(view.x + RightOfAmmo(ui), view.y + (Margin + 18f) * ui + 70f * ui + 28f * ui, 120f * ui, 24f * ui);
+            UtilityButtonRect(view, ui, 2);
 
         static void DrawHkButton(Rect view, float ui, Vector2 mouse)
         {
@@ -27,6 +27,7 @@ namespace TerraKnight.Items
         static void ToggleHkBag()
         {
             hkOpen = !hkOpen;
+            if (hkOpen) blacklistOpen = sellMode = false;
             if (hkOpen) bestiaryOpen = false;
             Sound(hkOpen ? "Menu_Open" : "Menu_Close");
         }
@@ -48,6 +49,7 @@ namespace TerraKnight.Items
                 {
                     hovered = inv.HkBag[i];
                     hoveredKind = Kind.HkBag;
+                    if (hovered.IsEmpty) DrawLines(mouse, new System.Collections.Generic.List<string> { HkItems.BagSlotHint(i) }, Color.white);
                 }
             }
         }
@@ -82,7 +84,7 @@ namespace TerraKnight.Items
             }
             if (!HkItems.BagAccepts(i, inv.Mouse))
             {
-                NoticeHk(i == HkItems.DreamNailSlot ? "这个格子专门保管梦之钉" : "圣巢背包里只能放圣巢的物品");
+                NoticeHk(HkItems.BagSlotHint(i));
                 return;
             }
             if (inv.Mouse.IsEmpty && slot.IsEmpty) return;
@@ -108,6 +110,12 @@ namespace TerraKnight.Items
         /// <summary>Shift+click on a Hallownest item in the hotbar: into the bag. True when it was one.</summary>
         static bool ShiftHkToBag(ref ItemStack slot)
         {
+            if (!slot.IsEmpty && HkItems.AbilityBagSlot(slot.Type) >= 0)
+            {
+                if (HkItems.TryStoreAbility(inv, slot)) slot = default;
+                Sound("Grab");
+                return true;
+            }
             if (slot.Type == ItemType.DreamNail && !slot.IsEmpty)
             {
                 if (DreamNailItem.TryStoreInBag(inv, slot)) slot = default;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using HarmonyLib;
 using TerraKnight.Effects;
 using UnityEngine;
@@ -195,7 +195,7 @@ namespace TerraKnight.Items
         /// <summary>NPC.GetHurtByDebuff: off its Terraria life (so its own health), the kill through the game's own hit.</summary>
         static void Damage(HealthManager hm, int amount)
         {
-            if (hm.isDead) return;
+            if (hm.isDead || BossWake.DreamWindow(hm) || BossWake.Hit(hm) != BossWake.Result.Normal) return;
             var info = EnemyStats.Of(hm);
             int dealt = EnemyStats.ToGameDamage(info, amount);
             var col = hm.GetComponent<Collider2D>();

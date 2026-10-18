@@ -10,14 +10,38 @@ namespace TerraKnight.Items
     /// button opens the inventory with the reforge slot under it (ItemSlot context 5: only what can have a prefix goes
     /// in), its cost beside it (the item's value with its prefix, times the stack, a third: Prefixes.ReforgeCost), the
     /// hammer under (Reforge_0, Reforge_1 hovered, "重铸"). A click pays and rolls a prefix (Item.Prefix(-2): always one),
-    /// its name popping up; Item_37, the best one a brighter popup. The crafting column gives way meanwhile. Closing the
-    /// talk (or saving) puts the item back in the bag.
+    /// the item's new name popping up over the player (PopupText ItemReforge) with Item_37. The best prefix the item can
+    /// have (rolledPrefixIsTopTier) pops up in cycling colours with the best_reforge sound and rainbow sparks, and the
+    /// hammer holds for a second (reforgeCooldown 60), so one click too many doesn't roll it away. The crafting column
+    /// gives way meanwhile. Closing the talk (or saving) puts the item back in the bag.
     /// </summary>
     internal static partial class InventoryGui
     {
         static bool reforgeHover;
         static float reforgeScale = 1f;
-        public static int DevReforges;
+        public static int DevReforges, DevReforgesHeld;
+
+        /// <summary>Main.reforgeCooldown: after the best prefix the reforge hammer holds this long (s).</summary>
+        public const float BestHold = 1f;
+        static float hammerHeldUntil = -1f;
+
+        /// <summary>The reforge hammer holds after a best prefix just rolled.</summary>
+        public static bool HammerHeld => Time.unscaledTime < hammerHeldUntil;
+
+        /// <summary>The result over the player: the item's name popping up, the best in cycling colours with its sound and sparks.</summary>
+        static void HammerResult(ItemStack item, bool best)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return;
+            var centre = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
+            UI.PopupText.Show(item.Def, item.Count, centre, best, noStack: true);
+            if (!best) return;
+            Sound("Custom/best_reforge");
+            // ParticleOrchestraType.RainbowRodHit twice, 16 px over the player's middle.
+            var at = Effects.TerraParticles.ToPx(centre + Vector2.up * 0.5f);
+            Effects.FxParticles.RainbowRodHit(at);
+            Effects.FxParticles.RainbowRodHit(at);
+        }
 
         static void DrawReforge(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind)
         {
@@ -44,14 +68,17 @@ namespace TerraKnight.Items
             long cost = Prefixes.ReforgeCost(item);
             Outlined(text, TT("LegacyInterface.46", "花费") + ": " + Shop.Money(cost), labelStyle, color);
             // The hammer, 70 right and 40 down of the slot, growing while hovered.
-            var tex = TerrariaAssets.Texture(reforgeHover ? "UI/Reforge_1" : "UI/Reforge_0");
-            reforgeScale = Mathf.MoveTowards(reforgeScale, reforgeHover ? 1.2f : 1f, 0.02f);
+            var tex = TerrariaAssets.Texture(reforgeHover && !HammerHeld ? "UI/Reforge_1" : "UI/Reforge_0");
+            reforgeScale = Mathf.MoveTowards(reforgeScale, reforgeHover && !HammerHeld ? 1.2f : 1f, 0.02f);
             float w = tex.width * reforgeScale * ui, h = tex.height * reforgeScale * ui;
             var hammer = new Rect(rect.x + 70f * ui - w / 2f, rect.y + 40f * ui - h / 2f, w, h);
             bool over = new Rect(rect.x + 55f * ui, rect.y + 25f * ui, 30f * ui, 30f * ui).Contains(mouse);
             if (over && !reforgeHover) Sound("Menu_Tick");
             reforgeHover = over;
+            var prev = GUI.color;
+            if (HammerHeld) GUI.color = new Color(0.55f, 0.55f, 0.55f, 1f);
             GUI.DrawTexture(hammer, tex);
+            GUI.color = prev;
             Add(new Rect(rect.x + 55f * ui, rect.y + 25f * ui, 30f * ui, 30f * ui), Kind.ReforgeButton, 0);
             if (over) DrawLines(mouse, new List<string> { TT("LegacyInterface.19", "重铸") }, Color.white);
         }
@@ -61,7 +88,7 @@ namespace TerraKnight.Items
         {
             if (!leftPress || !TownNpcs.ReforgeOpen) return;
             // His forging takes a weapon only; his reforging what can have a prefix.
-            if (!inv.Mouse.IsEmpty && (TownNpcs.ForgeMode ? !Forging.CanForge(ItemDb.Get(inv.Mouse.Type)) : !Prefixes.CanHave(ItemDb.Get(inv.Mouse.Type)))) return;
+            if (!inv.Mouse.IsEmpty && (TownNpcs.ForgeMode ? !Forging.Forgeable(ItemDb.Get(inv.Mouse.Type)) : !Prefixes.CanHave(ItemDb.Get(inv.Mouse.Type)))) return;
             var held = inv.Mouse;
             inv.Mouse = TownNpcs.ReforgeItem;
             TownNpcs.ReforgeItem = held;
@@ -73,6 +100,8 @@ namespace TerraKnight.Items
         {
             ref var item = ref TownNpcs.ReforgeItem;
             if (!TownNpcs.ReforgeOpen || item.IsEmpty) return false;
+            // The best prefix just rolled: the hammer holds a second (the click is lost, nothing paid).
+            if (HammerHeld) { DevReforgesHeld++; return false; }
             long cost = Prefixes.ReforgeCost(item);
             if (!Shop.Spend(cost))
             {
@@ -83,9 +112,10 @@ namespace TerraKnight.Items
             if (p <= 0) return false;
             item.Prefix = (byte)p;
             DevReforges++;
-            var hero = HeroController.SilentInstance;
-            if (hero != null) UI.PopupText.Show(item.Def, item.Count, (Vector2)hero.transform.position + new Vector2(0f, best ? 1.5f : 1f));
-            Sound("Item_37");
+            DevLastBest = best;
+            HammerResult(item, best);
+            if (best) hammerHeldUntil = Time.unscaledTime + BestHold;
+            else Sound("Item_37");
             return true;
         }
 
@@ -98,5 +128,7 @@ namespace TerraKnight.Items
         }
 
         public static bool DevReforge() => Reforge();
+        public static bool DevLastBest;
+        public static void DevReleaseHammer() => hammerHeldUntil = -1f;
     }
 }

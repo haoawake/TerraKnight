@@ -25,6 +25,9 @@ namespace TerraKnight.World
         MagicIce = 9,
         /// <summary>Meteorite (tile 37, World.Meteorites): a 50% pickaxe's, glowing, burning to the touch.</summary>
         Meteorite = 10,
+        /// <summary>Each Hallownest area's own block (World/AreaBlocks.cs): 24 kinds from here, in that file's order.</summary>
+        AreaBlockFirst = 32,
+        AreaBlockLast = 55,
     }
 
     internal static class Cells
@@ -32,7 +35,10 @@ namespace TerraKnight.World
         /// <summary>Kinds that block movement as a full block.</summary>
         public static bool Blocks(CellKind k) =>
             k == CellKind.Original || k == CellKind.Dirt || k == CellKind.Stone || k == CellKind.Wood || k == CellKind.Sand || k == CellKind.MagicIce
-            || k == CellKind.Meteorite;
+            || k == CellKind.Meteorite || IsAreaBlock(k);
+
+        /// <summary>An area's own block (World/AreaBlocks.cs).</summary>
+        public static bool IsAreaBlock(CellKind k) => k >= CellKind.AreaBlockFirst && k <= CellKind.AreaBlockLast;
     }
 
     /// <summary>
@@ -74,6 +80,29 @@ namespace TerraKnight.World
         {
             var indices = new List<int>(walls.Keys);
             foreach (int i in indices) SetWall(i % Width, i / Width, -1);
+        }
+
+        // A torch cell's regional style (World.RegionalTorches, 1..48; none the plain torch). It stays after the torch is
+        // mined (what it gives back reads it) until another torch is placed there.
+        readonly Dictionary<int, byte> torchStyles = new Dictionary<int, byte>();
+        public int TorchStyleAt(int index) => torchStyles.TryGetValue(index, out var s) ? s : 0;
+        public int GetTorchStyle(int x, int y) => InBounds(x, y) ? TorchStyleAt(y * Width + x) : 0;
+        public void RestoreTorchStyle(int index, int style)
+        {
+            if (index < 0 || index >= cells.Length) return;
+            if (style <= 0) torchStyles.Remove(index); else torchStyles[index] = (byte)style;
+        }
+        /// <summary>A cell's torch style changed: a torch there is drawn again (and the change recorded) as any change is.</summary>
+        public void SetTorchStyle(int x, int y, int style)
+        {
+            if (!InBounds(x, y) || GetTorchStyle(x, y) == Math.Max(0, style)) return;
+            RestoreTorchStyle(y * Width + x, style);
+            if (cells[y * Width + x] == CellKind.Torch) CellChanged?.Invoke(x, y);
+        }
+        public void ResetTorchStyles()
+        {
+            var indices = new List<int>(torchStyles.Keys);
+            foreach (int i in indices) SetTorchStyle(i % Width, i / Width, 0);
         }
 
         public event Action<int, int> CellChanged;
@@ -200,6 +229,7 @@ namespace TerraKnight.World
             Array.Copy(art, copy.art, art.Length);
             Array.Copy(slopes, copy.slopes, slopes.Length);
             foreach (var wall in walls) copy.walls[wall.Key] = wall.Value;
+            foreach (var style in torchStyles) copy.torchStyles[style.Key] = style.Value;
             copy.networkBase = networkBase != null ? (CellKind[])networkBase.Clone() : null;
             return copy;
         }
@@ -228,6 +258,8 @@ namespace TerraKnight.World
             cells[i] = kind;
             // WorldGen.PlaceTile clears the slope: a new platform starts flat.
             slopes[i] = 0;
+            // A torch set down starts as the plain one; the item placing it gives its style (RegionalTorches.Placed).
+            if (kind == CellKind.Torch) torchStyles.Remove(i);
             CellChanged?.Invoke(x, y);
         }
 

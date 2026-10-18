@@ -25,7 +25,10 @@ namespace TerraKnight.UI
                 room.Charted = true;
                 Build(room);
                 byte Alpha(Texture2D t, int x) => ((Color32)t.GetPixel(x, 0)).a;
-                bool dim = Alpha(room.Solid, 0) == 255 && Alpha(room.Solid, 1) == 77 && Alpha(room.Open, 2) == 77 && Alpha(room.Open, 3) == 77;
+                // A bought map's unexplored cells: 30% of the colour, drawn whole (overlaps don't add up); its plain air not drawn.
+                Color32 rock = TileColor(room, Tile.Terrain), dimRock = (Color32)room.Solid.GetPixel(1, 0), door = (Color32)room.Open.GetPixel(3, 0);
+                bool dim = Alpha(room.Solid, 0) == 255 && Alpha(room.Solid, 1) == 255 && dimRock.r == (byte)(rock.r * MapExploration.ChartedAlpha / 255)
+                    && Alpha(room.Open, 2) == 0 && Alpha(room.Open, 3) == 255 && door.r <= (byte)(((Color32)ObjColor(Obj.Door)).r * 0.5f + 1f);
                 bool separate = !room.IsSeen(1, 0) && !room.IsSeen(2, 0) && !room.IsSeen(3, 0);
                 room.SetSeen(1, 0); room.SetSeen(2, 0); room.SetSeen(3, 0);
                 Build(room);
@@ -33,10 +36,11 @@ namespace TerraKnight.UI
                 var seen = new bool[64 * 64];
                 bool Mark(int x, int y) { int i = y * 64 + x; bool first = !seen[i]; seen[i] = true; return first; }
                 int count = MapExploration.Reveal(64, 64, 20, 20, (x, y) => x == 23, Mark);
-                bool local = count > 0 && count <= 197 && seen[20 * 64 + 23] && !seen[20 * 64 + 24] && !seen[20 * 64 + 29];
+                int open = MapExploration.Reveal(64, 64, 20, 20, (x, y) => false, (x, y) => true);
+                bool local = count > 0 && count < open && seen[20 * 64 + 23] && !seen[20 * 64 + 24] && !seen[20 * 64 + 29];
                 bool still = MapExploration.Reveal(64, 64, 20, 20, (x, y) => x == 23, Mark) == 0;
                 bool move = MapExploration.Reveal(64, 64, 30, 20, (x, y) => x == 23, Mark) > 0 && seen[20 * 64 + 29];
-                report = $"未买隐藏 {hidden}，买图纹理 alpha=77 {dim}，购买不改探索 {separate}，走过 alpha=255 {walked}，局部/遮挡 {local}，原地不扩散 {still}，移动揭图 {move}";
+                report = $"未买隐藏 {hidden}，买图未探索 30% 亮度、通道不画 {dim}，购买不改探索 {separate}，走过 alpha=255 {walked}，局部/遮挡 {local}，原地不扩散 {still}，移动揭图 {move}";
                 return hidden && dim && separate && walked && local && still && move;
             }
             finally

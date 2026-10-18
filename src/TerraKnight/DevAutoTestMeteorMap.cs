@@ -30,10 +30,10 @@ namespace TerraKnight
             yield return GoTo("Town", "left1");
             yield return new WaitForSeconds(2f);
             string target = null;
-            Dictionary<int, byte> before = null;
+            Dictionary<int, ushort> before = null;
             foreach (var room in candidates)
             {
-                before = new Dictionary<int, byte>(WorldEdits.For(room));
+                before = new Dictionary<int, ushort>(WorldEdits.For(room));
                 if (Meteorites.Drop("Town", room)) { target = room; break; }
             }
             Meteorites.Pending = false;

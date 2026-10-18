@@ -93,6 +93,8 @@ namespace TerraKnight.Items
         internal sealed class Ref
         {
             public Boss Boss;
+            public string Record;
+            public string Key;
             /// <summary>The stage the boss is fought at (its bestiary's).</summary>
             public int Stage;
         }
@@ -156,6 +158,16 @@ namespace TerraKnight.Items
             ["FinalBoss"] = R(5, MoonLord),
         };
 
+        static BossStats()
+        {
+            foreach(var pair in table)
+            {
+                int at=pair.Key.IndexOf('@');
+                pair.Value.Record=at<0 ? pair.Key : pair.Key.Substring(0,at);
+                pair.Value.Key=pair.Key;
+            }
+        }
+
         /// <summary>A boss's Terraria stand-in at a stage: its own entry there, else its usual one.</summary>
         public static Ref Of(string record, int stage)
         {
@@ -168,42 +180,56 @@ namespace TerraKnight.Items
         public static bool InGodhome(string scene) => scene != null && scene.StartsWith("GG_");
 
         /// <summary>
-        /// A boss's Terraria life where it is met, on a difficulty: its stand-in's; in Godhome, where
-        /// the player comes with the endgame's weapons, a boss of an earlier stage is as much of the
-        /// Lunatic Cultist as it was of its own stage's boss, and Ascended's extra health over Attuned
-        /// (<paramref name="godhomeTier"/>) is on top.
+        /// The health unit distributed by EnemyStats over native phases and bodies. Dream/late bosses
+        /// and Godhome rematches have explicit whole-fight budgets; early world encounters keep their
+        /// stand-in's life. Godhome's existing challenge profile is selected using godhomeTier.
         /// </summary>
         internal static float CombatLifeShare(int stage) => stage switch
-            { 0 => .65f, 1 => .65f, 2 => .6f, 3 => .55f, 4 => .5f, _ => .4f };
+            { 0 => .715f, 1 => .754f, 2 => .75f, 3 => .7425f, 4 => .725f, _ => .64f };
 
         public static int LifeOf(Ref r, string scene, DifficultyLevel d, float godhomeTier = 1f)
         {
+            if (InGodhome(scene)) return GodhomeLifeOf(r, scene, d, GodhomeBalance.Current(scene, godhomeTier));
+            if (BossHealthBudgets.TryTotal(r, scene, d, out float total))
+                return BossHealthBudgets.UnitLife(r, scene, total);
             float t = Tier(d);
             float life = r.Boss.LifeAt(t);
-            if (InGodhome(scene))
-            {
-                if (r.Stage < 5) life *= GodhomeRematch.LifeAt(t) / (float)stageBoss[r.Stage].LifeAt(t);
-                life *= Mathf.Clamp(godhomeTier, 1f, 2f);
-            }
             // Preserve the native FSM health and phases; reduce only displayed/combat life.
-            life *= CombatLifeShare(InGodhome(scene) ? 5 : r.Stage);
+            life *= CombatLifeShare(r.Stage);
             return Mathf.Max(1, Mathf.RoundToInt(life));
         }
 
+        internal static int GodhomeLifeOf(Ref r,string scene,DifficultyLevel d,GodhomeBalance.Profile profile)
+        {
+            if (BossHealthBudgets.TryTotal(r, scene, d, out float budget))
+                return BossHealthBudgets.UnitLife(r, scene, budget * profile.Life);
+            // Budget the whole fight, not a full floor for each native phase. Late bosses
+            // retain their stronger stand-in; early and formerly fragile bosses get a floor.
+            float world=r.Boss.LifeAt(Tier(d))*CombatLifeShare(r.Stage);
+            float total=Mathf.Max(world*1.5f,GodhomeRematch.LifeAt(Tier(d))*1.5f)*profile.Life;
+            float phases=BossPhases.WholeFactor(r.Record,scene);
+            return Mathf.Max(1,Mathf.RoundToInt(total/Mathf.Max(.01f,phases)));
+        }
+
         /// <summary>
-        /// The potion the stand-in drops at its death (NPC.DoDeathEvents_DropBossPotionsAndHearts): the Lesser Healing
-        /// Potion, the Healing Potion for Skeletron, the Deerclops and the Wall of Flesh, Bottled Honey for the Queen
-        /// Bee, the Greater for the hardmode bosses, the Super for the Moon Lord. A share of a boss is the boss (its parts).
+        /// The healing potion a boss drops at its death and its phases' ends (NPC.DoDeathEvents_DropBossPotionsAndHearts's,
+        /// by the boss's own stage, the user's): the Lesser Healing Potion at stages 0 and 1, the Healing Potion at 2 and 3,
+        /// the Greater at 4, the Super at 5 (each no later than its own stage, so never locked out of the drop). A stage 5
+        /// boss gives Ultimate Healing Potions besides (<see cref="UltimatePotion"/>).
         /// </summary>
         public static ItemType PotionOf(Ref r)
         {
-            var p = r.Boss.Parts;
-            if (p == MoonLord.Parts) return ItemType.SuperHealingPotion;
-            if (p == QueenBee.Parts) return ItemType.BottledHoney;
-            if (p == Skeletron.Parts || p == Deerclops.Parts || p == WallOfFlesh.Parts) return ItemType.HealingPotion;
-            if (p == KingSlime.Parts || p == EyeOfCthulhu.Parts || p == EaterOfWorlds.Parts || p == BrainOfCthulhu.Parts) return ItemType.LesserHealingPotion;
-            return ItemType.GreaterHealingPotion;
+            switch (Mathf.Clamp(r.Stage, 0, 5))
+            {
+                case 0: case 1: return ItemType.LesserHealingPotion;
+                case 2: case 3: return ItemType.HealingPotion;
+                case 4: return ItemType.GreaterHealingPotion;
+                default: return ItemType.SuperHealingPotion;
+            }
         }
+
+        /// <summary>Whether the boss's death gives Ultimate Healing Potions too (one to three): a stage 5 boss's.</summary>
+        public static bool UltimatePotion(Ref r) => r != null && r.Stage >= 5;
 
         /// <summary>The boss's Terraria defense (Master leaves it as it is).</summary>
         public static int DefenseOf(Ref r) => r.Boss.Defense;

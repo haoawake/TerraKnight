@@ -18,12 +18,16 @@ namespace TerraKnight
     /// </summary>
     internal sealed partial class DevAutoTest
     {
-        IEnumerator LagTest()
+        /// <summary>The rooms named after "lag_" (comma-separated), after the plain one; else the tram pass rooms.</summary>
+        IEnumerator LagTest(string only = null)
         {
             var pd = PlayerData.instance;
             pd.isInvincible = true;
             mod.DevNoFallDamage = true;
-            foreach (var (scene, label, seconds) in new[] { ("Crossroads_01", "对照：十字路口第一间", 8f), ("Deepnest_26b", "电车票房间", 20f), ("Deepnest_26", "失败的电车道", 20f), ("Deepnest_26b", "电车票房间（再进一次）", 12f) })
+            var rooms = new List<(string, string, float)> { ("Crossroads_01", "对照：十字路口第一间", 8f) };
+            if (only != null) foreach (var r in only.Split(',')) rooms.Add((r, r, 12f));
+            else rooms.AddRange(new[] { ("Deepnest_26b", "电车票房间", 20f), ("Deepnest_26", "失败的电车道", 20f), ("Deepnest_26b", "电车票房间（再进一次）", 12f) });
+            foreach (var (scene, label, seconds) in rooms)
             {
                 var frames = new List<float>();
                 bool watching = true;

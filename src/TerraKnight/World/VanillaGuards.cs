@@ -97,6 +97,7 @@ namespace TerraKnight.World
     {
         static PlayMakerFSM bench;
         static float nextFind, pressedAt = -1f;
+        static float detachedSince = -1f;
         static string pending, key;
         static int told;
         public static int DevNudged;
@@ -109,15 +110,40 @@ namespace TerraKnight.World
                 || gm.IsInSceneTransition || Time.timeScale == 0f || Items.InventoryGui.Open)
             {
                 pressedAt = -1f;
+                detachedSince = -1f;
                 return;
             }
-            if ((bench == null || bench.ActiveStateName != "Resting") && Time.unscaledTime >= nextFind)
+            bool farFromCachedBench = bench != null && ((Vector2)bench.transform.position - (Vector2)hero.transform.position).sqrMagnitude > 4f;
+            if ((bench == null || !bench.gameObject.activeInHierarchy || bench.ActiveStateName != "Resting" || farFromCachedBench)
+                && (Time.unscaledTime >= nextFind || farFromCachedBench))
             {
                 nextFind = Time.unscaledTime + 0.5f;
                 bench = null;
+                float nearest = float.MaxValue;
                 foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
-                    if (f.FsmName == "Bench Control" && f.ActiveStateName == "Resting") { bench = f; break; }
+                    if (f.FsmName == "Bench Control" && f.ActiveStateName == "Resting")
+                    {
+                        float distance = ((Vector2)f.transform.position - (Vector2)hero.transform.position).sqrMagnitude;
+                        if (distance < nearest) { nearest = distance; bench = f; }
+                    }
             }
+            // The native bench can remain in another scene, or no longer be Resting, after
+            // dream/death return while TerraMovement already lets the player walk away.
+            bool offBench = bench == null || !bench.gameObject.activeInHierarchy || bench.ActiveStateName != "Resting"
+                || ((Vector2)bench.transform.position - (Vector2)hero.transform.position).sqrMagnitude > 4f;
+            if (offBench && !hero.cState.dead && !hero.cState.transitioning && GameHooks.PlayerHasControl())
+            {
+                if (detachedSince < 0f) detachedSince = Time.unscaledTime;
+                if (Time.unscaledTime - detachedSince >= 0.3f)
+                {
+                    if (bench != null && bench.ActiveStateName == "Resting") bench.SendEvent("GET UP");
+                    pd.atBench = false;
+                    pressedAt = detachedSince = -1f;
+                    Plugin.Log.LogInfo("[长椅] 已离开长椅：清除残留的坐姿标记");
+                    return;
+                }
+            }
+            else detachedSince = -1f;
             if (bench == null || bench.ActiveStateName != "Resting") { pressedAt = -1f; return; }
 
             if (pressedAt < 0f)

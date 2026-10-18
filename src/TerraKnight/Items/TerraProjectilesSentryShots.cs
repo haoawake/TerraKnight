@@ -110,7 +110,7 @@ namespace TerraKnight.Items
                     if (col == null) continue;
                     FlameburstBurn(tier, hm);
                     int dealt = SummonTags.Modify(hm, p.Damage, out bool crit, 1f, true, CenterPx(p));
-                    melee.HitWith(col, dealt, p.Knockback, crit ? 100f : 0f, facing, p.Pos, Equipment.Current.ArmorPen);
+                    melee.HitWith(col, dealt, p.Knockback, crit ? 100f : 0f, facing, p.Pos, Equipment.Current.ArmorPen, autonomous: true);
                     p.Immune[id] = int.MaxValue;
                     DevHits[p.Kind] = DevHit(p.Kind) + 1;
                     SummonTags.OnHit(hm, p.Damage, CenterPx(p));

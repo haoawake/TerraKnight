@@ -22,7 +22,7 @@ namespace TerraKnight.Items
         static bool textHooked;
 
         /// <summary>A chest's name is being typed: the keys are the text's.</summary>
-        public static bool TypingName => renaming || Time.frameCount - renameEnded <= 1;
+        public static bool TypingName => renaming || Time.frameCount - renameEnded <= 1 || BookTyping;
         /// <summary>The frame the typing ended: its Enter or Esc closes nothing else.</summary>
         static int renameEnded = -10;
 
@@ -70,7 +70,7 @@ namespace TerraKnight.Items
         /// <summary>The chest panel's title: the name being typed (with its caret), the chest's name, else "箱子".</summary>
         static string ChestTitle()
         {
-            if (Chests.BankOpen) return Lang.T("猪猪存钱罐");
+            if (Chests.BankOpen) return Chests.BankTitle;
             if (renaming) return nameDraft + ((int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : " ");
             string name = Chests.OpenName;
             return string.IsNullOrEmpty(name) ? Lang.T("箱子") : name;
@@ -123,20 +123,33 @@ namespace TerraKnight.Items
         /// <summary>ItemSlot.Draw's empty-slot icons (Extra_54 frames) for contexts 19, 20, 18, 17, 16.</summary>
         static readonly int[] miscIcons = { 10, 17, 7, 13, 4 };
 
-        /// <summary>Main.DrawPageIcons' misc equipment button (EquipPage 2: DisplaySlots_2, _3 while on it, _6 behind it hovered).</summary>
+        /// <summary>
+        /// Main.DrawPageIcons: the misc equipment button (EquipPage 2: DisplaySlots_2, _3 while on it, _6 behind it hovered)
+        /// and 48 px to its left the housing button (EquipPage 1: DisplaySlots_4, _5 while on it, _7 behind it hovered), whose
+        /// page is the townspeople's list (Town.TownNpcs.PanelOpen) in the equipment column's place.
+        /// </summary>
         static void DrawEquipPageIcon(Vector2 at, float ui, Vector2 mouse)
         {
-            var tex = TerrariaAssets.Texture(equipPage == 2 ? "UI/DisplaySlots_3" : "UI/DisplaySlots_2");
+            bool housing = Town.TownNpcs.PanelOpen;
+            PageIcon(at, ui, mouse, 0, !housing && equipPage == 2 ? "UI/DisplaySlots_3" : "UI/DisplaySlots_2", "UI/DisplaySlots_6",
+                !housing && equipPage == 2 ? "装备" : "其他装备");
+            PageIcon(new Vector2(at.x - 48f * ui, at.y), ui, mouse, 1, housing ? "UI/DisplaySlots_5" : "UI/DisplaySlots_4", "UI/DisplaySlots_7",
+                housing ? "装备" : "房屋");
+        }
+
+        static void PageIcon(Vector2 at, float ui, Vector2 mouse, int page, string texture, string glowTexture, string tip)
+        {
+            var tex = TerrariaAssets.Texture(texture);
             var r = new Rect(at.x, at.y, tex.width * 0.9f * ui, tex.height * 0.9f * ui);
-            Add(r, Kind.EquipPage, 0);
+            Add(r, Kind.EquipPage, page);
             if (r.Contains(mouse))
             {
-                var glow = TerrariaAssets.Texture("UI/DisplaySlots_6");
+                var glow = TerrariaAssets.Texture(glowTexture);
                 var prev = GUI.color;
                 GUI.color = new Color(1f, 0.85f, 0.3f);
                 GUI.DrawTexture(new Rect(r.x - 2f * ui, r.y - 2f * ui, glow.width * 0.9f * ui, glow.height * 0.9f * ui), glow);
                 GUI.color = prev;
-                DrawLines(mouse, new List<string> { Lang.T(equipPage == 2 ? "装备" : "其他装备") }, Color.white);
+                DrawLines(mouse, new List<string> { Lang.T(tip) }, Color.white);
             }
             GUI.DrawTexture(r, tex);
         }
@@ -195,7 +208,7 @@ namespace TerraKnight.Items
             var items = Chests.OpenItems;
             if (items == null) return;
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
-            float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f) * ui;
+            float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f + SlotStep) * ui;   // a slot lower than Terraria's: the trash slot stays clear
             Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), ChestTitle(), nameStyleLeft(ui), renaming ? new Color(1f, 0.85f, 0.3f) : Color.white);
             panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 224f * 0.755f * ui));
             var prev = GUI.color;
@@ -205,21 +218,24 @@ namespace TerraKnight.Items
                 var rect = new Rect(x0 + col * step, y0 + row * step, s, s);
                 Add(rect, Kind.ChestSlot, i);
                 GUI.color = new Color(220 / 255f, 220 / 255f, 220 / 255f, 220 / 255f);
-                GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back5"));
+                GUI.DrawTexture(rect, TerrariaAssets.Texture(ChestSlotBack(items[i])));
                 GUI.color = prev;
                 var st = items[i];
                 if (st.IsEmpty) continue;
-                DrawIcon(rect, st, false);
+                DrawChestIcon(rect, st);
                 if (!rect.Contains(mouse)) continue;
                 hovered = st;
                 hoveredKind = Kind.ChestSlot;
+                // The Potion Box: how near a buff potion is to being kept for good.
+                if (Chests.PotionBoxOpen && Containers.IsBuffPotion(st.Def))
+                    hoveredExtra = st.Favorite ? Lang.T("已收藏：这种增益永久生效，Alt+左键取消收藏即失效") : Lang.F("已攒 {0}/{1} 瓶：满 {1} 瓶后 Alt+左键收藏，这种增益永久生效", Mathf.Min(st.Count, Containers.FavoriteAt), Containers.FavoriteAt);
             }
             // The buttons, one under another beside the slots; the hovered one bigger and gold.
             int over = -1;
             for (int i = 0; i < chestButtons.Length; i++)
             {
                 // The bank has no name; Cancel only while renaming.
-                if ((i == 5 && Chests.BankOpen) || (i == 6 && !renaming)) continue;
+                if ((i == 5 && Chests.BankOpen) || (i == 6 && !renaming) || HideChestButton(i)) continue;
                 var r = new Rect(view.x + 506f * ui, y0 + (30f + i * 28f) * ui, 120f * ui, 24f * ui);
                 Add(r, Kind.ChestButton, i);
                 bool hover = r.Contains(mouse);
@@ -232,6 +248,8 @@ namespace TerraKnight.Items
             }
             if (over != chestButtonHover && over >= 0) Sound("Menu_Tick");
             chestButtonHover = over;
+            // A Banner Case's or a Potion Box's pages (InventoryGuiContainers.cs).
+            DrawContainerPager(view, ui, y0, mouse);
         }
 
         static void ActChest(int index, bool leftPress, bool rightPress, bool rightHeld)
@@ -239,6 +257,8 @@ namespace TerraKnight.Items
             var items = Chests.OpenItems;
             if (items == null) return;
             ref var slot = ref items[index];
+            // A container's own rules first: what it takes, Alt+click's favourite, the sell list's entries (InventoryGuiContainers.cs).
+            if (ContainerAct(index, ref slot, leftPress)) return;
             if (leftPress)
             {
                 if (Shift && !slot.IsEmpty)
@@ -279,6 +299,7 @@ namespace TerraKnight.Items
 
         static void ActChestButton(int index)
         {
+            if (ActContainerButton(index)) return;
             if (index == 0) Chests.LootAll(inv);
             else if (index == 1) Chests.DepositAll(inv);
             else if (index == 2) Chests.QuickStack(inv);

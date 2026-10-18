@@ -1,4 +1,5 @@
-using System.Collections;
+﻿using System.Collections;
+using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 
@@ -51,19 +52,96 @@ namespace TerraKnight.Player
             }
         }
 
+        static ConfigEntry<float> zoomSetting;
+
+        public static void Bind(ConfigFile cfg) =>
+            zoomSetting = cfg.Bind("Gameplay", "Zoom", 2f,
+                "视野缩放（泰拉瑞亚的缩放，1 到 2）：2 是空洞骑士自己的视野，1 看到的范围是它的两倍。游戏里按住 - / = 调。\n" +
+                "View zoom (Terraria's zoom, 1 to 2): 2 is Hollow Knight's own view, 1 shows twice as far. Hold - / = in game.");
+
+        /// <summary>
+        /// Terraria's game zoom (Main.GameZoomTarget, 1 to 2): Zoom In / Zoom Out held change it by 0.02 a tick
+        /// (Main.UpdateViewZoomKeys), and the view is drawn that much larger. Hollow Knight's view is about Terraria's at
+        /// 2 (half its width at 1), so 2 is where it starts and 1 shows twice as far.
+        /// </summary>
+        public static float Zoom
+        {
+            get => zoomSetting != null ? Mathf.Clamp(zoomSetting.Value, 1f, 2f) : zoom;
+            set
+            {
+                zoom = Mathf.Clamp(value, 1f, 2f);
+                if (zoomSetting != null) zoomSetting.Value = zoom;
+            }
+        }
+        static float zoom = 2f;
+        static bool zoomHeld;
+        /// <summary>Dev: frames the zoom was looked at, with the keys held, and the zoom factor put on the camera.</summary>
+        public static int DevZoomFrames, DevZoomKeyFrames, DevZoomOursFrames;
+        public static float DevZoomFactor = 1f;
+
+        /// <summary>Dev: the view's height on the play plane now (world units).</summary>
+        public static float DevViewHeight
+        {
+            get
+            {
+                var cam = GameCameras.instance != null ? GameCameras.instance.mainCamera : null;
+                return cam == null ? 0f : 2f * Mathf.Abs(cam.transform.position.z) * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            }
+        }
+
+        /// <summary>
+        /// The zoom keys held this frame, and the view they make. The camera's tk2dCamera sets its field of view before each
+        /// frame is drawn (OnPreCull: its own angle over its ZoomFactor), so the zoom goes there: the factor that turns its
+        /// angle into one showing 2/zoom as much. The game's own (1) back when the view isn't the Terraria camera's.
+        /// </summary>
+        static void ApplyZoom(Camera cam, bool ours)
+        {
+            if (cam == null || cam.orthographic) return;
+            DevZoomFrames++;
+            float z = zoomHeld ? zoom : Zoom;
+            if (ours) DevZoomOursFrames++;
+            if (ours && !Items.InventoryGui.TypingName && !Net.NetChat.BlocksKeys)
+            {
+                float step = 0.02f * 60f * Time.unscaledDeltaTime;
+                bool zoomIn = TerraKeys.Held(TerraKeys.Action.ViewZoomIn), zoomOut = TerraKeys.Held(TerraKeys.Action.ViewZoomOut);
+                if (zoomIn || zoomOut) DevZoomKeyFrames++;
+                if (zoomIn) z = Mathf.Clamp(z + step, 1f, 2f);
+                if (zoomOut) z = Mathf.Clamp(z - step, 1f, 2f);
+                // Kept in memory while held, written to the config file once let go.
+                if (zoomIn || zoomOut) { zoom = z; zoomHeld = true; }
+                else if (zoomHeld) { zoomHeld = false; Zoom = zoom; }
+            }
+            var tk = cam.GetComponent<tk2dCamera>();
+            if (tk == null) return;
+            float own = tk.SettingsRoot != null ? tk.SettingsRoot.CameraSettings.fieldOfView : tk.CameraSettings.fieldOfView;
+            float factor = 1f;
+            if (ours && z < 1.999f)
+            {
+                float fov = 2f * Mathf.Atan(Mathf.Tan(own * 0.5f * Mathf.Deg2Rad) * 2f / z) * Mathf.Rad2Deg;
+                factor = own / fov;
+            }
+            if (!Mathf.Approximately(tk.ZoomFactor, factor)) tk.ZoomFactor = factor;
+            DevZoomFactor = factor;
+        }
+
         /// <summary>CameraController.LateUpdate without the look offsets, lock zones, scene clamp and smoothing.</summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CameraController), "LateUpdate")]
         static bool LateUpdate(CameraController __instance, bool ___isGameplayScene, HeroController ___hero_ctrl)
         {
-            if (!Active || !___isGameplayScene || ___hero_ctrl == null) return true;
+            // The zoom works with the game's own camera too (the centred one is a setting, off by default).
+            bool gameplay = TerraMod.Instance != null && World.TerrainSystem.Current != null && ___isGameplayScene && ___hero_ctrl != null;
+            ApplyZoom(__instance.cam != null ? __instance.cam : GameCameras.instance != null ? GameCameras.instance.mainCamera : null, gameplay);
+            bool ours = Active && gameplay;
+            if (!ours) return true;
             if (DevLook.HasValue)
             {
                 Snap(__instance, DevLook.Value);
                 return false;
             }
-            if (__instance.mode != CameraController.CameraMode.FROZEN)
-                Snap(__instance, HeroCenter(___hero_ctrl) + ScopePan(__instance) + BossPan(__instance, HeroCenter(___hero_ctrl)));
+            // A phase's native freeze/pan and our old boss framing must not move a locked view.
+            bossPan = Vector2.zero;
+            Snap(__instance, HeroCenter(___hero_ctrl) + ScopePan(__instance));
             ref float timer = ref startLockedTimer(__instance);
             if (timer > 0f) timer -= Time.deltaTime;
             return false;
@@ -72,46 +150,14 @@ namespace TerraKnight.Player
         static Vector2 bossPan;
         public static Vector2 DevBossPan => bossPan;
 
-        /// <summary>
-        /// Hollow Knight's view is about half of Terraria's at the same screen, and its arenas are made to be seen
-        /// whole under their camera locks: a boss leaping off the screen (the False Knight, Hornet...) leaves only its
-        /// health bar. While a boss's bar is up the view eases toward it as far as it is off screen (its whole body in
-        /// view, a margin inside the edge), the player kept within six tenths of the view's middle; back on the
-        /// player when the boss is in view again or the fight is over.
-        /// </summary>
-        static Vector2 BossPan(CameraController cc, Vector2 player)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(ConfigManager), "get_CameraShakeMultiplier")]
+        static void LockedShake(ref float __result)
         {
-            var target = Vector2.zero;
-            var cam = cc.cam != null ? cc.cam : Camera.main;
-            var info = UI.EnemyHealthBars.Fought;
-            var hm = info?.Hm;
-            if (cam != null && hm != null && !hm.isDead && hm.hp > 0 && hm.gameObject.activeInHierarchy && !Items.EnemyStats.Defeated(hm))
-            {
-                Bounds b = default;
-                bool any = false;
-                foreach (var r in hm.GetComponentsInChildren<Renderer>())
-                {
-                    if (r == null || !r.enabled || r is ParticleSystemRenderer || r.bounds.size.x > 40f) continue;
-                    if (!any) { b = r.bounds; any = true; }
-                    else b.Encapsulate(r.bounds);
-                }
-                if (!any) { var col = hm.GetComponent<Collider2D>(); if (col != null) { b = col.bounds; any = true; } }
-                float dist = Mathf.Abs(cc.transform.position.z);
-                float halfH = cam.orthographic ? cam.orthographicSize : dist * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad), halfW = halfH * cam.aspect;
-                if (any && Vector2.Distance(b.center, player) < 40f)
-                {
-                    float mx = halfW * 0.9f, my = halfH * 0.85f;
-                    if (b.max.x > player.x + mx) target.x = b.max.x - (player.x + mx);
-                    else if (b.min.x < player.x - mx) target.x = b.min.x - (player.x - mx);
-                    if (b.max.y > player.y + my) target.y = b.max.y - (player.y + my);
-                    else if (b.min.y < player.y - my) target.y = b.min.y - (player.y - my);
-                    target.x = Mathf.Clamp(target.x, -halfW * 0.6f, halfW * 0.6f);
-                    target.y = Mathf.Clamp(target.y, -halfH * 0.6f, halfH * 0.6f);
-                }
-            }
-            // Glided there and back, a little faster than a scope (the boss doesn't wait).
-            bossPan = Vector2.MoveTowards(bossPan, target, 48f * 60f * Effects.TerraParticles.Px * Time.unscaledDeltaTime);
-            return bossPan;
+            // Native ShakePositionV2 reads this ONLY for IsCameraShake. Its timers,
+            // looping rumbles and StopEvent continue normally with zero displacement.
+            // The saved vanilla setting is never modified, and body shakes still play.
+            if (Active) __result = 0f;
         }
 
         static Vector2 pan;

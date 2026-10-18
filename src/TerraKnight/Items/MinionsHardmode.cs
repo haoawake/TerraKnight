@@ -1,4 +1,4 @@
-using TerraKnight.Effects;
+﻿using TerraKnight.Effects;
 using TerraKnight.Player;
 using UnityEngine;
 

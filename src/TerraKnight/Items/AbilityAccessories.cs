@@ -18,18 +18,18 @@ namespace TerraKnight.Items
             list.Add(new ItemDef
             {
                 Type = ItemType.ShadeCloak, Name = "暗影披风", Texture = HkItems.TexturePrefix + ItemType.ShadeCloak, Accessory = AccessoryEffect.Passive, Rare = 8,
-                Tooltip = "按暗影冲刺键，或按住冲刺键时双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门\n冷却 10 秒",
+                Tooltip = "按暗影冲刺键，或按住冲刺键时双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门",
             });
             list.Add(new ItemDef
             {
                 Type = ItemType.CrystalHeart, Name = "水晶之心", Texture = HkItems.TexturePrefix + ItemType.CrystalHeart, Accessory = AccessoryEffect.Passive, Rare = 5,
-                Tooltip = "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺\n冷却 20 秒",
+                Tooltip = "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺",
             });
             list.Add(new ItemDef
             {
                 Type = ItemType.HallownestShield, Name = "圣巢之盾", Texture = Relics.TexturePrefix + "item_hallownest_shield", Accessory = AccessoryEffect.ShieldDash,
                 Bonus = new Bonuses { DashKind = 2 }, Defense = 4, Rare = 8,
-                Tooltip = "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n长按冲刺键（空中也行）：水晶之心蓄力，松开超级冲刺（冷却 20 秒）\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却 10 秒）",
+                Tooltip = "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n长按冲刺键（空中也行）：水晶之心蓄力，松开超级冲刺\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门",
             });
         }
 
@@ -51,21 +51,22 @@ namespace TerraKnight.Items
     }
 
     /// <summary>
-    /// The Knight's two dashes Terraria has no item for. The Shade Cloak worn gives a shadow dash, once in 10 s, on its own
-    /// key (TerraKeys' Shadow Dash) or on a double tap of a direction while the Dash key is held (the Crystal Heart charging
-    /// is broken off for it): a dash of the worn kind (the Shield's without one) during which the game's own
-    /// cState.shadowDashing is set, so enemies and their attacks pass through the player (TakeDamage, HeroBox) while spikes
-    /// still hurt, the Shield of Cthulhu doesn't bounce off what it meets, and the shade gates (ShadowGateColliderControl)
-    /// open as in the game. The Crystal Heart worn turns a long press of the Dash key, on the ground, on a wall or in the
+    /// The Knight's two dashes Terraria has no item for. The Shade Cloak worn gives a shadow dash, after the game's own
+    /// cooldown (SHADOW_DASH_COOLDOWN), on its own key (TerraKeys' Shadow Dash) or on a double tap of a direction while the
+    /// Dash key is held (the Crystal Heart charging is broken off for it): Hollow Knight's own dash, straight and level at
+    /// its DASH_SPEED for its DASH_TIME (TerraMovement.HkShadowDash), during which the game's own cState.shadowDashing is
+    /// set, so enemies and their attacks pass through the player (TakeDamage, HeroBox) while spikes still hurt, and the
+    /// shade gates (ShadowGateColliderControl) open as in the game. The Crystal Heart worn turns a long press of the Dash key, on the ground, on a wall or in the
     /// air (held where it is while it charges), into the game's own Super Dash (the hero's "Superdash" FSM: charge,
-    /// release, fly until a wall), once in 20 s; a short press is still a dash. The Hallownest Shield is all three: the Shield's dash on a tap.
+    /// release, fly until a wall), with no cooldown, as in the game; a short press is still a dash. The shadow dash waits the game's own cooldown. The Hallownest Shield is all three: the Shield's dash on a tap.
     /// </summary>
     [HarmonyPatch]
     internal static partial class AbilityAccessories
     {
-        const float ShadowCooldown = 10f;
+        /// <summary>The game's own shadow dash cooldown (HeroController.SHADOW_DASH_COOLDOWN, 1.5 s): it is no dash that never ends.</summary>
+        static float ShadowCooldown => HeroController.SilentInstance != null && HeroController.SilentInstance.SHADOW_DASH_COOLDOWN > 0f ? HeroController.SilentInstance.SHADOW_DASH_COOLDOWN : 1.5f;
         const float DoubleTapWindow = 15f / 60f;
-        const float SuperCooldown = 20f;
+        const float SuperCooldown = 0f;
         /// <summary>How long the Dash key is held before it is the Super Dash's (shorter: a dash on its release).</summary>
         const float HoldTime = 0.25f;
 
@@ -137,6 +138,8 @@ namespace TerraKnight.Items
         static bool TryShadowDash(HeroController hero, int dir)
         {
             if (hero == null || !ShadeWorn || Time.time < shadowReady || hero.cState.dead || hero.cState.transitioning || hero.cState.superDashing) return false;
+            // No cooldown, but one at a time: a press inside a shadow dash doesn't start another.
+            if (ShadowDashing && TerraMovement.IsDashing) return false;
             if (!GameHooks.PlayerHasControl() && !Charging(hero)) return false;
             if (Charging(hero))
             {
@@ -148,7 +151,9 @@ namespace TerraKnight.Items
             // The press that was waiting for the Super Dash is spent: no dash on its release, no charge.
             deferring = false;
             shadowAsked = true;
-            TerraMovement.ForceDash(dir);
+            // Hollow Knight's own dash, straight and level, made a shadow one.
+            TerraMovement.HkShadowDash(hero, dir);
+            OnDashStart(hero, dir);
             return true;
         }
 
@@ -559,7 +564,75 @@ namespace TerraKnight.Items
             ShadowKeys(hero);
             TickShadow(hero);
             TickSuper(hero);
+            DashStrikes(hero);
             DashLooks(hero, Mathf.Min(Time.deltaTime, 0.1f));
+        }
+
+        // ------------------------------------------------------------------ what they strike
+
+        /// <summary>The enemies this dash has struck (by instance id).</summary>
+        static readonly HashSet<int> dashStruck = new HashSet<int>();
+        public static int DevDashStrikes;
+
+        /// <summary>
+        /// The Super Dash in flight and the shadow dash strike what they go through as the Shield of Cthulhu's bonk does
+        /// (TerraMovement.Bash: its damage, knockback and crit), each enemy once a dash, without the bonk's bounce: the
+        /// Super Dash flies on, the shadow dash passes through.
+        /// </summary>
+        static void DashStrikes(HeroController hero)
+        {
+            bool super = hero.cState.superDashing;
+            if (!(super || ShadowDashing) || hero.cState.dead || hero.cState.transitioning)
+            {
+                dashStruck.Clear();
+                return;
+            }
+            var melee = TerraMod.Instance?.Melee;
+            var col = hero.GetComponent<BoxCollider2D>();
+            if (melee == null || col == null) return;
+            var b = col.bounds;
+            var rb = hero.GetComponent<Rigidbody2D>();
+            float dir = rb != null && Mathf.Abs(rb.linearVelocity.x) > 0.1f ? Mathf.Sign(rb.linearVelocity.x) : hero.cState.facingRight ? 1f : -1f;
+            foreach (var h in Physics2D.OverlapBoxAll(b.center, (Vector2)b.size + new Vector2(0.25f, 0.25f), 0f, 1 << 11))
+            {
+                var hm = h.GetComponentInParent<HealthManager>();
+                if (hm == null || hm.isDead || !dashStruck.Add(hm.GetInstanceID())) continue;
+                melee.HitWith(h, TerraMovement.ShieldBashDamage, TerraMovement.ShieldBashKnockback, TerraMovement.ShieldBashCrit, dir, b.center);
+                DevDashStrikes++;
+            }
+        }
+
+        /// <summary>
+        /// An enemy's touch during the Super Dash's flight: struck, not hurting, as the one the Shield of Cthulhu's dash runs
+        /// into never hurts (Terraria checks the bonk first). Its shots still do.
+        /// </summary>
+        public static bool SuperDashThrough(HeroController hero, GameObject go)
+        {
+            if (hero == null || !hero.cState.superDashing || go == null || go.GetComponentInParent<HealthManager>() == null) return false;
+            DashStrikes(hero);
+            return true;
+        }
+
+        /// <summary>
+        /// A creative save has the Shade Cloak and the Crystal Heart as it has every Hallownest item (HkItems.GiveAllForCreative):
+        /// one of each into the bag where none is carried or worn in any loadout (the Hallownest Shield counts for both).
+        /// </summary>
+        public static void GiveForCreative(Inventory inv)
+        {
+            if (inv == null) return;
+            bool Has(ItemType t)
+            {
+                bool In(ItemStack[] xs) { foreach (var s in xs) if (!s.IsEmpty && (s.Type == t || s.Type == ItemType.HallownestShield)) return true; return false; }
+                if (In(inv.Slots) || In(inv.Accessories) || In(inv.HkBag) || !inv.Mouse.IsEmpty && inv.Mouse.Type == t) return true;
+                foreach (var l in inv.Loadouts) if (In(l.Accessories) || In(l.Bag)) return true;
+                return false;
+            }
+            foreach (var t in new[] { ItemType.ShadeCloak, ItemType.CrystalHeart })
+                if (!Has(t))
+                {
+                    int left = HkItems.TryStoreAbility(inv, ItemStack.Of(t)) ? 0 : 1;
+                    Plugin.Log.LogInfo($"[能力饰品] 创造模式：给了{ItemDb.Get(t).Name}{(left > 0 ? "（背包满了，没放下）" : "")}");
+                }
         }
 
         /// <summary>Dev: the cooldowns cleared.</summary>

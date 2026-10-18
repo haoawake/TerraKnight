@@ -55,13 +55,13 @@ namespace TerraKnight
             FxCheck("买了地图后德特茅斯画出", town > 0, $"德特茅斯已画 {town}");
             yield return new WaitForSecondsRealtime(1.5f);
 
-            // The reach round the player: 8 cells to the sides, 13 up and down, on an open grid.
-            const int w = 64, h = 64;
+            // The reach round the player (MapExploration): five cells more up and down than to the sides, on an open grid.
+            const int w = 96, h = 96, rx = UI.MapExploration.Radius, ry = UI.MapExploration.RadiusY;
             var seen = new bool[w * h];
-            UI.MapExploration.Reveal(w, h, 32, 32, (x, y) => false, (x, y) => { if (seen[y * w + x]) return false; seen[y * w + x] = true; return true; });
-            bool up13 = seen[(32 + 13) * w + 32], up14 = seen[(32 + 14) * w + 32], down13 = seen[(32 - 13) * w + 32];
-            bool side8 = seen[32 * w + 40], side9 = seen[32 * w + 41];
-            FxCheck("点亮范围上下多五格", up13 && down13 && !up14 && side8 && !side9, $"上13 {up13} 下13 {down13} 上14 {up14} 横8 {side8} 横9 {side9}");
+            UI.MapExploration.Reveal(w, h, 48, 48, (x, y) => false, (x, y) => { if (seen[y * w + x]) return false; seen[y * w + x] = true; return true; });
+            bool upIn = seen[(48 + ry) * w + 48], upOut = seen[(48 + ry + 1) * w + 48], downIn = seen[(48 - ry) * w + 48];
+            bool sideIn = seen[48 * w + 48 + rx], sideOut = seen[48 * w + 48 + rx + 1];
+            FxCheck("点亮范围上下多五格", ry == rx + 5 && upIn && downIn && !upOut && sideIn && !sideOut, $"上{ry} {upIn} 下{ry} {downIn} 上{ry + 1} {upOut} 横{rx} {sideIn} 横{rx + 1} {sideOut}");
         }
 
         // ------------------------------------------------------------------ 9: Autopause
@@ -501,7 +501,7 @@ namespace TerraKnight
                 int lost = life0 - stats.Life;
                 bool reflected = TerraProjectiles.DevReflected > refl0;
                 if (t.reflects)
-                    FxCheck($"盾反弹 {t.label}", reflected && Mathf.Abs(TerraProjectiles.DevReflectSpeedOut - TerraProjectiles.DevReflectSpeedIn * 0.5f) < 0.05f
+                    FxCheck($"盾反弹 {t.label}（变成慢速光球）", reflected && Mathf.Abs(TerraProjectiles.DevReflectSpeedOut - TerraProjectiles.ReflectSpeed) < 0.05f
                         && TerraProjectiles.DevReflectHits > hits0 && lost > 0 && hm.hp == hp0,
                         $"反弹 {reflected}（{TerraProjectiles.DevReflectKind}），速度 {TerraProjectiles.DevReflectSpeedIn:F1}->{TerraProjectiles.DevReflectSpeedOut:F1}，反弹伤害 {TerraProjectiles.DevReflectDamage}×2={TerraProjectiles.DevReflectHitDamage}，打中主角 {TerraProjectiles.DevReflectHits - hits0} 次 掉血 {lost}（防御 {stats.Defense}），怪掉血 {hp0 - hm.hp}");
                 else
@@ -509,6 +509,30 @@ namespace TerraKnight
                         $"反弹 {reflected}，挡住 {MeleeHits.DevBlocked - blocked0} 次，主角掉血 {lost}，怪掉血 {hp0 - hm.hp}");
                 Shot("Crossroads_15", $"fx_reflect_{(int)t.item}");
                 yield return new WaitForSeconds(1.5f);
+            }
+            // Invincible all round (an enemy hiding, curled up): the shot is stopped, not sent back.
+            {
+                hm.transform.position = new Vector3(hold.x, hold.y, hm.transform.position.z);
+                hero.transform.position = new Vector3(c.x - 5f, c.y + 0.2f, hero.transform.position.z);
+                hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+                hero.FaceRight();
+                yield return new WaitForSeconds(1.2f);
+                int dir0 = hm.InvincibleFromDirection;
+                hm.IsInvincible = true;
+                hm.InvincibleFromDirection = 0;
+                int refl0 = TerraProjectiles.DevReflected, blocked0 = MeleeHits.DevBlocked, hp0 = hm.hp;
+                yield return UseOn(ItemType.FlintlockPistol, c);
+                for (float until = Time.time + 1.5f; Time.time < until && MeleeHits.DevBlocked == blocked0; )
+                {
+                    hm.transform.position = new Vector3(hold.x, hold.y, hm.transform.position.z);
+                    hm.IsInvincible = true;
+                    hm.InvincibleFromDirection = 0;
+                    yield return null;
+                }
+                bool reflected = TerraProjectiles.DevReflected > refl0;
+                FxCheck("全方位无敌（躲着的怪）挡住子弹但不反弹", !reflected && MeleeHits.DevBlocked > blocked0 && hm.hp == hp0,
+                    $"反弹 {reflected}，挡住 {MeleeHits.DevBlocked - blocked0} 次，怪掉血 {hp0 - hm.hp}");
+                hm.InvincibleFromDirection = dir0;
             }
             control.enabled = true;
             if (body != null) body.isKinematic = false;
@@ -531,7 +555,8 @@ namespace TerraKnight
                 if (hm != null && !hm.isDead && hm.gameObject.activeInHierarchy && !TerraKnockback.Immune(hm) && EnemyStats.Of(hm) != null) { target = hm; break; }
             if (target == null) { FxCheck("连续击退后免疫", false, "这里没有能击退的敌人"); yield break; }
             target.hp = Mathf.Max(target.hp, 400);
-            int Applied() => TerraKnockback.DevLaunches + TerraKnockback.DevOwnPushes;
+            // A push while it still flies from the last moves it no further but counts towards steadying it.
+            int Applied() => TerraKnockback.DevLaunches + TerraKnockback.DevOwnPushes + TerraKnockback.DevHeldInFlight;
             int a0 = Applied(), held0 = TerraKnockback.DevHeldBySteady;
             var moved = new System.Text.StringBuilder();
             for (int i = 0; i < 7; i++)
@@ -546,7 +571,7 @@ namespace TerraKnight
             yield return new WaitForSeconds(TerraKnockback.SteadyFor + 0.2f);
             int b0 = Applied();
             TerraKnockback.Push(target, 6f, 1f);
-            FxCheck("免疫3秒后又能击退", Applied() == b0 + 1 && !TerraKnockback.Steady(target), $"推了 {Applied() - b0}");
+            FxCheck($"免疫{TerraKnockback.SteadyFor:F0}秒后又能击退", Applied() == b0 + 1 && !TerraKnockback.Steady(target), $"推了 {Applied() - b0}");
             // Spread out (one every 0.8 s, five over more than 3 s): never steady.
             yield return new WaitForSeconds(0.8f);
             int c0 = Applied();

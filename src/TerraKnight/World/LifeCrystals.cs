@@ -37,7 +37,8 @@ namespace TerraKnight.World
             return Mathf.Min(Player.TerraStats.MaxLifeCrystals, GroundAllowance + bosses);
         }
         const float Px = Effects.TerraParticles.Px;
-        const float Z = 0.0045f;
+        // Behind the minions, pets and shots (FxBatch.BehindZ 0.0047), the townsfolk and the player, as the furniture (Stations.Z).
+        const float Z = 0.00475f;
         const float Cell = CellGrid.CellSize;
 
         /// <summary>The stages whose scenes a crystal may lie in (Areas.LevelOf): the first two.</summary>
@@ -195,6 +196,20 @@ namespace TerraKnight.World
         static bool FindSpot(TerrainRegion region, int seed, out Vector2 local)
         {
             local = default;
+            var spots = GroundSpots(region, 2, 2);
+            if (spots.Count == 0) return false;
+            var rng = new System.Random(seed ^ Hash(region.SceneName));
+            local = spots[rng.Next(spots.Count)] - (Vector2)region.Root.position;
+            return true;
+        }
+
+        /// <summary>
+        /// The spots of a loaded scene for a thing two cells wide (its bottom middle, world coordinates): two solid cells
+        /// side by side with this many empty cells over each, joined to a gate of the scene through open cells, and no
+        /// spikes, acid, lava or water this many cells round.
+        /// </summary>
+        internal static List<Vector2> GroundSpots(TerrainRegion region, int headroom, int margin)
+        {
             var grid = region.Grid;
             int w = grid.Width, h = grid.Height;
             bool Open(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && !Cells.Blocks(grid.Get(x, y));
@@ -235,18 +250,20 @@ namespace TerraKnight.World
             foreach (var dh in InScene<DamageHero>(scene, false))
             {
                 var col = dh.GetComponent<Collider2D>();
-                if (col != null && dh.hazardType >= 2 && dh.hazardType <= 4) bad.Add(Grow(col.bounds));
+                if (col != null && dh.hazardType >= 2 && dh.hazardType <= 4) bad.Add(Grow(col.bounds, margin));
             }
             foreach (var col in InScene<Collider2D>(scene, false))
-                if (col.gameObject.layer == 4) bad.Add(Grow(col.bounds));
+                if (col.gameObject.layer == 4) bad.Add(Grow(col.bounds, margin));
 
             var spots = new List<Vector2>();
-            for (int y = 0; y < h - 3; y++)
+            for (int y = 0; y < h - 1 - headroom; y++)
                 for (int x = 1; x < w - 2; x++)
                 {
                     if (!Solid(x, y) || !Solid(x + 1, y)) continue;
-                    if (grid.Get(x, y + 1) != CellKind.Empty || grid.Get(x + 1, y + 1) != CellKind.Empty
-                        || grid.Get(x, y + 2) != CellKind.Empty || grid.Get(x + 1, y + 2) != CellKind.Empty) continue;
+                    bool room = true;
+                    for (int dy = 1; dy <= headroom && room; dy++)
+                        room = grid.Get(x, y + dy) == CellKind.Empty && grid.Get(x + 1, y + dy) == CellKind.Empty;
+                    if (!room) continue;
                     if (!reached[(y + 1) * w + x] || !reached[(y + 1) * w + x + 1]) continue;
                     var bottom = new Vector2((region.CellOffset.x + x + 1) * Cell, (region.CellOffset.y + y + 1) * Cell);
                     var box = new Rect(bottom.x - Cell, bottom.y, 2f * Cell, 2f * Cell);
@@ -254,10 +271,7 @@ namespace TerraKnight.World
                     foreach (var r in bad) if (r.Overlaps(box)) { near = true; break; }
                     if (!near) spots.Add(bottom);
                 }
-            if (spots.Count == 0) return false;
-            var rng = new System.Random(seed ^ Hash(region.SceneName));
-            local = spots[rng.Next(spots.Count)] - (Vector2)region.Root.position;
-            return true;
+            return spots;
         }
 
         static IEnumerable<T> InScene<T>(UnityEngine.SceneManagement.Scene scene, bool inactive) where T : Component
@@ -267,10 +281,10 @@ namespace TerraKnight.World
                 foreach (var t in root.GetComponentsInChildren<T>(inactive)) yield return t;
         }
 
-        static Rect Grow(Bounds b) => Rect.MinMaxRect(b.min.x - 2f * Cell, b.min.y - 2f * Cell, b.max.x + 2f * Cell, b.max.y + 2f * Cell);
+        static Rect Grow(Bounds b, int cells) => Rect.MinMaxRect(b.min.x - cells * Cell, b.min.y - cells * Cell, b.max.x + cells * Cell, b.max.y + cells * Cell);
 
         /// <summary>FNV-1a: the same for a name in every run (string.GetHashCode needn't be).</summary>
-        static int Hash(string s)
+        internal static int Hash(string s)
         {
             unchecked
             {

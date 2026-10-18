@@ -55,7 +55,7 @@ namespace TerraKnight.Items
                 foreach (var pair in earliest)
                 {
                     var d = items[(int)pair.Key];
-                    if (d.Source != ItemSource.Craft || d.Stage >= pair.Value) continue;
+                    if (d.Source != ItemSource.Craft || d.Stage == pair.Value) continue;
                     d.Stage = pair.Value;
                     changed = true;
                 }
@@ -63,15 +63,15 @@ namespace TerraKnight.Items
             }
         }
 
-        // Progression only gates recipes; Terraria ingredients, quantities and stations stay intact.
+        // Acquisition estimates for documentation/loot planning only. Crafting itself has no stage gate.
         internal static void ApplyRecipes(List<Recipe> recipes)
         {
-            // Smelting and non-curated recipes cannot open before their ingredients/result tiers.
+            // Record the expected source tier without changing vanilla ingredients or stations.
             for(int i=0;i<recipes.Count;i++)
             {
                 var r=recipes[i];
                 if(r.IsBought) continue; // Preserve the original purchase cost; do not turn purchases into free recipes.
-                int required=Math.Max(r.Def.Stage,IngredientStage(r,ItemDb.Get));
+                int required=IngredientStage(r,ItemDb.Get);
                 if(required!=r.StationStage)
                     recipes[i]=new Recipe(r.Result,r.Count,r.Station,required,r.Ingredients) { Environment=r.Environment };
             }

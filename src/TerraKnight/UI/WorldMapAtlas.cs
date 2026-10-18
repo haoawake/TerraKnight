@@ -19,6 +19,10 @@ namespace TerraKnight.UI
         static bool atlasLoaded;
         static string AtlasPath => Path.Combine(BepInEx.Paths.BepInExRootPath, "TerraKnight", "worldatlas.bin");
 
+        internal static void DevExtendAtlas() => LoadAtlas();
+        internal static void DevPlaceAtlasRoom(string name, Vector2Int at) => layout[name] = at;
+        internal static bool DevAtlasContains(string name) => atlas.ContainsKey(name);
+
         /// <summary>Dev (the layout survey): a scene's cells and things into the atlas.</summary>
         public static void BakeScene(string name, CellGrid grid, Vector2Int offset, UnityEngine.SceneManagement.Scene scene)
         {
@@ -63,6 +67,46 @@ namespace TerraKnight.UI
                 return $"{atlas.Count} 个场景，{new FileInfo(AtlasPath).Length / 1024} KB，{AtlasPath}";
             }
             catch (Exception e) { return "写不了：" + e.Message; }
+        }
+
+        /// <summary>
+        /// A scene's room to walk on the world atlas: its open cells (air, water, platforms) with rock somewhere left, right,
+        /// above and below them in the scene (the void round a scene's walls not counted); 0 when the atlas lacks it.
+        /// </summary>
+        internal static int OpenCells(string scene)
+        {
+            LoadAtlas();
+            if (scene == null || !atlas.TryGetValue(scene, out var room) || room.Tiles == null) return 0;
+            int w = room.W, h = room.H;
+            bool Solid(int x, int y) => IsSolid((Tile)room.Tiles[y * w + x]);
+            var left = new bool[w * h];
+            var below = new bool[w * h];
+            var above = new bool[w * h];
+            for (int y = 0; y < h; y++)
+            {
+                bool seen = false;
+                for (int x = 0; x < w; x++) { seen |= Solid(x, y); left[y * w + x] = seen; }
+            }
+            for (int x = 0; x < w; x++)
+            {
+                bool seen = false;
+                for (int y = 0; y < h; y++) { seen |= Solid(x, y); below[y * w + x] = seen; }
+                seen = false;
+                for (int y = h - 1; y >= 0; y--) { seen |= Solid(x, y); above[y * w + x] = seen; }
+            }
+            int n = 0;
+            for (int y = 0; y < h; y++)
+            {
+                bool right = false;
+                for (int x = w - 1; x >= 0; x--)
+                {
+                    int i = y * w + x;
+                    var t = (Tile)room.Tiles[i];
+                    if (IsSolid(t)) { right = true; continue; }
+                    if (t != Tile.None && right && left[i] && below[i] && above[i]) n++;
+                }
+            }
+            return n;
         }
 
         static void LoadAtlas()

@@ -60,8 +60,7 @@ namespace TerraKnight
                     {
                         changed=false;
                         foreach(var r in Recipes.All)
-                            if(!r.IsBought && r.StationStage<=stage && ProgressionBalance.Unlocked(r.Result,stage,stage>=4,stage>=5)
-                                && Ready(r,stock) && r.Ingredients.All(i=>stock.Contains(i.Type))) changed|=stock.Add(r.Result);
+                            if(!r.IsBought && Ready(r,stock) && r.Ingredients.All(i=>stock.Contains(i.Type))) changed|=stock.Add(r.Result);
                     } while(changed);
                     var targets=new HashSet<ItemType>(ProgressionBalance.Core[stage].SelectMany(x=>x));
                     targets.UnionWith(ProgressionBalance.AccessoryPaths[stage].SelectMany(x=>x));
@@ -72,7 +71,7 @@ namespace TerraKnight
                         Check($"成长装备可达 {t}/{stage}",pass,$"物品阶段{ItemDb.Get(t).Stage}");
                         if(ItemDb.Get(t).Source==ItemSource.Craft)
                         {
-                            bool craftable=Recipes.All.Any(r=>r.Result==t && !r.IsBought && r.StationStage<=stage && Ready(r,stock) && r.Ingredients.All(i=>stock.Contains(i.Type)));
+                            bool craftable=Recipes.All.Any(r=>r.Result==t && !r.IsBought && Ready(r,stock) && r.Ingredients.All(i=>stock.Contains(i.Type)));
                             Check($"成长装备原版制作链 {t}/{stage}",craftable);
                         }
                     }

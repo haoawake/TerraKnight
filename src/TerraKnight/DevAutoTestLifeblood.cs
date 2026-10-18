@@ -36,10 +36,10 @@ namespace TerraKnight
             Shot("Town", "lifeblood_shield");
             yield return null;
             int life0 = st.Life;
-            st.TakeDirect(30 + st.Defense / 2);
+            st.TakeDirect(30 + Mathf.CeilToInt(st.Defense * World.GameDifficulty.DefenseEffectiveness));
             yield return new WaitForSeconds(0.2f);
             Check("护盾先挨打", st.Life == life0 && st.Shield == 10, $"生命 {life0} → {st.Life}，护盾 {st.Shield}");
-            st.TakeDirect(30 + st.Defense / 2);
+            st.TakeDirect(30 + Mathf.CeilToInt(st.Defense * World.GameDifficulty.DefenseEffectiveness));
             yield return new WaitForSeconds(0.3f);
             Check("护盾打破后挨生命", st.Shield == 0 && st.Life == life0 - 20 && pd.healthBlue == 0, $"生命 {st.Life}，护盾 {st.Shield}，蓝面具 {pd.healthBlue}");
             pd.healthBlue = 3;

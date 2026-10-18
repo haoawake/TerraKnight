@@ -56,12 +56,17 @@ namespace TerraKnight
             var shop = new HashSet<ItemType>(Town.CraftingSupplementShops.All.Select(s => s.Type));
             var drops = new HashSet<ItemType>();
             foreach (var key in EnemyDrops.DevRecords) foreach (var drop in EnemyDrops.Of(key)) drops.Add(drop.Type);
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+            var travel = new HashSet<ItemType>((((ItemType Type, int Stage)[])typeof(Town.TownNpcs).GetField("travelPool", flags).GetValue(null)).Select(e => e.Type));
+            var angler = new HashSet<ItemType>(Town.Angler.DevRewardSources());
             bool Sourced(ItemType t, HashSet<ItemType> visited)
             {
                 if (ItemDb.Get(t).Source == ItemSource.Shop)
-                    foreach (var npc in new[] { "Merchant", "GoblinTinkerer", "SkeletonMerchant", "PartyGirl", "ArmsDealer", "WitchDoctor", "Cyborg", "Steampunker", "BestiaryGirl", "Demolitionist" })
+                    foreach (var npc in new[] { "Merchant", "GoblinTinkerer", "SkeletonMerchant", "PartyGirl", "ArmsDealer", "WitchDoctor", "Cyborg", "Steampunker", "BestiaryGirl", "Demolitionist", "DyeTrader", "DD2Bartender", "Stylist" })
                     { Town.TownNpcs.DevStockAt(npc, 5, t, out bool has); if (has) return true; }
                 if (shop.Contains(t) || drops.Contains(t) || ItemDb.Get(t).Source == ItemSource.Basic) return true;
+                // The Traveling Merchant's pool and the Angler's quest rewards (Player.GetAnglerReward) give it too.
+                if (travel.Contains(t) || angler.Contains(t)) return true;
                 if (!visited.Add(t)) return false;
                 return Recipes.All.Where(r => r.Result == t).Any(r => r.Ingredients.All(g => Sourced(g.Type, new HashSet<ItemType>(visited))));
             }

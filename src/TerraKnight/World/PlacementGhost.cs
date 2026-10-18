@@ -14,6 +14,10 @@ namespace TerraKnight.World
         static readonly System.Collections.Generic.Dictionary<int, Sprite> wallSprites = new System.Collections.Generic.Dictionary<int, Sprite>();
         public static bool DevShown { get; private set; }
         public static bool DevValid { get; private set; }
+        /// <summary>Dev: the furniture shown faces right.</summary>
+        public static bool DevRight { get; private set; }
+        /// <summary>Dev: where the ghost stands (its bottom middle; a wall's cell middle).</summary>
+        public static Vector2 DevAt { get; private set; }
 
         /// <summary>Call every frame in gameplay with the item in hand and the cursor in the world.</summary>
         public static void Tick(HeroController hero, Items.ItemDef held, Vector2 mouse, bool overUi)
@@ -28,7 +32,10 @@ namespace TerraKnight.World
                 {
                     ok = Stations.FindSpot(held.PlacesStation, hero, mouse, out bottom);
                     if (!ok && !Stations.GuessSpot(held.PlacesStation, hero, mouse, out bottom)) bottom = default;
-                    if (bottom != default) { sprite = Stations.GhostSprite(held.PlacesStation); sink = Stations.GhostSink(held.PlacesStation); }
+                    // Facing the way it would go down (TileObject.DrawPreview draws the alternate the player's direction picks).
+                    bool right = Stations.FacesRight(held.PlacesStation, hero);
+                    if (bottom != default) { sprite = Stations.GhostSprite(held.PlacesStation, right); sink = Stations.GhostSink(held.PlacesStation); }
+                    DevRight = right;
                 }
                 else if (held.PlacesChest)
                 {
@@ -39,6 +46,9 @@ namespace TerraKnight.World
                 else if (held.PlacesWall > 0)
                 {
                     var cell = CellGrid.WorldToCell(mouse);
+                    // With the smart cursor on, where the smart cursor puts the wall (SmartCursorHelper.Step_Walls).
+                    var mod = TerraMod.Instance;
+                    if (mod != null && mod.SmartCursor && mod.TargetFor(held, mouse, out var smartCell, out bool smart) && smart) cell = smartCell;
                     if (TerraMod.InReach(hero.GetComponent<BoxCollider2D>().bounds, held, cell))
                     {
                         bottom = CellGrid.CellCenter(cell.x, cell.y);
@@ -54,6 +64,7 @@ namespace TerraKnight.World
             }
             DevShown = sprite != null;
             DevValid = ok && sprite != null;
+            DevAt = bottom;
             if (sprite == null)
             {
                 if (ghost != null && ghost.enabled) ghost.enabled = false;
@@ -81,7 +92,7 @@ namespace TerraKnight.World
 
     internal sealed partial class Stations
     {
-        public static Sprite GhostSprite(StationKind kind) => SpriteOf(kind);
+        public static Sprite GhostSprite(StationKind kind, bool right = false) => SpriteOf(kind, right);
 
         /// <summary>The station standing under a point (none: StationKind.None).</summary>
         public static StationKind KindAt(Vector2 p)

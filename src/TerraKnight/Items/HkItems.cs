@@ -9,10 +9,10 @@ namespace TerraKnight.Items
     /// Brand, the Delicate Flower, the Rancid Eggs, the Pale Ore, the four relics, the Kingsoul and the Void Heart. Each
     /// stands for its PlayerData record (what the game gives, it gives; what the game takes, it takes: a key used, relics
     /// sold to Lemm), drawn with the game's own inventory picture and named as the game names it. They live only in the
-    /// hotbar and in their own bag (the Hallownest bag, beside the monster book), and work only in hand (the item held):
-    /// the City Gate opens to the crest held, the dark rooms are lit by the lantern held, the tram runs for the pass held,
-    /// the Abyss's door to the Birthplace opens to the Kingsoul held, the Siblings and the Radiance know the Void Heart
-    /// held. Elsewhere they are only kept.
+    /// hotbar and in their own bag (the Hallownest bag, beside the monster book), and work wherever they are carried (the
+    /// Hallownest bag, the bag, the hotbar, a pet slot), as the game's own inventory has them: the City Gate opens to the
+    /// crest, the dark rooms are lit by the lantern, the tram runs for the pass, the Abyss's door to the Birthplace opens to
+    /// the Kingsoul, the Siblings and the Radiance know the Void Heart. The Grimmchild is worn while its summon is out.
     /// </summary>
     [HarmonyPatch]
     internal static class HkItems
@@ -21,9 +21,11 @@ namespace TerraKnight.Items
         public const int KeyBagSlots = 20;
         /// <summary>A reserved, saved slot: a newly obtained Dream Nail never has to be left on the ground.</summary>
         public const int DreamNailSlot = KeyBagSlots;
-        public const int BagSlots = KeyBagSlots + 1;
+        public const int AbilityBagSlots = 8;
+        public const int AbilityBagStart = DreamNailSlot + 1;
+        public const int BagSlots = AbilityBagStart + AbilityBagSlots;
 
-        enum Kind { Bool, Int, Royal }
+        enum Kind { Bool, Int, Royal, Charm }
 
         sealed class Def
         {
@@ -39,6 +41,8 @@ namespace TerraKnight.Items
 
         static Def B(ItemType t, string flag, string key, string sprite, string zh) => new Def { Type = t, Kind = Kind.Bool, Flag = flag, NameKey = "INV_NAME_" + key, DescKey = "INV_DESC_" + key, Sprite = sprite, Zh = zh };
         static Def I(ItemType t, string flag, string key, string sprite, string zh) => new Def { Type = t, Kind = Kind.Int, Flag = flag, NameKey = "INV_NAME_" + key, DescKey = "INV_DESC_" + key, Sprite = sprite, Zh = zh };
+        /// <summary>A charm the story needs (the Grimmchild): got by its gotCharm record; "worn" while its summon is out.</summary>
+        static Def C(ItemType t, int charm, string zh) => new Def { Type = t, Kind = Kind.Charm, Royal = charm, Flag = "gotCharm_" + charm, NameKey = "CHARM_NAME_" + charm, DescKey = "CHARM_DESC_" + charm, Sprite = null, Zh = zh };
         static Def R(ItemType t, int state, string suffix, string zh) => new Def { Type = t, Kind = Kind.Royal, Royal = state, Flag = "equippedCharm_36", NameKey = "CHARM_NAME_36_" + suffix, DescKey = "CHARM_DESC_36_" + suffix, Sprite = null, Zh = zh };
 
         static readonly Def[] all =
@@ -60,6 +64,7 @@ namespace TerraKnight.Items
             I(ItemType.HkArcaneEgg, "trinket4", "TRINKET4", "inv_item__0011_arcane-egg", "神秘蛋"),
             R(ItemType.HkKingsoul, 3, "B", "国王之魂"),
             R(ItemType.HkVoidHeart, 4, "C", "虚空之心"),
+            C(ItemType.HkGrimmchild, 40, "格林之子"),
         };
 
         static readonly Dictionary<ItemType, Def> byType = new Dictionary<ItemType, Def>();
@@ -77,9 +82,44 @@ namespace TerraKnight.Items
         public static bool Is(ItemType t) => byType.ContainsKey(t);
         public static bool Is(ItemStack s) => !s.IsEmpty && byType.ContainsKey(s.Type);
 
-        public static bool CanStoreInBag(ItemStack s) => Is(s) || (!s.IsEmpty && s.Type == ItemType.DreamNail);
+        public static int AbilityBagSlot(ItemType type)
+        {
+            for (int i = 0; i < Player.PlayerHooks.AbilityItems.Length && i < AbilityBagSlots; i++)
+                if (Player.PlayerHooks.AbilityItems[i].item == type) return AbilityBagStart + i;
+            return -1;
+        }
+
+        public static bool CanStoreInBag(ItemStack s) => Is(s) || (!s.IsEmpty && (s.Type == ItemType.DreamNail || AbilityBagSlot(s.Type) >= 0));
         public static bool BagAccepts(int slot, ItemStack s) => s.IsEmpty ||
-            (slot == DreamNailSlot ? s.Type == ItemType.DreamNail : CanStoreInBag(s));
+            (slot == DreamNailSlot ? s.Type == ItemType.DreamNail : slot >= AbilityBagStart
+                ? AbilityBagSlot(s.Type) == slot : Is(s) || s.Type == ItemType.DreamNail);
+
+        public static bool TryStoreAbility(Inventory inv, ItemStack stack)
+        {
+            int slot = AbilityBagSlot(stack.Type);
+            if (stack.IsEmpty || slot < 0 || !inv.HkBag[slot].IsEmpty) return false;
+            inv.HkBag[slot] = stack; // Keep prefix, forge and favorite; never displace an existing stack.
+            return true;
+        }
+
+        internal static string AbilityDeliveryKey(string flag) => "ability.hkbag.delivered.v1." + flag;
+
+        internal static bool OwnsAbilityReward(Inventory inv, ItemType type)
+        {
+            bool Has(ItemType item)
+            {
+                if (inv.Owns(item)) return true;
+                foreach (var xs in new[] { inv.Bank, inv.Safe, inv.Forge, inv.Void })
+                    foreach (var stack in xs) if (!stack.IsEmpty && stack.Type == item) return true;
+                return false;
+            }
+            return Has(type) || (type == ItemType.CrystalHeart || type == ItemType.ShadeCloak) && Has(ItemType.HallownestShield);
+        }
+
+        public static string BagSlotHint(int slot) => slot == DreamNailSlot ? Lang.T("梦之钉专用格")
+            : slot >= AbilityBagStart && slot < BagSlots
+                ? Lang.F("{0}专用格", ItemDb.Get(Player.PlayerHooks.AbilityItems[slot - AbilityBagStart].item).Name)
+                : Lang.T("圣巢物品格");
 
         // ------------------------------------------------------------------ the items
 
@@ -90,8 +130,15 @@ namespace TerraKnight.Items
                 {
                     Type = d.Type, Name = d.Zh, Texture = TexturePrefix + d.Type, Permanent = true, HkItem = true, UseSound = null, Rare = -11,
                     MaxStack = d.Kind == Kind.Int ? 9999 : 1, Tooltip = "",
+                    // The lantern is a light pet too: worn in the light pet slot, it floats by the player (Pets); the Grimmchild
+                    // a pet: worn in the pet slot it is out, the game's own Grimmchild with it.
+                    PetBuff = d.Type == ItemType.HkLumaflyLantern ? Pets.LanternBuff : d.Type == ItemType.HkGrimmchild ? Pets.GrimmBuff : 0, LightPet = d.Type == ItemType.HkLumaflyLantern,
+                    // Used (in hand), it calls its pet as a light pet item does.
+                    UseAnimation = Pet(d.Type) ? 20f / 60f : 0f, UseTime = Pet(d.Type) ? 20f / 60f : 0f, NoMelee = Pet(d.Type),
                 });
         }
+
+        static bool Pet(ItemType t) => t == ItemType.HkLumaflyLantern || t == ItemType.HkGrimmchild;
 
         static string Text(string key, string fallback)
         {
@@ -109,7 +156,9 @@ namespace TerraKnight.Items
             if (!byType.TryGetValue(def.Type, out var d)) return;
             def.Name = Lang.IsSource ? d.Zh : Text(d.NameKey, d.Zh);
             string desc = Text(d.DescKey, "").Replace("<br>", "\n").Trim();
-            def.Tooltip = (desc.Length > 0 ? desc + "\n" : "") + Lang.T("拿在手里才生效");
+            def.Tooltip = (desc.Length > 0 ? desc + "\n" : "") + Lang.T(d.Type == ItemType.HkLumaflyLantern ? "放在圣巢背包里就生效：黑暗的房间会被照亮；放进照明宠物栏还会漂浮在身边照亮四周"
+                : d.Type == ItemType.HkGrimmchild ? "放进宠物栏（或使用）召唤格林之子：算作佩戴了这个护符"
+                : d.Kind == Kind.Royal ? "放在圣巢背包里就算佩戴着，不用拿在手上" : "放在圣巢背包里就算已获取，不用拿在手上");
         }
 
         // ------------------------------------------------------------------ pictures
@@ -144,6 +193,7 @@ namespace TerraKnight.Items
             if (d != null)
             {
                 if (d.Kind == Kind.Royal) s = RoyalSprite(d.Royal);
+                else if (d.Kind == Kind.Charm) s = CharmIconList.Instance != null ? CharmIconList.Instance.GetSprite(d.Royal) : null;
                 else
                 {
                     if (sprites == null || !sprites.ContainsKey(d.Sprite))
@@ -193,6 +243,53 @@ namespace TerraKnight.Items
             return f?.GetValue(pd);
         }
 
+        /// <summary>The counted ones as many as the whole world holds: 4 simple keys, 21 rancid eggs, 6 pale ore, the four relics' 14, 17, 8 and 4.</summary>
+        static readonly Dictionary<string, int> worldTotals = new Dictionary<string, int>
+        {
+            ["simpleKeys"] = 4, ["rancidEggs"] = 21, ["ore"] = 6, ["trinket1"] = 14, ["trinket2"] = 17, ["trinket3"] = 8, ["trinket4"] = 4,
+        };
+
+        public static int DevCreativeGiven;
+
+        /// <summary>
+        /// A creative save has all of them (UI.CreativeMenu), each by its record as the game sets it on getting the item: the
+        /// counted ones to the world's totals, the Void Heart for the royal charm (one of its two states), the Grimmchild at
+        /// its first level, the Delicate Flower whole, and the Dream Nail, awoken. On every load of the save: a record is
+        /// only ever raised, so what was used up (a key, relics sold) is there again, as nothing runs out in creative.
+        /// </summary>
+        public static void GiveAllForCreative(PlayerData pd)
+        {
+            if (pd == null) return;
+            int raised = 0;
+            foreach (var d in all)
+                switch (d.Kind)
+                {
+                    case Kind.Bool:
+                        if (!(Field(pd, d.Flag) is bool b && b)) { pd.SetBool(d.Flag, true); raised++; }
+                        if (d.Type == ItemType.HkDelicateFlower) pd.SetBool("xunFlowerBroken", false);
+                        break;
+                    case Kind.Int:
+                        int want = worldTotals.TryGetValue(d.Flag, out int total) ? total : 1;
+                        if (Field(pd, d.Flag) is int n && n < want) { pd.SetInt(d.Flag, want); raised++; }
+                        break;
+                    case Kind.Charm:
+                        if (!(Field(pd, d.Flag) is bool c && c)) { pd.SetBool(d.Flag, true); raised++; }
+                        if (d.Royal == 40 && pd.GetInt("grimmChildLevel") < 1) pd.SetInt("grimmChildLevel", 1);
+                        break;
+                    case Kind.Royal:
+                        if (d.Royal != 4) break;
+                        if (!(Field(pd, "gotCharm_36") is bool r && r) || pd.royalCharmState < 4) raised++;
+                        pd.SetBool("gotCharm_36", true);
+                        pd.royalCharmState = Mathf.Max(pd.royalCharmState, 4);
+                        pd.SetBool("gotShadeCharm", true);
+                        break;
+                }
+            if (!pd.hasDreamNail) { pd.hasDreamNail = true; raised++; }
+            pd.dreamNailUpgraded = true;
+            DevCreativeGiven += raised;
+            if (raised > 0) Plugin.Log.LogInfo($"[圣巢物品] 创造模式：补齐 {raised} 种圣巢物品");
+        }
+
         /// <summary>How many of the item the game's record says the Knight has.</summary>
         static int Wanted(Def d, PlayerData pd)
         {
@@ -200,6 +297,8 @@ namespace TerraKnight.Items
             {
                 case Kind.Royal:
                     return Field(pd, "gotCharm_36") is bool got && got && pd.royalCharmState == d.Royal ? 1 : 0;
+                case Kind.Charm:
+                    return Field(pd, d.Flag) is bool has && has ? 1 : 0;
                 case Kind.Int:
                     return Field(pd, d.Flag) is int n ? Mathf.Max(0, n) : 0;
                 default:
@@ -220,6 +319,16 @@ namespace TerraKnight.Items
         /// <summary>In hand: the item held (the hotbar's selected slot, or the cursor's with the inventory open).</summary>
         public static bool Held(Inventory inv, ItemType t) => inv != null && !inv.Current.IsEmpty && inv.Current.Type == t;
 
+        /// <summary>Carried: in the Hallownest bag, the bag or the hotbar, a pet slot, or on the cursor.</summary>
+        public static bool Carried(Inventory inv, ItemType t) =>
+            inv != null && (Count(inv.HkBag, t) + Count(inv.Slots, t) + Count(inv.Misc, t) > 0 || !inv.Mouse.IsEmpty && inv.Mouse.Type == t);
+
+        /// <summary>The Lumafly Lantern works: carried (out as the light pet, too).</summary>
+        public static bool LanternLit(Inventory inv) => Pets.LanternOut || Carried(inv, ItemType.HkLumaflyLantern);
+
+        /// <summary>Carried (the lantern also out as the light pet).</summary>
+        static bool Working(Inventory inv, ItemType t) => t == ItemType.HkLumaflyLantern ? LanternLit(inv) : Carried(inv, t);
+
         public static int DevGiven, DevTaken;
 
         /// <summary>
@@ -230,11 +339,18 @@ namespace TerraKnight.Items
         {
             var pd = PlayerData.instance;
             if (mod == null || pd == null) return;
+            // The Hollow Knight's Phase Control tests gotShadeCharm, not royalCharmState.
+            // Older creative saves raised the royal charm but missed that native ending flag.
+            if (pd.royalCharmState >= 4 && Field(pd, "gotCharm_36") is bool royal && royal && !pd.gotShadeCharm)
+            {
+                pd.SetBool("gotShadeCharm", true);
+                Plugin.Log.LogInfo("[虚空之心] 补齐原版 gotShadeCharm 结局标记");
+            }
             var inv = mod.Inventory;
             foreach (var d in all)
             {
                 int want = Wanted(d, pd);
-                int have = Count(inv.Slots, d.Type) + Count(inv.HkBag, d.Type) + (!inv.Mouse.IsEmpty && inv.Mouse.Type == d.Type ? inv.Mouse.Count : 0);
+                int have = Count(inv.Slots, d.Type) + Count(inv.HkBag, d.Type) + Count(inv.Misc, d.Type) + (!inv.Mouse.IsEmpty && inv.Mouse.Type == d.Type ? inv.Mouse.Count : 0);
                 if (have < want)
                 {
                     int add = want - have;
@@ -252,6 +368,7 @@ namespace TerraKnight.Items
                     int take = have - want;
                     take = Take(inv.HkBag, d.Type, take, inv.HkBag.Length);
                     take = Take(inv.Slots, d.Type, take, inv.Slots.Length);
+                    take = Take(inv.Misc, d.Type, take, inv.Misc.Length);
                     if (take > 0 && !inv.Mouse.IsEmpty && inv.Mouse.Type == d.Type)
                     {
                         int n = Mathf.Min(take, inv.Mouse.Count);
@@ -321,7 +438,7 @@ namespace TerraKnight.Items
         static int rawDepth;
         static bool Gating => rawDepth == 0 && TerraMod.Instance != null && !BossArena.Visiting;
 
-        /// <summary>PlayerData.GetBool: a key item's record counts only while the item is held (and the charm 36 worn while either royal one is).</summary>
+        /// <summary>PlayerData.GetBool: a key item's record counts while the item is carried (and the charm 36 worn while either royal one is).</summary>
         internal static void GateBool(string name, ref bool result)
         {
             if (!Gating || PickupAsking()) return;
@@ -330,22 +447,30 @@ namespace TerraKnight.Items
             {
                 var pd = PlayerData.instance;
                 bool got = pd != null && Field(pd, "gotCharm_36") is bool g && g && pd.royalCharmState >= 3;
-                result = got && (Held(inv, ItemType.HkKingsoul) || Held(inv, ItemType.HkVoidHeart));
+                result = got && (Carried(inv, ItemType.HkKingsoul) || Carried(inv, ItemType.HkVoidHeart));
                 if (got && !result) Refused(pd.royalCharmState >= 4 ? ItemType.HkVoidHeart : ItemType.HkKingsoul);
+                return;
+            }
+            // The Grimmchild worn: its summon out (Pets), whatever the charm menu says.
+            if (name == "equippedCharm_40")
+            {
+                var pd = PlayerData.instance;
+                bool got = pd != null && Field(pd, "gotCharm_40") is bool g40 && g40;
+                result = got && Pets.GrimmOut;
                 return;
             }
             if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Bool && result)
             {
-                result = Held(inv, d.Type);
+                result = Working(inv, d.Type);
                 if (!result) Refused(d.Type);
             }
         }
 
-        /// <summary>PlayerData.GetInt: a counted item (keys, eggs, ore, relics) counts in full while held, else not at all.</summary>
+        /// <summary>PlayerData.GetInt: a counted item (keys, eggs, ore, relics) counts in full while carried, else not at all.</summary>
         internal static void GateInt(string name, ref int result)
         {
             if (!Gating || result <= 0 || PickupAsking()) return;
-            if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Int && !Held(TerraMod.Instance.Inventory, d.Type))
+            if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Int && !Carried(TerraMod.Instance.Inventory, d.Type))
             {
                 result = 0;
                 Refused(d.Type);
@@ -354,16 +479,16 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// A pickup asking whether its item was got already (Shiny Control's "PD Bool?": the King's Brand on its stand):
-        /// the record as it is, or the item would lie there again for the taking whenever it isn't in hand.
+        /// the record as it is, or the item would lie there again for the taking whenever it isn't carried.
         /// </summary>
         static bool PickupAsking() => HutongGames.PlayMaker.FsmExecutionStack.ExecutingFsm?.Name == "Shiny Control";
 
-        // ------------------------------------------------------------------ asked again once in hand
+        // ------------------------------------------------------------------ asked again once carried
 
         /// <summary>
-        /// A state machine told no because its item wasn't in hand, that waits in the state that asked: the Abyss's gate asks
-        /// for the King's Brand once as its room comes in (abyss_door's Check) and, told no, stays there; the Birthplace's
-        /// floor asks for the Kingsoul so. Taken in hand, the item is asked for again there.
+        /// A state machine told no because its item wasn't carried (both bags full as it was got), that waits in the state
+        /// that asked: the Abyss's gate asks for the King's Brand once as its room comes in (abyss_door's Check) and, told no,
+        /// stays there; the Birthplace's floor asks for the Kingsoul so. Carried at last, the item is asked for again there.
         /// </summary>
         sealed class Asker
         {
@@ -373,9 +498,10 @@ namespace TerraKnight.Items
         }
 
         static readonly List<Asker> askers = new List<Asker>();
-        static int heldBefore = -1;
+        static readonly HashSet<ItemType> carriedBefore = new HashSet<ItemType>();
+        static bool lanternBefore;
 
-        /// <summary>What a pitch-dark room hid from one without the lantern in hand (DarknessStart): back once it is.</summary>
+        /// <summary>What a pitch-dark room hid from one without the lantern (DarknessStart): back once it is carried.</summary>
         static readonly List<GameObject> hiddenInDark = new List<GameObject>();
 
         public static int DevAskedAgain;
@@ -394,21 +520,71 @@ namespace TerraKnight.Items
             askers.Add(new Asker { Fsm = fsm, State = state.Name, Item = t });
         }
 
-        /// <summary>The item in hand changed: a key item taken asked for again where it was refused; the lantern lights (or not) at once.</summary>
+        /// <summary>What is carried changed: a key item come in asked for again where it was refused; the lantern lights (or not) at once.</summary>
+        static bool grimmBefore;
+        static float grimmLook;
+        public static int DevGrimmCalls;
+
+        /// <summary>
+        /// The Grimmchild's summon out or gone: the Knight's "Spawn Grimmchild" machine (Charm Effects) and a Grimmchild's own
+        /// "Charm Unequip" told CHARM EQUIP CHECK, as the charm menu tells them, so the game's own Grimmchild comes or goes;
+        /// once a second while it is out and none flies, called again (a new scene).
+        /// </summary>
+        static void GrimmCheck()
+        {
+            bool now = Pets.GrimmOut;
+            bool changed = now != grimmBefore;
+            grimmBefore = now;
+            if (!changed && (!now || Time.unscaledTime < grimmLook)) return;
+            grimmLook = Time.unscaledTime + 1f;
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return;
+            if (!changed && GameObject.FindWithTag("Grimmchild") != null) return;
+            var fx = hero.transform.Find("Charm Effects");
+            if (fx != null)
+                foreach (var f in fx.GetComponents<PlayMakerFSM>())
+                    if (f.FsmName == "Spawn Grimmchild") f.SendEvent("CHARM EQUIP CHECK");
+            if (!now)
+                foreach (var f in PlayMakerFSM.FsmList)
+                    if (f != null && f.FsmName == "Charm Unequip" && f.gameObject.name.StartsWith("Grimmchild")) f.SendEvent("CHARM EQUIP CHECK");
+            DevGrimmCalls++;
+        }
+
         static void HandChanged(Inventory inv)
         {
-            int held = inv.Current.IsEmpty ? -1 : (int)inv.Current.Type;
-            if (held == heldBefore) return;
-            bool lantern = held == (int)ItemType.HkLumaflyLantern || heldBefore == (int)ItemType.HkLumaflyLantern;
-            heldBefore = held;
-            var hero = HeroController.SilentInstance;
-            if (lantern && hero != null) hero.SetDarkness(World.LightMap.Darkness);
-            if (held == (int)ItemType.HkLumaflyLantern)
+            GrimmCheck();
+            // The lantern lit or put out (carried, or its light pet out): the dark room as it should be at once.
+            bool lantern = LanternLit(inv);
+            if (lantern != lanternBefore)
             {
-                foreach (var go in hiddenInDark) if (go != null) go.SetActive(true);
-                hiddenInDark.Clear();
+                lanternBefore = lantern;
+                var hero = HeroController.SilentInstance;
+                if (hero != null) hero.SetDarkness(World.LightMap.Darkness);
+                if (lantern)
+                {
+                    foreach (var go in hiddenInDark) if (go != null) go.SetActive(true);
+                    hiddenInDark.Clear();
+                    AskAgain(ItemType.HkLumaflyLantern);
+                }
             }
-            if (held < 0 || !byType.ContainsKey((ItemType)held)) return;
+            foreach (var d in all)
+            {
+                bool now = Carried(inv, d.Type);
+                if (now == carriedBefore.Contains(d.Type)) continue;
+                if (!now)
+                {
+                    carriedBefore.Remove(d.Type);
+                    continue;
+                }
+                carriedBefore.Add(d.Type);
+                AskAgain(d.Type);
+            }
+        }
+
+        /// <summary>The state machines told no for an item, asked again where they asked (if they still wait there).</summary>
+        static void AskAgain(ItemType item)
+        {
+            int held = (int)item;
             for (int i = askers.Count - 1; i >= 0; i--)
             {
                 var a = askers[i];
@@ -425,11 +601,11 @@ namespace TerraKnight.Items
                 a.Fsm.SetState(a.State);
                 DevAskedAgain++;
                 DevLastAskedAgain = $"{owner.gameObject.scene.name}/{owner.name} '{a.Fsm.Name}' {a.State} → {a.Fsm.ActiveStateName}";
-                Plugin.Log.LogInfo($"[圣巢物品] 拿起{ItemDb.Get((ItemType)held).Name}：{DevLastAskedAgain}");
+                Plugin.Log.LogInfo($"[圣巢物品] 带上{ItemDb.Get((ItemType)held).Name}：{DevLastAskedAgain}");
             }
         }
 
-        /// <summary>The Knight holds the lantern up in a dark room (HeroController.SetDarkness reads the record itself): from the hotbar.</summary>
+        /// <summary>The Knight holds the lantern up in a dark room (HeroController.SetDarkness reads the record itself): the lantern carried.</summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.SetDarkness))]
         static bool SetDarkness(HeroController __instance, int darkness)
@@ -439,7 +615,7 @@ namespace TerraKnight.Items
             return false;
         }
 
-        /// <summary>What a pitch-dark room hides from one without the lantern (it reads the record itself): from the hotbar.</summary>
+        /// <summary>What a pitch-dark room hides from one without the lantern (it reads the record itself): the lantern carried.</summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(DeactivateInDarknessWithoutLantern), "Start")]
         static bool DarknessStart(DeactivateInDarknessWithoutLantern __instance)

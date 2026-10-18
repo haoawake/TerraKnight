@@ -52,6 +52,7 @@ namespace TerraKnight.Player
         {
             if (!Active) return true;
             if (hazardType == 1 && TerraMovement.BonkReady && go != null && go.GetComponentInParent<HealthManager>() != null) return false;
+            if (hazardType == 1 && Items.AbilityAccessories.SuperDashThrough(__instance, go)) return false;
             // The Turtle's thorns answer an enemy's touch before the hit, dodged or not (Pl:31586-31641); the
             // Brand of the Inferno's parry turns it (its own thorns ×2, no hurt).
             if (hazardType == 1 && damageAmount > 0 && go != null && canTakeDamage(__instance))

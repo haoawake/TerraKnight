@@ -25,7 +25,7 @@ namespace TerraKnight.Net
         public const int MaxSlots = 16;
         /// <summary>What a client must say in its Hello (Terraria: "Terraria" + curRelease).</summary>
         public static string Protocol => "TerraKnight" + Plugin.Version + "/net" + NetVersion;
-        const int NetVersion = 3;
+        const int NetVersion = 4;
         /// <summary>RemoteClient's timeout: two minutes without a word (a scene loading on the other end can stall it for seconds).</summary>
         const double TimeoutSeconds = 120;
 
@@ -48,6 +48,7 @@ namespace TerraKnight.Net
 
         readonly Client[] clients = new Client[MaxSlots];
         readonly Dictionary<string, int> owners = new Dictionary<string, int>();
+        readonly BossLifeRewardLedger lifeRewards = new BossLifeRewardLedger();
         readonly TcpListener listener;
         readonly string password;
         readonly int maxPlayers;
@@ -371,6 +372,28 @@ namespace TerraKnight.Net
                         body[1] = (byte)c.Slot;
                         Relay(c, body);
                         Chat(NetText.Mod("{0} 使用了首领召唤物，所有人都被传送到首领的竞技场", c.Name), Yellow, null);
+                        return;
+                    }
+                    case Msg.BossLifeReward:
+                    {
+                        r.ReadByte();
+                        byte phase = r.ReadByte();
+                        string token = r.ReadString(), scene = r.ReadString(), record = r.ReadString();
+                        if (!Items.EnemyDrops.IsBoss(record)) return;
+                        if (phase == 0)
+                        {
+                            bool owner = owners.TryGetValue(scene, out int o) ? o == c.Slot : c.IsHost;
+                            lifeRewards.Register(token, c.Slot, scene, record, owner);
+                        }
+                        else if (phase == 1 && lifeRewards.Complete(token, c.Slot, scene, record))
+                        {
+                            var award = new Packet(Msg.BossLifeReward);
+                            award.W.Write((byte)255); award.W.Write((byte)2);
+                            award.W.Write(token); award.W.Write(scene); award.W.Write(record);
+                            // Everyone currently connected, including the owner, gets a personal
+                            // claim; each character's saved first-kill ledger decides eligibility.
+                            Broadcast(award.Done(), null);
+                        }
                         return;
                     }
                     case Msg.ProjectileSnapshot:

@@ -73,7 +73,15 @@ namespace TerraKnight
             TerraKeys.DoubleTapDash = true;
             yield return new WaitForSeconds(1f);
             dashedTap = false;
-            for (int k = 0; k < 2; k++) yield return Tap(TerraKeys.Get(TerraKeys.Action.Right), 0.05f);
+            // Two presses 0.1 s apart, inside Terraria's 15-tick window (Tap itself waits 0.2 s after each).
+            var right = TerraKeys.Get(TerraKeys.Action.Right);
+            for (int k = 0; k < 2; k++)
+            {
+                KeysDown(right);
+                yield return new WaitForSecondsRealtime(0.05f);
+                KeysDown();
+                yield return new WaitForSecondsRealtime(0.05f);
+            }
             tt = Time.time;
             while (Time.time - tt < 0.4f) { yield return null; if (TerraMovement.IsDashing) dashedTap = true; }
             Check("双击冲刺打开时双击能冲", dashedTap);
@@ -112,9 +120,11 @@ namespace TerraKnight
             if (UI.WorldMap.StyleSetting != null) UI.WorldMap.StyleSetting.Value = 1;
             var scale = AccessTools.Field(typeof(UI.WorldMap), "miniScale");
             float s0 = (float)scale.GetValue(null);
+            UI.WorldMap.DevKeys = true;
             KeysDown(Key.NumpadPlus);
             yield return new WaitForSeconds(0.5f);
             KeysDown();
+            UI.WorldMap.DevKeys = false;
             float s1 = (float)scale.GetValue(null);
             Check("小地图放大键", s1 > s0 * 1.05f, $"{s0:F2}→{s1:F2}");
             if (UI.WorldMap.StyleSetting != null) UI.WorldMap.StyleSetting.Value = styleWas;

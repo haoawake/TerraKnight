@@ -8,8 +8,7 @@ namespace TerraKnight.World
     /// The save's difficulty, chosen when it is started (UI.CreativeMenu), as Terraria's worlds
     /// are: the enemies' life and the damage they deal are the mod's own tuning, which is Master,
     /// times a share of it: a quarter on Normal, half on Hard, three quarters on Expert. The share
-    /// of damage is of what a hit takes off after the player's defense (TerraStats.TakeMasks), so
-    /// an easier save always takes that share of what Master would, armor or not. Saves from
+    /// of damage is applied before defense; defense uses Terraria's difficulty-specific effectiveness. Saves from
     /// before there was a choice are Master, which is what they were played at.
     /// </summary>
     internal static class GameDifficulty
@@ -18,6 +17,15 @@ namespace TerraKnight.World
 
         /// <summary>The share of Master's enemy life and damage the current save's enemies have.</summary>
         public static float EnemyFactor => FactorOf(Current);
+
+        // Terraria.Main.CalculateDamagePlayersTake: normal .5, expert .75, master 1.
+        // The mod's extra Hard setting keeps normal defense rules.
+        public static float DefenseEffectiveness => Current switch
+        {
+            DifficultyLevel.Master => 1f,
+            DifficultyLevel.Expert => .75f,
+            _ => .5f,
+        };
 
         public static float FactorOf(DifficultyLevel d) => d switch
         {

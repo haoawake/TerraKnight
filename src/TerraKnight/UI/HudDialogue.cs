@@ -40,6 +40,7 @@ namespace TerraKnight.UI
                 {
                     if (fsm == null || !fsm.FsmName.StartsWith("Box Open")) continue;
                     fsm.SendEvent("BOX DOWN");
+                    fsm.SendEvent("BOX DOWN DREAM");
                     fsm.SendEvent("BOX DOWN YN");
                 }
             }

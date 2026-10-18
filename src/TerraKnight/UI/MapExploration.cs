@@ -5,10 +5,11 @@ namespace TerraKnight.UI
     /// <summary>Exploration is a local visit, independent of the camera and purchased charts.</summary>
     internal static class MapExploration
     {
-        public const int Radius = 8;
+        /// <summary>The reach to the sides of the player, in cells.</summary>
+        public const int Radius = 18;
         /// <summary>The reach above and below the player: five cells more than to the sides (an upright ellipse).</summary>
         public const int RadiusY = Radius + 5;
-        // 70% transparent = 30% opaque, rounded to an RGBA byte.
+        // 70% transparent = 30% of the colour, rounded to a byte (WorldMap.ExplorationColor works it into the colour).
         public const byte ChartedAlpha = 77;
 
         public static byte Alpha(bool seen, bool charted) => seen ? (byte)255 : charted ? ChartedAlpha : (byte)0;

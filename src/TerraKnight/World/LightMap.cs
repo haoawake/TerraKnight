@@ -200,8 +200,8 @@ namespace TerraKnight.World
                     terrain[i] = kind == CellKind.Original && !dug;
                     float s = !isSolid && !dug ? amb : 0f;
                     r[i] = g[i] = b[i] = s;
-                    // A placed torch: TorchID.TorchColor of the plain torch.
-                    if (kind == CellKind.Torch) Put(i, TorchRgb);
+                    // A placed torch: TorchID.TorchColor of the plain torch, a regional one's own colour (World.RegionalTorches).
+                    if (kind == CellKind.Torch) Put(i, RegionalTorches.LightRgb(cellRegion.Grid.GetTorchStyle(gx - cellRegion.CellOffset.x, gy - cellRegion.CellOffset.y)));
                     // TileLightScanner's Meteorite: (0.56, 0.43, 0.15), five in a hundred either way.
                     else if (kind == CellKind.Meteorite) Put(i, MeteoriteRgb * Random.Range(0.95f, 1.05f));
                 }
@@ -214,10 +214,19 @@ namespace TerraKnight.World
             }
             foreach (var (at, rgb) in added) { PutAt(at, rgb, x0, y0, w, h); count++; }
             added.Clear();
+            // The Lumafly Lantern in hand: Terraria's brightest light, the Suspicious Looking Tentacle's (Projectile.AI for
+            // 650: (0.5, 0.9, 1) × 2 cast across the player, CastLightOpen), wherever it is.
             // In the dark the Knight still sees a little round itself, as the game's vignette lets it;
-            // the Lumafly Lantern much more.
+            // the lantern's room light (the mining helmet's, Night Owl's) much more.
             var pd = PlayerData.instance;
-            if (Darkness > 0)
+            var heroBox = hero.GetComponent<BoxCollider2D>().bounds;
+            if (LanternHeld)
+            {
+                for (float x = heroBox.min.x; x <= heroBox.max.x + 0.01f; x += CellGrid.CellSize)
+                    PutAt(new Vector2(Mathf.Min(x, heroBox.max.x), heroBox.center.y), LanternRgb, x0, y0, w, h);
+                count++;
+            }
+            else if (Darkness > 0)
             {
                 // Through GetBool: the mining helmet and Night Owl count as the lantern too (PlayerHooks).
                 bool lantern = pd != null && pd.GetBool("hasLantern");
@@ -315,6 +324,21 @@ namespace TerraKnight.World
             DevCells = cells;
             DevSources = sourcesNow;
             DevMs = (Time.realtimeSinceStartup - t0) * 1000f;
+        }
+
+        /// <summary>The Lumafly Lantern held: the Suspicious Looking Tentacle's light, Terraria's brightest.</summary>
+        public static readonly Color LanternRgb = new Color(1f, 1.8f, 2f);
+
+        /// <summary>The Lumafly Lantern is the item in hand.</summary>
+        public static bool LanternHeld
+        {
+            get
+            {
+                var mod = TerraMod.Instance;
+                if (mod == null || mod.Inventory == null) return false;
+                var held = mod.Inventory.Current;
+                return !held.IsEmpty && held.Def != null && held.Def.Type == Items.ItemType.HkLumaflyLantern;
+            }
         }
 
         /// <summary>The plain torch's light (TorchID.TorchColor 0).</summary>

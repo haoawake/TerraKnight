@@ -38,11 +38,11 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 陨石 去过的房间 {rooms.Count} 个，能直接传过去的 {reachable.Count} 个：{string.Join(",", reachable.Take(12))}");
             // Its landing: the clock at midnight, only the reachable rooms (the test goes there after).
             string target = null;
-            Dictionary<int, byte> before = null;
+            Dictionary<int, ushort> before = null;
             int landed0 = Meteorites.DevDropped;
             foreach (var room in reachable.OrderBy(_ => Random.value))
             {
-                before = new Dictionary<int, byte>(WorldEdits.For(room));
+                before = new Dictionary<int, ushort>(WorldEdits.For(room));
                 if (Meteorites.Drop("Town", room)) { target = room; break; }
             }
             Meteorites.Pending = false;
@@ -136,7 +136,7 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 陨石 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
 
-        static void RestoreEdits(string scene, Dictionary<int, byte> before)
+        static void RestoreEdits(string scene, Dictionary<int, ushort> before)
         {
             if (scene == null || before == null) return;
             var edits = WorldEdits.For(scene);

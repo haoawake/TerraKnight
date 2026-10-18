@@ -74,8 +74,14 @@ namespace TerraKnight.Town
             public string Given;
             /// <summary>Feet (world units); speed in px per tick.</summary>
             public float X, FeetY, Vx, HomeX;
+            /// <summary>How far either side of home it may wander (Safe): the bench's own default spot
+            /// is the town's shared one, so those roam the street; one bound to a chair stays near it.</summary>
+            public float Range = RoamRange;
             public int Dir = 1, Ai0, Frame;
             public float Ai1, FrameCounter, LocalAi3, StuckTicks, LastX;
+            /// <summary>NPC.closeDoor, doorX/doorY: it opened the door whose doorway is there and shuts it once past.</summary>
+            public bool ShutDoor;
+            public Vector2 DoorAt;
             /// <summary>Main.HoverOverNPCs' GivenOrTypeName: the type (Terraria's own name for it in the language now) and the given name (Game.NPCTitle's order).</summary>
             public string Name
             {
@@ -99,6 +105,7 @@ namespace TerraKnight.Town
             get
             {
                 if (all != null) return all;
+                AddBatch1017Stock();
                 var list = new List<NpcDef>(roster);
                 list.AddRange(more);
                 return all = list.ToArray();
@@ -121,6 +128,14 @@ namespace TerraKnight.Town
         }
         static TerrainRegion placedFor;
         static float streetMin, streetMax, benchX, benchY;
+        /// <summary>Dirtmouth's own bench was found and the town read from it: a click has somewhere to put a townsperson.</summary>
+        static bool townFound;
+        /// <summary>
+        /// How far a townsperson walks either side of its home. Everyone Dirtmouth's own bench is home to
+        /// shares that one spot, so they need room to spread over; one the player bound to a chair keeps
+        /// close to it (ChairRange, set where it is put down).
+        /// </summary>
+        public const float RoamRange = 16f, ChairRange = 4f;
         static float tickAccumulator;
         static Npc talk;
         static bool shop;
@@ -138,6 +153,14 @@ namespace TerraKnight.Town
         /// <summary>Given names chosen so far (saved), and who has been announced as moved in.</summary>
         public static readonly Dictionary<string, string> Names = new Dictionary<string, string>();
         public static readonly HashSet<string> Arrived = new HashSet<string>();
+
+        /// <summary>
+        /// The townsfolk the player has sent away with a right click in the panel (TownNpcsManage.Remove):
+        /// they stay away — even the ones who would otherwise move in on their own, which is how a
+        /// right-clicked shopkeeper used to come straight back — until the player sets one down again
+        /// (PlaceClick takes it out of here). Kept in the save with the town (ModSave.NpcDismissed).
+        /// </summary>
+        public static readonly HashSet<string> Dismissed = new HashSet<string>();
 
         /// <summary>The chat box's text (empty while the shop is open, as Main.npcChatText).</summary>
         public static string ChatText { get; private set; } = "";
@@ -164,9 +187,25 @@ namespace TerraKnight.Town
             TerraMod.Instance.PlaySound("Menu_Tick", 0.7f);
         }
 
-        /// <summary>The open shop's 40 slots, and which hold bought-back items (buyOnce).</summary>
-        public static readonly ItemStack[] ShopItems = new ItemStack[40];
-        public static readonly bool[] BuyBack = new bool[40];
+        /// <summary>
+        /// The open shop's slots, and which hold bought-back items (buyOnce): Terraria's 40 (four rows of ten), and a fifth
+        /// row for a stock past them (the Merchant's at the last stage, with every healing and mana potion), shown only then.
+        /// </summary>
+        public const int ShopColumns = 10, ShopBaseSlots = 40;
+        public static readonly ItemStack[] ShopItems = new ItemStack[50];
+        public static readonly bool[] BuyBack = new bool[50];
+        /// <summary>A slot showing what the seller brings at a later stage (that stage; 0: on sale now): to look at, not to buy.</summary>
+        public static readonly int[] ShopLock = new int[50];
+
+        /// <summary>The rows the shop shows: four, five once something lies past the fortieth slot.</summary>
+        public static int ShopRowsShown
+        {
+            get
+            {
+                for (int i = ShopBaseSlots; i < ShopItems.Length; i++) if (!ShopItems[i].IsEmpty) return ShopItems.Length / ShopColumns;
+                return ShopBaseSlots / ShopColumns;
+            }
+        }
 
         /// <summary>Main.moonPhase: a new phase every Terraria day (24 minutes of play), eight in all; in a LAN game the host's.</summary>
         public static int MoonPhase => PlayerData.instance == null ? 0 : ((World.TerraTime.Day % 8) + 8) % 8;
@@ -202,6 +241,7 @@ namespace TerraKnight.Town
             foreach (var def in All)
             {
                 if (def.Internal != internalName) continue;
+                if(def.Stage>stage)return 0;
                 int n = 0;
                 foreach (var s in ProgressionBalance.ShopStock(def.Internal,def.Items))
                 {
@@ -217,6 +257,7 @@ namespace TerraKnight.Town
 
         internal static IEnumerable<(string Npc, ItemType Type)> DevSourcesAt(int stage)
         {
+            if(stage>=1)
             foreach (var stock in travelPool)
                 if (stock.Stage <= stage && ItemDb.Get(stock.Type).Stage <= stage)
                     yield return ("TravelingMerchant", stock.Type);
@@ -241,6 +282,8 @@ namespace TerraKnight.Town
             reforge = false;
             Names.Clear();
             Arrived.Clear();
+            Dismissed.Clear();
+            ClearHouses();
             lastStage = -1;
         }
 
@@ -252,17 +295,22 @@ namespace TerraKnight.Town
             var region = TerrainSystem.Find("Town");
             if (region == null || hero == null)
             {
-                if (npcs.Count > 0) npcs.Clear();
+                // Dirtmouth isn't loaded: only those with a house in a scene that is stay, in their rooms (TownNpcsHousing).
+                if (npcs.Count > 0) npcs.RemoveAll(n => hero == null || !Houses.ContainsKey(n.Def.Internal));
                 placedFor = null;
-                if (talk != null) Close(false);
-                return;
+                if (talk != null && !npcs.Contains(talk)) Close(false);
+                if (hero == null) return;
             }
-            int stage = Shop.UnlockedStage();
-            if (region != placedFor || stage != lastStage || Time.unscaledTime >= nextRecheck)
+            else
             {
-                nextRecheck = Time.unscaledTime + 3f;
-                Place(region, stage, hero);
+                int stage = Shop.UnlockedStage();
+                if (region != placedFor || stage != lastStage || Time.unscaledTime >= nextRecheck)
+                {
+                    nextRecheck = Time.unscaledTime + 3f;
+                    Place(region, stage, hero);
+                }
             }
+            HousingTick(hero);
             CollectTaxTime();
             tickAccumulator += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
             while (tickAccumulator >= 1f)
@@ -282,18 +330,27 @@ namespace TerraKnight.Town
         /// </summary>
         static bool InTown(NpcDef def, int stage)
         {
+            // Sent away with a right click in the panel: it stays away, whatever it would do on its own,
+            // until the player puts it down again.
+            if (Dismissed.Contains(def.Internal)) return false;
             switch (def.Kind)
             {
                 case NpcKind.Angler: return Angler.Saved;
-                case NpcKind.Santa: return stage >= def.Stage && System.DateTime.Now.Month == 12 && System.DateTime.Now.Day >= 15;
+                case NpcKind.Santa:
+                    if (!AutoArrives(def) && !Arrived.Contains(def.Internal)) return false;   // no shop of his own: the townsfolk panel's
+                    return stage >= def.Stage && System.DateTime.Now.Month == 12 && System.DateTime.Now.Day >= 15;
                 case NpcKind.Visitor: return stage >= def.Stage && TravelerVisiting();
                 case NpcKind.Princess:
                     if (Arrived.Contains(def.Internal)) return true;
+                    if (!AutoArrives(def)) return false;   // the decorative ones wait for the townsfolk panel
                     if (stage < def.Stage) return false;
                     foreach (var o in All)
                         if (o != def && o.Kind == NpcKind.Resident && o.Stage <= stage && !npcs.Exists(n => n.Def == o)) return false;
                     return true;
-                default: return def.Stage <= stage || Arrived.Contains(def.Internal);
+                // Terraria's own townsfolk have moved in by their stage ever since; in Hallownest the
+                // shops and the few with something to do still do, and everyone else waits in the
+                // townsfolk panel (AutoArrives): the street was filling up with townsfolk nobody asked for.
+                default: return (def.Stage <= stage && AutoArrives(def)) || Arrived.Contains(def.Internal);
             }
         }
 
@@ -308,18 +365,26 @@ namespace TerraKnight.Town
             return new System.Random(day * 7919 + 17).Next(3) == 0;
         }
 
-        static int travelDay = -1;
+        static int travelDay = -1,travelStage=-1;
 
         static void StockTraveler(NpcDef def, int stage)
         {
             int day = PlayerData.instance == null ? 0 : World.TerraTime.Day;
-            if (day == travelDay && def.Items != null && def.Items.Length > 0) return;
-            travelDay = day;
+            if (day == travelDay && stage==travelStage && def.Items != null && def.Items.Length > 0) return;
+            travelDay = day;travelStage=stage;
             var rng = new System.Random(day * 104729 + 3);
             var pool = new List<(ItemType Type, int Stage)>();
-            foreach (var t in travelPool) if (t.Stage <= stage) pool.Add(t);
+            foreach (var t in travelPool) if (t.Stage <= stage && ItemDb.Get(t.Type).Stage<=stage) pool.Add(t);
             var pick = new List<Stock>();
             int n = 4 + rng.Next(3);
+            int best=-1;
+            foreach(var item in pool)if(ProgressionLoot.CombatWeapon(ItemDb.Get(item.Type)))best=System.Math.Max(best,ItemDb.Get(item.Type).Stage);
+            var weapons=pool.FindAll(item=>ProgressionLoot.CombatWeapon(ItemDb.Get(item.Type)) && ItemDb.Get(item.Type).Stage==best);
+            if(weapons.Count>0)
+            {
+                var weapon=weapons[rng.Next(weapons.Count)];
+                pick.Add(new Stock(weapon.Type,weapon.Stage,null));pool.Remove(weapon);
+            }
             while (pick.Count < n && pool.Count > 0)
             {
                 int k = rng.Next(pool.Count);
@@ -350,6 +415,7 @@ namespace TerraKnight.Town
                 if (bench != null) break;
             }
             if (bench == null) return;
+            townFound = true;
             if (fresh)
             {
                 npcs.Clear();
@@ -369,21 +435,21 @@ namespace TerraKnight.Town
                 string left = Terraria.TerrariaText.Get(Lang.Culture, "LegacyMisc.35");
                 Net.NetChat.Add(left != null ? left.Replace("{0}", gone.Name) : Lang.F("{0}已离去！", gone.Name), new Color(50 / 255f, 125 / 255f, 255 / 255f));
             }
-            // Homes alternate left and right of the bench, past the pylon beside it: room for all forty.
-            var homes = new List<float>();
-            for (int k = 0; homes.Count < 40 && k < 120; k++)
-            {
-                float off = 5f + 3f * (k / 2);
-                float x = benchX + (k % 2 == 0 ? -off : off + 2f);
-                if (x > streetMin + 1f && x < streetMax - 1f) homes.Add(x);
-            }
+            var homes = StreetHomes();
             int i = 0;
             foreach (var def in All)
             {
                 // Once moved in, a townsperson stays (as in Terraria), even if the progress reads lower than when it came.
                 if (!InTown(def, stage)) continue;
+                // One with a house lives there, wherever it is (TownNpcsHousing), not on the street.
+                if (Houses.ContainsKey(def.Internal)) continue;
                 if (npcs.Exists(n => n.Def == def))
                 {
+                    // Already standing here: the ground under it may have changed since (dug out by the
+                    // player, or a position saved before the panel learned to stand them on the floor).
+                    var have = npcs.Find(n => n.Def == def);
+                    var under = StandingFloor(have.X, have.FeetY, have);
+                    if (under.HasValue) have.FeetY = under.Value;
                     i++;
                     continue;
                 }
@@ -396,10 +462,38 @@ namespace TerraKnight.Town
                     Names[def.Internal] = given;
                 }
                 // More townsfolk than homes along the street: they share, a little apart.
-                float home = homes[i % homes.Count] + 1.2f * (i / homes.Count) * ((i / homes.Count) % 2 == 0 ? 1f : -1f);
+                // One the player put down stays where they put it (Homes, saved with the town); a spot
+                // that has no ground any more (or was saved by a build that let them float) is given up.
+                float home;
+                float put, putY = 0f;
+                bool hasHome = Homes.TryGetValue(def.Internal, out put) && HomeY.TryGetValue(def.Internal, out putY);
+                // A chair home is the chair's seat: the chair itself is furniture, not a cell in the
+                // grid, and the floor under it may be the street while the seat is an upper storey.
+                float seatY = putY;
+                bool onChair = hasHome && World.Stations.ChairNear(new Vector2(put, putY), out _, out seatY);
+                bool placed = hasHome && (onChair || GridGround(put, putY + 0.5f, out _));
+                if (placed) home = put;
+                else
+                {
+                    if (Homes.ContainsKey(def.Internal)) Homes.Remove(def.Internal);
+                    if (HomeY.ContainsKey(def.Internal)) HomeY.Remove(def.Internal);
+                    home = homes[i % homes.Count] + 1.2f * (i / homes.Count) * ((i / homes.Count) % 2 == 0 ? 1f : -1f);
+                }
                 var n = new Npc { Def = def, Given = given, HomeX = home, X = home, Dir = Random.Range(0, 2) == 0 ? -1 : 1, Ai1 = Random.Range(60, 300) };
                 n.FeetY = Ground(n.X) ?? benchY;
+                if (placed)
+                {
+                    if (onChair)
+                    {
+                        n.FeetY = seatY;
+                        HomeY[def.Internal] = seatY;   // an older save may hold the chair's base
+                    }
+                    else if (GridGround(n.X, putY + 0.5f, out float putGround)) n.FeetY = putGround;
+                }
                 n.LastX = n.X;
+                // Where it lives says how far it may wander: a chair the player set it on keeps it close,
+                // everything else (the town's own bench) is one spot for everybody and roams the street.
+                n.Range = World.Stations.ChairNear(new Vector2(n.HomeX, n.FeetY + 0.3f), out _, out _) ? ChairRange : RoamRange;
                 npcs.Add(n);
                 i++;
                 if (Arrived.Add(def.Internal) && !fresh)
@@ -411,6 +505,30 @@ namespace TerraKnight.Town
                 }
             }
             if (fresh) foreach (var n in npcs) Arrived.Add(n.Def.Internal);
+        }
+
+        /// <summary>
+        /// Homes alternate left and right of the bench, past the pylon beside it: room for all forty.
+        /// </summary>
+        static List<float> StreetHomes()
+        {
+            var homes = new List<float>();
+            for (int k = 0; homes.Count < 40 && k < 120; k++)
+            {
+                float off = 5f + 3f * (k / 2);
+                float x = benchX + (k % 2 == 0 ? -off : off + 2f);
+                if (x > streetMin + 1f && x < streetMax - 1f) homes.Add(x);
+            }
+            // No run read round the bench at all (the player has built the street over, or the survey was
+            // beaten by something of theirs): still give them their spots either side of it, a little
+            // closer in, so the townsfolk who move in by themselves have somewhere to arrive.
+            if (homes.Count == 0)
+                for (int k = 0; homes.Count < 40 && k < 120; k++)
+                {
+                    float off = 2.5f + 2f * (k / 2);
+                    homes.Add(benchX + (k % 2 == 0 ? -off : off + 2f));
+                }
+            return homes;
         }
 
         /// <summary>
@@ -463,10 +581,26 @@ namespace TerraKnight.Town
         /// <summary>The ground's height under a point of the street (null where there's none near).</summary>
         static float? Ground(float x)
         {
+            // The cell grid first: it holds the terrain the player walks on — the street as it ships, and
+            // the player's own blocks the moment they are laid — and nothing that merely stands on the
+            // street. A ray from above hits the first of those props to come along: at the very bench the
+            // town is laid out from it finds the bench's own collider (0.7 tiles above the street, which
+            // is why the street used to read as 0 tiles long and every townsperson stood still), and a
+            // floor built over the street would hide the street under it.
+            var cell = CellGrid.WorldToCell(new Vector2(x, benchY));
+            for (int i = 0; i < 80; i++)
+            {
+                int cy = cell.y - i;
+                if (TerraWorld.RegionAt(cell.x, cy) == null || (!TerraWorld.IsSolid(cell.x, cy) && !TerraWorld.IsPlatform(cell.x, cy))) continue;
+                return CellGrid.CellCenter(cell.x, cy).y + CellGrid.CellSize / 2f;
+            }
+            // Then the scene's own floor where the grid holds none (kept as it is), the exact contact the
+            // ray gives — from above the bench down past it, ignoring what stands higher than the street.
             int n = Physics2D.Raycast(new Vector2(x, benchY + 3f), Vector2.down, terrain, hits, 10f);
             for (int i = 0; i < n; i++)
             {
                 if (hits[i].collider.usedByEffector) continue;
+                if (hits[i].point.y > benchY + 0.4f) continue;
                 return hits[i].point.y;
             }
             return null;
@@ -509,7 +643,9 @@ namespace TerraKnight.Town
                 }
                 if (talkDir == 0)
                 {
-                    if (Mathf.Abs(n.X - n.HomeX) > 6f) n.Dir = n.X < n.HomeX ? 1 : -1;
+                    // Its own range, not a fixed six: everyone Dirtmouth's bench is home to shares that
+                    // one spot, so they have to be free to walk the street apart (Safe's own limit).
+                    if (Mathf.Abs(n.X - n.HomeX) > n.Range) n.Dir = n.X < n.HomeX ? 1 : -1;
                     else if (n.LocalAi3 <= 0f && Random.Range(0, 80) == 0)
                     {
                         n.Dir = -n.Dir;
@@ -522,7 +658,7 @@ namespace TerraKnight.Town
                 if (Mathf.Abs(n.Vx) > 1f) n.Vx *= 0.8f;
                 else n.Vx = Mathf.Clamp(n.Vx + 0.07f * n.Dir, -1f, 1f);
                 n.Ai1--;
-                if (Mathf.Abs(n.X - n.HomeX) > 8f && (n.X - n.HomeX) * n.Dir > 0f) n.Ai1 -= 5f;
+                if (Mathf.Abs(n.X - n.HomeX) > n.Range && (n.X - n.HomeX) * n.Dir > 0f) n.Ai1 -= 5f;
                 if (n.Ai1 <= 0f)
                 {
                     n.Ai0 = 0;
@@ -538,7 +674,13 @@ namespace TerraKnight.Town
                 }
             }
             n.X += n.Vx * Px;
-            var g = Ground(n.X);
+            // NPC.AI_007's closeDoor: two tiles past the door it opened, it shuts it (given up four tiles on).
+            if (n.ShutDoor)
+            {
+                float away = Mathf.Abs(n.X - n.DoorAt.x);
+                if (away > 2f * CellGrid.CellSize && (World.Stations.NpcShutDoor(n.DoorAt) || away > 4f * CellGrid.CellSize)) n.ShutDoor = false;
+            }
+            var g = StandingFloor(n.X, n.FeetY, n);
             if (g.HasValue) n.FeetY = Mathf.MoveTowards(n.FeetY, g.Value, 0.25f);
             // Stuck for half a second while walking: turn round.
             if (n.Ai0 == 1 && Mathf.Abs(n.X - n.LastX) < 0.001f && ++n.StuckTicks >= 30)
@@ -571,11 +713,29 @@ namespace TerraKnight.Town
         static bool Safe(Npc n, int dir)
         {
             float nx = n.X + dir * 0.6f;
-            if (nx < streetMin + 0.5f || nx > streetMax - 0.5f || Mathf.Abs(nx - n.HomeX) > 6.5f) return false;
-            var g = Ground(nx);
+            // The street's own run; when the survey read none (the player has built the street over), the
+            // range round home instead of a run of zero length, which would pin everyone in place.
+            float lo = streetMin + 0.5f, hi = streetMax - 0.5f;
+            // One with a house walks its room's floor (TownNpcsHousing).
+            if (HouseSpan(n, out float roomLo, out float roomHi)) { lo = roomLo; hi = roomHi; }
+            else if (hi - lo < 4f) { lo = n.HomeX - n.Range; hi = n.HomeX + n.Range; }
+            if (nx < lo || nx > hi || Mathf.Abs(nx - n.HomeX) > n.Range) return false;
+            var g = StandingFloor(nx, n.FeetY, n);
             if (g == null || Mathf.Abs(g.Value - n.FeetY) > 0.7f) return false;
             int c = Physics2D.Raycast(new Vector2(n.X, n.FeetY + 0.6f), new Vector2(dir, 0f), terrain, hits, 0.7f);
-            for (int i = 0; i < c; i++) if (!hits[i].collider.usedByEffector) return false;
+            for (int i = 0; i < c; i++)
+            {
+                if (hits[i].collider.usedByEffector) continue;
+                // NPC.AI_007: a shut door at head height ahead is opened the way it walks (else the other way) and walked through.
+                if (World.Stations.NpcOpenDoor(hits[i].collider, dir, out var doorway))
+                {
+                    n.ShutDoor = true;
+                    n.DoorAt = doorway;
+                    n.Ai1 += 80f;
+                    continue;
+                }
+                return false;
+            }
             return true;
         }
 
@@ -585,6 +745,8 @@ namespace TerraKnight.Town
         public static void Draw()
         {
             var fx = FxBatch.Instance;
+            // The housing menu's banners over each home (Main.DrawNPCHousesInWorld, TownNpcsHousing).
+            DrawHouseBanners(fx);
             if (fx == null || npcs.Count == 0) return;
             Vector2? mouse = TerraMod.MouseWorld(out var m) ? m : (Vector2?)null;
             foreach (var n in npcs)
@@ -593,7 +755,7 @@ namespace TerraKnight.Town
                 var t = Terraria.TerrariaAssets.Texture(tex);
                 int frames = FramesOf(n.Def), fh = t.height / frames;
                 var feet = TerraParticles.ToPx(new Vector2(n.X, n.FeetY)) + new Vector2(0f, AddHeight(n.Def.Id));
-                fx.Draw(FxBatch.Frame(tex, 0, fh * n.Frame, t.width, fh, t.width / 2f, fh - 4f), feet, new Color(L, L, L, 1f), 0f, 1f, flipX: n.Dir == 1);
+                fx.Draw(FxBatch.Frame(tex, 0, fh * n.Frame, t.width, fh, t.width / 2f, fh - 4f), feet, new Color(L, L, L, 1f), 0f, 1f, flipX: Facing(n) == 1, town: true);
                 // The chat bubble over a townsperson the cursor is on and the player can reach.
                 var hero = HeroController.SilentInstance;
                 if (mouse.HasValue && hero != null && n != talk && FrameRect(n).Contains(mouse.Value) && InReach(n, hero))
@@ -612,8 +774,63 @@ namespace TerraKnight.Town
         {
             var h = hovered;
             hovered = null;
-            return h?.Name;
+            // A house banner under the cursor says whose it is (Lang.GetNPCHouseBannerText).
+            string banner = BannerHoverText();
+            return h?.Name ?? banner;
         }
+
+        /// <summary>
+        /// The way a townsperson is drawn facing: where it walks or looks, and on its chair's seat at rest the way the chair
+        /// faces (PlayerSittingHelper's direction for an NPC sat on tile 15: the chair's frameX).
+        /// </summary>
+        static int Facing(Npc n)
+        {
+            if (n != talk && n.Ai0 == 0 && World.Stations.ChairNear(new Vector2(n.X, n.FeetY), out float chairX, out float seat, out int chairFace)
+                && Mathf.Abs(seat - n.FeetY) < 0.05f && Mathf.Abs(chairX - n.X) < 0.3f) return chairFace;
+            return n.Dir;
+        }
+
+        /// <summary>Dev: the way a townsperson is drawn facing now (0: not there).</summary>
+        public static int DevFacing(string internalName)
+        {
+            var n = npcs.Find(v => v.Def.Internal == internalName);
+            return n == null ? 0 : Facing(n);
+        }
+
+        /// <summary>A townsperson's body (Terraria's 18x40 town NPC box at its feet) is in a box: Collision.EmptyTile's look at the NPCs (a door doesn't shut on one).</summary>
+        public static bool AnyIn(Rect box)
+        {
+            foreach (var n in npcs)
+                if (new Rect(n.X - 9f * Px, n.FeetY, 18f * Px, 40f * Px).Overlaps(box)) return true;
+            return false;
+        }
+
+        /// <summary>Dev: the doorway of the door a townsperson means to shut (none: null).</summary>
+        public static Vector2? DevDoorOf(string internalName)
+        {
+            var n = npcs.Find(v => v.Def.Internal == internalName);
+            return n != null && n.ShutDoor ? n.DoorAt : (Vector2?)null;
+        }
+
+        /// <summary>Dev: a townsperson on the street set walking from x that way (dir) for ten seconds, or (dir 0) standing there as long; false when it isn't there.</summary>
+        public static bool DevSend(string internalName, float x, int dir)
+        {
+            var n = npcs.Find(v => v.Def.Internal == internalName);
+            if (n == null) return false;
+            n.X = n.LastX = x;
+            var g = StandingFloor(x, n.FeetY + 0.3f, n);
+            if (g.HasValue) n.FeetY = g.Value;
+            if (dir != 0) n.Dir = dir;
+            n.Ai0 = dir != 0 ? 1 : 0;
+            n.Ai1 = 600f;
+            n.LocalAi3 = 600f;
+            n.Vx = 0f;
+            n.StuckTicks = 0f;
+            return true;
+        }
+
+        /// <summary>Dev: Dirtmouth's bench (x, y) the street is read from, and the street's run either side.</summary>
+        public static Vector4 DevStreet => new Vector4(benchX, benchY, streetMin, streetMax);
 
         static Rect FrameRect(Npc n)
         {
@@ -638,6 +855,8 @@ namespace TerraKnight.Town
         {
             var hero = HeroController.SilentInstance;
             if (hero == null) return false;
+            // A right click on a house banner with the housing menu up turns that townsperson out (WorldGen.kickOut).
+            if (BannerRightClick(mouseWorld)) return true;
             // Several under the cursor (a crowded street): the one nearest it.
             Npc pick = null;
             foreach (var c in npcs)
@@ -761,34 +980,62 @@ namespace TerraKnight.Town
             {
                 ShopItems[i] = default;
                 BuyBack[i] = false;
+                ShopLock[i] = 0;
             }
             if (sound) TerraMod.Instance?.PlaySound("Menu_Close", 0.7f);
         }
 
-        /// <summary>Chest.SetupShop: the lines whose stage and moon phase hold, in order.</summary>
+        /// <summary>
+        /// Chest.SetupShop: the lines whose stage and moon phase hold, in order; then, in the slots left, what the seller
+        /// brings at the later stages, from the nearest stage on, locked (<see cref="ShopLock"/>): every stock to look at
+        /// from the start, with the stage it opens at.
+        /// </summary>
         static void SetupShop(NpcDef def)
         {
             for (int i = 0; i < ShopItems.Length; i++)
             {
                 ShopItems[i] = default;
                 BuyBack[i] = false;
+                ShopLock[i] = 0;
             }
             int stage = Shop.UnlockedStage(), phase = MoonPhase, k = 0;
+            var later = new List<(ItemType Type, int Stage)>();
+            var shown = new HashSet<ItemType>();
             foreach (var s in ProgressionBalance.ShopStock(def.Internal,def.Items))
             {
-                if (s.Stage > stage) continue;
-                if (!ProgressionBalance.Unlocked(s.Type)) continue;
                 if (s.Phases != null && System.Array.IndexOf(s.Phases, phase) < 0) continue;
+                if (s.Stage > stage || !ProgressionBalance.Unlocked(s.Type))
+                {
+                    int at = Mathf.Max(s.Stage, ItemDb.Get(s.Type).Stage, stage + 1);
+                    if (at <= World.Areas.MaxLevel) later.Add((s.Type, at));
+                    continue;
+                }
                 if (k >= ShopItems.Length) break;
                 ShopItems[k++] = ItemStack.Of(s.Type);
+                shown.Add(s.Type);
+            }
+            // The later stages' looks only in the four rows, or in the fifth when the stock on sale already reaches it.
+            int lookLimit = k > ShopBaseSlots ? ShopItems.Length : ShopBaseSlots;
+            // Stable by stage: the next stage's first, each stage's in the stock's order.
+            var order = new Dictionary<ItemType, int>();
+            for (int i = 0; i < later.Count; i++) if (!order.ContainsKey(later[i].Type)) order[later[i].Type] = i;
+            later.Sort((a, b) => a.Stage != b.Stage ? a.Stage.CompareTo(b.Stage) : order[a.Type].CompareTo(order[b.Type]));
+            foreach (var l in later)
+            {
+                if (k >= lookLimit) break;
+                if (!shown.Add(l.Type)) continue;
+                ShopLock[k] = l.Stage;
+                ShopItems[k++] = ItemStack.Of(l.Type);
             }
         }
+
+        public static bool Locked(int slot) => slot >= 0 && slot < ShopLock.Length && ShopLock[slot] > 0 && !ShopItems[slot].IsEmpty;
 
         /// <summary>Buys from a shop slot onto the cursor (as many as count allows); false when nothing was bought.</summary>
         public static bool Buy(int slot, int count, Inventory inv)
         {
             if (!ShopOpen || slot < 0 || slot >= ShopItems.Length || ShopItems[slot].IsEmpty) return false;
-            if (!ProgressionBalance.Unlocked(ShopItems[slot].Type)) return false;
+            if (Locked(slot) || !ProgressionBalance.Unlocked(ShopItems[slot].Type)) return false;
             int bought = 0;
             for (int k = 0; k < count; k++)
             {
@@ -858,15 +1105,20 @@ namespace TerraKnight.Town
         public static void Sell(ref ItemStack stack)
         {
             // Money isn't sold.
-            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.Permanent || stack.Type == ItemType.Geo) return;
+            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.Permanent || Currencies.Is(stack.Type)) return;
             long money = Shop.SellValue(stack);
             Shop.Earn(money);
             int at = -1;
-            for (int i = 0; i < 39; i++)
+            int last = ShopItems.Length - 1;
+            for (int i = 0; i < last; i++)
                 if (BuyBack[i] && ShopItems[i].Type == stack.Type && ShopItems[i].Prefix == stack.Prefix && ShopItems[i].Forge == stack.Forge) { at = i; break; }
             if (at < 0)
-                for (int i = 0; i < 39; i++)
+                for (int i = 0; i < last; i++)
                     if (ShopItems[i].IsEmpty) { at = i; break; }
+            // A full shop: the last of the later stages' looks gives up its slot.
+            if (at < 0)
+                for (int i = last - 1; i >= 0; i--)
+                    if (Locked(i)) { ShopItems[i] = default; ShopLock[i] = 0; at = i; break; }
             if (at >= 0)
             {
                 if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge };

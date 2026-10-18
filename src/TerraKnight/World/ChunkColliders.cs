@@ -72,8 +72,11 @@ namespace TerraKnight.World
             foreach (var c in chunks)
             {
                 if (c == null || c.PlatformGo == null || c.PlatformGo.activeSelf) continue;
-                if (Time.time >= c.SuspendedUntil) c.PlatformGo.SetActive(true);
-                else anySuspended = true;
+                if (Time.time < c.SuspendedUntil) { anySuspended = true; continue; }
+                c.PlatformGo.SetActive(true);
+                // A rebuild while it was off (any cell of the chunk changed meanwhile) left the composite
+                // empty: an inactive one generates no geometry, and the platforms would stay drawn but ghostly.
+                c.Platforms.GenerateGeometry();
             }
         }
 

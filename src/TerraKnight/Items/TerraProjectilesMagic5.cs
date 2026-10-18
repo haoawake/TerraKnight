@@ -25,7 +25,7 @@ namespace TerraKnight.Items
             };
             specs[ProjKind.CrimsonCloud] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_244", W = 54, H = 28, Time = 18000 + 60, Penetrate = -1, TileCollide = false, CanDamage = p => false,
+                Ai = Ai.Custom, Texture = "Projectile_244", W = 54, H = 28, Time = CloudLife + 60, Penetrate = -1, TileCollide = false, CanDamage = p => false,
                 Update = (t, p) => t.StepNimbusCloud(p), Draw = (t, fx, p, px) => DrawNimbus(fx, p, px, "Projectile_244"), OnKill = (t, p) => { },
             };
             specs[ProjKind.BloodRain] = new Spec

@@ -85,7 +85,7 @@ namespace TerraKnight.World
         readonly ChunkColliders colliders;
         readonly CellVisuals visuals;
         readonly FillMeshes fill;
-        readonly Dictionary<int, byte> edits;
+        readonly Dictionary<int, ushort> edits;
         HandPlacedArt handPlaced;
 
         public int BoxCount => colliders.BoxCount;
@@ -105,6 +105,7 @@ namespace TerraKnight.World
             fill = new FillMeshes(grid, root, grid.IsCut);
             Holes = new HoleCutter(root, art);
             visuals = new CellVisuals(grid, root, Holes, fill) { DugWallSheet = Areas.WallFor(sceneName) };
+            fill.Skip = visuals.FillElsewhere;
             grid.CellChanged += OnCellChanged;
             grid.WallChanged += OnWallChanged;
             if (buildNow) Build();
@@ -115,6 +116,9 @@ namespace TerraKnight.World
 
         /// <summary>Dev: shows another wall behind this region's dug cells (Areas.WallFor gives the scene's own).</summary>
         public void DevSetDugWall(string sheet) => visuals.SetDugWall(sheet);
+
+        /// <summary>The holes' style switched (World.HoleShapes): every hole drawn again on the next tick.</summary>
+        public void RestyleHoles() => visuals.MarkAll();
 
         void Build()
         {
@@ -137,6 +141,7 @@ namespace TerraKnight.World
                 WorldEdits.Unpack(e.Value, out var kind, out bool wasDug, out int slope);
                 grid.Restore(e.Key, kind, wasDug, slope);
             }
+            RegionalTorches.Replay(grid, sceneName);
         }
 
         /// <summary>Ties the art of the scene's hand-placed terrain to its cells (call while those colliders are still on).</summary>
@@ -184,6 +189,7 @@ namespace TerraKnight.World
         {
             int i = y * Grid.Width + x;
             edits[i] = WorldEdits.Pack(Grid.GetAt(i), Grid.IsDugAt(i), Grid.SlopeAt(i));
+            RegionalTorches.Record(SceneName, Grid, i);
             colliders.MarkDirty(x, y);
             visuals.MarkDirty(x, y);
             handPlaced?.CellChanged(x, y);

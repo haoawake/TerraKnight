@@ -267,7 +267,8 @@ namespace TerraKnight.World
         /// A place beside the enemy for an extra copy (in the parent's space), so the pair doesn't
         /// stand in one spot: along the surface it stands or clings on (a wall crawler's wall),
         /// with room for its body there and, for one on a floor, a floor at the same height under
-        /// it. None where there isn't one (a moss creeper pressed into a corner): never in a wall.
+        /// it; for a tiktik or a crawlid the game's ground within the reach it feels for it
+        /// (<see cref="Crawls"/>). None where there isn't one (a moss creeper pressed into a corner): never in a wall.
         /// </summary>
         static bool Beside(Slot origin, int k, out Vector3 local)
         {
@@ -281,11 +282,13 @@ namespace TerraKnight.World
             float? floor0 = upright ? FloorBelow(pos + offset, size.y * 0.5f + 1.5f) : null;
             float step = Mathf.Max(1.2f, size.x + 0.3f) * ((k + 1) / 2);
             float first = k % 2 == 1 ? 1f : -1f;
+            bool crawls = Crawls(origin, out var toGround, out float reach);
             foreach (float side in new[] { first, -first })
                 foreach (float scale in new[] { 1f, 1.6f, 0.6f })
                 {
                     var p = pos + along * (side * step * scale);
                     if (!Fits(p, size, offset, upright, floor0, down)) continue;
+                    if (crawls && !Felt(p + offset, toGround, reach)) continue;
                     Vector3 world = p - pos;
                     local = origin.HadParent && origin.Parent != null ? origin.Parent.InverseTransformVector(world) : world;
                     return true;
@@ -307,6 +310,30 @@ namespace TerraKnight.World
             // Clinging to a wall or ceiling: that surface goes on under it.
             return upright || TerraWorld.IsSolidAt(c + down * (size.y * 0.5f + 0.3f));
         }
+
+        /// <summary>
+        /// A surface crawler: a tiktik (the game's Climber) or a crawlid (its Crawler). They walk by
+        /// the game's own colliders, not by the grid: a tiktik sticks to the ground it finds within
+        /// two units under it as it starts and turns at once where it feels none within one, so one
+        /// set off its ledge turns round and round the empty air. The way to its ground (its own down,
+        /// flipped for one hung upside down by its scale) and how far it reaches for it.
+        /// </summary>
+        static bool Crawls(Slot s, out Vector2 toGround, out float reach)
+        {
+            toGround = Vector2.zero;
+            reach = 0f;
+            if (s.Template == null) return false;
+            bool climber = s.Template.GetComponent<Climber>() != null;
+            if (!climber && s.Template.GetComponent<Crawler>() == null) return false;
+            Upright(s, out _, out var down);
+            float sy = Mathf.Sign(s.LocalScale.y) * (s.HadParent && s.Parent != null ? Mathf.Sign(s.Parent.lossyScale.y) : 1f);
+            toGround = down * sy;
+            reach = climber ? 2f : s.Size.y * 0.5f + 1f;
+            return true;
+        }
+
+        /// <summary>The game's ground (its terrain layer, the blocks put in it too) within reach of a body's centre that way.</summary>
+        static bool Felt(Vector2 body, Vector2 toGround, float reach) => Physics2D.Raycast(body, toGround, reach, 1 << ChunkColliders.TerrainLayer).collider != null;
 
         static bool BoxSolid(Vector2 centre, Vector2 size)
         {
@@ -614,6 +641,7 @@ namespace TerraKnight.World
             if (!Built(s, home, true)) return true;
             bool upright = Upright(s, out var along, out var down);
             bool walker = upright && GroundBelow(home + s.Offset, s.Size.y * 0.5f + 1.5f);
+            bool crawls = Crawls(s, out var toGround, out float reach);
             const float c = CellGrid.CellSize;
             float best = float.MaxValue;
             for (int j = -4; j <= 20; j++)
@@ -630,6 +658,7 @@ namespace TerraKnight.World
                     var body = p + s.Offset;
                     if (walker && !FloorUnder(body, s.Size.y * 0.5f + 1.5f)) continue;
                     if (!upright && !TerraWorld.IsSolidAt(body + down * (s.Size.y * 0.5f + 0.3f))) continue;
+                    if (crawls && !Felt(body, toGround, reach)) continue;
                     best = d;
                     shift = off;
                 }

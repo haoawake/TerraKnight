@@ -75,11 +75,15 @@ namespace TerraKnight.Items
             var mouse = Mouse.current;
             bool raw = DevHold ?? (!TerraMod.DevNoRealMouse && Player.TerraKeys.Held(Player.TerraKeys.Action.UseItem));
             if (!raw) suppressed = false;
-            // A press that lands on the inventory or the hotbar is the interface's.
-            if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem) && Player.TerraKeys.IsMouse(Player.TerraKeys.Get(Player.TerraKeys.Action.UseItem)) && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver)) suppressed = true;
+            // A press that lands on the inventory or the hotbar is the interface's; one with a townsperson's head or the
+            // housing query on the cursor puts it down (TownNpcs.PlaceClick), it doesn't swing.
+            if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem) && Player.TerraKeys.IsMouse(Player.TerraKeys.Get(Player.TerraKeys.Action.UseItem))
+                && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver || Town.TownNpcs.Querying || Town.TownNpcs.Placing)) suppressed = true;
             // The inventory open, it swings as Terraria's held item does; an item on the cursor is the one used instead.
             if (raw && !suppressed && Holding() && GameHooks.PlayerHasControl() && !(InventoryGui.Open && !mod.Inventory.Mouse.IsEmpty) && (bool)canAttack.Invoke(hero, null))
             {
+                // The Terraria settings' aim at the mouse: facing it, the game's way nearest it (NailAim).
+                NailAim.BeforeAttack(hero);
                 doAttack.Invoke(hero, null);
                 // A reforged nail's speed (its use time against the plain one's) scales the wait before the next slash.
                 var held = mod.Inventory.Current.Def;

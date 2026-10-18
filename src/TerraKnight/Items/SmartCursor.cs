@@ -55,7 +55,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < starts.Count && i < ends.Count; i++)
             {
                 var c = HitLine(starts[i], ends[i], sx, sy);
-                if (!Blocks(c.x, c.y) || !TerraWorld.CanDig(c.x, c.y)) continue;
+                if (!Blocks(c.x, c.y) || !(TerraWorld.CanDig(c.x, c.y) || DugHazards.IsSpikeCell(c))) continue;
                 float d = Vector2.Distance(new Vector2(c.x * Tile + 8f, c.y * Tile + 8f), new Vector2(cx, cy));
                 if (d < best)
                 {
@@ -67,11 +67,11 @@ namespace TerraKnight.Items
             return found && inReach(target);
         }
 
-        /// <summary>What stops a smart-cursor ray: a solid block (platforms don't).</summary>
+        /// <summary>What stops a mining ray: solids and uncut spike/thorn cells; platforms don't.</summary>
         static bool Blocks(int x, int y)
         {
             var k = TerraWorld.Get(x, y);
-            return k != CellKind.Empty && k != CellKind.Platform;
+            return (k != CellKind.Empty && k != CellKind.Platform) || DugHazards.IsSpikeCell(new Vector2Int(x, y));
         }
 
         /// <summary>

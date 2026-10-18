@@ -22,6 +22,10 @@ namespace TerraKnight
                 Plugin.Log.LogInfo($"[AutoTest] 地图分层 {what}：{detail} {(pass ? "通过" : "不通过")}");
             }
             UI.WorldMap.DevStyle(1);
+            foreach (string interior in new[] { "Cliffs_03", "Cliffs_04", "Cliffs_05", "Cliffs_06", "Room_Colosseum_01", "Room_Colosseum_02", "Room_Colosseum_Spectate", "Room_GG_Shortcut", "Room_Mask_Maker", "Room_Wyrm" })
+                Check("侧面入口的室内分层/" + interior, UI.WorldMap.DevDeep(interior), "内层");
+            foreach (string exterior in new[] { "Cliffs_01", "Cliffs_02", "Town", "Tutorial_01" })
+                Check("室外分层/" + exterior, !UI.WorldMap.DevDeep(exterior), "外层");
             yield return GoTo("Town", "left1");
             PlayerData.instance.isInvincible = true;
             var hero = HeroController.instance;
@@ -78,11 +82,11 @@ namespace TerraKnight
             // Mato's hut sits over the Howling Cliffs on the map.
             yield return GoTo("Room_nailmaster", "left1");
             yield return new WaitForSeconds(1.5f);
-            Check("骨钉大师小屋不叠在呼啸悬崖上", UI.WorldMap.DevViewDeep && !UI.WorldMap.DevShown("Cliffs_02"), $"深={UI.WorldMap.DevViewDeep}，悬崖 {UI.WorldMap.DevShown("Cliffs_02")}");
+            Check("骨钉大师小屋与露天悬崖不同层", UI.WorldMap.DevViewDeep && !UI.WorldMap.DevDeepAt("Cliffs_02",new Vector2(56f,41f)), $"深={UI.WorldMap.DevViewDeep}");
             yield return GoTo("Cliffs_02", "door1");
             yield return new WaitForSeconds(1.5f);
-            Check("回到悬崖画浅层", !UI.WorldMap.DevViewDeep && UI.WorldMap.DevShown("Cliffs_02") && !UI.WorldMap.DevShown("Room_nailmaster"),
-                $"悬崖 {UI.WorldMap.DevShown("Cliffs_02")}，小屋 {UI.WorldMap.DevShown("Room_nailmaster")}");
+            Check("回到小屋外洞道画内层", UI.WorldMap.DevViewDeep && UI.WorldMap.DevDeepAt("Cliffs_02",new Vector2(122.5f,5f)),
+                $"洞道内层 {UI.WorldMap.DevViewDeep}");
             HeadReport("Cliffs_02");
             NeighbourReport();
             Plugin.Log.LogInfo($"[AutoTest] 地图分层 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");

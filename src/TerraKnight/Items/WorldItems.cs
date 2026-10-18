@@ -8,7 +8,8 @@ namespace TerraKnight.Items
     /// Items lying in the world (Terraria 1.4.5's WorldItem): thrown from the inventory, spilled
     /// when the cursor's stack doesn't fit back, dropped by mined blocks. Each sits in a 16×16 px
     /// box, falls at 0.1 px/tick² up to 7, loses 5% of its sideways speed a tick, lands on blocks
-    /// and on platforms (from above) without bouncing, and merges with the same item nearby. The
+    /// and on platforms (from above) without bouncing, and merges with the same item nearby; in a boss room's own ground
+    /// (the game's colliders kept) it lands on those instead, and one let out inside the ground rises out of it. The
     /// player pulls items in from 42 px around his hitbox (0.45 px/tick² on each axis, at most
     /// 4 px/tick, straight through walls) and picks up what touches him; a thrown item can't be
     /// taken back for 100 ticks.
@@ -284,15 +285,25 @@ namespace TerraKnight.Items
                     }
                     if (it.NetId != null && Net.WorldSync.Guest)
                     {
-                        if (!it.ClaimPending && inv.Room(it.Stack.Type) > 0)
+                        if (!it.ClaimPending && (Containers.Sells(inv, it.Stack.Type) || inv.Room(it.Stack.Type) > 0))
                         {
                             it.ClaimPending = true;
-                            Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
+                            Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Containers.Sells(inv, it.Stack.Type) ? it.Stack.Count : Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
                         }
                         continue;
                     }
                     int count = it.Stack.Count;
-                    int left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, count);
+                    // The Auto-Sell Bag carried: an item on its list is sold as it is picked up (Containers).
+                    if (Containers.AutoSell(inv, it.Stack, body.center))
+                    {
+                        it.Stack = default;
+                        continue;
+                    }
+                    // The Banner Case or the Potion Box carried: its banners or potions go into it first (Containers).
+                    int left = Containers.Store(inv, it.Stack, count);
+                    if (left > 0) left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, left);
+                    // The Void Bag carried: what the bag had no room for goes into the Void Vault (Player.GetItem's void bag).
+                    if (left > 0 && World.Chests.VoidBagCarried(inv)) left = World.Chests.StoreInVoid(inv, it.Stack, left);
                     if (left == count) continue;
                     UI.PopupText.Show(it.Stack.Def, count - left, body.center);
                     TerraMod.Instance.PlaySound("Grab", 0.7f);
@@ -301,7 +312,8 @@ namespace TerraKnight.Items
                     continue;
                 }
                 if (star && !starsCome) continue;
-                if (!box.Intersects(heart ? heartReach : star ? starReach : reach) || (!heart && !star && inv.Room(it.Stack.Type) <= 0)) continue;
+                if (!box.Intersects(heart ? heartReach : star ? starReach : reach) || (!heart && !star && inv.Room(it.Stack.Type) <= 0
+                    && !Containers.Sells(inv, it.Stack.Type) && !(World.Chests.VoidBagCarried(inv) && World.Chests.VoidHasRoom(inv, it.Stack.Type)) && !Containers.HasRoom(inv, it.Stack.Type))) continue;
                 if (it.NetId != null && Net.WorldSync.Guest)
                 {
                     // The authority may have no local hero near this item. Request the same
@@ -309,7 +321,7 @@ namespace TerraKnight.Items
                     if (!it.ClaimPending)
                     {
                         it.ClaimPending = true;
-                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
+                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Containers.Sells(inv, it.Stack.Type) ? it.Stack.Count : Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
                     }
                     continue;
                 }
@@ -396,6 +408,24 @@ namespace TerraKnight.Items
         static void Move(Item it)
         {
             var c = it.World;
+            // A boss room's own ground (World.BossRooms): the game's colliders are the floor there, not the grid.
+            if (TerraWorld.OwnGroundAt(c))
+            {
+                MoveOnOwnGround(it, c);
+                return;
+            }
+            // Sunk in a block (let out inside the ground, or the ground laid over it): up to the first open cell, six
+            // units at most, as an item never rests inside a tile.
+            if (TerraWorld.IsSolidAt(c))
+                for (int up = 1; up <= 12; up++)
+                {
+                    var cell = CellGrid.WorldToCell(c) + new Vector2Int(0, up);
+                    if (TerraWorld.IsSolid(cell.x, cell.y)) continue;
+                    c.y = cell.y * CellGrid.CellSize + Half;
+                    it.Vel.y = 0f;
+                    DevUnstuck++;
+                    break;
+                }
             float dx = it.Vel.x * Px;
             if (dx != 0f)
             {
@@ -437,6 +467,66 @@ namespace TerraKnight.Items
                 c.y = ny;
             }
             it.Local = c - (Vector2)it.Region.Root.position;
+        }
+
+        public static int DevUnstuck;
+
+        static readonly RaycastHit2D[] groundHits = new RaycastHit2D[8];
+        static readonly Collider2D[] groundOverlap = new Collider2D[4];
+        static ContactFilter2D groundFilter = new ContactFilter2D { useTriggers = false, useLayerMask = true, layerMask = 1 << ChunkColliders.TerrainLayer };
+        static readonly Vector2 boxSize = new Vector2(2f * Half - 0.02f, 2f * Half - 0.02f);
+        /// <summary>The box's core: only this inside the ground is sunk. The whole box resting on a collider touches it within the physics' skin, and lifting that lifted it off its floor each time it settled.</summary>
+        static readonly Vector2 coreSize = boxSize * 0.5f;
+        /// <summary>The gap a cast leaves before what it meets: past the colliders' skin (Physics2D.defaultContactOffset 0.01).</summary>
+        const float CastGap = 0.015f;
+
+        /// <summary>
+        /// The same box's moves on the game's own ground (a boss room's): cast against its colliders, stopping flush; one
+        /// born inside them (a boss's loot let out in the floor) first rises to the first free spot over it and is set down
+        /// on what it rose out of.
+        /// </summary>
+        static void MoveOnOwnGround(Item it, Vector2 c)
+        {
+            if (Physics2D.OverlapBox(c, coreSize, 0f, groundFilter, groundOverlap) > 0)
+                for (float up = 0.1f; up <= 6f; up += 0.1f)
+                {
+                    if (Physics2D.OverlapBox(c + Vector2.up * up, boxSize, 0f, groundFilter, groundOverlap) > 0) continue;
+                    c.y += up;
+                    c.y -= GroundCast(c, Vector2.down, up, false);
+                    it.Vel.y = 0f;
+                    DevUnstuck++;
+                    break;
+                }
+            float dx = it.Vel.x * Px;
+            if (dx != 0f)
+            {
+                float d = GroundCast(c, dx > 0f ? Vector2.right : Vector2.left, Mathf.Abs(dx), false);
+                if (d < Mathf.Abs(dx)) it.Vel.x = 0f;
+                c.x += Mathf.Sign(dx) * d;
+            }
+            float dy = it.Vel.y * Px;
+            if (dy != 0f)
+            {
+                float d = GroundCast(c, dy > 0f ? Vector2.up : Vector2.down, Mathf.Abs(dy), dy > 0f);
+                if (d < Mathf.Abs(dy)) it.Vel.y = 0f;
+                c.y += Mathf.Sign(dy) * d;
+            }
+            it.Local = c - (Vector2)it.Region.Root.position;
+        }
+
+        /// <summary>How far the box goes along a direction before the ground stops it (one-way platforms not on the way up).</summary>
+        static float GroundCast(Vector2 c, Vector2 dir, float dist, bool up)
+        {
+            int n = Physics2D.BoxCast(c, boxSize, 0f, dir, groundFilter, groundHits, dist);
+            float free = dist;
+            for (int i = 0; i < n; i++)
+            {
+                var h = groundHits[i];
+                if (h.collider == null || h.distance <= 0f) continue;
+                if (up && h.collider.GetComponent<PlatformEffector2D>() != null) continue;
+                free = Mathf.Min(free, Mathf.Max(0f, h.distance - CastGap));
+            }
+            return free;
         }
 
         static bool SolidColumn(int gx, float y0, float y1)

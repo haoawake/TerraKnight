@@ -42,7 +42,7 @@ namespace TerraKnight.Items
             };
             specs[ProjKind.Skull] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_837", W = 26, H = 26, Time = 480, Penetrate = 3, TileCollide = false, AlphaStart = 1f,
+                Ai = Ai.Custom, Texture = "Projectile_837", W = 26, H = 26, Time = 180, MaxTravel = 640, Penetrate = 3, LocalCooldown = 20, TileCollide = false, AlphaStart = 1f,
                 Update = (t, p) => t.StepSkull(p), Draw = (t, fx, p, px) => DrawSkull(fx, p, px), OnKill = (t, p) => KillSkull(p),
             };
             specs[ProjKind.SpiritFlame] = new Spec
@@ -214,8 +214,9 @@ namespace TerraKnight.Items
         // ------------------------------------------------------------------ 837: Book of Skulls (AI_001)
 
         /// <summary>
-        /// P:57759: it fades in fast; it locks on to the nearest enemy in sight within 300 px
-        /// (Manhattan), keeping it while within 1000, and bends towards it at its starting speed,
+        /// P:57759, bounded for progression: acquire within 240 px (Manhattan),
+        /// release beyond 480 px; expire after 3 seconds or 640 px of total travel.
+        /// It bends towards the target at its starting speed,
         /// (v·19 + aim)/20; through blocks, but a block takes 33 updates off its life; flames
         /// behind it; three frames, turned to its flight.
         /// </summary>
@@ -241,8 +242,8 @@ namespace TerraKnight.Items
             if (p.LocalAi0 == 0f) p.LocalAi0 = v.magnitude;
             if (p.Target == null)
             {
-                float best = 300f;
-                foreach (var hm in EnemiesNear(c, 300f))
+                float best = 240f;
+                foreach (var hm in EnemiesNear(c, 240f))
                 {
                     var e = EnemyCenterPx(hm);
                     float m = Mathf.Abs(c.x - e.x) + Mathf.Abs(c.y - e.y);
@@ -259,11 +260,12 @@ namespace TerraKnight.Items
                 else
                 {
                     var e = EnemyCenterPx(p.Target);
-                    if (Mathf.Abs(c.x - e.x) + Mathf.Abs(c.y - e.y) < 1000f)
+                    if (Mathf.Abs(c.x - e.x) + Mathf.Abs(c.y - e.y) < 480f)
                     {
                         var want = (e - c).normalized * p.LocalAi0;
                         v = (v * 19f + want) / 20f;
                     }
+                    else p.Target=null;
                 }
             }
             p.TRot = p.Dir < 0f ? Mathf.Atan2(-v.y, -v.x) : Mathf.Atan2(v.y, v.x);

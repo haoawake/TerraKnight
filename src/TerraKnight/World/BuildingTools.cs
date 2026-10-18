@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TerraKnight.Items;
 using UnityEngine;
 
@@ -26,6 +27,143 @@ namespace TerraKnight.World
                 || TerraWorld.HasWall(x - 1, y) || TerraWorld.HasWall(x + 1, y)
                 || TerraWorld.HasWall(x, y - 1) || TerraWorld.HasWall(x, y + 1);
         }
+
+        // ------------------------------------------------------------------ the smart cursor's walls and torches
+
+        static readonly HashSet<Vector2Int> shutDoors = new HashSet<Vector2Int>(), doorHinges = new HashSet<Vector2Int>();
+        static readonly List<Vector2Int> torches = new List<Vector2Int>();
+
+        /// <summary>
+        /// IsHoveringOverAnInteractableTileThatBlocksSmartCursor: the mouse on a tile TileID.Sets.DisableSmartCursor holds,
+        /// within reach (a torch, a door, a bed, a chest, a bank...), and the smart cursor picks nothing: the item goes
+        /// where the mouse is.
+        /// </summary>
+        public static bool SmartCursorOffAt(Vector2Int mouseCell, RectInt reach)
+        {
+            if (!reach.Contains(mouseCell)) return false;
+            return TerraWorld.Get(mouseCell.x, mouseCell.y) == CellKind.Torch || Stations.DisablesSmartCursorAt(mouseCell) || Chests.Covers(mouseCell);
+        }
+
+        /// <summary>
+        /// SmartCursorHelper.Step_Walls: of the cells in reach that take a wall (CanPlaceWall: none there yet, a block or
+        /// a wall beside it) and hold no solid block (a platform, a torch or nothing; not an open door's hinge column,
+        /// WorldGen.IsOpenDoorAnchorFrame), the ones the player can see (Collision.CanHitWithCheck from his middle with
+        /// DelegateMethods.NotDoorStand), the one nearest the mouse. Sight is what keeps the walls in the room the player
+        /// stands in: the house's own blocks hide everything outside, and so do its doors, shut or open (an open door's
+        /// hinge column stops the line as its frame).
+        /// </summary>
+        public static bool SmartWall(Bounds hitbox, RectInt reach, Vector2 mouse, out Vector2Int target)
+        {
+            target = default;
+            Stations.DoorCells(shutDoors, doorHinges);
+            var from = CellGrid.WorldToCell(hitbox.center);
+            float best = float.MaxValue;
+            bool found = false;
+            for (int x = reach.xMin; x < reach.xMax; x++)
+                for (int y = reach.yMin; y < reach.yMax; y++)
+                {
+                    var c = new Vector2Int(x, y);
+                    if (!CanPlaceWall(c) || Cells.Blocks(TerraWorld.Get(x, y)) || shutDoors.Contains(c) || doorHinges.Contains(c)) continue;
+                    float d = ((Vector2)CellGrid.CellCenter(x, y) - mouse).sqrMagnitude;
+                    if (d >= best || !InSight(from, c)) continue;
+                    best = d;
+                    target = c;
+                    found = true;
+                }
+            return found;
+        }
+
+        /// <summary>Dev: Step_Walls' look from a cell: whether the player there would see that cell.</summary>
+        public static bool DevInSight(Vector2Int from, Vector2Int to)
+        {
+            Stations.DoorCells(shutDoors, doorHinges);
+            return InSight(from, to);
+        }
+
+        /// <summary>
+        /// Collision.CanHitWithCheck on the grid, cell by cell from a to b (the axis further to go first): a solid block
+        /// or a shut door in the way stops it, and so does a step sideways between two full blocks above and below it (or
+        /// up between two either side); the check (NotDoorStand) stops it on an open door's hinge column.
+        /// </summary>
+        static bool InSight(Vector2Int a, Vector2Int b)
+        {
+            int x = a.x, y = a.y;
+            for (int n = 0; n < 1024; n++)
+            {
+                if (x == b.x && y == b.y) return true;
+                if (Mathf.Abs(x - b.x) > Mathf.Abs(y - b.y))
+                {
+                    x += x < b.x ? 1 : -1;
+                    if (FullBlock(x, y - 1) && FullBlock(x, y + 1)) return false;
+                }
+                else
+                {
+                    y += y < b.y ? 1 : -1;
+                    if (FullBlock(x - 1, y) && FullBlock(x + 1, y)) return false;
+                }
+                if (BlocksSight(x, y) || doorHinges.Contains(new Vector2Int(x, y))) return false;
+            }
+            return false;
+        }
+
+        /// <summary>Main.tileSolid and not Main.tileSolidTop: a block (platforms aren't), or a shut door.</summary>
+        static bool BlocksSight(int x, int y) => Cells.Blocks(TerraWorld.Get(x, y)) || shutDoors.Contains(new Vector2Int(x, y));
+
+        /// <summary>That, with no slope and not a half brick.</summary>
+        static bool FullBlock(int x, int y) => (Cells.Blocks(TerraWorld.Get(x, y)) && TerraWorld.GetSlope(x, y) == 0) || shutDoors.Contains(new Vector2Int(x, y));
+
+        /// <summary>
+        /// SmartCursorHelper.Step_Torch: of the cells in reach a torch can go in (TerraMod.CanPlace) and that hold it by
+        /// IsValidSpotForTorch's rules (a wall behind; a solid block beside it whose slope doesn't fall away from it; a
+        /// flat, whole block under it), those with no torch within eight tiles either way, the one nearest the mouse. A
+        /// torch held with the smart cursor on lights a place that is dark, a torch's width apart from the last.
+        /// </summary>
+        public static bool SmartTorch(RectInt reach, Vector2 mouse, out Vector2Int target)
+        {
+            target = default;
+            const int Apart = 8;
+            torches.Clear();
+            for (int x = reach.xMin - Apart; x < reach.xMax + Apart; x++)
+                for (int y = reach.yMin - Apart; y < reach.yMax + Apart; y++)
+                    if (TerraWorld.Get(x, y) == CellKind.Torch) torches.Add(new Vector2Int(x, y));
+            float best = float.MaxValue;
+            bool found = false;
+            for (int x = reach.xMin; x < reach.xMax; x++)
+                for (int y = reach.yMin; y < reach.yMax; y++)
+                {
+                    float d = ((Vector2)CellGrid.CellCenter(x, y) - mouse).sqrMagnitude;
+                    if (d >= best) continue;
+                    var c = new Vector2Int(x, y);
+                    if (!TerraMod.CanPlace(c, CellKind.Torch) || !TorchSpot(x, y)) continue;
+                    bool near = false;
+                    foreach (var t in torches)
+                        if (Mathf.Abs(t.x - x) <= Apart && Mathf.Abs(t.y - y) <= Apart) { near = true; break; }
+                    if (near) continue;
+                    best = d;
+                    target = c;
+                    found = true;
+                }
+            return found;
+        }
+
+        /// <summary>
+        /// IsValidSpotForTorch: a wall behind; else a solid block on the left not of slope 1 or 3, or one on the right not
+        /// of slope 2 or 4 (a half brick counts as unsloped there); else a flat, whole solid block under it.
+        /// </summary>
+        static bool TorchSpot(int x, int y)
+        {
+            if (TerraWorld.HasWall(x, y)) return true;
+            int Slope(int sx, int sy)
+            {
+                int s = TerraWorld.GetSlope(sx, sy);
+                return s == CellGrid.HalfBrick ? 0 : s;
+            }
+            if (TerraWorld.IsSolid(x - 1, y) && (Slope(x - 1, y) == 0 || Slope(x - 1, y) % 2 != 1)) return true;
+            if (TerraWorld.IsSolid(x + 1, y) && (Slope(x + 1, y) == 0 || Slope(x + 1, y) % 2 != 0)) return true;
+            return TerraWorld.IsSolid(x, y - 1) && TerraWorld.GetSlope(x, y - 1) == 0;
+        }
+
+        // ------------------------------------------------------------------ hammers
 
         public static bool CanHammerWall(Vector2Int cell)
         {

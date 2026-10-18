@@ -69,7 +69,8 @@ namespace TerraKnight.Items
         }
 
         /// <summary>The share of the stand-in's life a body carries now: its phase's measure times its share (1 for a boss not in phases).</summary>
-        public static float Factor(EnemyStats.Info info) => Of(info, out int phase, out float share) ? Mult(phase) * share : 1f;
+        public static float Factor(EnemyStats.Info info) => info?.Record == "Oblobble" ? 0.5f
+            : Of(info, out int phase, out float share) ? Mult(phase) * share : 1f;
 
         /// <summary>Its phase's measure (1 for a boss not in phases): how much its stagger is paced by.</summary>
         public static float PhaseFactor(EnemyStats.Info info) => Of(info, out int phase, out _) ? Mult(phase) : 1f;

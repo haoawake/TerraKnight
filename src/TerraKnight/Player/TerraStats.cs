@@ -90,13 +90,15 @@ namespace TerraKnight.Player
             if (Mana > ManaMax) Mana = ManaMax;
         }
 
+        /// <summary>Dev: hits leave at least one life (a test's fight against a boss that one-shots its starter gear).</summary>
+        public static bool DevImmortal;
+
         /// <summary>Applies a hit worth this many masks at the given Terraria damage per mask; returns the damage taken.</summary>
         public int TakeMasks(int masks, int perMask, float share = 1f)
         {
-            // Terraria: damage minus half the defense, never below 1, then the endurance's share off. The
-            // difficulty's share is taken of what is left after defense (perMask is Master's).
-            int damage = Items.ArmorEffects.ModifyHurt(Endure(Mathf.Max(1, Mathf.RoundToInt((masks * perMask - Defense / 2) * share))));
-            Life = Mathf.Max(0, Life - Shielded(damage));
+            // Enemy scaling precedes defense. Keep fractional defense through endurance, as Player.Hurt does.
+            int damage = Mitigate(Mathf.Max(1, Mathf.RoundToInt(masks * perMask * share)));
+            Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
             return damage;
@@ -105,8 +107,8 @@ namespace TerraKnight.Player
         /// <summary>Damage that isn't measured in masks (falls, explosions); defense applies as usual.</summary>
         public int TakeDirect(int raw)
         {
-            int damage = Items.ArmorEffects.ModifyHurt(Endure(Mathf.Max(1, raw - Defense / 2)));
-            Life = Mathf.Max(0, Life - Shielded(damage));
+            int damage = Mitigate(raw);
+            Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
             return damage;
@@ -121,7 +123,8 @@ namespace TerraKnight.Player
         }
 
         /// <summary>Player.Hurt: (int)((1 - endurance) * damage), at least 1.</summary>
-        int Endure(int damage) => Mathf.Max(1, (int)((1f - Endurance) * damage));
+        int Mitigate(float raw) => Items.ArmorEffects.ModifyHurt(Mathf.Max(1,
+            (int)((double)(1f - Endurance) * System.Math.Max(1d, raw - Defense * (double)World.GameDifficulty.DefenseEffectiveness))));
 
         float nebulaMana;
 

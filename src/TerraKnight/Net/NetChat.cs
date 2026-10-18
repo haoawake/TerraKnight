@@ -5,12 +5,13 @@ using UnityEngine.InputSystem;
 namespace TerraKnight.Net
 {
     /// <summary>
-    /// Terraria's chat in a LAN game (Main.DrawPlayerChat, RemadeChatMonitor): Enter opens the line
+    /// Terraria's chat (Main.DrawPlayerChat, RemadeChatMonitor), alone or in a LAN game: Enter opens the line
     /// at the bottom left, Enter sends it, Escape lets it go; the last ten messages stand over it,
     /// each for ten seconds (all ten while typing). A player's message reads "&lt;name&gt; text" and
     /// shows over their head for a while (Player.chatOverhead); the server's lines (joins, PvP,
-    /// deaths, commands) come in their own colours. While typing, the keys type: nothing else in
-    /// the game hears them.
+    /// deaths, commands) come in their own colours. Alone, a line and the commands (/me, /roll,
+    /// /playing, /death, /p, /help) are answered here as Terraria's single player answers them. While
+    /// typing, the keys type: nothing else in the game hears them.
     /// </summary>
     internal static class NetChat
     {
@@ -82,15 +83,24 @@ namespace TerraKnight.Net
         static string ownOverhead;
         static float ownOverheadUntil;
 
-        /// <summary>Each frame of play: Enter opens the line.</summary>
+        /// <summary>Alone: the deaths this play (Player.numberOfDeathsPVE, for /death).</summary>
+        static int deaths;
+        static bool wasDead;
+
+        /// <summary>Each frame of play: Enter opens the line (not while the game holds the Knight: a talk, a cutscene).</summary>
         public static void Tick(bool playing)
         {
-            if (!NetSession.Active || !playing)
+            var hero = HeroController.SilentInstance;
+            bool dead = hero != null && hero.cState.dead;
+            if (dead && !wasDead) deaths++;
+            wasDead = dead;
+            if (!playing)
             {
                 if (Typing) Close();
                 return;
             }
             if (Typing) return;
+            if (!NetSession.Active && !GameHooks.PlayerHasControl() && !Items.InventoryGui.Open) return;
             var kb = Keyboard.current;
             if (kb == null || Time.frameCount - closedFrame <= 1) return;
             if (Player.TerraKeys.Pressed(Player.TerraKeys.Action.Chat) || (Player.TerraKeys.Get(Player.TerraKeys.Action.Chat) == Key.Enter && kb.numpadEnterKey.wasPressedThisFrame)) Open();
@@ -111,22 +121,77 @@ namespace TerraKnight.Net
             unfocus = true;
         }
 
+        /// <summary>Dev: the line let go, as Escape does.</summary>
+        public static void DevClose() { if (Typing) Close(); }
+
         static bool unfocus;
 
         /// <summary>Sends a line (or a command) as if typed.</summary>
         public static void Say(string text)
         {
             text = (text ?? "").Trim();
-            if (text.Length == 0 || !NetSession.Active) return;
+            if (text.Length == 0) return;
+            if (text.Length > MaxLength) text = text.Substring(0, MaxLength);
+            if (!NetSession.Active)
+            {
+                SayAlone(text);
+                return;
+            }
             var p = new Packet(Msg.Chat);
             p.W.Write(text.Length > MaxLength ? text.Substring(0, MaxLength) : text);
             NetSession.Send(p.Done());
         }
 
+        static readonly Color32 Yellow = new Color32(255, 240, 20, 255), EmoteOrange = new Color32(200, 100, 0, 255);
+
+        /// <summary>Alone (Terraria's single player, ChatCommandProcessor): the line is the player's own, the commands answered here.</summary>
+        static void SayAlone(string text)
+        {
+            string name = string.IsNullOrEmpty(NetSettings.PlayerName) ? "Knight" : NetSettings.PlayerName;
+            if (text.StartsWith("/"))
+            {
+                string word = text.Split(' ')[0].ToLowerInvariant(), rest = text.Length > word.Length ? text.Substring(word.Length).Trim() : "";
+                switch (word)
+                {
+                    case "/me":
+                        Add("*" + name + " " + rest, EmoteOrange);
+                        return;
+                    case "/roll":
+                        // LegacyMultiplayer.9: "rolls a"
+                        Add(NetText.Mod("*{0} {1} {2}", name, NetText.Key("LegacyMultiplayer.9"), Random.Range(1, 101)).ToString(), Yellow);
+                        return;
+                    case "/playing":
+                    case "/players":
+                        // LegacyMultiplayer.7: "Current players:"
+                        Add(NetText.Mod("{0} {1}", NetText.Key("LegacyMultiplayer.7"), name).ToString(), Yellow);
+                        return;
+                    case "/death":
+                    case "/alldeath":
+                        Add(NetText.Key("LegacyMultiplayer.23", name, deaths).ToString(), Yellow);
+                        return;
+                    case "/pvpdeath":
+                    case "/allpvpdeath":
+                        Add(NetText.Key("LegacyMultiplayer.24", name, 0).ToString(), Yellow);
+                        return;
+                    case "/p":
+                        // LegacyMultiplayer.10: "You are not in a party!"
+                        Add(NetText.Key("LegacyMultiplayer.10").ToString(), Yellow);
+                        return;
+                    case "/help":
+                        foreach (var k in new[] { "Party", "Emote", "Playing", "Roll", "Death", "PVPDeath", "AllDeath", "AllPVPDeath", "Help" })
+                            Add(NetText.Key("ChatCommandDescription." + k).ToString(), Yellow);
+                        return;
+                }
+            }
+            Add($"<{name}> {text}", Color.white);
+            ownOverhead = text;
+            ownOverheadUntil = Time.unscaledTime + Mathf.Clamp(text.Length / 7f, 4f, 10f);
+        }
+
         public static void Draw()
         {
             // Alone the game's own lines (a townsperson come, Main.NewText) show all the same, while fresh.
-            if (NetSession.State == NetSession.Phase.Off && (lines.Count == 0 || Time.unscaledTime - lines[lines.Count - 1].Time > LineSeconds)) return;
+            if (!Typing && NetSession.State == NetSession.Phase.Off && (lines.Count == 0 || Time.unscaledTime - lines[lines.Count - 1].Time > LineSeconds)) return;
             var e = Event.current;
             float ui = UI.GameView.Scale;
             var view = UI.GameView.Rect;

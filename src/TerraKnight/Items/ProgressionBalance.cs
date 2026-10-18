@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -47,26 +47,8 @@ namespace TerraKnight.Items
             }
         }
         internal static bool FinalClear => Bestiary.KillsOf("FinalBoss") > 0;
-        internal static int ExtraGate(ItemType t)
-        {
-            if (t == ItemType.LunarOre || t == ItemType.LunarBar) return 2;
-            switch (t)
-            {
-                case ItemType.AdamantiteOre: case ItemType.AdamantiteBar: case ItemType.TitaniumOre: case ItemType.TitaniumBar:
-                case ItemType.ChlorophyteOre: case ItemType.ChlorophyteBar: return 1;
-                default:
-                    var d=ItemDb.Get(t);
-                    if(d.Set==ArmorSet.Titanium || d.Set==ArmorSet.Chlorophyte || d.Set==ArmorSet.Shroomite) return 1;
-                    if(d.Set==ArmorSet.Solar || d.Set==ArmorSet.Vortex || d.Set==ArmorSet.Nebula || d.Set==ArmorSet.Stardust) return 2;
-                    switch(t)
-                    {
-                        case ItemType.Meowmere: case ItemType.StarWrath: case ItemType.Terrarian: case ItemType.SDMG:
-                        case ItemType.LastPrism: case ItemType.LunarFlareBook: case ItemType.StardustDragonStaff:
-                        case ItemType.StardustCellStaff: case ItemType.LunarPortalStaff: case ItemType.RainbowCrystalStaff: return 2;
-                    }
-                    return 0;
-            }
-        }
+        // Complete recipe families unlock together with their ingredients.
+        internal static int ExtraGate(ItemType t) => 0;
         internal static bool Unlocked(ItemType t, int stage, bool entry, bool final)
         {
             var d = ItemDb.Get(t);
@@ -91,6 +73,13 @@ namespace TerraKnight.Items
             foreach (var p in ArmorPaths) foreach (var t in p.Items)
                 if (!armourTiers.TryGetValue(t, out int old) || p.Stage < old) armourTiers[t] = p.Stage;
             foreach (var p in armourTiers) tiers[p.Key] = p.Value;
+            foreach(var pair in BossSignatures)
+                if(FormalBoss(pair.Key)) {
+                    int target=BossRewards[pair.Key].Stage;
+                    if(!tiers.TryGetValue(pair.Value,out int old) || target<old)tiers[pair.Value]=target;
+                }
+            foreach(var t in EarlyExplorationItems)tiers[t]=0;
+            tiers[ItemType.HoneyComb]=1;
             tiers[ItemType.PygmyNecklace] = 0;
             tiers[ItemType.IronBow] = tiers[ItemType.FlintlockPistol] = 0;
             tiers[ItemType.FeralClaws] = tiers[ItemType.PoisonBarb] = tiers[ItemType.BandofStarpower] = 0;
@@ -100,6 +89,9 @@ namespace TerraKnight.Items
             tiers[ItemType.Hellforge] = 2;
             tiers[ItemType.MythrilAnvil] = tiers[ItemType.OrichalcumAnvil] = 3;
             tiers[ItemType.AdamantiteForge] = 4;
+            tiers[ItemType.Autohammer] = 5;
+            tiers[ItemType.ZapinatorGray] = 1;
+            tiers[ItemType.LunarCraftingStation] = 5;
             tiers[ItemType.TinkerersWorkshop] = 1;
             tiers[ItemType.WoodenBoomerang] = 0;
             tiers[ItemType.TitanGlove] = 2;
@@ -118,6 +110,7 @@ namespace TerraKnight.Items
             {
                 if (d == null || d.Type == ItemType.None) continue;
                 if (tiers.TryGetValue(d.Type, out int stage)) d.Stage = stage;
+                if(ShopOnlyWeapons.Contains(d.Type))d.Source=ItemSource.Shop;
                 if (d.Stage < 0 || d.Stage > 5) continue;
                 // Stage changes acquisition only. Preserve all piece stats and descriptions.
             }

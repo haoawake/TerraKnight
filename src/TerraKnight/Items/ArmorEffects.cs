@@ -327,7 +327,7 @@ namespace TerraKnight.Items
                 else solarCounter = 180;
             }
             SetLevelBuff(SolarShield, SolarShields);
-            float dir = TerraMod.Instance.UseDirection < 0f ? -1f : 1f;
+            float dir = SolarFacing(hero);
             for (int l = 0; l < SolarShields; l++)
             {
                 SolarPos[l] += solarVel[l];
@@ -339,6 +339,12 @@ namespace TerraKnight.Items
                 SolarDashing = false;
                 consumedFlare = false;
             }
+        }
+
+        internal static int SolarFacing(HeroController hero)
+        {
+            var mod = TerraMod.Instance;
+            return mod != null && mod.IsUsingItem ? (mod.UseDirection < 0f ? -1 : 1) : (hero.cState.facingRight ? 1 : -1);
         }
 
         /// <summary>ConsumeSolarFlare (Pl:57416-57436): a shield spent.</summary>

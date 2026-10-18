@@ -66,6 +66,16 @@ namespace TerraKnight.World
             return sr;
         }
 
+        /// <summary>Placed facing right (tile 617's PlaceRight alternate, frameY 72 on): the sculpture and its echoes drawn turned (SpriteEffects.FlipHorizontally).</summary>
+        public void Face(bool right)
+        {
+            if (sculpture == null || sculpture.flipX == right) return;
+            sculpture.flipX = right;
+            foreach (var e in echoes) if (e != null) e.flipX = right;
+        }
+
+        public bool Facing => sculpture != null && sculpture.flipX;
+
         public void SetVisible(bool show)
         {
             visible = show;

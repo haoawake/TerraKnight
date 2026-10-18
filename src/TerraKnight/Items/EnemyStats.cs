@@ -49,7 +49,7 @@ namespace TerraKnight.Items
                 ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossPhases.Factor(this) / (float)Mathf.Max(1, MaxHp)
                 : Boss ? World.Areas.HealthScale * World.Areas.LevelHealth(Level, true) : World.Areas.LifeScale(Level)) * Players;
             /// <summary>Terraria defense: a boss's stand-in's (<see cref="BossDefense"/>), else the level's.</summary>
-            public int Defense => Ref != null ? BossDefense(Ref, Tune) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
+            public int Defense => Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }
@@ -109,6 +109,15 @@ namespace TerraKnight.Items
                     Name = DisplayName(hm.gameObject.name),
                 };
                 string record = UI.EnemyHover.RecordOf(hm);
+                // The exposed head has no independent journal entry. It must use the same
+                // boss/phase budget as its armour, not the area's ordinary-enemy life scale.
+                HealthManager owner = null;
+                if (hm.gameObject.name.Split('(')[0].Trim() == "Head" && hm.transform.parent != null)
+                {
+                    var parent = hm.transform.parent.GetComponentInParent<HealthManager>();
+                    if (parent != null && UI.EnemyHover.RecordOf(parent) == "FalseKnight")
+                    { owner = parent; record = "FalseKnight"; }
+                }
                 info.Record = record;
                 string kind = EnemyDrops.KindOf(record);
                 info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp);
@@ -119,6 +128,7 @@ namespace TerraKnight.Items
                     info.Scene = hm.gameObject.scene.name;
                     info.Ref = BossStats.Of(record, EnemyDrops.VariantLevel(info.Scene));
                     info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
+                    if (owner != null) info.GodhomeTier = Of(owner).GodhomeTier;
                 }
                 var touch = hm.GetComponentInChildren<DamageHero>(true);
                 info.Harmful = kind != "passive" && touch != null && touch.damageDealt > 0;
@@ -182,7 +192,7 @@ namespace TerraKnight.Items
         static readonly HashSet<string> pushedElites = new HashSet<string> { "GorgeousHusk" };
 
         /// <summary>How much harder than the area's common enemies this one hits.</summary>
-        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage * (info.Ref != null ? info.Tune.Damage : 1f) : info.Elite ? World.Areas.EliteDamage : 1f;
+        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage * (info.Ref != null ? info.Tune.Damage * GodhomeBalance.Damage(info.Scene) : 1f) : info.Elite ? World.Areas.EliteDamage : 1f;
 
         /// <summary>Godhome gives its bosses (and only them) health per difficulty.</summary>
         static bool HasBossScale(HealthManager hm)
@@ -231,7 +241,8 @@ namespace TerraKnight.Items
         /// A boss's Terraria defense: half its stand-in's (the user's: Hallownest's bosses are met with less than the gear
         /// Terraria has by then, and fast weapons were left at a point a hit), its own measure only ever lowering it.
         /// </summary>
-        public static int BossDefense(BossStats.Ref r, BossBalance.Tune t) => Mathf.RoundToInt(BossStats.DefenseOf(r) * Mathf.Min(1f, t.Defense) * 0.5f);
+        public static int BossDefense(BossStats.Ref r, BossBalance.Tune t,string scene=null) =>
+            GodhomeBalance.Defense(Mathf.RoundToInt(BossStats.DefenseOf(r) * Mathf.Min(1f, t.Defense) * 0.5f),scene);
 
         /// <summary>
         /// NPC.GetStatScalingFactors for the players in the game now (the local one and every remote one), on Expert and

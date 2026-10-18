@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.Terraria;
 using UnityEngine;
@@ -6,15 +6,18 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// The pets out (Items/Pets.cs): a vanity pet and a light pet, moved and drawn beside the minions but no minions
-    /// themselves (no slots, no hits). Walkers go by AI_026's walking and flying (P:59086-63340), orbs and fairies by
-    /// aiStyle 11 (P:24651), flyers after the player, the held ones at the player's side, worms winding after the player.
+    /// The pets out (Items/Pets.cs): a vanity pet and a light pet (the Resplendent Dessert's two slime royals as one), moved
+    /// and drawn beside the minions but no minions themselves (no slots, no hits), each by its own Terraria AI: AI_026's
+    /// walkers and flyers (MinionsPets026.cs), aiStyles 11, 67, 90, 124, 144 and 174 (MinionsPetsAI.cs); Hallownest's own
+    /// pets held by the player's side.
     /// </summary>
     internal sealed partial class Minions
     {
         static readonly KindSpec petSpec = new KindSpec { Minion = false, Tracked = false };
         /// <summary>The pet out of each kind (vanity, light) and the item it came from.</summary>
         readonly M[] pets = new M[2];
+        /// <summary>A second pet of that kind: the Resplendent Dessert's Slime Princess beside the Slime Prince (Pl:11284-11288).</summary>
+        readonly M[] petTwins = new M[2];
         readonly ItemType[] petItems = { ItemType.None, ItemType.None };
 
         /// <summary>Dev: the pet out of a kind, its projectile id and where it is (px), or null.</summary>
@@ -23,6 +26,15 @@ namespace TerraKnight.Items
             var m = Instance?.pets[light ? 1 : 0];
             if (m == null) return null;
             return (m.Pet.Id, m.Center, m.Frame, m.Ai0 == 1f);
+        }
+
+        /// <summary>Dev: a pet's motion (the first of its kind, or the second with `twin`): velocity (px a tick, y down), ai[0], rotation, sprite direction.</summary>
+        public static (int id, Vector2 vel, float ai0, float rot, int spriteDir, Vector2 at)? DevPetMotion(bool light, bool twin = false)
+        {
+            var i = Instance;
+            var m = i == null ? null : twin ? i.petTwins[light ? 1 : 0] : i.pets[light ? 1 : 0];
+            if (m == null) return null;
+            return (m.Pet.Id, m.Vel, m.Ai0, m.Rot, m.SpriteDir, m.Center);
         }
 
         void PetsTick()
@@ -35,24 +47,50 @@ namespace TerraKnight.Items
                 {
                     petItems[k] = t;
                     if (pets[k] != null) wormTrails.Remove(pets[k]);
+                    if (petTwins[k] != null) wormTrails.Remove(petTwins[k]);
                     pets[k] = null;
+                    petTwins[k] = null;
                     var def = Pets.Of(t);
-                    if (def != null) pets[k] = NewPet(def.Projs[Random.Range(0, def.Projs.Length)]);
+                    // Player.BuffHandle_SpawnPetIfNeeded (Pl:12321-12345): the Resplendent Dessert calls both royals, the
+                    // Prince 10 px behind the player and the Princess 10 ahead; the Fairy Bell one of its three fairies.
+                    if (def != null && def.Buff == 341 && def.Projs.Length > 1)
+                    {
+                        pets[k] = NewPet(def.Projs[0], -10f * pDir);
+                        petTwins[k] = NewPet(def.Projs[1], 10f * pDir);
+                    }
+                    else if (def != null) pets[k] = NewPet(def.Projs[Random.Range(0, def.Projs.Length)], 0f);
                 }
-                var m = pets[k];
-                if (m == null) continue;
-                StepPet(m);
+                if (pets[k] != null) StepPet(pets[k]);
+                if (petTwins[k] != null) StepPet(petTwins[k]);
+            }
+            ChesterTick();
+        }
+
+        /// <summary>The Terraria AI a pet's projectile runs (its SetDefaults aiStyle); -1 for Hallownest's own.</summary>
+        static int PetAi(PetProj p)
+        {
+            switch (p.Id)
+            {
+                case 0: return -1;
+                case 18: case 72: case 86: case 87: return 11;
+                case 500: case 653: case 1018: case 1056: case 1090: return 67;
+                case 492: return 90;
+                case 650: case 882: case 888: case 895: case 896: case 898: case 957: return 124;
+                case 701: case 702: case 703: case 764: case 1050: return 144;
+                case 883: case 887: case 893: return 174;
+                default: return 26;
             }
         }
 
-        M NewPet(PetProj p)
+        /// <summary>Projectile.NewProjectile at the player's middle (dx across), still, frame 0; blocks stop it unless its SetDefaults says not.</summary>
+        M NewPet(PetProj p, float dx)
         {
             var m = new M { S = petSpec, Pet = p, W = p.W, H = p.H, Scale = p.Scale, Alpha = p.Alpha / 255f, TimeLeft = int.MaxValue };
-            m.Center = pCenter;
+            m.Center = pCenter + new Vector2(dx, 0f);
             m.OldPos = m.Pos;
-            m.TileCollide = p.Move == PetMove.Ground;
-            m.Frame = p.Move == PetMove.Ground ? p.Idle : p.FlyStart;
-            if (p.Move == PetMove.Worm) m.Vel = new Vector2(0f, -4f);
+            int ai = PetAi(p);
+            m.TileCollide = ai == 26 || ai == 67 || ai == 90;
+            m.Frame = 0;
             return m;
         }
 
@@ -65,18 +103,24 @@ namespace TerraKnight.Items
                 m.GfxOffY = m.GfxOffY > 0f ? Mathf.Max(0f, m.GfxOffY - k) : Mathf.Min(0f, m.GfxOffY + k);
                 m.GfxOffY = Mathf.Clamp(m.GfxOffY, -16f, 16f);
             }
-            switch (p.Move)
+            // P:17588-17596: a pet drops through platforms while the player stands 12 px lower (AI_067's set their own).
+            m.FallThrough = pBox.yMax - 12f > m.Bottom;
+            switch (PetAi(p))
             {
-                case PetMove.Ground: PetWalker(m, p); break;
-                case PetMove.Orb: PetOrb(m, p); break;
-                case PetMove.Flyer: PetFlyer(m, p); break;
-                case PetMove.Anchor: PetHeld(m, p); break;
-                case PetMove.Worm: PetWorm(m, p); break;
+                case 26: Pet026(m, p); break;
+                case 11: PetAI011(m, p); break;
+                case 67: PetAI067(m, p); break;
+                case 90: PetAI090(m, p); break;
+                case 124: PetAI124(m, p); break;
+                case 144: PetAI144(m, p); break;
+                case 174: PetAI174(m, p); break;
+                default: PetHeld(m, p); break;
             }
             m.OldPos = m.Pos;
             if (m.TileCollide) TileCollision(m, m.FallThrough);
             else m.Pos += m.Vel;
-            if (p.Light.r + p.Light.g + p.Light.b > 0.01f) FxBatch.Instance?.Light(m.Center, p.Light, 5f);
+            // Projectile.light / Lighting.AddLight each tick (the Cursed Sapling's only while it flies: FlyFrames026).
+            if (p.Id != 324 && p.Light.r + p.Light.g + p.Light.b > 0.01f) FxBatch.Instance?.Light(m.Center, p.Light, 5f);
         }
 
         /// <summary>The sprite turned by a move across: most pets' art faces left, flipped going right.</summary>
@@ -107,105 +151,6 @@ namespace TerraKnight.Items
                 : p.FlyTurn == PetTurn.Along && m.Vel.sqrMagnitude > 0.01f ? Mathf.Atan2(m.Vel.y, m.Vel.x) + (m.SpriteDir == 1 ? Mathf.PI : 0f) : 0f;
         }
 
-        /// <summary>
-        /// AI_026 for a pet: walking after the player until it is more than `StopDist` across (P:59993-59999), hopping a wall
-        /// ahead (P:63196-63260); taking to the air when over FlyAt away or 300 px up or down (P:61256-61316), flying back
-        /// through anything (P:61386-61615) and landing within LandAt once the player stands (P:61490-61497); past 2000 px it
-        /// is at the player.
-        /// </summary>
-        void PetWalker(M m, PetProj p)
-        {
-            var d = pCenter - m.Center;
-            float dist = d.magnitude;
-            if (dist > 2000f)
-            {
-                m.Center = pCenter;
-                m.Vel = Vector2.zero;
-            }
-            else if (m.Ai0 == 0f && (dist > p.FlyAt || Mathf.Abs(d.y) > 300f))
-            {
-                if (d.y > 0f && m.Vel.y < 0f) m.Vel.y = 0f;
-                if (d.y < 0f && m.Vel.y > 0f) m.Vel.y = 0f;
-                m.Ai0 = 1f;
-            }
-            if (m.Ai0 == 1f)
-            {
-                m.TileCollide = false;
-                if (dist < p.LandAt && ownerGrounded && m.Bottom <= pBox.yMax && !SolidBox(m.Box))
-                {
-                    m.Ai0 = 0f;
-                    if (m.Vel.y < -6f) m.Vel.y = -6f;
-                }
-                float speed = p.FlySpeed, accel = p.FlyAccel;
-                Vector2 want = dist < 60f ? m.Vel : d * (speed / Mathf.Max(dist, 0.001f));
-                m.Vel.x = Steer(m.Vel.x, want.x, accel);
-                m.Vel.y = Steer(m.Vel.y, want.y, accel);
-                FacePet(m, p, m.Vel.x, 0.5f);
-                PetFlyFrames(m, p);
-                return;
-            }
-
-            m.TileCollide = true;
-            m.Rot = 0f;
-            bool left = pCenter.x < m.Center.x - p.StopDist, right = pCenter.x > m.Center.x + p.StopDist;
-            float acc = p.WalkAccel, max = p.WalkSpeed;
-            if (left) m.Vel.x -= m.Vel.x > -3.5f ? acc : acc * 0.25f;
-            else if (right) m.Vel.x += m.Vel.x < 3.5f ? acc : acc * 0.25f;
-            else
-            {
-                m.Vel.x *= 0.9f;
-                if (Mathf.Abs(m.Vel.x) <= acc) m.Vel.x = 0f;
-            }
-            bool wallAhead = false;
-            int wi = TileOf(m.Center.x) + (left ? -1 : 0) + (right ? 1 : 0) + (int)m.Vel.x, wj = TileOf(m.Center.y);
-            if (left || right) wallAhead = SolidTile(wi, wj);
-            // Lower than the player's feet by 8 px: it drops through platforms after him.
-            m.FallThrough = pBox.yMax - 8f > m.Bottom;
-            StepUp(m, m.FallThrough);
-            if (m.Vel.y == 0f && wallAhead)
-            {
-                int fi = TileOf(m.Center.x), fj = TileOf(m.Bottom);
-                if (SolidTile(fi, fj) || PlatformTile(fi, fj)) m.Vel.y = WallJump(wi, wj);
-            }
-            m.Vel.x = Mathf.Clamp(m.Vel.x, -max, max);
-            if (m.Vel.x < 0f) m.Dir = -1;
-            if (m.Vel.x > 0f) m.Dir = 1;
-            if (m.Vel.x > acc && right) m.Dir = 1;
-            if (m.Vel.x < -acc && left) m.Dir = -1;
-            m.SpriteDir = p.FacesRight ? m.Dir : -m.Dir;
-            bool still = m.Pos.x - m.OldPos.x == 0f;
-            if (m.Vel.y == 0f)
-            {
-                if (still || Mathf.Abs(m.Vel.x) <= 0.8f)
-                {
-                    m.Frame = p.Idle;
-                    m.FrameCounter = 0;
-                }
-                else
-                {
-                    if (m.Frame < p.WalkStart || m.Frame >= p.WalkWrap) m.Frame = p.WalkTo;
-                    m.FrameCounter += (p.WalkBySpeed ? (int)Mathf.Abs(m.Vel.x) : 0) + 1;
-                    if (m.FrameCounter > p.WalkCounter)
-                    {
-                        m.Frame++;
-                        m.FrameCounter = 0;
-                    }
-                    if (m.Frame >= p.WalkWrap) m.Frame = p.WalkTo;
-                }
-            }
-            else if (m.Vel.y < 0f)
-            {
-                m.FrameCounter = 0;
-                if (p.Up >= 0) m.Frame = p.Up;
-            }
-            else
-            {
-                m.FrameCounter = 0;
-                if (p.Down >= 0) m.Frame = p.Down;
-            }
-            m.Vel.y = Mathf.Min(m.Vel.y + 0.4f, 10f);
-        }
-
         /// <summary>AI_026's flying pull on one axis: toward the wanted speed, harder when turning back (P:61574-61615).</summary>
         static float Steer(float v, float want, float accel)
         {
@@ -222,76 +167,7 @@ namespace TerraKnight.Items
             return v;
         }
 
-        /// <summary>
-        /// aiStyle 11 (P:24651-24760): the Shadow Orb turning slowly, 3 px a tick toward the player until 70 px off (4 above the
-        /// head or below the feet while up or down is held); the fairies at 6 px until 50 off, never overshooting, tilting with
-        /// their speed, four frames of 4 ticks. Past 800 px it is at the player.
-        /// </summary>
-        void PetOrb(M m, PetProj p)
-        {
-            bool fairy = p.Frames >= 4;
-            if (fairy)
-            {
-                FacePet(m, p, m.Vel.x, 0f);
-                m.Rot = m.Vel.x * 0.1f;
-                if (++m.FrameCounter >= 4)
-                {
-                    m.Frame++;
-                    m.FrameCounter = 0;
-                }
-                if (m.Frame >= 4) m.Frame = 0;
-            }
-            else m.Rot += 0.02f;
-            float speed = fairy ? 6f : 3f;
-            var d = pCenter - m.Center;
-            int stop = fairy ? 50 : 70;
-            var hero = HeroController.SilentInstance;
-            if (!fairy && hero != null && (hero.cState.lookingUp || hero.cState.lookingDown))
-            {
-                d.y = hero.cState.lookingUp ? pBox.yMin - 40f - m.Center.y : pBox.yMax + 40f - m.Center.y;
-                d.x -= 6f;
-                stop = 4;
-            }
-            float dist = d.magnitude;
-            if (dist > 800f)
-            {
-                m.Center = pCenter;
-                return;
-            }
-            if (dist > stop)
-            {
-                float left = dist - stop;
-                m.Vel = d * (speed / dist);
-                if (fairy && m.Vel.magnitude > left) m.Vel = m.Vel.normalized * left;
-            }
-            else m.Vel = Vector2.zero;
-        }
-
-        /// <summary>A flying pet (AI_026's flyers): to its place by the player (behind and above), easing in, faster when the player is.</summary>
-        void PetFlyer(M m, PetProj p)
-        {
-            var goal = pCenter + new Vector2(p.Anchor.x * pDir, p.Anchor.y);
-            var d = goal - m.Center;
-            float dist = d.magnitude;
-            if (dist > 2000f)
-            {
-                m.Center = goal;
-                m.Vel = Vector2.zero;
-            }
-            float speed = Mathf.Max(p.Speed, Mathf.Abs(pVel.x) + Mathf.Abs(pVel.y));
-            if (dist < p.Slack) m.Vel *= 0.9f;
-            else
-            {
-                var want = d * (Mathf.Min(speed, dist * p.Pull * 2f) / dist);
-                m.Vel.x = Steer(m.Vel.x, want.x, p.FlyAccel);
-                m.Vel.y = Steer(m.Vel.y, want.y, p.FlyAccel);
-            }
-            if (p.FacesPlayer) m.SpriteDir = p.FacesRight ? pDir : -pDir;
-            else FacePet(m, p, m.Vel.x, 0.5f);
-            PetFlyFrames(m, p);
-        }
-
-        /// <summary>Held by the player's side (aiStyles 124, 144, 90): a tenth of the way to its place a tick, gently bobbing; past 1000 px it is there.</summary>
+        /// <summary>Hallownest's own pets by the player's side (as aiStyle 124): a tenth of the way to their place a tick, gently bobbing; past 1000 px there.</summary>
         void PetHeld(M m, PetProj p)
         {
             m.LocalAi0++;
@@ -305,101 +181,244 @@ namespace TerraKnight.Items
             PetFlyFrames(m, p);
         }
 
-        /// <summary>AI_174's worm: as fast as the player (4 to 12), turning at most 5° a tick toward him once 120 px off, drifting up; along its path.</summary>
-        void PetWorm(M m, PetProj p)
-        {
-            var d = pCenter - m.Center;
-            float dist = d.magnitude;
-            if (dist > 2000f) m.Center = pCenter;
-            float speed = Mathf.Clamp(pVel.magnitude, 4f, 12f);
-            var v = m.Vel.sqrMagnitude > 0.0001f ? m.Vel.normalized : Vector2.up * -1f;
-            if (dist > 120f)
-            {
-                float turn = Vector2.SignedAngle(v, d);
-                v = Quaternion.Euler(0f, 0f, Mathf.Clamp(turn, -5f, 5f)) * v;
-            }
-            m.Vel = v * speed;
-            if (Mathf.Abs(m.Vel.y) < 1f) m.Vel.y -= 0.1f;
-            m.Rot = Mathf.Atan2(m.Vel.y, m.Vel.x) + Mathf.PI / 2f;
-            if (p.Segments <= 1) LoopPet(m, p.FlyStart, p.FlyWrap, p.FlyTo, p.FlyTicks);
-            if (!wormTrails.TryGetValue(m, out var trail)) wormTrails[m] = trail = new List<Vector2>();
-            trail.Insert(0, m.Center);
-            if (trail.Count > 200) trail.RemoveAt(trail.Count - 1);
-        }
-
-        /// <summary>A worm pet's path, newest first (Projectile.oldPos), for its segments.</summary>
+        /// <summary>A worm pet's path, newest first (Projectile.oldPos, as centres), for its segments.</summary>
         readonly Dictionary<M, List<Vector2>> wormTrails = new Dictionary<M, List<Vector2>>();
 
         /// <summary>
-        /// The pets as Main.DrawProjDirect draws them: the general branch (DrawGeneric's offsets), the centred one (the frame's
-        /// middle on the hitbox's), a single-frame sheet whole, a worm's segments along its path (DrawMultisegmentPet: the head
-        /// frame 0, the body 1, the tail the last).
+        /// The pets as Main.DrawProjDirect draws them: the general branch (DrawGeneric's offsets; the pig's, Spiffo's and the
+        /// Cave Gardener's by their facing, Main.cs:30482-30508), the centred one (the frame's middle on the hitbox's;
+        /// Glommer's three columns and its bob, the princess's, lantern's and queen's bob, Main.cs:33756-33878), a single-frame
+        /// sheet whole, the worms' segments (DrawMultisegmentPet), the Twins' two eyes (DrawTwinsPet), Skeletron's hands and
+        /// Skeletron Prime's arms (Main.cs:34311-34426), the Suspicious Looking Eye's pupil (Main.cs:34599) and the glow masks.
         /// </summary>
         void DrawPets(FxBatch fx)
         {
-            foreach (var m in pets)
+            for (int k = 0; k < 2; k++)
             {
-                if (m == null) continue;
-                var p = m.Pet;
-                string name = "Projectile_" + p.Id;
-                var tex = TerrariaAssets.Texture(name);
-                if (tex == null) continue;
-                int frames = p.Whole ? 1 : Mathf.Max(1, p.Frames);
-                int texW = tex.width, frameH = tex.height / frames;
-                var c = p.Light.r + p.Light.g + p.Light.b > 0.01f ? Color.white : Lit;
-                c.a = 1f - m.Alpha;
-                if (p.Move == PetMove.Worm && p.Segments > 1)
+                DrawPet(fx, pets[k]);
+                DrawPet(fx, petTwins[k]);
+            }
+        }
+
+        /// <summary>Main.GlobalTimeWrappedHourly: seconds, wrapped at an hour.</summary>
+        static float GlobalTime => Time.time % 3600f;
+
+        void DrawPet(FxBatch fx, M m)
+        {
+            if (m == null) return;
+            var p = m.Pet;
+            // A pet drawn by the game itself (the Grimmchild): nothing of the mod's.
+            if (p.Texture == "") return;
+            string name = p.Texture ?? "Projectile_" + p.Id;
+            var tex = TerrariaAssets.Texture(name);
+            if (tex == null) return;
+            int frames = p.Whole ? 1 : Mathf.Max(1, p.Frames);
+            int cols = p.Id == 957 ? 3 : 1;
+            int texW = tex.width / cols, frameH = tex.height / frames;
+            float scale = p.DrawHeight > 0f ? m.Scale * p.DrawHeight / Mathf.Max(1, frameH) : m.Scale;
+            var c = p.Light.r + p.Light.g + p.Light.b > 0.01f ? Color.white : Lit;
+            c.a = 1f - m.Alpha;
+            if (PetAi(p) == 174 && p.Segments > 1)
+            {
+                DrawWorm(fx, m, p, name, texW, frameH, frames, c);
+                return;
+            }
+            if (p.Id == 888)
+            {
+                // DrawTwinsPet (Main.cs:37725): Retinazer and Spazmatism (18 frames on) going round each other, 18 px out.
+                int f = Mathf.Clamp(m.Frame, 0, frames - 19);
+                var round = new Vector2(Mathf.Cos(GlobalTime * 2f), Mathf.Sin(GlobalTime * 2f)) * 18f;
+                fx.Draw(FxBatch.Frame(name, 0, frameH * f, texW, frameH, texW / 2f, frameH / 2f), m.Center + round, c, m.Rot, scale, flipX: m.SpriteDir == -1);
+                fx.Draw(FxBatch.Frame(name, 0, frameH * (f + 18), texW, frameH, texW / 2f, frameH / 2f), m.Center - round, c, m.Rot, scale, flipX: m.SpriteDir == -1);
+                return;
+            }
+            int frame = Mathf.Clamp(m.Frame, 0, frames * cols - 1);
+            int sx = frame / frames * texW, sy = frame % frames * frameH;
+            Vector2 pos;
+            Sprite spr;
+            int sh = frameH;
+            float ox, oy;
+            if (p.Centered)
+            {
+                pos = m.Center + new Vector2(0f, m.GfxOffY);
+                if (p.Id == 957)
                 {
-                    DrawWorm(fx, m, p, name, texW, frameH, frames, c);
-                    continue;
+                    // Glommer bobs with Main.mouseTextColor once it has rested, and squashes through its bounce.
+                    float bob = Mathf.Cos(mouseTextColor / 255f * (Mathf.PI * 2f) * 2f) * 4f * Mathf.Clamp01(m.LocalAi0 / 100f), squash = 0f;
+                    if (m.Frame > frames * 2)
+                        switch (m.Frame % frames)
+                        {
+                            case 5: case 11: squash = 2f; break;
+                            case 6: case 10: squash = 6f; break;
+                            case 7: squash = 8f; break;
+                            case 8: case 9: squash = 10f; break;
+                        }
+                    pos.y += -2f + bob + squash;
                 }
-                int frame = Mathf.Clamp(m.Frame, 0, frames - 1);
-                Vector2 pos;
-                Sprite spr;
-                if (p.Centered)
+                if (p.Id == 895 || p.Id == 896 || p.Id == 898) pos.y += -2f + Mathf.Cos(mouseTextColor / 255f * (Mathf.PI * 2f) * 2f) * 4f;
+                ox = texW / 2f;
+                oy = frameH / 2f + p.OriginY;
+            }
+            else
+            {
+                int offX = p.OffX;
+                if (p.Id == 959 && m.SpriteDir == -1) offX -= 8;
+                if (p.Id == 1003 && m.SpriteDir == 1) offX += 8;
+                if (p.Id == 1004 && m.SpriteDir == 1) offX += 6;
+                pos = new Vector2(m.Pos.x + texW / 2 + offX, m.Pos.y + m.H / 2 + m.GfxOffY);
+                if (!p.Whole) sh = frameH - 1;
+                ox = texW / 2 + p.OriginX;
+                oy = m.H / 2 + p.OriginY;
+            }
+            spr = FxBatch.Frame(name, sx, sy, texW, sh, ox, oy);
+            fx.Draw(spr, pos, c, m.Rot, scale, flipX: m.SpriteDir == -1);
+            // The glow masks over the frame: Everscream's and the Martian's (279, 281) white, the Toy Golem's (277) pulsing,
+            // the Jack 'O Lantern's (278) flickering, Skeletron Prime's (276).
+            string glow = p.Id == 897 ? "Glow_279" : p.Id == 899 ? "Glow_281" : p.Id == 891 ? "Glow_277" : p.Id == 896 ? "Glow_278" : p.Id == 889 ? "Glow_276" : null;
+            if (glow != null && TerrariaAssets.Texture(glow) != null)
+            {
+                var gs = FxBatch.Frame(glow, sx, sy, texW, sh, ox, oy);
+                if (p.Id == 891)
                 {
-                    pos = m.Center + new Vector2(0f, m.GfxOffY);
-                    spr = FxBatch.Frame(name, 0, frameH * frame, texW, frameH, texW / 2f, frameH / 2f + p.OriginY);
+                    // Utils.WrappedLerp(0.6, 1) over Main.timeForVisualEffects % 100 (a tick each).
+                    float t = discoTick % 100 / 100f;
+                    float v = t <= 0.5f ? Mathf.Lerp(0.6f, 1f, t * 2f) : Mathf.Lerp(1f, 0.6f, t * 2f - 1f);
+                    fx.Draw(gs, pos, new Color(v, v, v, 1f), m.Rot, scale, flipX: m.SpriteDir == -1);
+                }
+                else if (p.Id == 896)
+                {
+                    for (int k = 0; k < 2; k++)
+                        fx.Draw(gs, pos + new Vector2(Random.Range(-10, 11) * 0.1f, Random.Range(-10, 11) * 0.1f), new Color(150 / 255f, 150 / 255f, 150 / 255f, 100 / 255f), m.Rot, scale,
+                            flipX: m.SpriteDir == -1);
+                    fx.Draw(gs, pos, Color.white, m.Rot, scale, flipX: m.SpriteDir == -1);
+                }
+                else fx.Draw(gs, pos, Color.white, m.Rot, scale, flipX: m.SpriteDir == -1);
+            }
+            if (p.Id == 885) DrawSkeletronHands(fx, m, name, texW, frameH, c, scale);
+            if (p.Id == 889) DrawPrimeArms(fx, m, name, texW, frameH, c, scale);
+            if (p.Id == 650) DrawEyePupil(fx, m, c, pos);
+        }
+
+        /// <summary>Main.cs:34391-34426: Skeletron's two hands (frames 7-9 by localAI[0], 7 while it spins) 30 px either side, swaying.</summary>
+        void DrawSkeletronHands(FxBatch fx, M m, string name, int texW, int frameH, Color c, float scale)
+        {
+            var center = m.Center + new Vector2(0f, m.GfxOffY);
+            for (int k = 0; k < 2; k++)
+            {
+                int pose = (int)m.LocalAi0;
+                if (m.Frame == 6) pose = 0;
+                else if (k == 1) pose = 2 - pose;
+                pose += 7;
+                var at = center + new Vector2(k == 1 ? 30f : -30f, 0f);
+                var sway = new Vector2(Mathf.Cos(GlobalTime * 2f), Mathf.Sin(GlobalTime * 2f)) * 4f + m.Vel * -1.5f;
+                var drift = new Vector2(Mathf.Cos(GlobalTime), Mathf.Sin(GlobalTime)) * 3f;
+                at = k == 1 ? at + sway + drift : at - sway;
+                fx.Draw(FxBatch.Frame(name, 0, frameH * pose, texW, frameH, texW / 2f, frameH / 2f), at, c, 0f, scale, flipX: k == 1);
+            }
+        }
+
+        /// <summary>
+        /// Main.cs:34311-34389: Skeletron Prime's four arms (frames 7-10, the saw's glow on 8) held round the head, swinging,
+        /// and drawn out to circle it (28 px) as localAI[0] reaches 100 while it flies.
+        /// </summary>
+        void DrawPrimeArms(FxBatch fx, M m, string name, int texW, int frameH, Color c, float scale)
+        {
+            var center = m.Center + new Vector2(0f, m.GfxOffY);
+            bool glow = TerrariaAssets.Texture("Glow_276") != null;
+            for (int k = 0; k < 4; k++)
+            {
+                const int r = 28;
+                int frame = 7 + k;
+                const float full = 100f;
+                float spin = GlobalTime * 2f + k * (Mathf.PI / 2f);
+                spin *= 3f;
+                var orbit = center + new Vector2(Mathf.Cos(spin), Mathf.Sin(spin)) * r;
+                bool flip = false;
+                Vector2 at;
+                float rot;
+                if (m.LocalAi0 == full)
+                {
+                    at = orbit;
+                    rot = spin;
                 }
                 else
                 {
-                    pos = new Vector2(m.Pos.x + texW / 2 + p.OffX, m.Pos.y + m.H / 2 + m.GfxOffY);
-                    spr = FxBatch.Frame(name, 0, frameH * frame, texW, p.Whole ? frameH : frameH - 1, texW / 2 + p.OriginX, m.H / 2 + p.OriginY);
+                    var rest = new Vector2(r, -16f) + m.Vel * 1.5f;
+                    float wave = 4f, tilt = -0.35f;
+                    switch (k)
+                    {
+                        case 1:
+                            rest.x *= -1f;
+                            flip = true;
+                            tilt = 0.35f;
+                            wave = -3f;
+                            break;
+                        case 2:
+                            rest.y = 16f;
+                            tilt = 0.35f;
+                            wave = 2f;
+                            break;
+                        case 3:
+                            rest.x *= -1f;
+                            rest.y = 16f;
+                            flip = true;
+                            tilt = -0.35f;
+                            wave = -1f;
+                            break;
+                    }
+                    rest += new Vector2(Mathf.Cos(GlobalTime * wave), Mathf.Sin(GlobalTime * wave)) * 4f;
+                    float t = m.LocalAi0 / full;
+                    at = Vector2.Lerp(center + rest, orbit, t);
+                    rot = t > 0.5f ? spin : tilt;
                 }
-                fx.Draw(spr, pos, c, m.Rot, m.Scale, flipX: m.SpriteDir == -1);
+                fx.Draw(FxBatch.Frame(name, 0, frameH * frame, texW, frameH, texW / 2f, frameH / 2f), at, c, rot, scale, flipX: flip);
+                if (frame == 8 && glow) fx.Draw(FxBatch.Frame("Glow_276", 0, frameH * frame, texW, frameH, texW / 2f, frameH / 2f), at, Color.white, rot, scale, flipX: flip);
             }
         }
 
+        /// <summary>Main.cs:34599-34618: the eye's pupil (Extra_66) out along localAI[0]'s angle by localAI[1], sized by it.</summary>
+        void DrawEyePupil(FxBatch fx, M m, Color c, Vector2 eye)
+        {
+            var tex = TerrariaAssets.Texture("Extra_66");
+            if (tex == null) return;
+            int what = (int)(m.LocalAi0 / (Mathf.PI * 2f));
+            float angle = m.LocalAi0 % (Mathf.PI * 2f) - Mathf.PI;
+            float reach = (float)System.Math.IEEERemainder(m.LocalAi1, 1.0);
+            if (reach < 0f) reach++;
+            int steps = (int)Mathf.Floor(m.LocalAi1);
+            float size = 1f + steps * 0.02f, far = what == 1 ? 7f : 5f;
+            var off = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * reach * far * m.Scale;
+            fx.Draw(FxBatch.Frame("Extra_66", 0, 0, tex.width, tex.height, tex.width / 2f, tex.height / 2f), eye + off, c, m.Rot, size);
+        }
+
+        /// <summary>
+        /// DrawMultisegmentPet (Main.cs:37745-37808): each segment a fixed step (16 px; the Phantasmal dragon's 20) from the one
+        /// before, toward where the head was 10 ticks per segment ago; the bodies frame 1 (the dragon's 2 but for its 2nd and
+        /// 5th), the tail the last; the head over them; the Destroyer's glow mask (275) on all.
+        /// </summary>
         void DrawWorm(FxBatch fx, M m, PetProj p, string name, int texW, int frameH, int frames, Color c)
         {
-            if (!wormTrails.TryGetValue(m, out var trail)) return;
-            // Tail first, the head over the rest.
-            for (int i = p.Segments - 1; i >= 0; i--)
+            if (!wormTrails.TryGetValue(m, out var trail) || trail.Count == 0) return;
+            string glow = p.Id == 887 && TerrariaAssets.Texture("Glow_275") != null ? "Glow_275" : null;
+            var gc = Color.white * (mouseTextColor / 255f);
+            float step = p.Spacing;
+            var at = m.Center;
+            for (int i = 1; i < p.Segments; i++)
             {
-                var at = PointAlong(trail, i * p.Spacing, out float rot);
-                int frame = i == 0 ? 0 : i == p.Segments - 1 ? frames - 1 : Mathf.Min(1, frames - 1);
-                var spr = FxBatch.Frame(name, 0, frameH * frame, texW, frameH, texW / 2f, frameH / 2f);
-                fx.Draw(spr, at, c, i == 0 ? m.Rot : rot + Mathf.PI / 2f, m.Scale);
+                int frameY = 1;
+                if (i == p.Segments - 1) frameY = frames - 1;
+                else if (p.Id == 893 && i != 2 && i != 5) frameY = 2;
+                var old = trail[Mathf.Min(i * 10, trail.Count - 1)];
+                float a = Mathf.Atan2(at.y - old.y, at.x - old.x);
+                var seg = at - new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * step;
+                float rot = Mathf.Atan2(at.y - seg.y, at.x - seg.x) + Mathf.PI / 2f;
+                bool flip = !(seg.x < at.x);
+                at = seg;
+                fx.Draw(FxBatch.Frame(name, 0, frameH * frameY, texW, frameH, texW / 2f, frameH / 2f), seg, c, rot, m.Scale, flipX: flip);
+                if (glow != null) fx.Draw(FxBatch.Frame(glow, 0, frameH * frameY, texW, frameH, texW / 2f, frameH / 2f), seg, gc, rot, m.Scale, flipX: flip);
             }
-        }
-
-        /// <summary>The point a distance back along a path (newest first) and the way the path runs there.</summary>
-        static Vector2 PointAlong(List<Vector2> path, float dist, out float rot)
-        {
-            rot = 0f;
-            if (path.Count == 0) return Vector2.zero;
-            for (int i = 1; i < path.Count; i++)
-            {
-                float seg = Vector2.Distance(path[i - 1], path[i]);
-                if (seg >= dist && seg > 0f)
-                {
-                    var d = path[i - 1] - path[i];
-                    rot = Mathf.Atan2(d.y, d.x);
-                    return Vector2.Lerp(path[i - 1], path[i], dist / seg);
-                }
-                dist -= seg;
-            }
-            return path[path.Count - 1];
+            fx.Draw(FxBatch.Frame(name, 0, 0, texW, frameH, texW / 2f, frameH / 2f), m.Center, c, m.Rot, m.Scale, flipX: m.SpriteDir == -1);
+            if (glow != null) fx.Draw(FxBatch.Frame(glow, 0, 0, texW, frameH, texW / 2f, frameH / 2f), m.Center, gc, m.Rot, m.Scale, flipX: m.SpriteDir == -1);
         }
     }
 }

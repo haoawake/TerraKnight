@@ -16,7 +16,7 @@ namespace TerraKnight.Net
     internal static class TileSync
     {
         static bool hooked, applying;
-        static readonly Dictionary<string, List<(int Index, byte Packed, int Wall)>> pending = new Dictionary<string, List<(int, byte, int)>>();
+        static readonly Dictionary<string, List<(int Index, ushort Packed, int Wall)>> pending = new Dictionary<string, List<(int, ushort, int)>>();
 
         public static int DevSent, DevApplied;
 
@@ -34,7 +34,7 @@ namespace TerraKnight.Net
         {
             if (applying || WorldSync.Applying || !NetSession.Active || !WorldSync.Ready || region == null || string.IsNullOrEmpty(region.SceneName)) return;
             int i = y * region.Grid.Width + x;
-            if (!pending.TryGetValue(region.SceneName, out var list)) pending[region.SceneName] = list = new List<(int, byte, int)>();
+            if (!pending.TryGetValue(region.SceneName, out var list)) pending[region.SceneName] = list = new List<(int, ushort, int)>();
             list.Add((i, WorldEdits.Pack(region.Grid.GetAt(i), region.Grid.IsDugAt(i), region.Grid.SlopeAt(i)), region.Grid.WallAt(i)));
         }
 
@@ -58,6 +58,16 @@ namespace TerraKnight.Net
                         p.W.Write(list[k].Packed);
                         p.W.Write(list[k].Wall);
                     }
+                    // After the cells, the torches' styles among them (World.RegionalTorches): a count, then index and style.
+                    var region = TerrainSystem.Find(kv.Key);
+                    var torches = new List<(int, byte)>();
+                    for (int k = start; k < start + n; k++)
+                    {
+                        WorldEdits.Unpack(list[k].Packed, out var kind, out _);
+                        if (kind == CellKind.Torch && region != null) torches.Add((list[k].Index, (byte)region.Grid.TorchStyleAt(list[k].Index)));
+                    }
+                    p.W.Write((ushort)torches.Count);
+                    foreach (var (index, style) in torches) { p.W.Write(index); p.W.Write(style); }
                     NetSession.Send(p.Done());
                     DevSent += n;
                 }
@@ -77,7 +87,7 @@ namespace TerraKnight.Net
             for (int k = 0; k < n; k++)
             {
                 int i = r.ReadInt32();
-                byte packed = r.ReadByte();
+                ushort packed = r.ReadUInt16();
                 int wall = r.ReadInt32();
                 WorldEdits.Unpack(packed, out var kind, out bool dug, out int slope);
                 if (region == null || i < 0 || i >= region.Grid.Width * region.Grid.Height)
@@ -111,6 +121,23 @@ namespace TerraKnight.Net
                         dust++;
                     }
                 }
+            }
+            // The torches' styles, from a sender that has them.
+            if (r.BaseStream.Position + 2 > r.BaseStream.Length) return;
+            int styles = r.ReadUInt16();
+            applying = true;
+            try
+            {
+                for (int k = 0; k < styles; k++)
+                {
+                    int i = r.ReadInt32();
+                    int style = r.ReadByte();
+                    RegionalTorches.SetNet(scene, i, style);
+                }
+            }
+            finally
+            {
+                applying = false;
             }
         }
     }

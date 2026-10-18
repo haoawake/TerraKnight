@@ -73,7 +73,7 @@ namespace TerraKnight
                     {
                         more = false;
                         foreach (var r in Recipes.All)
-                            if (r.StationStage<=s && r.Ingredients.All(i=>sources.Contains(i.Type))) more |= sources.Add(r.Result);
+                            if (r.Ingredients.All(i=>sources.Contains(i.Type))) more |= sources.Add(r.Result);
                     }
                     available[s] = sources;
                     var health = new List<object>();

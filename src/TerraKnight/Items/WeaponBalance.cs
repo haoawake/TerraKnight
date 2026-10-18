@@ -24,11 +24,18 @@ namespace TerraKnight.Items
 
         internal static WeaponOutput OutputOf(ItemDef d)
         {
+            // Gladius, Ruler and Chlorophyte Saber repeat their stab every
+            // useTime inside one animation; animation duration is not hit cadence.
+            if(d.Fx==MeleeFx.Shortsword)
+                return new WeaponOutput(d.UseTime,1,d.Type==ItemType.ChlorophyteSaber?.7f:1,
+                    "短剑按使用间隔重复刺击；叶绿军刀特效保留原版0.7伤害倍率");
             float cycle=d.Class==DamageClass.Melee && (d.Shoot==ProjKind.None || d.ShootsOnSwingStart) || d.IsWhip ? d.UseAnimation : d.UseTime;
             float count=1, units=1;
             string basis="每次使用一击";
             switch(d.Type)
             {
+                case ItemType.BookofSkulls:
+                    return new WeaponOutput(cycle,1,1,"骷髅最多3次命中；3秒或累计640像素消失，20帧局部命中冷却",repeat:3);
                 case ItemType.VampireKnives: count=units=4+1f/2+1f/4+1f/8+1f/16; break;
                 case ItemType.Boomstick: count=units=3.5f; break;
                 case ItemType.Shotgun: count=units=4.5f; break;
@@ -172,7 +179,7 @@ namespace TerraKnight.Items
             var p=OutputOf(d);
             if(d.IsSummon || d.Channel || d.Texture==null || !d.Texture.StartsWith("Item_")
                 || !int.TryParse(d.Texture.Substring(5),out int id) || !VanillaWeaponDamage.Values.TryGetValue(id,out var v)) return p.Cycle;
-            bool complete=d.ShotsPerUse>0 || d.ShootsFinalFractal || d.Class==DamageClass.Melee && d.Shoot==ProjKind.None;
+            bool complete=d.ShotsPerUse>0 || d.ShootsFinalFractal || d.Class==DamageClass.Melee && d.Shoot==ProjKind.None && d.Fx!=MeleeFx.Shortsword;
             switch(d.Type)
             {
                 case ItemType.ClockworkAssaultRifle: case ItemType.SkyFracture:
@@ -195,10 +202,19 @@ namespace TerraKnight.Items
             // Lunar and final crafted weapons keep a wider power range, so the
             // Zenith's many returning hits aren't flattened into a normal late drop.
             float relative=Mathf.Clamp(Mathf.Sqrt(vanilla/(reference[Mathf.Clamp(rare,0,11)]*role)),.55f,rare>=10 ? 2.5f : 1.55f);
-            float utility=d.Type==ItemType.VampireKnives ? .78f : 1; // lifesteal is retained
+            float utility=d.Type==ItemType.VampireKnives ? .78f : d.Type==ItemType.BookofSkulls ? .8f : 1; // utility is retained, but budgeted
             float endgame=rare>=10 ? 1.25f : 1;
-            return HitBudget[d.Stage]*2*role*relative*utility*endgame;
+            float target=HitBudget[d.Stage]*2*role*relative*utility*endgame;
+            // Late wood is a building material, not a full-strength weapon tier.
+            // Normalizing rarity 0 against rarity 4-7 inverted their quality:
+            // Pearlwood Sword reached ~329 DPS while Chlorophyte Saber was ~117.
+            // Keep acquisition/recipes untouched and cap these cheap fallback
+            // weapons below the tier's metal weapons instead of promoting them.
+            if(ConstructionWeapon(d.Type))target=Mathf.Min(target,HitBudget[d.Stage]*.9f);
+            return target;
         }
+        internal static bool ConstructionWeapon(ItemType type)=>type==ItemType.AshWoodSword || type==ItemType.AshWoodBow
+            || type==ItemType.PearlwoodSword || type==ItemType.PearlwoodBow;
         static float AmmoBudget(ItemDef d) => weaponAmmo.TryGetValue((d.UseAmmo,d.Stage),out int damage) ? damage : 0;
         static int WeaponArmorPen(ItemDef d)
         {

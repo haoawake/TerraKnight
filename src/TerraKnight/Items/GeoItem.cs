@@ -60,9 +60,11 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A tk2d sprite's current frame (its rectangle of the atlas, by its UVs) drawn into a texture of the given height.</summary>
-        static Texture2D CaptureTk2d(tk2dBaseSprite tk, int height)
+        internal static Texture2D CaptureTk2d(tk2dBaseSprite tk, int height, string name = Icon) => CaptureTk2d(tk.GetCurrentSpriteDef(), height, name);
+
+        /// <summary>A tk2d sprite definition (its rectangle of the atlas, by its UVs) drawn into a texture of the given height.</summary>
+        internal static Texture2D CaptureTk2d(tk2dSpriteDefinition def, int height, string name = Icon)
         {
-            var def = tk.GetCurrentSpriteDef();
             var src = def?.material != null ? def.material.mainTexture : null;
             if (def == null || src == null || def.uvs == null || def.uvs.Length < 4) return null;
             float u0 = float.MaxValue, v0 = float.MaxValue, u1 = float.MinValue, v1 = float.MinValue;
@@ -77,7 +79,7 @@ namespace TerraKnight.Items
             {
                 Graphics.Blit(src, rt, new Vector2(u1 - u0, v1 - v0), new Vector2(u0, v0));
                 RenderTexture.active = rt;
-                var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { name = Icon, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { name = name, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
                 tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
                 tex.Apply(false, false);
                 return tex;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -49,6 +49,8 @@ namespace TerraKnight.Items
             /// <summary>The enemy's own health (the roster's maxHp) and a scene it lives in (the monster book's background).</summary>
             public int Hp;
             public string Scene;
+            // Runtime copy only: the actual death area's override, never the roster's first sighting.
+            internal string AreaOverride;
             public bool Boss;
             /// <summary>The geo it drops (-1: the game's own).</summary>
             public int Geo;
@@ -121,6 +123,7 @@ namespace TerraKnight.Items
 
         /// <summary>A drop of a stage the player hasn't unlocked yet: it doesn't drop, and the book hides it.</summary>
         public static bool Locked(Drop d) => d.LockStage > Shop.UnlockedStage();
+        internal static bool Locked(Drop d, int stage) => d.LockStage > stage;
 
         /// <summary>The geo a record's kill drops on the current difficulty (-1: the game's own).</summary>
         public static int GeoOf(string key) => key != null && table.TryGetValue(key, out var e) && e.Geo >= 0 ? Mathf.RoundToInt(e.Geo * GeoScale) : -1;
@@ -233,11 +236,12 @@ namespace TerraKnight.Items
         public static float EffectiveChance(Drop d) => d.Chance >= 1f ? 1f : Mathf.Min(1f, d.Chance * ChanceScale);
 
         /// <summary>How many of a drop's group are unlocked now (the book's "one of N"); 0 for a drop in no group.</summary>
-        public static int GroupSize(IReadOnlyList<Drop> drops, int group)
+        public static int GroupSize(IReadOnlyList<Drop> drops, int group) => GroupSize(drops, group, Shop.UnlockedStage());
+        internal static int GroupSize(IReadOnlyList<Drop> drops, int group, int stage)
         {
             if (group <= 0) return 0;
             int n = 0;
-            foreach (var d in drops) if (d.Group == group && !Locked(d)) n++;
+            foreach (var d in drops) if (d.Group == group && !Locked(d, stage)) n++;
             return n;
         }
 
@@ -261,7 +265,7 @@ namespace TerraKnight.Items
         {
             if (hm == null) return;
             var col = hm.GetComponent<Collider2D>();
-            Roll(record, col != null ? (Vector2)col.bounds.center : (Vector2)hm.transform.position, LeavesOnItsOwn(hm.gameObject.scene.name), firstKill);
+            Roll(record, col != null ? (Vector2)col.bounds.center : (Vector2)hm.transform.position, LeavesOnItsOwn(hm.gameObject.scene.name), firstKill,scene:hm.gameObject.scene.name);
         }
 
         /// <summary>
@@ -270,14 +274,14 @@ namespace TerraKnight.Items
         /// time to pick anything up: there the drops go straight into the inventory, and what
         /// doesn't fit falls at the player's feet once back in the world.
         /// </summary>
-        public static void Roll(string record, Vector2 at, bool direct = false, bool? firstKill = null, bool fromBag = false)
+        public static void Roll(string record, Vector2 at, bool direct = false, bool? firstKill = null, bool fromBag = false,string scene=null)
         {
             // Whose loot it is in a LAN game: the kill's enemy's scene (Bestiary.Credit sets it just before); a bag's own
             // contents are the opener's.
-            LootScene = fromBag ? null : Relics.ContextScene;
+            LootScene = fromBag ? null : scene ?? Relics.ContextScene;
             bool first = firstKill ?? Bestiary.KillsOf(record)==0;
             var drops = record != null && table.TryGetValue(record,out var entry)
-                ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear)) : none;
+                ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene ?? (fromBag ? null : Relics.ContextScene))) : none;
             if (drops.Count == 0) return;
             // Terraria's boss bags (Expert, Master): the loot goes into one bag left at the boss, rolled when it is opened
             // (fromBag); the relic, the hearts, the potions and the crystals drop beside it as ever.
@@ -298,6 +302,9 @@ namespace TerraKnight.Items
             }
             foreach (var d in drops)
             {
+                // The first-kill crystal is paid separately after death, once per character.
+                // Never reroll it as shared loot or as an opened treasure bag's contents.
+                if (IsBoss(record) && d.Type == ItemType.LifeCrystal) continue;
                 if (Locked(d)) continue;
                 if (d.Master && World.GameDifficulty.Current != World.DifficultyLevel.Master) continue;
                 if (bag != ItemType.None && !TreasureBags.Outside(d)) continue;
@@ -315,6 +322,7 @@ namespace TerraKnight.Items
                     var pick = Pick(options);
                     Pay(pick);
                     DevGroupPicks++;
+                    if(d.Group==100)DevMainPicks++;
                     continue;
                 }
                 if (Random.value >= EffectiveChance(d)) continue;
@@ -327,11 +335,11 @@ namespace TerraKnight.Items
                 }
                 Pay(relic);
             }
-            if (bag != ItemType.None) TreasureBags.Leave(bag, at, direct, first);
+            if (bag != ItemType.None) TreasureBags.Leave(bag, at, direct, first, ProgressionLoot.GodhomeScene(scene ?? Relics.ContextScene));
             // What a bag holds is the boss's; the kill's own extras came with the kill.
             if (fromBag) return;
             // Fishing bait and moss (FishingCrates.cs).
-            Fishing.KillDrops(record, at, direct);
+            Fishing.KillDrops(record, at, direct,scene);
             // The pets: an easter egg from any enemy.
             Pets.KillDrop(record, at, direct);
         }
@@ -349,12 +357,17 @@ namespace TerraKnight.Items
             return options[options.Count-1];
         }
 
-        public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d)
+        public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d) => MarginalChance(drops, d, Shop.UnlockedStage());
+        internal static float MarginalChance(IReadOnlyList<Drop> drops,Drop d,int stage)
         {
             if(d.Group<=0) return EffectiveChance(d);
-            float total=0;
-            foreach(var other in drops) if(other.Group==d.Group && !Locked(other)) total+=ProgressionLoot.Weight(other);
-            return total>0 ? EffectiveChance(d)*ProgressionLoot.Weight(d)/total : 0;
+            float total=0,chance=0;
+            foreach(var other in drops) if(other.Group==d.Group && !Locked(other, stage))
+            {
+                if(total==0)chance=EffectiveChance(other);
+                total+=ProgressionLoot.Weight(other);
+            }
+            return total>0 ? chance*ProgressionLoot.Weight(d)/total : 0;
         }
 
         static void Put(Drop d, Vector2 at, bool direct)
@@ -432,6 +445,9 @@ namespace TerraKnight.Items
 
         public static int DevBossDropMoved;
 
+        /// <summary>Dev: where a boss's loot comes out for a death at a spot.</summary>
+        internal static Vector2 DevBossDropPoint(Vector2 at) => SafeBossDropPoint(at);
+
         /// <summary>
         /// A stack from a kill: into the world at the spot, or straight into the bag where there's no time to pick it up;
         /// perPlayer for what each player of a LAN game gets their own of (a treasure bag).
@@ -445,6 +461,7 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: sure picks made out of groups so far.</summary>
         public static int DevGroupPicks;
+        internal static int DevMainPicks;
 
         /// <summary>Dev: items dropped by kills so far, and the ones given straight to the inventory.</summary>
         public static int DevDropped, DevGiven;
@@ -470,6 +487,7 @@ namespace TerraKnight.Items
                 waiting.Add(stack);
                 return;
             }
+            if (Containers.AutoSell(mod.Inventory, stack, hero.transform.position)) return;
             int left = mod.Inventory.Pickup(stack);
             if (left < stack.Count)
             {

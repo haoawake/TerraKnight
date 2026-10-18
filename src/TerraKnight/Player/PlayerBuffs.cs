@@ -16,7 +16,7 @@ namespace TerraKnight.Player
     internal static class PlayerBuffs
     {
         public const int MaxBuffs = 44;
-        public const int PotionSickness = 21, Honey = 48, Panic = 63, BabySlime = 64, HornetMinion = 125, ImpMinion = 126, SpiderMinion = 133,
+        public const int PotionSickness = 21, ManaSickness = 94, Honey = 48, Panic = 63, BabySlime = 64, HornetMinion = 125, ImpMinion = 126, SpiderMinion = 133,
             TwinEyesMinion = 134, PirateMinion = 135, StardustDragonMinion = 188, BatOfLight = 213, VampireFrog = 214, BabyBird = 216,
             Ravens = 83, Pygmies = 49, SharknadoMinion = 139, UFOMinion = 140, DeadlySphere = 161, StardustMinion = 182, StormTiger = 263, Smolstar = 271, SwordWhip = 308, ScytheWhip = 311, EmpressBlade = 322, CoolWhip = 312, ThornWhip = 314, FlinxMinion = 325, AbigailMinion = 335, CobWhip = 365,
             Werewolf = 28, Merfolk = 34, IceBarrier = 62, BrainOfConfusion = 321, ManaHeat = 396,
@@ -37,6 +37,7 @@ namespace TerraKnight.Player
         static readonly Dictionary<int, Info> info = new Dictionary<int, Info>
         {
             [PotionSickness] = new Info { Name = "耐药性", Desc = "不能再消耗治疗物品", Debuff = true },
+            [ManaSickness] = new Info { Name = "魔力病", Desc = "魔法伤害降低，随剩余时间逐渐恢复", Debuff = true },
             [WaterCandle] = new Info { Name = "水蜡烛", Desc = "提高怪物生成速度", NoTime = true },
             [CozyFire] = new Info { Name = "温馨之火", Desc = "生命再生速度略有提高", NoTime = true },
             [HeartLamp] = new Info { Name = "心灯", Desc = "生命再生速度提高", NoTime = true },
@@ -158,7 +159,7 @@ namespace TerraKnight.Player
             return list;
         }
         public static bool IsDebuff(int type) => info.TryGetValue(type, out var i) && i.Debuff;
-        public static bool NoTime(int type) => (info.TryGetValue(type, out var i) && i.NoTime) || UntilDeath(type);
+        public static bool NoTime(int type) => (info.TryGetValue(type, out var i) && i.NoTime) || UntilDeath(type) || Items.Containers.Holds(type) || Items.BuffStationItems.Holds(type);
 
         /// <summary>The buff stations' buffs (Clairvoyance, Ammo Box, Bewitched, Sharpened, Strategist): on until death, shown without a time.</summary>
         public static bool UntilDeath(int type) => type == 29 || type == 93 || type == 150 || type == 159 || type == 348;
@@ -179,6 +180,9 @@ namespace TerraKnight.Player
             for (int i = 0; i < MaxBuffs; i++) if (Type[i] == type) return Time[i];
             return 0;
         }
+
+        public static void DrankManaPotion() => Add(ManaSickness, Mathf.Min(600, TimeLeft(ManaSickness) + 300));
+        public static float ManaSicknessPenalty => Mathf.Clamp(TimeLeft(ManaSickness) / 60f * .05f, 0f, .5f);
 
         /// <summary>The player flag a minion buff sets (slime, spiderMinion…): its minions live while it's on.</summary>
         public static bool Flag(int type) => flags.Contains(type);

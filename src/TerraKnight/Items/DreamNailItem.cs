@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using HutongGames.PlayMaker.Actions;
 using TerraKnight.Terraria;
 using UnityEngine;
@@ -246,7 +246,7 @@ namespace TerraKnight.Items
             }
             if (reaction == null || reactionState(reaction) != Ready) return;
             var hm = reaction.GetComponent<HealthManager>() ?? reaction.GetComponentInParent<HealthManager>();
-            if (hm == null || hm.isDead) return;
+            if (hm == null || hm.isDead || BossWake.DreamWindow(hm)) return;
             var col = hm.GetComponent<Collider2D>() ?? target.GetComponent<Collider2D>();
             if (col == null) return;
             // The Dream Nail in hand: a reforged one hits with its prefix.
@@ -270,6 +270,7 @@ namespace TerraKnight.Items
         {
             EnsureIcon();
             DreamFocusHint();
+            if (hero != null && Holding()) NailAim.TickDream(hero, DreamFsm(hero));
             if (Time.unscaledTime < nextCheck) return;
             nextCheck = Time.unscaledTime + 1f;
             var def = ItemDb.Get(ItemType.DreamNail);

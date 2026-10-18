@@ -32,6 +32,9 @@ namespace TerraKnight.World
         public static string WallFor(string scene)
         {
             if (string.IsNullOrEmpty(scene)) return "Wall_1";
+            // The area's own wall (World/AreaBlocks.cs), drawn for it; the Terraria walls below for the rest.
+            var own = AreaBlocks.WallSheetOfScene(scene);
+            if (own != null) return own;
             if (Starts(scene, "GG_Pipeway", "GG_Waterways", "Room_GG_Shortcut", "Waterways")) return "Wall_8";
             if (Starts(scene, "GG_Lurker", "Deepnest_East", "Room_Wyrm")) return "Wall_178";
             if (Starts(scene, "Room_Colosseum")) return "Wall_87";
@@ -219,10 +222,12 @@ namespace TerraKnight.World
         const float MasterHealthScale = MasterSlimeLife * Toughness / (float)WeakestEnemyHp;
 
         /// <summary>
-        /// Modest late-game toughness: 1.25 at stage 4 and 2 at stage 5 for ordinary enemies.
-        /// This replaces the old 2/5 multipliers, which also compounded with catch-up scaling.
+        /// Fixed stage budgets for reforging, routine forging and optional matching banners.
+        /// Native-stage ordinary life rises 5/10/18/25/32/40 percent over the prior curve;
+        /// catch-up scaling remains separate and never depends on the player's equipment.
         /// </summary>
-        public static float LevelHealth(int level, bool boss) => level == 4 ? 1.25f : level == 5 && !boss ? 2f : 1f;
+        public static float LevelHealth(int level, bool boss) => boss ? (level==4 ? 1.25f : 1f)
+            : level switch { 0=>1.05f,1=>1.10f,2=>1.18f,3=>1.25f,4=>1.65f,_=>2.8f };
 
         /// <summary>
         /// The level an area's enemies (not its bosses) are met at: the progress reached once it is past the area's own, so the
@@ -265,7 +270,10 @@ namespace TerraKnight.World
         public static int DamagePerMask(int level) => Mathf.Max(1, Mathf.RoundToInt(MasterDamagePerMask(level) * GameDifficulty.EnemyFactor));
 
         /// <summary>A mask's Terraria damage on Master, before defense: what a hit costs is that less half the defense, times the difficulty's share (TerraStats.TakeMasks).</summary>
-        public static int MasterDamagePerMask(int level) => level switch { 1 => 30, 2 => 42, 3 => 58, 4 => 76, 5 => 100, _ => 20 };
+        public static int MasterDamagePerMask(int level) => level switch { 1 => 48, 2 => 68, 3 => 96, 4 => 132, 5 => 176, _ => 32 };
+
+        /// <summary>Environmental hazards retain their previous budget; enemy damage tuning must not also buff spikes.</summary>
+        public static int MasterHazardDamagePerMask(int level) => level switch { 1 => 30, 2 => 42, 3 => 58, 4 => 76, 5 => 100, _ => 20 };
 
         /// <summary>Bosses and elites hit harder than the common enemies around them, as Terraria's bosses do (settings Gameplay.BossDamage / EliteDamage).</summary>
         public static float BossDamage = 2f, EliteDamage = 1.5f;

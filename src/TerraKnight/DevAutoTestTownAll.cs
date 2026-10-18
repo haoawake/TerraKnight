@@ -28,9 +28,20 @@ namespace TerraKnight
             PlayerData.instance.isInvincible = true;
             yield return GoTo("Town", "left1");
             yield return new WaitForSeconds(4f);
+            bool xmas = System.DateTime.Now.Month == 12 && System.DateTime.Now.Day >= 15;
+            // The townsfolk with nothing to sell or do wait in the housing panel (TownNpcsManage) until put down by hand.
+            int waited = 0, early = 0;
+            foreach (var d in TownNpcs.AllDefs)
+            {
+                if (TownNpcs.AutoArrives(d) || d.Kind == NpcKind.Santa || d.Kind == NpcKind.Angler) continue;
+                waited++;
+                if (TownNpcs.Present(d.Internal)) early++;
+                else TownNpcs.DevPlace(d.Internal);
+            }
+            Check("只卖东西、有用处的居民自己入住，其余等玩家安置", waited > 0 && early == 0, $"等安置 {waited} 位，自己来了 {early} 位");
+            yield return new WaitForSeconds(1f);
             string who = TownNpcs.DevDescribe();
             int count = TownNpcs.Count;
-            bool xmas = System.DateTime.Now.Month == 12 && System.DateTime.Now.Day >= 15;
             Check("都住进来了", count >= 37, $"{count} 位：{who}");
             foreach (var id in new[] { "Nurse", "Dryad", "Wizard", "Mechanic", "Truffle", "TaxCollector", "DD2Bartender", "Golfer", "Princess", "TownCat", "TownSlimeBlue", "TownSlimeRainbow", "Angler" })
                 Check("在 " + id, TownNpcs.DevPos(id).HasValue);

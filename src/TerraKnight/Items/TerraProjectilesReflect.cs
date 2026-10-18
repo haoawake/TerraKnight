@@ -5,16 +5,55 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// Shots a shield sends back. A shield or shell that stops a shot (<see cref="MeleeHits.Blocks"/>) turns the ones
-    /// Terraria lets be reflected (Projectile.CanBeReflected: aiStyle 1, 2, 8, 21, 24, 28, 29, 131, and 728, 955) into
-    /// the enemy's (NPC.ReflectProjectile): aimed back at the player with a little scatter, damage halved twice, one
-    /// hit, and here at half its speed. A reflected shot hurts only the player, doubled as any hostile shot is
-    /// (Projectile.Damage; a reflected one skips the difficulty's scaling).
+    /// Shots a shield sends back. A shield that stops a shot (<see cref="MeleeHits.Blocks"/>, held one way:
+    /// <see cref="MeleeHits.IsShield"/>) turns the ones Terraria lets be reflected (Projectile.CanBeReflected: aiStyle 1,
+    /// 2, 8, 21, 24, 28, 29, 131, and 728, 955) into the enemy's (NPC.ReflectProjectile): aimed back at the player with a
+    /// little scatter, damage halved twice, one hit. Here it comes back as a slow energy orb (<see cref="ReflectSpeed"/>
+    /// px a tick), not at the shot's own speed, so it can be walked away from. A reflected shot hurts only the player,
+    /// doubled as any hostile shot is (Projectile.Damage; a reflected one skips the difficulty's scaling).
     /// </summary>
     internal sealed partial class TerraProjectiles
     {
-        /// <summary>How fast a reflected shot comes back, of its speed when it was stopped.</summary>
-        public const float ReflectSpeed = 0.5f;
+        /// <summary>How fast a reflected shot comes back (Terraria px a tick; the player runs at 3).</summary>
+        public const float ReflectSpeed = 1f;
+
+        static void RegisterReflect()
+        {
+            // The Magnet Sphere's orb (AI_047's frames), reddened, smaller, lit; gone on the terrain, or after six seconds.
+            specs[ProjKind.ReflectedOrb] = new Spec
+            {
+                Ai = Ai.Custom, Texture = "Projectile_254", W = 22, H = 22, Scale = 0.7f, Time = 360, Penetrate = 1, NoGravity = true,
+                Light = new Color(0.5f, 0.15f, 0.2f), Update = (t, p) => StepReflectedOrb(p), Draw = (t, fx, p, px) => DrawReflectedOrb(fx, p, px),
+                OnKill = (t, p) => t.OrbDust(p),
+            };
+        }
+
+        static void StepReflectedOrb(Proj p)
+        {
+            p.TRot += (p.Vel.x >= 0f ? 1f : -1f) * 0.05f;
+            if (++p.FrameCounter > 6)
+            {
+                p.FrameCounter = 0;
+                if (++p.Frame > 4) p.Frame = 0;
+            }
+        }
+
+        static void DrawReflectedOrb(FxBatch fx, Proj p, Vector2 px)
+        {
+            float o = p.TimeLeft < 30 ? p.TimeLeft / 30f : 1f;
+            fx.Draw(FxBatch.Frame("Projectile_254", 0, p.Frame * 44, 38, 44, 19f, 22f), px, new Color(1f, 0.45f, 0.5f, 0f) * o, p.TRot, p.Scale);
+        }
+
+        void OrbDust(Proj p)
+        {
+            var particles = TerraParticles.Instance;
+            if (particles == null) return;
+            for (int i = 0; i < 6; i++)
+            {
+                int d = particles.NewDust(TerraParticles.ToPx(p.Pos) - new Vector2(8f, 8f), 16, 16, 60);
+                if (d >= 0) particles[d].Velocity *= 0.5f;
+            }
+        }
 
         /// <summary>Terraria's projectile types that can be reflected (from Projectile.SetDefaults' aiStyles).</summary>
         static readonly HashSet<int> reflectable = new HashSet<int>
@@ -70,22 +109,19 @@ namespace TerraKnight.Items
             DevReflectKind = p.Kind;
             DevReflectSpeedIn = speed;
             var to = playerCentre - p.Pos;
-            to = to.sqrMagnitude > 1e-6f ? to.normalized * speed : -p.Vel;
+            to = to.sqrMagnitude > 1e-6f ? to.normalized : -p.Vel.normalized;
             var v = new Vector2(Random.Range(-100, 101), Random.Range(-100, 101));
-            v = v.sqrMagnitude > 0f ? v.normalized * speed : Vector2.zero;
+            v = v.sqrMagnitude > 0f ? v.normalized : Vector2.zero;
             v += to * 20f;
-            v = v.sqrMagnitude > 1e-6f ? v.normalized * speed * ReflectSpeed : -p.Vel * ReflectSpeed;
-            p.Vel = p.OldVel = v;
-            p.Dir = v.x >= 0f ? 1f : -1f;
-            p.Hostile = true;
-            p.Returning = false;
-            p.Target = null;
-            p.Damage = p.Damage / 2 / 2;
-            p.Penetrate = 1;
-            p.Hits = 0;
-            p.Immune.Clear();
+            v = v.sqrMagnitude > 1e-6f ? v.normalized * ReflectSpeed : -p.Vel.normalized * ReflectSpeed;
+            // The shot itself is gone (no blast, no dust of its own); an orb comes back in its place.
+            p.Dead = true;
+            var orb = Spawn(ProjKind.ReflectedOrb, p.Pos, v, p.Damage / 2 / 2, 0f, 0f);
+            if (orb == null) return;
+            orb.Hostile = true;
+            orb.Class = p.Class;
             DevReflectSpeedOut = v.magnitude;
-            DevReflectDamage = p.Damage;
+            DevReflectDamage = orb.Damage;
         }
 
         /// <summary>A reflected shot against the player (Projectile.Damage's hostile check): its damage doubled, then gone.</summary>

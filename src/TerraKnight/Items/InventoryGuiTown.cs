@@ -167,18 +167,19 @@ namespace TerraKnight.Items
             return lines;
         }
 
-        /// <summary>The shop: 10×4 slots at 0.755 scale under the inventory, "商店" and the NPC's name beside them.</summary>
+        /// <summary>The shop: 10×4 slots at 0.755 scale under the inventory (a fifth row for a longer stock), "商店" and the NPC's name beside them.</summary>
         static void DrawShopPanel(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string hoveredExtra, ref Kind hoveredKind)
         {
             if (!TownNpcs.ShopOpen) return;
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
-            float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f) * ui;
+            float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f + SlotStep) * ui;   // a slot lower than Terraria's: the trash slot stays clear
             Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T("商店"), nameStyleLeft(ui), Color.white);
             Outlined(new Rect(view.x + 504f * ui, y0 + 26f * ui, 300f * ui, 22f * ui), TownNpcs.TalkingName, labelStyle, new Color(1f, 0.95f, 0.6f));
             Outlined(new Rect(view.x + 504f * ui, y0 + 48f * ui, 300f * ui, 22f * ui), Lang.F("持有 {0}", Shop.Money(Shop.Purse)), labelStyle, new Color(1f, 0.9f, 0.55f));
-            panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 224f * 0.755f * ui));
+            int rows = TownNpcs.ShopRowsShown;
+            panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 56f * rows * 0.755f * ui));
             var prev = GUI.color;
-            for (int i = 0; i < TownNpcs.ShopItems.Length; i++)
+            for (int i = 0; i < rows * TownNpcs.ShopColumns; i++)
             {
                 int col = i % 10, row = i / 10;
                 var rect = new Rect(x0 + col * step, y0 + row * step, s, s);
@@ -188,6 +189,22 @@ namespace TerraKnight.Items
                 GUI.color = prev;
                 var st = TownNpcs.ShopItems[i];
                 if (st.IsEmpty) continue;
+                // A later stage's: dimmed under the book's lock, its stage and how to reach it over it.
+                if (TownNpcs.Locked(i))
+                {
+                    GUI.color = new Color(0.45f, 0.45f, 0.5f, 0.8f);
+                    DrawIconOnly(rect, st);
+                    var lk = TerrariaAssets.Texture("UI/Bestiary/Icon_Locked");
+                    GUI.color = new Color(1f, 1f, 1f, 0.85f);
+                    GUI.DrawTexture(new Rect(rect.xMax - lk.width * 0.5f * ui - 2f * ui, rect.yMax - lk.height * 0.5f * ui - 2f * ui, lk.width * 0.5f * ui, lk.height * 0.5f * ui), lk);
+                    GUI.color = prev;
+                    if (!rect.Contains(mouse)) continue;
+                    hovered = st;
+                    hoveredKind = Kind.ShopSlot;
+                    int at = TownNpcs.ShopLock[i];
+                    hoveredExtra = Lang.F("阶段 {0}", at) + "：" + Lang.F("再获得 {0} 种能力后解锁（通常是{1}）", at - Shop.UnlockedStage(), Lang.T(Shop.GateAbility(at)));
+                    continue;
+                }
                 DrawIcon(rect, st, false);
                 if (!rect.Contains(mouse)) continue;
                 hovered = st;
@@ -213,7 +230,8 @@ namespace TerraKnight.Items
             var slot = TownNpcs.ShopItems[index];
             // A sale's click held on: the item it put in that slot isn't bought straight back.
             if (!leftHeld) soldOnPress = false;
-            if (slot.IsEmpty)
+            // A later stage's look takes a sale as an empty slot does (the sale goes to the shop's first free one).
+            if (slot.IsEmpty || TownNpcs.Locked(index) && !inv.Mouse.IsEmpty)
             {
                 if (leftPress && !inv.Mouse.IsEmpty)
                 {

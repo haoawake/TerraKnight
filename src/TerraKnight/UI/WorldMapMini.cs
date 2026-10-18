@@ -26,13 +26,16 @@ namespace TerraKnight.UI
         static float keyTicks;
         const string FrameDir = "UI/Minimap/Default/";
 
+        /// <summary>Dev: the minimap's keys read during a test (the keys suite).</summary>
+        public static bool DevKeys;
+
         /// <summary>Keys and the frame's buttons for the minimap and overlay; call every frame in gameplay.</summary>
         public static void UpdateMini()
         {
             if (!Enabled || Open) return;
             var kb = Keyboard.current;
-            // Tests set the style and zoom themselves: keys and clicks in their window don't count.
-            if (kb == null || TerraMod.Instance?.AutoTest != null || Net.NetChat.BlocksKeys) return;
+            // Tests set the style and zoom themselves: keys and clicks in their window don't count (but for DevKeys).
+            if (kb == null || (TerraMod.Instance?.AutoTest != null && !DevKeys) || Net.NetChat.BlocksKeys) return;
             if (Player.TerraKeys.Pressed(Player.TerraKeys.Action.MapStyle))
             {
                 if (StyleSetting != null) StyleSetting.Value = (Style + 1) % 3;
@@ -42,9 +45,9 @@ namespace TerraKnight.UI
             int ticks = Mathf.Min(4, (int)keyTicks);
             keyTicks -= (int)keyTicks;
             if (ticks == 0 || Style == 0) return;
-            // The map keys (Terraria's Map Controls: Zoom In/Out, Decrease/Increase Transparency); = and - zoom as well.
-            bool zoomIn = Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomIn) || kb.equalsKey.isPressed;
-            bool zoomOut = Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomOut) || kb.minusKey.isPressed;
+            // The map keys (Terraria's Map Controls: Zoom In/Out, Decrease/Increase Transparency); = and - are the view's zoom.
+            bool zoomIn = Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomIn);
+            bool zoomOut = Player.TerraKeys.Held(Player.TerraKeys.Action.MapZoomOut);
             bool alphaUp = Player.TerraKeys.Held(Player.TerraKeys.Action.MapAlphaUp), alphaDown = Player.TerraKeys.Held(Player.TerraKeys.Action.MapAlphaDown);
             var mouse = Mouse.current;
             if (Style == 1 && mouse != null && mouse.leftButton.isPressed)
@@ -143,8 +146,8 @@ namespace TerraKnight.UI
             else if (Style == 2) DrawOverlay();
         }
 
-        /// <summary>The rooms seen, drawn round a centre cell at a zoom into a rectangle (solids, then open cells, at an alpha).</summary>
-        static void DrawRooms(Rect area, Vector2 centre, float z, float alpha, bool inGroup)
+        /// <summary>The rooms seen, drawn round a centre cell at a zoom into a rectangle (solids, then open cells, at an alpha); the rooms drawn.</summary>
+        static System.Collections.Generic.List<(Room room, Rect rect)> DrawRooms(Rect area, Vector2 centre, float z, float alpha, bool inGroup)
         {
             float cx = (inGroup ? 0f : area.x) + area.width / 2f, cy = (inGroup ? 0f : area.y) + area.height / 2f;
             float w = area.width, h = area.height;
@@ -156,8 +159,9 @@ namespace TerraKnight.UI
                 var rect = new Rect(cx + (room.At.x - centre.x) * z, cy - (room.At.y + room.H - centre.y) * z, room.W * z, room.H * z);
                 float left = inGroup ? 0f : area.x, top = inGroup ? 0f : area.y;
                 if (rect.xMax < left || rect.yMax < top || rect.xMin > left + w || rect.yMin > top + h) continue;
-                // The corner maps refresh a room's picture at most twice a second.
-                if (room.Solid == null || room.Dirty && now - room.LastBuilt > 0.5f) Build(room);
+                // The corner maps make a room's pictures again whole at most twice a second; changed cells go in at once.
+                if (room.Solid == null || room.BuiltDeep != ViewDeep || room.Dirty && now - room.LastBuilt > 0.5f) Build(room);
+                else if (!room.Dirty && room.Pending.Count > 0) Patch(room);
                 visible.Add((room, rect));
             }
             LiveOnTop(visible);
@@ -166,6 +170,7 @@ namespace TerraKnight.UI
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Open);
             GUI.color = prev;
+            return visible;
         }
 
         static void DrawMinimap()
@@ -179,9 +184,17 @@ namespace TerraKnight.UI
             GUI.color = prev;
             var centre = HeadCell(out _);
             GUI.BeginGroup(area);
-            DrawRooms(area, centre, miniScale * ui, miniAlpha, true);
+            var shown = DrawRooms(area, centre, miniScale * ui, miniAlpha, true);
             float mz = miniScale * ui;
-            DrawOthers(c => new Vector2(area.width / 2f + (c.x - centre.x) * mz, area.height / 2f - (c.y - centre.y) * mz), ui * 0.5f, false, new Rect(0f, 0f, area.width, area.height));
+            System.Func<Vector2, Vector2> toMini = c => new Vector2(area.width / 2f + (c.x - centre.x) * mz, area.height / 2f - (c.y - centre.y) * mz);
+            var inside = new Rect(0f, 0f, area.width, area.height);
+            // The arrows at gates that don't meet their partner, then the townsfolk (Main.DrawNPCHeadOnMap), under the players.
+            GUI.color = new Color(1f, 1f, 1f, miniAlpha);
+            DrawGateMarkers(shown, toMini, 9f * ui, inside, null);
+            DrawNpcHeads(toMini, ui * 0.75f, inside, null);
+            DrawGrimmFlames(toMini, 18f * ui, inside, null);
+            GUI.color = prev;
+            DrawOthers(toMini, ui * 0.5f, false, inside);
             FullMap.DrawHead(new Vector2(area.width / 2f, area.height / 2f), ui * 0.5f);
             GUI.EndGroup();
             var frameTex = TerrariaAssets.Texture(FrameDir + "MinimapFrame");
@@ -202,10 +215,14 @@ namespace TerraKnight.UI
             float ui = GameView.Scale;
             var screen = new Rect(0f, 0f, Screen.width, Screen.height);
             var centre = HeadCell(out _);
-            DrawRooms(screen, centre, overlayScale * ui, overlayAlpha, false);
+            var shown = DrawRooms(screen, centre, overlayScale * ui, overlayAlpha, false);
             var prev = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, Mathf.Max(overlayAlpha, 0.5f));
             float oz = overlayScale * ui;
+            System.Func<Vector2, Vector2> toOverlay = c => new Vector2(Screen.width / 2f + (c.x - centre.x) * oz, Screen.height / 2f - (c.y - centre.y) * oz);
+            DrawGateMarkers(shown, toOverlay, 11f * ui, screen, null);
+            DrawNpcHeads(toOverlay, ui * 0.8f, screen, null);
+            DrawGrimmFlames(toOverlay, 20f * ui, screen, null);
             DrawOthers(c => new Vector2(Screen.width / 2f + (c.x - centre.x) * oz, Screen.height / 2f - (c.y - centre.y) * oz), ui * 0.6f, false, screen);
             FullMap.DrawHead(new Vector2(Screen.width / 2f, Screen.height / 2f), ui * 0.6f);
             GUI.color = prev;

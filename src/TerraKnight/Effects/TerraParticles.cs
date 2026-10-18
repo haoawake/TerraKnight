@@ -55,6 +55,24 @@ namespace TerraKnight.Effects
         readonly Dictionary<(int, int), Sprite> dustSprites = new Dictionary<(int, int), Sprite>();
         readonly Dictionary<int, Sprite> goreSprites = new Dictionary<int, Sprite>();
         float tickAccumulator;
+        int nextDust;
+
+        // Under sustained fire, retaining every old mote starved newly fired, dust-only
+        // projectiles (Water Bolt, Lunar Flare). Prefer free slots, then recycle in a
+        // round-robin instead of dropping all new effects until old ones expire.
+        int AllocateDust()
+        {
+            for (int n = 0; n < MaxDust; n++)
+            {
+                int i = (nextDust + n) % MaxDust;
+                if (dust[i].Active) continue;
+                nextDust = (i + 1) % MaxDust;
+                return i;
+            }
+            int recycled = nextDust;
+            nextDust = (nextDust + 1) % MaxDust;
+            return recycled;
+        }
 
         public static TerraParticles Create(Transform parent)
         {
@@ -75,8 +93,7 @@ namespace TerraKnight.Effects
         /// </summary>
         public int NewDust(Vector2 topLeft, int width, int height, int type, float speedX = 0f, float speedY = 0f, int alpha = 0, float scale = 1f)
         {
-            int i = System.Array.FindIndex(dust, d => !d.Active);
-            if (i < 0) return -1;
+            int i = AllocateDust();
             width = Mathf.Max(width, 5);
             height = Mathf.Max(height, 5);
             dust[i] = new Dust

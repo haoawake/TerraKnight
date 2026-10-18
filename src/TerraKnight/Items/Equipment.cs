@@ -106,6 +106,7 @@ namespace TerraKnight.Items
             b.Add(ArmorEffects.DynamicBonuses());
             b.Add(MeleeSpecials.DynamicBonuses());
             b.Add(Player.PotionBuffs.Bonuses());
+            b.MagicDamage -= Player.PlayerBuffs.ManaSicknessPenalty;
             Current = b;
         }
 

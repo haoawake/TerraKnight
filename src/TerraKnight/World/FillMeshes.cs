@@ -24,6 +24,9 @@ namespace TerraKnight.World
         readonly List<int> tris = new List<int>();
         static Material material;
 
+        /// <summary>Cells whose fill another layer draws (a smooth hole's shaped piece: CellVisuals.FillElsewhere).</summary>
+        public System.Func<int, int, bool> Skip;
+
         public FillMeshes(CellGrid grid, Transform root, System.Func<int, int, bool> isCut)
         {
             this.grid = grid;
@@ -64,7 +67,7 @@ namespace TerraKnight.World
             verts.Clear();
             tris.Clear();
             const float c = CellGrid.CellSize;
-            greedy.Run(x0, y0, x1, y1, (x, y) => grid.InClip(x, y) && grid.Get(x, y) == CellKind.Original && !isCut(x, y) && !grid.IsArt(x, y), (x, y, w, h) =>
+            greedy.Run(x0, y0, x1, y1, (x, y) => grid.InClip(x, y) && grid.Get(x, y) == CellKind.Original && !isCut(x, y) && !grid.IsArt(x, y) && (Skip == null || !Skip(x, y)), (x, y, w, h) =>
             {
                 int v = verts.Count;
                 verts.Add(new Vector3(x * c, y * c, Z));

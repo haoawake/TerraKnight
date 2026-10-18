@@ -87,6 +87,7 @@ namespace TerraKnight.Items
         {
             ["hornet1Defeated"] = "Hornet", ["hornetOutskirtsDefeated"] = "Hornet",
             ["falseKnightDreamDefeated"] = "FalseKnight", ["mageLordDreamDefeated"] = "MageLord", ["infectedKnightDreamDefeated"] = "InfectedKnight",
+            ["defeatedMantisLords"] = "MantisLord",
         };
 
         /// <summary>The journal's kill flag set (EnemyDeathEffects.RecordKillForJournal, or a boss FSM's SetPlayerDataBool), or a beaten flag.</summary>
@@ -110,17 +111,21 @@ namespace TerraKnight.Items
 
         static (string Flag, string Record)? deferred;
 
+        // In these fights, an individual phase/partner can write the shared journal flag.
+        // Other fights (e.g. God Tamer's rider yielding when the beast dies) use it as their
+        // terminal signal even though another health-bearing object remains alive.
+        internal static bool IndividualJournal(string record) => record == "MantisLord" || record == "MageLord"
+            || record == "BlackKnight" || record == "NailBros" || record == "Oblobble" || record == "BigBuzzer";
+
         /// <summary>After a HealthManager.Die: a flag it set, counted if the death itself didn't count the boss.</summary>
         public static void AfterDeath(HealthManager dying)
         {
             if (deferred == null) return;
             var (flag, record) = deferred.Value;
             deferred = null;
-            // Each Oblobble writes killedOblobble from its own Die, including the first
-            // partner's death. Bestiary.AfterDie already waited for the surviving partner;
-            // do not turn that individual journal flag into a whole-fight win. Other bosses'
-            // terminal flags (e.g. the Soul Master's second phase) still finish their fight.
-            if (record == "Oblobble" && dying != null && UI.EnemyHover.RecordOf(dying) == record) return;
+            // These multi-body journal kills describe individual bodies, not a whole-fight win.
+            // AfterDie already credited it (or waited for the remaining, possibly inactive phases).
+            if (flag.StartsWith("killed") && IndividualJournal(record) && dying != null && UI.EnemyHover.RecordOf(dying) == record) return;
             CreditByFlag(flag, record);
         }
 
@@ -139,16 +144,22 @@ namespace TerraKnight.Items
                 bool up = hm.gameObject.activeInHierarchy, bestUp = best != null && best.gameObject.activeInHierarchy;
                 if (best == null || (up && !bestUp) || (up == bestUp && Vector2.Distance(hm.transform.position, at) < Vector2.Distance(best.transform.position, at))) best = hm;
             }
-            if (best != null) Credit(best, boolName);
+            if (best != null)
+            {
+                // FSM-written journal kills also occur between phases. Only explicit beaten
+                // flags may bypass the remaining-body check.
+                Credit(best, boolName, whole: !boolName.StartsWith("killed") || !IndividualJournal(record));
+            }
             else Plugin.Log.LogWarning($"[首领] {boolName} 已设置，但找不到 {record} 的首领对象，没能记入图鉴");
         }
 
-        static void Credit(HealthManager hm, string why)
+        static void Credit(HealthManager hm, string why, bool whole = true)
         {
             if (hm != null && Bestiary.Credited(hm)) Plugin.Log.LogInfo($"[首领] {hm.gameObject.scene.name}/{hm.name}（{why}）已经记过");
             if (hm == null || Bestiary.Credited(hm)) return;
+            Bestiary.Credit(hm, whole: whole);
+            if (!Bestiary.Credited(hm)) return;
             EnemyStats.MarkDefeated(hm);
-            Bestiary.Credit(hm, whole: true);
             DevCredited++;
             DevLast = $"{hm.gameObject.scene.name}/{hm.name}（{why}）";
             Plugin.Log.LogInfo($"[首领] {DevLast} 由它自己的死亡流程打倒：记入图鉴、掉落");

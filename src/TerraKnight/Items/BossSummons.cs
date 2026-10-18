@@ -77,8 +77,6 @@ namespace TerraKnight.Items
             S(ItemType.BossSigilOroMato, "NailBros", "兄弟双钉契", "Brothers' Nail Pact", 5, ItemType.IronOre, 12, "Buzzer", ItemType.PixieDust, 8, "Hopper", "马托住所·呼啸悬崖／奥罗住所·王国边缘", true),
             S(ItemType.BossSigilSheo, "Paintmaster", "绘圣调色印", "Paintmaster's Palette Seal", 5, ItemType.Moonglow, 6, "MossCharger", ItemType.Vine, 8, "MossKnight", "席奥住所·苍绿之径", true),
             S(ItemType.BossSigilSly, "Nailsage", "贤者试剑令", "Nailsage's Trial Writ", 5, ItemType.IronOre, 14, "ZombieGuard", ItemType.Gel, 10, "ZombieRunner", "斯莱住所·德特茅斯十字路井口", true),
-            S(ItemType.BossSigilOblobbles, "Oblobble", "双生酸囊", "Twin Acid Sacs", 4, ItemType.CobaltOre, 12, "ColShield", ItemType.Fireblossom, 4, "ColShield", "愚人斗兽场·前置勇士试炼", true),
-            S(ItemType.BossSigilGodTamer, "LobsterLancer", "驯神兽笛", "God Tamer's Beast Whistle", 4, ItemType.PalladiumOre, 16, "ColShield", ItemType.Fireblossom, 6, "ColHopper", "愚人斗兽场·前置试炼小怪", true),
         };
 
         internal static Seal Find(ItemType type) { foreach (var s in All) if (s.Type == type) return s; return null; }
@@ -128,7 +126,6 @@ namespace TerraKnight.Items
                     if (BossArena.Arrived(s.Key) || pending) yield break;
                     if (BossArena.Visiting) BossArena.AbortEntry(s.Key);
                     if (!BossArena.Fight(s.Key, true)) yield break;
-                    TerraMod.Instance?.StartCoroutine(StartOnArrival(s));
                     DevFollowed++;
                     DevLast = s.Key + " followed";
                     Plugin.Log.LogInfo($"[首领召唤物] 跟随 {who} 的召唤去 {s.Key}");
@@ -142,12 +139,6 @@ namespace TerraKnight.Items
         /// The arena reached (HeroController.SendHeroInPosition): its portal opens once the game has brought the player
         /// in by the arena's door (Player.OpeningPortal.SummonAfterEntry). False when no seal is arriving here.
         /// </summary>
-        static IEnumerator StartOnArrival(Seal s)
-        {
-            float until = Time.realtimeSinceStartup + 30f;
-            while (Time.realtimeSinceStartup < until && BossArena.Visiting && !BossArena.Arrived(s.Key)) yield return new WaitForSecondsRealtime(0.1f);
-            if (BossArena.Arrived(s.Key)) yield return BossSummonStart.Begin(s.Key);
-        }
 
         internal static bool Arrive(HeroController hero)
         {
@@ -171,6 +162,8 @@ namespace TerraKnight.Items
                     // EnemyDrops initializes some loot values through ItemDb.Get. Do not read its
                     // roster while ItemDb itself is being constructed; Relocalize fills the text later.
                     Value = 0, Price = 0, Tooltip = "首领召唤物\n首次击败对应首领后使用" });
+            // The colosseum's bosses are its trials': one summon to its door instead of their seals (ColosseumTicket).
+            list.Add(ColosseumTicket.Def());
         }
 
         internal static IEnumerable<Recipe> Recipes()
@@ -178,6 +171,7 @@ namespace TerraKnight.Items
             foreach (var s in All)
                 yield return new Recipe(s.Type, 1, "砧", s.Stage,
                     (s.Material, s.Amount), (s.SupportMaterial, s.SupportAmount));
+            yield return ColosseumTicket.Recipe();
         }
 
         static string Tooltip(Seal s, bool zh)
@@ -286,7 +280,6 @@ namespace TerraKnight.Items
                 }
                 DevLast = s.Key + " entered";
                 Plugin.Log.LogInfo("[首领召唤物] 到达竞技场：" + s.Key + ", creative=" + inv.Infinite);
-                TerraMod.Instance?.StartCoroutine(BossSummonStart.Begin(s.Key));
             }
             else
             {
@@ -317,7 +310,8 @@ namespace TerraKnight.Items
             string key = texture.Substring(IconPrefix.Length);
             bool cached = icons.TryGetValue(key, out var previous);
             if (cached && (!retryIcons.TryGetValue(key, out float next) || Time.unscaledTime < next)) return previous;
-            var s = Find(key);
+            // The colosseum's summon has no seal of its own: its picture is drawn as one (ColosseumTicket.IconSeal).
+            var s = Find(key) ?? (key == ColosseumTicket.IconSeal.Key ? ColosseumTicket.IconSeal : null);
             if (s == null) return Texture2D.whiteTexture;
             var portrait = EnemyHover.PortraitOf(key);
             if (portrait == null && cached) { retryIcons[key] = Time.unscaledTime + 3f; return previous; }

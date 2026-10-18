@@ -36,7 +36,7 @@ namespace TerraKnight.Items
             {
                 if (all != null) return all;
                 all = new List<ItemDef>();
-                foreach (var d in ItemDb.All) if (!string.IsNullOrEmpty(d.Name) && d.Name != d.Type.ToString() && !d.Permanent) all.Add(d);
+                foreach (var d in ItemDb.All) if (!string.IsNullOrEmpty(d.Name) && d.Name != d.Type.ToString() && !d.Placeholder && !d.Permanent) all.Add(d);
                 all.Sort((a, b) => Category(a) != Category(b) ? Category(a).CompareTo(Category(b)) : a.Stage != b.Stage ? a.Stage.CompareTo(b.Stage) : a.Type.CompareTo(b.Type));
                 return all;
             }
@@ -49,8 +49,10 @@ namespace TerraKnight.Items
             {
                 if (basics != null) return basics;
                 basics = new List<ItemDef>();
-                // The Knight's own nails (the Nail, the Dream Nail) are no one's to make.
-                foreach (var d in ItemDb.All) if (d.Source == ItemSource.Basic && !d.Permanent) basics.Add(d);
+                // The Knight's own nails (the Nail, the Dream Nail) are no one's to make; nor is a place left in the item list
+                // with nothing made of it (an item taken out, such as the God Tamer's seal: named by its enum, Item_1's
+                // pickaxe for a picture, a basic by default at no price), as Everything leaves it out.
+                foreach (var d in ItemDb.All) if (d.Source == ItemSource.Basic && !d.Permanent && !d.Placeholder) basics.Add(d);
                 return basics;
             }
         }
@@ -203,8 +205,11 @@ namespace TerraKnight.Items
             return Lang.F("{0} 吉欧", (copper / 100f).ToString(copper % 10 == 0 ? "0.0" : "0.00"));
         }
 
-        /// <summary>What a stack sells for, in copper: a fifth of the value apiece (Player.GetItemExpectedPrice).</summary>
-        public static long SellValue(ItemStack s) => s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type) ? 0 : System.Math.Max(1L, PriceOf(s.Def) / 5) * s.Count;
+        /// <summary>
+        /// What a stack sells for, in copper: a fifth of the value apiece (Player.GetItemExpectedPrice); a forged weapon a
+        /// fifth of its levels' prices more (Forging.SellBonus), the higher its level the more.
+        /// </summary>
+        public static long SellValue(ItemStack s) => s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type) ? 0 : (System.Math.Max(1L, PriceOf(s.Def) / 5) + Forging.SellBonus(s)) * s.Count;
 
         /// <summary>
         /// What an item costs at the townsfolk's, in copper (a geo is 100): Terraria's value up to a

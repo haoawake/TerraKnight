@@ -46,6 +46,8 @@ namespace TerraKnight.Net
             public Stack[] Slots;
             public long[] Cells;
             public long[] Walls;
+            /// <summary>An "r:" record's regional torch styles (World.RegionalTorches): index &lt;&lt; 8 | style.</summary>
+            public long[] Torches;
         }
 
         internal sealed class Action
@@ -110,7 +112,7 @@ namespace TerraKnight.Net
                 {
                     int chunk = cell.Key / 512;
                     if (!chunks.TryGetValue(chunk, out var cells)) chunks[chunk] = cells = new List<long>();
-                    cells.Add(((long)cell.Key << 8) | cell.Value);
+                    cells.Add(((long)cell.Key << 16) | cell.Value);
                 }
                 foreach (var chunk in chunks)
                 {
@@ -133,6 +135,7 @@ namespace TerraKnight.Net
                     list.Add(new Record { Key = "w:" + scene.Key + ":" + chunk.Key, Scene = scene.Key, Walls = chunk.Value.ToArray() });
                 }
             }
+            foreach (var (key, scene, torches) in RegionalTorches.NetRecords()) list.Add(new Record { Key = key, Scene = scene, Torches = torches });
             return list;
         }
 
@@ -227,9 +230,10 @@ namespace TerraKnight.Net
                 Stations.Clear();
                 LifeCrystals.Clear();
                 WorldItems.NetClear();
-                foreach (var t in TerrainSystem.All) { t?.Region?.Grid.ResetNetworkEdits(); t?.Region?.Grid.ResetWalls(); }
+                foreach (var t in TerrainSystem.All) { t?.Region?.Grid.ResetNetworkEdits(); t?.Region?.Grid.ResetWalls(); t?.Region?.Grid.ResetTorchStyles(); }
                 WorldWalls.ClearInPlace();
                 WorldEdits.ClearInPlace();
+                RegionalTorches.ClearInPlace();
                 foreach (var record in records) Apply(record);
             }
             finally { Applying = false; }
@@ -242,8 +246,8 @@ namespace TerraKnight.Net
                 var region = TerrainSystem.Find(record.Scene);
                 foreach (long packed in record.Cells)
                 {
-                    int index = (int)(packed >> 8);
-                    byte value = (byte)(packed & 255);
+                    int index = (int)(packed >> 16);
+                    ushort value = (ushort)(packed & 0xFFFF);
                     WorldEdits.For(record.Scene)[index] = value;
                     WorldEdits.Unpack(value, out var kind, out bool dug, out int slope);
                     region?.Grid.ApplyNetwork(index, kind, dug, slope);
@@ -263,10 +267,12 @@ namespace TerraKnight.Net
             else if (record.Key.StartsWith("c:", StringComparison.Ordinal)) Chests.NetApply(record, ownLease == record.Key);
             else if (record.Key.StartsWith("l:", StringComparison.Ordinal)) LifeCrystals.NetApply(record);
             else if (record.Key.StartsWith("i:", StringComparison.Ordinal)) WorldItems.NetApply(record);
+            else if (record.Key.StartsWith("r:", StringComparison.Ordinal)) RegionalTorches.NetApply(record.Key, record.Scene, record.Torches);
         }
 
         static void Remove(string key)
         {
+            RegionalTorches.NetRemove(key);
             Stations.NetRemove(key);
             Chests.NetRemove(key);
             LifeCrystals.NetRemove(key);
@@ -313,6 +319,7 @@ namespace TerraKnight.Net
                 case "station": result.Ok = Stations.NetPlace(a); break;
                 case "chest": result.Ok = Chests.NetPlace(a); break;
                 case "mineStation": result.Ok = Stations.NetMine(a); break;
+                case "door": result.Ok = Stations.NetToggleDoor(a); break;
                 case "mineChest": result.Ok = Chests.NetMine(a); break;
                 case "mineCrystal": result.Ok = LifeCrystals.NetMine(a); break;
                 case "locateCrystal": result.Ok = LifeCrystals.NetLocate(a); break;
@@ -389,14 +396,15 @@ namespace TerraKnight.Net
                     var got = ItemStack.Of((ItemType)result.Type, result.Count);
                     got.Prefix = result.Prefix;
                     got.Forge = result.Forge;
-                    Give(got);
+                    var hero = HeroController.SilentInstance;
+                    if (TerraMod.Instance == null || !Containers.AutoSell(TerraMod.Instance.Inventory, got, hero != null ? (Vector2)hero.transform.position : Vector2.zero)) Give(got);
                     DevPickups++;
                 }
             }
             else if (!result.Ok && action.Count > 0 && (result.Op == "station" || result.Op == "chest"))
             {
                 // The caller consumed one item on submitting placement; rejection refunds it.
-                Give(result.Op == "chest" ? ItemType.Chest : Stations.ItemOf((StationKind)action.Kind), 1);
+                Give(result.Op == "chest" ? RegionalChests.ItemOf(action.Kind) : Stations.ItemOf((StationKind)action.Kind), 1);
                 Notice("放置位置已被占用，物品已退回");
             }
         }
@@ -477,7 +485,7 @@ namespace TerraKnight.Net
         {
             if (personal == null) return Stations.Save();
             var list = new List<Stations.Saved>();
-            foreach (var r in personal) if (r.Key.StartsWith("s:")) list.Add(new Stations.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Kind = (StationKind)r.Kind });
+            foreach (var r in personal) if (r.Key.StartsWith("s:")) list.Add(new Stations.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Kind = (StationKind)r.Kind, Right = r.Placed });
             return list;
         }
         public static List<Chests.Saved> SaveChests()
@@ -485,7 +493,7 @@ namespace TerraKnight.Net
             if (personal == null) return Chests.Save();
             var list = new List<Chests.Saved>();
             foreach (var r in personal)
-                if (r.Key.StartsWith("c:")) list.Add(new Chests.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Items = Array.ConvertAll(r.Slots, s => s.Item()) });
+                if (r.Key.StartsWith("c:")) list.Add(new Chests.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Items = Array.ConvertAll(r.Slots, s => s.Item()), Style = r.Kind });
             return list;
         }
         public static List<LifeCrystals.Saved> SaveCrystals()
@@ -508,15 +516,27 @@ namespace TerraKnight.Net
                 }
             return scenes;
         }
-        public static IEnumerable<KeyValuePair<string, Dictionary<int, byte>>> SaveEdits()
+        public static IEnumerable<KeyValuePair<string, Dictionary<int, ushort>>> SaveEdits()
         {
             if (personal == null) return WorldEdits.All;
-            var scenes = new Dictionary<string, Dictionary<int, byte>>();
+            var scenes = new Dictionary<string, Dictionary<int, ushort>>();
             foreach (var r in personal)
                 if (r.Cells != null)
                 {
+                    if (!scenes.TryGetValue(r.Scene, out var cells)) scenes[r.Scene] = cells = new Dictionary<int, ushort>();
+                    foreach (long cell in r.Cells) cells[(int)(cell >> 16)] = (ushort)cell;
+                }
+            return scenes;
+        }
+        public static IEnumerable<KeyValuePair<string, Dictionary<int, byte>>> SaveTorchStyles()
+        {
+            if (personal == null) return RegionalTorches.AllSaved;
+            var scenes = new Dictionary<string, Dictionary<int, byte>>();
+            foreach (var r in personal)
+                if (r.Torches != null)
+                {
                     if (!scenes.TryGetValue(r.Scene, out var cells)) scenes[r.Scene] = cells = new Dictionary<int, byte>();
-                    foreach (long cell in r.Cells) cells[(int)(cell >> 8)] = (byte)cell;
+                    foreach (long cell in r.Torches) cells[(int)(cell >> 8)] = (byte)cell;
                 }
             return scenes;
         }

@@ -68,6 +68,8 @@ namespace TerraKnight
         public bool UseHeld => DevHold ?? (!DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem));
         /// <summary>Dev: the autotest is driving; the real mouse buttons are ignored (a click from whoever is at the computer can't steer it).</summary>
         public static bool DevNoRealMouse;
+        /// <summary>The use button's press went to the interface (or the housing panel's placing): no use until it is let go.</summary>
+        static bool uiPress;
         public bool? DevHold;
         Vector2Int miningCell = new Vector2Int(int.MinValue, 0);
         int miningDamage;
@@ -132,13 +134,15 @@ namespace TerraKnight
             Inventory.BagPerLoadout = creative;
         }
 
-        /// <summary>A creative save's world, once the save is in: the whole map shown, every bench's pylon there to teleport to.</summary>
+        /// <summary>A creative save's world, once the save is in: the whole map shown, every bench's pylon there to teleport to, every Hallownest item in its bag.</summary>
         public void ApplyCreativeWorld()
         {
             if (!Creative) return;
             UI.WorldMap.RevealWorld();
             Pylons.UnlockAllForCreative();
             Pylons.UnlockTollBenches(PlayerData.instance);
+            HkItems.GiveAllForCreative(PlayerData.instance);
+            AbilityAccessories.GiveForCreative(Inventory);
         }
 
         public void SetInfiniteItems(bool infinite)
@@ -179,8 +183,12 @@ namespace TerraKnight
             Stats.LifeFruits = 0;
             Stats.Boosts.Clear();
             Chests.Clear();
+            UI.DialogueBroadcast.Clear();
             Stations.Clear();
             LifeCrystals.Clear();
+            RegionalChests.Clear();
+            BossLootTiming.Clear();
+            World.ArenaTriggers.Clear();
             Stats.UpdateMaximums(PlayerData.instance, 0);
             Stats.FullHeal();
             Stats.PotionSickness = 0f;
@@ -195,6 +203,7 @@ namespace TerraKnight
             Town.Angler.Clear();
             World.Meteorites.Clear();
             InventoryGui.ClearSold();
+            InventoryGui.ClearUtilities();
             Pets.Clear();
             Bestiary.Clear();
             Shop.SpareCopper = 0;
@@ -244,6 +253,14 @@ namespace TerraKnight
             if (gm != null && gm.isPaused) lastPausedFrame = Time.frameCount;
             if (gameplay && !gm.isPaused && TerrainSystem.Current != null) InventoryGui.Tick();
             if (gameplay) World.BossPlatforms.Tick();
+            if (gameplay) World.EnemyAggro.Tick();
+            if (gameplay) World.NpcTitleWake.Tick();
+            if (gameplay) World.BossRoomVacancy.Tick();
+            if (gameplay) World.ArenaTriggers.Tick();
+            if (gameplay) UI.WorldMap.WarmUp();
+            BossLootTiming.Tick();
+            if (gameplay) World.Wormhole.Tick();
+            UI.DialogueBroadcast.Tick();
             if (gameplay) AcidLiquid.Tick();
             if (gm == null || !gm.isPaused) Fishing.Tick(gameplay ? hero : null);
             if (gameplay) BossPhases.Tick();
@@ -282,6 +299,9 @@ namespace TerraKnight
                 Items.Tombstones.Start();
                 AbilityAccessories.Tick(hero);
                 CarriedFurniture.Tick(this);
+                Banners.Tick(this);
+                BuffStationItems.Tick(Inventory, HeroController.SilentInstance != null && HeroController.SilentInstance.cState.dead);
+                Containers.Tick(this);
                 Town.TownNpcs.Draw();
                 if (Creative) Shop.KeepCreativeGeo(hero);
                 BossArena.Tick();
@@ -291,6 +311,7 @@ namespace TerraKnight
                 DreamNailItem.Tick(this, HeroController.SilentInstance);
                 NailItem.Tick(this, HeroController.SilentInstance);
                 GeoWallet.Tick(this);
+                EssenceWallet.Tick(this);
                 GeoItem.EnsureIcon();
                 HoldFrameRate();
             }
@@ -312,6 +333,12 @@ namespace TerraKnight
             if (gameplay && terrain != null && !gm.isPaused && !Net.NetChat.BlocksKeys && !UI.IngameOptions.Open) HandleEscape();
             // The Dream Nail item's button (the game's FSM reads it, in control or not).
             DreamNailItem.Sample();
+            // Sitting on a bench (the game holds the Knight there), the housing panel still answers the mouse, as Terraria's
+            // does with the inventory open anywhere: the "?" says what the room clicked is, a head chosen moves in.
+            if (terrain != null && Mouse.current != null && gameplay && !gm.isPaused && PlayerData.instance != null && PlayerData.instance.atBench
+                && !GameHooks.PlayerHasControl() && (Town.TownNpcs.Querying || Town.TownNpcs.Placing) && !DevNoRealMouse && !InventoryGui.MouseOverUi && !UI.IngameOptions.MouseOver
+                && TerraKeys.Pressed(TerraKeys.Action.UseItem) && MouseWorld(out var benchMouse))
+                Town.TownNpcs.PlaceClick(benchMouse, hero);
             // The game showing the Knight by a stand-in of its own (his renderer off: a cutscene) uses nothing either;
             // its attack prompts take the use button (Player.CutsceneAttack).
             if (terrain == null || !GameHooks.PlayerHasControl() || Mouse.current == null || CutsceneAttack.KnightHidden())
@@ -324,7 +351,7 @@ namespace TerraKnight
             if (!Net.NetChat.BlocksKeys) ReadKeys();
             if (!MouseWorld(out var mouse)) return;
             // A right click on a townsperson in reach starts talking to it (Main.HoverOverNPCs).
-            bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && (Town.TownNpcs.TryRightClick(mouse) || Town.Angler.TryRightClick(mouse));
+            bool talked = !DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && (Town.TownNpcs.TryRightClick(mouse) || Town.Angler.TryRightClick(mouse) || World.Wormhole.TryRightClick(mouse) || Minions.TryChester(mouse));
             // A right click on an own sentry in reach puts it away (TryDespawningProjectile, 1.4).
             talked = talked || (!DevNoRealMouse && !InventoryGui.MouseOverUi && TerraKeys.Pressed(TerraKeys.Action.Interact) && Minions.Instance != null && Minions.Instance.TryDespawnSentry(mouse));
             // A right click on a chest in reach opens it (Player.TileInteractionsUse); on the pet Pal, a pat (Player.PetAnimal).
@@ -340,10 +367,22 @@ namespace TerraKnight
             Player.SpotReport.Tick(hero, mouse);
             // Terraria: with the inventory open, the item on the cursor is the one used in the world.
             Inventory.UseMouse = InventoryGui.Open && !Inventory.Mouse.IsEmpty;
+            // The townsfolk panel's placement: a left click on Dirtmouth's street puts the chosen
+            // townsperson there, and that click is not also a use of the item in hand.
+            if (!DevNoRealMouse && !InventoryGui.MouseOverUi && !UI.IngameOptions.MouseOver
+                && TerraKeys.Pressed(TerraKeys.Action.UseItem) && Town.TownNpcs.PlaceClick(mouse, hero))
+            {
+                uiPress = true;
+                return;
+            }
             var def = Inventory.Current.Def;
             if (!DevNoRealMouse && (!TerraKeys.Held(TerraKeys.Action.UseItem) || TerraKeys.Pressed(TerraKeys.Action.UseItem))) BuildingTools.PoundReady = true;
             // Over the hotbar (closed) or any panel (open), a click is the interface's, not a use.
             bool overUi = InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver;
+            // A press that began on the interface (or put a townsperson down) stays the interface's while it is held:
+            // sliding off a panel with the button down starts no use.
+            if (!DevNoRealMouse && overUi && TerraKeys.Pressed(TerraKeys.Action.UseItem)) uiPress = true;
+            if (DevNoRealMouse || !TerraKeys.Held(TerraKeys.Action.UseItem)) uiPress = false;
             if (!DevNoRealMouse && !overUi && !talked && TerraKeys.Pressed(TerraKeys.Action.Interact)) MeleeSpecials.RightLatch = true;
             bool usable = false, smart = false;
             var cell = CellGrid.WorldToCell(mouse);
@@ -367,7 +406,7 @@ namespace TerraKnight
                 BossRooms.Notice(mouse);
             // Potions and crystals take a click each; everything else keeps going while held.
             bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def);
-            bool pressed = !DevNoRealMouse && (once ? TerraKeys.Pressed(TerraKeys.Action.UseItem) : TerraKeys.Held(TerraKeys.Action.UseItem));
+            bool pressed = !DevNoRealMouse && !uiPress && (once ? TerraKeys.Pressed(TerraKeys.Action.UseItem) : TerraKeys.Held(TerraKeys.Action.UseItem));
             // The Axe strums a note on each click, by how far off the cursor is (Pl:46946-46971), whether or not it swings now.
             if (!overUi && !talked && !DevNoRealMouse && def.Type == ItemType.TheAxe && TerraKeys.Pressed(TerraKeys.Action.UseItem)) StrumGuitar(mouse);
             if (!overUi && pressed && useCooldown <= 0f && def.IsUsable)
@@ -592,6 +631,8 @@ namespace TerraKnight
                 Inventory.ConsumeAt(i);
                 drunk++;
             }
+            // The Potion Box's after the bag's (QuickBuff's void bag, Pl:5814-5832).
+            drunk += Containers.QuickBuff(Inventory, on, Drink);
             DevLastQuickUse = $"快速增益 {drunk} 瓶";
             return drunk;
         }
@@ -605,6 +646,8 @@ namespace TerraKnight
                 if (s.IsEmpty || !kind(s.Def)) continue;
                 if (best < 0 || s.Def.HealLife + s.Def.HealMana > Inventory.Slots[best].Def.HealLife + Inventory.Slots[best].Def.HealMana) best = i;
             }
+            // The Potion Box's when it holds a stronger one (QuickHeal_GetItemToUse's void bag, Pl:5549-5555; QuickMana's, Pl:5630-5636).
+            if (Containers.QuickUse(Inventory, kind, best >= 0 ? Inventory.Slots[best].Def : null, Drink)) return;
             bool drunk = best >= 0 && Drink(Inventory.Slots[best].Def);
             if (drunk) Inventory.ConsumeAt(best);
             DevLastQuickUse = best < 0 ? "背包里没找到" : $"第 {best} 格 {Inventory.Slots[best].Def?.Name} ×{Inventory.Slots[best].Count}，喝下 {drunk}";
@@ -652,6 +695,7 @@ namespace TerraKnight
             {
                 UndoSlowMagic();
                 int restored = Stats.RestoreMana(def.HealMana);
+                PlayerBuffs.DrankManaPotion();
                 CombatText.Show(hero.transform.position + Vector3.up * 0.9f, restored.ToString(), CombatText.Mana);
             }
             if (def.BuffType > 0) PotionBuffs.Give(def.BuffType, def.BuffTime);
@@ -661,8 +705,10 @@ namespace TerraKnight
 
         /// <summary>
         /// The cell the held tool acts on: the one under the mouse, or with smart cursor on, the
-        /// block Terraria's pickaxe smart cursor picks (<see cref="Items.SmartCursor"/>), and for a
-        /// block the nearest place it can go (<see cref="SmartBlock"/>). smart tells whether the
+        /// block Terraria's pickaxe smart cursor picks (<see cref="Items.SmartCursor"/>), for a
+        /// block the nearest place it can go (<see cref="SmartBlock"/>), for a wall the nearest cell of
+        /// the room in sight and for a torch the nearest dark spot (BuildingTools.SmartWall,
+        /// BuildingTools.SmartTorch). smart tells whether the
         /// smart cursor chose it, which is when Terraria marks the tile.
         /// </summary>
         bool FindTarget(HeroController hero, ItemDef def, Vector2 mouse, out Vector2Int cell, out bool smart)
@@ -684,7 +730,7 @@ namespace TerraKnight
                 // TileTargetDesired: while a line is locked, nothing goes where the mouse is instead.
                 if (PlatformStairs.Locked) return false;
             }
-            if (SmartCursor && (def.HammerPower > 0 || def.PlacesWall > 0))
+            if (SmartCursor && def.HammerPower > 0)
             {
                 float best = float.PositiveInfinity;
                 bool found = false;
@@ -693,13 +739,21 @@ namespace TerraKnight
                 for (int y = reach.yMin; y < reach.yMax; y++)
                 {
                     var candidate = new Vector2Int(x, y);
-                    bool valid = def.HammerPower > 0 ? BuildingTools.CanHammerWall(candidate) : BuildingTools.CanPlaceWall(candidate);
-                    if (!valid) continue;
+                    if (!BuildingTools.CanHammerWall(candidate)) continue;
                     float distance = ((Vector2)CellGrid.CellCenter(x, y) - mouse).sqrMagnitude;
                     if (distance < best) { best = distance; cell = candidate; found = true; }
                 }
                 smart = found;
                 return found;
+            }
+            // Step_Walls (the room the player can see) and Step_Torch (a dark spot); what they find nothing for goes where
+            // the mouse is, as Terraria's tile target stays the mouse's.
+            if (SmartCursor && (def.PlacesWall > 0 || def.Places == CellKind.Torch) && !BuildingTools.SmartCursorOffAt(cell, ReachBox(bounds, def))
+                && (def.PlacesWall > 0 ? BuildingTools.SmartWall(bounds, ReachBox(bounds, def), mouse, out var spot0) : BuildingTools.SmartTorch(ReachBox(bounds, def), mouse, out spot0)))
+            {
+                cell = spot0;
+                smart = true;
+                return true;
             }
             if (SmartCursor && def.PickPower > 0
                 && Items.SmartCursor.PickaxeTarget(bounds, mouse, c => InReach(bounds, def, c), out var target))
@@ -740,6 +794,15 @@ namespace TerraKnight
             foreach (var (_, c) in candidates)
                 if (CanPlace(c, def.Places)) { spot = c; return true; }
             return false;
+        }
+
+        /// <summary>The cell a held item would act on aimed at a point (FindTarget), and whether the smart cursor chose it.</summary>
+        public bool TargetFor(ItemDef def, Vector2 aim, out Vector2Int cell, out bool smart)
+        {
+            var hero = HeroController.SilentInstance;
+            cell = default;
+            smart = false;
+            return hero != null && def != null && FindTarget(hero, def, aim, out cell, out smart);
         }
 
         /// <summary>Dev: whether an item aimed at a point has something to act on (FindTarget), and which cell.</summary>
@@ -805,6 +868,12 @@ namespace TerraKnight
             mouse = AwayFromWall(hero, def, mouse);
             UseDirection = mouse.x < hero.transform.position.x ? -1f : 1f;
 
+            if (def.Type == ColosseumTicket.Type)
+            {
+                // Off to the Colosseum of Fools' door, one spent there (its own transaction, as a seal's).
+                ColosseumTicket.TryUse(Inventory);
+                return;
+            }
             if (def.BossSummonKey != null)
             {
                 // The seal owns its transaction; ordinary weapon/potion consumption must not run.
@@ -838,6 +907,19 @@ namespace TerraKnight
                 return;
             }
 
+            // The Money Trough's flying piggy bank, the Void Bag's vault: the storage opens here (used again, it shuts).
+            // The Banner Case's and the Potion Box's own storage, the same way (Containers).
+            if (Containers.Toggle(def.Type))
+            {
+                StartSwing(def);
+                return;
+            }
+            if (def.Type == ItemType.MoneyTrough || def.Type == ItemType.VoidBag)
+            {
+                World.Chests.TogglePortable(def.Type == ItemType.VoidBag ? 3 : 0, def.Type);
+                StartSwing(def);
+                return;
+            }
             // A pet: called, or sent away if it is out.
             if (def.PetBuff > 0)
             {
@@ -854,6 +936,15 @@ namespace TerraKnight
             if (def.Boost != PermanentBoost.None)
             {
                 if (PotionBuffs.UseBooster(def, hero)) Inventory.ConsumeSelected();
+                return;
+            }
+            if (def.Type == ItemType.PotionOfReturn)
+            {
+                if (World.Wormhole.DrinkReturn())
+                {
+                    PlaySound(def.UseSound ?? "Item_6");
+                    Inventory.ConsumeSelected();
+                }
                 return;
             }
             if (def.Type == ItemType.RecallPotion || def.Type == ItemType.TeleportationPotion)
@@ -889,7 +980,7 @@ namespace TerraKnight
             }
             if (def.PlacesChest)
             {
-                if (Chests.TryPlace(hero, DevAim ?? mouse)) Inventory.ConsumeSelected();
+                if (Chests.TryPlace(hero, DevAim ?? mouse, def.ChestStyle)) Inventory.ConsumeSelected();
                 return;
             }
             if (def.PlacesStation != StationKind.None)
@@ -949,6 +1040,8 @@ namespace TerraKnight
                 useCooldown /= 1f + Equipment.Current.TileSpeed + Equipment.Current.BlockSpeed;
                 BuildingTools.UnslopeForPlacement(cell, def.Places);
                 TerraWorld.Set(cell.x, cell.y, def.Places);
+                // A regional torch's cell keeps its style (World.RegionalTorches).
+                if (def.Places == CellKind.Torch) RegionalTorches.Placed(cell, def.Type);
                 Inventory.ConsumeSelected();
                 PlaySound("Dig_" + Random.Range(0, 3));
                 // With the smart cursor on, a platform takes the slope its neighbours make: stairs.
@@ -1377,7 +1470,7 @@ namespace TerraKnight
             int hardness = ItemDb.Hardness(kind);
             miningDamage += pick.PickPower * hardness;
             // Tile.soundType: rock tinks, the soft blocks and wood dig.
-            PlaySound((kind == CellKind.Original || kind == CellKind.Stone || kind == CellKind.Meteorite ? "Tink_" : "Dig_") + Random.Range(0, 3));
+            PlaySound((kind == CellKind.Original || kind == CellKind.Stone || kind == CellKind.Meteorite || Cells.IsAreaBlock(kind) ? "Tink_" : "Dig_") + Random.Range(0, 3));
             // WorldGen.KillTile with fail: a few dust of the tile's kind on every hit, more when it breaks.
             if (miningDamage < MineThreshold)
             {
@@ -1387,7 +1480,7 @@ namespace TerraKnight
 
             miningDamage = 0;
             TerraWorld.Set(cell.x, cell.y, CellKind.Empty);
-            var drop = ItemDb.DropFor(kind);
+            var drop = World.AreaBlocks.DropFor(kind, cell);
             // WorldGen.KillTile_DropItems: the block pops out of the tile's middle.
             if (drop != ItemType.None && !Inventory.Infinite) WorldItems.Drop(ItemStack.Of(drop), CellGrid.CellCenter(cell.x, cell.y));
             PlaySound("Dig_" + Random.Range(0, 3));
@@ -1439,9 +1532,12 @@ namespace TerraKnight
                         || TerraWorld.Get(x, y + 1) == CellKind.Rope || TerraWorld.Get(x, y - 1) == CellKind.Rope
                         || TerraWorld.HasWall(x, y);
             }
+            // A chest or a piece of furniture beside it holds it too (they are tiles in Terraria): a platform on a chest's top.
+            bool Furniture(int fx, int fy) => Chests.Covers(new Vector2Int(fx, fy)) || Stations.Covers(new Vector2Int(fx, fy));
             bool anchored = TerraWorld.IsOccupied(x - 1, y) || TerraWorld.IsOccupied(x + 1, y)
                             || TerraWorld.IsOccupied(x, y - 1) || TerraWorld.IsOccupied(x, y + 1)
-                            || TerraWorld.HasWall(x, y);
+                            || TerraWorld.HasWall(x, y)
+                            || Furniture(x, y - 1) || Furniture(x - 1, y) || Furniture(x + 1, y);
             // Platforms (PlaceThing_Tiles_BlockPlacementForAssortedThings' fallback): anything in
             // the 3×3 around, diagonals and torches included, or a wall behind a side neighbour.
             if (kind == CellKind.Platform && !anchored)
@@ -1541,6 +1637,7 @@ namespace TerraKnight
         public float PanicTicks { get; set; }
 
         SpriteRenderer heldTorchLight;
+        int heldTorchStyle;
 
         /// <summary>
         /// ItemCheck_EmitHeldItemLight: a torch in hand lights up around it as a placed one does,
@@ -1550,10 +1647,18 @@ namespace TerraKnight
         {
             var hero = HeroController.SilentInstance;
             bool on = held != null && held.Places == CellKind.Torch && hero != null && playerSprite.gameObject.activeSelf && !AcidLiquid.Swimming(hero);
+            // A regional torch in hand lights in its own colour.
+            int style = on ? RegionalTorches.StyleOf(held.Type) : heldTorchStyle;
+            if (on && heldTorchLight != null && style != heldTorchStyle)
+            {
+                Destroy(heldTorchLight.gameObject);
+                heldTorchLight = null;
+            }
             if (on && heldTorchLight == null)
             {
-                heldTorchLight = Glow.CreateLight(transform, CellVisuals.TorchLight);
+                heldTorchLight = style > 0 ? Glow.CreateLight(transform, RegionalTorches.GlowColor(style), RegionalTorches.LightRgb(style)) : Glow.CreateLight(transform, CellVisuals.TorchLight);
                 heldTorchLight.gameObject.AddComponent<Glow.Flicker>();
+                heldTorchStyle = style;
             }
             if (heldTorchLight == null) return;
             if (heldTorchLight.gameObject.activeSelf != on) heldTorchLight.gameObject.SetActive(on);
@@ -1631,6 +1736,11 @@ namespace TerraKnight
         {
             var m = Inventory.Mouse;
             if (m.IsEmpty) return;
+            if (HkItems.AbilityBagSlot(m.Type) >= 0 && HkItems.TryStoreAbility(Inventory, m))
+            {
+                Inventory.Mouse = default;
+                return;
+            }
             // The Dream Nail has its own saved safekeeping slot: do not displace another item
             // or leave the tool in a cutscene's scene when the main inventory is full.
             if (m.Type == ItemType.DreamNail && Inventory.Room(m.Type) <= 0)
@@ -1704,14 +1814,24 @@ namespace TerraKnight
                 // Isma's tear read as the save has it: GetBool also counts worn flippers (PlayerHooks.EquipmentFlags).
                 // Desolate Dive is a level (Descending Dark is 2).
                 bool has = flag == "hasAcidArmour" ? pd.hasAcidArmour : flag == "quakeLevel" ? pd.quakeLevel > 0 : pd.GetBool(flag);
-                if (GrantedAbilities.Contains(flag) || !has) continue;
+                string delivery = HkItems.AbilityDeliveryKey(flag);
+                bool legacyRepair = GrantedAbilities.Contains(flag) && !GrantedAbilities.Contains(delivery)
+                    && (item == ItemType.CrystalHeart || item == ItemType.ShadeCloak);
+                if (!has || GrantedAbilities.Contains(flag) && !legacyRepair) continue;
+                if (HkItems.OwnsAbilityReward(Inventory, item))
+                {
+                    GrantedAbilities.Add(flag);
+                    GrantedAbilities.Add(delivery);
+                    continue;
+                }
+                // Only acknowledge delivery after the item is safely stored. A blocked slot retries next tick.
+                if (!HkItems.TryStoreAbility(Inventory, ItemStack.Of(item))) continue;
                 GrantedAbilities.Add(flag);
-                if (Inventory.Owns(item)) continue;
-                Inventory.Add(item);
+                GrantedAbilities.Add(delivery);
                 var hero = HeroController.SilentInstance;
                 if (hero != null) PopupText.Show(ItemDb.Get(item), 1, hero.GetComponent<BoxCollider2D>().bounds.center);
                 PlaySound("Grab");
-                Plugin.Log.LogInfo($"{flag} -> {ItemDb.Get(item).Name}");
+                Plugin.Log.LogInfo($"{flag} -> {ItemDb.Get(item).Name}（已放入圣巢背包{(legacyRepair ? "，修复旧版未送达奖励" : "")}）");
             }
         }
 
@@ -2431,8 +2551,15 @@ namespace TerraKnight
             GUI.DrawTexture(new Rect(m.x + 14f * ui, m.y + 14f * ui, icon.width * ui, icon.height * ui), icon);
         }
 
+        /// <summary>Dev: none of the mod's interface drawn (an art reference's clean view).</summary>
+        public static bool DevNoInterface;
+
         void OnGUI()
         {
+            if (DevNoInterface) return;
+            // Ahead of the first inventory open: the item sprites and the text it will need are built
+            // while the menus are up (the same work the first open used to do in one long frame).
+            InventoryGui.WarmIcons();
             try { DrawInterface(); }
             // Terraria's cursor over all of it.
             finally { UI.TerraCursor.Draw(); }
@@ -2448,6 +2575,8 @@ namespace TerraKnight
             // Fifty save slots: the profiles screen's pages.
             SaveSlots.Draw(CreativeMenu.IsOpen || Net.NetMenu.IsOpen);
             if (TerrainSystem.Current == null || !GameHooks.IsGameplay(GameManager.UnsafeInstance)) return;
+            // The text, at the sizes the view is actually laid out at (the menu's scale differs).
+            InventoryGui.WarmText();
             if (FullMap.Open)
             {
                 FullMap.Draw();

@@ -1,26 +1,32 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// Opening a crate (Player.OpenFishingCrate, a right click in the bag), its contents shared out among Hallownest's
-    /// areas: a piece of the area's equipment (an area's crate always one, the special one 1 time in 5: the Fiberglass Fishing
-    /// Pole in the Greenpath crate, the Scarab Fishing Rod in Kingdom's Edge's, the Chum Caster in the Waterways', the acid
-    /// hook in the acid crate's; Wooden 1 in 4, Iron 1 in 3, Golden 1 in 2, of their stages), and as Terraria's crates
-    /// give: geo, ore, bars, potions, healing and mana potions, bait. A hardmode crate's ore and bars are hardmode's half
-    /// the time and more. Now and then (1 in 50) a pet, a light pet or a minecart too. The Oyster: a pearl 1 time in 4 and
-    /// the shucked oyster.
+    /// Opening a crate (Player.OpenFishingCrate, a right click in the bag): a piece of equipment (an area's crate always
+    /// one, from its area: FishingAreaCrates.cs; the special one 1 time in 5: the Fiberglass Fishing Pole in Greenpath's
+    /// and the Queen's Gardens' crates, the Scarab Fishing Rod in Kingdom's Edge's and the Colosseum's, the Chum Caster in
+    /// the Waterways', the acid hook in the acid crate's; Wooden 1 in 4, Iron 1 in 3, Golden 1 in 2, of their stages), and
+    /// as Terraria's crates give: geo, ore, bars, potions, healing and mana potions, bait; an area's crate its area's block,
+    /// torch, material, bait and moss too. A hardmode crate's ore and bars are hardmode's half the time and more. Now and
+    /// then (1 in 50) a pet, a light pet or a minecart too. Life Crystals are an independent bonus roll:
+    /// Wooden 5%, Iron 10%, Golden 15%, biome/area crates 10%, one each. The Oyster: a pearl 1 time in 4 and the shucked oyster.
     /// </summary>
     internal static partial class Fishing
     {
         public static int DevOpened;
 
-        public static bool IsCrate(ItemType t) => crates.ContainsKey(t);
+        public static bool IsCrate(ItemType t)
+        {
+            EnsureAreaCrates();
+            return crates.ContainsKey(t);
+        }
 
         /// <summary>A right click on a crate in the bag: one opened, its contents into the bag (or at the player's feet).</summary>
         public static bool TryOpen(Inventory inv, int slot)
         {
+            EnsureAreaCrates();
             var stack = inv.Slots[slot];
             if (stack.IsEmpty || !crates.TryGetValue(stack.Type, out var def)) return false;
             var got = new List<ItemStack>();
@@ -49,7 +55,7 @@ namespace TerraKnight.Items
             foreach (var t in from)
             {
                 var d = ItemDb.Get(t);
-                if (d.Stage >= lo && d.Stage <= hi && Unlocked(t)) ok.Add(t);
+                if (d.Stage >= lo && d.Stage <= hi && Unlocked(t) && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !ProgressionBalance.ExclusiveBossItems.Contains(t)) ok.Add(t);
             }
             return ok.Count == 0 ? ItemType.None : ok[Random.Range(0, ok.Count)];
         }
@@ -63,6 +69,7 @@ namespace TerraKnight.Items
         /// <summary>For test reports: what one crate gives.</summary>
         internal static List<ItemStack> DevContents(ItemType crate)
         {
+            EnsureAreaCrates();
             var got = new List<ItemStack>();
             if (crates.TryGetValue(crate, out var def)) Contents(def, got);
             return got;
@@ -84,11 +91,15 @@ namespace TerraKnight.Items
             {
                 ItemType piece = ItemType.None;
                 if (c.Special != ItemType.None && Random.Range(0, 5) == 0 && Unlocked(c.Special)) piece = c.Special;
-                if (piece == ItemType.None) piece = Pick(c.Pool, c.Lo, c.Hi);
+                if (piece == ItemType.None) piece = c.Kind == CrateKind.Area ? AreaPiece(c) : Pick(c.Pool, c.Lo, c.Hi);
                 Put(got, piece, 1, 1);
             }
             bool biome = c.Kind != CrateKind.Tier;
             int level = biome ? 3 : c.Level;
+            // An additional route to permanent health, without replacing any existing crate reward.
+            // Both early and hardmode counterparts qualify; oysters returned above do not.
+            int crystalChance = biome ? 10 : level == 0 ? 5 : level == 1 ? 10 : 15;
+            if (Random.Range(0, 100) < crystalChance) Put(got, ItemType.LifeCrystal, 1, 1);
             // Geo (Terraria's coins, a fifth: a gold coin is 20 geo here, a silver one 0.2).
             if (biome) { if (Random.Range(0, 4) == 0) got.Add(ItemStack.Of(ItemType.Geo, Random.Range(100, 241))); }
             else if (Random.Range(0, new[] { 7, 4, 3 }[level]) == 0)
@@ -121,6 +132,7 @@ namespace TerraKnight.Items
             // A pet, a light pet or a minecart, now and then.
             var eggs = Pets.Eggs;
             if (eggs.Count > 0 && Random.Range(0, 50) == 0) Put(got, eggs[Random.Range(0, eggs.Count)], 1, 1);
+            if (c.Kind == CrateKind.Area) AreaExtras(c, got);
             if (got.Count == 0) got.Add(ItemStack.Of(ItemType.Geo, Random.Range(5, 21)));
         }
     }
@@ -168,7 +180,27 @@ namespace TerraKnight.Items
         }
 
         internal static int DevRules => rules.Length;
-        internal static int DevCrates => crates.Count;
+        internal static int DevCrates
+        {
+            get
+            {
+                EnsureAreaCrates();
+                return crates.Count;
+            }
+        }
+
+        /// <summary>Dev (the wiki's export): the areas fished in, as the fishing tables know them.</summary>
+        internal static List<string> DevFishingAreas => new List<string>(areas.Keys);
+
+        /// <summary>Dev (the wiki's export): every crate there is, the areas' too.</summary>
+        internal static List<ItemType> DevCrateTypes
+        {
+            get
+            {
+                EnsureAreaCrates();
+                return new List<ItemType>(crates.Keys);
+            }
+        }
     }
 }
 
@@ -178,8 +210,8 @@ namespace TerraKnight.Items
     {
         /// <summary>
         /// The bait Hallownest's enemies drop (Terraria's critters, caught with a bug net, have no Hallownest kin): an ordinary
-        /// enemy 1 in 6 one of its area's, an elite 1 in 3, one or two; its area's moss 1 in 12; any of them a gold critter's
-        /// 1 in 150. Bosses none. What is above the stage reached doesn't drop.
+        /// enemy 1 in 200 one of its area's, an elite 1 in 100, exactly one; moss 1 in 50.
+        /// Golden critters keep their targeted sources instead of an extra roll on every enemy.
         /// </summary>
         internal static void KillDrops(string record, Vector2 at, bool direct, string scene = null)
         {
@@ -192,19 +224,14 @@ namespace TerraKnight.Items
             }
             string area = World.Areas.AreaName(scene ?? "");
             bool elite = EnemyDrops.IsEliteRecord(record);
-            if (areaBait.TryGetValue(area, out var baits) && Random.Range(0, elite ? 3 : 6) == 0)
+            if (areaBait.TryGetValue(area, out var baits) && Random.Range(0, elite ? 100 : 200) == 0)
             {
                 var t = Pick(baits);
-                if (t != ItemType.None) EnemyDrops.Spill(ItemStack.Of(t, Random.Range(1, 3)), at, direct);
-            }
-            if (areaMoss.TryGetValue(area, out var moss) && Random.Range(0, 12) == 0)
-            {
-                var t = Pick(moss);
                 if (t != ItemType.None) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
             }
-            if (Random.Range(0, 150) == 0)
+            if (areaMoss.TryGetValue(area, out var moss) && Random.Range(0, 50) == 0)
             {
-                var t = Pick(goldBait);
+                var t = Pick(moss);
                 if (t != ItemType.None) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
             }
         }

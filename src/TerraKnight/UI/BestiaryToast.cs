@@ -116,14 +116,41 @@ namespace TerraKnight.UI
         }
 
         /// <summary>A Unity sprite fitted into a box, keeping its shape (its part of the atlas).</summary>
+        static readonly System.Collections.Generic.Dictionary<Sprite, (Rect Tr, Rect Uv)> spriteRects = new System.Collections.Generic.Dictionary<Sprite, (Rect, Rect)>();
+
+        /// <summary>Dev: sprites whose rect had to come from their UVs (packed tight: textureRect throws).</summary>
+        public static int DevTightSprites;
+
+        /// <summary>A sprite's part of its texture (pixels) and as UVs: from textureRect, or for a tightly packed one the box of its UVs.</summary>
+        static (Rect Tr, Rect Uv) RectsOf(Sprite sprite)
+        {
+            if (spriteRects.TryGetValue(sprite, out var r)) return r;
+            var tex = sprite.texture;
+            Rect tr;
+            if (sprite.packed && sprite.packingMode == SpritePackingMode.Tight)
+            {
+                DevTightSprites++;
+                var uvs = sprite.uv;
+                Vector2 lo = uvs.Length > 0 ? uvs[0] : Vector2.zero, hi = lo;
+                foreach (var u in uvs) { lo = Vector2.Min(lo, u); hi = Vector2.Max(hi, u); }
+                tr = new Rect(lo.x * tex.width, lo.y * tex.height, (hi.x - lo.x) * tex.width, (hi.y - lo.y) * tex.height);
+            }
+            else
+            {
+                try { tr = sprite.textureRect; }
+                catch { tr = sprite.rect; }
+            }
+            r = (tr, new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height));
+            if (spriteRects.Count > 2048) spriteRects.Clear();
+            spriteRects[sprite] = r;
+            return r;
+        }
+
         public static void DrawSprite(Rect box, Sprite sprite, Color tint)
         {
             if (sprite == null || sprite.texture == null) return;
-            Rect tr;
-            try { tr = sprite.textureRect; }
-            catch { tr = sprite.rect; }
+            var (tr, uv) = RectsOf(sprite);
             var tex = sprite.texture;
-            var uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
             float k = Mathf.Min(box.width / tr.width, box.height / tr.height);
             float w = tr.width * k, h = tr.height * k;
             var r = new Rect(box.center.x - w / 2f, box.center.y - h / 2f, w, h);

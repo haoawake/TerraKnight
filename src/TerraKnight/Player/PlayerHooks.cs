@@ -226,9 +226,10 @@ namespace TerraKnight.Player
             inTakeHealth = true;
             try
             {
-                // Master's hit less the defense, then the difficulty's share of that: an easier save takes
-                // a quarter (half, three quarters) of what Master would, whatever the armor.
-                int perMask = Mathf.RoundToInt(StageDamage(World.Areas.MasterDamagePerMask) * SourceFactor(sourceNow));
+                // Scale the enemy's raw damage first; TerraStats then applies this difficulty's defense rule.
+                int perMask = Mathf.RoundToInt((hazardNow > 1
+                    ? StageDamage(World.Areas.MasterHazardDamagePerMask)
+                    : StageDamage(World.Areas.MasterDamagePerMask)) * SourceFactor(sourceNow));
                 // The Dead Man's Sweater (deadMansSweater, P:14920-14924, 15120-15124): a trap's hit halved, at most 300; Hallownest's
                 // spikes are its traps.
                 if (hazardNow == 2 && Items.Equipment.Current.DeadMansSweater)
@@ -236,6 +237,8 @@ namespace TerraKnight.Player
                     perMask = Mathf.Max(1, Mathf.Min(perMask / 2, 300 / Mathf.Max(1, amount)));
                     DevSweater++;
                 }
+                // The enemy's banner carried (its body, its attack, a shot it spawned): its DamageReceived before the defense (Pl:31624-31627, P:14906-14909).
+                if (hazardNow <= 1 && overrideDamage <= 0) perMask = Items.Banners.Taken(sourceNow, perMask);
                 float share = World.GameDifficulty.EnemyFactor;
                 int raw = overrideDamage > 0 ? overrideDamage : Mathf.Max(1, Mathf.RoundToInt(amount * perMask * share));
                 TerraHurt.BeforeHurt();

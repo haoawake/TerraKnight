@@ -1,4 +1,4 @@
-using TerraKnight.Effects;
+﻿using TerraKnight.Effects;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -535,7 +535,7 @@ namespace TerraKnight.Items
                 var box = new Rect(n.Box.x - half, n.Box.y - half, n.Box.width + half * 2f, n.Box.height + half * 2f);
                 if (!SegmentHitsRect(a, b, box)) continue;
                 int dmg = SummonTags.Modify(n.Hm, m.Damage, out bool crit, 1f, true, m.Center, m.ItemTag);
-                melee.HitWith(n.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen + m.ItemPen);
+                melee.HitWith(n.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen + m.ItemPen, autonomous: true);
                 DevHits++;
                 DevHitDamage += dmg;
                 SummonTags.OnHit(n.Hm, m.Damage, m.Center);
@@ -680,7 +680,7 @@ namespace TerraKnight.Items
             {
                 if (npc.Hm == null || npc.Hm.isDead || !npc.Box.Overlaps(box)) continue;
                 int dmg = SummonTags.Modify(npc.Hm, m.Damage, out bool crit, 1f, true, m.Center, m.ItemTag);
-                melee.HitWith(npc.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen + m.ItemPen);
+                melee.HitWith(npc.Col, dmg, m.Knockback, crit ? 100f : 0f, m.Dir, TerraParticles.ToWorld(m.Center), Equipment.Current.ArmorPen + m.ItemPen, autonomous: true);
                 DevHits++;
                 DevHitDamage += dmg;
                 SummonTags.OnHit(npc.Hm, m.Damage, m.Center);

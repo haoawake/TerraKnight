@@ -53,6 +53,7 @@ namespace TerraKnight.Items
             RegisterMagic8();
             RegisterPal();
             RegisterGuns3();
+            RegisterReflect();
         }
     }
 }

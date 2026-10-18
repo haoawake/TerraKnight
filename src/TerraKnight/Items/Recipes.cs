@@ -4,16 +4,16 @@ namespace TerraKnight.Items
 {
     /// <summary>
     /// One Terraria recipe (Recipe.SetupRecipes, 1.4.5.8): the result and how many, the
-    /// ingredients, and the station it's made at. Here every station is a bench or Dirtmouth; a
-    /// station only exists from its stage on (an anvil at once, the Tinkerer's Workshop and the
-    /// Mythril Anvil with the stages Terraria gets them in). A basic item (blocks, torches) is an
-    /// entry with no ingredients and a geo price instead.
+    /// ingredients, and the nearby station it's made at. Only acquisition of materials and
+    /// stations follows progression; possession permits crafting at any stage. A basic item
+    /// is an entry with no ingredients and a geo price instead.
     /// </summary>
     internal sealed class Recipe
     {
         public readonly ItemType Result;
         public readonly int Count;
         public readonly string Station;
+        /// <summary>Estimated acquisition stage for documentation and loot planning; never a crafting gate.</summary>
         public readonly int StationStage;
         public readonly (ItemType Type, int Count)[] Ingredients;
         /// <summary>A basic item's price in copper (a geo is 100); 0 for a real recipe.</summary>
@@ -86,10 +86,14 @@ namespace TerraKnight.Items
             result.AddRange(ChainRecipes());
             result.AddRange(SupplementRecipes());
             result.AddRange(WallRecipes());
+            result.AddRange(World.AreaBlocks.Recipes());
+            result.AddRange(World.RegionalChests.Recipes());
             result.AddRange(FoodRecipes());
             result.AddRange(BossSummons.Recipes());
             result.AddRange(AbilityAccessories.Recipes());
             result.AddRange(CarriedFurniture.Recipes());
+            result.AddRange(ItemDb.Batch1017Recipes());
+            result.AddRange(ItemDb.ContainerRecipes());
             return result;
         }
 
@@ -168,7 +172,7 @@ namespace TerraKnight.Items
         public static bool HasIngredients(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
             if (inv.Infinite) return true;
-            if (!ProgressionBalance.Unlocked(r.Result) || r.StationStage > Shop.UnlockedStage()) return false;
+            if (r.IsBought && !ProgressionBalance.Unlocked(r.Result)) return false;
             foreach (var (t, n) in r.Ingredients)
                 if (Count(inv, t, chests) < n) return false;
             return true;

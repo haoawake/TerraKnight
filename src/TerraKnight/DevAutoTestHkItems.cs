@@ -7,9 +7,10 @@ namespace TerraKnight
 {
     /// <summary>
     /// Dev (suite "hkitems"): Hallownest's key items as items. Given into the Hallownest bag as the game's records say
-    /// (the City Crest, two Simple Keys, the Lantern, the Kingsoul), working only in hand (the records read false or 0
-    /// from the bag and from an unselected hotbar slot), the Kingsoul turned Void Heart, a key used up, refused anywhere
-    /// but the hotbar and the bag, a stray one sent back, the game's own pictures, the bag drawn.
+    /// (the City Crest, two Simple Keys, the Lantern, the Kingsoul), working wherever carried (the records read true from
+    /// the bag, from an unselected hotbar slot, in hand), not while both bags are full and back once a slot is free, the
+    /// Kingsoul turned Void Heart, a key used up, refused anywhere but the hotbar and the bag, a stray one sent back, the
+    /// game's own pictures, the bag drawn.
     /// </summary>
     internal sealed partial class DevAutoTest
     {
@@ -42,25 +43,45 @@ namespace TerraKnight
             int Bar(ItemType t) => inv.Slots.Take(Inventory.HotbarSize).Where(s => !s.IsEmpty && s.Type == t).Sum(s => s.Count);
             Check("按存档给进圣巢背包", Bag(ItemType.HkCityCrest) == 1 && Bag(ItemType.HkSimpleKey) == 2 && Bag(ItemType.HkLumaflyLantern) == 1 && Bag(ItemType.HkKingsoul) == 1,
                   $"纹章 {Bag(ItemType.HkCityCrest)}，钥匙 {Bag(ItemType.HkSimpleKey)}，灯笼 {Bag(ItemType.HkLumaflyLantern)}，国王之魂 {Bag(ItemType.HkKingsoul)}");
-            Check("在背包里不生效", !pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 0 && !pd.GetBool("equippedCharm_36"),
-                  $"hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}，equippedCharm_36 {pd.GetBool("equippedCharm_36")}");
+            inv.Override = -1;
+            inv.Selected = 0;
+            Check("在圣巢背包里就生效", pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 2 && pd.GetBool("equippedCharm_36") && pd.GetBool("hasLantern"),
+                  $"手里 {inv.Current.Def?.Name ?? "空"}，hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}，equippedCharm_36 {pd.GetBool("equippedCharm_36")}，hasLantern {pd.GetBool("hasLantern")}");
             InventoryGui.Open = true;
             for (int i = 0; i < inv.HkBag.Length; i++)
                 if (!inv.HkBag[i].IsEmpty && inv.HkBag[i].Type != ItemType.HkLumaflyLantern) InventoryGui.DevClickHkBag(i, shift: true);
             InventoryGui.Open = false;
             int Slot(ItemType t) => System.Array.FindIndex(inv.Slots, s => !s.IsEmpty && s.Type == t);
-            inv.Override = -1;
             inv.Selected = Slot(ItemType.HkSimpleKey);
-            Check("快捷栏里没拿在手上不生效", Bar(ItemType.HkCityCrest) == 1 && !pd.GetBool("hasCityKey") && !pd.GetBool("equippedCharm_36"),
+            Check("在快捷栏里没拿在手上也生效", Bar(ItemType.HkCityCrest) == 1 && pd.GetBool("hasCityKey") && pd.GetBool("equippedCharm_36"),
                   $"手里 {inv.Current.Def?.Name}，hasCityKey {pd.GetBool("hasCityKey")}，equippedCharm_36 {pd.GetBool("equippedCharm_36")}");
             Check("拿着钥匙生效", pd.GetInt("simpleKeys") == 2, $"simpleKeys {pd.GetInt("simpleKeys")}");
             inv.Selected = Slot(ItemType.HkCityCrest);
-            Check("拿着城市纹章生效", pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 0, $"hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}");
+            Check("拿着城市纹章生效，钥匙照样算", pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 2, $"hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}");
             inv.Selected = Slot(ItemType.HkKingsoul);
             Check("拿着国王之魂生效", pd.GetBool("equippedCharm_36"), $"equippedCharm_36 {pd.GetBool("equippedCharm_36")}");
+
+            // Both bags full as the Tram Pass is got: not carried, not counted; a hotbar slot freed, it comes in and counts.
+            bool tramWas = pd.hasTramPass;
+            pd.hasTramPass = false;
+            yield return null;
+            var fillers = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < HkItems.KeyBagSlots; i++) if (inv.HkBag[i].IsEmpty) { inv.HkBag[i] = ItemStack.Of(ItemType.Torch, 1); fillers.Add(i); }
+            var barFillers = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < Inventory.HotbarSize; i++) if (inv.Slots[i].IsEmpty) { inv.Slots[i] = ItemStack.Of(ItemType.Torch, 1); barFillers.Add(i); }
+            pd.hasTramPass = true;
+            yield return null;
+            bool fullRefused = !pd.GetBool("hasTramPass") && !HkItems.Carried(inv, ItemType.HkTramPass);
+            if (barFillers.Count > 0) inv.Slots[barFillers[0]] = default;
+            yield return null;
+            Check("两个背包都满时没带上不算，腾出一格放进来就算", barFillers.Count > 0 && fullRefused && pd.GetBool("hasTramPass") && Bar(ItemType.HkTramPass) == 1,
+                  $"空出快捷栏 {barFillers.Count} 格，满时 {fullRefused}，腾出后 hasTramPass {pd.GetBool("hasTramPass")}，快捷栏里 {Bar(ItemType.HkTramPass)}");
+            foreach (int i in fillers) inv.HkBag[i] = default;
+            foreach (int i in barFillers) if (!inv.Slots[i].IsEmpty && inv.Slots[i].Type == ItemType.Torch) inv.Slots[i] = default;
+            pd.hasTramPass = tramWas;
+            yield return null;
             InventoryGui.Open = true;
-            bool lit = pd.GetBool("hasLantern");
-            Check("灯笼在背包里不照明（没戴矿工头盔）", !lit || Equipment.Current.Light || Equipment.Current.NightVision, $"hasLantern {lit}");
+            Check("灯笼放在圣巢背包里就照明", pd.GetBool("hasLantern") && Bag(ItemType.HkLumaflyLantern) == 1, $"hasLantern {pd.GetBool("hasLantern")}，灯笼在圣巢背包 {Bag(ItemType.HkLumaflyLantern)}");
 
             // The Kingsoul turned Void Heart: the item follows.
             pd.royalCharmState = 4;

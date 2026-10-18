@@ -101,6 +101,7 @@ namespace TerraKnight
             {
                 long cost = Prefixes.ReforgeCost(TownNpcs.ReforgeItem);
                 long purse = Shop.Purse;
+                InventoryGui.DevReleaseHammer();
                 if (!InventoryGui.DevReforge()) { paidRight = false; break; }
                 if (Shop.Purse != purse - cost) paidRight = false;
                 int p = TownNpcs.ReforgeItem.Prefix;
@@ -140,7 +141,7 @@ namespace TerraKnight
                 yield return new WaitForSeconds(2.5f);
                 int nails = inv.Slots.Count(s => s.Type == ItemType.KnightNail);
                 Check("骨钉在重铸栏时不会再补一把", nails == 0 && TownNpcs.ReforgeItem.Type == ItemType.KnightNail, $"背包里 {nails} 把");
-                for (int k = 0; k < 60 && TownNpcs.ReforgeItem.Prefix != 81; k++) InventoryGui.DevReforge();
+                for (int k = 0; k < 60 && TownNpcs.ReforgeItem.Prefix != 81; k++) { InventoryGui.DevReleaseHammer(); InventoryGui.DevReforge(); }
                 var nail = TownNpcs.ReforgeItem;
                 Check("骨钉重铸", nail.Prefix > 0, $"{nail.Def.Name}，伤害 {ItemDb.Get(ItemType.KnightNail).Damage}→{nail.Def.Damage}，花费 {Shop.Money(Prefixes.ReforgeCost(nail))}");
                 TownNpcs.Close(false);

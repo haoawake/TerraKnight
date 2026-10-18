@@ -28,20 +28,13 @@ namespace TerraKnight.Items
             Migrated = migrated;
         }
 
-        public static long Held(Inventory inv)
-        {
-            long n = 0;
-            foreach (var s in inv.Slots) if (!s.IsEmpty && s.Type == ItemType.Geo) n += s.Count;
-            if (!inv.Mouse.IsEmpty && inv.Mouse.Type == ItemType.Geo) n += inv.Mouse.Count;
-            return n;
-        }
+        public static long Held(Inventory inv) => Currencies.Held(inv, ItemType.Geo);
 
-        public static long Banked(Inventory inv)
-        {
-            long n = 0;
-            foreach (var s in inv.Bank) if (!s.IsEmpty && s.Type == ItemType.Geo) n += s.Count;
-            return n;
-        }
+        /// <summary>The geo in the player's storages: the Piggy Bank's, the Safe's, the Defender's Forge's, the Void Vault's (all spent in shops).</summary>
+        public static long Banked(Inventory inv) => Currencies.Banked(inv, ItemType.Geo);
+
+        /// <summary>Geo taken from the storages in their order (Player.BuyItem: bank, bank2, bank3, bank4). Returns how much.</summary>
+        static long TakeBanked(Inventory inv, long geo) => Currencies.TakeBanked(inv, ItemType.Geo, geo);
 
         /// <summary>Each frame in play: the game's geo and the bag's held equal.</summary>
         public static void Tick(TerraMod mod)
@@ -70,15 +63,33 @@ namespace TerraKnight.Items
                 long left = -dPd - Take(inv.Slots, ref inv.Mouse, -dPd);
                 // A death takes only the bag's (its shade carries that much); a toll or a price the bank too.
                 var hero = HeroController.SilentInstance;
-                if (left > 0 && !(hero != null && hero.cState.dead))
-                {
-                    var none = default(ItemStack);
-                    Take(inv.Bank, ref none, left);
-                }
+                if (left > 0 && !(hero != null && hero.cState.dead)) TakeBanked(inv, left);
             }
             long total = Held(inv) + Banked(inv);
             if (pd.geo != Clamp(total)) SetGameGeo(pd, total);
             lastPd = pd.geo;
+        }
+
+        /// <summary>A geo piece being picked up (GeoControl's trigger, its AddGeo inside).</summary>
+        static int collecting;
+        public static int DevPopped;
+
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(GeoControl), "OnTriggerEnter2D")]
+        static void PickupStart() => collecting++;
+
+        [HarmonyLib.HarmonyFinalizer]
+        [HarmonyLib.HarmonyPatch(typeof(GeoControl), "OnTriggerEnter2D")]
+        static void PickupEnd() => collecting = Mathf.Max(0, collecting - 1);
+
+        /// <summary>A geo piece picked up (small, medium or large): how much, over the player, as Terraria pops a coin's (PopupText, merged with the last).</summary>
+        [HarmonyLib.HarmonyPostfix]
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.AddGeo))]
+        static void Picked(HeroController __instance, int amount)
+        {
+            if (collecting <= 0 || amount <= 0 || __instance == null) return;
+            UI.PopupText.Show(ItemDb.Get(ItemType.Geo), amount, __instance.GetComponent<BoxCollider2D>().bounds.center);
+            DevPopped++;
         }
 
         /// <summary>The shade's geo at a death: what the bag carried, not the Piggy Bank's share of the counter.</summary>
@@ -91,7 +102,7 @@ namespace TerraKnight.Items
             value = Clamp(System.Math.Min(value, Held(mod.Inventory)));
         }
 
-        static int Clamp(long n) => n > int.MaxValue ? int.MaxValue : n < 0 ? 0 : (int)n;
+        static int Clamp(long n) => Currencies.Clamp(n);
 
         static void SetGameGeo(PlayerData pd, long held)
         {
@@ -101,43 +112,10 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Geo into the bag; what doesn't fit falls at the player's feet.</summary>
-        public static void Give(TerraMod mod, long n)
-        {
-            var hero = HeroController.SilentInstance;
-            while (n > 0)
-            {
-                int part = (int)Mathf.Min(n, int.MaxValue);
-                n -= part;
-                int left = mod.Inventory.Pickup(ItemType.Geo, part);
-                if (left > 0 && hero != null) WorldItems.Drop(ItemStack.Of(ItemType.Geo, left), hero.GetComponent<BoxCollider2D>().bounds.center);
-            }
-        }
+        public static void Give(TerraMod mod, long n) => Currencies.Give(mod, ItemType.Geo, n);
 
         /// <summary>Geo out of some slots (and the cursor), the smallest stacks first; how much was taken.</summary>
-        static long Take(ItemStack[] slots, ref ItemStack mouse, long n)
-        {
-            long taken = 0;
-            while (n > 0)
-            {
-                int best = -1;
-                for (int i = 0; i < slots.Length; i++)
-                    if (!slots[i].IsEmpty && slots[i].Type == ItemType.Geo && (best < 0 || slots[i].Count < slots[best].Count)) best = i;
-                if (best < 0) break;
-                int part = (int)Mathf.Min(n, slots[best].Count);
-                slots[best].Count -= part;
-                if (slots[best].Count <= 0) slots[best] = default;
-                n -= part;
-                taken += part;
-            }
-            if (n > 0 && !mouse.IsEmpty && mouse.Type == ItemType.Geo)
-            {
-                int part = (int)Mathf.Min(n, mouse.Count);
-                mouse.Count -= part;
-                if (mouse.Count <= 0) mouse = default;
-                taken += part;
-            }
-            return taken;
-        }
+        static long Take(ItemStack[] slots, ref ItemStack mouse, long n) => Currencies.Take(slots, ref mouse, ItemType.Geo, n);
 
         /// <summary>Pays geo from the bag, then the Piggy Bank; false (nothing taken) when there isn't enough.</summary>
         public static bool Pay(Inventory inv, long geo)
@@ -145,8 +123,7 @@ namespace TerraKnight.Items
             if (geo <= 0) return true;
             if (Held(inv) + Banked(inv) < geo) return false;
             geo -= Take(inv.Slots, ref inv.Mouse, geo);
-            var none = default(ItemStack);
-            if (geo > 0) Take(inv.Bank, ref none, geo);
+            if (geo > 0) TakeBanked(inv, geo);
             return true;
         }
     }

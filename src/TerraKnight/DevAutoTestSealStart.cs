@@ -22,6 +22,8 @@ namespace TerraKnight
             int stage = Shop.DevStage, selected = inv.Selected;
             int crystals = mod.Stats.LifeCrystals, fruits = mod.Stats.LifeFruits;
             var kills = new Dictionary<string, int>(Bestiary.Kills);
+            // A boss of a later stage one-shots the test's gear: hits leave a life (a death in a dream wakes the Knight).
+            Player.TerraStats.DevImmortal = true;
             int ok = 0, all = 0;
             var bad = new List<string>();
             void Check(string key, bool pass, string detail)
@@ -144,6 +146,7 @@ namespace TerraKnight
                 PlayerData.instance.hasDreamNail = dreamNail;
                 Bestiary.Kills.Clear();
                 foreach (var kv in kills) Bestiary.Kills[kv.Key] = kv.Value;
+                Player.TerraStats.DevImmortal = false;
                 Plugin.Log.LogInfo($"[AutoTest] 召唤开战 合计 {ok}/{all} {(ok == all ? "通过" : "不通过：" + string.Join("、", bad))}");
             }
         }

@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "3.2.0";
+        public const string Version = "4.0.0";
 
         internal static ManualLogSource Log;
 
@@ -100,6 +100,10 @@ namespace TerraKnight
             UI.WorldMap.Enabled = terrariaMap.Value;
             UI.WorldMap.StyleSetting = Config.Bind("Gameplay", "MapStyle", 1,
                 "泰拉瑞亚地图的显示方式（Tab 切换，会记住）：0 = 不显示，1 = 右上角小地图，2 = 半透明覆盖在画面上。\nHow the Terraria map shows (Tab cycles it and is remembered): 0 = hidden, 1 = minimap at the top right, 2 = translucent overlay over the screen.");
+            Player.TerraCamera.Bind(Config);
+            UI.DialogueBroadcast.Bind(Config);
+            Items.NailAim.Bind(Config);
+            World.HoleShapes.Bind(Config);
             var darkness = Config.Bind("Gameplay", "HollowKnightDarkness", false,
                 "保留空洞骑士的黑暗：没有光蝇灯笼时，黑暗区域（呼啸悬崖边缘、深巢、水晶山峰的矿道等）把视野缩成人物周围一小圈。默认关：不缩视野；开着泰拉瑞亚光照时，这些地方按泰拉瑞亚的方式是暗的，由火把、头灯、光蝇灯笼或法术的光照亮。\nHollow Knight's darkness: without the Lumafly Lantern, dark areas (the dark edges of the Howling Cliffs, Deepnest, Crystal Peak's mines and so on) close the view to a small circle around the player. Off by default: no narrowed view; with Terraria lighting on, these places are dark the Terraria way and are lit by torches, the Mining Helmet, the Lumafly Lantern or spells.");
             World.SceneMood.KeepDarkness = darkness.Value;
@@ -138,7 +142,7 @@ namespace TerraKnight
             World.EnemyBlockers.Init();
             UI.TerraCursor.Install(host, harmony);
             if (mod.AutoTest != null && testSuite.Value == "profile") DevLoadProfiler.Install(harmony);
-            if (mod.AutoTest != null && (suite == "lag" || suite == "sentryscan" || suite == "v251diag")) DevFrameProfiler.Install(harmony);
+            if (mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag")) DevFrameProfiler.Install(harmony);
             Log.LogInfo($"{ModName} {Version} 已加载，泰拉瑞亚素材：{TerrariaAssets.ImagesDir}");
         }
     }

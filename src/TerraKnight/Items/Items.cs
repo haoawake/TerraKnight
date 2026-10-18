@@ -183,8 +183,8 @@ namespace TerraKnight.Items
         // </generated>
         // Consumables.
         LesserHealingPotion, HealingPotion, LesserManaPotion, ManaPotion, LifeCrystal, ManaCrystal,
-        // Crafting stations set down, and the wood gear made at the first of them (ItemsStations.cs).
-        WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Chain,
+        // Crafting stations set down, the wooden chair, and the wood gear made at the first of them (ItemsStations.cs).
+        WorkBench, Chair, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Chain,
         WoodHelmet, WoodBreastplate, WoodGreaves,
         // The Knight's own (DreamNailItem.cs, NailItem.cs).
         DreamNail, KnightNail,
@@ -282,6 +282,50 @@ namespace TerraKnight.Items
         // Append only: the star a kill leaves for mana (Items/ManaStars.cs).
         Star,
 
+        // Append only: the 10-17 batch (Items/ItemsBatch1017.cs): the bed, the storage (World/Chests.cs).
+        Bed, Safe, DefendersForge, VoidVault, VoidBag, MoneyTrough,
+        // The potions it lacked (World/Wormhole.cs): to a teammate, home and back; the Traveling Merchant's Sake.
+        WormholePotion, PotionOfReturn, Sake,
+        // Hallownest's Grimmchild, a summon (Items/HkItems.cs).
+        HkGrimmchild,
+        // Append only: the Banner Case and the Potion Box (Items/Containers.cs), and a banner for each journal record (Items/Banners.cs).
+        BannerCase, PotionBox,
+        BannerAbyssCrawler, BannerAbyssTendril, BannerAcidFlyer, BannerAcidWalker, BannerAngryBuzzer, BannerBabyCentipede, BannerBeamMiner, BannerBeeHatchling, BannerBeeStinger, BannerBigBee, BannerBigCentipede, BannerBlobFlyer, BannerBlobble, BannerBlocker, BannerBlowFly, BannerBouncer, BannerBurstingBouncer, BannerBurstingZombie, BannerBuzzer, BannerCeilingDropper, BannerCentipedeHatcher, BannerClimber, BannerColFlyingSentry, BannerColHopper, BannerColMiner, BannerColMosquito, BannerColRoller, BannerColShield, BannerColWorm, BannerCrawler, BannerCrystalCrawler, BannerCrystalFlyer, BannerEggSac, BannerElectricMage, BannerFatFluke, BannerFlameBearerLarge, BannerFlameBearerMed, BannerFlameBearerSmall, BannerFlipHopper, BannerFlukefly, BannerFlukeman, BannerFlyingSentryJavelin, BannerFlyingSentrySword, BannerFungCrawler, BannerFungifiedZombie, BannerFungoonBaby, BannerFungusFlyer, BannerGardenZombie, BannerGiantHopper, BannerGorgeousHusk, BannerGrassHopper, BannerGreatShieldZombie, BannerGrubMimic, BannerHatcher, BannerHatchling, BannerHealthScuttler, BannerHeavyMantis, BannerHopper, BannerInflater, BannerJellyCrawler, BannerJellyfish, BannerLaserBug, BannerLazyFlyer, BannerLesserMawlek, BannerMage, BannerMageBalloon, BannerMageBlob, BannerMantis, BannerMantisFlyerChild, BannerMantisHeavyFlyer, BannerMawlekTurret, BannerMenderBug, BannerMinesCrawler, BannerMiniSpider, BannerMosquito, BannerMossCharger, BannerMossFlyer, BannerMossKnight, BannerMossKnightFat, BannerMossWalker, BannerMossmanRunner, BannerMossmanShaker, BannerMummy, BannerMushroomBaby, BannerMushroomBrawler, BannerMushroomRoller, BannerMushroomTurret, BannerOrangeBalloon, BannerOrangeScuttler, BannerPalaceFly, BannerPigeon, BannerPlantShooter, BannerPrayerSlug, BannerRoller, BannerRoyalCoward, BannerRoyalDandy, BannerRoyalGuard, BannerRoyalPlumper, BannerSentry, BannerSentryFat, BannerShootSpider, BannerSibling, BannerSlashSpider, BannerSnapperTrap, BannerSpiderCorpse, BannerSpiderFlyer, BannerSpitter, BannerSpittingZombie, BannerSuperSpitter, BannerWhiteRoyal, BannerWorm, BannerZapBug, BannerZombieBarger, BannerZombieGuard, BannerZombieHive, BannerZombieHornhead, BannerZombieLeaper, BannerZombieMiner, BannerZombieMinerAt0, BannerZombieRunner, BannerZombieShield, BannerZotelingBalloon, BannerZotelingBuzzer, BannerZotelingHopper, BannerBigBuzzer, BannerMageKnight, BannerPaleLurker,
+        // The Auto-Sell Bag: its list's items sold as they are picked up (Items/Containers.cs).
+        AutoSellBag,
+        // The Fishing Chest: fished up now and then, bait and fishing gear inside (Items/FishingChest.cs).
+        FishingChest,
+        // Append only: the Wooden Door and the Wooden Table, for houses (World/StationsHousing.cs, World/Housing.cs).
+        WoodenDoor, WoodenTable,
+        // Append only: each Hallownest area's own block and its wall, in World/AreaBlocks.cs's order (that file relies on it).
+        AreaBlockKingsPass, AreaBlockDirtmouth, AreaBlockHowlingCliffs, AreaBlockCrossroads, AreaBlockGreenpath, AreaBlockFungalWastes, AreaBlockFogCanyon, AreaBlockQueensGardens, AreaBlockCityOfTears, AreaBlockRoyalWaterways, AreaBlockCrystalPeak, AreaBlockRestingGrounds, AreaBlockDeepnest, AreaBlockBeastsDen, AreaBlockKingdomsEdge, AreaBlockHive, AreaBlockAncientBasin, AreaBlockAbyss, AreaBlockWhitePalace, AreaBlockBlackEggTemple, AreaBlockColosseum, AreaBlockGrimmTroupe, AreaBlockDream, AreaBlockGodhome,
+        AreaWallKingsPass, AreaWallDirtmouth, AreaWallHowlingCliffs, AreaWallCrossroads, AreaWallGreenpath, AreaWallFungalWastes, AreaWallFogCanyon, AreaWallQueensGardens, AreaWallCityOfTears, AreaWallRoyalWaterways, AreaWallCrystalPeak, AreaWallRestingGrounds, AreaWallDeepnest, AreaWallBeastsDen, AreaWallKingdomsEdge, AreaWallHive, AreaWallAncientBasin, AreaWallAbyss, AreaWallWhitePalace, AreaWallBlackEggTemple, AreaWallColosseum, AreaWallGrimmTroupe, AreaWallDream, AreaWallGodhome,
+
+        // Append only: Hallownest's Dream Essence, a currency of the coin slots (Items/DreamEssence.cs).
+        DreamEssence,
+
+        // Append only: the 48 regional torches, in World/RegionalTorches.cs's order (that file relies on it).
+        TorchKingsPass, TorchDirtmouth, TorchCrossroads, TorchInfectedCrossroads, TorchGreenpath, TorchLakeOfUnn, TorchFogCanyon, TorchArchives,
+        TorchQueensStation, TorchFungalWastes, TorchMantisVillage, TorchCityOfTears, TorchSoulSanctum, TorchWatchersSpire, TorchPleasureHouse,
+        TorchTowerOfLove, TorchRoyalWaterways, TorchIsmasGrove, TorchJunkPit, TorchCrystalPeak, TorchHallownestsCrown, TorchRestingGrounds,
+        TorchSpiritsGlade, TorchBlueLake, TorchHowlingCliffs, TorchJonisRepose, TorchDeepnest, TorchBeastsDen, TorchWeaversDen, TorchDistantVillage,
+        TorchFailedTramway, TorchKingdomsEdge, TorchCastOffShell, TorchColosseum, TorchHive, TorchQueensGardens, TorchStoneSanctuary,
+        TorchOvergrownMound, TorchAncestralMound, TorchAncientBasin, TorchWhitePalace, TorchPathOfPain, TorchAbyss, TorchBirthplace,
+        TorchBlackEggTemple, TorchDream, TorchGodhome, TorchGrimmTroupe,
+
+        // Append only: the areas' fishing crates the Terraria biome crates didn't stand for (Items/FishingAreaCrates.cs).
+        CrateKingsPass, CrateDirtmouth, CrateCrossroads, CrateFungalWastes, CrateHowlingCliffs, CrateCrystalPeak, CrateBeastsDen, CrateAncientBasin,
+        CrateQueensGardens, CrateColosseum, CrateHive, CrateAbyss, CrateBlackEggTemple, CrateDream, CrateGrimmTroupe,
+        CofferKingsPass, CofferDirtmouth, CofferCrossroads, CofferFungalWastes, CofferHowlingCliffs, CofferCrystalPeak, CofferBeastsDen, CofferAncientBasin,
+        CofferQueensGardens, CofferColosseum, CofferHive, CofferAbyss, CofferBlackEggTemple, CofferDream, CofferGrimmTroupe,
+
+        // Append only: the areas' chests, in World.AreaBlocks.All's order (World/RegionalChests.cs relies on it).
+        ChestKingsPass, ChestDirtmouth, ChestHowlingCliffs, ChestCrossroads, ChestGreenpath, ChestFungalWastes, ChestFogCanyon, ChestQueensGardens,
+        ChestCityOfTears, ChestRoyalWaterways, ChestCrystalPeak, ChestRestingGrounds, ChestDeepnest, ChestBeastsDen, ChestKingdomsEdge, ChestHive,
+        ChestAncientBasin, ChestAbyss, ChestWhitePalace, ChestBlackEggTemple, ChestColosseum, ChestGrimmTroupe, ChestDream, ChestGodhome,
+
+        // Append only: the Ultimate Healing Potion (Items/ItemsUltimatePotion.cs).
+        UltimateHealingPotion,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -728,6 +772,7 @@ namespace TerraKnight.Items
         SpilledLiquid, FlaironHead, // (a pool where a liquid rocket burst) 404
         FallingStar, // 12 (the night sky's)
         HallowLance, ThunderBolt, LightningStrikeBolt,
+        ReflectedOrb, // (a shot a shield sent back, as a slow orb)
     }
 
     /// <summary>
@@ -1077,6 +1122,8 @@ namespace TerraKnight.Items
         public PermanentBoost Boost;
         /// <summary>Placed in the world as a chest that holds things (Chest).</summary>
         public bool PlacesChest;
+        /// <summary>The chest's look: 0 Terraria's own, 1.. an area's (World.RegionalChests).</summary>
+        public int ChestStyle;
         /// <summary>Placed in the world as a crafting station (World.Stations).</summary>
         public World.StationKind PlacesStation;
         public ArmorSlot Armor;
@@ -1093,6 +1140,8 @@ namespace TerraKnight.Items
         /// <summary>When Hallownest first offers it, 0-5 (World.Areas levels), and how.</summary>
         public int Stage;
         public ItemSource Source;
+        /// <summary>A place in the item list with nothing made of it (an item taken out, the God Tamer's seal): offered nowhere.</summary>
+        public bool Placeholder;
         /// <summary>Item.material: a crafting ingredient with no use of its own.</summary>
         public bool Material;
         /// <summary>How deep into Hallownest the player must have been before the shop sells it (0-3).</summary>
@@ -1120,7 +1169,7 @@ namespace TerraKnight.Items
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
         public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || FishingPower > 0 || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
-            || BuffType > 0 || PetBuff > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type) || Type == ItemType.WaterCandle);
+            || BuffType > 0 || PetBuff > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type) || Type == ItemType.WaterCandle || Type == ItemType.MoneyTrough || Type == ItemType.VoidBag || Type == ItemType.PotionOfReturn || Containers.IsContainer(Type));
 
         /// <summary>
         /// Ammo with no use of its own (Item.useStyle 0: Explosive Jack 'O Lanterns, rockets, darts,
@@ -1539,6 +1588,7 @@ namespace TerraKnight.Items
             AddCraftChain(list);
             AddCraftingSupplement(list);
             AddFishing(list);
+            list.Add(FishingChest.Def());
             AddFood(list);
             AddPets(list);
             HkItems.AddItems(list);
@@ -1547,11 +1597,18 @@ namespace TerraKnight.Items
             AddTombstones(list);
             AddAbilityAccessories(list);
             AddCarriedFurniture(list);
+            AddBatch1017(list);
+            AddContainers(list);
             AddArmor2(list);
             AddHeart(list);
+            AddUltimatePotion(list);
             if (Relics.Enabled) AddRelics(list);
             TreasureBags.AddItems(list);
             AddWalls(list);
+            World.AreaBlocks.AddItems(list);
+            AddRegionalTorches(list);
+            Fishing.AddAreaCrates(list);
+            World.RegionalChests.AddItems(list);
             BossSummons.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
@@ -1576,9 +1633,9 @@ namespace TerraKnight.Items
             })
                 if (arr[(int)t] != null) arr[(int)t].AutoReuse = false;
             for (int i = 0; i < arr.Length; i++)
-                if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1" };
+                if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1", Placeholder = true };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Sources(), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(AbilityAccessorySources(), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(AbilityAccessorySources(), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1588,8 +1645,8 @@ namespace TerraKnight.Items
             }
             // 1.4.4: everything that stacks at all stacks to 9999 (Item.CommonMaxStack): blocks, torches, bombs, potions, crystals.
             foreach (var d in arr) if (d != null && d.MaxStack > 1) d.MaxStack = 9999;
-            // Money stacks as far as a count goes.
-            arr[(int)ItemType.Geo].MaxStack = int.MaxValue;
+            // Money stacks as far as a count goes: the Geo and the Dream Essence.
+            foreach (var t in Currencies.All) arr[(int)t].MaxStack = int.MaxValue;
             // The Chaos Cylinder's other modes come only from toggling it: its stage, source and value.
             foreach (var t in new[] { ItemType.ChaosCylinderFull, ItemType.ChaosCylinderRandom, ItemType.ChaosCylinderSimple })
             {
@@ -1983,7 +2040,7 @@ namespace TerraKnight.Items
     /// With the inventory open, an item held on the cursor is the one used when clicking in the
     /// world (Terraria's selectedItem 58).
     /// </summary>
-    internal sealed class Inventory
+    internal sealed partial class Inventory
     {
         public const int Columns = 10;
         public const int Rows = 5;
@@ -1995,14 +2052,18 @@ namespace TerraKnight.Items
         /// </summary>
         public const int AmmoSlots = 4;
         public const int AmmoEnd = Size + AmmoSlots;
-        /// <summary>Terraria's coin slots (inventory 50-53), one of them: the Geo, the only money, is one stack. After the ammo slots.</summary>
-        public const int CoinSlots = 1;
+        /// <summary>
+        /// Terraria's four coin slots (inventory 50-53), after the ammo slots: CoinSlot to Total - 1, top to bottom.
+        /// Hallownest's currencies (Currencies: the Geo, the Dream Essence), each one stack, any of them in any slot. A save
+        /// from when there was one keeps its Geo in the first.
+        /// </summary>
+        public const int CoinSlots = 4;
         public const int CoinSlot = AmmoEnd;
         public const int Total = AmmoEnd + CoinSlots;
         public static bool IsAmmoSlot(int i) => i >= Size && i < AmmoEnd;
-        public static bool IsCoinSlot(int i) => i == CoinSlot;
-        /// <summary>ItemSlot's InventoryCoin context: money only.</summary>
-        public static bool FitsCoinSlot(ItemDef d) => d != null && d.Type == ItemType.Geo;
+        public static bool IsCoinSlot(int i) => i >= CoinSlot && i < Total;
+        /// <summary>ItemSlot's InventoryCoin context: currencies only.</summary>
+        public static bool FitsCoinSlot(ItemDef d) => d != null && Currencies.Is(d.Type);
 
         /// <summary>Item.FitsAmmoSlot: what an ammo slot takes (ammo of any kind, the Ale too).</summary>
         public static bool FitsAmmoSlot(ItemDef d) => d != null && (d.Ammo != AmmoKind.None || d.BaitPower > 0);
@@ -2039,6 +2100,11 @@ namespace TerraKnight.Items
         /// <summary>Player.bank: the Piggy Bank's 40 slots, the same in every one set down.</summary>
         public const int BankSlots = 40;
         public readonly ItemStack[] Bank = new ItemStack[BankSlots];
+        /// <summary>Player.bank2 .. bank4: the Safe's, the Defender's Forge's, the Void Vault's (the Void Bag's too).</summary>
+        public readonly ItemStack[] Safe = new ItemStack[BankSlots], Forge = new ItemStack[BankSlots], Void = new ItemStack[BankSlots];
+
+        /// <summary>A personal storage by its number (0 the Piggy Bank's, 1 the Safe's, 2 the Defender's Forge's, 3 the Void Vault's).</summary>
+        public ItemStack[] BankOf(int kind) => kind == 1 ? Safe : kind == 2 ? Forge : kind == 3 ? Void : Bank;
 
         /// <summary>The Hallownest bag: Hallownest's key items not in the hotbar (HkItems).</summary>
         public readonly ItemStack[] HkBag = new ItemStack[HkItems.BagSlots];
@@ -2106,7 +2172,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < AccessorySlots; i++) (Accessories[i], l.Accessories[i]) = (l.Accessories[i], Accessories[i]);
             if (!BagPerLoadout) return;
             // The money stays the player's whatever the loadout.
-            for (int i = 0; i < Total; i++) if (i != CoinSlot) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
+            for (int i = 0; i < Total; i++) if (!IsCoinSlot(i)) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
             (Selected, l.Selected) = (l.Selected, Selected);
         }
 
@@ -2186,8 +2252,9 @@ namespace TerraKnight.Items
             for (int i = 0; i < AccessorySlots; i++) Accessories[i] = default;
             for (int i = 0; i < ArmorSlots; i++) Armor[i] = default;
             for (int i = 0; i < MiscSlots; i++) Misc[i] = default;
-            for (int i = 0; i < BankSlots; i++) Bank[i] = default;
+            for (int i = 0; i < BankSlots; i++) Bank[i] = Safe[i] = Forge[i] = Void[i] = default;
             for (int i = 0; i < HkBag.Length; i++) HkBag[i] = default;
+            ClearContainers();
             foreach (var l in Loadouts)
             {
                 for (int i = 0; i < ArmorSlots; i++) l.Armor[i] = default;
@@ -2217,6 +2284,7 @@ namespace TerraKnight.Items
         public int AddSome(ItemType type, int count)
         {
             var def = ItemDb.Get(type);
+            count = FillCoins(def, count);
             count = FillAmmo(def, count);
             for (int i = 0; i < Size && count > 0; i++)
             {
@@ -2287,30 +2355,51 @@ namespace TerraKnight.Items
             return count;
         }
 
-        /// <summary>Player.GetItem's coins: money goes to the coin slot first. Returns how many are left.</summary>
-        int FillCoins(ItemDef def, int count)
+        /// <summary>
+        /// Player.GetItem's coins: a currency tops up its stacks in the coin slots, then in the bag
+        /// (GetItem_FillIntoOccupiedSlot: 50-53 first, then 0 on), then takes an empty coin slot, the
+        /// top one first. Returns how many are left (for the bag's empty slots).
+        /// </summary>
+        int FillCoins(ItemDef def, int count, bool bag = true)
         {
             if (!FitsCoinSlot(def) || count <= 0) return count;
-            var s = Slots[CoinSlot];
-            if (!s.IsEmpty && s.Type != def.Type) return count;
-            int have = s.IsEmpty ? 0 : s.Count;
-            int moved = System.Math.Min(count, def.MaxStack - have);
-            if (moved <= 0) return count;
-            if (s.IsEmpty) Slots[CoinSlot] = ItemStack.Of(def.Type, moved);
-            else Slots[CoinSlot].Count += moved;
-            return count - moved;
+            count = TopUp(def, count, CoinSlot, Total);
+            if (bag) count = TopUp(def, count, 0, Size);
+            for (int i = CoinSlot; i < Total && count > 0; i++)
+            {
+                if (!Slots[i].IsEmpty) continue;
+                int moved = System.Math.Min(count, def.MaxStack);
+                Slots[i] = ItemStack.Of(def.Type, moved);
+                count -= moved;
+            }
+            return count;
         }
 
-        /// <summary>The Geo the bag carries elsewhere gathered into the coin slot (a save from before it had one).</summary>
+        /// <summary>An item onto its stacks among slots from to to - 1, in order. Returns how many are left.</summary>
+        int TopUp(ItemDef def, int count, int from, int to)
+        {
+            for (int i = from; i < to && count > 0; i++)
+            {
+                if (Slots[i].IsEmpty || Slots[i].Type != def.Type || Slots[i].Count >= def.MaxStack || Slots[i].Prefix != 0 || Slots[i].Forge != 0) continue;
+                int moved = System.Math.Min(count, def.MaxStack - Slots[i].Count);
+                Slots[i].Count += moved;
+                count -= moved;
+            }
+            return count;
+        }
+
+        /// <summary>The currencies the bag carries elsewhere gathered into the coin slots (a save from before them, a stack put down by hand).</summary>
         public void GatherCoins()
         {
-            var geo = ItemDb.Get(ItemType.Geo);
             for (int i = 0; i < Size; i++)
             {
                 if (Slots[i].IsEmpty || !FitsCoinSlot(Slots[i].Def)) continue;
-                int left = FillCoins(geo, Slots[i].Count);
-                if (left <= 0) Slots[i] = default;
-                else Slots[i].Count = left;
+                var s = Slots[i];
+                Slots[i] = default;
+                int left = FillCoins(s.Def, s.Count, false);
+                if (left <= 0) continue;
+                Slots[i] = s;
+                Slots[i].Count = left;
             }
         }
 
@@ -2431,6 +2520,7 @@ namespace TerraKnight.Items
         /// <summary>Anywhere the player has it: the inventory, the cursor, the worn set or a stored loadout.</summary>
         public bool Owns(ItemType type)
         {
+            foreach (var s in HkBag) if (s.Type == type && !s.IsEmpty) return true;
             if (Mouse.Type == type && !Mouse.IsEmpty) return true;
             foreach (var s in Slots) if (s.Type == type && !s.IsEmpty) return true;
             foreach (var a in Accessories) if (a.Type == type && !a.IsEmpty) return true;
@@ -2438,6 +2528,7 @@ namespace TerraKnight.Items
             foreach (var a in Misc) if (a.Type == type && !a.IsEmpty) return true;
             foreach (var l in Loadouts)
             {
+                foreach (var s in l.Bag) if (s.Type == type && !s.IsEmpty) return true;
                 foreach (var a in l.Accessories) if (a.Type == type && !a.IsEmpty) return true;
                 foreach (var a in l.Armor) if (a.Type == type && !a.IsEmpty) return true;
             }

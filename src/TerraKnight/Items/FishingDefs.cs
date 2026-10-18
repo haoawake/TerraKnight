@@ -9,8 +9,11 @@ namespace TerraKnight.Items
         None = 0, Corrupt = 1, Crimson = 2, Hallow = 4, HalfHallow = 8, Jungle = 16, Snow = 32, Desert = 64, Glowshroom = 128, Dungeon = 256, Beach = 512, Ocean = 1024, Rain = 2048,
     }
 
-    /// <summary>A crate's kind: by quality (Wooden, Iron, Golden and their hardmode ones), an area's, the acid one; the Oyster.</summary>
-    internal enum CrateKind : byte { Tier, Biome, Acid, Oyster }
+    /// <summary>
+    /// A crate's kind: by quality (Wooden, Iron, Golden and their hardmode ones), a Terraria biome's, the acid one; the
+    /// Oyster; an area's own (Items/FishingAreaCrates.cs: its piece of equipment from its area, its area's extras).
+    /// </summary>
+    internal enum CrateKind : byte { Tier, Biome, Acid, Oyster, Area }
 
     /// <summary>A crate's contents: its piece of equipment (its pool, the special one at 1/5, the stages it may be of), the rest by kind.</summary>
     internal sealed class CrateDef
@@ -24,6 +27,8 @@ namespace TerraKnight.Items
         public readonly int Lo, Hi;
         public readonly ItemType Special;
         public readonly ItemType[] Pool;
+        /// <summary>An area crate's area (Areas.AreaName's name).</summary>
+        public string Area;
 
         public CrateDef(CrateKind kind, int level, bool hard, int den, int lo, int hi, ItemType special, ItemType[] pool)
         {

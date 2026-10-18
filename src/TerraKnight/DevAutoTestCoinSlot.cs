@@ -5,7 +5,7 @@ using UnityEngine;
 namespace TerraKnight
 {
     /// <summary>
-    /// Dev (suite "coinslot"): Terraria's coin slot, one of it. Geo picked up goes there first; Geo left in the bag by an
+    /// Dev (suite "coinslot"): Terraria's coin column, its first slot. Geo picked up goes there first; Geo left in the bag by an
     /// older save is gathered into it; it takes money only; buying draws on it; the bag drawn with the coin column.
     /// </summary>
     internal sealed partial class DevAutoTest

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.UI;
 using UnityEngine;
@@ -262,7 +262,7 @@ namespace TerraKnight.Items
         /// NPC by <see cref="EnemyStats"/>: its level's life, defense and knockback resistance), or
         /// a prop that answers hits. Used by projectiles and explosions. True when an enemy took it.
         /// </summary>
-        public bool HitWith(Collider2D col, int damage, float knockback, float critChance, float facing, Vector2 from, int armorPen = -1, int addAfterVariation = 0)
+        public bool HitWith(Collider2D col, int damage, float knockback, float critChance, float facing, Vector2 from, int armorPen = -1, int addAfterVariation = 0, bool autonomous = false)
         {
             var hm = col.GetComponentInParent<HealthManager>();
             // A prop that answers the nail (a bell, a lever) is set off as by a slash.
@@ -270,6 +270,7 @@ namespace TerraKnight.Items
             GameObject target = hm != null ? hm.gameObject : FindResponder(col);
             if (target == null || (hm != null && hm.isDead)) return false;
             if (World.ArenaGuard.Refuse(hm)) return false;
+            if (autonomous && BossWake.DreamWindow(hm)) return false;
             var wake = BossWake.Hit(hm);
             if (wake == BossWake.Result.Held) return false;
             if (wake == BossWake.Result.Woke)
@@ -278,14 +279,17 @@ namespace TerraKnight.Items
                 Deal(col, hm, target, 1, 0f, 0f, facing, 0);
                 return true;
             }
+            // A minion's or sentry's blow on a boss or an elite takes its health and nothing else of it (MinionQuiet).
+            bool quiet = autonomous && hm != null && EnemyStats.Unstoppable(EnemyStats.Of(hm));
             // As a spell's DamageEnemies does, the struck enemy's FSMs hear TAKE DAMAGE first (what wakes some of them).
-            if (hm != null && !Net.Enemies.IsPuppet(hm)) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
+            if (hm != null && !quiet && !Net.Enemies.IsPuppet(hm)) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
             source.transform.position = new Vector3(from.x, from.y, 0f);
-            Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation);
-            return hm != null;
+            int accepted = Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation, quiet);
+            return hm != null && accepted > 0;
         }
 
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, PlayMakerFSM> stunFsm = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, PlayMakerFSM>("stunControlFSM");
+        static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, GameObject> sendHitTo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, GameObject>("sendHitTo");
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, bool> preventBlockFx = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, bool>("preventInvincibleEffect");
 
         /// <summary>How often a shield shows a blocked hit (s): about a nail swing.</summary>
@@ -306,13 +310,22 @@ namespace TerraKnight.Items
             hm != null && !hm.isDead && !Net.Enemies.IsPuppet(hm)
             && hm.IsBlockingByDirection(DirectionUtils.GetCardinalDirection(facing > 0f ? 0f : 180f), IsSpellOn(hm, cls) ? AttackTypes.Spell : AttackTypes.Generic);
 
+        /// <summary>
+        /// A shield held one way (the game's invincibility from one side only: Husk Sentries, Husk Warriors...), the only
+        /// thing that sends a shot back. All-round invincibility is an enemy hiding (in the ground, in a bush, curled up
+        /// as the Elder Baldur): it stops a shot, which is spent on it.
+        /// </summary>
+        public static bool IsShield(HealthManager hm) => hm != null && hm.IsInvincible && hm.InvincibleFromDirection != 0;
+
         /// <summary>Returns the hit's rolled damage (crit doubled), 0 when nothing took it.</summary>
 
-        int Deal(Collider2D col, HealthManager hm, GameObject target, int baseDamage, float knockback, float critChance, float facing, int armorPen, int addAfterVariation = 0)
+        int Deal(Collider2D col, HealthManager hm, GameObject target, int baseDamage, float knockback, float critChance, float facing, int armorPen, int addAfterVariation = 0, bool quiet = false)
         {
             // Who dealt it, for the armor sets' on-hit effects (cleared whatever happens).
             var armorCtx = ArmorEffects.Context;
             ArmorEffects.Context = default;
+            // The enemy's banner carried: its DamageDealt before the variation (Pl:20597-20600, 44656-44659; P:13388-13391).
+            if (hm != null) baseDamage = Banners.Dealt(hm, baseDamage);
             bool crit = Random.value * 100f < critChance;
             // Terraria rolls each hit within +-15% of the weapon's damage (Main.DamageVar); a snapping stone's strike comes after.
             // Main.DamageVar: ±15%, rolled again by luck (the better of two with good luck, the worse with bad).
@@ -326,6 +339,7 @@ namespace TerraKnight.Items
             int dealtHk = damage;
             float pushSpeed = 0f;
             EnemyStats.Info info = null;
+            float carryBefore = 0f;
             // Props (levers, breakables) take the old push; enemies Terraria's.
             float magnitude = knockback / 4f;
             // Shields and shells hold as they do against the nail (HealthManager.IsBlockingByDirection): a shielded husk
@@ -337,6 +351,9 @@ namespace TerraKnight.Items
             if (hm != null)
             {
                 info = EnemyStats.Of(hm);
+                carryBefore = info.Carry;
+                // Struck by the player: it comes for him (Terraria's npc.target), from wherever it stands.
+                World.EnemyAggro.Struck(hm, info);
                 damage = EnemyStats.Strike(info, damage, crit, armorPen);
                 LastStruck = damage;
                 // Bosses and elites don't budge (knockBackResist 0), the rest by their level.
@@ -369,10 +386,17 @@ namespace TerraKnight.Items
             // (the Stun Control FSM's STUN DAMAGE), meant for a nail's few slashes, not a hail of shots.
             // A boss whose attacks can be broken off counts one hit in so much damage (BossBalance).
             PlayMakerFSM heldStun = null;
-            if (hm != null && EnemyStats.Unstoppable(info) && !BossBalance.StunCounts(info, damage))
+            if (hm != null && EnemyStats.Unstoppable(info) && (quiet || !BossBalance.StunCounts(info, damage)))
             {
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;
+            }
+            // A minion's or sentry's: nor do its machines hear the hit (HealthManager.TakeDamage's HIT and TOOK DAMAGE).
+            if (quiet)
+            {
+                MinionQuiet.Body = hm.gameObject;
+                MinionQuiet.Forward = sendHitTo(hm);
+                MinionQuiet.DevQuieted++;
             }
             // A blocked hit's spark, clank and hit-stop (HealthManager.Invincible) once in BlockFxGap per enemy: a fast
             // weapon would freeze the game on each shot the shield takes.
@@ -398,6 +422,7 @@ namespace TerraKnight.Items
             {
                 if (heldStun != null) stunFsm(hm) = heldStun;
                 if (quietBlock) preventBlockFx(hm) = keptPrevent;
+                MinionQuiet.Body = MinionQuiet.Forward = null;
             }
 
             var mod = TerraMod.Instance;
@@ -408,6 +433,9 @@ namespace TerraKnight.Items
             {
                 // Blocked (a shell, a shield): nothing taken, nothing pushed.
                 DevBlocked++;
+                // A native shield/state change can refuse a hit after conversion. Do
+                // not spend the fractional damage earned by earlier accepted hits.
+                info.Carry = carryBefore;
                 if (!quietBlock) blockFxAt[hm.GetInstanceID()] = Time.time;
                 return 0;
             }
@@ -463,7 +491,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static void ApplyNetHit(HealthManager hm, int dealtHk, float direction, AttackTypes type, float push, int terra, bool crit, bool bigHit, bool dot, Vector2 from)
         {
-            if (hm == null || hm.isDead) return;
+            if (hm == null || hm.isDead || BossWake.Hit(hm) != BossWake.Result.Normal || (dot && BossWake.DreamWindow(hm))) return;
             var info = EnemyStats.Of(hm);
             // A Terraria hit: its damage made the enemy's health here, the remainder carried as for a hit of this game's.
             if (!dot && terra > 0)

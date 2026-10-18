@@ -56,7 +56,7 @@ namespace TerraKnight.Items
             };
             specs[ProjKind.NimbusCloud] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_238", W = 54, H = 28, Time = 18000 + 60, Penetrate = -1, TileCollide = false, CanDamage = p => false,
+                Ai = Ai.Custom, Texture = "Projectile_238", W = 54, H = 28, Time = CloudLife + 60, Penetrate = -1, TileCollide = false, CanDamage = p => false,
                 Update = (t, p) => t.StepNimbusCloud(p), Draw = (t, fx, p, px) => DrawNimbus(fx, p, px, "Projectile_238"), OnKill = (t, p) => { },
             };
             specs[ProjKind.NimbusRain] = new Spec
@@ -375,10 +375,13 @@ namespace TerraKnight.Items
             if (c != null) c.Melee = p.Melee;
         }
 
+        /// <summary>A raining cloud's life, in updates: 30 seconds (Terraria's 18000, five minutes, outlasts a Hallownest room's fight).</summary>
+        const int CloudLife = 1800;
+
         /// <summary>
         /// AI_045 for 238: rains a drop (239) 5 px an update down from within 14 px of its middle
         /// every 9 updates while nothing solid is within 20 px under it; six frames of 9 (three over
-        /// blocks); after 18000 updates it fades out; with more than three, the oldest fades. The
+        /// blocks); after <see cref="CloudLife"/> updates it fades out; with more than three, the oldest fades. The
         /// Crimson Rod's (244) rains blood (245) every 11 and keeps only one.
         /// </summary>
         void StepNimbusCloud(Proj p)
@@ -393,7 +396,7 @@ namespace TerraKnight.Items
                 if (++p.Frame > (open ? 5 : 2)) p.Frame = 0;
             }
             p.Ai1++;
-            if (p.Ai1 >= 18000f)
+            if (p.Ai1 >= CloudLife)
             {
                 p.Alpha += 5f / 255f;
                 if (p.Alpha >= 1f)

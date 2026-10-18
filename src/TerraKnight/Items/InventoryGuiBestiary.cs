@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TerraKnight.Terraria;
+using UnityEngine.InputSystem;
 using TerraKnight.UI;
 using UnityEngine;
 
@@ -15,7 +16,10 @@ namespace TerraKnight.Items
     /// background in the bestiary's frame, its name and kind, a danger rating, the four stat
     /// panels (life, attack, defense, knockback) from when it was seen, the journal's
     /// description, and once it has been defeated the Hunter's notes and everything it can drop
-    /// with the chance of each. A creative save's book is all open.
+    /// with the chance of each, previewed at the selected drop stage independently of the list's grouping.
+    /// A creative save's book is all open. The search box at the top finds an enemy by its
+    /// name or by an item it drops (what the book shows of it: a seen one's name, a defeated one's unlocked drops).
+    /// What the book lists and counts is worked out again only when something it shows changes.
     /// </summary>
     internal static partial class InventoryGui
     {
@@ -23,10 +27,36 @@ namespace TerraKnight.Items
         static int bestiaryScroll, bestiaryFilter = -1;
         static bool bestiaryByStage;
         static int bestiaryStageFilter = -1;
+        // Independent of the enemy list's area/stage grouping: -1 follows this save.
+        static int bestiaryDropStage = -1;
+        static int BookDropStage => bestiaryDropStage < 0 ? Shop.UnlockedStage() : bestiaryDropStage;
+        static IReadOnlyList<EnemyDrops.Drop> BookDrops(string record)
+        {
+            if (bestiaryDropStage < 0) return EnemyDrops.Of(record);
+            int stage = BookDropStage;
+            // A fixed boss reward belongs to its own stage, even though At promotes it.
+            if (ProgressionBalance.FormalBoss(record) && ProgressionBalance.BossRewards.TryGetValue(record, out var boss) && stage < boss.Stage)
+                return System.Array.Empty<EnemyDrops.Drop>();
+            return EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5);
+        }
+        public static int DevBestiaryDropStage => bestiaryDropStage;
+        public static IReadOnlyList<EnemyDrops.Drop> DevBestiaryDrops(string record) => BookDrops(record);
+        public static bool DevBestiarySearchMatches(string record) => MatchesSearch(record);
         static int ActiveBookFilter => bestiaryByStage ? bestiaryStageFilter : bestiaryFilter;
+        /// <summary>
+        /// The stage a record is listed under: a boss's place in the progression, any other's own stage in the roster (the
+        /// roster's sample room can lie in a later area: the tiktik's is the Howling Cliffs, which put it under stage 1).
+        /// </summary>
         static int BookStageOf(string record) => ProgressionBalance.BossRewards.TryGetValue(record,out var boss)
-            ? boss.Stage : Mathf.Clamp(World.Areas.LevelOf(EnemyDrops.SceneOf(record)),0,5);
+            ? boss.Stage : Mathf.Clamp(EnemyDrops.StageOf(record),0,5);
         static int BookGroupOf(string record) => bestiaryByStage ? BookStageOf(record) : BestiaryRoute.Of(record).Area;
+        static string BookStageLine()
+        {
+            int stage = Shop.UnlockedStage(), last = World.Areas.MaxLevel;
+            return stage >= last ? Lang.F("当前阶段 {0} / {1}（最终阶段）", stage, last)
+                : Lang.F("当前阶段 {0} / {1}，再得到 1 种能力进入下一阶段（通常是{2}）", stage, last, Lang.T(Shop.GateAbility(stage + 1)));
+        }
+
         static string BookGroupName(int group) => bestiaryByStage ? Lang.F("阶段 {0}",group) : World.Areas.Display(BestiaryRoute.Areas[group]);
         static string bestiaryChosen, bestiaryScrollTo;
         static readonly List<string> bestiaryRows = new List<string>();
@@ -202,7 +232,7 @@ namespace TerraKnight.Items
                 int area = BookGroupOf(all[i]), cat = CategoryOf(all[i]);
                 int j = i;
                 while (j < all.Count && BookGroupOf(all[j]) == area && CategoryOf(all[j]) == cat) j++;
-                if (ActiveBookFilter < 0 || area == ActiveBookFilter)
+                if (ActiveBookFilter < 0 || area == ActiveBookFilter || Searching)
                 {
                     int first = bestiaryRows.Count, seen = 0;
                     for (int k = i; k < j; k++)
@@ -211,7 +241,7 @@ namespace TerraKnight.Items
                         if (Bestiary.IsSeen(all[k])) seen++;
                     }
                     int n = j - i;
-                    string head = (ActiveBookFilter < 0 ? BookGroupName(area) + " · " : "") + Lang.T(sectionNames[cat]) + $"  {seen}/{n}";
+                    string head = (ActiveBookFilter < 0 || Searching ? BookGroupName(area) + " · " : "") + Lang.T(sectionNames[cat]) + $"  {seen}/{n}";
                     bookLines.Add(new BookLine { Head = head, Color = CategoryColor(cat), First = -1 });
                     for (int k = 0; k < n; k += BookColumns)
                         bookLines.Add(new BookLine { First = first + k, Count = Mathf.Min(BookColumns, n - k) });
@@ -223,13 +253,28 @@ namespace TerraKnight.Items
         static void ToggleBestiary()
         {
             bestiaryOpen = !bestiaryOpen;
-            if (bestiaryOpen) hkOpen = false;
+            if (bestiaryOpen) hkOpen = blacklistOpen = sellMode = false;
             Sound(bestiaryOpen ? "Menu_Open" : "Menu_Close");
         }
 
         /// <summary>A click in the book: an entry (its index in the rows), or an area (-100 - area, -99 for all).</summary>
         static void SelectBestiary(int i)
         {
+            if (i == -4) { if (!bookTyping) StartBookSearch(); return; }
+            if (i == -5) { SetBookSearch(""); EndBookSearch(); Sound("Menu_Tick"); return; }
+            EndBookSearch();
+            // -10 follows the save, -11 through -16 preview stages 0 through 5.
+            if (i <= -10 && i >= -16)
+            {
+                int stage = -11 - i;
+                if (bestiaryDropStage == stage) return;
+                bestiaryDropStage = stage;
+                dropScroll = bestiaryScroll = 0;
+                bestiaryScrollTo = null;
+                bookKey = dropTextKey = null;
+                Sound("Menu_Tick");
+                return;
+            }
             if(i==-2 || i==-3)
             {
                 bool byStage=i==-3;
@@ -285,7 +330,7 @@ namespace TerraKnight.Items
             float x = view.x + RightOfAmmo(ui), y = view.y + (Margin + 18f) * ui + 70f * ui;
             var r = new Rect(x, y, 90f * ui, 24f * ui);
             bool over = r.Contains(mouse);
-            Outlined(r, Lang.T("怪物图鉴"), labelStyle, over || bestiaryOpen ? new Color(1f, 0.85f, 0.3f) : Color.white);
+            BookOutlined(r, Lang.T("怪物图鉴"), labelStyle, over || bestiaryOpen ? new Color(1f, 0.85f, 0.3f) : Color.white);
             Add(r, Kind.BestiaryButton, 0);
         }
 
@@ -342,7 +387,7 @@ namespace TerraKnight.Items
             Fill(f, c * 0.8f);
             Fill(new Rect(f.x, f.y, f.width, f.height * 0.4f), new Color(c.r, c.g, c.b, 0.9f));
             Rim(r, BookRim, 1.5f * ui);
-            Outlined(new Rect(r.x, r.y, r.width, r.height), text, bookCentre, Color.white);
+            BookOutlined(new Rect(r.x, r.y, r.width, r.height), text, bookCentre, Color.white);
         }
 
         /// <summary>How often it has been beaten ("尚未击败" if not; a creative save's book is open without it).</summary>
@@ -356,7 +401,9 @@ namespace TerraKnight.Items
             var areas = BestiaryRoute.Areas;
             int groups=bestiaryByStage ? 6 : areas.Count;
             if (bestiaryFilter >= areas.Count) bestiaryFilter = -1;
-            BuildBookLines(all);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            RefreshBook(all, groups);
+            DevBookTicks[0] += watch.ElapsedTicks;
             if (bestiaryChosen == null || !bestiaryRows.Contains(bestiaryChosen))
             {
                 // The first seen entry of the list, else its first.
@@ -382,23 +429,21 @@ namespace TerraKnight.Items
             Add(panel, Kind.BestiaryPanel, 0);
 
             // The title, the two counts with their bars, and the close button.
-            int seen = 0, done = 0;
-            foreach (var r in all)
-            {
-                if (Bestiary.IsSeen(r)) seen++;
-                if (Bestiary.IsDefeated(r)) done++;
-            }
-            Outlined(new Rect(panel.x + 22f * ui, panel.y + 6f * ui, 300f * ui, 36f * ui), Lang.T("怪物图鉴"), bookTitle, new Color(1f, 0.95f, 0.75f));
-            Outlined(new Rect(panel.x + 24f * ui, panel.y + 42f * ui, 560f * ui, 20f * ui),
+            int seen = bookSeen, done = bookDone;
+            DrawBookSearch(new Rect(panel.x + 190f * ui, panel.y + 9f * ui, Mathf.Min(360f * ui, panel.xMax - 2f * 260f * ui - 100f * ui - (panel.x + 190f * ui)), 30f * ui), ui, mouse);
+            BookOutlined(new Rect(panel.x + 22f * ui, panel.y + 6f * ui, 300f * ui, 36f * ui), Lang.T("怪物图鉴"), bookTitle, new Color(1f, 0.95f, 0.75f));
+            if (!Searching) BookOutlined(new Rect(panel.x + 24f * ui, panel.y + 42f * ui, 560f * ui, 20f * ui),
                 Bestiary.AllUnlocked ? Lang.T("创造模式：图鉴已全部解锁") : Lang.T("敌人第一次出现在视野中时解锁资料，击败后解锁掉落和猎人笔记"), bookSmall, Bestiary.AllUnlocked ? Gold : new Color(0.75f, 0.8f, 1f));
             float bw = 260f * ui;
             Bar(new Rect(panel.xMax - 2f * bw - 80f * ui, panel.y + 22f * ui, bw, 26f * ui), all.Count > 0 ? seen / (float)all.Count : 0f, new Color(0.35f, 0.65f, 1f), Lang.F("已发现 {0} / {1}", seen, all.Count), ui);
             Bar(new Rect(panel.xMax - bw - 60f * ui, panel.y + 22f * ui, bw, 26f * ui), all.Count > 0 ? done / (float)all.Count : 0f, Gold, Lang.F("已收集 {0} / {1}", done, all.Count), ui);
+            // The stage the save is at (the abilities got, Shop.UnlockedStage), and the ability that usually opens the next.
+            BookOutlined(new Rect(panel.xMax - 2f * bw - 80f * ui, panel.y + 49f * ui, 2f * bw + 20f * ui, 18f * ui), BookStageLine(), bookSmall, Gold);
             var close = new Rect(panel.xMax - 44f * ui, panel.y + 21f * ui, 28f * ui, 28f * ui);
             bool overClose = close.Contains(mouse);
             Fill(close, overClose ? new Color(0.75f, 0.25f, 0.25f, 0.9f) : new Color(0f, 0f, 0f, 0.35f));
             Tex(close, "UI/Bestiary/Button_Border", overClose ? Gold : Color.white);
-            Outlined(close, "×", bookCentre, Color.white);
+            BookOutlined(close, "×", bookCentre, Color.white);
             Add(close, Kind.BestiaryButton, 1);
 
             // The areas down the left, in route order, each with how much of it has been seen.
@@ -412,16 +457,14 @@ namespace TerraKnight.Items
                 bool on=bestiaryByStage==(mode==1);
                 Fill(button,on ? BookRim : button.Contains(mouse) ? BookHeadColor : BookBack);
                 Rim(button,on ? Gold : BookRim,1f*ui);
-                Outlined(button,Lang.T(mode==0 ? "按地区" : "按阶段"),bookCentre,on ? Gold : Color.white);
+                BookOutlined(button,Lang.T(mode==0 ? "按地区" : "按阶段"),bookCentre,on ? Gold : Color.white);
                 Add(button,Kind.BestiaryEntry,mode==0 ? -2 : -3);
             }
             float listY=sy+34f*ui;
             float rh = Mathf.Min(27f * ui, (side.yMax-listY-8f*ui) / (groups + 1));
             for (int f = -1; f < groups; f++)
             {
-                int total = 0, s = 0;
-                foreach (var r in all)
-                    if (f < 0 || BookGroupOf(r) == f) { total++; if (Bestiary.IsSeen(r)) s++; }
+                int total = f + 1 < groupTotal.Length ? groupTotal[f + 1] : 0, s = f + 1 < groupSeen.Length ? groupSeen[f + 1] : 0;
                 if (total == 0) continue;
                 var row = new Rect(sx, listY + (f + 1) * rh, sw, rh - 2f * ui);
                 bool on = f == ActiveBookFilter, over = row.Contains(mouse);
@@ -429,9 +472,9 @@ namespace TerraKnight.Items
                 else if (over) Fill(row, new Color(1f, 1f, 1f, 0.12f));
                 if (on) Rim(row, Gold, 1.5f * ui);
                 bool full = s == total;
-                Outlined(new Rect(row.x + 8f * ui, row.y, row.width - 50f * ui, row.height), f < 0 ? Lang.T(bestiaryByStage ? "全部阶段" : "全部地区") : BookGroupName(f), bookSmall,
+                BookOutlined(new Rect(row.x + 8f * ui, row.y, row.width - 50f * ui, row.height), f < 0 ? Lang.T(bestiaryByStage ? "全部阶段" : "全部地区") : BookGroupName(f), bookSmall,
                     on ? Color.white : full ? Gold : s > 0 ? new Color(0.88f, 0.9f, 1f) : new Color(0.6f, 0.62f, 0.75f));
-                Outlined(new Rect(row.x, row.y, row.width - 6f * ui, row.height), $"{s}/{total}", bookCount, full ? Gold : new Color(0.7f, 0.75f, 0.9f));
+                BookOutlined(new Rect(row.x, row.y, row.width - 6f * ui, row.height), $"{s}/{total}", bookCount, full ? Gold : new Color(0.7f, 0.75f, 0.9f));
                 Add(row, Kind.BestiaryEntry, -100 - f);
             }
 
@@ -462,6 +505,7 @@ namespace TerraKnight.Items
             }
             bestiaryScroll = Mathf.Clamp(bestiaryScroll, 0, bookMaxScroll);
             string hoverRecord = null;
+            watch.Restart();
             float y = gy;
             for (int l = bestiaryScroll; l < bookLines.Count; l++)
             {
@@ -469,7 +513,7 @@ namespace TerraKnight.Items
                 if (y + (line.First < 0 ? headH : slot) > gridArea.yMax - 4f * ui) break;
                 if (line.First < 0)
                 {
-                    Outlined(new Rect(gx + 2f * ui, y + 2f * ui, gridArea.width - 14f * ui, headH - 8f * ui), line.Head, bookSmall, line.Color);
+                    BookOutlined(new Rect(gx + 2f * ui, y + 2f * ui, gridArea.width - 14f * ui, headH - 8f * ui), line.Head, bookSmall, line.Color);
                     Fill(new Rect(gx, y + headH - 6f * ui, gridArea.width - 12f * ui, 1.5f * ui), new Color(line.Color.r, line.Color.g, line.Color.b, 0.55f));
                 }
                 else
@@ -495,10 +539,14 @@ namespace TerraKnight.Items
                 Fill(new Rect(track.x + 1f * ui, ky, track.width - 2f * ui, kh), BookRim);
             }
 
+            DevBookTicks[1] += watch.ElapsedTicks;
             // The chosen entry.
+            watch.Restart();
             float dx = gridArea.xMax + 26f * ui;
             var detail = new Rect(dx, gridArea.y, panel.xMax - 18f * ui - dx, panel.yMax - gridArea.y - 10f * ui);
             if (bestiaryChosen != null) DrawBookEntry(detail, bestiaryChosen, ui, mouse, ref hovered, ref hoveredKind, ref hoveredExtra);
+            DevBookTicks[2] += watch.ElapsedTicks;
+            if (Event.current.type == EventType.Repaint) DevBookFrames++;
             if (hoverRecord != null && hovered.IsEmpty)
             {
                 bool seenIt = Bestiary.IsSeen(hoverRecord);
@@ -518,7 +566,7 @@ namespace TerraKnight.Items
             {
                 var sprite = EnemyHover.PortraitOf(rec);
                 if (sprite != null) BestiaryToast.DrawSprite(new Rect(r.x + 7f * ui, r.y + 7f * ui, r.width - 14f * ui, r.height - 14f * ui), sprite, Color.white);
-                else Outlined(r, Bestiary.NameOf(rec), bookSmall, Color.white);
+                else BookOutlined(r, Bestiary.NameOf(rec), bookSmall, Color.white);
             }
             else
             {
@@ -566,14 +614,14 @@ namespace TerraKnight.Items
             {
                 var lk = TerrariaAssets.Texture("UI/Bestiary/Icon_Locked");
                 Tex(new Rect(inner.center.x - lk.width * 1.25f * ui, inner.center.y - lk.height * 1.25f * ui - 8f * ui, lk.width * 2.5f * ui, lk.height * 2.5f * ui), "UI/Bestiary/Icon_Locked", new Color(1f, 1f, 1f, 0.7f));
-                Outlined(new Rect(inner.x, inner.yMax - 34f * ui, inner.width, 24f * ui), Lang.T("尚未发现"), bookCentre, new Color(0.85f, 0.85f, 0.95f));
+                BookOutlined(new Rect(inner.x, inner.yMax - 34f * ui, inner.width, 24f * ui), Lang.T("尚未发现"), bookCentre, new Color(0.85f, 0.85f, 0.95f));
             }
             Tex(port, "UI/Bestiary/Portrait_Front", Color.white);
 
             // Name, kind and area, danger, defeats.
             float cx = port.xMax + 18f * ui, cw = d.xMax - cx;
             var nameColor = !seen ? new Color(0.75f, 0.75f, 0.85f) : cat > 0 ? CategoryColor(cat) : new Color(1f, 0.95f, 0.7f);
-            Outlined(new Rect(cx, d.y, cw, 34f * ui), seen ? Bestiary.NameOf(rec) : "？？？", bookName, nameColor);
+            BookOutlined(new Rect(cx, d.y, cw, 34f * ui), seen ? Bestiary.NameOf(rec) : "？？？", bookName, nameColor);
             float chipX = cx;
             void Chip(string text, Color c)
             {
@@ -581,7 +629,7 @@ namespace TerraKnight.Items
                 var chip = new Rect(chipX, d.y + 40f * ui, w, 22f * ui);
                 Fill(chip, new Color(c.r * 0.35f, c.g * 0.35f, c.b * 0.35f, 0.9f));
                 Rim(chip, c, 1.5f * ui);
-                Outlined(chip, text, bookCentre, c);
+                BookOutlined(chip, text, bookCentre, c);
                 chipX += w + 6f * ui;
             }
             if (seen)
@@ -603,16 +651,16 @@ namespace TerraKnight.Items
                 bool over = spawn.Contains(mouse);
                 Fill(spawn, over ? new Color(0.32f, 0.55f, 0.28f, 0.95f) : new Color(0.18f, 0.32f, 0.16f, 0.9f));
                 Rim(spawn, new Color(0.7f, 1f, 0.6f), 1.5f * ui);
-                Outlined(spawn, label, bookCentre, Color.white);
+                BookOutlined(spawn, label, bookCentre, Color.white);
                 var m = UnityEngine.InputSystem.Mouse.current;
                 if (over && Event.current.type == EventType.Repaint && UI.TerraCursor.LeftPressed(m)) BookSpawner.Spawn(rec);
             }
-            Outlined(new Rect(cx, d.y + 70f * ui, 80f * ui, 20f * ui), Lang.T("危险度"), bookSmall, new Color(0.8f, 0.85f, 1f));
+            BookOutlined(new Rect(cx, d.y + 70f * ui, 80f * ui, 20f * ui), Lang.T("危险度"), bookSmall, new Color(0.8f, 0.85f, 1f));
             int danger = seen ? Mathf.Clamp(st.Level + 1 + (cat == 2 ? 1 : 0), 1, 6) : 0;
             for (int s = 0; s < 6; s++)
                 Tex(new Rect(cx + 62f * ui + s * 20f * ui, d.y + 72f * ui, 16f * ui, 16f * ui), s < danger ? "UI/Bestiary/Icon_Rank_Light" : "UI/Bestiary/Icon_Rank_Dim", Color.white);
-            Outlined(new Rect(cx, d.y + 96f * ui, cw, 20f * ui), DefeatsText(rec), bookSmall, beaten ? Gold : new Color(0.8f, 0.8f, 0.85f));
-            if (seen) Outlined(new Rect(cx, d.y + 118f * ui, cw, 20f * ui), Lang.F("第 {0} 阶段", st.Level), bookSmall, new Color(0.7f, 0.75f, 0.9f));
+            BookOutlined(new Rect(cx, d.y + 96f * ui, cw, 20f * ui), DefeatsText(rec), bookSmall, beaten ? Gold : new Color(0.8f, 0.8f, 0.85f));
+            if (seen) BookOutlined(new Rect(cx, d.y + 118f * ui, cw, 20f * ui), Lang.F("第 {0} 阶段", st.Level), bookSmall, new Color(0.7f, 0.75f, 0.9f));
 
             // The four stat panels under the portrait (Stat_HP / Attack / Defense / Knockback: the icon kept, the panel stretched).
             float sy = port.yMax + 12f * ui, sw = (d.width - 3f * 8f * ui) / 4f, sh = 46f * ui;
@@ -629,47 +677,60 @@ namespace TerraKnight.Items
             {
                 var r = new Rect(d.x + s * (sw + 8f * ui), sy, sw, sh);
                 StatPanel(r, stats[s].Tex);
-                Outlined(new Rect(r.x + sh + 4f * ui, r.y + 3f * ui, r.width - sh - 10f * ui, 18f * ui), stats[s].Label, bookSmall, new Color(0.8f, 0.85f, 1f));
-                Outlined(new Rect(r.x + sh, r.y + 16f * ui, r.width - sh - 10f * ui, 28f * ui), stats[s].Value, bookValue, Color.white);
+                BookOutlined(new Rect(r.x + sh + 4f * ui, r.y + 3f * ui, r.width - sh - 10f * ui, 18f * ui), stats[s].Label, bookSmall, new Color(0.8f, 0.85f, 1f));
+                BookOutlined(new Rect(r.x + sh, r.y + 16f * ui, r.width - sh - 10f * ui, 28f * ui), stats[s].Value, bookValue, Color.white);
             }
 
             // The journal's description, then the Hunter's notes once defeated.
             float y = sy + sh + 14f * ui;
             var textBox = new Rect(d.x, y, d.width, 0f);
-            string desc = seen ? EnemyHover.JournalText(rec, "DESC_") ?? Lang.T("猎人日志里没有这种敌人的描述。") : Lang.T("在视野中发现这种敌人后解锁它的资料。");
-            string notes = beaten ? EnemyHover.JournalText(rec, "NOTE_") : null;
             float textW = d.width - 28f * ui;
-            float hDesc = bookText.CalcHeight(new GUIContent(desc), textW);
-            float hNotes = notes != null ? bookText.CalcHeight(new GUIContent(notes), textW) + 26f * ui : 0f;
-            float dropsMin = 120f * ui;
+            EntryText(rec, seen, beaten, textW, out string desc, out string notes, out float hDesc, out float hNotes);
+            if (notes != null) hNotes += 26f * ui;
+            float dropsMin = 150f * ui;
             float avail = d.yMax - y - dropsMin;
             float boxH = Mathf.Min(hDesc + 34f * ui + hNotes, Mathf.Max(80f * ui, avail));
             textBox.height = boxH;
             Fill(textBox, BookInner);
             Rim(textBox, new Color(BookRim.r, BookRim.g, BookRim.b, 0.6f), 1.5f * ui);
             GUI.BeginGroup(textBox);
-            Outlined(new Rect(14f * ui, 6f * ui, 300f * ui, 20f * ui), Lang.T("图鉴记录"), bookSmall, Gold);
-            Outlined(new Rect(14f * ui, 28f * ui, textW, hDesc + 4f * ui), desc, bookText, seen ? new Color(0.95f, 0.95f, 1f) : new Color(0.7f, 0.7f, 0.8f));
+            BookOutlined(new Rect(14f * ui, 6f * ui, 300f * ui, 20f * ui), Lang.T("图鉴记录"), bookSmall, Gold);
+            BookOutlined(new Rect(14f * ui, 28f * ui, textW, hDesc + 4f * ui), desc, bookText, seen ? new Color(0.95f, 0.95f, 1f) : new Color(0.7f, 0.7f, 0.8f));
             if (notes != null)
             {
                 float ny = 34f * ui + hDesc;
-                Outlined(new Rect(14f * ui, ny, 300f * ui, 20f * ui), Lang.T("猎人笔记"), bookSmall, new Color(0.6f, 0.95f, 0.75f));
-                Outlined(new Rect(14f * ui, ny + 22f * ui, textW, hNotes), notes, bookText, new Color(0.82f, 0.9f, 0.85f));
+                BookOutlined(new Rect(14f * ui, ny, 300f * ui, 20f * ui), Lang.T("猎人笔记"), bookSmall, new Color(0.6f, 0.95f, 0.75f));
+                BookOutlined(new Rect(14f * ui, ny + 22f * ui, textW, hNotes), notes, bookText, new Color(0.82f, 0.9f, 0.85f));
             }
             GUI.EndGroup();
 
             // What it drops: shown once defeated, locked slots before.
             y = textBox.yMax + 12f * ui;
-            var drops = EnemyDrops.Of(rec);
-            Outlined(new Rect(d.x, y, 300f * ui, 22f * ui), beaten ? Lang.F("掉落物（{0} 种）", drops.Count) : Lang.T("掉落物"), bookSmall, Gold);
-            if (!beaten) Outlined(new Rect(d.x + 90f * ui, y, 400f * ui, 22f * ui), Lang.T("击败后解锁掉落信息"), bookSmall, new Color(0.75f, 0.75f, 0.85f));
+            var drops = BookDrops(rec);
+            // Found by an item it drops (not by its name): only the drops the search finds.
+            var view = DropView(rec, drops);
+            BookOutlined(new Rect(d.x, y, d.width, 22f * ui), beaten ? Lang.F("阶段 {0} 掉落物（{1} 种）", BookDropStage, view.Count) : Lang.T("掉落物"), bookSmall, Gold);
+            if (!beaten) BookOutlined(new Rect(d.x + 90f * ui, y, 400f * ui, 22f * ui), Lang.T("击败后解锁掉落信息"), bookSmall, new Color(0.75f, 0.75f, 0.85f));
             y += 26f * ui;
-            if (beaten && drops.Count == 0) Outlined(new Rect(d.x, y, 400f * ui, 22f * ui), Lang.T("只掉吉欧"), bookSmall, new Color(0.75f, 0.75f, 0.8f));
+            BookOutlined(new Rect(d.x, y, 66f * ui, 24f * ui), Lang.T("掉落阶段"), bookSmall, Gold);
+            float filterX = d.x + 70f * ui, filterW = (d.width - 70f * ui) / 7f;
+            for (int s = -1; s <= World.Areas.MaxLevel; s++)
+            {
+                var button = new Rect(filterX + (s + 1) * filterW, y, filterW - 3f * ui, 24f * ui);
+                bool on = bestiaryDropStage == s;
+                Fill(button, on ? BookRim : button.Contains(mouse) ? BookHeadColor : BookBack);
+                Rim(button, on ? Gold : BookRim, 1f * ui);
+                BookOutlined(button, s < 0 ? Lang.T("当前") : s.ToString(), bookCentre, on ? Gold : Color.white);
+                Add(button, Kind.BestiaryEntry, -11 - s);
+            }
+            y += 30f * ui;
+            if (beaten && drops.Count == 0) BookOutlined(new Rect(d.x, y, d.width, 22f * ui),
+                Lang.T(bestiaryDropStage < 0 ? "只掉吉欧" : "该阶段无物品掉落"), bookSmall, new Color(0.75f, 0.75f, 0.8f));
             int cols = Mathf.Clamp((int)(d.width / (170f * ui)), 1, 4);
             float cwid = d.width / cols, rowH = 46f * ui;
             int maxRows = Mathf.Max(1, (int)((d.yMax - y) / rowH));
             // More than fit: they scroll by rows (the wheel over them), with a bar at the side.
-            int rows = (drops.Count + cols - 1) / cols;
+            int rows = (view.Count + cols - 1) / cols;
             if (dropFor != rec) { dropFor = rec; dropScroll = 0; }
             dropMaxScroll = Mathf.Max(0, rows - maxRows);
             dropScroll = Mathf.Clamp(dropScroll, 0, dropMaxScroll);
@@ -684,10 +745,10 @@ namespace TerraKnight.Items
                 Fill(new Rect(track.x, track.y + (track.height - thumbH) * dropScroll / dropMaxScroll, track.width, thumbH), new Color(0.95f, 0.85f, 0.45f, 0.8f));
             }
             int first = dropScroll * cols;
-            int shown = Mathf.Min(drops.Count, first + cols * maxRows);
+            int shown = Mathf.Min(view.Count, first + cols * maxRows);
             for (int k = first; k < shown; k++)
             {
-                var dr = drops[k];
+                var dr = drops[view[k]];
                 float ix = d.x + ((k - first) % cols) * cwid, iy = y + ((k - first) / cols) * rowH;
                 var s = new Rect(ix, iy, 40f * ui, 40f * ui);
                 Tex(s, "Inventory_Back", Color.white);
@@ -695,36 +756,27 @@ namespace TerraKnight.Items
                 {
                     var lk = TerrariaAssets.Texture("UI/Bestiary/Icon_Locked");
                     Tex(new Rect(s.center.x - lk.width * 0.45f * ui, s.center.y - lk.height * 0.45f * ui, lk.width * 0.9f * ui, lk.height * 0.9f * ui), "UI/Bestiary/Icon_Locked", new Color(1f, 1f, 1f, 0.5f));
-                    Outlined(new Rect(ix + 46f * ui, iy + 10f * ui, cwid - 50f * ui, 20f * ui), "？？？", bookSmall, new Color(0.7f, 0.7f, 0.8f));
+                    BookOutlined(new Rect(ix + 46f * ui, iy + 10f * ui, cwid - 50f * ui, 20f * ui), "？？？", bookSmall, new Color(0.7f, 0.7f, 0.8f));
                     continue;
                 }
                 // A drop of a stage not unlocked yet: a question mark and when it comes, not the item.
-                if (EnemyDrops.Locked(dr))
+                if (EnemyDrops.Locked(dr, BookDropStage))
                 {
-                    Outlined(s, "?", bookCentre, new Color(0.85f, 0.85f, 0.95f, 0.9f));
-                    Outlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), "？？？", bookSmall, new Color(0.7f, 0.7f, 0.8f));
-                    Outlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), Lang.F("阶段 {0} 解锁后掉落", dr.LockStage), bookSmall, new Color(0.65f, 0.65f, 0.75f));
+                    BookOutlined(s, "?", bookCentre, new Color(0.85f, 0.85f, 0.95f, 0.9f));
+                    BookOutlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), "？？？", bookSmall, new Color(0.7f, 0.7f, 0.8f));
+                    BookOutlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), Lang.F("阶段 {0} 解锁后掉落", dr.LockStage), bookSmall, new Color(0.65f, 0.65f, 0.75f));
                     if (s.Contains(mouse))
                     {
-                        int need = dr.LockStage - Shop.UnlockedStage();
+                        int need = dr.LockStage - BookDropStage;
                         BookHint = Lang.F("再获得 {0} 种能力后解锁（通常是{1}）", need, Lang.T(Shop.GateAbility(dr.LockStage)));
                     }
                     continue;
                 }
                 DrawIconOnly(s, ItemStack.Of(dr.Type));
-                // On the save's difficulty (EnemyDrops.EffectiveChance / EffectiveMax).
-                int most = EnemyDrops.EffectiveMax(dr);
-                int least = EnemyDrops.EffectiveMin(dr);
-                string count = least == most ? (least > 1 ? $" ×{least}" : "") : $" ×{least}-{most}";
-                float eff = EnemyDrops.EffectiveChance(dr);
-                string chance = eff >= 1f ? Lang.T("必定掉落") : $"{eff * 100f:0.##}%";
-                // One of a sure pick: one of the group's unlocked drops comes, at the group's chance.
-                int of = EnemyDrops.GroupSize(drops, dr.Group);
-                if (of > 0) chance = (EnemyDrops.MarginalChance(drops,dr)*100f).ToString("0.##") + "%";
-                if (dr.Master) chance = Lang.T("大师模式必掉");
-                var def = ItemDb.Get(dr.Type);
-                Outlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), def.Name + count, bookSmall, ItemDb.RarityColor(def.Rare));
-                Outlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), chance, bookSmall, new Color(0.8f, 0.8f, 0.85f));
+                var text = DropTexts(rec, drops)[view[k]];
+                if (Searching && Matches(ItemDb.Get(dr.Type).Name)) Rim(s, Gold, 2f * ui);
+                BookOutlined(new Rect(ix + 46f * ui, iy, cwid - 50f * ui, 20f * ui), text.Name, bookSmall, text.Color);
+                BookOutlined(new Rect(ix + 46f * ui, iy + 20f * ui, cwid - 50f * ui, 20f * ui), text.Chance, bookSmall, new Color(0.8f, 0.8f, 0.85f));
                 if (s.Contains(mouse))
                 {
                     hovered = ItemStack.Of(dr.Type);
@@ -732,6 +784,314 @@ namespace TerraKnight.Items
                     hoveredExtra = null;
                 }
             }
+        }
+
+        // ------------------------------------------------------------------ worked out once, drawn often
+
+        /// <summary>
+        /// Text with Terraria's four-way border (Utils.DrawBorderStringFourWay: the text drawn left, right, above and below
+        /// in black, then itself): the book is mostly text, and the inventory's eight-way border cost it twice as much.
+        /// </summary>
+        static void BookOutlined(Rect r, string text, GUIStyle style, Color color)
+        {
+            if (Event.current.type != EventType.Repaint || string.IsNullOrEmpty(text)) return;
+            float o = 1.5f * GameView.Scale;
+            style.normal.textColor = new Color(0f, 0f, 0f, 0.85f * color.a);
+            GUI.Label(new Rect(r.x - o, r.y, r.width, r.height), text, style);
+            GUI.Label(new Rect(r.x + o, r.y, r.width, r.height), text, style);
+            GUI.Label(new Rect(r.x, r.y - o, r.width, r.height), text, style);
+            GUI.Label(new Rect(r.x, r.y + o, r.width, r.height), text, style);
+            style.normal.textColor = color;
+            GUI.Label(r, text, style);
+        }
+
+        /// <summary>A drop's two lines as the book shows them: its name with how many, its chance, its rarity's colour.</summary>
+        struct DropText
+        {
+            public string Name, Chance;
+            public Color Color;
+        }
+
+        static string dropTextKey;
+        static readonly List<DropText> dropTexts = new List<DropText>();
+
+        static readonly List<int> dropView = new List<int>();
+
+        /// <summary>
+        /// Which of an entry's drops the book shows (their places in the whole table, whose groups the chances are worked out
+        /// over): all of them, or while it is found by an item it drops, not by its name, only the unlocked drops the search finds.
+        /// </summary>
+        static List<int> DropView(string rec, IReadOnlyList<EnemyDrops.Drop> drops)
+        {
+            dropView.Clear();
+            bool byItem = Searching && !Matches(Bestiary.NameOf(rec));
+            for (int k = 0; k < drops.Count; k++)
+                if (!byItem || !EnemyDrops.Locked(drops[k], BookDropStage) && Matches(ItemDb.Get(drops[k].Type).Name)) dropView.Add(k);
+            return dropView;
+        }
+
+        /// <summary>The chosen entry's drops as text, worked out again only for another entry, language, difficulty or stage.</summary>
+        static List<DropText> DropTexts(string rec, IReadOnlyList<EnemyDrops.Drop> drops)
+        {
+            string key = rec + "|" + Lang.Culture + "|" + World.GameDifficulty.Current + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + drops.Count;
+            if (key == dropTextKey) return dropTexts;
+            dropTextKey = key;
+            dropTexts.Clear();
+            foreach (var dr in drops)
+            {
+                // On the save's difficulty (EnemyDrops.EffectiveChance / EffectiveMax).
+                int most = EnemyDrops.EffectiveMax(dr);
+                int least = EnemyDrops.EffectiveMin(dr);
+                string count = least == most ? (least > 1 ? $" ×{least}" : "") : $" ×{least}-{most}";
+                float eff = EnemyDrops.EffectiveChance(dr);
+                string chance = eff >= 1f ? Lang.T("必定掉落") : $"{eff * 100f:0.##}%";
+                // One of a sure pick: one of the group's unlocked drops comes, at the group's chance.
+                int of = EnemyDrops.GroupSize(drops, dr.Group, BookDropStage);
+                if (of > 0) chance = (EnemyDrops.MarginalChance(drops, dr, BookDropStage) * 100f).ToString("0.##") + "%";
+                if (dr.Master) chance = Lang.T("大师模式必掉");
+                var def = ItemDb.Get(dr.Type);
+                dropTexts.Add(new DropText { Name = def.Name + count, Chance = chance, Color = ItemDb.RarityColor(def.Rare) });
+            }
+            return dropTexts;
+        }
+
+        /// <summary>Dev: time spent (Stopwatch ticks) on the lists and counts, the grid, the chosen entry; the book's repaints.</summary>
+        public static readonly long[] DevBookTicks = new long[3];
+        public static int DevBookFrames, DevBookRebuilds;
+
+        static string bookKey;
+        static int bookSeen, bookDone;
+        static int[] groupTotal = new int[0], groupSeen = new int[0];
+
+        /// <summary>
+        /// The book's lines and counts, made again only when what they show changes: the area or stage chosen, the search,
+        /// an enemy seen or beaten for the first time, the language, the creative book.
+        /// </summary>
+        static void RefreshBook(List<string> all, int groups)
+        {
+            string key = ActiveBookFilter + "|" + bestiaryByStage + "|" + bookSearch + "|" + Bestiary.Stats.Count + "|" + Bestiary.Kills.Count
+                + "|" + Lang.Culture + "|" + Bestiary.AllUnlocked + "|" + groups + "|" + all.Count + "|" + Shop.UnlockedStage() + "|" + bestiaryDropStage;
+            if (key == bookKey) return;
+            bookKey = key;
+            DevBookRebuilds++;
+            // Searching: only what it finds, in the grid and in the list down the left (a group it finds nothing in goes).
+            var found = Searching ? all.FindAll(MatchesSearch) : all;
+            BuildBookLines(found);
+            if (Searching && bestiaryRows.Count > 0 && !bestiaryRows.Contains(bestiaryChosen)) bestiaryChosen = bestiaryRows[0];
+            bookSeen = bookDone = 0;
+            foreach (var r in all)
+            {
+                if (Bestiary.IsSeen(r)) bookSeen++;
+                if (Bestiary.IsDefeated(r)) bookDone++;
+            }
+            if (groupTotal.Length != groups + 1) { groupTotal = new int[groups + 1]; groupSeen = new int[groups + 1]; }
+            System.Array.Clear(groupTotal, 0, groupTotal.Length);
+            System.Array.Clear(groupSeen, 0, groupSeen.Length);
+            foreach (var r in found)
+            {
+                bool s = Bestiary.IsSeen(r);
+                int g = BookGroupOf(r);
+                groupTotal[0]++;
+                if (s) groupSeen[0]++;
+                if (g >= 0 && g + 1 < groupTotal.Length) { groupTotal[g + 1]++; if (s) groupSeen[g + 1]++; }
+            }
+        }
+
+        static string textFor, textCulture, descCached, notesCached;
+        static bool textSeen, textBeaten;
+        static float textWidth = -1f, hDescCached, hNotesCached;
+        static int textFont;
+
+        /// <summary>The chosen entry's description and notes, and their heights at this width (measured once for each).</summary>
+        static void EntryText(string rec, bool seen, bool beaten, float width, out string desc, out string notes, out float hDesc, out float hNotes)
+        {
+            if (rec != textFor || seen != textSeen || beaten != textBeaten || Lang.Culture != textCulture)
+            {
+                textFor = rec; textSeen = seen; textBeaten = beaten; textCulture = Lang.Culture;
+                descCached = seen ? EnemyHover.JournalText(rec, "DESC_") ?? Lang.T("猎人日志里没有这种敌人的描述。") : Lang.T("在视野中发现这种敌人后解锁它的资料。");
+                notesCached = beaten ? EnemyHover.JournalText(rec, "NOTE_") : null;
+                textWidth = -1f;
+            }
+            if (!Mathf.Approximately(width, textWidth) || bookText.fontSize != textFont)
+            {
+                textWidth = width;
+                textFont = bookText.fontSize;
+                hDescCached = bookText.CalcHeight(new GUIContent(descCached), width);
+                hNotesCached = notesCached != null ? bookText.CalcHeight(new GUIContent(notesCached), width) : 0f;
+            }
+            desc = descCached; notes = notesCached; hDesc = hDescCached; hNotes = hNotesCached;
+        }
+
+        // ------------------------------------------------------------------ the search (UIBestiaryTest's search bar)
+
+        static string bookSearch = "", bookComposing = "";
+        static bool bookTyping, bookTextHooked;
+        static int bookTypingEnded = -10;
+
+        /// <summary>Something is searched for.</summary>
+        static bool Searching => bookSearch.Trim().Length > 0;
+
+        /// <summary>The search box is being typed into (or was this frame or the last): the keys are the text's.</summary>
+        internal static bool BookTyping => bookTyping || Time.frameCount - bookTypingEnded <= 1;
+
+        /// <summary>Dev: what is searched for.</summary>
+        public static string DevBookSearch
+        {
+            get => bookSearch;
+            set { SetBookSearch(value ?? ""); }
+        }
+
+        // A new query must not inherit the previous query's stage or area restriction.
+        static void ResetBookSearchFilters()
+        {
+            bestiaryFilter = bestiaryStageFilter = bestiaryDropStage = -1;
+            bestiaryScroll = dropScroll = 0;
+            bestiaryScrollTo = null;
+            bookKey = dropTextKey = null;
+        }
+
+        static void SetBookSearch(string value)
+        {
+            if (bookSearch == value) return;
+            bookSearch = value;
+            ResetBookSearchFilters();
+        }
+
+        public static List<string> DevBookRows() => new List<string>(bestiaryRows);
+
+        /// <summary>Dev: start or end typing into the search, as a click on the box and Enter do.</summary>
+        public static void DevBookType(bool on) { if (on) StartBookSearch(); else EndBookSearch(); }
+
+        static bool Matches(string text) => text != null && text.IndexOf(bookSearch.Trim(), System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>An enemy the search finds: a seen one by its name, a defeated one by a drop the book shows (not a locked one).</summary>
+        static bool MatchesSearch(string rec)
+        {
+            if (!Bestiary.IsSeen(rec)) return false;
+            if (Matches(Bestiary.NameOf(rec))) return true;
+            if (!Bestiary.IsDefeated(rec)) return false;
+            foreach (var dr in BookDrops(rec))
+                if (!EnemyDrops.Locked(dr, BookDropStage) && Matches(ItemDb.Get(dr.Type).Name)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// The game's own input (UnityEngine.Input) carries the typing: its IME mode left on Auto keeps the system's input
+        /// method off for a window with no text field of its own focused, which kept Chinese out of the box (the chat's
+        /// GUI.TextField turns it on itself). Without it (an input setup with no legacy input), the Input System's.
+        /// </summary>
+        static bool legacyText;
+
+        static void StartBookSearch()
+        {
+            ResetBookSearchFilters();
+            bookTyping = true;
+            try
+            {
+                _ = UnityEngine.Input.inputString;
+                // Chinese and the other languages typed through the system's input method, on while the box is typed into.
+                UnityEngine.Input.imeCompositionMode = IMECompositionMode.On;
+                legacyText = true;
+            }
+            catch (System.InvalidOperationException) { legacyText = false; }
+            var kb = Keyboard.current;
+            if (kb != null)
+            {
+                if (!bookTextHooked)
+                {
+                    bookTextHooked = true;
+                    kb.onTextInput += BookTyped;
+                    kb.onIMECompositionChange += BookComposing;
+                }
+                kb.SetIMEEnabled(true);
+            }
+            Sound("Menu_Tick");
+        }
+
+        static void BookTyped(char c)
+        {
+            if (!legacyText) BookAppend(c);
+        }
+
+        static void BookAppend(char c)
+        {
+            if (!bookTyping || char.IsControl(c) || bookSearch.Length >= 32) return;
+            SetBookSearch(bookSearch + c);
+            bookComposing = "";
+        }
+
+        static void BookComposing(UnityEngine.InputSystem.LowLevel.IMECompositionString s)
+        {
+            if (bookTyping && !legacyText) bookComposing = s.ToString();
+        }
+
+        static void EndBookSearch()
+        {
+            if (!bookTyping) return;
+            bookTyping = false;
+            bookComposing = "";
+            bookTypingEnded = Time.frameCount;
+            Keyboard.current?.SetIMEEnabled(false);
+            if (legacyText)
+                try { UnityEngine.Input.imeCompositionMode = IMECompositionMode.Auto; }
+                catch (System.InvalidOperationException) { }
+        }
+
+        /// <summary>Dev: whether the box reads the game's own input, and its IME mode now.</summary>
+        public static string DevBookIme => $"{(legacyText ? "旧输入" : "Input System")} {(legacyText ? UnityEngine.Input.imeCompositionMode.ToString() : "-")}";
+
+        /// <summary>Each frame while typed into: Backspace; Enter or Esc ends the typing (the text stays); the book shut ends it.</summary>
+        static void TickBookSearch()
+        {
+            if (!bookTyping) return;
+            if (!Open || !bestiaryOpen) { EndBookSearch(); return; }
+            if (legacyText)
+            {
+                // What the input method put in this frame (a word chosen, or plain keys), and what it is composing.
+                foreach (char c in UnityEngine.Input.inputString) BookAppend(c);
+                bookComposing = UnityEngine.Input.compositionString ?? "";
+            }
+            var kb = Keyboard.current;
+            if (kb == null) return;
+            if (kb.backspaceKey.wasPressedThisFrame && bookComposing.Length == 0 && bookSearch.Length > 0)
+            {
+                SetBookSearch(bookSearch.Substring(0, bookSearch.Length - 1));
+            }
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame) EndBookSearch();
+        }
+
+        /// <summary>The search box: what is typed (with what the input method is composing, and the caret), a hint when empty, a × to clear it.</summary>
+        static void DrawBookSearch(Rect box, float ui, Vector2 mouse)
+        {
+            if (box.width < 80f * ui) return;
+            bool over = box.Contains(mouse);
+            Fill(box, bookTyping ? new Color(0.05f, 0.07f, 0.18f, 0.95f) : over ? new Color(0.1f, 0.13f, 0.3f, 0.95f) : new Color(0f, 0f, 0f, 0.35f));
+            Rim(box, bookTyping ? Gold : BookRim, 1.5f * ui);
+            var text = new Rect(box.x + 10f * ui, box.y, box.width - 40f * ui, box.height);
+            if (bookSearch.Length == 0 && bookComposing.Length == 0 && !bookTyping)
+                BookOutlined(text, Lang.T("搜索怪物或掉落物"), bookSmall, new Color(0.6f, 0.65f, 0.8f));
+            else
+            {
+                string caret = bookTyping && (int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : "";
+                BookOutlined(text, bookSearch + bookComposing + caret, bookSmall, Color.white);
+                // The input method's word list under the box, at the caret (as a text field puts it).
+                if (bookTyping && legacyText)
+                {
+                    float w = bookSmall.CalcSize(new GUIContent(bookSearch)).x;
+                    UnityEngine.Input.compositionCursorPos = new Vector2(text.x + Mathf.Min(w, text.width), box.yMax);
+                }
+            }
+            Add(box, Kind.BestiaryEntry, -4);
+            if (bookSearch.Length > 0)
+            {
+                var clear = new Rect(box.xMax - 28f * ui, box.y + 3f * ui, 24f * ui, box.height - 6f * ui);
+                BookOutlined(clear, "×", bookCentre, clear.Contains(mouse) ? Gold : Color.white);
+                Add(clear, Kind.BestiaryEntry, -5);
+            }
+            // How many it found, under the box.
+            if (Searching)
+                BookOutlined(new Rect(box.x, box.yMax + 2f * ui, box.width, 18f * ui),
+                    bestiaryRows.Count > 0 ? Lang.F("找到 {0} 种", bestiaryRows.Count) : Lang.T("没有找到"), bookCount, new Color(0.8f, 0.85f, 1f));
         }
 
         /// <summary>A Stat_* panel at any width: its left third (the icon) at the panel's height, the rest of its fill stretched.</summary>

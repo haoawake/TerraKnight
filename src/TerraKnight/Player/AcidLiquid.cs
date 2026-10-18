@@ -98,7 +98,42 @@ namespace TerraKnight.Player
                 }
                 if (p.Box != null) p.Box.damageDealt = swim ? 0 : p.Damage;
                 if (p.Region != null && p.Region.enabled != swim) p.Region.enabled = swim;
-                if (p.Top != null && p.Top.activeSelf != walk) p.Top.SetActive(walk);
+                if (p.Top != null && p.Top.activeSelf != walk)
+                {
+                    // Switched on again: its passes through are made afresh (a collider switched off may forget them).
+                    if (walk) passing.Clear();
+                    p.Top.SetActive(walk);
+                }
+                if (walk && p.Top != null) KeepEnemiesOff(p.Top);
+            }
+        }
+
+        /// <summary>Enemy bodies already told to pass through a pool's top (the top's id and the collider's).</summary>
+        static readonly HashSet<long> passing = new HashSet<long>();
+        public static int DevEnemiesThrough;
+
+        /// <summary>
+        /// The walking top holds the Knight only (Player.waterWalk is his): every enemy body near the pool passes through it
+        /// as through the water, the top being on the terrain layer the enemies stand on too.
+        /// </summary>
+        static void KeepEnemiesOff(GameObject top)
+        {
+            var box = top.GetComponent<BoxCollider2D>();
+            if (box == null || !box.enabled) return;
+            var span = box.bounds;
+            span.Expand(new Vector3(6f, 12f, 0f));
+            if (passing.Count > 8192) passing.Clear();
+            foreach (var info in Items.EnemyStats.All)
+            {
+                var hm = info.Hm;
+                if (hm == null || !hm.gameObject.activeInHierarchy) continue;
+                if (!span.Contains(new Vector3(hm.transform.position.x, hm.transform.position.y, span.center.z))) continue;
+                long key = ((long)box.GetInstanceID() << 32) ^ (uint)hm.GetInstanceID();
+                if (!passing.Add(key)) continue;
+                // Each of its bodies once (those switched on later too: the pair is kept while both live).
+                foreach (var c in hm.GetComponentsInChildren<Collider2D>(true))
+                    if (c != null && !c.isTrigger) Physics2D.IgnoreCollision(box, c, true);
+                DevEnemiesThrough++;
             }
         }
 

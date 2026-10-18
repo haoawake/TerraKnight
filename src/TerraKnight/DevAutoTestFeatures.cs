@@ -132,6 +132,10 @@ namespace TerraKnight
             yield return new WaitForSeconds(0.3f);
             Shot(scene, "f1_inventory_crafting");
             yield return new WaitForSeconds(0.2f);
+            InventoryGui.DevFilterShot("f1e_filter_empty", 8);   // 时装：圣巢里没有这一类，格子应当空着（不弹任何提示）
+            yield return new WaitForSeconds(0.4f);
+            InventoryGui.DevFilterShot("f1f_filter_cleared", -1);
+            yield return new WaitForSeconds(0.3f);
             inv.ReturnMouseItem();
             InventoryGui.Open = false;
             yield return new WaitForSeconds(0.3f);
@@ -294,6 +298,10 @@ namespace TerraKnight
                 yield return new WaitForSeconds(1f);
                 Plugin.Log.LogInfo($"[AutoTest] 晶塔：解锁 {Pylons.Unlocked.Count} 个{(Pylons.Unlocked.Count > 0 ? $"，{Pylons.Unlocked[0].Name} 在 {Pylons.Unlocked[0].Local}" : "")}");
                 Shot("Town", "f5_pylon");
+                // The townsfolk panel's ground: a click in the air, one away from the flat street, one nowhere.
+                Plugin.Log.LogInfo($"[AutoTest] 居民落点：空中 {Town.TownNpcs.DevPlaceAt("PartyGirl", new Vector2(150f, 26f))}");
+                Plugin.Log.LogInfo($"[AutoTest] 居民落点：街外 {Town.TownNpcs.DevPlaceAt("Golfer", new Vector2(66f, 12f))}");
+                Plugin.Log.LogInfo($"[AutoTest] 居民落点：半空远处 {Town.TownNpcs.DevPlaceAt("Painter", new Vector2(4f, 30f))}");
                 UI.FullMap.OpenForPylons();
                 yield return new WaitForSeconds(0.6f);
                 Shot("Town", "f6_pylon_map");

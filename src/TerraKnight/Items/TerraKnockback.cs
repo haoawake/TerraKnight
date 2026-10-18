@@ -80,7 +80,7 @@ namespace TerraKnight.Items
             return crit ? k * 1.4f : k;
         }
 
-        public static int DevOwnPushes, DevLaunches, DevPushCalls, DevImmune, DevPushUps;
+        public static int DevOwnPushes, DevLaunches, DevPushCalls, DevImmune, DevPushUps, DevHeldInFlight;
 
         /// <summary>
         /// The Nail's upward slash: the struck enemy knocked up by Terraria's launch speed (its level's resistance; bosses and
@@ -114,6 +114,9 @@ namespace TerraKnight.Items
         {
             if (hm == null) return false;
             if (hm.GetComponent<Climber>() != null) return true;
+            // Dirtcarver uses its own surface-following FSM rather than Climber. Launching
+            // it away from that surface leaves its crawl/burrow movement without a valid track.
+            if (UI.EnemyHover.RecordOf(hm) == "BabyCentipede") return true;
             // A part of another enemy goes where its owner puts it: the False Knight's head, pushed on its own
             // while he lay stunned, stayed where the blows left it, and the game brought it out from there the
             // next times, beyond the arena's gates, away from the head drawn on his body.
@@ -137,7 +140,7 @@ namespace TerraKnight.Items
             var recoil = recoilOf(hm) ?? hm.GetComponent<Recoil>();
             var body = hm.GetComponent<Rigidbody2D>();
             string how = body == null ? "无刚体" : body.bodyType + (body.gravityScale == 0f ? "无重力" : "");
-            string why = hm.GetComponent<Climber>() != null ? "绕地形爬" : hm.transform.parent != null && hm.transform.parent.GetComponentInParent<HealthManager>() != null ? "别的敌人的部件"
+            string why = hm.GetComponent<Climber>() != null || UI.EnemyHover.RecordOf(hm) == "BabyCentipede" ? "绕地形爬" : hm.transform.parent != null && hm.transform.parent.GetComponentInParent<HealthManager>() != null ? "别的敌人的部件"
                 : recoil == null ? "无Recoil" : speedBase(recoil) <= 0f ? "Recoil速度0" : body != null && body.bodyType == RigidbodyType2D.Static ? "静态刚体"
                 : recoil.freezeInPlace && body != null && body.gravityScale == 0f ? "受击定住" : null;
             return (why != null ? "免疫(" + why + ")" : "可击退") + " " + how + (recoil != null ? $" recoil {speedBase(recoil):F1}" : "");
@@ -151,7 +154,7 @@ namespace TerraKnight.Items
         /// <summary>How many knockbacks in that window: the last of them still moves it.</summary>
         public const int SteadyAfter = 5;
         /// <summary>How long it then takes no knockback at all (s); after that the count starts again.</summary>
-        public const float SteadyFor = 3f;
+        public const float SteadyFor = 1f;
 
         sealed class Recent
         {
@@ -170,10 +173,13 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// A knockback about to move an enemy: false (and nothing moves) while it is steady. Five within three seconds
-        /// make it steady for three, so a stream of hits can't pin it to a wall or juggle it in the air.
+        /// make an ordinary enemy or an elite steady for one, so a stream of hits can't pin it to a wall or juggle it in
+        /// the air. A boss isn't counted: one is never knocked back to begin with.
         /// </summary>
         static bool CountPush(HealthManager hm)
         {
+            var info = EnemyStats.Of(hm);
+            if (info != null && info.Boss) return true;
             int id = hm.GetInstanceID();
             if (!recent.TryGetValue(id, out var r))
             {
@@ -227,9 +233,19 @@ namespace TerraKnight.Items
                 return;
             }
             if (!CountPush(hm)) return;
+            // Still flying or sliding from the last push: this one moves it no further (it counts towards steadying it
+            // all the same). A hail of hits (the Zenith's swords, the Star Wrath's stars, several a second) lifted it
+            // again and again before it came down and carried it across the room on one swing.
+            var flying = hm.GetComponent<KnockFlight>();
+            var sliding = hm.GetComponent<KnockSlide>();
+            if (flying != null && flying.Airborne || sliding != null && sliding.Active)
+            {
+                DevHeldInFlight++;
+                return;
+            }
             if (body != null && body.bodyType == RigidbodyType2D.Dynamic)
             {
-                var flight = hm.GetComponent<KnockFlight>() ?? hm.gameObject.AddComponent<KnockFlight>();
+                var flight = flying ?? hm.gameObject.AddComponent<KnockFlight>();
                 flight.Begin(body, col, speed, facing >= 0f ? 1f : -1f, body.gravityScale <= 0.01f, bigHit, resist);
                 DevLaunches++;
                 DevLastLaunch = speed;
@@ -238,7 +254,7 @@ namespace TerraKnight.Items
             float distance = Distance(bigHit ? speed : speed * resist) * Effects.TerraParticles.Px;
             if (distance <= 0.01f) return;
             int cardinal = facing >= 0f ? 0 : 2;
-            var slide = hm.GetComponent<KnockSlide>() ?? hm.gameObject.AddComponent<KnockSlide>();
+            var slide = sliding ?? hm.gameObject.AddComponent<KnockSlide>();
             slide.Begin(col, cardinal, distance);
             DevOwnPushes++;
             DevLastOwnPush = distance;
@@ -272,6 +288,9 @@ namespace TerraKnight.Items
         float age;
 
         public bool Active => active;
+
+        /// <summary>Up in the air from the push (a flyer: still drifting back), not yet down and braking.</summary>
+        public bool Airborne => active && (flying || !grounded);
 
         public void Begin(Rigidbody2D rb, Collider2D c, float speed, float dir, bool fly, bool bigHit = true, float resist = 1f)
         {
@@ -409,6 +428,8 @@ namespace TerraKnight.Items
         Sweep sweep;
         float total, done, time, duration;
         bool active;
+
+        public bool Active => active;
 
         public void Begin(Collider2D col, int cardinal, float distance)
         {

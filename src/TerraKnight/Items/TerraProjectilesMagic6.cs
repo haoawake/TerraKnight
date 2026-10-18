@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.World;
 using UnityEngine;
@@ -13,7 +13,7 @@ namespace TerraKnight.Items
     /// </summary>
     internal sealed partial class TerraProjectiles
     {
-        public static int DevCrystalShards, DevZapJumps, DevSharpTears;
+        public static int DevCrystalShards, DevZapJumps, DevSharpTears, DevZapBigHits;
 
         static void RegisterMagic6()
         {
@@ -249,6 +249,7 @@ namespace TerraKnight.Items
             if (Random.Range(0, 20) == 0) p.Knockback *= 10f;
             if (Random.Range(0, 50) == 0)
             {
+                DevZapBigHits++;
                 p.Damage *= 10;
                 dealt *= 10;
             }

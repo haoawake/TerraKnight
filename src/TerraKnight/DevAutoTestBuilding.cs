@@ -28,7 +28,7 @@ namespace TerraKnight
             const float c = CellGrid.CellSize;
             int ox = Mathf.FloorToInt(col.bounds.center.x / c) + 4;
             int oy = Mathf.FloorToInt(col.bounds.min.y / c) + 3;
-            var saved = new Dictionary<Vector2Int, (byte Tile, int Wall)>();
+            var saved = new Dictionary<Vector2Int, (ushort Tile, int Wall)>();
             for (int x = ox - 3; x <= ox + 26; x++)
             for (int y = oy - 3; y <= oy + 14; y++)
             {
@@ -63,7 +63,7 @@ namespace TerraKnight
                 bool packed = true;
                 for (int shape=0;shape<=5;shape++)
                 {
-                    byte value=WorldEdits.Pack(CellKind.Stone,true,shape);
+                    ushort value=WorldEdits.Pack(CellKind.Stone,true,shape);
                     WorldEdits.Unpack(value,out var kind,out bool dug,out int result);
                     var grid=new CellGrid(2,2); grid.Restore(0,kind,dug,result);
                     packed &= grid.Clone().GetSlope(0,0)==shape && grid.IsDug(0,0);
@@ -125,11 +125,11 @@ namespace TerraKnight
                 string index=(iy*region.Grid.Width+ix).ToString();
                 Check("实际存档文件含独立墙层",(int?)disk["Version"]==7 && (int?)disk["Walls"]?[region.SceneName]?[index]==329);
                 int wallCount=0;
-                foreach(var d in ItemDb.All) if(d!=null && d.PlacesWall>0) wallCount++;
+                foreach(var d in ItemDb.All) if(d!=null && d.PlacesWall>0 && !World.AreaBlocks.IsAreaWall(d.PlacesWall)) wallCount++;
                 Check("292种墙有物品定义",wallCount==292,wallCount.ToString());
                 var ids=new HashSet<int>(); bool unique=true;
                 foreach(var d in ItemDb.All) if(d!=null && d.PlacesWall>0) unique &= ids.Add(d.PlacesWall);
-                Check("墙片编号无误合并",unique && ids.Count==292);
+                Check("墙片编号无误合并",unique && ids.Count==292+World.AreaBlocks.All.Length,ids.Count.ToString());
                 Check("排除误识别为墙的前景材料",!System.Enum.IsDefined(typeof(ItemType),"DynastyWood") && !System.Enum.IsDefined(typeof(ItemType),"RedDynastyShingles"));
 
                 ClearCourse();

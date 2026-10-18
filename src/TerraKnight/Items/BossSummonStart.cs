@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TerraKnight.World;
@@ -55,18 +55,19 @@ namespace TerraKnight.Items
             }
             yield return new WaitForSecondsRealtime(0.2f);
             var done = new List<string>();
+            yield return RestoreWorldBattle(key, room, record, done);
             var before = States(room, record);
             for (int attempt = 0; attempt < 3; attempt++)
             {
-                if (!BossArena.Visiting) yield break;
+                if (!BossArena.Arrived(key)) yield break;
                 var hero = HeroController.SilentInstance;
                 if (hero == null) yield break;
-                if (attempt != 1) yield return Act(room, record, hero, done, attempt > 0);
+                if (attempt != 1) yield return Act(key, room, record, hero, done, attempt > 0);
                 if (attempt > 0) yield return Nudge(room, record, done);
                 float wait = Time.realtimeSinceStartup + (attempt == 0 ? 1.5f : 3f);
                 while (Time.realtimeSinceStartup < wait)
                 {
-                    if (!BossArena.Visiting) yield break;
+                    if (!BossArena.Arrived(key)) yield break;
                     string why = Started(room, record, before);
                     if (why != null)
                     {
@@ -84,10 +85,58 @@ namespace TerraKnight.Items
             Plugin.Log.LogWarning("[首领召唤物] " + DevLast);
         }
 
+        // A completed world encounter may load only its empty base room. Restore the native
+        // fight scene rather than spawning a detached copy without its battle controller.
+        static IEnumerator RestoreWorldBattle(string key, string room, string record, List<string> done)
+        {
+            if (!BossArena.Arrived(key)) yield break;
+            if (Parts(room, record).Exists(h => h.hp > 0 && !h.isDead && !EnemyStats.Defeated(h) && h.gameObject.activeInHierarchy)) yield break;
+            string battle = room + "_boss";
+            if (!Application.CanStreamedLevelBeLoaded(battle)) yield break;
+            // A previously beaten alternate scene must not remain beside the fresh fight.
+            foreach (var loader in Object.FindObjectsByType<SceneAdditiveLoadConditional>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (loader.gameObject.scene.name != room || loader.sceneNameToLoad != battle || string.IsNullOrEmpty(loader.altSceneNameToLoad)) continue;
+                var alt = UnityEngine.SceneManagement.SceneManager.GetSceneByName(loader.altSceneNameToLoad);
+                if (!alt.isLoaded) continue;
+                var drop = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(alt);
+                while (drop != null && !drop.isDone) yield return null;
+            }
+            var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(battle);
+            if (scene.isLoaded)
+            {
+                var unload = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
+                while (unload != null && !unload.isDone) yield return null;
+            }
+            if (!BossArena.Arrived(key)) yield break;
+            var load = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(battle, UnityEngine.SceneManagement.LoadSceneMode.Additive);
+            while (load != null && !load.isDone) yield return null;
+            if (!BossArena.Arrived(key)) yield break;
+            GameManager.UnsafeInstance?.LoadedBoss();
+            yield return null;
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+            {
+                if (f.gameObject.scene.name != room || !IsBattle(f) || f.GetComponentInParent<HealthManager>() != null) continue;
+                var activated = f.FsmVariables.FindFsmBool("Activated");
+                if (activated != null) activated.Value = false;
+                if (HasState(f, "Init")) f.SetState("Init");
+            }
+            done.Add("恢复原生战斗子场景 " + battle);
+            Plugin.Log.LogInfo($"[首领召唤物] {key} 本体未载入：重新载入 {battle}，复位战斗控制，再执行开场与关门");
+            yield return null;
+        }
+
         /// <summary>What the player's walking up would do, done.</summary>
-        static IEnumerator Act(string room, string record, HeroController hero, List<string> done, bool again)
+        static IEnumerator Act(string key, string room, string record, HeroController hero, List<string> done, bool again)
         {
             var parts = Parts(room, record);
+            bool reviewed = BossArrivalPoints.TryFeet(key, out var arrival);
+            if (!again && reviewed)
+            {
+                Put(hero, arrival);
+                DevPlaced++;
+                done.Add($"站到首领战斗层 {arrival:F1}");
+            }
             // A fight with the game's own short way in once faced (the Radiance's: the challenge's long build-up, or a
             // pause and the boss): the short way.
             var fork = Fsm(room, f => Waits(f, "CHALLENGE") && Waits(f, "REFIGHT") && f.GetComponentInParent<HealthManager>() == null);
@@ -133,15 +182,17 @@ namespace TerraKnight.Items
                 yield break;
             }
             // Beside the boss, on the side the player came in by.
-            if (!again && parts.Count > 0)
+            if (!again && !reviewed && parts.Count > 0)
             {
                 Vector2 at = Beside(hero, parts);
                 Put(hero, at);
                 DevPlaced++;
-                done.Add($"站到首领旁 {at:F1}");
+                done.Add($"站到首领战斗层 {at:F1}");
             }
             // Into the boss's own range it waits on.
-            foreach (var name in ranges)
+            // A sleeping/offscreen body can carry a range on another floor. Reviewed encounter
+            // points must stay on the combat floor; the native battle events below wake the boss.
+            foreach (var name in reviewed ? System.Array.Empty<string>() : ranges)
             {
                 Collider2D range = null;
                 foreach (var hm in parts)
@@ -168,6 +219,17 @@ namespace TerraKnight.Items
             {
                 tent.SetState("Lights Up 2");
                 done.Add("格林直接开灯开战");
+            }
+            // The Nightmare King's dream: past its intro (the pan, the eyes, the silhouette and the title, the player held
+            // all along while a woken king would already strike), straight to its end: the battle's camera lock, control
+            // back (Fade Back), the king brought in and woken (Fight Start).
+            var nightmare = Fsm(room, f => f.FsmName == "Control" && f.gameObject.name == "Grimm Control" && HasState(f, "Return Pause") && HasState(f, "Fight Start"));
+            string intro = nightmare != null ? nightmare.ActiveStateName : null;
+            if (intro != null && (intro == "Idle" || intro == "Take Control 2" || intro.StartsWith("Pan Over") || intro.StartsWith("Eye")
+                || intro.StartsWith("Silhouette") || intro.StartsWith("Fader Wipe") || intro.StartsWith("Title")))
+            {
+                nightmare.SetState("Return Pause");
+                done.Add("梦魇格林跳过开场直接开战");
             }
             // The room's battle FSM waiting on the player's touch: the touch's event.
             foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))

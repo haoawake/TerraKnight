@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using GlobalEnums;
 using HarmonyLib;
 using UnityEngine;
@@ -50,18 +50,18 @@ namespace TerraKnight.Items
             ["GhostAladar"] = Set(W("Cliffs_02", "left1"), beatenInts: new[] { ("aladarSlugDefeated", 0) }, needs: new[] { T("hasDreamNail") }),
             ["GhostNoEyes"] = Set(W("Fungus1_35", "left1"), beatenInts: new[] { ("noEyesDefeated", 0) }, needs: new[] { T("hasDreamNail"), T("hasLantern") }),
             ["DungDefender"] = Set(W("Waterways_05", "bot1"), beaten: new[] { F("defeatedDungDefender") }),
-            ["TraitorLord"] = Set(W("Fungus3_23", "left1"), beaten: new[] { F("killedTraitorLord") }, needs: new[] { T("hasShadowDash") }),
+            ["TraitorLord"] = Set(W("Fungus3_23", "left1"), beaten: new[] { F("killedTraitorLord") }, needs: new[] { T("hasShadowDash") }, states: new[] { "Fungus3_23/Battle Scene" }),
             ["MantisLord"] = Set(W("Fungus2_15", "top1"), beaten: new[] { F("defeatedMantisLords") }),
             ["MageLord"] = Set(W("Ruins1_24", "left1"), beaten: new[] { F("mageLordDefeated"), F("mageLordEncountered") }),
             ["MegaJellyfish"] = Set(W("Fungus3_archive_02", "top1"), beaten: new[] { F("defeatedMegaJelly") }),
             ["FlukeMother"] = Set(W("Waterways_12", "right1"), beaten: new[] { F("flukeMotherDefeated") }),
-            ["MegaBeamMiner"] = Set(W("Mines_18", "left1"), beaten: new[] { F("killedMegaBeamMiner") }, states: new[] { "Mines_18/Battle Scene" }),
+            ["MegaBeamMiner"] = Set(W("Mines_18", "left1"), beaten: new[] { F("killedMegaBeamMiner"), F("defeatedMegaBeamMiner") }, states: new[] { "Mines_18/Battle Scene", "Mines_18/Mega Zombie Beam Miner (1)", "Mines_18/Mega Zombie Beam Miner" }),
             ["GhostHu"] = Set(W("Fungus2_32", "left1"), beatenInts: new[] { ("elderHuDefeated", 0) }, needs: new[] { T("hasDreamNail") }),
             ["GhostMarmu"] = Set(W("Fungus3_40", "right1"), beatenInts: new[] { ("mumCaterpillarDefeated", 0) }, needs: new[] { T("hasDreamNail") }),
             // The Watcher Knights wake only for one who comes down from the Watcher's room (doorTrigger top1).
             ["BlackKnight"] = Set(W("Ruins2_03", "top1"), states: new[] { "Ruins2_03/Battle Control" }),
             ["HiveKnight"] = Set(W("Hive_05", "left1"), beaten: new[] { F("killedHiveKnight") }),
-            ["JarCollector"] = Set(W("Ruins2_11", "right1"), beaten: new[] { F("collectorDefeated") }),
+            ["JarCollector"] = Set(W("Ruins2_11", "right1"), beaten: new[] { F("collectorDefeated") }, states: new[] { "Ruins2_11/Battle Scene" }),
             ["MimicSpider"] = Set(W("Deepnest_32", "left1"), beaten: new[] { F("encounteredMimicSpider") }, states: new[] { "Deepnest_32/Battle Scene" }),
             ["GhostGalien"] = Set(W("Deepnest_40", "right1"), beatenInts: new[] { ("galienDefeated", 0) }, needs: new[] { T("hasDreamNail") }),
             ["GhostXero"] = Set(W("RestingGrounds_02", "left1"), beatenInts: new[] { ("xeroDefeated", 0) }, needs: new[] { T("hasDreamNail") }),
@@ -77,7 +77,7 @@ namespace TerraKnight.Items
             ["InfectedKnight@5"] = Set(D("Dream_03_Infected_Knight"), states: new[] { "Dream_03_Infected_Knight/Camera Locks Boss" }),
             ["WhiteDefender"] = D("Dream_04_White_Defender"),
             ["GreyPrince"] = D("Dream_Mighty_Zote"),
-            ["NightmareGrimm"] = D("Grimm_Nightmare"),
+            ["NightmareGrimm"] = Set(D("Grimm_Nightmare"), beaten: new[] { F("killedNightmareGrimm"), F("defeatedNightmareGrimm") }),
             ["FinalBoss"] = D("Dream_Final_Boss"),
             ["HollowKnightPrime"] = G("GG_Hollow_Knight"),
             ["NailBros"] = G("GG_Nailmasters"),
@@ -194,6 +194,7 @@ namespace TerraKnight.Items
 
         /// <summary>A creative challenge is on: its records are being set back and forth (SpecialDeaths leaves them be).</summary>
         public static bool Visiting => visit != null;
+        internal static string VisitKey => visit?.Key;
         /// <summary>Where a dream's or Godhome's fight sends the player back to: the scene and the spot they left from.</summary>
         static string returnScene;
         /// <summary>
@@ -201,6 +202,7 @@ namespace TerraKnight.Items
         /// anywhere): its gate nearest the spot left from. Null: the room's own door_dreamReturn.
         /// </summary>
         static string returnGate;
+        static bool ordinaryDreamReturn;
         public static int DevReturnGates;
         static Vector2 returnSpot;
 
@@ -236,6 +238,10 @@ namespace TerraKnight.Items
             var pd = PlayerData.instance;
             if (!Has(key) || gm == null || hero == null || pd == null || gm.IsInSceneTransition) return false;
             if (visit != null) Restore(keepWins: true);
+            ordinaryDreamReturn = false;
+            // A summon used while resting leaves the bench behind; its seated flag must not
+            // follow the player into a fight or survive a later dream return.
+            pd.atBench = false;
             var a = arenas[key];
             var v = new Visit { Key = key, Arena = a, KillsBefore = Bestiary.KillsOf(key) };
             string scene = a.Scene, gate = a.Gate;
@@ -298,6 +304,20 @@ namespace TerraKnight.Items
             return true;
         }
 
+        // BeginSceneTransition saves every loaded persistent object before loading the target.
+        // A parked room can otherwise write its old victory over the temporary arena reset.
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.SaveLevelState))]
+        static void RearmAfterDepartureSave()
+        {
+            if (visit == null || visit.Arrived || saving != null || SceneData.instance == null) return;
+            foreach (var key in visit.Arena.States)
+            {
+                var data = StateOf(key); data.activated = false;
+                SceneData.instance.SaveMyState(data);
+            }
+        }
+
         /// <summary>
         /// The waking's way back into a room: its own door_dreamReturn (null), else its gate nearest the spot (a room the
         /// game never wakes the player into: Crossroads_01, Greenpath... a wake to a door the room hasn't left the player
@@ -326,6 +346,11 @@ namespace TerraKnight.Items
             if (info == null || returnGate == null || returnScene == null) return;
             if (info.SceneName != returnScene || info.EntryGateName != "door_dreamReturn") return;
             info.EntryGateName = returnGate;
+            // The old dream visualization reasserts IsEnteringDream inside GameManager,
+            // even after the returning flags below were cleared. An ordinary gate has no
+            // dream wake-up actor to remove its white fade or release the hero.
+            info.Visualization = GameManager.SceneLoadVisualizations.Default;
+            ordinaryDreamReturn = true;
             DevReturnGates++;
             // In by an ordinary gate, an ordinary entry: not the Knight lying where the dream's door would be, waiting for
             // jump (his "Dream Return" left in "Ready" while he walks, the next waking stuck in "Get Up").
@@ -370,8 +395,12 @@ namespace TerraKnight.Items
             {
                 if (InFight(gm.sceneName))
                 {
-                    if (!visit.Arrived && visit.Arena.Kind != Kind.World) TerraMod.Instance?.StartCoroutine(FadeIn());
+                    BossEncounterCleanup.HideStoryActors();
+                    bool firstArrival = !visit.Arrived;
+                    if (firstArrival && visit.Arena.Kind != Kind.World) TerraMod.Instance?.StartCoroutine(FadeIn());
                     visit.Arrived = true;
+                    // Seals, creative-book challenges and LAN followers share the same placement/start path.
+                    if (firstArrival) TerraMod.Instance?.StartCoroutine(BossSummonStart.Begin(visit.Key));
                 }
                 else if (!visit.Arrived && visit.Door != null && gm.sceneName == visit.Door)
                 {
@@ -390,6 +419,7 @@ namespace TerraKnight.Items
             }
             if (returnScene != null && gm.sceneName == returnScene && visit == null)
             {
+                string arrivedScene = returnScene;
                 var hero = HeroController.SilentInstance;
                 if (hero != null)
                 {
@@ -399,7 +429,67 @@ namespace TerraKnight.Items
                     Plugin.Log.LogInfo($"[图鉴] 挑战结束，回到 {returnScene} {returnSpot:F1}");
                 }
                 returnScene = null; returnGate = null;
+                if (ordinaryDreamReturn)
+                {
+                    ordinaryDreamReturn = false;
+                    TerraMod.Instance?.StartCoroutine(FinishOrdinaryDreamReturn(arrivedScene));
+                }
             }
+        }
+
+        // A dream/Godhome loss can return to any room a seal was used in. When that room
+        // has no native dream-return gate, explicitly finish the wake-up we bypassed.
+        static System.Collections.IEnumerator FinishOrdinaryDreamReturn(string scene)
+        {
+            float until = Time.realtimeSinceStartup + 8f;
+            while (Time.realtimeSinceStartup < until)
+            {
+                var loading = GameManager.UnsafeInstance;
+                if (loading == null || loading.sceneName != scene || visit != null) yield break;
+                if (!loading.IsInSceneTransition) break;
+                yield return null;
+            }
+            yield return null;
+            var gm = GameManager.UnsafeInstance;
+            var hero = HeroController.SilentInstance;
+            if (gm == null || hero == null || gm.sceneName != scene || gm.IsInSceneTransition || visit != null) yield break;
+            foreach (var f in hero.GetComponents<PlayMakerFSM>())
+                if (f.FsmName == "Dream Return" || f.FsmName == "Dream Nail")
+                {
+                    var returning = f.FsmVariables.FindFsmBool("Dream Returning");
+                    if (returning != null) returning.Value = false;
+                    foreach (var state in f.FsmStates)
+                        if (state.Name == "Idle") { if (f.ActiveStateName != "Idle") f.SetState("Idle"); break; }
+                }
+            hero.IsEnteringDream = false;
+            hero.cState.dead = false;
+            hero.RegainControl();
+            hero.StartAnimationControl();
+            hero.AffectedByGravity(true);
+            PlayerData.instance.SetBool("disablePause", false);
+            PlayerData.instance.atBench = false;
+            TerraMod.Instance?.Stats.FullHeal();
+            gm.FadeSceneIn();
+            var whites = new List<PlayMakerFSM>();
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsSortMode.None))
+                if (f.gameObject.name == "Blanker White" || f.gameObject.name == "Blanker White(Clone)")
+                { whites.Add(f); f.SendEvent("FADE OUT"); }
+            yield return new WaitForSecondsRealtime(0.7f);
+            if (gm == null || gm.sceneName != scene || gm.IsInSceneTransition || visit != null) yield break;
+            var fade = GameCameras.instance != null ? GameCameras.instance.cameraFadeFSM : null;
+            if (fade != null && fade.ActiveStateName != "Normal")
+                foreach (var state in fade.FsmStates)
+                    if (state.Name == "Normal") { fade.SetState("Normal"); break; }
+            // Only the known dream white overlay; keep it enabled for future native fades.
+            foreach (var f in whites)
+            {
+                if (f == null) continue;
+                foreach (var r in f.GetComponentsInChildren<SpriteRenderer>(true)) { var c = r.color; c.a = 0f; r.color = c; }
+                foreach (var r in f.GetComponentsInChildren<tk2dBaseSprite>(true)) { var c = r.color; c.a = 0f; r.color = c; }
+                foreach (var r in f.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) { var c = r.color; c.a = 0f; r.color = c; }
+            }
+            DevFadeKicks++;
+            Plugin.Log.LogInfo($"[图鉴] 梦境/神居返回 {scene}：普通门入场完成，梦醒状态、白屏和操作已收尾");
         }
 
         public static int DevFadeKicks;
@@ -635,6 +725,7 @@ namespace TerraKnight.Items
                 }
             Plugin.Log.LogInfo($"[图鉴] 挑战 {v.Key} 结束，记录放回原样{(won.Count > 0 ? "，赢下的留着：" + string.Join("、", won) : "")}");
             visit = null;
+            BossEncounterCleanup.RestoreStoryActors();
         }
 
         static bool Contains((string Name, bool Value)[] list, string n) { foreach (var e in list) if (e.Name == n) return true; return false; }

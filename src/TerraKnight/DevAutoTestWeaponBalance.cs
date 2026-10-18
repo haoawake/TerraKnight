@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +13,33 @@ namespace TerraKnight
 {
     internal sealed partial class DevAutoTest
     {
-        IEnumerator WeaponBalanceTest(bool integrationOnly=false)
+        bool noviceTimberBaseline;
+        IEnumerator NoviceTimberComparison()
+        {
+            yield return WeaponBalanceTest(true,true);
+            string current=Path.Combine(DevCopy.SaveDir,"weapon-balance.json"),after=Path.Combine(DevCopy.SaveDir,"weapon-balance-after.json");
+            File.Copy(current,after,true);
+            var old=new Dictionary<ItemType,int>{{ItemType.AshWoodSword,66},{ItemType.AshWoodBow,68},{ItemType.PearlwoodSword,89},{ItemType.PearlwoodBow,87}};
+            var saved=old.Keys.ToDictionary(t=>t,t=>ItemDb.Get(t).Damage);
+            try
+            {
+                // Controlled before/after fixture only. These are the prior verified
+                // runtime values from resume-lootquality-20261017-131503; no source
+                // or save is changed, and no old budget is accepted as balanced.
+                noviceTimberBaseline=true;
+                foreach(var pair in old)ItemDb.Get(pair.Key).Damage=pair.Value;
+                yield return WeaponBalanceTest(true,true);
+                File.Copy(current,Path.Combine(DevCopy.SaveDir,"weapon-balance-timber-before.json"),true);
+            }
+            finally
+            {
+                foreach(var pair in saved)ItemDb.Get(pair.Key).Damage=pair.Value;
+                noviceTimberBaseline=false;
+                File.Copy(after,current,true);
+            }
+        }
+
+        IEnumerator WeaponBalanceTest(bool integrationOnly=false,bool shopsOnly=false)
         {
             if(!DevCopy.Verified) throw new InvalidOperationException("Isolated saves required");
             int checks=0,failures=0;
@@ -32,7 +58,20 @@ namespace TerraKnight
                     EstimatedNoAmmoDps=ProgressionBalance.WeaponDps(d,Areas.Defense(d.Stage))});
             }
             Check("飞刀随机数量期望",Mathf.Abs(ProgressionBalance.OutputOf(ItemDb.Get(ItemType.VampireKnives)).Volley-4.9375f)<.00001f);
+            if(!noviceTimberBaseline)foreach(var pair in new[]{(ItemType.AshWoodSword,ItemType.CobaltSword),(ItemType.AshWoodBow,ItemType.CobaltRepeater),
+                (ItemType.PearlwoodSword,ItemType.ChlorophyteSaber),(ItemType.PearlwoodBow,ItemType.TitaniumRepeater)})
+            {
+                var wood=ItemDb.Get(pair.Item1);var metal=ItemDb.Get(pair.Item2);
+                int ammo=wood.UseAmmo==AmmoKind.None?0:ItemDb.Get(ItemType.WoodenArrow).Damage;
+                Check("建材武器不压过同阶金属/"+wood.Type,ProgressionBalance.WeaponDps(wood,Areas.Defense(wood.Stage),ammo)
+                    <ProgressionBalance.WeaponDps(metal,Areas.Defense(wood.Stage),ammo));
+            }
             Check("暴雪不是双算每动画数量",ProgressionBalance.OutputOf(ItemDb.Get(ItemType.BlizzardStaff)).Volley==2);
+            foreach(var stab in new[]{ItemType.Gladius,ItemType.Ruler,ItemType.ChlorophyteSaber})
+            {
+                Check("连续短刺使用实际频率/"+stab,Mathf.Abs(ProgressionBalance.OutputOf(ItemDb.Get(stab)).Cycle-ItemDb.Get(stab).UseTime)<.00001f);
+                Check("原版连续短刺频率/"+stab,Mathf.Abs(ProgressionBalance.OriginalCycle(ItemDb.Get(stab))-ItemDb.Get(stab).UseTime)<.00001f);
+            }
             Check("毒液法杖随机数量",Mathf.Abs(ProgressionBalance.OutputOf(ItemDb.Get(ItemType.VenomStaff)).Volley-(4+1f/3+1f/4+1f/5))<.00001f);
             Check("太阳花不双算每动画数量",ProgressionBalance.OutputOf(ItemDb.Get(ItemType.DaybloomStaff)).Volley==5);
             Check("泰拉刃单发高于飞刀",ItemDb.Get(ItemType.TerraBlade).Damage>ItemDb.Get(ItemType.VampireKnives).Damage*2);
@@ -93,9 +132,30 @@ namespace TerraKnight
                 foreach(var t in new[] {ItemType.VampireKnives,ItemType.TerraBlade})
                 {cases.Add((t,1,12));cases.Add((t,3,12));}
                 foreach(var t in new[] {ItemType.Flamelash,ItemType.ChargedBlasterCannon,ItemType.Zenith,ItemType.PiercingStarlight}) cases.Add((t,3,10));
+                cases.Add((ItemType.BookofSkulls,1,10));
+                cases.Add((ItemType.BookofSkulls,3,10));
+            }
+            if(shopsOnly)
+            {
+                cases.Clear();
+                foreach(var t in ProgressionBalance.ShopOnlyWeapons.Concat(new[]{ItemType.Minishark,ItemType.Shotgun,
+                    ItemType.GoldBroadsword,ItemType.PlatinumBroadsword,ItemType.TungstenBroadsword,
+                    ItemType.GoldShortsword,ItemType.PlatinumShortsword,ItemType.TungstenShortsword,
+                    ItemType.GoldBow,ItemType.PlatinumBow,ItemType.TungstenBow,
+                    ItemType.AshWoodSword,ItemType.AshWoodBow,ItemType.PearlwoodSword,ItemType.PearlwoodBow,
+                    ItemType.CobaltSword,ItemType.CobaltRepeater,ItemType.ChlorophyteSaber,ItemType.TitaniumRepeater,ItemType.Gladius,ItemType.Ruler}))
+                    cases.Add((t,ItemDb.Get(t).Class==DamageClass.Melee ? 1 : 3,10));
+            }
+            if(noviceTimberBaseline)
+            {
+                cases.Clear();
+                foreach(var t in new[]{ItemType.AshWoodSword,ItemType.AshWoodBow,ItemType.PearlwoodSword,ItemType.PearlwoodBow})
+                    cases.Add((t,ItemDb.Get(t).Class==DamageClass.Melee?1:3,10));
             }
             try
             {
+                Check("骷髅追踪范围内保留",TerraProjectiles.Instance.DevSkullLeash(target,false));
+                Check("骷髅追踪越界释放",TerraProjectiles.Instance.DevSkullLeash(target,true));
                 foreach(var run in cases)
                 {
                     var d=ItemDb.Get(run.Type); Shop.DevStage=d.Stage;
@@ -134,7 +194,7 @@ namespace TerraKnight
                     Check("裸装输出基线 "+run.Type,Equipment.Current.MeleeDamage==0 && Equipment.Current.RangedDamage==0
                         && Equipment.Current.MagicDamage==0 && Equipment.Current.MinionDamage==0);
                     var hitBefore=Enum.GetValues(typeof(ProjKind)).Cast<ProjKind>().ToDictionary(k=>k,k=>TerraProjectiles.DevHit(k));
-                    int orbs=TerraProjectiles.DevVampireOrbs;
+                    int orbs=TerraProjectiles.DevVampireOrbs,zapBigBefore=TerraProjectiles.DevZapBigHits;
                     float start=Time.time;
                     UnityEngine.Random.InitState(41016+(int)run.Type);
                     while(Time.time-start<run.Seconds)
@@ -148,14 +208,21 @@ namespace TerraKnight
                     int damage=before-EnemyStats.Life(target,info);
                     var row=new WeaponLiveRow {Type=run.Type.ToString(),Stage=d.Stage,Damage=d.Damage,Distance=run.Distance,Seconds=seconds,
                         Dps=damage/seconds,TotalDamage=damage,Casts=casts,Made=TerraProjectiles.DevMade(d.Shoot)-made,Hits=TerraProjectiles.DevHit(d.Shoot)-hits,
-                        HealingOrbs=TerraProjectiles.DevVampireOrbs-orbs,Minions=Equipment.MaxMinions,
+                        HealingOrbs=TerraProjectiles.DevVampireOrbs-orbs,ZapBigHits=TerraProjectiles.DevZapBigHits-zapBigBefore,Minions=Equipment.MaxMinions,
                         EnemyDefense=info.Defense,ProjectileDamage=Equipment.Damage(d,ammo)};
                     row.ProjectileHits=hitBefore.Where(pair=>TerraProjectiles.DevHit(pair.Key)>pair.Value)
                         .ToDictionary(pair=>pair.Key.ToString(),pair=>TerraProjectiles.DevHit(pair.Key)-pair.Value);
                     live.Add(row);
                     Check("实际命中 "+run.Type+" 距离"+run.Distance,damage>0,JsonConvert.SerializeObject(row));
                     if(d.Sentry) Plugin.Log.LogInfo("[AutoTest] 哨兵实测 "+Minions.Instance.DevDescribe()+" 弩箭生成="+TerraProjectiles.DevMade(ProjKind.BallistaBolt));
-                    if(!d.IsSummon)
+                    if(d.Shoot==ProjKind.ZapinatorLaser) {
+                        // Vanilla's 1/50 tenfold hit is intentionally high variance.
+                        // A short run may exceed average DPS; require an observed
+                        // lottery hit to explain it, and keep the eight-hit projectile limit.
+                        Check("随机枪穿透次数有界 "+run.Type,row.Hits<=row.Casts*8 && row.Made==row.Casts);
+                        Check("随机枪高输出有实际十倍触发 "+run.Type,row.Dps<=ProgressionBalance.WeaponTarget(d)*2.2f || row.ZapBigHits>0,
+                            $"实测={row.Dps:F1} 十倍命中={row.ZapBigHits}");
+                    } else if(!d.IsSummon && !noviceTimberBaseline)
                         Check("实际输出未异常叠加 "+run.Type,row.Dps<=ProgressionBalance.WeaponTarget(d)*2.2f,
                             $"实测={row.Dps:F1} 预算={ProgressionBalance.WeaponTarget(d):F1}；允许近战双命中、暴击及范围命中波动");
                     if(run.Type==ItemType.VampireKnives)
@@ -169,7 +236,7 @@ namespace TerraKnight
                     // Allow the prior swing to finish before another item starts.
                     yield return new WaitForSeconds(.6f);
                 }
-                foreach(float distance in new[] {1f,3f})
+                if(!shopsOnly)foreach(float distance in new[] {1f,3f})
                 {
                     float knife=live.Last(r=>r.Type=="VampireKnives" && r.Distance==distance).Dps;
                     float terra=live.Last(r=>r.Type=="TerraBlade" && r.Distance==distance).Dps;
@@ -189,14 +256,14 @@ namespace TerraKnight
                 inv.Infinite=infiniteWas; GameDifficulty.Current=difficultyWas; Shop.DevStage=stageWas; UnityEngine.Random.state=randomWas;
             }
             string path=Path.Combine(DevCopy.SaveDir,"weapon-balance.json");
-            File.WriteAllText(path,JsonConvert.SerializeObject(new {Checks=checks,Failures=failures,Weapons=rows,Live=live},Formatting.Indented));
+            File.WriteAllText(path,JsonConvert.SerializeObject(new {Checks=checks,Failures=failures,CounterfactualTimberBaseline=noviceTimberBaseline,Weapons=rows,Live=live},Formatting.Indented));
             Check("汇总",failures==0,$"{checks-failures}/{checks}；{path}");
         }
 
         sealed class WeaponLiveRow
         {
             public string Type;
-            public int Stage,Damage,TotalDamage,Casts,Made,Hits,HealingOrbs,Minions,EnemyDefense,ProjectileDamage;
+            public int Stage,Damage,TotalDamage,Casts,Made,Hits,HealingOrbs,ZapBigHits,Minions,EnemyDefense,ProjectileDamage;
             public float Distance,Seconds,Dps;
             public Dictionary<string,int> ProjectileHits;
         }

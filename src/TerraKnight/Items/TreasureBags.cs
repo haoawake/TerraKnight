@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -55,7 +55,7 @@ namespace TerraKnight.Items
         /// <summary>Outside the bag, as Terraria drops them beside it: the relic, hearts, healing and mana, the crystals.</summary>
         public static bool Outside(EnemyDrops.Drop d)
         {
-            if (d.Master || d.Type == ItemType.Heart) return true;
+            if (d.Group==207 || d.Master || d.Type == ItemType.Heart) return true;
             var def = ItemDb.Get(d.Type);
             return def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal;
         }
@@ -63,10 +63,10 @@ namespace TerraKnight.Items
         public static int DevLeft, DevOpened;
 
         /// <summary>A bag left where the boss fell (into the bag when there's no time to pick it up), a first kill's marked.</summary>
-        public static void Leave(ItemType bag, Vector2 at, bool direct, bool first)
+        public static void Leave(ItemType bag, Vector2 at, bool direct, bool first, bool godhome=false)
         {
             var s = ItemStack.Of(bag);
-            if (first) s.Forge = 1;
+            s.Forge = (byte)((first ? 1 : 0) | (godhome ? 2 : 0));
             DevLeft++;
             if (EnemyDrops.DevSink != null) { EnemyDrops.DevSink(bag, 1); return; }
             // Each player's own in a LAN game (DropLocalPerClient).
@@ -80,11 +80,12 @@ namespace TerraKnight.Items
             if (stack.IsEmpty || !Is(stack.Type)) return false;
             string key = KeyOf(stack.Type);
             if (key == null) return false;
-            bool first = stack.Forge > 0;
+            bool first = (stack.Forge & 1) != 0;
+            bool godhome = (stack.Forge & 2) != 0;
             inv.ConsumeAt(slot);
             var hero = HeroController.SilentInstance;
             Vector2 at = hero != null ? (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center : Vector2.zero;
-            EnemyDrops.Roll(key, at, direct: true, firstKill: first, fromBag: true);
+            EnemyDrops.Roll(key, at, direct: true, firstKill: first, fromBag: true, scene: godhome ? "GG_Workshop" : null);
             TerraMod.Instance?.PlaySound("Grab");
             DevOpened++;
             Plugin.Log.LogInfo($"[宝藏袋] 打开 {ItemDb.Get(stack.Type).Name}（{key}{(first ? "，首次击败" : "")}）");
@@ -101,6 +102,20 @@ namespace TerraKnight.Items
             c.Tooltip = (b.Tooltip ?? "") + "\n" + Lang.T("首次击败：必得首领武器");
             firstDefs[b] = c;
             return c;
+        }
+
+        static readonly Dictionary<(ItemDef,byte,string),ItemDef> markedDefs=new Dictionary<(ItemDef,byte,string),ItemDef>();
+        public static ItemDef Marked(ItemDef b,byte mark) {
+            var original=b;
+            if((mark & 1)!=0)b=FirstKill(b);
+            if((mark & 2)==0)return b;
+            var key=(original,mark,Lang.Culture);
+            if(markedDefs.TryGetValue(key,out var cached))return cached;
+            var copy=b.Clone();
+            copy.Tooltip=(b.Tooltip ?? "")+"\n"+(Lang.IsSource || Lang.Culture.StartsWith("zh")
+                ? "神居战利品：开出终局装备\n夜明矿已在击败首领时发放"
+                : "Godhome spoils: endgame equipment\nLuminite awarded when the boss fell");
+            markedDefs[key]=copy;return copy;
         }
 
         /// <summary>A bag's name in the language now: Terraria's "Treasure Bag (Boss)".</summary>

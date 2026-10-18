@@ -7,8 +7,12 @@ namespace TerraKnight.Items
 {
     /// <summary>
     /// The Goblin Tinkerer's forging (Forging): his "Forge" button opens the inventory with his slot under it, as his
-    /// reforging does, for a weapon only. Beside it: its level and the stage's cap, its damage now and after, the odds,
-    /// the price; the hammer under it forges (Item_37 when it takes, a dull clank when it fails).
+    /// reforging does, for a weapon or a piece of armor. Beside it: its level and its cap (a weapon's own stage's, armor's
+    /// +5: Forging.MaxLevelOf), its damage (armor: its defense) now and after, or at the cap "武器已满级，无法再锻造"
+    /// ("盔甲已满级…") and no hammer; the odds,
+    /// the price; the hammer under it forges (Item_37 when it takes, a dull clank when it fails). As a reforge's best
+    /// prefix: a forging that takes pops the item's new name up over the player (in cycling colours, with the best_reforge
+    /// sound and sparks, when it reaches the stage's cap). Forging can continue immediately after success.
     /// </summary>
     internal static partial class InventoryGui
     {
@@ -31,24 +35,26 @@ namespace TerraKnight.Items
             float n = ChatPulse / 255f;
             var color = new Color(n, n, n, 1f);
             var text = new Rect(rect.x + 50f * ui, rect.y - 22f * ui, 460f * ui, 24f * ui);
-            int max = Forging.MaxLevel;
             if (item.IsEmpty)
             {
-                Outlined(text, Lang.T("将武器放到此处锻造"), labelStyle, color);
-                Outlined(new Rect(text.x, text.y + 24f * ui, text.width, text.height), Lang.F("锻造上限 +{0}（每解锁一个阶段多 5 级）", max), labelStyle, color);
+                Outlined(text, Lang.T("将武器或盔甲放到此处锻造"), labelStyle, color);
+                Outlined(new Rect(text.x, text.y + 24f * ui, text.width, text.height), Lang.T("锻造上限看武器的阶段：阶段 0 的武器 +5，每高一个阶段多 5 级"), labelStyle, color);
+                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲最多锻造到 +5，每级 +1 防御"), labelStyle, color);
                 forgeHover = false;
                 return;
             }
+            int max = Forging.MaxLevelOf(item.Type);
+            bool armor = Forging.IsArmorPiece(ItemDb.Get(item.Type));
             var def = item.Def;
-            int now = Equipment.Damage(def);
             var next = item;
             next.Forge = (byte)Mathf.Min(item.Forge + 1, 255);
-            int after = Equipment.Damage(next.Def);
+            int now = armor ? def.Defense : Equipment.Damage(def);
+            int after = armor ? next.Def.Defense : Equipment.Damage(next.Def);
             bool atMax = item.Forge >= max;
             var lines = new List<string>
             {
                 Lang.F("锻造 +{0} / +{1}", item.Forge, max),
-                atMax ? Lang.T("已达上限：解锁下一个阶段后可以继续锻造") : Lang.F("伤害 {0} → {1}", now, after),
+                atMax ? Lang.T(armor ? "盔甲已满级，无法再锻造" : "武器已满级，无法再锻造") : Lang.F(armor ? "防御 {0} → {1}" : "伤害 {0} → {1}", now, after),
             };
             if (!atMax)
             {
@@ -68,7 +74,9 @@ namespace TerraKnight.Items
             bool over = hit.Contains(mouse);
             if (over && !forgeHover) Sound("Menu_Tick");
             forgeHover = over;
+            var prev = GUI.color;
             GUI.DrawTexture(hammer, tex);
+            GUI.color = prev;
             Add(hit, Kind.ForgeButton, 0);
             if (over) DrawLines(mouse, new List<string> { Lang.T("锻造") }, Color.white);
         }
@@ -94,8 +102,9 @@ namespace TerraKnight.Items
                     Sound("Tink_0");
                     return false;
                 default:
-                    if (hero != null) UI.CombatText.Show(over, Lang.F("锻造成功 +{0}", item.Forge), new Color(1f, 0.85f, 0.3f), true);
-                    Sound("Item_37");
+                    bool top = Forging.AtMax(item);
+                    HammerResult(item, top);
+                    if (!top) Sound("Item_37");
                     return true;
             }
         }

@@ -193,11 +193,17 @@ namespace TerraKnight.Items
             return 0;
         }
 
-        /// <summary>The cost of reforging (Main.DrawInventory: the item's value with its prefix, times the stack, a third), in copper; at least 1.</summary>
+        /// <summary>
+        /// The cost of reforging (Main.DrawInventory: the item's value with its prefix, times the stack, a third), in copper;
+        /// never under its rarity's and stage's floor (a geo a rarity step and a stage), so a rarer or later item never
+        /// reforges for less than a plainer one whose value happens to be set higher.
+        /// </summary>
         public static long ReforgeCost(ItemStack s)
         {
             if (s.IsEmpty) return 0;
             var d = s.Def;
+            var plain = ItemDb.Get(s.Type);
+            long floor = 100L * (Mathf.Max(0, plain.Rare) + 1) * (Mathf.Clamp(plain.Stage, 0, 5) + 1) * s.Count;
             long price = Shop.PriceOf(d);
             // The Nail and the Dream Nail have no price: 4 silver a point of damage, times the prefix's worth squared.
             if (price <= 0 && (s.Type == ItemType.KnightNail || s.Type == ItemType.DreamNail))
@@ -207,7 +213,8 @@ namespace TerraKnight.Items
                 if (s.Prefix > 0) TryStats(b, s.Prefix, out _, out worth);
                 price = (long)(b.Damage * 400L * worth * worth);
             }
-            return System.Math.Max(1L, price * s.Count / 3);
+            if (s.Type == ItemType.KnightNail || s.Type == ItemType.DreamNail) return System.Math.Max(1L, price * s.Count / 3);
+            return System.Math.Max(floor, price * s.Count / 3);
         }
 
         /// <summary>A prefixed copy, its prefix's numbers and the plain damage it was made from (the nails' grows with the stage).</summary>

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.World;
 using UnityEngine;
@@ -41,6 +41,8 @@ namespace TerraKnight.Items
             public string Glow;
             public int W = 10, H = 10, Time = 600, Penetrate = 1, Extra, Dust = -1;
             public float Scale = 1f;
+            /// <summary>Maximum cumulative flight in Terraria pixels; zero is unrestricted.</summary>
+            public float MaxTravel;
             /// <summary>How far behind the hitbox centre the sprite's centre is drawn, along the flight (Main.DrawProj's pivot).</summary>
             public float PivotBack;
             public Look Look = Look.Lit;
@@ -260,6 +262,7 @@ namespace TerraKnight.Items
             public bool Collide, Stopped;
             public float LaunchSpeed;
             public Vector2 StartPos, StartVel;
+            public float Travel;
             /// <summary>The Chlorophyte Bullet's quarry.</summary>
             public HealthManager Target;
             /// <summary>The enemy it last hit (left out of its blast).</summary>
@@ -837,8 +840,11 @@ namespace TerraKnight.Items
                 }
             }
 
+            Vector2 beforeMove=p.Pos;
             if (!s.OwnMove) Move(p);
             if (p.Dead) return;
+            p.Travel+=Vector2.Distance(beforeMove,p.Pos)/Px;
+            if(s.MaxTravel>0 && p.Travel>=s.MaxTravel) {Kill(p);return;}
             if (s.Ai == Ai.Missile) PushMissileTrail(p);
             HitEnemies(p);
         }
@@ -1378,12 +1384,12 @@ namespace TerraKnight.Items
                 // Yoyos and flails push away from the player (P:13304-13311, 13664-13679).
                 if (s.PushFromPlayer) facing = col.bounds.center.x >= ownerCentre.x ? 1f : -1f;
                 // A shield or a shell that stops the shot (MeleeHits.Blocks): nothing of the hit lands, its debuffs neither;
-                // one Terraria reflects comes back at the player (TerraProjectilesReflect), the rest are spent on it.
+                // one Terraria reflects comes back at the player off a shield (TerraProjectilesReflect), the rest are spent on it.
                 if (MeleeHits.Blocks(hm, facing, ClassOf(p)))
                 {
                     ArmorEffects.Context = default;
-                    melee.HitWith(col, Mathf.Max(1, p.Damage), 0f, 0f, facing, p.Pos - p.Vel.normalized * 0.3f);
-                    if (CanReflect(p))
+                    melee.HitWith(col, Mathf.Max(1, p.Damage), 0f, 0f, facing, p.Pos - p.Vel.normalized * 0.3f, autonomous: p.MinionShot);
+                    if (CanReflect(p) && MeleeHits.IsShield(hm))
                     {
                         Reflect(p, ownerCentre);
                         return;
@@ -1424,7 +1430,7 @@ namespace TerraKnight.Items
                 float kb = p.MinionShot ? 0f : p.Knockback * (s.KnockbackScale != null ? s.KnockbackScale(p) : 1f);
                 // P:12855-12860: the Hive Pack's wasps go through 5 more defence.
                 int pen = Equipment.Current.ArmorPen + s.ArmorPen + p.GemArmorPen + (p.Kind == ProjKind.Wasp && Equipment.Current.StrongBees ? 5 : 0);
-                melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap);
+                melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap, autonomous: p.MinionShot);
                 p.Hits++;
                 AccAfterHit(p, hm, dealt);
                 DevHits[p.Kind] = DevHit(p.Kind) + 1;
@@ -1773,7 +1779,7 @@ namespace TerraKnight.Items
                     var hm = col.GetComponentInParent<HealthManager>();
                     if (hm == null || hm.isDead || !done.Add(hm.GetInstanceID())) continue;
                     float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-                    if (melee.HitWith(col, damage, p.MinionShot ? 0f : s.BlastKnockback, 4f, facing, p.Pos)) hitEnemies++;
+                    if (melee.HitWith(col, damage, p.MinionShot ? 0f : s.BlastKnockback, 4f, facing, p.Pos, autonomous: p.MinionShot)) hitEnemies++;
                 }
 
             // The player, if caught in it (Terraria's explosives hurt their owner).
@@ -1823,7 +1829,7 @@ namespace TerraKnight.Items
                     var kind = TerraWorld.Get(x, y);
                     TerraWorld.Set(x, y, CellKind.Empty);
                     n++;
-                    var drop = ItemDb.DropFor(kind);
+                    var drop = World.AreaBlocks.DropFor(kind, new Vector2Int(x, y));
                     if (drop != ItemType.None && mod != null && !mod.Inventory.Infinite) WorldItems.Drop(ItemStack.Of(drop), CellGrid.CellCenter(x, y));
                 }
             return n;
@@ -2348,7 +2354,7 @@ namespace TerraKnight.Items
                 int id = hm.GetInstanceID();
                 if (id == p.LastHit || npcImmune.ContainsKey(id) || p.Immune.ContainsKey(id) || typeImmune.ContainsKey((p.Kind, id)) || !done.Add(id)) continue;
                 float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-                if (melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, p.Pos, Equipment.Current.ArmorPen + p.Spec.ArmorPen)) hit.Add(id);
+                if (melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, p.Pos, Equipment.Current.ArmorPen + p.Spec.ArmorPen, autonomous: p.MinionShot)) hit.Add(id);
             }
             return hit;
         }
@@ -2365,7 +2371,7 @@ namespace TerraKnight.Items
             int id = hm.GetInstanceID();
             if (col == null || npcImmune.ContainsKey(id)) return false;
             float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-            if (!melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, col.bounds.center, Equipment.Current.ArmorPen + p.Spec.ArmorPen)) return false;
+            if (!melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, col.bounds.center, Equipment.Current.ArmorPen + p.Spec.ArmorPen, autonomous: p.MinionShot)) return false;
             npcImmune[id] = 10;
             DevHits[p.Kind] = DevHit(p.Kind) + 1;
             return true;

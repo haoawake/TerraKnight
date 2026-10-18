@@ -109,10 +109,91 @@ namespace TerraKnight
                 }
                 stageDrops[stage] = records;
             }
+            // Each crate at each stage, opened CrateOpens times (Fishing.DevContents, as a right click opens it): how often
+            // each thing comes out of one, how many when it does. The shops at each stage, as the townsfolk sell then.
+            const int CrateOpens = 600, Casts = 3000, ChestOpens = 300, FishingPower = 100;
+            var crateStages = new Dictionary<int, Dictionary<string, object>>();
+            var fishingStages = new Dictionary<int, Dictionary<string, object>>();
+            var chestStages = new Dictionary<int, Dictionary<string, object>>();
+            // As an ordinary save opens them: the autotests' endless items would unlock every stage's (Shop.Free).
+            bool wasInfinite = mod.Inventory.Infinite;
+            mod.Inventory.Infinite = false;
+            var shopStages = new Dictionary<int, object>();
+            for (int stage = 0; stage < 6; stage++)
+            {
+                Shop.DevStage = stage;
+                var byCrate = new Dictionary<string, object>();
+                foreach (var crate in Fishing.DevCrateTypes)
+                {
+                    var seen = new Dictionary<ItemType, (int Times, int Min, int Max, long Sum)>();
+                    for (int k = 0; k < CrateOpens; k++)
+                    {
+                        var once = new Dictionary<ItemType, int>();
+                        foreach (var s in Fishing.DevContents(crate)) once[s.Type] = (once.TryGetValue(s.Type, out int n) ? n : 0) + s.Count;
+                        foreach (var kv in once)
+                        {
+                            seen.TryGetValue(kv.Key, out var e);
+                            seen[kv.Key] = (e.Times + 1, e.Times == 0 ? kv.Value : Mathf.Min(e.Min, kv.Value), Mathf.Max(e.Max, kv.Value), e.Sum + kv.Value);
+                        }
+                    }
+                    var rows = new List<object>();
+                    foreach (var kv in seen)
+                        rows.Add(new { Type = kv.Key.ToString(), Chance = kv.Value.Times / (float)CrateOpens, kv.Value.Min, kv.Value.Max, Mean = kv.Value.Sum / (float)kv.Value.Times });
+                    byCrate[crate.ToString()] = rows;
+                }
+                crateStages[stage] = byCrate;
+                // What each area's water gives (a big pond, fishing power FishingPower, no quest), and the acid with the gear for it.
+                var byArea = new Dictionary<string, object>();
+                foreach (var area in Fishing.DevFishingAreas)
+                {
+                    byArea[area] = CatchRows(Fishing.DevSimulate(area, false, FishingPower, 1500, Casts), Casts);
+                    yield return null;
+                }
+                byArea["酸水"] = CatchRows(Fishing.DevSimulate("遗忘十字路", true, FishingPower, 1500, Casts), Casts);
+                fishingStages[stage] = byArea;
+                // Each area's chests (World.RegionalChests): its weapon chest, its accessory chest, a supplies chest.
+                var byChest = new Dictionary<string, object>();
+                foreach (var a in World.AreaBlocks.All)
+                    for (int part = 0; part < 3; part++)
+                    {
+                        var seen = new Dictionary<ItemType, (int Times, int Min, int Max, long Sum)>();
+                        for (int k = 0; k < ChestOpens; k++)
+                        {
+                            var once = new Dictionary<ItemType, int>();
+                            foreach (var s in World.RegionalChests.Contents(a.Name, part, stage))
+                                if (!s.IsEmpty) once[s.Type] = (once.TryGetValue(s.Type, out int n) ? n : 0) + s.Count;
+                            foreach (var kv in once)
+                            {
+                                seen.TryGetValue(kv.Key, out var e);
+                                seen[kv.Key] = (e.Times + 1, e.Times == 0 ? kv.Value : Mathf.Min(e.Min, kv.Value), Mathf.Max(e.Max, kv.Value), e.Sum + kv.Value);
+                            }
+                        }
+                        var rows = new List<object>();
+                        foreach (var kv in seen)
+                            rows.Add(new { Type = kv.Key.ToString(), Chance = kv.Value.Times / (float)ChestOpens, kv.Value.Min, kv.Value.Max, Mean = kv.Value.Sum / (float)kv.Value.Times });
+                        byChest[a.Name + "|" + part] = rows;
+                    }
+                chestStages[stage] = byChest;
+                var stocks = new List<object>();
+                foreach (var (npc, type) in Town.TownNpcs.DevSourcesAt(stage)) stocks.Add(new { Npc = npc, Type = type.ToString() });
+                shopStages[stage] = stocks;
+                yield return null;
+            }
+            mod.Inventory.Infinite = wasInfinite;
             Shop.DevStage = originalStage;
             World.GameDifficulty.Current = originalDifficulty;
-            File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData, drop_stages = stageDrops }, Formatting.Indented));
+            File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData, drop_stages = stageDrops,
+                crate_stages = crateStages, crate_opens = CrateOpens, shop_stages = shopStages,
+                fishing_stages = fishingStages, fishing_casts = Casts, fishing_power = FishingPower, chest_stages = chestStages, chest_opens = ChestOpens }, Formatting.Indented));
             Plugin.Log.LogInfo($"[AutoTest] Wiki 资源导出 {count} 张，缺失 {failures} 张{(failures > 0 ? "，不通过" : "")}");
+        }
+
+        /// <summary>A simulated fishing's catches as rows: each item and how often a cast brought it up (nothing caught left out).</summary>
+        static List<object> CatchRows(Dictionary<ItemType, int> counts, int casts)
+        {
+            var rows = new List<object>();
+            foreach (var kv in counts) if (kv.Key != ItemType.None) rows.Add(new { Type = kv.Key.ToString(), Chance = kv.Value / (float)casts });
+            return rows;
         }
     }
 }

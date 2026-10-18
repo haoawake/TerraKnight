@@ -137,6 +137,7 @@ namespace TerraKnight.Net
             foreach (var p in Players.Values) p.Destroy();
             Players.Clear();
             Owners.Clear();
+            BossLifeRewards.Reset();
             Enemies.Reset();
             Items.TerraProjectiles.Instance?.NetClearGhosts();
             Items.Minions.Instance?.NetClearGhosts();
@@ -453,6 +454,9 @@ namespace TerraKnight.Net
                         return;
                     case Msg.BossBeaten:
                         Enemies.ReceiveBeaten(slot, r);
+                        return;
+                    case Msg.BossLifeReward:
+                        BossLifeRewards.Receive(slot, r);
                         return;
                     case Msg.EnemyHit:
                         Enemies.ReceiveHit(slot, r);

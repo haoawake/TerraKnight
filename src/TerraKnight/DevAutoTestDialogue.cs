@@ -23,11 +23,13 @@ namespace TerraKnight
             hero.transform.position = Clear(hero, (Vector2)elder.transform.position + new Vector2(-1.5f, 0.5f));
             yield return new WaitForSeconds(1.5f);
             bool open = false;
+            // Told the Terraria way (UI.DialogueBroadcast), the talk ends at once: its being told counts as open.
+            int told0 = UI.DialogueBroadcast.DevTold;
             for (int i = 0; i < 6 && !open; i++)
             {
                 yield return Tap(UnityEngine.InputSystem.Key.W, 0.2f);
                 yield return new WaitForSeconds(1.5f);
-                open = UI.HudDialogue.DevOpen;
+                open = UI.HudDialogue.DevOpen || UI.DialogueBroadcast.DevTold > told0;
             }
             Shot("Town", "talkaway_0_talking");
             Plugin.Log.LogInfo($"[AutoTest] 对话中传送 和老虫子说话：对话框 {open}");

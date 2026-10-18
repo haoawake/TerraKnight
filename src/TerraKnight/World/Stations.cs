@@ -31,7 +31,21 @@ namespace TerraKnight.World
         // Tombstones (Tiles_85's eleven styles, dropped on death: Items.Tombstones) and the Abigail's Flower growing by them.
         Tombstone, GraveMarker, CrossGraveMarker, Headstone, Gravestone, Obelisk,
         RichGravestone1, RichGravestone2, RichGravestone3, RichGravestone4, RichGravestone5, AbigailsFlower,
-
+        /// <summary>The bed: a right click sets the spawn point there (World.Beds).</summary>
+        Bed,
+        /// <summary>The player's other storages, opened as the Piggy Bank is (Chests: Player.bank2 .. bank4).</summary>
+        Safe, DefendersForge, VoidVault,
+        /// <summary>
+        /// Not a crafting station either: Terraria's Wooden Chair (tile 15, ItemID 34), the furniture a
+        /// townsperson is put on. It stands where the player set it and is knocked back into its item like
+        /// any other furniture; the housing menu binds a townsperson to one (ChairNear).
+        /// </summary>
+        Chair,
+        /// <summary>
+        /// Terraria's Wooden Door (tile 10 shut, 11 open to either side) and Wooden Table (tile 14): what a house is
+        /// built with besides the chair (World/StationsHousing.cs, World/Housing.cs).
+        /// </summary>
+        Door, DoorOpenRight, DoorOpenLeft, Table,
     }
 
     /// <summary>
@@ -45,13 +59,19 @@ namespace TerraKnight.World
     /// anchors: an anvil on a bench, a bottle on a bench). One whose ground is dug out from under it
     /// falls back into its item, as Terraria's furniture breaks without its anchor, and whatever
     /// stood on it with it. A station belongs to the scene it stands in, in
-    /// that scene's own coordinates, and is kept in the mod's save. A Hallownest bench or Dirtmouth
+    /// that scene's own coordinates, and is kept in the mod's save. The pieces TileObjectData gives a
+    /// direction (the chair, the bed, the relics) go down facing the way the player faces. A Hallownest bench or Dirtmouth
     /// still makes everything its stage has reached (Items.Recipes), these add to that anywhere.
     /// </summary>
     internal sealed partial class Stations : MonoBehaviour
     {
         const float Px = Effects.TerraParticles.Px;
-        const float Z = 0.0045f;
+        /// <summary>
+        /// Behind what Terraria draws over its tiles: the minions, pets and shots (Effects.FxBatch.BehindZ, 0.0047, going
+        /// nearer with each draw), the townsfolk (0.00395) and the player (0.0039); in front of the light's glow (0.0048)
+        /// and of the blocks (0.006).
+        /// </summary>
+        const float Z = 0.00475f;
 
         /// <summary>A station's look and what it counts as.</summary>
         sealed class Spec
@@ -69,6 +89,13 @@ namespace TerraKnight.World
             public int Buff, BuffTicks;
             /// <summary>A picture of the mod's own (a relic's), whole, 32 px a cell, instead of a Terraria sheet's tiles.</summary>
             public string Custom;
+            /// <summary>
+            /// TileObjectData.Direction: it is placed facing the way the player faces (PlaceLeft, and an alternate
+            /// PlaceRight), the right-facing one RightX px further along its sheet (the chair's 18, the bed's 72); a
+            /// relic's floating sculpture is drawn turned (DrawMasterTrophies' FlipHorizontally).
+            /// </summary>
+            public bool Faces;
+            public int RightX;
         }
 
         /// <summary>The relics: three-cell pedestals with floating sculptures, occupying 3x4 cells.</summary>
@@ -78,8 +105,10 @@ namespace TerraKnight.World
             {
                 var h = new int[kv.Value.H];
                 for (int i = 0; i < h.Length; i++) h[i] = 16;
-                specs[kv.Key] = new Spec { Custom = kv.Value.Texture, W = kv.Value.W, H = kv.Value.H, Heights = h, Item = kv.Value.Item, Counts = new string[0] };
+                // Tile 617: Direction PlaceLeft with a PlaceRight alternate (frameY 72 on: the sculpture turned).
+                specs[kv.Key] = new Spec { Custom = kv.Value.Texture, W = kv.Value.W, H = kv.Value.H, Heights = h, Item = kv.Value.Item, Counts = new string[0], Faces = true };
             }
+            AddHousingSpecs();
         }
 
         static Spec Grave(int style, ItemType item) =>
@@ -102,10 +131,20 @@ namespace TerraKnight.World
             [StationKind.RichGravestone4] = Grave(9, ItemType.RichGravestone4),
             [StationKind.RichGravestone5] = Grave(10, ItemType.RichGravestone5),
             [StationKind.AbigailsFlower] = new Spec { Texture = "Tiles_624", W = 1, H = 1, Heights = new[] { 16 }, Item = ItemType.AbigailsFlower, Counts = new string[0] },
+            // Tile 79: Style4x2 with CoordinateHeights {16, 18}; style 0 the wooden bed.
+            // Tiles 97 (Style2x2 {16, 18}), 463 (Style3x4 {16, 16, 16, 16}, drawn 2 px down), 491 (Style3x3 {16, 16, 16}, 2 px down).
+            [StationKind.Safe] = new Spec { Texture = "Tiles_97", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Safe, Counts = new string[0] },
+            [StationKind.DefendersForge] = new Spec { Texture = "Tiles_463", W = 3, H = 4, Heights = new[] { 16, 16, 16, 16 }, DrawY = 2, Item = ItemType.DefendersForge, Counts = new string[0] },
+            [StationKind.VoidVault] = new Spec { Texture = "Tiles_491", W = 3, H = 3, Heights = new[] { 16, 16, 16 }, DrawY = 2, Item = ItemType.VoidVault, Counts = new string[0] },
+            // Tile 79: Direction PlaceLeft, its PlaceRight alternate the next 72 px across (StyleMultiplier 2, StyleWrapLimit 2).
+            [StationKind.Bed] = new Spec { Texture = "Tiles_79", W = 4, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Bed, Counts = new string[0], Faces = true, RightX = 72 },
             [StationKind.Campfire] = new Spec { Texture = "Tiles_215", W = 3, H = 2, Heights = new[] { 16, 16 }, Item = ItemType.Campfire, Counts = new[] { "篝火" } },
             [StationKind.DyeVat] = new Spec { Texture = "Tiles_228", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.DyeVat, Counts = new[] { "染缸" } },
             // TileObjectData: Style2x1 with CoordinateHeights {18} (tiles 18, 16), Style3x2 {16, 18} (17, 114).
             [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" }, SolidTop = true },
+            // Tile 15 (TileID.Chairs): Style1x2, CoordinateHeights {16, 18}; Direction PlaceLeft (frameX 0, the seat to the
+            // left) and the PlaceRight alternate at frameX 18, each style a row of the sheet.
+            [StationKind.Chair] = new Spec { Texture = "Tiles_15", W = 1, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Chair, Counts = new string[0], Faces = true, RightX = 18 },
             [StationKind.Furnace] = new Spec { Texture = "Tiles_17", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Furnace, Counts = new[] { "熔炉" } },
             [StationKind.IronAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.IronAnvil, Counts = new[] { "砧" }, SolidTop = true },
             [StationKind.LeadAnvil] = new Spec { Texture = "Tiles_16", W = 2, H = 1, StyleX = 36, Heights = new[] { 18 }, Item = ItemType.LeadAnvil, Counts = new[] { "砧" }, SolidTop = true },
@@ -165,6 +204,8 @@ namespace TerraKnight.World
             public int Damage;
             /// <summary>Set in the world by the mod (the altars): not the player's, never knocked down nor saved.</summary>
             public bool Fixed;
+            /// <summary>Placed facing right (Spec.Faces: the player faced right as it went down).</summary>
+            public bool Right;
             public SpriteRenderer Renderer;
             public RelicDisplay Relic;
             /// <summary>Its top, a one-way platform on the terrain layer (the solid-top ones).</summary>
@@ -190,11 +231,13 @@ namespace TerraKnight.World
             public string Scene;
             public Vector2 Local;
             public StationKind Kind;
+            /// <summary>Placed facing right (Station.Right).</summary>
+            public bool Right;
         }
 
         public static Stations Instance { get; private set; }
         static readonly List<Station> stations = new List<Station>();
-        static readonly Dictionary<StationKind, Sprite> sprites = new Dictionary<StationKind, Sprite>();
+        static readonly Dictionary<StationKind, Sprite> sprites = new Dictionary<StationKind, Sprite>(), rightSprites = new Dictionary<StationKind, Sprite>();
         float ticks;
 
         public static Stations Create(Transform parent)
@@ -239,6 +282,9 @@ namespace TerraKnight.World
         }
 
         /// <summary>TileReachCheckSettings.Simple: the player's tiles, 5 more across and 4 more up and down.</summary>
+        /// <summary>Dev: the reach box used for placing and breaking.</summary>
+        public static Rect DevReach(HeroController hero) => Reach(hero);
+
         static Rect Reach(HeroController hero)
         {
             var b = hero.GetComponent<BoxCollider2D>().bounds;
@@ -248,7 +294,14 @@ namespace TerraKnight.World
 
         // ------------------------------------------------------------------ placing
 
-        /// <summary>A station set where the cursor points: snapped to the grid, on even ground under all its cells, room for it, in reach.</summary>
+        /// <summary>
+        /// Whether furniture of this kind goes down facing right: one TileObjectData gives a direction (Spec.Faces) and
+        /// the player faces right (TileObject.CanPlace with Player.direction: the way he walked last, not the cursor).
+        /// </summary>
+        public static bool FacesRight(StationKind kind, HeroController hero) =>
+            hero != null && specs.TryGetValue(kind, out var spec) && spec.Faces && hero.cState.facingRight;
+
+        /// <summary>A station set where the cursor points: snapped to the grid, on even ground under all its cells, room for it, in reach; facing the way the player faces (FacesRight).</summary>
         public static bool TryPlace(StationKind kind, HeroController hero, Vector2 aim)
         {
             if (!Net.WorldSync.CanInteract) return false;
@@ -258,13 +311,14 @@ namespace TerraKnight.World
             var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
             var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
+            bool right = FacesRight(kind, hero);
             if (Net.WorldSync.Guest)
             {
                 var local = bottom - (Vector2)region.Root.position;
-                Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "station", Scene = region.SceneName, X = local.x, Y = local.y, Kind = (int)kind, Count = TerraMod.Instance.Inventory.Infinite ? 0 : 1 });
+                Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "station", Scene = region.SceneName, X = local.x, Y = local.y, Kind = (int)kind, Count = TerraMod.Instance.Inventory.Infinite ? 0 : 1, Placed = right });
                 return true;
             }
-            stations.Add(new Station { Kind = kind, Region = region, Scene = region.SceneName, Local = bottom - (Vector2)region.Root.position });
+            stations.Add(new Station { Kind = kind, Region = region, Scene = region.SceneName, Local = bottom - (Vector2)region.Root.position, Right = right });
             TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
             DevPlaced++;
             return true;
@@ -312,6 +366,54 @@ namespace TerraKnight.World
         public static string DevWhy;
         public static int DevDrops;
 
+        /// <summary>The stations a touch gives a buff by (Spec.Buff), with their items: carried, they give it too (Items.BuffStationItems).</summary>
+        public static IEnumerable<(ItemType Item, int Buff)> BuffItems()
+        {
+            foreach (var kv in specs)
+                if (kv.Value.Buff > 0 && kv.Value.Item != ItemType.None) yield return (kv.Value.Item, kv.Value.Buff);
+        }
+
+        /// <summary>
+        /// The floor under a point: the scene's own colliders first (the exact contact point a raycast
+        /// gives), and where the scene has none, the cell grid — the grid holds the player's own blocks
+        /// the moment they are laid, while their colliders are only rebuilt per chunk later.
+        /// </summary>
+        static bool SpotGround(float x, float fromY, out float y)
+        {
+            const int mask = 1 << ChunkColliders.TerrainLayer;
+            const float reach = 1.5f;
+            var hit = Physics2D.Raycast(new Vector2(x, fromY), Vector2.down, reach, mask);
+            if (hit.collider != null) { y = hit.point.y; return true; }
+            y = 0f;
+            // The grid within the same reach as the ray.
+            var cell = CellGrid.WorldToCell(new Vector2(x, fromY));
+            int lowest = CellGrid.WorldToCell(new Vector2(x, fromY - reach)).y;
+            for (int cy = cell.y; cy >= lowest; cy--)
+            {
+                if (TerraWorld.RegionAt(cell.x, cy) == null || (!TerraWorld.IsSolid(cell.x, cy) && !TerraWorld.IsPlatform(cell.x, cy))) continue;
+                y = CellGrid.CellCenter(cell.x, cy).y + CellGrid.CellSize / 2f;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whether the cell grid holds a block in any cell this box covers. Outside the loaded regions
+        /// nothing is read as solid (the same rule the grid itself is read by).
+        /// </summary>
+        static bool GridInside(Rect box)
+        {
+            var lo = CellGrid.WorldToCell(new Vector2(box.xMin, box.yMin));
+            var hi = CellGrid.WorldToCell(new Vector2(box.xMax, box.yMax));
+            for (int cx = lo.x; cx <= hi.x; cx++)
+                for (int cy = lo.y; cy <= hi.y; cy++)
+                {
+                    if (TerraWorld.RegionAt(cx, cy) == null) continue;
+                    if (TerraWorld.IsSolid(cx, cy) || TerraWorld.IsPlatform(cx, cy)) return true;
+                }
+            return false;
+        }
+
         public static bool FindSpot(StationKind kind, HeroController hero, Vector2 aim, out Vector2 bottom)
         {
             bottom = default;
@@ -321,14 +423,11 @@ namespace TerraKnight.World
             float w = spec.W * cell, h = spec.H * cell;
             // An odd width centres on a cell, an even one on a cell edge.
             float x = spec.W % 2 == 1 ? (Mathf.Floor(aim.x / cell) + 0.5f) * cell : Mathf.Round(aim.x / cell) * cell;
-            var down = Physics2D.Raycast(new Vector2(x, aim.y + 0.25f), Vector2.down, 1.5f, mask);
-            if (down.collider == null) { DevWhy = "下面没有地"; return false; }
-            float y = down.point.y;
+            if (!SpotGround(x, aim.y + 0.25f, out float y)) { DevWhy = "下面没有地"; return false; }
             for (int i = 0; i < spec.W; i++)
             {
                 float cx = x - w / 2f + (i + 0.5f) * cell;
-                var side = Physics2D.Raycast(new Vector2(cx, y + 0.1f), Vector2.down, 0.2f, mask);
-                if (side.collider == null || Mathf.Abs(side.point.y - y) > 0.06f) { DevWhy = $"第 {i + 1} 格下面不平（{(side.collider != null ? side.collider.name + " " + side.point.y.ToString("F2") : "无")}，地面 {y:F2}）"; return false; }
+                if (!SpotGround(cx, y + 0.1f, out float gy) || Mathf.Abs(gy - y) > 0.06f) { DevWhy = $"第 {i + 1} 格下面不平（地面 {y:F2}）"; return false; }
             }
             var centre = new Vector2(x, y + h / 2f + 0.02f);
             var inWay = Physics2D.OverlapBox(centre, new Vector2(w, h) * 0.9f, 0f, mask);
@@ -336,11 +435,19 @@ namespace TerraKnight.World
             var box = new Rect(x - w / 2f, y, w, h);
             // Inset a little: one standing on another's top only touches it.
             var inner = new Rect(box.x + 0.02f, box.y + 0.02f, box.width - 0.04f, box.height - 0.04f);
+            // And the cell grid: the player's own walls are in it the moment they are laid, while their
+            // colliders are only rebuilt later, so the overlap above can still look straight through a
+            // wall that has just been built and set the furniture down inside it.
+            if (GridInside(inner)) { DevWhy = "那格里有方块"; return false; }
             foreach (var s in stations)
                 if (s.Region != null && s.Box.Overlaps(inner)) { DevWhy = "和别的工作站重叠"; return false; }
-            foreach (var c in Chests.Positions())
-                if (box.Contains(c)) { DevWhy = "和箱子重叠"; return false; }
+            // The chest's own box, not its middle: a chest is two cells wide, so one set down in the cell
+            // beside it used to slip through the point test while the two pictures overlapped.
+            foreach (var c in Chests.Boxes())
+                if (c.Overlaps(inner)) { DevWhy = "和箱子重叠"; return false; }
             if (hero != null && !Reach(hero).Overlaps(box)) { DevWhy = "够不着"; return false; }
+            // A door goes between a floor and a ceiling (StationsHousing).
+            if (!DoorFits(kind, box)) { DevWhy = "门要装在地面和天花板之间"; return false; }
             DevWhy = null;
             bottom = new Vector2(x, y);
             return true;
@@ -359,9 +466,25 @@ namespace TerraKnight.World
             foreach (var s in stations)
             {
                 if (s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
+                // A door opens or shuts (StationsHousing: WorldGen.OpenDoor / CloseDoor).
+                if (IsDoor(s.Kind))
+                {
+                    ToggleDoor(s, hero);
+                    return true;
+                }
                 if (s.Kind == StationKind.PiggyBank)
                 {
                     Chests.ToggleBank(s.Scene, s.Region, s.Local);
+                    return true;
+                }
+                if (s.Kind == StationKind.Bed)
+                {
+                    Beds.Toggle(s.Scene, s.Local);
+                    return true;
+                }
+                if (s.Kind == StationKind.Safe || s.Kind == StationKind.DefendersForge || s.Kind == StationKind.VoidVault)
+                {
+                    Chests.ToggleBank(s.Scene, s.Region, s.Local, s.Kind == StationKind.Safe ? 1 : s.Kind == StationKind.DefendersForge ? 2 : 3, s.Spec.Item);
                     return true;
                 }
                 // Abigail's Flower, picked as a plant is (Main.tileCut): the flower to the bag.
@@ -389,6 +512,21 @@ namespace TerraKnight.World
         }
 
         public static int DevBuffsTaken, DevFlowersPicked;
+
+        /// <summary>A bed stands at this bottom middle of a scene (its own coordinates), and where that is in the world now.</summary>
+        public static bool BedAt(string scene, Vector2 local, out Vector2 world)
+        {
+            world = default;
+            foreach (var s in stations)
+            {
+                if (s.Kind != StationKind.Bed || s.Scene != scene || (s.Local - local).sqrMagnitude > 0.0004f) continue;
+                var region = s.Region ?? RegionNamed(scene);
+                if (region == null) return false;
+                world = region.Root.TransformPoint(s.Local);
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>Dev: the recipe stations standing within reach.</summary>
         public static string DevNearNames(HeroController hero)
@@ -448,6 +586,7 @@ namespace TerraKnight.World
                 }
                 Dust(px, s, 10);
                 WorldItems.Drop(ItemStack.Of(s.Spec.Item), s.Box.center);
+                if (s.Kind == StationKind.Bed) Beds.Gone(s.Scene, s.Local);
                 Remove(i);
                 DevBroken++;
                 return true;
@@ -460,9 +599,47 @@ namespace TerraKnight.World
             var p = Effects.TerraParticles.Instance;
             if (p == null) return;
             // Wood for the wooden ones, stone and metal sparks for the rest.
-            int dust = s.Kind == StationKind.WorkBench || s.Kind == StationKind.Loom || s.Kind == StationKind.Sawmill ? 7 : 1;
+            int dust = s.Kind == StationKind.WorkBench || s.Kind == StationKind.Chair || s.Kind == StationKind.Loom || s.Kind == StationKind.Sawmill || IsDoor(s.Kind) || s.Kind == StationKind.Table ? 7 : 1;
             float hw = s.Spec.W * 8f, hh = s.Spec.H * 8f;
             for (int k = 0; k < n; k++) p.NewDust(px - new Vector2(hw, hh), (int)(hw * 2f), (int)(hh * 2f), dust);
+        }
+
+        /// <summary>
+        /// The chair a click landed on (a Wooden Chair the player set down), and where on it: a
+        /// townsperson put there stands on the chair's seat. False when the click wasn't on a chair —
+        /// the street or the air, which means its usual place along the street instead.
+        /// </summary>
+        public static bool ChairNear(Vector2 at, out float x, out float y) => ChairNear(at, out x, out y, out _);
+
+        /// <summary>The chair a click landed on, where its seat is, and which way it faces (1 right, -1 left).</summary>
+        public static bool ChairNear(Vector2 at, out float x, out float y, out int facing)
+        {
+            x = at.x;
+            y = at.y;
+            facing = 0;
+            float best = float.MaxValue;
+            bool found = false;
+            foreach (var s in stations)
+            {
+                if (s.Kind != StationKind.Chair || s.Region == null) continue;
+                var b = s.Box;
+                // The chair's own box, a little wider all round: the whole seat is clickable, the tiles
+                // beside it are not.
+                // Its own box and a hand's width around it: the seat is clickable, the street and the
+                // bench below it are not (a chair standing over the bench must not swallow its clicks).
+                var reach = new Rect(b.xMin - 0.15f, b.yMin - 0.1f, b.width + 0.3f, b.height + 0.2f);
+                if (!reach.Contains(at)) continue;
+                float d = Vector2.Distance(b.center, at);
+                if (d >= best) continue;
+                best = d;
+                x = b.center.x;
+                // The seat, not the floor at the chair's feet: the top of the chair's lower cell.
+                // Standing at b.yMin put the townsperson on the ground underneath the chair.
+                y = b.yMin + CellGrid.CellSize;
+                facing = s.Right ? 1 : -1;
+                found = true;
+            }
+            return found;
         }
 
         // ------------------------------------------------------------------ each frame
@@ -472,6 +649,8 @@ namespace TerraKnight.World
             if (TerrainSystem.Current == null) return;
             FixedStations.Ensure();
             foreach (var s in stations) s.Region = RegionNamed(s.Scene);
+            // Doors walked into open, and shut again behind (StationsHousing).
+            PushDoors();
             ticks += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
             while (ticks >= 1f)
             {
@@ -485,7 +664,8 @@ namespace TerraKnight.World
                 var s = stations[i];
                 if (s.Region == null) { s.SupportedIn = null; continue; }
                 if (s.Fixed) continue;
-                bool now = HasGround(s);
+                // A door hangs on its ceiling and its floor both (StationsHousing).
+                bool now = IsDoor(s.Kind) ? DoorHeld(s) : HasGround(s);
                 if (s.SupportedIn == s.Region && s.Supported && !now && !Chests.RestsOn(s.Box))
                 {
                     if (Net.WorldSync.Guest)
@@ -496,6 +676,7 @@ namespace TerraKnight.World
                     Dust(Effects.TerraParticles.ToPx(s.Box.center), s, 10);
                     WorldItems.Drop(ItemStack.Of(s.Spec.Item), s.Box.center);
                     TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
+                    if (s.Kind == StationKind.Bed) Beds.Gone(s.Scene, s.Local);
                     Remove(i);
                     DevFell++;
                     continue;
@@ -523,8 +704,12 @@ namespace TerraKnight.World
                     }
                 }
                 s.Renderer.enabled = true;
-                if (s.Relic != null) s.Relic.SetVisible(true);
-                s.Renderer.sprite = SpriteOf(s.Kind);
+                if (s.Relic != null)
+                {
+                    s.Relic.SetVisible(true);
+                    s.Relic.Face(s.Right);
+                }
+                s.Renderer.sprite = SpriteOf(s.Kind, s.Right);
                 // A bottom row 18 px tall sinks its last 2 px into the ground; DrawYOffset lowers it more.
                 var spec = s.Spec;
                 float sink = (spec.Heights[spec.Heights.Length - 1] - 16) + spec.DrawY;
@@ -538,14 +723,20 @@ namespace TerraKnight.World
                     bool on = Time.time >= s.TopOffUntil && !Inside(s);
                     if (s.Top.activeSelf != on) s.Top.SetActive(on);
                 }
+                if (IsDoor(s.Kind)) DoorBody(s);
             }
         }
 
-        /// <summary>A station's look, put together from its tiles in the sheet (18 px apart across; down by each row's height and 2).</summary>
-        static Sprite SpriteOf(StationKind kind)
+        /// <summary>
+        /// A station's look, put together from its tiles in the sheet (18 px apart across; down by each row's height and
+        /// 2), the right-facing alternate's columns (Spec.RightX on) for one placed facing right.
+        /// </summary>
+        static Sprite SpriteOf(StationKind kind, bool right = false)
         {
-            if (sprites.TryGetValue(kind, out var sp) && sp != null) return sp;
             var spec = specs[kind];
+            right &= spec.RightX > 0 && spec.Custom == null;
+            var cache = right ? rightSprites : sprites;
+            if (cache.TryGetValue(kind, out var sp) && sp != null) return sp;
             if (spec.Custom != null)
             {
                 var pic = Items.Relics.Texture(spec.Custom);
@@ -555,6 +746,7 @@ namespace TerraKnight.World
                 return sp;
             }
             var src = TerrariaAssets.Pixels(spec.Texture, out int sw, out int sh);
+            int x0 = spec.StyleX + (right ? spec.RightX : 0);
             int w = spec.W * 16, h = 0;
             foreach (var th in spec.Heights) h += th;
             var dst = new Color32[w * h];
@@ -566,7 +758,7 @@ namespace TerraKnight.World
                     for (int y = 0; y < th; y++)
                         for (int x = 0; x < 16; x++)
                         {
-                            int sx = spec.StyleX + col * 18 + x, sy = sy0 + y;
+                            int sx = x0 + col * 18 + x, sy = sy0 + y;
                             int dx = col * 16 + x, dy = dy0 + y;
                             if (sx >= sw || sy >= sh) continue;
                             dst[(h - 1 - dy) * w + dx] = src[(sh - 1 - sy) * sw + sx];
@@ -574,9 +766,9 @@ namespace TerraKnight.World
                 sy0 += th + 2;
                 dy0 += th;
             }
-            var tex = TerrariaAssets.Make(spec.Texture + "#station" + spec.StyleX, dst, w, h);
+            var tex = TerrariaAssets.Make(spec.Texture + "#station" + x0, dst, w, h);
             sp = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0f), 1f / Px, 0, SpriteMeshType.FullRect);
-            sprites[kind] = sp;
+            cache[kind] = sp;
             return sp;
         }
 
@@ -761,7 +953,7 @@ namespace TerraKnight.World
         public static List<Saved> Save()
         {
             var list = new List<Saved>(stations.Count);
-            foreach (var s in stations) if (!s.Fixed) list.Add(new Saved { Scene = s.Scene, Local = s.Local, Kind = s.Kind });
+            foreach (var s in stations) if (!s.Fixed) list.Add(new Saved { Scene = s.Scene, Local = s.Local, Kind = s.Kind, Right = s.Right });
             return list;
         }
 
@@ -770,7 +962,7 @@ namespace TerraKnight.World
             Clear();
             if (saved == null) return;
             foreach (var s in saved)
-                if (specs.ContainsKey(s.Kind)) stations.Add(new Station { Scene = s.Scene, Local = s.Local, Kind = s.Kind });
+                if (specs.ContainsKey(s.Kind)) stations.Add(new Station { Scene = s.Scene, Local = s.Local, Kind = s.Kind, Right = s.Right && specs[s.Kind].Faces });
         }
 
         /// <summary>Dev: the stations standing in loaded scenes, by kind.</summary>

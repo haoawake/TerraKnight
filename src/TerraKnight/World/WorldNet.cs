@@ -10,7 +10,8 @@ namespace TerraKnight.World
         internal static IEnumerable<WorldSync.Record> NetRecords()
         {
             foreach (var s in stations)
-                if (!s.Fixed) yield return new WorldSync.Record { Key = WorldSync.Key("s", s.Scene, s.Local), Scene = s.Scene, X = s.Local.x, Y = s.Local.y, Kind = (int)s.Kind };
+                // Placed: which way it faces (Station.Right).
+                if (!s.Fixed) yield return new WorldSync.Record { Key = WorldSync.Key("s", s.Scene, s.Local), Scene = s.Scene, X = s.Local.x, Y = s.Local.y, Kind = (int)s.Kind, Placed = s.Right };
         }
 
         internal static void NetApply(WorldSync.Record r)
@@ -26,9 +27,10 @@ namespace TerraKnight.World
                         s.Renderer = null; s.Top = null; s.SupportedIn = null;
                         s.Kind = (StationKind)r.Kind;
                     }
+                    s.Right = r.Placed && s.Spec.Faces;
                     return;
                 }
-            stations.Add(new Station { Scene = r.Scene, Local = at, Kind = (StationKind)r.Kind, Region = RegionNamed(r.Scene) });
+            stations.Add(new Station { Scene = r.Scene, Local = at, Kind = (StationKind)r.Kind, Region = RegionNamed(r.Scene), Right = r.Placed && specs[(StationKind)r.Kind].Faces });
         }
 
         internal static void NetRemove(string key)
@@ -53,7 +55,7 @@ namespace TerraKnight.World
             if (!specs.TryGetValue((StationKind)a.Kind, out var spec) || spec.Item == ItemType.None || string.IsNullOrEmpty(a.Scene)) return false;
             var box = new Rect(a.X - spec.W * 8f * Px, a.Y, spec.W * 16f * Px, spec.H * 16f * Px);
             if (NetOverlaps(a.Scene, box) || Chests.NetOverlaps(a.Scene, box)) return false;
-            NetApply(new WorldSync.Record { Key = WorldSync.Key("s", a.Scene, new Vector2(a.X, a.Y)), Scene = a.Scene, X = a.X, Y = a.Y, Kind = a.Kind });
+            NetApply(new WorldSync.Record { Key = WorldSync.Key("s", a.Scene, new Vector2(a.X, a.Y)), Scene = a.Scene, X = a.X, Y = a.Y, Kind = a.Kind, Placed = a.Placed });
             DevPlaced++;
             return true;
         }
@@ -83,7 +85,7 @@ namespace TerraKnight.World
         internal static IEnumerable<WorldSync.Record> NetRecords()
         {
             foreach (var c in chests)
-                yield return new WorldSync.Record { Key = WorldSync.Key("c", c.Scene, c.Local), Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Slots = NetSlots(c) };
+                yield return new WorldSync.Record { Key = WorldSync.Key("c", c.Scene, c.Local), Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Kind = c.Style, Slots = NetSlots(c) };
         }
 
         internal static void NetApply(WorldSync.Record r, bool keepContents)
@@ -94,6 +96,7 @@ namespace TerraKnight.World
                 c = new Chest { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Region = RegionNamed(r.Scene) };
                 chests.Add(c);
             }
+            c.Style = r.Kind;
             if (!keepContents) NetSet(c, r.Slots);
         }
 
@@ -158,7 +161,7 @@ namespace TerraKnight.World
             var box = new Rect(a.X - Width / 2f, a.Y, Width, Height);
             if (NetOverlaps(a.Scene, box) || Stations.NetOverlaps(a.Scene, box)) return false;
             var at = new Vector2(a.X, a.Y);
-            chests.Add(new Chest { Scene = a.Scene, Local = at, Region = RegionNamed(a.Scene) });
+            chests.Add(new Chest { Scene = a.Scene, Local = at, Region = RegionNamed(a.Scene), Style = a.Kind });
             DevPlaced++;
             return true;
         }
@@ -172,7 +175,7 @@ namespace TerraKnight.World
                 if (!c.Empty || WorldSync.ChestBusy(c.Scene, c.Local)) return false;
                 c.Damage += Mathf.Clamp(a.Power, 0, 1000);
                 if (c.Damage < 100) return true;
-                WorldItems.NetDrop(ItemStack.Of(ItemType.Chest), c.Scene, c.Local + Vector2.up * Height / 2f);
+                WorldItems.NetDrop(ItemStack.Of(RegionalChests.ItemOf(c.Style)), c.Scene, c.Local + Vector2.up * Height / 2f);
                 Remove(i);
                 DevBroken++;
                 return true;

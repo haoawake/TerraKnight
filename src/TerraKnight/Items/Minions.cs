@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.Player;
 using TerraKnight.World;
@@ -1461,7 +1461,7 @@ namespace TerraKnight.Items
                 // The Huntress's sets (P:11440-11443): the trap's blast oils what it hits for 4-8.5 s.
                 if (IsTrapBlast(m.Kind) && (Equipment.Current.Ooa & OoaSet.HuntressT2) != 0) EnemyDebuffs.Add(hm, EnemyDebuffs.Oiled, Random.Range(8, 18) * 30);
                 int pen = Equipment.Current.ArmorPen + m.ItemPen + (m.Kind == Kind.Snowflake ? 30 : m.Kind == Kind.BladeStaff ? 25 : 0);
-                melee.HitWith(col, dmg, kb, crit ? 100f : 0f, facing, TerraParticles.ToWorld(m.Center), pen);
+                melee.HitWith(col, dmg, kb, crit ? 100f : 0f, facing, TerraParticles.ToWorld(m.Center), pen, autonomous: true);
                 // P:14492-14499: the Cattiva's punch glitters.
                 if (m.Kind == Kind.Cattiva || m.Kind == Kind.TrustyCattiva) FxParticles.CattivaHit(m.Center + new Vector2(m.Dir * 8f, 0f) + Random.insideUnitCircle * 4f);
                 DevHits++;

@@ -12,8 +12,8 @@ namespace TerraKnight
     /// <summary>
     /// Dev (3.0.1): suite "hkflagdump" dumps the state machines of a few scenes that read a Hallownest key item's record (the
     /// Abyss's gate to the King's Brand, the Birthplace's floor to the Kingsoul); "invlag" walks with the inventory open and times
-    /// the crafting column; "nailhits" counts the Nail's and a sword's hits on one enemy a swing; "hkuse" takes the King's Brand
-    /// and the Kingsoul in hand after their room came in, and the room answers; "v301" runs the last three.
+    /// the crafting column; "nailhits" counts the Nail's and a sword's hits on one enemy a swing; "hkuse" walks into the room with
+    /// both bags full, lets the King's Brand and the Kingsoul come into a freed hotbar slot, and the room answers; "v301" runs the last three.
     /// </summary>
     internal sealed partial class DevAutoTest
     {
@@ -135,8 +135,8 @@ namespace TerraKnight
                 foreach (var r in Recipes.All)
                 {
                     bool byHand = !r.IsBought && (string.IsNullOrEmpty(r.Station) || r.Station == "徒手");
-                    bool can = ProgressionBalance.Unlocked(r.Result) && r.StationStage <= stage && CraftEnvironments.Available(r.Environment)
-                        && (byHand || here || (!r.IsBought && World.Stations.Near(r.Station, hero)));
+                    bool can = (!r.IsBought || ProgressionBalance.Unlocked(r.Result)) && CraftEnvironments.Available(r.Environment)
+                        && (r.IsBought ? here : byHand || World.Stations.Near(r.Station, hero));
                     if (can && Recipes.HasIngredients(r, inv, near)) oldCount++;
                 }
             }
@@ -570,6 +570,8 @@ namespace TerraKnight
             foreach (var name in new[] { "roster", "more" })
                 foreach (var npc in (Town.NpcDef[])typeof(Town.TownNpcs).GetField(name, flags).GetValue(null))
                     if (npc.Items != null) foreach (var st in npc.Items) Add(st.Type, "商店 " + npc.Zh);
+            foreach (var (t, _) in ((Items.ItemType Type, int Stage)[])typeof(Town.TownNpcs).GetField("travelPool", flags).GetValue(null)) Add(t, "旅商");
+            foreach (var t in Town.Angler.DevRewardSources()) Add(t, "渔夫任务");
             foreach (var record in EnemyDrops.DevRecords)
                 for (int stage = 0; stage <= 5; stage++)
                     foreach (bool first in new[] { true, false })
@@ -900,7 +902,7 @@ namespace TerraKnight
             int life0 = mod.Stats.Life, shadows0 = AbilityAccessories.DevShadowDashes;
             yield return Toward(false);
             float passed = hero.transform.position.x - eb.max.x;
-            V301Check("暗影冲刺键：穿过敌人，不受伤、不被弹回，冷却 10 秒", AbilityAccessories.DevShadowDashes > shadows0 && passed > 0f && mod.Stats.Life == lifeBefore && AbilityAccessories.ShadowCooldownLeft > 8f,
+            V301Check("暗影冲刺键：穿过敌人，不受伤、不被弹回，原版冷却 1.5 秒", AbilityAccessories.DevShadowDashes > shadows0 && passed > 0f && mod.Stats.Life == lifeBefore && AbilityAccessories.ShadowCooldownLeft > 0f && AbilityAccessories.ShadowCooldownLeft <= 1.5f,
                 $"{enemy.name}：暗影冲刺 {AbilityAccessories.DevShadowDashes - shadows0} 次，冲过怪的右边 {passed:F2}，掉血 {lifeBefore - mod.Stats.Life}，冷却剩 {AbilityAccessories.ShadowCooldownLeft:F1} 秒");
             // Again at once: on cooldown, nothing.
             shadows0 = AbilityAccessories.DevShadowDashes;
@@ -1089,17 +1091,23 @@ namespace TerraKnight
             var inv = mod.Inventory;
             bool infinite = inv.Infinite;
             inv.Infinite = false;
-            pd.hasKingsBrand = true;
+            pd.hasKingsBrand = false;
             pd.abyssGateOpened = false;
-            pd.gotCharm_36 = true;
+            pd.gotCharm_36 = false;
             pd.royalCharmState = 3;
             pd.openedBlackEggPath = true;
             yield return null;
             yield return null;
-            // A weapon in hand on the way in.
-            inv.Slots[0] = ItemStack.Of(ItemType.CopperBroadsword);
+            // Both bags full as the brand and the Kingsoul are got: neither carried on the way in (a weapon in hand).
+            var bagFillers = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < HkItems.KeyBagSlots; i++) if (inv.HkBag[i].IsEmpty) { inv.HkBag[i] = ItemStack.Of(ItemType.Torch, 1); bagFillers.Add(i); }
+            for (int i = 0; i < Inventory.HotbarSize; i++) inv.Slots[i] = ItemStack.Of(ItemType.CopperBroadsword);
             inv.Selected = 0;
             inv.Override = -1;
+            pd.hasKingsBrand = true;
+            pd.gotCharm_36 = true;
+            yield return null;
+            bool notCarried = !HkItems.Carried(inv, ItemType.HkKingsBrand) && !HkItems.Carried(inv, ItemType.HkKingsoul);
             yield return GoTo("Abyss_06_Core", EntryGateOf("Abyss_06_Core"));
             pd.isInvincible = true;
             yield return new WaitForSeconds(2f);
@@ -1121,12 +1129,14 @@ namespace TerraKnight
             bool floorWas = floor.gameObject.activeSelf;
             int asked0 = HkItems.DevAskedAgain;
 
-            HkItemsDev.ToHotbar(ItemType.HkKingsBrand);
+            // A hotbar slot freed: the brand (first in the table) comes into it, carried, not in hand.
+            inv.Slots[1] = default;
             yield return null;
             yield return null;
             string doorAfter = door.ActiveStateName;
-            V301Check("进房间后再拿起王之印记，深渊大门准备打开", doorBefore == "Check" && doorAfter == "Ready",
-                $"拿起前 {doorBefore}，拿起后 {doorAfter}，手里 {inv.Current.Def?.Name}（{HkItems.DevLastAskedAgain}）");
+            bool brandIn = !inv.Slots[1].IsEmpty && inv.Slots[1].Type == ItemType.HkKingsBrand;
+            V301Check("背包满着进房间，腾出一格让王之印记进来，深渊大门准备打开", notCarried && brandIn && doorBefore == "Check" && doorAfter == "Ready",
+                $"进门时没带上 {notCarried}，第 2 格 {inv.Slots[1].Def?.Name}，放进前 {doorBefore}，放进后 {doorAfter}，手里 {inv.Current.Def?.Name}（{HkItems.DevLastAskedAgain}）");
             // Walked up to it, it opens (Ready: the door's own trigger).
             var box = door.GetComponent<Collider2D>();
             var hero = HeroController.instance;
@@ -1136,16 +1146,20 @@ namespace TerraKnight
                 hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
             }
             for (float t = 0f; t < 3f && !pd.abyssGateOpened; t += Time.deltaTime) yield return null;
-            V301Check("拿着王之印记走过去，大门打开", pd.abyssGateOpened, $"门的触发区 {(box != null ? box.bounds.ToString() : "无")}，门状态 {door.ActiveStateName}，abyssGateOpened {pd.abyssGateOpened}");
+            V301Check("带着王之印记走过去，大门打开", pd.abyssGateOpened, $"门的触发区 {(box != null ? box.bounds.ToString() : "无")}，门状态 {door.ActiveStateName}，abyssGateOpened {pd.abyssGateOpened}");
 
             string spawnerBefore = spawner != null ? spawner.ActiveStateName : "无";
-            HkItemsDev.ToHotbar(ItemType.HkKingsoul);
+            inv.Slots[2] = default;
             yield return null;
             yield return null;
-            V301Check("再拿起国王之魂，出生地的地板打开", floorBefore == "State 1" && floorWas && !floor.gameObject.activeSelf,
-                $"地板状态 {floorBefore}→{floor.ActiveStateName}，显示 {floorWas}→{floor.gameObject.activeSelf}，重新询问 {HkItems.DevAskedAgain - asked0} 次；暗影刷新器 {spawnerBefore}→{(spawner != null ? spawner.ActiveStateName : "无")}");
+            bool soulIn = !inv.Slots[2].IsEmpty && inv.Slots[2].Type == ItemType.HkKingsoul;
+            V301Check("再腾出一格让国王之魂进来，出生地的地板打开", soulIn && floorBefore == "State 1" && floorWas && !floor.gameObject.activeSelf,
+                $"第 3 格 {inv.Slots[2].Def?.Name}，地板状态 {floorBefore}→{floor.ActiveStateName}，显示 {floorWas}→{floor.gameObject.activeSelf}，重新询问 {HkItems.DevAskedAgain - asked0} 次；暗影刷新器 {spawnerBefore}→{(spawner != null ? spawner.ActiveStateName : "无")}");
+            foreach (int i in bagFillers) inv.HkBag[i] = default;
+            for (int i = 0; i < Inventory.HotbarSize; i++) if (!inv.Slots[i].IsEmpty && inv.Slots[i].Type == ItemType.CopperBroadsword) inv.Slots[i] = default;
+            inv.Slots[0] = ItemStack.Of(ItemType.CopperBroadsword);
 
-            // The King's Brand's stand: got already, it isn't there again though the brand isn't in hand.
+            // The King's Brand's stand: got already, it isn't there again (the brand carried, not in hand).
             inv.Selected = 0;
             yield return GoTo("Room_Wyrm", EntryGateOf("Room_Wyrm"));
             pd.isInvincible = true;
@@ -1154,7 +1168,7 @@ namespace TerraKnight
             foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (f.gameObject.scene.name == "Room_Wyrm" && f.name == "Shiny Item Stand" && f.FsmName == "Shiny Control") stand = f;
             bool standShown = stand != null && stand.gameObject.activeInHierarchy && stand.ActiveStateName != "Destroy";
-            V301Check("没拿着王之印记进它的房间，拾取处不会再出现", !standShown,
+            V301Check("王之印记带在身上没拿在手里，进它的房间拾取处不会再出现", !standShown,
                 $"拾取处 {(stand == null ? "已销毁" : stand.ActiveStateName + "，显示 " + stand.gameObject.activeInHierarchy)}，手里 {inv.Current.Def?.Name}");
             inv.Infinite = infinite;
         }

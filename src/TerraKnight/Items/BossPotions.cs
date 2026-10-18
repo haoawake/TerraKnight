@@ -22,8 +22,9 @@ namespace TerraKnight.Items
     internal static partial class EnemyDrops
     {
         /// <summary>
-        /// Every boss's table ends with its healing (NPC.DoDeathEvents_DropBossPotionsAndHearts): 5 to 15 of its potion
-        /// and 5 to 9 hearts, sure, in the monster book with the rest of its drops.
+        /// Every boss's table ends with its healing (NPC.DoDeathEvents_DropBossPotionsAndHearts): 5 to 15 of its stage's
+        /// potion and 5 to 9 hearts, a stage 5 boss's 1 to 3 Ultimate Healing Potions too, sure, in the monster book with the
+        /// rest of its drops.
         /// </summary>
         static void AddBossHealing()
         {
@@ -40,6 +41,7 @@ namespace TerraKnight.Items
                     C(BossStats.PotionOf(stand), 1, 5, 15),
                     C(ItemType.Heart, 1, 5, 9),
                 };
+                if (BossStats.UltimatePotion(stand)) rows.Add(C(ItemType.UltimateHealingPotion, 1, 1, 3));
                 e.Drops = rows.ToArray();
                 table[key] = e;
                 DevHealingRows++;
@@ -53,7 +55,7 @@ namespace TerraKnight.Items
     /// <summary>
     /// A boss's healing. At its death, its table's (<see cref="EnemyDrops"/>: 5 to 15 of its potion, 5 to 9 hearts). At
     /// the end of each of its phases but the last (<see cref="BossPhases"/>) a third of that, for the next one. The
-    /// potion as Terraria picks it by the boss its stand-in is (<see cref="BossStats.PotionOf"/>). Each heart drops on its
+    /// potion by the boss's stage (<see cref="BossStats.PotionOf"/>). Each heart drops on its
     /// own (Item.NewItem one by one); where the game takes the player away after the fight (the dreams, Godhome) the
     /// potions go into the bag and the hearts heal at once.
     /// </summary>

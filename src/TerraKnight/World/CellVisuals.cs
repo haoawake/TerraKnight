@@ -5,9 +5,9 @@ using UnityEngine;
 namespace TerraKnight.World
 {
     /// <summary>
-    /// Draws the Terraria side of the grid: placed blocks, a Terraria wall behind every dug-out
-    /// cell, and a ring of Terraria blocks on the original terrain around each hole so the edge
-    /// of a dig reads as a Terraria cave cut into Hallownest. Also tells the hole cutter and the
+    /// Draws the Terraria side of the grid: placed blocks and placed walls, and the dug holes in the style the settings
+    /// choose (World.HoleShapes): Hollow Knight's, a smooth outline with an ink edge, an inner shadow and dark rock in the
+    /// area's colour; or Terraria's, square cells with the area's Terraria wall behind. Also tells the hole cutter and the
     /// fill meshes which cells are open.
     /// </summary>
     internal sealed class CellVisuals
@@ -31,6 +31,27 @@ namespace TerraKnight.World
         readonly Dictionary<int, SpriteRenderer> walls = new Dictionary<int, SpriteRenderer>();
         // A stair piece's brace, drawn in the cell under it (keyed by the stair cell).
         readonly Dictionary<int, SpriteRenderer> supports = new Dictionary<int, SpriteRenderer>();
+        // Hollow Knight's holes: the ink on the terrain's edge, the shadow inside, the black fill cut to the outline.
+        readonly Dictionary<int, SpriteRenderer> rims = new Dictionary<int, SpriteRenderer>();
+        readonly Dictionary<int, SpriteRenderer> shadows = new Dictionary<int, SpriteRenderer>();
+        readonly Dictionary<int, SpriteRenderer> fills = new Dictionary<int, SpriteRenderer>();
+        readonly bool[] open5 = new bool[25], terrain5 = new bool[25];
+
+        /// <summary>The cell's black fill is a shaped piece of this layer's (a smooth hole's edge), not the fill meshes' square.</summary>
+        public bool FillElsewhere(int x, int y) => fills.ContainsKey(y * grid.Width + x);
+
+        /// <summary>Every hole drawn again (the style switched): the cells within reach of a dug one.</summary>
+        public void MarkAll()
+        {
+            for (int y = 0; y < grid.Height; y++)
+                for (int x = 0; x < grid.Width; x++)
+                    if (grid.IsDug(x, y)) Mark(x, y, ShapeReach);
+            foreach (var layer in new[] { rims, shadows, fills })
+                foreach (int i in layer.Keys) dirty.Add(i);
+        }
+
+        /// <summary>How far a smooth hole's shapes reach from a changed cell: its 5×5 pictures and the overhang beside it.</summary>
+        const int ShapeReach = 4;
         readonly HashSet<int> dirty = new HashSet<int>();
         readonly Stack<SpriteRenderer> pool = new Stack<SpriteRenderer>();
         static readonly Dictionary<(string, int, int), Sprite> sprites = new Dictionary<(string, int, int), Sprite>();
@@ -60,10 +81,12 @@ namespace TerraKnight.World
         /// A cell changed: its neighbours may need new frames, and open cells up to
         /// <see cref="OverhangReach"/> away may now show or hide the terrain's overhanging edge.
         /// </summary>
-        public void MarkDirty(int x, int y)
+        public void MarkDirty(int x, int y) => Mark(x, y, HoleShapes.Hollow ? ShapeReach : OverhangReach);
+
+        void Mark(int x, int y, int reach)
         {
-            for (int dy = -OverhangReach; dy <= OverhangReach; dy++)
-            for (int dx = -OverhangReach; dx <= OverhangReach; dx++)
+            for (int dy = -reach; dy <= reach; dy++)
+            for (int dx = -reach; dx <= reach; dx++)
                 if (grid.InBounds(x + dx, y + dy)) dirty.Add((y + dy) * grid.Width + x + dx);
         }
 
@@ -88,23 +111,50 @@ namespace TerraKnight.World
                 Hide(walls, i);
                 Hide(blocks, i);
                 Hide(supports, i);
+                Hide(rims, i);
+                Hide(shadows, i);
+                Hide(fills, i);
+                flamesLayer?.Hide(i);
                 return;
             }
             var kind = grid.Get(x, y);
             bool cut = grid.IsCut(x, y) || Overhang(x, y);
-            holes.SetCut(i, x, y, cut);
+            var shape = HoleShapes.Hollow ? ShapeAt(x, y) : null;
+            if (shape != null) holes.SetShape(i, x, y, shape.Mask, cut);
+            else holes.SetCut(i, x, y, cut);
 
-            // Wall behind any cell that was dug out of the original terrain.
-            if (grid.HasWall(x, y))
+            // A wall set there; Terraria's way, the area's wall behind every dug cell.
+            if (grid.GetWall(x, y) > 0 || (shape == null && grid.HasWall(x, y)))
             {
                 var (fx, fy) = TileFraming.WallFrame(grid.HasWall(x, y + 1), grid.HasWall(x, y - 1),
                     grid.HasWall(x - 1, y), grid.HasWall(x + 1, y), TileFraming.Variant(x, y), x, y);
                 Show(walls, i, x, y, WallZ, GetSprite(grid.GetWall(x, y) > 0 ? "Wall_" + grid.GetWall(x, y) : DugWallSheet, fx, fy, TileFraming.WallFrameSize), WallTint);
             }
+            else if (shape != null && shape.Mask != null && grid.GetWall(x, y) != 0 && (grid.IsDug(x, y) || kind == CellKind.Original))
+            {
+                // Blended: the area's wall softened and darker, as if running on behind the terrain (inner frames only, no
+                // ragged wall edge) and seen only through the holes, so their outline is its only edge; a wall knocked out
+                // shows none.
+                var (fx, fy) = TileFraming.WallFrame(true, true, true, true, TileFraming.Variant(x, y), x, y);
+                Show(walls, i, x, y, WallZ, GetSprite(HoleShapes.WallSheet(DugWallSheet), fx, fy, TileFraming.WallFrameSize), Color.white);
+                walls[i].maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+            }
             else
             {
                 Hide(walls, i);
             }
+            if (shape?.Rim != null)
+            {
+                Show(rims, i, x, y, -0.001f, shape.Rim, Color.white);
+                // Over the art it outlines, whatever that art's own order.
+                var c = CellGrid.CellCenter(x, y);
+                rims[i].sortingOrder = holes.ArtOrderAt(root.TransformPoint(new Vector3(c.x, c.y, 0f))) + 1;
+            }
+            else Hide(rims, i);
+            if (shape?.Shadow != null) Show(shadows, i, x, y, WallZ - 0.002f, shape.Shadow, Color.white);
+            else Hide(shadows, i);
+            if (shape?.Fill != null) Show(fills, i, x, y, 0f, shape.Fill, Color.white);
+            else Hide(fills, i);
 
             // The scene's own terrain keeps its own art; only placed blocks are drawn.
             string sheet = SheetFor(kind);
@@ -130,15 +180,20 @@ namespace TerraKnight.World
             }
             else if (kind == CellKind.Torch)
             {
-                // Tiles_4, the plain torch: standing on a block, else on the wall beside it.
+                // Tiles_4, the plain torch: standing on a block, else on the wall beside it. A regional torch: its row of
+                // RegionalTorches.TileSheet, its flame layer over it.
                 int fx = Solid(x, y - 1) ? 0 : Solid(x - 1, y) ? 22 : Solid(x + 1, y) ? 44 : 0;
-                Show(blocks, i, x, y, BlockZ, GetTorchSprite(fx), Color.white);
+                int style = grid.TorchStyleAt(i);
+                Show(blocks, i, x, y, BlockZ, style > 0 ? RegionalTorches.Sprite(style, fx, false) : GetTorchSprite(fx), Color.white);
+                if (style > 0) flames.Show(i, x, y, style, fx, BlockZ - 0.0003f);
+                else flames.Hide(i);
             }
             else
             {
                 Hide(blocks, i);
             }
-            if (kind == CellKind.Torch) ShowLight(i, x, y);
+            if (kind != CellKind.Torch) flamesLayer?.Hide(i);
+            if (kind == CellKind.Torch) ShowLight(i, x, y, grid.TorchStyleAt(i));
             else HideLight(i);
             int brace = kind == CellKind.Platform ? PlatformStairs.SupportFrameX(grid, x, y) : -1;
             if (brace >= 0) Show(supports, i, x, y - 1, BlockZ + 0.0005f, GetSprite("Tiles_19", brace, 0, TileFraming.FrameSize), BlockTint);
@@ -155,31 +210,41 @@ namespace TerraKnight.World
                 case CellKind.Sand: return "Tiles_53";
                 case CellKind.MagicIce: return "Tiles_127";
                 case CellKind.Meteorite: return "Tiles_37";
-                default: return null;
+                default: return AreaBlocks.Sheet(kind);
             }
         }
 
         // --- Torch light: a soft warm glow around each torch. ---
 
         readonly Dictionary<int, SpriteRenderer> lights = new Dictionary<int, SpriteRenderer>();
+        // The style each light was made for (a regional torch's own colour).
+        readonly Dictionary<int, int> lightStyles = new Dictionary<int, int>();
+        RegionalTorchFlames flamesLayer;
+        RegionalTorchFlames flames => flamesLayer ?? (flamesLayer = new RegionalTorchFlames(root));
         /// <summary>TorchID.TorchColor of the plain torch (1, 0.95, 0.8), warmed a touch for Hallownest's blue; the alpha is its strength.</summary>
         public static readonly Color TorchLight = new Color(1f, 0.88f, 0.66f, 0.2f);
 
-        void ShowLight(int i, int x, int y)
+        /// <summary>Dev: the regional torches' flames drawn in this region.</summary>
+        public int DevFlames => flamesLayer?.Count ?? 0;
+
+        void ShowLight(int i, int x, int y, int style)
         {
-            // One left from before whose object is gone (its chunk rebuilt): made again.
-            if (lights.TryGetValue(i, out var had) && had != null) return;
-            var sr = Glow.CreateLight(root, TorchLight);
+            // One left from before whose object is gone (its chunk rebuilt): made again; a torch of another style: its colour.
+            if (lights.TryGetValue(i, out var had) && had != null && (lightStyles.TryGetValue(i, out int was) ? was : 0) == style) return;
+            if (had != null) Object.Destroy(had.gameObject);
+            var sr = style > 0 ? Glow.CreateLight(root, RegionalTorches.GlowColor(style), RegionalTorches.LightRgb(style)) : Glow.CreateLight(root, TorchLight);
             var c = CellGrid.CellCenter(x, y);
             sr.transform.localPosition = new Vector3(c.x, c.y + 0.1f, Glow.Z);
             sr.gameObject.AddComponent<Glow.Flicker>();
             lights[i] = sr;
+            lightStyles[i] = style;
         }
 
         void HideLight(int i)
         {
             if (!lights.TryGetValue(i, out var sr)) return;
             lights.Remove(i);
+            lightStyles.Remove(i);
             if (sr != null) Object.Destroy(sr.gameObject);
         }
 
@@ -209,6 +274,28 @@ namespace TerraKnight.World
 
         bool IsOriginal(int x, int y) => grid.InBounds(x, y) && grid.Get(x, y) == CellKind.Original;
 
+        /// <summary>
+        /// A smooth hole's pictures for the cell (World.HoleShapes), from its 5×5 neighbourhood: which cells are cut (dug,
+        /// or the overhang beside a dig) and which are standing terrain; null with nothing cut that near.
+        /// </summary>
+        HoleShapes.Shape ShapeAt(int x, int y)
+        {
+            bool any = false;
+            for (int dy = -2; dy <= 2; dy++)
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    int k = (dy + 2) * 5 + dx + 2, cx = x + dx, cy = y + dy;
+                    bool o = grid.InBounds(cx, cy) && (grid.IsCut(cx, cy) || Overhang(cx, cy));
+                    open5[k] = o;
+                    terrain5[k] = !o && IsOriginal(cx, cy);
+                    any |= o;
+                }
+            if (!any) return null;
+            bool ink = grid.IsDug(x, y) || (!open5[12] && grid.Get(x, y) == CellKind.Original);
+            bool fill = !grid.IsArt(x, y) && (grid.IsDug(x, y) || grid.Get(x, y) == CellKind.Original);
+            return HoleShapes.For(open5, terrain5, ink, fill);
+        }
+
         bool Solid(int x, int y) => Cells.Blocks(grid.Get(x, y));
 
         bool Connects(int x, int y, int dx, int dy)
@@ -235,6 +322,8 @@ namespace TerraKnight.World
             sr.transform.localPosition = new Vector3(center.x, center.y, z);
             sr.sprite = sprite;
             sr.color = tint;
+            sr.sortingOrder = 0;
+            sr.maskInteraction = SpriteMaskInteraction.None;
         }
 
         void Hide(Dictionary<int, SpriteRenderer> layer, int i)

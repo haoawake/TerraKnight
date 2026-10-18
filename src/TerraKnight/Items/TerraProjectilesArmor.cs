@@ -570,8 +570,6 @@ namespace TerraKnight.Items
 
         // ------------------------------------------------------------------ 623: the Stardust Guardian
 
-        readonly Dictionary<int, int> guardianImmune = new Dictionary<int, int>();
-
         /// <summary>
         /// AI_120 (P:45454-45784): rests 15 px behind and 25 up from the player; with an enemy
         /// within 500 px of the player, flies beside it (70 px off, up to 24 px a tick) and punches
@@ -593,8 +591,6 @@ namespace TerraKnight.Items
             var v = TV(p);
             FxBatch.Instance?.Light(c, new Color(0.9f, 0.9f, 0.7f), 3f);
             if (p.Ticks <= 1) GuardianBurst(c);
-            var keys = new List<int>(guardianImmune.Keys);
-            foreach (var k in keys) if (--guardianImmune[k] <= 0) guardianImmune.Remove(k);
             int state = (int)p.Ai0;
             if (state == 0)
             {
@@ -683,14 +679,15 @@ namespace TerraKnight.Items
             foreach (var h in Physics2D.OverlapBoxAll(TerraParticles.ToWorld(boxPx), new Vector2(80f, 40f) * Px, 0f, 1 << 11))
             {
                 var hm = h.GetComponentInParent<HealthManager>();
-                if (hm == null || hm.isDead) continue;
+                if (hm == null || !Chaseable(hm)) continue;
                 int id = hm.GetInstanceID();
-                if (guardianImmune.ContainsKey(id)) continue;
+                if (p.Immune.ContainsKey(id)) continue;
+                if (MeleeHits.Blocks(hm, p.Dir, DamageClass.Summon)) continue;
                 int dealt = SummonTags.Modify(hm, dmg, out bool crit, 1f, false, boxPx);
                 ArmorEffects.Context = new ArmorEffects.Hit { Class = DamageClass.Summon };
-                melee.HitWith(h, dealt, 10f, crit ? 100f : 0f, p.Dir, TerraParticles.ToWorld(boxPx - new Vector2(p.Dir * 40f, 0f)));
+                if (!melee.HitWith(h, dealt, 10f, crit ? 100f : 0f, p.Dir, TerraParticles.ToWorld(boxPx - new Vector2(p.Dir * 40f, 0f)), autonomous: true)) continue;
                 SummonTags.OnHit(hm, dmg, boxPx, 10f);
-                guardianImmune[id] = 5;
+                p.Immune[id] = 5;
                 ArmorEffects.DevGuardianHits++;
                 FxParticles.StardustPunch(EnemyCenterPx(hm), new Vector2(p.Dir * 4f, 0f));
             }

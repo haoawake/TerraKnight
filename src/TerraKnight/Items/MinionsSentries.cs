@@ -1,4 +1,4 @@
-using TerraKnight.Effects;
+﻿using TerraKnight.Effects;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -682,7 +682,7 @@ namespace TerraKnight.Items
                 // The Monk's sets (P:12930-12943): a crit one time in four (tier 3), one in six (tier 2).
                 if ((Ooa & OoaSet.MonkT3) != 0 ? Random.Range(0, 4) == 0 : (Ooa & OoaSet.MonkT2) != 0 && Random.Range(0, 6) == 0) crit = true;
                 if (crit) DevAuraCrits++;
-                melee.HitWith(n.Col, dmg, 0f, crit ? 100f : 0f, 1f, TerraParticles.ToWorld(m.Center), 9999);
+                melee.HitWith(n.Col, dmg, 0f, crit ? 100f : 0f, 1f, TerraParticles.ToWorld(m.Center), 9999, autonomous: true);
                 DevHits++;
                 DevHitDamage += dmg;
                 SummonTags.OnHit(n.Hm, m.Damage, m.Center);

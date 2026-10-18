@@ -271,6 +271,11 @@ namespace TerraKnight.Items
             [ItemType.PufferfishPet] = new PetDef(371, false, "河豚", "一只友好河豚将跟着你", new[] { new PetProj { Id = 1046, Frames = 12, W = 26, H = 26, Scale = 1f, Move = PetMove.Flyer, FlyStart = 0, FlyWrap = 4, FlyTo = 0, FlyTicks = 7, FlyTurn = PetTurn.VelX, FlyTurnK = 0.05f, Speed = 5.0f, FlyAccel = 0.3f, Slack = 2.0f } }),
             [ItemType.AxeFairyPetItem] = new PetDef(372, false, "塞纳克斯", "刨根问底", new[] { new PetProj { Id = 1050, Frames = 16, W = 20, H = 20, Scale = 1.0f, Move = PetMove.Anchor, FlyStart = 0, FlyWrap = 3, FlyTo = 0, FlyTicks = 5, Centered = true, FacesPlayer = true, Anchor = new Vector2(-30.0f, -20.0f), Pull = 0.1f } }),
             [ItemType.BoulderPet] = new PetDef(373, false, "友好巨石", "一个友好巨石将与你一起滚动", new[] { new PetProj { Id = 1056, Frames = 1, W = 32, H = 32, Scale = 1f, Move = PetMove.Ground, WalkStart = 0, WalkWrap = 0, WalkTo = 0, Centered = true, Whole = true, FlyFixed = 0 } }),
+            // Hallownest's Lumafly Lantern, floating by the player's shoulder with Terraria's brightest light: the Suspicious
+            // Looking Tentacle's blue-white (650: (0.5, 0.9, 1)) at the Fairy Princess's strength (895: 2.25 at most).
+            [ItemType.HkLumaflyLantern] = new PetDef(Pets.LanternBuff, true, "光蝇灯笼", "光蝇灯笼照亮四周", new[] { new PetProj { Texture = HkItems.TexturePrefix + nameof(ItemType.HkLumaflyLantern), Frames = 1, Whole = true, W = 20, H = 20, Scale = 1f, DrawHeight = 34f, Move = PetMove.Anchor, Light = new Color(1.125f, 2.025f, 2.25f), Centered = true, FacesPlayer = true, Anchor = new Vector2(30.0f, -44.0f), Pull = 0.1f } }),
+            // Hallownest's Grimmchild: no Terraria sprite, the game's own Grimmchild flies with the player (HkItems: equippedCharm_40).
+            [ItemType.HkGrimmchild] = new PetDef(Pets.GrimmBuff, false, "格林之子", "格林之子跟着你", new[] { new PetProj { Id = 0, Texture = "", Frames = 1, Whole = true, W = 16, H = 16, Move = PetMove.Anchor, Anchor = new Vector2(-30f, -40f), Pull = 0.1f } }),
             [ItemType.RainbowBoulderPet] = new PetDef(382, false, "友好彩虹巨石", "一个友好的彩虹巨石正跟在你身边滚来滚去", new[] { new PetProj { Id = 1090, Frames = 1, W = 16, H = 16, Scale = 0.5f, Move = PetMove.Ground, WalkStart = 0, WalkWrap = 0, WalkTo = 0, Centered = true, Whole = true, FlyFixed = 0 } }),
         };
     }

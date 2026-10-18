@@ -33,7 +33,7 @@ namespace TerraKnight
 
 
             // ---- data
-            Check("规则与宝匣", Fishing.DevRules > 100 && Fishing.DevCrates == 27, $"规则 {Fishing.DevRules} 条，宝匣 {Fishing.DevCrates} 种");
+            Check("规则与宝匣", Fishing.DevRules > 100 && Fishing.DevCrates == 57, $"规则 {Fishing.DevRules} 条，宝匣 {Fishing.DevCrates} 种");
             Check("任务鱼", Fishing.QuestList(5).Count() == 41 && Fishing.QuestList(0).Count() >= 8, $"第5阶段 {Fishing.QuestList(5).Count()} 条，第0阶段 {Fishing.QuestList(0).Count()} 条");
             Check("改名", ItemDb.Get(ItemType.LavaFishingHook).Name == Lang.T("酸水钩") && ItemDb.Get(ItemType.HotlineFishingHook).AcidPole && ItemDb.Get(ItemType.HellButterfly).AcidBait,
                   $"{ItemDb.Get(ItemType.LavaFishingHook).Name}、{ItemDb.Get(ItemType.HotlineFishingHook).Name}、{ItemDb.Get(ItemType.LavaCrate).Name}");

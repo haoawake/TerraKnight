@@ -214,6 +214,7 @@ namespace TerraKnight.Town
         // ------------------------------------------------------------------ the sleeper by the Blue Lake
 
         const string LakeScene = "Crossroads_50";
+        static float nextLook;
         static SpriteRenderer sleeper;
         static Rect sleeperBox;
         public static bool DevSleeperShown => sleeper != null && sleeper.enabled;
@@ -229,6 +230,12 @@ namespace TerraKnight.Town
         public static void Tick()
         {
             if (Saved) { if (sleeper != null) HideSleeper(); return; }
+            // The lake looked for only while its scene is in, and once a second at most: searching every state machine of
+            // every scene each frame cost 2 ms a frame everywhere (more where many enemies are, the Royal Waterways).
+            if (sleeper != null && UnityEngine.SceneManagement.SceneManager.GetSceneByName(LakeScene).isLoaded) return;
+            if (Time.unscaledTime < nextLook) return;
+            nextLook = Time.unscaledTime + 1f;
+            if (!UnityEngine.SceneManagement.SceneManager.GetSceneByName(LakeScene).isLoaded) { if (sleeper != null) HideSleeper(); return; }
             var lake = FindLake();
             if (lake == null) { if (sleeper != null) HideSleeper(); return; }
             if (sleeper != null) return;

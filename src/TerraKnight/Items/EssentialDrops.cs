@@ -25,15 +25,15 @@ namespace TerraKnight.Items
             // The Ancient Manipulator: every time, as the Lunatic Cultist's.
             ["HollowKnight"] = new[] { (ItemType.LunarCraftingStation, 1f, 5) },
             // Bait critters (the Grub Soup's, the Escargot's) and the gold ones (the Golden Delight's).
-            ["Crawler"] = new[] { (ItemType.Grubby, .05f, 0) },
-            ["Climber"] = new[] { (ItemType.Snail, .05f, 0) },
-            ["MossWalker"] = new[] { (ItemType.Sluggy, .05f, 1), (ItemType.GoldWorm, .01f, 1) },
-            ["MiniSpider"] = new[] { (ItemType.Buggy, .05f, 3) },
-            ["GrassHopper"] = new[] { (ItemType.GoldGrasshopper, .02f, 1) },
-            ["MossFlyer"] = new[] { (ItemType.GoldButterfly, .02f, 1) },
-            ["Mosquito"] = new[] { (ItemType.GoldDragonfly, .02f, 1) },
-            ["MossmanRunner"] = new[] { (ItemType.GoldLadyBug, .02f, 1) },
-            ["AcidWalker"] = new[] { (ItemType.GoldWaterStrider, .02f, 1) },
+            ["Crawler"] = new[] { (ItemType.Grubby, .005f, 0) },
+            ["Climber"] = new[] { (ItemType.Snail, .005f, 0) },
+            ["MossWalker"] = new[] { (ItemType.Sluggy, .005f, 1), (ItemType.GoldWorm, .001f, 1) },
+            ["MiniSpider"] = new[] { (ItemType.Buggy, .005f, 3) },
+            ["GrassHopper"] = new[] { (ItemType.GoldGrasshopper, .002f, 1) },
+            ["MossFlyer"] = new[] { (ItemType.GoldButterfly, .002f, 1) },
+            ["Mosquito"] = new[] { (ItemType.GoldDragonfly, .002f, 1) },
+            ["MossmanRunner"] = new[] { (ItemType.GoldLadyBug, .002f, 1) },
+            ["AcidWalker"] = new[] { (ItemType.GoldWaterStrider, .002f, 1) },
             // Buff furniture Terraria's world puts about: the Bast Statue (its desert) in Kingdom's Edge's dunes, the
             // Sunflower and the Garden Gnome (its surface) in Greenpath and the Queen's Gardens.
             ["Hopper"] = new[] { (ItemType.CatBast, .04f, 1) },
@@ -47,6 +47,17 @@ namespace TerraKnight.Items
 
         /// <summary>A record's drops at a stage with its essentials after them (the same list when it has none then).</summary>
         public static IReadOnlyList<EnemyDrops.Drop> With(string record, int stage, IReadOnlyList<EnemyDrops.Drop> drops)
+        {
+            var result = WithEssentials(record, stage, drops);
+            if (!EnemyDrops.IsBoss(record)) return result;
+            var list = new List<EnemyDrops.Drop>(result);
+            list.RemoveAll(d => d.Type == ItemType.LifeCrystal);
+            if (Net.BossLifeRewards.Eligible(record))
+                list.Add(new EnemyDrops.Drop { Type = ItemType.LifeCrystal, Num = 1, Den = 1, Min = 1, Max = 1, LockStage = 0 });
+            return list;
+        }
+
+        static IReadOnlyList<EnemyDrops.Drop> WithEssentials(string record, int stage, IReadOnlyList<EnemyDrops.Drop> drops)
         {
             if (record == null || !extra.TryGetValue(record, out var rows)) return drops;
             // A boss pays at its own stage, whenever it is fought (as ProgressionLoot has it).

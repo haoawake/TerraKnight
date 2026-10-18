@@ -31,7 +31,16 @@ namespace TerraKnight.Save
             public List<SlotItem> Bank;
             /// <summary>The Hallownest bag (Items.HkItems).</summary>
             public List<SlotItem> HkBag;
+            /// <summary>The Safe's, the Defender's Forge's and the Void Vault's slots (Player.bank2 .. bank4).</summary>
+            public List<SlotItem> Safe, Forge, Void;
+            /// <summary>The Banner Case's and the Potion Box's slots, page after page (Items.Containers); Fav a favourited potion.</summary>
+            public List<SlotItem> BannerCase, PotionBox;
+            /// <summary>The Auto-Sell Bag's list, its entries page after page (an item each, no stack).</summary>
+            public List<SlotItem> SellList;
+            public List<string> DropBlacklist;
             public bool GeoItems;
+            /// <summary>The save's Dream Essence is the item already (Items.EssenceWallet); false in a file from before, whose essence becomes the item once.</summary>
+            public bool EssenceItems;
             /// <summary>Version 4: the worn loadout and the four loadouts' stored sets (the worn one's is empty). Fav marks a shared item.</summary>
             public int CurrentLoadout;
             public List<LoadoutSave> Loadouts;
@@ -60,6 +69,14 @@ namespace TerraKnight.Save
             public Dictionary<string, Bestiary.Seen> Seen;
             public Dictionary<string, string> NpcNames;
             public List<string> NpcArrived;
+            /// <summary>Townsfolk the player sent away with a right click in the panel: they stay away.</summary>
+            public List<string> NpcDismissed;
+            /// <summary>Townsfolk the player put down themselves: their internal name and the street x they were put at.</summary>
+            public Dictionary<string, float> NpcHomes;
+            /// <summary>The same spots' heights (so one on a roof stays on the roof).</summary>
+            public Dictionary<string, float> NpcHomeY;
+            /// <summary>The townsfolk with a house (Town.TownNpcsHousing): the scene and its cell of their home tile.</summary>
+            public Dictionary<string, Town.TownNpcs.HouseSave> NpcHouses;
             /// <summary>The Angler: woken at the Blue Lake, today's fish and its day, handed in today, quests done.</summary>
             public bool AnglerSaved;
             public string AnglerQuest;
@@ -79,9 +96,18 @@ namespace TerraKnight.Save
             /// <summary>The Life Crystals lying in the early areas (World.LifeCrystals): the save's seed, then each one's scene, spot and whether it was taken.</summary>
             public int CrystalSeed;
             public List<CrystalSave> Crystals;
+            /// <summary>The areas' chests of a save begun since there were any (World.RegionalChests): its seed, each chest's area, scene, part and whether set down; null for an older save (none).</summary>
+            public int WorldChestSeed;
+            public List<WorldChestSave> WorldChests;
             /// <summary>Scene name -> packed cell edits (index &lt;&lt; 8 | value, see <see cref="World.WorldEdits"/>).</summary>
             public Dictionary<string, Dictionary<int, int>> Walls = new Dictionary<string, Dictionary<int, int>>();
             public Dictionary<string, List<long>> Scenes = new Dictionary<string, List<long>>();
+            /// <summary>Scene name -> the edits' high bytes where they have one (index &lt;&lt; 8 | high byte: the areas' blocks).</summary>
+            public Dictionary<string, List<long>> ScenesHigh;
+            /// <summary>Scene name -> the regional torches' styles on its torch cells (index &lt;&lt; 8 | style, World.RegionalTorches).</summary>
+            public Dictionary<string, List<long>> TorchStyles;
+            /// <summary>The breakables that have given their drop (Items.BreakableDrops): scene, name and place.</summary>
+            public List<string> LootedBreakables;
         }
 
         sealed class PylonSave
@@ -104,6 +130,8 @@ namespace TerraKnight.Save
             public float X, Y;
             /// <summary>Its name (ChestUI's Rename), "" for none.</summary>
             public string Name;
+            /// <summary>Its look: 0 Terraria's chest, 1.. an area's (World.RegionalChests).</summary>
+            public int Style;
             public List<SlotItem> Items = new List<SlotItem>();
         }
 
@@ -111,6 +139,8 @@ namespace TerraKnight.Save
         {
             public string Scene, Kind;
             public float X, Y;
+            /// <summary>Placed facing right (a chair, a bed, a relic).</summary>
+            public bool Right;
         }
 
         sealed class CrystalSave
@@ -118,6 +148,13 @@ namespace TerraKnight.Save
             public string Scene;
             public bool Placed, Taken;
             public float X, Y;
+        }
+
+        sealed class WorldChestSave
+        {
+            public string Area, Scene;
+            public int Part;
+            public bool Placed;
         }
 
         sealed class LoadoutSave
@@ -148,12 +185,14 @@ namespace TerraKnight.Save
         static ItemStack Unpack(SlotItem s)
         {
             if (s == null || !Enum.TryParse(s.Type, out ItemType type)) return default;
+            // The God Tamer's seal is no more: one kept comes back as the colosseum's summon (Items.ColosseumTicket).
+            if (type == ItemType.BossSigilGodTamer) type = Items.ColosseumTicket.Type;
             var stack = ItemStack.Of(type, s.Count);
             stack.Favorite = s.Fav;
             // A prefix the item can't have (or one past the list) is dropped.
             if (s.Prefix > 0 && Items.Prefixes.Valid(Items.ItemDb.Get(type), s.Prefix)) stack.Prefix = (byte)s.Prefix;
             // A weapon's forge level; a treasure bag's first-kill mark in the same byte.
-            if (s.Forge > 0 && (Items.Forging.CanForge(Items.ItemDb.Get(type)) || Items.TreasureBags.Is(type))) stack.Forge = (byte)Mathf.Min(s.Forge, 255);
+            if (s.Forge > 0 && (Items.Forging.Forgeable(Items.ItemDb.Get(type)) || Items.TreasureBags.Is(type))) stack.Forge = (byte)Mathf.Min(s.Forge, 255);
             return stack;
         }
 
@@ -234,7 +273,21 @@ namespace TerraKnight.Save
             foreach (var s in inv.Bank) file.Bank.Add(Pack(s));
             file.HkBag = new List<SlotItem>();
             foreach (var s in inv.HkBag) file.HkBag.Add(Pack(s));
+            file.Safe = new List<SlotItem>();
+            foreach (var s in inv.Safe) file.Safe.Add(Pack(s));
+            file.Forge = new List<SlotItem>();
+            foreach (var s in inv.Forge) file.Forge.Add(Pack(s));
+            file.Void = new List<SlotItem>();
+            foreach (var s in inv.Void) file.Void.Add(Pack(s));
+            file.BannerCase = new List<SlotItem>();
+            foreach (var page in inv.BannerCase) foreach (var s in page) file.BannerCase.Add(Pack(s));
+            file.PotionBox = new List<SlotItem>();
+            foreach (var page in inv.PotionBox) foreach (var s in page) file.PotionBox.Add(Pack(s));
+            file.SellList = new List<SlotItem>();
+            foreach (var page in inv.SellList) foreach (var s in page) file.SellList.Add(Pack(s));
+            file.DropBlacklist = LootBlacklist.Save(inv);
             file.GeoItems = GeoWallet.Migrated;
+            file.EssenceItems = EssenceWallet.Migrated;
             file.CurrentLoadout = inv.CurrentLoadout;
             file.Loadouts = new List<LoadoutSave>();
             foreach (var l in inv.Loadouts)
@@ -258,6 +311,10 @@ namespace TerraKnight.Save
             file.Seen = new Dictionary<string, Bestiary.Seen>(Bestiary.Stats);
             file.NpcNames = new Dictionary<string, string>(Town.TownNpcs.Names);
             file.NpcArrived = new List<string>(Town.TownNpcs.Arrived);
+            file.NpcDismissed = new List<string>(Town.TownNpcs.Dismissed);
+            file.NpcHomes = new Dictionary<string, float>(Town.TownNpcs.Homes);
+            file.NpcHomeY = new Dictionary<string, float>(Town.TownNpcs.HomeY);
+            file.NpcHouses = Town.TownNpcs.SaveHouses();
             file.AnglerSaved = Town.Angler.Saved;
             file.AnglerQuest = Town.Angler.Quest == ItemType.None ? null : Town.Angler.Quest.ToString();
             file.AnglerDay = Town.Angler.QuestDay;
@@ -274,13 +331,19 @@ namespace TerraKnight.Save
             file.Boosts = new List<string>();
             foreach (var b in mod.Stats.Boosts) file.Boosts.Add(b.ToString());
             file.Stations = new List<StationSave>();
-            foreach (var s in Net.WorldSync.SaveStations()) file.Stations.Add(new StationSave { Scene = s.Scene, Kind = s.Kind.ToString(), X = s.Local.x, Y = s.Local.y });
+            foreach (var s in Net.WorldSync.SaveStations()) file.Stations.Add(new StationSave { Scene = s.Scene, Kind = s.Kind.ToString(), X = s.Local.x, Y = s.Local.y, Right = s.Right });
             file.Chests = new List<ChestSave>();
             foreach (var c in Net.WorldSync.SaveChests())
             {
-                var cs = new ChestSave { Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Name = c.Name };
+                var cs = new ChestSave { Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Name = c.Name, Style = c.Style };
                 foreach (var it in c.Items) cs.Items.Add(Pack(it));
                 file.Chests.Add(cs);
+            }
+            file.WorldChestSeed = World.RegionalChests.Seed;
+            if (World.RegionalChests.Planned)
+            {
+                file.WorldChests = new List<WorldChestSave>();
+                foreach (var c in World.RegionalChests.Save()) file.WorldChests.Add(new WorldChestSave { Area = c.Area, Scene = c.Scene, Part = c.Part, Placed = c.Placed });
             }
             file.CrystalSeed = Net.WorldSync.SaveSeed;
             file.Crystals = new List<CrystalSave>();
@@ -291,9 +354,29 @@ namespace TerraKnight.Save
             foreach (var kv in Net.WorldSync.SaveEdits())
             {
                 var cells = new List<long>(kv.Value.Count);
-                foreach (var cell in kv.Value) cells.Add(((long)cell.Key << 8) | cell.Value);
+                List<long> high = null;
+                foreach (var cell in kv.Value)
+                {
+                    cells.Add(((long)cell.Key << 8) | (cell.Value & 0xFFu));
+                    if (cell.Value >> 8 == 0) continue;
+                    if (high == null) high = new List<long>();
+                    high.Add(((long)cell.Key << 8) | (uint)(cell.Value >> 8));
+                }
                 file.Scenes[kv.Key] = cells;
+                if (high != null) (file.ScenesHigh ??= new Dictionary<string, List<long>>())[kv.Key] = high;
             }
+            {
+                // The styles of the torches the saved edits hold.
+                var torchEdits = new Dictionary<string, Dictionary<int, ushort>>();
+                foreach (var kv in Net.WorldSync.SaveEdits()) torchEdits[kv.Key] = kv.Value;
+                file.TorchStyles = World.RegionalTorches.Pack(Net.WorldSync.SaveTorchStyles(), (scene, index) =>
+                {
+                    if (!torchEdits.TryGetValue(scene, out var edits) || !edits.TryGetValue(index, out ushort value)) return false;
+                    World.WorldEdits.Unpack(value, out var kind, out _);
+                    return kind == World.CellKind.Torch;
+                });
+            }
+            file.LootedBreakables = BreakableDrops.Save();
             try
             {
                 string path = PathFor(slot);
@@ -351,6 +434,8 @@ namespace TerraKnight.Save
         {
             World.WorldEdits.Clear();
             World.WorldWalls.Clear();
+            World.RegionalTorches.Clear();
+            BreakableDrops.Load(null);
             mod.ResetPlayer();
             stateOf = slot;
             string path = PathFor(slot);
@@ -362,6 +447,7 @@ namespace TerraKnight.Save
             {
                 // No mod save of this slot yet: its geo becomes the item now.
                 GeoWallet.Reset(false);
+                EssenceWallet.Reset(false);
                 if (any) Plugin.Log.LogError($"[存档] 存档 {slot} 的 mod 存档全都读不了，按新档开始（原文件留在 .broken-* 里）");
                 mod.ApplyCreative(false);
                 World.GameDifficulty.Current = World.DifficultyLevel.Master;
@@ -384,7 +470,15 @@ namespace TerraKnight.Save
                 Load(file.Misc, inv.Misc);
                 Load(file.Bank, inv.Bank);
                 if (file.HkBag != null) Load(file.HkBag, inv.HkBag);
+                Load(file.Safe, inv.Safe);
+                Load(file.Forge, inv.Forge);
+                Load(file.Void, inv.Void);
+                LoadPages(file.BannerCase, inv.BannerCase);
+                LoadPages(file.PotionBox, inv.PotionBox);
+                LoadPages(file.SellList, inv.SellList);
+                LootBlacklist.Load(inv, file.DropBlacklist);
                 GeoWallet.Reset(file.GeoItems);
+                EssenceWallet.Reset(file.EssenceItems);
                 if (file.Version >= 4 && file.Loadouts != null)
                 {
                     bool bags = false;
@@ -440,6 +534,10 @@ namespace TerraKnight.Save
                 foreach (var r in Bestiary.Order) if (!Bestiary.SeenOrder.Contains(r)) Bestiary.SeenOrder.Add(r);
                 if (file.NpcNames != null) foreach (var kv in file.NpcNames) Town.TownNpcs.Names[kv.Key] = kv.Value;
                 if (file.NpcArrived != null) Town.TownNpcs.Arrived.UnionWith(file.NpcArrived);
+                if (file.NpcDismissed != null) Town.TownNpcs.Dismissed.UnionWith(file.NpcDismissed);
+                if (file.NpcHomes != null) foreach (var kv in file.NpcHomes) Town.TownNpcs.Homes[kv.Key] = kv.Value;
+                if (file.NpcHomeY != null) foreach (var kv in file.NpcHomeY) Town.TownNpcs.HomeY[kv.Key] = kv.Value;
+                Town.TownNpcs.LoadHouses(file.NpcHouses);
                 Town.Angler.Saved = file.AnglerSaved;
                 Town.Angler.Quest = file.AnglerQuest != null && System.Enum.TryParse(file.AnglerQuest, out ItemType aq) ? aq : ItemType.None;
                 Town.Angler.QuestDay = file.AnglerDay;
@@ -456,6 +554,7 @@ namespace TerraKnight.Save
                 mod.Stats.FullHeal();
                 mod.GrantedAbilities.Clear();
                 if (file.Granted != null) mod.GrantedAbilities.UnionWith(file.Granted);
+                Net.BossLifeRewards.InitializeClaims(mod);
                 if (file.Pylons != null)
                     foreach (var p in file.Pylons)
                         World.Pylons.Unlocked.Add(new World.Pylons.Pylon { Scene = p.Scene, Bench = p.Bench, Local = new Vector2(p.X, p.Y), SceneSize = new Vector2(p.W, p.H), Style = p.Style });
@@ -465,7 +564,7 @@ namespace TerraKnight.Save
                 {
                     var stations = new List<World.Stations.Saved>();
                     foreach (var s in file.Stations)
-                        if (Enum.TryParse(s.Kind, out World.StationKind kind)) stations.Add(new World.Stations.Saved { Scene = s.Scene, Kind = kind, Local = new Vector2(s.X, s.Y) });
+                        if (Enum.TryParse(s.Kind, out World.StationKind kind)) stations.Add(new World.Stations.Saved { Scene = s.Scene, Kind = kind, Local = new Vector2(s.X, s.Y), Right = s.Right });
                     World.Stations.Load(stations);
                 }
                 {
@@ -482,9 +581,19 @@ namespace TerraKnight.Save
                     {
                         var items = new ItemStack[World.Chests.Capacity];
                         if (c.Items != null) Load(c.Items, items);
-                        chests.Add(new World.Chests.Saved { Scene = c.Scene, Local = new Vector2(c.X, c.Y), Items = items, Name = c.Name });
+                        chests.Add(new World.Chests.Saved { Scene = c.Scene, Local = new Vector2(c.X, c.Y), Items = items, Name = c.Name, Style = c.Style });
                     }
                     World.Chests.Load(chests);
+                }
+                {
+                    // The areas' chests: a save from before them has none.
+                    List<World.RegionalChests.Saved> plan = null;
+                    if (file.WorldChests != null)
+                    {
+                        plan = new List<World.RegionalChests.Saved>();
+                        foreach (var c in file.WorldChests) plan.Add(new World.RegionalChests.Saved { Area = c.Area, Scene = c.Scene, Part = c.Part, Placed = c.Placed });
+                    }
+                    World.RegionalChests.Load(file.WorldChestSeed, plan);
                 }
                 if (file.Walls != null)
                     foreach (var scene in file.Walls)
@@ -492,8 +601,20 @@ namespace TerraKnight.Save
                 foreach (var scene in file.Scenes)
                 {
                     var edits = World.WorldEdits.For(scene.Key);
-                    foreach (long packed in scene.Value) edits[(int)(packed >> 8)] = (byte)(packed & 0xFF);
+                    foreach (long packed in scene.Value) edits[(int)(packed >> 8)] = (ushort)(packed & 0xFF);
                 }
+                if (file.ScenesHigh != null)
+                    foreach (var scene in file.ScenesHigh)
+                    {
+                        var edits = World.WorldEdits.For(scene.Key);
+                        foreach (long packed in scene.Value)
+                        {
+                            int index = (int)(packed >> 8);
+                            if (edits.TryGetValue(index, out ushort low)) edits[index] = (ushort)((low & 0xFF) | (int)(packed & 0xFF) << 8);
+                        }
+                    }
+                World.RegionalTorches.Load(file.TorchStyles);
+                BreakableDrops.Load(file.LootedBreakables);
                 Plugin.Log.LogInfo($"已读取 mod 存档：{path}（{file.Scenes.Count} 个场景有改动），调用：{Caller()}");
                 mod.ApplyCreativeWorld();
             }
@@ -528,6 +649,14 @@ namespace TerraKnight.Save
         {
             if (from == null) return;
             for (int i = 0; i < from.Count && i < to.Length; i++) to[i] = Unpack(from[i]);
+        }
+
+        /// <summary>A container's pages from its slots saved one after another.</summary>
+        static void LoadPages(List<SlotItem> from, ItemStack[][] to)
+        {
+            if (from == null) return;
+            int per = Inventory.ContainerPageSlots;
+            for (int i = 0; i < from.Count && i / per < to.Length; i++) to[i / per][i % per] = Unpack(from[i]);
         }
     }
 }

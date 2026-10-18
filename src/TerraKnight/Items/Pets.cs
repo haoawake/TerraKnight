@@ -12,11 +12,16 @@ namespace TerraKnight.Items
 
     /// <summary>
     /// A pet's projectile: its sheet (frames, hitbox, scale, Main.DrawProj's offsets), how it moves, its frames walking
-    /// (idle, the loop, up, down) and flying (a frame or a loop), and a light pet's light.
+    /// (idle, the loop, up, down) and flying (a frame or a loop), and a light pet's light. A Terraria pet moves and picks
+    /// its frames by its own AI (Minions.PetAi: its id's aiStyle, with Terraria's numbers); the walking and flying fields
+    /// here drive Hallownest's own pets.
     /// </summary>
     internal sealed class PetProj
     {
         public int Id, Frames = 1, W = 16, H = 16;
+        /// <summary>A picture of the mod's instead of Projectile_&lt;Id&gt; (the Lumafly Lantern's), and the height it is drawn at (px; 0: its own).</summary>
+        public string Texture;
+        public float DrawHeight;
         public float Scale = 1f;
         public PetMove Move;
         public Color Light;
@@ -81,6 +86,15 @@ namespace TerraKnight.Items
     internal static partial class Pets
     {
         public const int PetSlot = 0, LightSlot = 1;
+        /// <summary>The Lumafly Lantern's light pet buff (the mod's own, past Terraria's).</summary>
+        public const int LanternBuff = 9001;
+
+        /// <summary>The Lumafly Lantern is out as a light pet.</summary>
+        public static bool LanternOut => current[LightSlot] == ItemType.HkLumaflyLantern;
+
+        /// <summary>The Grimmchild's summon buff (the mod's own), and whether it is out.</summary>
+        public const int GrimmBuff = 9002;
+        public static bool GrimmOut => current[PetSlot] == ItemType.HkGrimmchild;
         /// <summary>The chance of each pet from a kill (all of them alike).</summary>
         public const float KillChance = 1f / 10000f;
 
@@ -146,8 +160,16 @@ namespace TerraKnight.Items
                 var want = !slot.IsEmpty && Inventory.FitsMisc(slot.Def, k) ? slot.Type : ItemType.None;
                 if (want != worn[k])
                 {
+                    // The Lumafly Lantern and the Grimmchild taken out of their slot: what they called goes with them (their
+                    // effects are the game's, for the one who has them out). A Terraria pet stays, as there.
+                    var was = worn[k];
                     worn[k] = want;
                     hidden[k] = false;
+                    if ((was == ItemType.HkLumaflyLantern || was == ItemType.HkGrimmchild) && current[k] == was)
+                    {
+                        PlayerBuffs.Remove(defs[was].Buff);
+                        current[k] = ItemType.None;
+                    }
                     if (want != ItemType.None && !dead) Call(want);
                 }
                 var cur = current[k];
@@ -181,7 +203,13 @@ namespace TerraKnight.Items
         {
             get
             {
-                if (eggs == null) eggs = new List<ItemType>(defs.Keys);
+                if (eggs == null)
+                {
+                    eggs = new List<ItemType>(defs.Keys);
+                    // The game gives the Lumafly Lantern (Sly sells it); no kill or crate does.
+                    eggs.Remove(ItemType.HkLumaflyLantern);
+                    eggs.Remove(ItemType.HkGrimmchild);
+                }
                 return eggs;
             }
         }

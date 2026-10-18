@@ -27,6 +27,7 @@ namespace TerraKnight.Items
                 if (d.BossSummonKey != null) { BossSummons.Localize(d); done++; continue; }
                 if (Relics.Is(d.Type)) { Relics.Localize(d); done++; continue; }
                 if (TreasureBags.Is(d.Type)) { TreasureBags.Localize(d); done++; continue; }
+                if (Containers.Localize(d)) { done++; continue; }
                 if (d.HkItem) { HkItems.Localize(d); done++; continue; }
                 // A quest fish's "Caught in ...": Hallownest's areas where it is.
                 if (d.QuestFish)

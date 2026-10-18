@@ -1,0 +1,186 @@
+using System.Collections.Generic;
+using BepInEx.Configuration;
+using HarmonyLib;
+using UnityEngine;
+
+namespace TerraKnight.Items
+{
+    /// <summary>
+    /// The nail and the Dream Nail swung at the mouse, any way round (the Terraria settings' switch, off by default). The
+    /// Knight faces the cursor's side and the game's own attack is the one for where the cursor is: up within 45° of
+    /// straight up, down within 45° of straight down while in the air, level otherwise (HeroController.DoAttack's vertical
+    /// input); so the recoil off what is struck, the pogo and the wall's thunk stay the game's four ways, read from the
+    /// slash FSM's direction (NailSlash.OnTriggerEnter2D: 0, 90, 180, 270). The slash itself, its picture and its hitbox,
+    /// is turned about the Knight from that way to the cursor's exact angle; the Dream Nail's slash alike (it has no recoil).
+    /// </summary>
+    [HarmonyPatch]
+    internal static class NailAim
+    {
+        public static ConfigEntry<bool> Setting;
+        public static bool On => Setting != null && Setting.Value;
+
+        public static void Bind(ConfigFile cfg) =>
+            Setting = cfg.Bind("Gameplay", "NailAimAtMouse", false,
+                "骨钉和梦之钉朝鼠标方向劈砍（360 度）；打中东西时自己的后坐力、下劈弹跳仍按原版的上下左右。\nThe nail and the Dream Nail swing toward the mouse, any angle; the recoil off what they strike and the pogo stay the game's four ways.");
+
+        public static void Set(bool on)
+        {
+            if (Setting != null) Setting.Value = on;
+        }
+
+        static readonly AccessTools.FieldRef<HeroController, float> verticalInput = AccessTools.FieldRefAccess<HeroController, float>("vertical_input");
+        static readonly AccessTools.FieldRef<NailSlash, float> slashAngle = AccessTools.FieldRefAccess<NailSlash, float>("slashAngle");
+
+        /// <summary>The angle (degrees: 0 right, 90 up) the slash starting now is turned to; NaN for none.</summary>
+        static float pending = float.NaN;
+
+        /// <summary>Each turned slash's own place under the Knight, put back before it is turned again.</summary>
+        static readonly Dictionary<Transform, (Vector3 Pos, Quaternion Rot)> home = new Dictionary<Transform, (Vector3, Quaternion)>();
+
+        public static float DevLastAngle = float.NaN, DevLastTurn;
+        public static string DevLastKind = "";
+        /// <summary>Dev: the cursor's world point for a test (null: the real mouse).</summary>
+        public static Vector2? DevAim;
+
+        static bool Aim(HeroController hero, out float angle)
+        {
+            angle = 0f;
+            Vector2 at;
+            if (DevAim.HasValue) at = DevAim.Value;
+            else if (!TerraMod.MouseWorld(out at)) return false;
+            Vector2 from = hero.GetComponent<BoxCollider2D>().bounds.center;
+            var d = at - from;
+            if (d.sqrMagnitude < 0.0001f) return false;
+            angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+            return true;
+        }
+
+        static void Face(HeroController hero, float angle)
+        {
+            bool right = Mathf.Abs(Mathf.DeltaAngle(angle, 0f)) <= 90f;
+            if (right && !hero.cState.facingRight) hero.FaceRight();
+            else if (!right && hero.cState.facingRight) hero.FaceLeft();
+        }
+
+        /// <summary>
+        /// Just before the nail item calls DoAttack: facing the cursor, the vertical input set for the game's way nearest it
+        /// (down only in the air, as DoAttack has it), and the cursor's angle kept for the slash about to start.
+        /// </summary>
+        public static void BeforeAttack(HeroController hero)
+        {
+            pending = float.NaN;
+            if (!On || hero == null || hero.cState.wallSliding || !Aim(hero, out float angle)) return;
+            Face(hero, angle);
+            float fromUp = Mathf.Abs(Mathf.DeltaAngle(angle, 90f)), fromDown = Mathf.Abs(Mathf.DeltaAngle(angle, -90f));
+            verticalInput(hero) = fromUp <= 45f ? 1f : fromDown <= 45f && !hero.cState.onGround ? -1f : 0f;
+            pending = angle;
+            DevLastAngle = angle;
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPriority(Priority.Low)]
+        [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.StartSlash))]
+        static void Turned(NailSlash __instance)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null || !__instance.transform.IsChildOf(hero.transform)) return;
+            var t = __instance.transform;
+            Restore(t);
+            if (float.IsNaN(pending)) return;
+            float baseAngle = slashAngle(__instance);
+            DevLastKind = baseAngle == 90f ? "上劈" : baseAngle == 270f ? "下劈" : "横劈";
+            Turn(t, hero, Mathf.DeltaAngle(baseAngle, pending));
+            pending = float.NaN;
+        }
+
+        static void Restore(Transform t)
+        {
+            if (home.TryGetValue(t, out var h))
+            {
+                t.localPosition = h.Pos;
+                t.localRotation = h.Rot;
+            }
+            else home[t] = (t.localPosition, t.localRotation);
+        }
+
+        /// <summary>The slash turned about the Knight's middle by so many degrees as seen on screen (the Knight is mirrored facing one way).</summary>
+        static void Turn(Transform t, HeroController hero, float degrees)
+        {
+            var parent = t.parent;
+            if (parent == null) return;
+            float mirror = Mathf.Sign(parent.lossyScale.x) * Mathf.Sign(parent.lossyScale.y);
+            var spin = Quaternion.Euler(0f, 0f, degrees * mirror);
+            Vector3 pivot = parent.InverseTransformPoint(hero.GetComponent<BoxCollider2D>().bounds.center);
+            pivot.z = t.localPosition.z;
+            t.localPosition = pivot + spin * (t.localPosition - pivot);
+            t.localRotation = spin * t.localRotation;
+            DevLastTurn = degrees;
+        }
+
+        // ------------------------------------------------------------------ the Dream Nail
+
+        static Transform dreamSlash;
+        static HeroController dreamOf;
+        static string lastDreamState;
+        static float dreamAngle = float.NaN;
+
+        /// <summary>The Knight's Dream Nail slash: his child whose FSM sends the dream impact (SendDreamImpact).</summary>
+        static Transform DreamSlash(HeroController hero)
+        {
+            if (dreamOf == hero && dreamSlash != null) return dreamSlash;
+            dreamOf = hero;
+            dreamSlash = null;
+            foreach (var f in hero.GetComponentsInChildren<PlayMakerFSM>(true))
+            {
+                if (f.gameObject == hero.gameObject) continue;
+                foreach (var s in f.FsmStates)
+                {
+                    foreach (var a in s.Actions)
+                        if (a is SendDreamImpact) { dreamSlash = f.transform; break; }
+                    if (dreamSlash != null) break;
+                }
+                if (dreamSlash != null) break;
+            }
+            if (dreamSlash != null) Plugin.Log.LogInfo($"[骨钉朝向] 梦之钉的挥砍：{dreamSlash.name}");
+            return dreamSlash;
+        }
+
+        public static string DevDreamSlash => dreamSlash != null ? dreamSlash.name : "";
+
+        /// <summary>
+        /// Each frame with the Dream Nail in hand: facing the cursor while it charges, and its slash turned to the cursor's
+        /// angle as it comes (the Dream Nail FSM's "Slash"), put back once it is over.
+        /// </summary>
+        public static void TickDream(HeroController hero, PlayMakerFSM dream)
+        {
+            if (hero == null || dream == null) return;
+            string state = dream.ActiveStateName;
+            if (state == lastDreamState) return;
+            lastDreamState = state;
+            var slash = DreamSlash(hero);
+            if (slash == null) return;
+            if (state == "Slash Antic" || state == "Slash")
+            {
+                if (!On || !Aim(hero, out float angle)) return;
+                if (state == "Slash Antic" || float.IsNaN(dreamAngle))
+                {
+                    Face(hero, angle);
+                    dreamAngle = angle;
+                }
+                if (state == "Slash")
+                {
+                    Restore(slash);
+                    Turn(slash, hero, Mathf.DeltaAngle(hero.cState.facingRight ? 0f : 180f, dreamAngle));
+                    DevLastAngle = dreamAngle;
+                    DevLastKind = "梦之钉";
+                    dreamAngle = float.NaN;
+                }
+            }
+            else
+            {
+                Restore(slash);
+                dreamAngle = float.NaN;
+            }
+        }
+    }
+}

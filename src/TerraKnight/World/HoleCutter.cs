@@ -30,6 +30,47 @@ namespace TerraKnight.World
                 if (sr.GetComponentInParent<TerraOwned>() != null || sr.GetComponentInParent<HealthManager>() != null) continue;
                 if (sr.gameObject.layer == 0 && sr.sortingLayerID == 0 && z >= -8f) art.Add(sr);
                 if (z < 0f) cover.Add(sr);
+                if (z >= -8f && IsDecor(sr)) decor.Add(sr);
+            }
+        }
+
+        // ------------------------------------------------------------------ what grows on the ground
+
+        /// <summary>The scene's plants in front of the gameplay plane: vines, grass, bushes, moss, leaves, ferns, flowers.</summary>
+        readonly List<SpriteRenderer> decor = new List<SpriteRenderer>();
+        static readonly string[] decorNames = { "vine", "grass", "bush", "moss", "leaf", "leaves", "fern", "flower", "plant", "weed" };
+        public int DevDecorHidden;
+
+        static bool IsDecor(SpriteRenderer sr)
+        {
+            string n = sr.gameObject.name.ToLowerInvariant();
+            bool named = false;
+            foreach (var k in decorNames) if (n.Contains(k)) { named = true; break; }
+            if (!named) return false;
+            // A sheet of the scene's art, not one plant (a whole floor's grass strip stays, cut where dug like the rest).
+            var b = sr.bounds;
+            return b.size.x <= 8f && b.size.y <= 8f;
+        }
+
+        /// <summary>
+        /// A cell of the room's own ground dug out: the plants growing on it, hanging from it or in front of it go with it,
+        /// whole, as they would fall off with the ground they grew on; the cut alone left the rest of a hanging vine in the
+        /// air (Greenpath's roof vines). On a load, each dug cell takes them away again.
+        /// </summary>
+        void DropDecor(int x, int y)
+        {
+            if (decor.Count == 0) return;
+            var c = (Vector2)root.position + CellGrid.CellCenter(x, y);
+            const float half = CellGrid.CellSize * 0.5f + 0.05f;
+            for (int i = decor.Count - 1; i >= 0; i--)
+            {
+                var sr = decor[i];
+                if (sr == null) { decor.RemoveAt(i); continue; }
+                var b = sr.bounds;
+                if (b.max.x < c.x - half || b.min.x > c.x + half || b.max.y < c.y - half || b.min.y > c.y + half) continue;
+                sr.enabled = false;
+                decor.RemoveAt(i);
+                DevDecorHidden++;
             }
         }
 
@@ -46,7 +87,9 @@ namespace TerraKnight.World
             }
         }
         public int MaskCount => masks.Count;
-        public bool HasMask(int index) => masks.ContainsKey(index);
+        /// <summary>The cell's art is cut away (dug, or its overhang): Hollow Knight's smooth holes also mask a corner of standing terrain, which doesn't count.</summary>
+        public bool HasMask(int index) => cutCells.Contains(index);
+        readonly HashSet<int> cutCells = new HashSet<int>();
 
         /// <summary>
         /// Whether any of the scene's foreground scenery is drawn over a point of the gameplay plane.
@@ -217,24 +260,48 @@ namespace TerraKnight.World
 
         public IEnumerable<string> ExemptKeys => exempt.Keys;
 
-        public void SetCut(int index, int x, int y, bool cut)
+        public void SetCut(int index, int x, int y, bool cut) => SetShape(index, x, y, cut ? MaskSprite() : null, cut);
+
+        /// <summary>
+        /// The cell's mask: the whole cell, a shape of it (World.HoleShapes: a smooth hole's outline through it), or none;
+        /// whether the cell counts as cut (<see cref="HasMask"/>) apart from what its mask covers.
+        /// </summary>
+        public void SetShape(int index, int x, int y, Sprite shape, bool cut)
         {
-            if (cut == masks.ContainsKey(index)) return;
-            if (cut)
+            if (cut) cutCells.Add(index); else cutCells.Remove(index);
+            if (cut) DropDecor(x, y);
+            if (shape == null)
+            {
+                if (masks.TryGetValue(index, out var old)) { Object.Destroy(old); masks.Remove(index); }
+                return;
+            }
+            if (!masks.TryGetValue(index, out var go))
             {
                 if (masks.Count == 0) ApplyMaskInteraction();
-                var go = new GameObject("Terra Hole");
+                go = new GameObject("Terra Hole");
                 go.transform.SetParent(root, false);
                 var c = CellGrid.CellCenter(x, y);
                 go.transform.localPosition = new Vector3(c.x, c.y, 0f);
-                go.AddComponent<SpriteMask>().sprite = MaskSprite();
+                go.AddComponent<SpriteMask>();
                 masks[index] = go;
             }
-            else
+            var mask = go.GetComponent<SpriteMask>();
+            if (mask.sprite != shape) mask.sprite = shape;
+            mask.alphaCutoff = 0.5f;
+        }
+
+        /// <summary>The highest sorting order of the cuttable art over a point (for what is drawn on its edge), 0 with none.</summary>
+        public int ArtOrderAt(Vector2 world)
+        {
+            int best = int.MinValue;
+            foreach (var sr in art)
             {
-                Object.Destroy(masks[index]);
-                masks.Remove(index);
+                if (sr == null || !sr.enabled || !sr.gameObject.activeInHierarchy) continue;
+                var b = sr.bounds;
+                if (world.x < b.min.x || world.x > b.max.x || world.y < b.min.y || world.y > b.max.y) continue;
+                if (sr.sortingOrder > best) best = sr.sortingOrder;
             }
+            return best == int.MinValue ? 0 : best;
         }
 
         void ApplyMaskInteraction()

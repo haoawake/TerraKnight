@@ -153,6 +153,23 @@ namespace TerraKnight.UI
             if (Toggle(new Rect(lx, y, lw, 44f * ui), TT(AutoPause.On ? "LegacyMenu.69" : "LegacyMenu.70", AutoPause.On ? "自动暂停: 开" : "自动暂停: 关"), ui))
                 AutoPause.Set(!AutoPause.On);
             y += 64f * ui;
+            // The nail and the Dream Nail swung at the mouse (Items.NailAim).
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), Items.NailAim.On ? Lang.T("骨钉朝鼠标劈砍：开") : Lang.T("骨钉朝鼠标劈砍：关"), ui))
+                Items.NailAim.Set(!Items.NailAim.On);
+            CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：骨钉和梦之钉朝鼠标方向挥砍（360 度），自身的后坐力仍按原版上下左右"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+            y += 96f * ui;
+            // Hollow Knight's talk in the chat a line a second, or the game's own box (UI.DialogueBroadcast).
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), DialogueBroadcast.Enabled ? Lang.T("对话播报：开") : Lang.T("对话播报：关"), ui))
+            {
+                if (DialogueBroadcast.Setting != null) DialogueBroadcast.Setting.Value = !DialogueBroadcast.Enabled;
+            }
+            CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：角色对话和碑文每秒一句进左下角聊天框；关：原版对话框"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+            y += 96f * ui;
+            // How dug holes look (World.HoleShapes).
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), World.HoleShapes.Hollow ? Lang.T("挖洞样式：融合") : Lang.T("挖洞样式：泰拉瑞亚"), ui))
+                World.HoleShapes.Set(!World.HoleShapes.Hollow);
+            CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("融合：平滑洞口、墨线描边、洞内阴影，背后是调暗的泰拉瑞亚墙；泰拉瑞亚：方格洞口和原样的墙"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+            y += 96f * ui;
             if (Net.NetSession.Active)
             {
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.13", "多人模式"), section, new Color(0.75f, 0.85f, 1f));
