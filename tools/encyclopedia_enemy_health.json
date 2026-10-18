@@ -1,0 +1,7744 @@
+{
+  "game": "Hollow Knight 1.5.12620",
+  "method": "Game Mono runtime calling EnemyStats.LifeMax/LifeWhole on roster-based Info; actual multipart overrides from component survey",
+  "source_hashes": {
+    "Items/EnemyStats.cs": "3ac1b7009bbbfb63c8b3026845405fd7111d273f0abd2c199c3dcf265120d114",
+    "Items/BossStats.cs": "70b8deb6ff4c95eb4029acc25f1af599a4fed3f0901e846583874d44d1dc5270",
+    "Items/BossBalance.cs": "2c9610d3d247093d205612f41019c9a828dcbc6e3e95a15bff965d200750bca1",
+    "Items/EnemyDrops.cs": "6c2d303b4e878ef098e8f944135ec403b6be09bdc5cf2e83d66008a83a8854fb",
+    "Items/EnemyDropData.cs": "8ee717d54b35b95074c9fc14493c3542293ddc42ff9705fc7638f5288e06342f",
+    "UI/EnemyHover.cs": "69cca2300c1696dff6f4e710c2c8afd4893d35005d8d5ede60f7bee797e136ee",
+    "World/Areas.cs": "41e9499b153777ea2c077ae9fa621288a2cc34137fe6eb6267a8ad020f6001b2",
+    "World/GameDifficulty.cs": "6b5111d2dba89ee074c47296ddb6b8fa12c37cd0c1dec4ec48fd44a7f4d2623e"
+  },
+  "records": {
+    "AbyssCrawler": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 19.6874981,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 39.3749962,
+          "raw_budget": 788.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 59.0624962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1575,
+          "pool_life": 1575,
+          "scale": 78.74999,
+          "raw_budget": 1575.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1575,
+          "pool_life": 1575,
+          "scale": 78.74999,
+          "raw_budget": 1575.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "AbyssTendril": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 5.90624952,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 11.812499,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 17.71875,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 23.6249981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 23.6249981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "AcidFlyer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 23.6249981,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 47.2499962,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2127,
+          "pool_life": 2127,
+          "scale": 70.875,
+          "raw_budget": 2127.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "AcidWalker": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 23.6249981,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 47.2499962,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2127,
+          "pool_life": 2127,
+          "scale": 70.875,
+          "raw_budget": 2127.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "AngryBuzzer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 47.2499962,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 70.875,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 94.49999,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 94.49999,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BabyCentipede": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 19.6874981,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 39.3749962,
+          "raw_budget": 788.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 59.0624962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1575,
+          "pool_life": 1575,
+          "scale": 78.74999,
+          "raw_budget": 1575.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1575,
+          "pool_life": 1575,
+          "scale": 78.74999,
+          "raw_budget": 1575.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BeamMiner": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 497,
+          "pool_life": 497,
+          "scale": 14.175,
+          "raw_budget": 497.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 993,
+          "pool_life": 993,
+          "scale": 28.35,
+          "raw_budget": 993.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1489,
+          "pool_life": 1489,
+          "scale": 42.525,
+          "raw_budget": 1489.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BeeHatchling": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 19.6874981,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 39.3749962,
+          "raw_budget": 788.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 59.0624962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1575,
+          "pool_life": 1575,
+          "scale": 78.74999,
+          "raw_budget": 1575.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1575,
+          "pool_life": 1575,
+          "scale": 78.74999,
+          "raw_budget": 1575.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BeeStinger": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 384,
+          "pool_life": 384,
+          "scale": 5.90624952,
+          "raw_budget": 384.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 768,
+          "pool_life": 768,
+          "scale": 11.812499,
+          "raw_budget": 768.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1152,
+          "pool_life": 1152,
+          "scale": 17.71875,
+          "raw_budget": 1152.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 23.6249981,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 23.6249981,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BigBee": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 5.90624952,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 11.812499,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 17.71875,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 23.6249981,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 23.6249981,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BigBuzzer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1300,
+          "pool_life": 1300,
+          "scale": 23.6249981,
+          "raw_budget": 1300.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2599,
+          "pool_life": 2599,
+          "scale": 47.2499962,
+          "raw_budget": 2599.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3899,
+          "pool_life": 3899,
+          "scale": 70.875,
+          "raw_budget": 3899.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 5198,
+          "pool_life": 5198,
+          "scale": 94.49999,
+          "raw_budget": 5198.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 5198,
+          "pool_life": 5198,
+          "scale": 94.49999,
+          "raw_budget": 5198.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BigCentipede": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 19.6874981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 39.3749962,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 59.0624962,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 78.74999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 78.74999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BigFly": {
+      "stage": 0,
+      "boss_reference": "史莱姆王（八成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1259,
+          "pool_life": 1259,
+          "scale": 13.9822226,
+          "raw_budget": 1258.4,
+          "godhome": 91000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1605,
+          "pool_life": 1605,
+          "scale": 17.832222,
+          "raw_budget": 1604.9,
+          "godhome": 116025
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1763,
+          "pool_life": 1763,
+          "scale": 19.58,
+          "raw_budget": 1762.20007,
+          "godhome": 127400
+        },
+        {
+          "difficulty": "Master",
+          "life": 2247,
+          "pool_life": 2247,
+          "scale": 24.9577789,
+          "raw_budget": 2246.2,
+          "godhome": 162435
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2247,
+          "pool_life": 2247,
+          "scale": 24.9577789,
+          "raw_budget": 2246.2,
+          "godhome": 162435
+        }
+      ]
+    },
+    "BlackKnight": {
+      "stage": 3,
+      "boss_reference": "血肉墙",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 14375,
+          "pool_life": 6534,
+          "scale": 29.7,
+          "raw_budget": 6534.0,
+          "godhome": 85683
+        },
+        {
+          "difficulty": "Hard",
+          "life": 18330,
+          "pool_life": 8332,
+          "scale": 37.87,
+          "raw_budget": 8331.4,
+          "godhome": 109245
+        },
+        {
+          "difficulty": "Expert",
+          "life": 20125,
+          "pool_life": 9148,
+          "scale": 41.58,
+          "raw_budget": 9147.601,
+          "godhome": 119955
+        },
+        {
+          "difficulty": "Master",
+          "life": 25660,
+          "pool_life": 11664,
+          "scale": 53.015,
+          "raw_budget": 11663.3,
+          "godhome": 152942
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 25660,
+          "pool_life": 11664,
+          "scale": 53.015,
+          "raw_budget": 11663.3,
+          "godhome": 152942
+        }
+      ]
+    },
+    "BlobFlyer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 23.6249981,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 47.2499962,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 70.875,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Blobble": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 414,
+          "pool_life": 414,
+          "scale": 5.90624952,
+          "raw_budget": 414.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 827,
+          "pool_life": 827,
+          "scale": 11.812499,
+          "raw_budget": 827.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1241,
+          "pool_life": 1241,
+          "scale": 17.71875,
+          "raw_budget": 1241.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1654,
+          "pool_life": 1654,
+          "scale": 23.6249981,
+          "raw_budget": 1654.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1654,
+          "pool_life": 1654,
+          "scale": 23.6249981,
+          "raw_budget": 1654.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Blocker": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 23.6249981,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 47.2499962,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 4253,
+          "pool_life": 4253,
+          "scale": 70.875,
+          "raw_budget": 4253.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 5670,
+          "pool_life": 5670,
+          "scale": 94.49999,
+          "raw_budget": 5670.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 5670,
+          "pool_life": 5670,
+          "scale": 94.49999,
+          "raw_budget": 5670.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BlowFly": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 5.90624952,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 11.812499,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 17.71875,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Bouncer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 189,
+          "pool_life": 189,
+          "scale": 23.6249981,
+          "raw_budget": 189.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 378,
+          "pool_life": 378,
+          "scale": 47.2499962,
+          "raw_budget": 378.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 70.875,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BurstingBouncer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 47.2499962,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 70.875,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 94.49999,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 94.49999,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "BurstingZombie": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 47.2499962,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 70.875,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 94.49999,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 94.49999,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Buzzer": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 189,
+          "pool_life": 189,
+          "scale": 23.6249981,
+          "raw_budget": 189.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 378,
+          "pool_life": 378,
+          "scale": 47.2499962,
+          "raw_budget": 378.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 70.875,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "CeilingDropper": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 99,
+          "pool_life": 99,
+          "scale": 19.6874981,
+          "raw_budget": 99.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 197,
+          "pool_life": 197,
+          "scale": 39.3749962,
+          "raw_budget": 197.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 59.0624962,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 78.74999,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 78.74999,
+          "raw_budget": 394.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "CentipedeHatcher": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 690,
+          "pool_life": 690,
+          "scale": 19.6874981,
+          "raw_budget": 690.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1379,
+          "pool_life": 1379,
+          "scale": 39.3749962,
+          "raw_budget": 1379.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2068,
+          "pool_life": 2068,
+          "scale": 59.0624962,
+          "raw_budget": 2068.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2757,
+          "pool_life": 2757,
+          "scale": 78.74999,
+          "raw_budget": 2757.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2757,
+          "pool_life": 2757,
+          "scale": 78.74999,
+          "raw_budget": 2757.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Climber": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 189,
+          "pool_life": 189,
+          "scale": 23.6249981,
+          "raw_budget": 189.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 378,
+          "pool_life": 378,
+          "scale": 47.2499962,
+          "raw_budget": 378.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 70.875,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColFlyingSentry": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 414,
+          "pool_life": 414,
+          "scale": 5.90624952,
+          "raw_budget": 414.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 827,
+          "pool_life": 827,
+          "scale": 11.812499,
+          "raw_budget": 827.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1241,
+          "pool_life": 1241,
+          "scale": 17.71875,
+          "raw_budget": 1241.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1654,
+          "pool_life": 1654,
+          "scale": 23.6249981,
+          "raw_budget": 1654.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1654,
+          "pool_life": 1654,
+          "scale": 23.6249981,
+          "raw_budget": 1654.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColHopper": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 266,
+          "pool_life": 266,
+          "scale": 5.90624952,
+          "raw_budget": 266.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 532,
+          "pool_life": 532,
+          "scale": 11.812499,
+          "raw_budget": 532.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 798,
+          "pool_life": 798,
+          "scale": 17.71875,
+          "raw_budget": 798.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 23.6249981,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 23.6249981,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColMiner": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 5.90624952,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 11.812499,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 17.71875,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 23.6249981,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 23.6249981,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColMosquito": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 5.90624952,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 11.812499,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 17.71875,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 23.6249981,
+          "raw_budget": 945.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColRoller": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 384,
+          "pool_life": 384,
+          "scale": 5.90624952,
+          "raw_budget": 384.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 768,
+          "pool_life": 768,
+          "scale": 11.812499,
+          "raw_budget": 768.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1152,
+          "pool_life": 1152,
+          "scale": 17.71875,
+          "raw_budget": 1152.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 23.6249981,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 23.6249981,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColShield": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 384,
+          "pool_life": 384,
+          "scale": 5.90624952,
+          "raw_budget": 384.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 768,
+          "pool_life": 768,
+          "scale": 11.812499,
+          "raw_budget": 768.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1152,
+          "pool_life": 1152,
+          "scale": 17.71875,
+          "raw_budget": 1152.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 23.6249981,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 23.6249981,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ColWorm": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 538,
+          "pool_life": 538,
+          "scale": 5.90624952,
+          "raw_budget": 538.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1075,
+          "pool_life": 1075,
+          "scale": 11.812499,
+          "raw_budget": 1075.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1613,
+          "pool_life": 1613,
+          "scale": 17.71875,
+          "raw_budget": 1613.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2150,
+          "pool_life": 2150,
+          "scale": 23.6249981,
+          "raw_budget": 2150.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2150,
+          "pool_life": 2150,
+          "scale": 23.6249981,
+          "raw_budget": 2150.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Crawler": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 189,
+          "pool_life": 189,
+          "scale": 23.6249981,
+          "raw_budget": 189.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 378,
+          "pool_life": 378,
+          "scale": 47.2499962,
+          "raw_budget": 378.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 70.875,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 94.49999,
+          "raw_budget": 756.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "CrystalCrawler": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 497,
+          "pool_life": 497,
+          "scale": 14.175,
+          "raw_budget": 497.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 993,
+          "pool_life": 993,
+          "scale": 28.35,
+          "raw_budget": 993.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1489,
+          "pool_life": 1489,
+          "scale": 42.525,
+          "raw_budget": 1489.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "CrystalFlyer": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 14.175,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 28.35,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 42.525,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 56.7,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 56.7,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "DungDefender": {
+      "stage": 2,
+      "boss_reference": "世界吞噬怪（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 4146,
+          "pool_life": 4146,
+          "scale": 5.922714,
+          "raw_budget": 4145.9,
+          "godhome": 136501
+        },
+        {
+          "difficulty": "Hard",
+          "life": 5286,
+          "pool_life": 5286,
+          "scale": 7.55071449,
+          "raw_budget": 5285.5,
+          "godhome": 174041
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5804,
+          "pool_life": 5804,
+          "scale": 8.290857,
+          "raw_budget": 5803.6,
+          "godhome": 191100
+        },
+        {
+          "difficulty": "Master",
+          "life": 7401,
+          "pool_life": 7401,
+          "scale": 10.5725718,
+          "raw_budget": 7400.80029,
+          "godhome": 243664
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 7401,
+          "pool_life": 7401,
+          "scale": 10.5725718,
+          "raw_budget": 7400.80029,
+          "godhome": 243664
+        }
+      ]
+    },
+    "EggSac": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 23.6249981,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 47.2499962,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 70.875,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ElectricMage": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 5.90624952,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 11.812499,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 17.71875,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 23.6249981,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 23.6249981,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FalseKnight": {
+      "stage": 0,
+      "boss_reference": "史莱姆王",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 3264,
+          "pool_life": 1645,
+          "scale": 25.3,
+          "raw_budget": 1644.5,
+          "godhome": 72223
+        },
+        {
+          "difficulty": "Hard",
+          "life": 4161,
+          "pool_life": 2097,
+          "scale": 32.2530746,
+          "raw_budget": 2096.45,
+          "godhome": 92083
+        },
+        {
+          "difficulty": "Expert",
+          "life": 4570,
+          "pool_life": 2303,
+          "scale": 35.42,
+          "raw_budget": 2302.3,
+          "godhome": 101112
+        },
+        {
+          "difficulty": "Master",
+          "life": 5827,
+          "pool_life": 2936,
+          "scale": 45.16846,
+          "raw_budget": 2935.95,
+          "godhome": 128917
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 5827,
+          "pool_life": 2936,
+          "scale": 45.16846,
+          "raw_budget": 2935.95,
+          "godhome": 128917
+        }
+      ]
+    },
+    "FalseKnight@5": {
+      "stage": 2,
+      "boss_reference": "骷髅王",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 100000,
+          "pool_life": 50388,
+          "scale": 775.1884,
+          "raw_budget": 50387.25,
+          "godhome": 72223
+        },
+        {
+          "difficulty": "Hard",
+          "life": 154821,
+          "pool_life": 78011,
+          "scale": 1200.15771,
+          "raw_budget": 78010.25,
+          "godhome": 111816
+        },
+        {
+          "difficulty": "Expert",
+          "life": 212858,
+          "pool_life": 107254,
+          "scale": 1650.0553,
+          "raw_budget": 107253.6,
+          "godhome": 153730
+        },
+        {
+          "difficulty": "Master",
+          "life": 271394,
+          "pool_life": 136749,
+          "scale": 2103.82764,
+          "raw_budget": 136748.8,
+          "godhome": 196006
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 271394,
+          "pool_life": 136749,
+          "scale": 2103.82764,
+          "raw_budget": 136748.8,
+          "godhome": 196006
+        }
+      ]
+    },
+    "FatFluke": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2127,
+          "pool_life": 2127,
+          "scale": 14.175,
+          "raw_budget": 2127.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 4253,
+          "pool_life": 4253,
+          "scale": 28.35,
+          "raw_budget": 4253.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 6379,
+          "pool_life": 6379,
+          "scale": 42.525,
+          "raw_budget": 6379.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 8505,
+          "pool_life": 8505,
+          "scale": 56.7,
+          "raw_budget": 8505.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 8505,
+          "pool_life": 8505,
+          "scale": 56.7,
+          "raw_budget": 8505.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FinalBoss": {
+      "stage": 5,
+      "boss_reference": "月亮领主",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 220000,
+          "pool_life": 220000,
+          "scale": 73.3333359,
+          "raw_budget": 220000.0,
+          "godhome": 286000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 288749,
+          "pool_life": 288749,
+          "scale": 96.2496643,
+          "raw_budget": 288749.0,
+          "godhome": 375374
+        },
+        {
+          "difficulty": "Expert",
+          "life": 330000,
+          "pool_life": 330000,
+          "scale": 110.0,
+          "raw_budget": 330000.0,
+          "godhome": 429000
+        },
+        {
+          "difficulty": "Master",
+          "life": 420751,
+          "pool_life": 420751,
+          "scale": 140.250336,
+          "raw_budget": 420751.0,
+          "godhome": 546976
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 420751,
+          "pool_life": 420751,
+          "scale": 140.250336,
+          "raw_budget": 420751.0,
+          "godhome": 546976
+        }
+      ]
+    },
+    "FlameBearerLarge": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 19.6874981,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3938,
+          "pool_life": 3938,
+          "scale": 39.3749962,
+          "raw_budget": 3938.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5907,
+          "pool_life": 5907,
+          "scale": 59.0624962,
+          "raw_budget": 5907.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 7875,
+          "pool_life": 7875,
+          "scale": 78.74999,
+          "raw_budget": 7875.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 7875,
+          "pool_life": 7875,
+          "scale": 78.74999,
+          "raw_budget": 7875.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FlameBearerMed": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 23.6249981,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 47.2499962,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5670,
+          "pool_life": 5670,
+          "scale": 70.875,
+          "raw_budget": 5670.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 7560,
+          "pool_life": 7560,
+          "scale": 94.49999,
+          "raw_budget": 7560.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 7560,
+          "pool_life": 7560,
+          "scale": 94.49999,
+          "raw_budget": 7560.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FlameBearerSmall": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 23.6249981,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 47.2499962,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 70.875,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 94.49999,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 94.49999,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FlipHopper": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 426,
+          "pool_life": 426,
+          "scale": 14.175,
+          "raw_budget": 426.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 28.35,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1276,
+          "pool_life": 1276,
+          "scale": 42.525,
+          "raw_budget": 1276.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1701,
+          "pool_life": 1701,
+          "scale": 56.7,
+          "raw_budget": 1701.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1701,
+          "pool_life": 1701,
+          "scale": 56.7,
+          "raw_budget": 1701.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FlukeMother": {
+      "stage": 2,
+      "boss_reference": "克苏鲁之脑（八成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1950,
+          "pool_life": 1951,
+          "scale": 5.571429,
+          "raw_budget": 1950.0,
+          "godhome": 110500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2705,
+          "pool_life": 2705,
+          "scale": 7.72857141,
+          "raw_budget": 2705.0,
+          "godhome": 153298
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3315,
+          "pool_life": 3315,
+          "scale": 9.471429,
+          "raw_budget": 3315.0,
+          "godhome": 187850
+        },
+        {
+          "difficulty": "Master",
+          "life": 4226,
+          "pool_life": 4226,
+          "scale": 12.0742855,
+          "raw_budget": 4226.0,
+          "godhome": 239488
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4226,
+          "pool_life": 4226,
+          "scale": 12.0742855,
+          "raw_budget": 4226.0,
+          "godhome": 239488
+        }
+      ]
+    },
+    "Flukefly": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 185,
+          "pool_life": 185,
+          "scale": 14.175,
+          "raw_budget": 185.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 369,
+          "pool_life": 369,
+          "scale": 28.35,
+          "raw_budget": 369.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 553,
+          "pool_life": 553,
+          "scale": 42.525,
+          "raw_budget": 553.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 738,
+          "pool_life": 738,
+          "scale": 56.7,
+          "raw_budget": 738.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 738,
+          "pool_life": 738,
+          "scale": 56.7,
+          "raw_budget": 738.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Flukeman": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 14.175,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 28.35,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 42.525,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 56.7,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 56.7,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FlyingSentryJavelin": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 493,
+          "pool_life": 493,
+          "scale": 19.6874981,
+          "raw_budget": 493.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 985,
+          "pool_life": 985,
+          "scale": 39.3749962,
+          "raw_budget": 985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1477,
+          "pool_life": 1477,
+          "scale": 59.0624962,
+          "raw_budget": 1477.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FlyingSentrySword": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 493,
+          "pool_life": 493,
+          "scale": 19.6874981,
+          "raw_budget": 493.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 985,
+          "pool_life": 985,
+          "scale": 39.3749962,
+          "raw_budget": 985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1477,
+          "pool_life": 1477,
+          "scale": 59.0624962,
+          "raw_budget": 1477.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FungCrawler": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 284,
+          "pool_life": 284,
+          "scale": 23.6249981,
+          "raw_budget": 284.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 47.2499962,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 70.875,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 94.49999,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 94.49999,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FungifiedZombie": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FungoonBaby": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 23.6249981,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 47.2499962,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 70.875,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "FungusFlyer": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "GardenZombie": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 867,
+          "pool_life": 867,
+          "scale": 19.6874981,
+          "raw_budget": 867.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1733,
+          "pool_life": 1733,
+          "scale": 39.3749962,
+          "raw_budget": 1733.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2599,
+          "pool_life": 2599,
+          "scale": 59.0624962,
+          "raw_budget": 2599.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3465,
+          "pool_life": 3465,
+          "scale": 78.74999,
+          "raw_budget": 3465.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3465,
+          "pool_life": 3465,
+          "scale": 78.74999,
+          "raw_budget": 3465.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "GhostAladar": {
+      "stage": 1,
+      "boss_reference": "克苏鲁之眼（六成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1077,
+          "pool_life": 1077,
+          "scale": 5.38475037,
+          "raw_budget": 1076.95007,
+          "godhome": 97501
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1333,
+          "pool_life": 1333,
+          "scale": 6.664,
+          "raw_budget": 1332.8,
+          "godhome": 120657
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1400,
+          "pool_life": 1400,
+          "scale": 6.99975,
+          "raw_budget": 1399.95007,
+          "godhome": 126751
+        },
+        {
+          "difficulty": "Master",
+          "life": 1785,
+          "pool_life": 1785,
+          "scale": 8.925,
+          "raw_budget": 1785.0,
+          "godhome": 161630
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1785,
+          "pool_life": 1785,
+          "scale": 8.925,
+          "raw_budget": 1785.0,
+          "godhome": 161630
+        }
+      ]
+    },
+    "GhostGalien": {
+      "stage": 3,
+      "boss_reference": "血肉墙（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2970,
+          "pool_life": 2970,
+          "scale": 14.85,
+          "raw_budget": 2970.0,
+          "godhome": 117000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3787,
+          "pool_life": 3787,
+          "scale": 18.935,
+          "raw_budget": 3787.0,
+          "godhome": 149175
+        },
+        {
+          "difficulty": "Expert",
+          "life": 4158,
+          "pool_life": 4158,
+          "scale": 20.79,
+          "raw_budget": 4158.0,
+          "godhome": 163800
+        },
+        {
+          "difficulty": "Master",
+          "life": 5301,
+          "pool_life": 5301,
+          "scale": 26.505,
+          "raw_budget": 5301.0,
+          "godhome": 208845
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 5301,
+          "pool_life": 5301,
+          "scale": 26.505,
+          "raw_budget": 5301.0,
+          "godhome": 208845
+        }
+      ]
+    },
+    "GhostHu": {
+      "stage": 2,
+      "boss_reference": "克苏鲁之脑（六成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1462,
+          "pool_life": 1462,
+          "scale": 7.31,
+          "raw_budget": 1462.0,
+          "godhome": 104000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2029,
+          "pool_life": 2030,
+          "scale": 10.145,
+          "raw_budget": 2029.0,
+          "godhome": 144267
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2486,
+          "pool_life": 2486,
+          "scale": 12.43,
+          "raw_budget": 2486.0,
+          "godhome": 176800
+        },
+        {
+          "difficulty": "Master",
+          "life": 3170,
+          "pool_life": 3170,
+          "scale": 15.85,
+          "raw_budget": 3170.0,
+          "godhome": 225387
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3170,
+          "pool_life": 3170,
+          "scale": 15.85,
+          "raw_budget": 3170.0,
+          "godhome": 225387
+        }
+      ]
+    },
+    "GhostMarkoth": {
+      "stage": 4,
+      "boss_reference": "双子魔眼",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 75000,
+          "pool_life": 75000,
+          "scale": 374.9985,
+          "raw_budget": 74999.6953,
+          "godhome": 97500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 98439,
+          "pool_life": 98439,
+          "scale": 492.192,
+          "raw_budget": 98438.4,
+          "godhome": 127971
+        },
+        {
+          "difficulty": "Expert",
+          "life": 112500,
+          "pool_life": 112500,
+          "scale": 562.5,
+          "raw_budget": 112500.0,
+          "godhome": 146250
+        },
+        {
+          "difficulty": "Master",
+          "life": 143439,
+          "pool_life": 143439,
+          "scale": 717.191956,
+          "raw_budget": 143438.391,
+          "godhome": 186471
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 143439,
+          "pool_life": 143439,
+          "scale": 717.191956,
+          "raw_budget": 143438.391,
+          "godhome": 186471
+        }
+      ]
+    },
+    "GhostMarmu": {
+      "stage": 2,
+      "boss_reference": "克苏鲁之脑（六成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1170,
+          "pool_life": 1170,
+          "scale": 5.848,
+          "raw_budget": 1169.6,
+          "godhome": 110500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1624,
+          "pool_life": 1624,
+          "scale": 8.116,
+          "raw_budget": 1623.20007,
+          "godhome": 153284
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1989,
+          "pool_life": 1989,
+          "scale": 9.944,
+          "raw_budget": 1988.8,
+          "godhome": 187850
+        },
+        {
+          "difficulty": "Master",
+          "life": 2536,
+          "pool_life": 2536,
+          "scale": 12.68,
+          "raw_budget": 2536.0,
+          "godhome": 239474
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2536,
+          "pool_life": 2536,
+          "scale": 12.68,
+          "raw_budget": 2536.0,
+          "godhome": 239474
+        }
+      ]
+    },
+    "GhostNoEyes": {
+      "stage": 1,
+      "boss_reference": "克苏鲁之眼（六成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1077,
+          "pool_life": 1077,
+          "scale": 5.38475037,
+          "raw_budget": 1076.95007,
+          "godhome": 110500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1333,
+          "pool_life": 1333,
+          "scale": 6.664,
+          "raw_budget": 1332.8,
+          "godhome": 136744
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1400,
+          "pool_life": 1400,
+          "scale": 6.99975,
+          "raw_budget": 1399.95007,
+          "godhome": 143650
+        },
+        {
+          "difficulty": "Master",
+          "life": 1785,
+          "pool_life": 1785,
+          "scale": 8.925,
+          "raw_budget": 1785.0,
+          "godhome": 183181
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1785,
+          "pool_life": 1785,
+          "scale": 8.925,
+          "raw_budget": 1785.0,
+          "godhome": 183181
+        }
+      ]
+    },
+    "GhostXero": {
+      "stage": 3,
+      "boss_reference": "血肉墙（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2673,
+          "pool_life": 2673,
+          "scale": 13.365,
+          "raw_budget": 2673.0,
+          "godhome": 110501
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3409,
+          "pool_life": 3409,
+          "scale": 17.0415,
+          "raw_budget": 3408.2998,
+          "godhome": 140888
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3743,
+          "pool_life": 3743,
+          "scale": 18.711,
+          "raw_budget": 3742.2,
+          "godhome": 154701
+        },
+        {
+          "difficulty": "Master",
+          "life": 4771,
+          "pool_life": 4771,
+          "scale": 23.8545,
+          "raw_budget": 4770.9,
+          "godhome": 197243
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4771,
+          "pool_life": 4771,
+          "scale": 23.8545,
+          "raw_budget": 4770.9,
+          "godhome": 197243
+        }
+      ]
+    },
+    "GiantHopper": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 768,
+          "pool_life": 768,
+          "scale": 5.90624952,
+          "raw_budget": 768.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1536,
+          "pool_life": 1536,
+          "scale": 11.812499,
+          "raw_budget": 1536.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2304,
+          "pool_life": 2304,
+          "scale": 17.71875,
+          "raw_budget": 2304.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3072,
+          "pool_life": 3072,
+          "scale": 23.6249981,
+          "raw_budget": 3072.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3072,
+          "pool_life": 3072,
+          "scale": 23.6249981,
+          "raw_budget": 3072.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "GorgeousHusk": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 3119,
+          "pool_life": 3119,
+          "scale": 14.175,
+          "raw_budget": 3119.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 6237,
+          "pool_life": 6237,
+          "scale": 28.35,
+          "raw_budget": 6237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 9356,
+          "pool_life": 9356,
+          "scale": 42.525,
+          "raw_budget": 9356.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 12474,
+          "pool_life": 12474,
+          "scale": 56.7,
+          "raw_budget": 12474.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 12474,
+          "pool_life": 12474,
+          "scale": 56.7,
+          "raw_budget": 12474.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "GrassHopper": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 23.6249981,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 47.2499962,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2127,
+          "pool_life": 2127,
+          "scale": 70.875,
+          "raw_budget": 2127.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "GreatShieldZombie": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2410,
+          "pool_life": 2410,
+          "scale": 14.175,
+          "raw_budget": 2410.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 4820,
+          "pool_life": 4820,
+          "scale": 28.35,
+          "raw_budget": 4820.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 7230,
+          "pool_life": 7230,
+          "scale": 42.525,
+          "raw_budget": 7230.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 9639,
+          "pool_life": 9639,
+          "scale": 56.7,
+          "raw_budget": 9639.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 9639,
+          "pool_life": 9639,
+          "scale": 56.7,
+          "raw_budget": 9639.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "GreyPrince": {
+      "stage": 5,
+      "boss_reference": "蛾怪",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 100000,
+          "pool_life": 100000,
+          "scale": 83.33325,
+          "raw_budget": 99999.9,
+          "godhome": 130001
+        },
+        {
+          "difficulty": "Hard",
+          "life": 150001,
+          "pool_life": 150001,
+          "scale": 125.000336,
+          "raw_budget": 150000.4,
+          "godhome": 195001
+        },
+        {
+          "difficulty": "Expert",
+          "life": 200000,
+          "pool_life": 200000,
+          "scale": 166.6665,
+          "raw_budget": 199999.8,
+          "godhome": 260001
+        },
+        {
+          "difficulty": "Master",
+          "life": 300000,
+          "pool_life": 300000,
+          "scale": 249.999756,
+          "raw_budget": 299999.719,
+          "godhome": 390000
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 300000,
+          "pool_life": 300000,
+          "scale": 249.999756,
+          "raw_budget": 299999.719,
+          "godhome": 390000
+        }
+      ]
+    },
+    "Grimm": {
+      "stage": 5,
+      "boss_reference": "南瓜王",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 100000,
+          "pool_life": 100000,
+          "scale": 133.333267,
+          "raw_budget": 99999.95,
+          "godhome": 130000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 123750,
+          "pool_life": 123750,
+          "scale": 164.999741,
+          "raw_budget": 123749.805,
+          "godhome": 160876
+        },
+        {
+          "difficulty": "Expert",
+          "life": 130000,
+          "pool_life": 130000,
+          "scale": 173.333145,
+          "raw_budget": 129999.852,
+          "godhome": 169001
+        },
+        {
+          "difficulty": "Master",
+          "life": 165750,
+          "pool_life": 165750,
+          "scale": 221.0,
+          "raw_budget": 165750.0,
+          "godhome": 215475
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 165750,
+          "pool_life": 165750,
+          "scale": 221.0,
+          "raw_budget": 165750.0,
+          "godhome": 215475
+        }
+      ]
+    },
+    "GrubMimic": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 19.6874981,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 39.3749962,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2658,
+          "pool_life": 2658,
+          "scale": 59.0624962,
+          "raw_budget": 2658.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 78.74999,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 78.74999,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Hatcher": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 23.6249981,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 47.2499962,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 70.875,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Hatchling": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 119,
+          "pool_life": 119,
+          "scale": 23.6249981,
+          "raw_budget": 119.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 47.2499962,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 70.875,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 94.49999,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 94.49999,
+          "raw_budget": 473.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "HealthScuttler": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 23.6249981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 47.2499962,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 70.875,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "HeavyMantis": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1457,
+          "pool_life": 1457,
+          "scale": 19.6874981,
+          "raw_budget": 1457.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2914,
+          "pool_life": 2914,
+          "scale": 39.3749962,
+          "raw_budget": 2914.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 4371,
+          "pool_life": 4371,
+          "scale": 59.0624962,
+          "raw_budget": 4371.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 5828,
+          "pool_life": 5828,
+          "scale": 78.74999,
+          "raw_budget": 5828.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 5828,
+          "pool_life": 5828,
+          "scale": 78.74999,
+          "raw_budget": 5828.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "HiveKnight": {
+      "stage": 4,
+      "boss_reference": "史莱姆皇后（蜂巢阶段4）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 50000,
+          "pool_life": 50000,
+          "scale": 62.5,
+          "raw_budget": 50000.0,
+          "godhome": 65000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 67500,
+          "pool_life": 67500,
+          "scale": 84.375,
+          "raw_budget": 67500.0,
+          "godhome": 87750
+        },
+        {
+          "difficulty": "Expert",
+          "life": 80000,
+          "pool_life": 80000,
+          "scale": 100.0,
+          "raw_budget": 80000.0,
+          "godhome": 104000
+        },
+        {
+          "difficulty": "Master",
+          "life": 102000,
+          "pool_life": 102000,
+          "scale": 127.5,
+          "raw_budget": 102000.0,
+          "godhome": 132600
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 102000,
+          "pool_life": 102000,
+          "scale": 127.5,
+          "raw_budget": 102000.0,
+          "godhome": 132600
+        }
+      ]
+    },
+    "HollowKnight": {
+      "stage": 5,
+      "boss_reference": "石巨人",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 140000,
+          "pool_life": 140000,
+          "scale": 140.0,
+          "raw_budget": 140000.0,
+          "godhome": 182000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 183750,
+          "pool_life": 183750,
+          "scale": 183.75,
+          "raw_budget": 183750.0,
+          "godhome": 238875
+        },
+        {
+          "difficulty": "Expert",
+          "life": 210000,
+          "pool_life": 210000,
+          "scale": 210.0,
+          "raw_budget": 210000.0,
+          "godhome": 273000
+        },
+        {
+          "difficulty": "Master",
+          "life": 267750,
+          "pool_life": 267750,
+          "scale": 267.75,
+          "raw_budget": 267750.0,
+          "godhome": 348075
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 267750,
+          "pool_life": 267750,
+          "scale": 267.75,
+          "raw_budget": 267750.0,
+          "godhome": 348075
+        }
+      ]
+    },
+    "HollowKnightPrime": {
+      "stage": 5,
+      "boss_reference": "月亮领主",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 260001,
+          "pool_life": 260001,
+          "scale": 162.500061,
+          "raw_budget": 260000.1,
+          "godhome": 260001
+        },
+        {
+          "difficulty": "Hard",
+          "life": 341250,
+          "pool_life": 341250,
+          "scale": 213.280869,
+          "raw_budget": 341249.4,
+          "godhome": 341250
+        },
+        {
+          "difficulty": "Expert",
+          "life": 390000,
+          "pool_life": 390000,
+          "scale": 243.7498,
+          "raw_budget": 389999.7,
+          "godhome": 390000
+        },
+        {
+          "difficulty": "Master",
+          "life": 497251,
+          "pool_life": 497251,
+          "scale": 310.7818,
+          "raw_budget": 497250.875,
+          "godhome": 497251
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 497251,
+          "pool_life": 497251,
+          "scale": 310.7818,
+          "raw_budget": 497250.875,
+          "godhome": 497251
+        }
+      ]
+    },
+    "Hopper": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 5.90624952,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 11.812499,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 17.71875,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 23.6249981,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 23.6249981,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Hornet": {
+      "stage": 4,
+      "boss_reference": "毁灭者（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 80000,
+          "pool_life": 80000,
+          "scale": 355.555573,
+          "raw_budget": 80000.0,
+          "godhome": 104000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 105000,
+          "pool_life": 105001,
+          "scale": 466.6667,
+          "raw_budget": 105000.0,
+          "godhome": 136500
+        },
+        {
+          "difficulty": "Expert",
+          "life": 120000,
+          "pool_life": 120000,
+          "scale": 533.3333,
+          "raw_budget": 120000.0,
+          "godhome": 156000
+        },
+        {
+          "difficulty": "Master",
+          "life": 153000,
+          "pool_life": 153000,
+          "scale": 680.0,
+          "raw_budget": 153000.0,
+          "godhome": 198900
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 153000,
+          "pool_life": 153000,
+          "scale": 680.0,
+          "raw_budget": 153000.0,
+          "godhome": 198900
+        }
+      ]
+    },
+    "Hornet@4": {
+      "stage": 4,
+      "boss_reference": "毁灭者（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 80000,
+          "pool_life": 80000,
+          "scale": 355.555573,
+          "raw_budget": 80000.0,
+          "godhome": 104000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 105000,
+          "pool_life": 105001,
+          "scale": 466.6667,
+          "raw_budget": 105000.0,
+          "godhome": 136500
+        },
+        {
+          "difficulty": "Expert",
+          "life": 120000,
+          "pool_life": 120000,
+          "scale": 533.3333,
+          "raw_budget": 120000.0,
+          "godhome": 156000
+        },
+        {
+          "difficulty": "Master",
+          "life": 153000,
+          "pool_life": 153000,
+          "scale": 680.0,
+          "raw_budget": 153000.0,
+          "godhome": 198900
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 153000,
+          "pool_life": 153000,
+          "scale": 680.0,
+          "raw_budget": 153000.0,
+          "godhome": 198900
+        }
+      ]
+    },
+    "InfectedKnight": {
+      "stage": 4,
+      "boss_reference": "世纪之花",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 40000,
+          "pool_life": 40000,
+          "scale": 76.19,
+          "raw_budget": 39999.75,
+          "godhome": 52001
+        },
+        {
+          "difficulty": "Hard",
+          "life": 51000,
+          "pool_life": 51000,
+          "scale": 97.14247,
+          "raw_budget": 50999.8,
+          "godhome": 66300
+        },
+        {
+          "difficulty": "Expert",
+          "life": 56000,
+          "pool_life": 56000,
+          "scale": 106.666,
+          "raw_budget": 55999.65,
+          "godhome": 72801
+        },
+        {
+          "difficulty": "Master",
+          "life": 71401,
+          "pool_life": 71401,
+          "scale": 136.000183,
+          "raw_budget": 71400.1,
+          "godhome": 92820
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 71401,
+          "pool_life": 71401,
+          "scale": 136.000183,
+          "raw_budget": 71400.1,
+          "godhome": 92820
+        }
+      ]
+    },
+    "InfectedKnight@5": {
+      "stage": 4,
+      "boss_reference": "毁灭者（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 110000,
+          "pool_life": 110000,
+          "scale": 209.522949,
+          "raw_budget": 109999.547,
+          "godhome": 143000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 144376,
+          "pool_life": 144376,
+          "scale": 275.00058,
+          "raw_budget": 144375.3,
+          "godhome": 187688
+        },
+        {
+          "difficulty": "Expert",
+          "life": 165000,
+          "pool_life": 165000,
+          "scale": 314.285339,
+          "raw_budget": 164999.8,
+          "godhome": 214500
+        },
+        {
+          "difficulty": "Master",
+          "life": 210375,
+          "pool_life": 210375,
+          "scale": 400.713623,
+          "raw_budget": 210374.641,
+          "godhome": 273488
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 210375,
+          "pool_life": 210375,
+          "scale": 400.713623,
+          "raw_budget": 210374.641,
+          "godhome": 273488
+        }
+      ]
+    },
+    "Inflater": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 14.175,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 28.35,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 42.525,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 56.7,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 56.7,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "JarCollector": {
+      "stage": 3,
+      "boss_reference": "血肉墙（八成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 4040,
+          "pool_life": 4040,
+          "scale": 5.3856,
+          "raw_budget": 4039.2002,
+          "godhome": 143000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 5151,
+          "pool_life": 5151,
+          "scale": 6.866867,
+          "raw_budget": 5150.15,
+          "godhome": 182325
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5656,
+          "pool_life": 5656,
+          "scale": 7.54006672,
+          "raw_budget": 5655.05029,
+          "godhome": 200200
+        },
+        {
+          "difficulty": "Master",
+          "life": 7210,
+          "pool_life": 7210,
+          "scale": 9.612933,
+          "raw_budget": 7209.7,
+          "godhome": 255255
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 7210,
+          "pool_life": 7210,
+          "scale": 9.612933,
+          "raw_budget": 7209.7,
+          "godhome": 255255
+        }
+      ]
+    },
+    "JellyCrawler": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 24,
+          "pool_life": 24,
+          "scale": 23.6249981,
+          "raw_budget": 24.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 48,
+          "pool_life": 48,
+          "scale": 47.2499962,
+          "raw_budget": 48.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 71,
+          "pool_life": 71,
+          "scale": 70.875,
+          "raw_budget": 71.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Jellyfish": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 24,
+          "pool_life": 24,
+          "scale": 23.6249981,
+          "raw_budget": 24.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 48,
+          "pool_life": 48,
+          "scale": 47.2499962,
+          "raw_budget": 48.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 71,
+          "pool_life": 71,
+          "scale": 70.875,
+          "raw_budget": 71.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "LaserBug": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 213,
+          "pool_life": 213,
+          "scale": 14.175,
+          "raw_budget": 213.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 426,
+          "pool_life": 426,
+          "scale": 28.35,
+          "raw_budget": 426.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 638,
+          "pool_life": 638,
+          "scale": 42.525,
+          "raw_budget": 638.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 56.7,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 56.7,
+          "raw_budget": 851.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "LazyFlyer": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 24,
+          "pool_life": 24,
+          "scale": 23.6249981,
+          "raw_budget": 24.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 48,
+          "pool_life": 48,
+          "scale": 47.2499962,
+          "raw_budget": 48.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 71,
+          "pool_life": 71,
+          "scale": 70.875,
+          "raw_budget": 71.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "LesserMawlek": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 19.6874981,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 39.3749962,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 59.0624962,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 78.74999,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 78.74999,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "LobsterLancer": {
+      "stage": 4,
+      "boss_reference": "史莱姆皇后（六成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 85000,
+          "pool_life": 85000,
+          "scale": 188.888885,
+          "raw_budget": 85000.0,
+          "godhome": 110500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 114750,
+          "pool_life": 114750,
+          "scale": 255.0,
+          "raw_budget": 114750.0,
+          "godhome": 149175
+        },
+        {
+          "difficulty": "Expert",
+          "life": 136000,
+          "pool_life": 136000,
+          "scale": 302.222229,
+          "raw_budget": 136000.0,
+          "godhome": 176800
+        },
+        {
+          "difficulty": "Master",
+          "life": 173400,
+          "pool_life": 173400,
+          "scale": 385.333344,
+          "raw_budget": 173400.0,
+          "godhome": 225420
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 173400,
+          "pool_life": 173400,
+          "scale": 385.333344,
+          "raw_budget": 173400.0,
+          "godhome": 225420
+        }
+      ]
+    },
+    "Mage": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 497,
+          "pool_life": 497,
+          "scale": 14.175,
+          "raw_budget": 497.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 993,
+          "pool_life": 993,
+          "scale": 28.35,
+          "raw_budget": 993.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1489,
+          "pool_life": 1489,
+          "scale": 42.525,
+          "raw_budget": 1489.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MageBalloon": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 185,
+          "pool_life": 185,
+          "scale": 14.175,
+          "raw_budget": 185.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 369,
+          "pool_life": 369,
+          "scale": 28.35,
+          "raw_budget": 369.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 553,
+          "pool_life": 553,
+          "scale": 42.525,
+          "raw_budget": 553.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 738,
+          "pool_life": 738,
+          "scale": 56.7,
+          "raw_budget": 738.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 738,
+          "pool_life": 738,
+          "scale": 56.7,
+          "raw_budget": 738.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MageBlob": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 185,
+          "pool_life": 185,
+          "scale": 14.175,
+          "raw_budget": 185.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 369,
+          "pool_life": 369,
+          "scale": 28.35,
+          "raw_budget": 369.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 553,
+          "pool_life": 553,
+          "scale": 42.525,
+          "raw_budget": 553.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 738,
+          "pool_life": 738,
+          "scale": 56.7,
+          "raw_budget": 738.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 738,
+          "pool_life": 738,
+          "scale": 56.7,
+          "raw_budget": 738.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MageKnight": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2552,
+          "pool_life": 2552,
+          "scale": 14.175,
+          "raw_budget": 2552.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 5103,
+          "pool_life": 5103,
+          "scale": 28.35,
+          "raw_budget": 5103.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 7655,
+          "pool_life": 7655,
+          "scale": 42.525,
+          "raw_budget": 7655.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 10206,
+          "pool_life": 10206,
+          "scale": 56.7,
+          "raw_budget": 10206.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 10206,
+          "pool_life": 10206,
+          "scale": 56.7,
+          "raw_budget": 10206.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MageLord": {
+      "stage": 2,
+      "boss_reference": "克苏鲁之脑",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2280,
+          "pool_life": 2073,
+          "scale": 7.53563643,
+          "raw_budget": 2072.3,
+          "godhome": 135910
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3163,
+          "pool_life": 2875,
+          "scale": 10.453455,
+          "raw_budget": 2874.7002,
+          "godhome": 188559
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3875,
+          "pool_life": 3523,
+          "scale": 12.8087273,
+          "raw_budget": 3522.40015,
+          "godhome": 231046
+        },
+        {
+          "difficulty": "Master",
+          "life": 4940,
+          "pool_life": 4491,
+          "scale": 16.3292732,
+          "raw_budget": 4490.55029,
+          "godhome": 294568
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4940,
+          "pool_life": 4491,
+          "scale": 16.3292732,
+          "raw_budget": 4490.55029,
+          "godhome": 294568
+        }
+      ]
+    },
+    "MageLord@5": {
+      "stage": 3,
+      "boss_reference": "血肉墙",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 120000,
+          "pool_life": 109091,
+          "scale": 396.693451,
+          "raw_budget": 109090.7,
+          "godhome": 141819
+        },
+        {
+          "difficulty": "Hard",
+          "life": 153000,
+          "pool_life": 139091,
+          "scale": 505.784027,
+          "raw_budget": 139090.609,
+          "godhome": 180818
+        },
+        {
+          "difficulty": "Expert",
+          "life": 168000,
+          "pool_life": 152728,
+          "scale": 555.37146,
+          "raw_budget": 152727.156,
+          "godhome": 198546
+        },
+        {
+          "difficulty": "Master",
+          "life": 214201,
+          "pool_life": 194728,
+          "scale": 708.0995,
+          "raw_budget": 194727.359,
+          "godhome": 253146
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 214201,
+          "pool_life": 194728,
+          "scale": 708.0995,
+          "raw_budget": 194727.359,
+          "godhome": 253146
+        }
+      ]
+    },
+    "Mantis": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 23.6249981,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 47.2499962,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 70.875,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MantisFlyerChild": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MantisHeavyFlyer": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 19.6874981,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 39.3749962,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2658,
+          "pool_life": 2658,
+          "scale": 59.0624962,
+          "raw_budget": 2658.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 78.74999,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 78.74999,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MantisLord": {
+      "stage": 2,
+      "boss_reference": "骷髅王",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 3928,
+          "pool_life": 3570,
+          "scale": 17.0,
+          "raw_budget": 3570.0,
+          "godhome": 153637
+        },
+        {
+          "difficulty": "Hard",
+          "life": 6080,
+          "pool_life": 5527,
+          "scale": 26.31762,
+          "raw_budget": 5526.7,
+          "godhome": 237863
+        },
+        {
+          "difficulty": "Expert",
+          "life": 8359,
+          "pool_life": 7599,
+          "scale": 36.1857147,
+          "raw_budget": 7599.0,
+          "godhome": 327026
+        },
+        {
+          "difficulty": "Master",
+          "life": 10658,
+          "pool_life": 9689,
+          "scale": 46.13476,
+          "raw_budget": 9688.3,
+          "godhome": 416959
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 10658,
+          "pool_life": 9689,
+          "scale": 46.13476,
+          "raw_budget": 9688.3,
+          "godhome": 416959
+        }
+      ]
+    },
+    "Mawlek": {
+      "stage": 0,
+      "boss_reference": "史莱姆王",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1717,
+          "pool_life": 1717,
+          "scale": 5.72000027,
+          "raw_budget": 1716.00012,
+          "godhome": 110500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2188,
+          "pool_life": 2188,
+          "scale": 7.29200029,
+          "raw_budget": 2187.6,
+          "godhome": 140888
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2403,
+          "pool_life": 2403,
+          "scale": 8.008,
+          "raw_budget": 2402.40015,
+          "godhome": 154701
+        },
+        {
+          "difficulty": "Master",
+          "life": 3064,
+          "pool_life": 3064,
+          "scale": 10.2120008,
+          "raw_budget": 3063.6,
+          "godhome": 197243
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3064,
+          "pool_life": 3064,
+          "scale": 10.2120008,
+          "raw_budget": 3063.6,
+          "godhome": 197243
+        }
+      ]
+    },
+    "MawlekTurret": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 2658,
+          "pool_life": 2658,
+          "scale": 19.6874981,
+          "raw_budget": 2658.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 5316,
+          "pool_life": 5316,
+          "scale": 39.3749962,
+          "raw_budget": 5316.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 7974,
+          "pool_life": 7974,
+          "scale": 59.0624962,
+          "raw_budget": 7974.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 10632,
+          "pool_life": 10632,
+          "scale": 78.74999,
+          "raw_budget": 10632.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 10632,
+          "pool_life": 10632,
+          "scale": 78.74999,
+          "raw_budget": 10632.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MegaBeamMiner": {
+      "stage": 2,
+      "boss_reference": "鹿角怪（八成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 4200,
+          "pool_life": 4200,
+          "scale": 15.0,
+          "raw_budget": 4200.0,
+          "godhome": 123500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 5828,
+          "pool_life": 5828,
+          "scale": 20.8142853,
+          "raw_budget": 5828.0,
+          "godhome": 171356
+        },
+        {
+          "difficulty": "Expert",
+          "life": 7140,
+          "pool_life": 7140,
+          "scale": 25.5,
+          "raw_budget": 7140.0,
+          "godhome": 209950
+        },
+        {
+          "difficulty": "Master",
+          "life": 9104,
+          "pool_life": 9104,
+          "scale": 32.514286,
+          "raw_budget": 9104.0,
+          "godhome": 267686
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 9104,
+          "pool_life": 9104,
+          "scale": 32.514286,
+          "raw_budget": 9104.0,
+          "godhome": 267686
+        }
+      ]
+    },
+    "MegaJellyfish": {
+      "stage": 2,
+      "boss_reference": "克苏鲁之脑",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1951,
+          "pool_life": 1951,
+          "scale": 6.501333,
+          "raw_budget": 1950.4,
+          "godhome": 123500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2706,
+          "pool_life": 2706,
+          "scale": 9.018667,
+          "raw_budget": 2705.6,
+          "godhome": 171342
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3316,
+          "pool_life": 3316,
+          "scale": 11.0506668,
+          "raw_budget": 3315.2,
+          "godhome": 209951
+        },
+        {
+          "difficulty": "Master",
+          "life": 4227,
+          "pool_life": 4227,
+          "scale": 14.088,
+          "raw_budget": 4226.4,
+          "godhome": 267672
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4227,
+          "pool_life": 4227,
+          "scale": 14.088,
+          "raw_budget": 4226.4,
+          "godhome": 267672
+        }
+      ]
+    },
+    "MegaMossCharger": {
+      "stage": 1,
+      "boss_reference": "克苏鲁之眼（八成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1858,
+          "pool_life": 1858,
+          "scale": 18.579,
+          "raw_budget": 1857.9,
+          "godhome": 104000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2299,
+          "pool_life": 2299,
+          "scale": 22.99,
+          "raw_budget": 2299.0,
+          "godhome": 128700
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2416,
+          "pool_life": 2416,
+          "scale": 24.156,
+          "raw_budget": 2415.6,
+          "godhome": 135200
+        },
+        {
+          "difficulty": "Master",
+          "life": 3080,
+          "pool_life": 3080,
+          "scale": 30.8000011,
+          "raw_budget": 3080.0,
+          "godhome": 172390
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 3080,
+          "pool_life": 3080,
+          "scale": 30.8000011,
+          "raw_budget": 3080.0,
+          "godhome": 172390
+        }
+      ]
+    },
+    "MenderBug": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 24,
+          "pool_life": 24,
+          "scale": 23.6249981,
+          "raw_budget": 24.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 48,
+          "pool_life": 48,
+          "scale": 47.2499962,
+          "raw_budget": 48.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 71,
+          "pool_life": 71,
+          "scale": 70.875,
+          "raw_budget": 71.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MimicSpider": {
+      "stage": 3,
+      "boss_reference": "血肉墙（八成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 5228,
+          "pool_life": 5228,
+          "scale": 7.687059,
+          "raw_budget": 5227.2,
+          "godhome": 149500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 6665,
+          "pool_life": 6665,
+          "scale": 9.801324,
+          "raw_budget": 6664.9,
+          "godhome": 190613
+        },
+        {
+          "difficulty": "Expert",
+          "life": 7319,
+          "pool_life": 7319,
+          "scale": 10.7622061,
+          "raw_budget": 7318.30029,
+          "godhome": 209301
+        },
+        {
+          "difficulty": "Master",
+          "life": 9331,
+          "pool_life": 9331,
+          "scale": 13.7208824,
+          "raw_budget": 9330.2,
+          "godhome": 266858
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 9331,
+          "pool_life": 9331,
+          "scale": 13.7208824,
+          "raw_budget": 9330.2,
+          "godhome": 266858
+        }
+      ]
+    },
+    "MinesCrawler": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 213,
+          "pool_life": 213,
+          "scale": 14.175,
+          "raw_budget": 213.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 426,
+          "pool_life": 426,
+          "scale": 28.35,
+          "raw_budget": 426.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 638,
+          "pool_life": 638,
+          "scale": 42.525,
+          "raw_budget": 638.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 56.7,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 56.7,
+          "raw_budget": 851.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MiniSpider": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 19.6874981,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 39.3749962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 59.0624962,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Mosquito": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 23.6249981,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 47.2499962,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 70.875,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossCharger": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossFlyer": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 19.6874981,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 39.3749962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 59.0624962,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossKnight": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 23.6249981,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 47.2499962,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 70.875,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 94.49999,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 94.49999,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossKnightFat": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 493,
+          "pool_life": 493,
+          "scale": 19.6874981,
+          "raw_budget": 493.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 985,
+          "pool_life": 985,
+          "scale": 39.3749962,
+          "raw_budget": 985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1477,
+          "pool_life": 1477,
+          "scale": 59.0624962,
+          "raw_budget": 1477.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossWalker": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 197,
+          "pool_life": 197,
+          "scale": 19.6874981,
+          "raw_budget": 197.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 39.3749962,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 59.0624962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 78.74999,
+          "raw_budget": 788.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 78.74999,
+          "raw_budget": 788.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossmanRunner": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MossmanShaker": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Mummy": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 638,
+          "pool_life": 638,
+          "scale": 14.175,
+          "raw_budget": 638.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1276,
+          "pool_life": 1276,
+          "scale": 28.35,
+          "raw_budget": 1276.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1914,
+          "pool_life": 1914,
+          "scale": 42.525,
+          "raw_budget": 1914.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2552,
+          "pool_life": 2552,
+          "scale": 56.7,
+          "raw_budget": 2552.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2552,
+          "pool_life": 2552,
+          "scale": 56.7,
+          "raw_budget": 2552.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MushroomBaby": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 119,
+          "pool_life": 119,
+          "scale": 23.6249981,
+          "raw_budget": 119.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 47.2499962,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 70.875,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 94.49999,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 94.49999,
+          "raw_budget": 473.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MushroomBrawler": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 23.6249981,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3780,
+          "pool_life": 3780,
+          "scale": 47.2499962,
+          "raw_budget": 3780.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5670,
+          "pool_life": 5670,
+          "scale": 70.875,
+          "raw_budget": 5670.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 7560,
+          "pool_life": 7560,
+          "scale": 94.49999,
+          "raw_budget": 7560.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 7560,
+          "pool_life": 7560,
+          "scale": 94.49999,
+          "raw_budget": 7560.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MushroomRoller": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 23.6249981,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 47.2499962,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 70.875,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1890,
+          "pool_life": 1890,
+          "scale": 94.49999,
+          "raw_budget": 1890.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "MushroomTurret": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 23.6249981,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 47.2499962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 70.875,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 94.49999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 94.49999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "NailBros": {
+      "stage": 5,
+      "boss_reference": "月亮领主",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 182000,
+          "pool_life": 165455,
+          "scale": 165.4542,
+          "raw_budget": 165454.2,
+          "godhome": 165455
+        },
+        {
+          "difficulty": "Hard",
+          "life": 238875,
+          "pool_life": 217159,
+          "scale": 217.1583,
+          "raw_budget": 217158.3,
+          "godhome": 217159
+        },
+        {
+          "difficulty": "Expert",
+          "life": 273001,
+          "pool_life": 248183,
+          "scale": 248.18219,
+          "raw_budget": 248182.188,
+          "godhome": 248183
+        },
+        {
+          "difficulty": "Master",
+          "life": 348077,
+          "pool_life": 316433,
+          "scale": 316.4328,
+          "raw_budget": 316432.781,
+          "godhome": 316433
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 348077,
+          "pool_life": 316433,
+          "scale": 316.4328,
+          "raw_budget": 316432.781,
+          "godhome": 316433
+        }
+      ]
+    },
+    "Nailsage": {
+      "stage": 5,
+      "boss_reference": "月亮领主",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 208000,
+          "pool_life": 208000,
+          "scale": 260.0,
+          "raw_budget": 208000.0,
+          "godhome": 208000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 273000,
+          "pool_life": 273000,
+          "scale": 341.249,
+          "raw_budget": 272999.219,
+          "godhome": 273000
+        },
+        {
+          "difficulty": "Expert",
+          "life": 312000,
+          "pool_life": 312000,
+          "scale": 390.0,
+          "raw_budget": 312000.0,
+          "godhome": 312000
+        },
+        {
+          "difficulty": "Master",
+          "life": 397801,
+          "pool_life": 397801,
+          "scale": 497.251,
+          "raw_budget": 397800.8,
+          "godhome": 397801
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 397801,
+          "pool_life": 397801,
+          "scale": 497.251,
+          "raw_budget": 397800.8,
+          "godhome": 397801
+        }
+      ]
+    },
+    "NightmareGrimm": {
+      "stage": 5,
+      "boss_reference": "猪龙鱼公爵",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 160000,
+          "pool_life": 160000,
+          "scale": 106.666504,
+          "raw_budget": 159999.75,
+          "godhome": 208001
+        },
+        {
+          "difficulty": "Hard",
+          "life": 198000,
+          "pool_life": 198000,
+          "scale": 131.999908,
+          "raw_budget": 197999.859,
+          "godhome": 257401
+        },
+        {
+          "difficulty": "Expert",
+          "life": 208001,
+          "pool_life": 208001,
+          "scale": 138.666733,
+          "raw_budget": 208000.109,
+          "godhome": 270401
+        },
+        {
+          "difficulty": "Master",
+          "life": 265200,
+          "pool_life": 265200,
+          "scale": 176.8,
+          "raw_budget": 265200.0,
+          "godhome": 344760
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 265200,
+          "pool_life": 265200,
+          "scale": 176.8,
+          "raw_budget": 265200.0,
+          "godhome": 344760
+        }
+      ]
+    },
+    "Oblobble": {
+      "stage": 4,
+      "boss_reference": "史莱姆皇后（两只分）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 90000,
+          "pool_life": 45000,
+          "scale": 173.07692,
+          "raw_budget": 90000.0,
+          "godhome": 117000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 121500,
+          "pool_life": 60750,
+          "scale": 233.653839,
+          "raw_budget": 121500.0,
+          "godhome": 157950
+        },
+        {
+          "difficulty": "Expert",
+          "life": 144000,
+          "pool_life": 72000,
+          "scale": 276.923065,
+          "raw_budget": 144000.0,
+          "godhome": 187200
+        },
+        {
+          "difficulty": "Master",
+          "life": 183600,
+          "pool_life": 91800,
+          "scale": 353.0769,
+          "raw_budget": 183600.0,
+          "godhome": 238680
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 183600,
+          "pool_life": 91800,
+          "scale": 353.0769,
+          "raw_budget": 183600.0,
+          "godhome": 238680
+        }
+      ]
+    },
+    "OrangeBalloon": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 19.6874981,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 39.3749962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 59.0624962,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "OrangeScuttler": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 23.6249981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 47.2499962,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 70.875,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Paintmaster": {
+      "stage": 5,
+      "boss_reference": "月亮领主",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 195000,
+          "pool_life": 195000,
+          "scale": 205.263153,
+          "raw_budget": 195000.0,
+          "godhome": 195000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 255937,
+          "pool_life": 255938,
+          "scale": 269.407379,
+          "raw_budget": 255937.0,
+          "godhome": 255937
+        },
+        {
+          "difficulty": "Expert",
+          "life": 292500,
+          "pool_life": 292500,
+          "scale": 307.894745,
+          "raw_budget": 292500.0,
+          "godhome": 292500
+        },
+        {
+          "difficulty": "Master",
+          "life": 372938,
+          "pool_life": 372938,
+          "scale": 392.5663,
+          "raw_budget": 372938.0,
+          "godhome": 372938
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 372938,
+          "pool_life": 372938,
+          "scale": 392.5663,
+          "raw_budget": 372938.0,
+          "godhome": 372938
+        }
+      ]
+    },
+    "PalaceFly": {
+      "stage": 5,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 66,
+          "pool_life": 66,
+          "scale": 6.5625,
+          "raw_budget": 66.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 132,
+          "pool_life": 132,
+          "scale": 13.125,
+          "raw_budget": 132.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 197,
+          "pool_life": 197,
+          "scale": 19.6875,
+          "raw_budget": 197.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 263,
+          "pool_life": 263,
+          "scale": 26.25,
+          "raw_budget": 263.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 263,
+          "pool_life": 263,
+          "scale": 26.25,
+          "raw_budget": 263.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "PaleLurker": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 5.90624952,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 11.812499,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3544,
+          "pool_life": 3544,
+          "scale": 17.71875,
+          "raw_budget": 3544.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 23.6249981,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4725,
+          "pool_life": 4725,
+          "scale": 23.6249981,
+          "raw_budget": 4725.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Pigeon": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 24,
+          "pool_life": 24,
+          "scale": 23.6249981,
+          "raw_budget": 24.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 48,
+          "pool_life": 48,
+          "scale": 47.2499962,
+          "raw_budget": 48.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 71,
+          "pool_life": 71,
+          "scale": 70.875,
+          "raw_budget": 71.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "PlantShooter": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 237,
+          "pool_life": 237,
+          "scale": 23.6249981,
+          "raw_budget": 237.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 473,
+          "pool_life": 473,
+          "scale": 47.2499962,
+          "raw_budget": 473.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 70.875,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 945,
+          "pool_life": 945,
+          "scale": 94.49999,
+          "raw_budget": 945.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "PrayerSlug": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 24,
+          "pool_life": 24,
+          "scale": 23.6249981,
+          "raw_budget": 24.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 48,
+          "pool_life": 48,
+          "scale": 47.2499962,
+          "raw_budget": 48.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 71,
+          "pool_life": 71,
+          "scale": 70.875,
+          "raw_budget": 71.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 95,
+          "pool_life": 95,
+          "scale": 94.49999,
+          "raw_budget": 95.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Roller": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "RoyalCoward": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 284,
+          "pool_life": 284,
+          "scale": 14.175,
+          "raw_budget": 284.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 28.35,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 42.525,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 56.7,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 56.7,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "RoyalDandy": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 284,
+          "pool_life": 284,
+          "scale": 14.175,
+          "raw_budget": 284.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 567,
+          "pool_life": 567,
+          "scale": 28.35,
+          "raw_budget": 567.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 42.525,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 56.7,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 56.7,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "RoyalGuard": {
+      "stage": 5,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1116,
+          "pool_life": 1116,
+          "scale": 6.5625,
+          "raw_budget": 1116.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 2232,
+          "pool_life": 2232,
+          "scale": 13.125,
+          "raw_budget": 2232.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 3347,
+          "pool_life": 3347,
+          "scale": 19.6875,
+          "raw_budget": 3347.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 4463,
+          "pool_life": 4463,
+          "scale": 26.25,
+          "raw_budget": 4463.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 4463,
+          "pool_life": 4463,
+          "scale": 26.25,
+          "raw_budget": 4463.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "RoyalPlumper": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 426,
+          "pool_life": 426,
+          "scale": 14.175,
+          "raw_budget": 426.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 851,
+          "pool_life": 851,
+          "scale": 28.35,
+          "raw_budget": 851.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1276,
+          "pool_life": 1276,
+          "scale": 42.525,
+          "raw_budget": 1276.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1701,
+          "pool_life": 1701,
+          "scale": 56.7,
+          "raw_budget": 1701.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1701,
+          "pool_life": 1701,
+          "scale": 56.7,
+          "raw_budget": 1701.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Sentry": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 493,
+          "pool_life": 493,
+          "scale": 19.6874981,
+          "raw_budget": 493.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 985,
+          "pool_life": 985,
+          "scale": 39.3749962,
+          "raw_budget": 985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1477,
+          "pool_life": 1477,
+          "scale": 59.0624962,
+          "raw_budget": 1477.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 78.74999,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SentryFat": {
+      "stage": 2,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 497,
+          "pool_life": 497,
+          "scale": 14.175,
+          "raw_budget": 497.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 993,
+          "pool_life": 993,
+          "scale": 28.35,
+          "raw_budget": 993.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1489,
+          "pool_life": 1489,
+          "scale": 42.525,
+          "raw_budget": 1489.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1985,
+          "pool_life": 1985,
+          "scale": 56.7,
+          "raw_budget": 1985.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ShootSpider": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 19.6874981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 39.3749962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 59.0624962,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 78.74999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 78.74999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Sibling": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 148,
+          "pool_life": 148,
+          "scale": 5.90624952,
+          "raw_budget": 148.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 11.812499,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 443,
+          "pool_life": 443,
+          "scale": 17.71875,
+          "raw_budget": 443.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 23.6249981,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 23.6249981,
+          "raw_budget": 591.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SlashSpider": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1969,
+          "pool_life": 1969,
+          "scale": 19.6874981,
+          "raw_budget": 1969.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3938,
+          "pool_life": 3938,
+          "scale": 39.3749962,
+          "raw_budget": 3938.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5907,
+          "pool_life": 5907,
+          "scale": 59.0624962,
+          "raw_budget": 5907.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 7875,
+          "pool_life": 7875,
+          "scale": 78.74999,
+          "raw_budget": 7875.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 7875,
+          "pool_life": 7875,
+          "scale": 78.74999,
+          "raw_budget": 7875.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SnapperTrap": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 378,
+          "pool_life": 378,
+          "scale": 23.6249981,
+          "raw_budget": 378.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 756,
+          "pool_life": 756,
+          "scale": 47.2499962,
+          "raw_budget": 756.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1134,
+          "pool_life": 1134,
+          "scale": 70.875,
+          "raw_budget": 1134.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1512,
+          "pool_life": 1512,
+          "scale": 94.49999,
+          "raw_budget": 1512.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1512,
+          "pool_life": 1512,
+          "scale": 94.49999,
+          "raw_budget": 1512.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SpiderCorpse": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 19.6874981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 39.3749962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 59.0624962,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 78.74999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 78.74999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SpiderFlyer": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 19.6874981,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 39.3749962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 59.0624962,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 78.74999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 78.74999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Spitter": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 19.6874981,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 39.3749962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 59.0624962,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SpittingZombie": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 23.6249981,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 47.2499962,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 2127,
+          "pool_life": 2127,
+          "scale": 70.875,
+          "raw_budget": 2127.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2835,
+          "pool_life": 2835,
+          "scale": 94.49999,
+          "raw_budget": 2835.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "SuperSpitter": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 207,
+          "pool_life": 207,
+          "scale": 5.90624952,
+          "raw_budget": 207.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 414,
+          "pool_life": 414,
+          "scale": 11.812499,
+          "raw_budget": 414.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 621,
+          "pool_life": 621,
+          "scale": 17.71875,
+          "raw_budget": 621.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 827,
+          "pool_life": 827,
+          "scale": 23.6249981,
+          "raw_budget": 827.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 827,
+          "pool_life": 827,
+          "scale": 23.6249981,
+          "raw_budget": 827.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "TraitorLord": {
+      "stage": 2,
+      "boss_reference": "世界吞噬怪（一半）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 3581,
+          "pool_life": 3581,
+          "scale": 4.4756875,
+          "raw_budget": 3580.55,
+          "godhome": 149500
+        },
+        {
+          "difficulty": "Hard",
+          "life": 4565,
+          "pool_life": 4565,
+          "scale": 5.70593739,
+          "raw_budget": 4564.75,
+          "godhome": 190617
+        },
+        {
+          "difficulty": "Expert",
+          "life": 5013,
+          "pool_life": 5013,
+          "scale": 6.26524973,
+          "raw_budget": 5012.19971,
+          "godhome": 209301
+        },
+        {
+          "difficulty": "Master",
+          "life": 6392,
+          "pool_life": 6392,
+          "scale": 7.9895,
+          "raw_budget": 6391.6,
+          "godhome": 266869
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 6392,
+          "pool_life": 6392,
+          "scale": 7.9895,
+          "raw_budget": 6391.6,
+          "godhome": 266869
+        }
+      ]
+    },
+    "WhiteDefender": {
+      "stage": 5,
+      "boss_reference": "冰雪女王",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 120001,
+          "pool_life": 120001,
+          "scale": 75.00006,
+          "raw_budget": 120000.1,
+          "godhome": 156000
+        },
+        {
+          "difficulty": "Hard",
+          "life": 148500,
+          "pool_life": 148500,
+          "scale": 92.8125,
+          "raw_budget": 148500.0,
+          "godhome": 193050
+        },
+        {
+          "difficulty": "Expert",
+          "life": 156000,
+          "pool_life": 156000,
+          "scale": 97.49988,
+          "raw_budget": 155999.8,
+          "godhome": 202801
+        },
+        {
+          "difficulty": "Master",
+          "life": 198900,
+          "pool_life": 198900,
+          "scale": 124.312378,
+          "raw_budget": 198899.8,
+          "godhome": 258571
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 198900,
+          "pool_life": 198900,
+          "scale": 124.312378,
+          "raw_budget": 198899.8,
+          "godhome": 258571
+        }
+      ]
+    },
+    "WhiteRoyal": {
+      "stage": 5,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 33,
+          "pool_life": 33,
+          "scale": 6.5625,
+          "raw_budget": 33.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 66,
+          "pool_life": 66,
+          "scale": 13.125,
+          "raw_budget": 66.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 99,
+          "pool_life": 99,
+          "scale": 19.6875,
+          "raw_budget": 99.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 132,
+          "pool_life": 132,
+          "scale": 26.25,
+          "raw_budget": 132.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 132,
+          "pool_life": 132,
+          "scale": 26.25,
+          "raw_budget": 132.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Worm": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 23.6249981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 47.2499962,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 70.875,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZapBug": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 23.6249981,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 47.2499962,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 70.875,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 0,
+          "pool_life": 0,
+          "scale": 94.49999,
+          "raw_budget": 0.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieBarger": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 19.6874981,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 39.3749962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 59.0624962,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieGuard": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 1654,
+          "pool_life": 1654,
+          "scale": 23.6249981,
+          "raw_budget": 1654.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 3308,
+          "pool_life": 3308,
+          "scale": 47.2499962,
+          "raw_budget": 3308.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 4962,
+          "pool_life": 4962,
+          "scale": 70.875,
+          "raw_budget": 4962.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 6615,
+          "pool_life": 6615,
+          "scale": 94.49999,
+          "raw_budget": 6615.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 6615,
+          "pool_life": 6615,
+          "scale": 94.49999,
+          "raw_budget": 6615.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieHive": {
+      "stage": 4,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 5.90624952,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 11.812499,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 17.71875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 23.6249981,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 23.6249981,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieHornhead": {
+      "stage": 3,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 296,
+          "pool_life": 296,
+          "scale": 19.6874981,
+          "raw_budget": 296.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 39.3749962,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 886,
+          "pool_life": 886,
+          "scale": 59.0624962,
+          "raw_budget": 886.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 78.74999,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieLeaper": {
+      "stage": 1,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieMiner": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 23.6249981,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 47.2499962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 70.875,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 94.49999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 94.49999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieMiner@0": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 23.6249981,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 1182,
+          "pool_life": 1182,
+          "scale": 47.2499962,
+          "raw_budget": 1182.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1772,
+          "pool_life": 1772,
+          "scale": 70.875,
+          "raw_budget": 1772.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 94.49999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 2363,
+          "pool_life": 2363,
+          "scale": 94.49999,
+          "raw_budget": 2363.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieRunner": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZombieShield": {
+      "stage": 0,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 355,
+          "pool_life": 355,
+          "scale": 23.6249981,
+          "raw_budget": 355.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 709,
+          "pool_life": 709,
+          "scale": 47.2499962,
+          "raw_budget": 709.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 1064,
+          "pool_life": 1064,
+          "scale": 70.875,
+          "raw_budget": 1064.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 1418,
+          "pool_life": 1418,
+          "scale": 94.49999,
+          "raw_budget": 1418.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "Zote": {
+      "stage": 4,
+      "boss_reference": "史莱姆皇后（两成）",
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 12000,
+          "pool_life": 12001,
+          "scale": 60.0000038,
+          "raw_budget": 12000.0,
+          "godhome": 15601
+        },
+        {
+          "difficulty": "Hard",
+          "life": 16201,
+          "pool_life": 16200,
+          "scale": 81.0,
+          "raw_budget": 16200.001,
+          "godhome": 21060
+        },
+        {
+          "difficulty": "Expert",
+          "life": 19200,
+          "pool_life": 19200,
+          "scale": 96.0,
+          "raw_budget": 19200.0,
+          "godhome": 24961
+        },
+        {
+          "difficulty": "Master",
+          "life": 24480,
+          "pool_life": 24480,
+          "scale": 122.4,
+          "raw_budget": 24480.0,
+          "godhome": 31825
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 24480,
+          "pool_life": 24480,
+          "scale": 122.4,
+          "raw_budget": 24480.0,
+          "godhome": 31825
+        }
+      ]
+    },
+    "ZotelingBalloon": {
+      "stage": 5,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 197,
+          "pool_life": 197,
+          "scale": 6.5625,
+          "raw_budget": 197.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 13.125,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 591,
+          "pool_life": 591,
+          "scale": 19.6875,
+          "raw_budget": 591.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 26.25,
+          "raw_budget": 788.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 788,
+          "pool_life": 788,
+          "scale": 26.25,
+          "raw_budget": 788.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZotelingBuzzer": {
+      "stage": 5,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 132,
+          "pool_life": 132,
+          "scale": 6.5625,
+          "raw_budget": 132.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 263,
+          "pool_life": 263,
+          "scale": 13.125,
+          "raw_budget": 263.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 19.6875,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 525,
+          "pool_life": 525,
+          "scale": 26.25,
+          "raw_budget": 525.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 525,
+          "pool_life": 525,
+          "scale": 26.25,
+          "raw_budget": 525.0,
+          "godhome": 0
+        }
+      ]
+    },
+    "ZotelingHopper": {
+      "stage": 5,
+      "boss_reference": null,
+      "difficulties": [
+        {
+          "difficulty": "Normal",
+          "life": 132,
+          "pool_life": 132,
+          "scale": 6.5625,
+          "raw_budget": 132.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hard",
+          "life": 263,
+          "pool_life": 263,
+          "scale": 13.125,
+          "raw_budget": 263.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Expert",
+          "life": 394,
+          "pool_life": 394,
+          "scale": 19.6875,
+          "raw_budget": 394.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Master",
+          "life": 525,
+          "pool_life": 525,
+          "scale": 26.25,
+          "raw_budget": 525.0,
+          "godhome": 0
+        },
+        {
+          "difficulty": "Hollow",
+          "life": 525,
+          "pool_life": 525,
+          "scale": 26.25,
+          "raw_budget": 525.0,
+          "godhome": 0
+        }
+      ]
+    }
+  }
+}

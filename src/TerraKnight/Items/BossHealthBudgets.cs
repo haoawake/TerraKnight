@@ -11,7 +11,7 @@ namespace TerraKnight.Items
         {
             ["FalseKnight@5"] = 100000, ["MageLord@5"] = 120000, ["InfectedKnight@5"] = 110000,
             ["HiveKnight"] = 50000, ["Hornet@4"] = 80000, ["GhostMarkoth"] = 75000,
-            ["InfectedKnight"] = 65000, ["Oblobble"] = 90000, ["LobsterLancer"] = 85000,
+            ["InfectedKnight"] = 40000, ["Oblobble"] = 90000, ["LobsterLancer"] = 85000,
             ["Zote"] = 12000,
             ["Grimm"] = 100000, ["WhiteDefender"] = 120000, ["GreyPrince"] = 100000,
             ["NightmareGrimm"] = 160000, ["HollowKnight"] = 140000,

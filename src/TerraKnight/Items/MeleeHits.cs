@@ -225,8 +225,6 @@ namespace TerraKnight.Items
                 MeleeSpecials.OnHit(weapon, hm, col, baseDamage, damage, kb, Equipment.Crit(weapon), direction, SwingBox);
                 if (hm.isDead) MeleeSpecials.OnKill(weapon);
             }
-            // The Lucky Coin's coins off a swing (1-10 at a time).
-            if (rolled > 0 && b.LuckyCoin) AccessoryEffects.LuckyCoin(hm, direction > 0f ? 1 : -1, true);
             // Player.StatusToNPC: the Magma Stone sets true melee hits on fire (Hellfire).
             if (rolled > 0 && weapon.Class == DamageClass.Melee) EnemyDebuffs.Magma(hm, false);
             // The Bee Keeper (ApplyNPCOnHitEffects): Confused, and one to three bees out of the swing at a third of the blow.
@@ -453,6 +451,9 @@ namespace TerraKnight.Items
             TerraHitFx.Bleed(hm, col.bounds, damage, facing, EnemyStats.LifeMax(info));
             mod.PlaySound(hm.isDead ? "NPC_Killed_1" : "NPC_Hit_1");
             ArmorEffects.OnHitNPC(hm, col.bounds.center, damage, armorCtx);
+            // All accepted hits share this path: swings, nails, projectiles, minions and sentries.
+            // The caller and the projectile's accessory callback must not roll it again.
+            if (Equipment.Current.LuckyCoin) AccessoryEffects.LuckyCoin(hm, facing > 0f ? 1 : -1, armorCtx.TrueMelee);
             return rolled;
         }
 

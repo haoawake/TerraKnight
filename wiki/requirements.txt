@@ -1,0 +1,4 @@
+Markdown==3.8
+Pillow>=11
+UnityPy>=1.20
+tzdata>=2025.2; sys_platform == "win32"

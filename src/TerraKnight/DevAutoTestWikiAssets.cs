@@ -73,7 +73,21 @@ namespace TerraKnight
                 if (def.Type != ItemType.None) itemData[def.Type.ToString()] = new { def.Stage, Source = def.Source.ToString(), def.MaxStack, def.Texture,
                     def.Name, def.Tooltip, def.Value, def.Price, def.Damage, def.Defense, def.Mana, def.PickPower, def.HealLife, def.HealMana,
                     Class = def.Class.ToString(), Accessory = def.Accessory.ToString(),
-                    Places = def.Places.ToString(), PlacesStation = def.PlacesStation.ToString(), def.PlacesWall };
+                    Places = def.Places.ToString(), PlacesStation = def.PlacesStation.ToString(), def.PlacesWall,
+                    def.UseTime, def.UseAnimation, def.Channel, def.NoUseMana, def.PayManaAfterCheck, def.ManaEveryOtherShot, def.ShotsPerUse };
+            int magicCount = 0, manaErrors = 0;
+            foreach (var def in ItemDb.All)
+                if (def.Class == DamageClass.Magic && def.IsWeapon)
+                {
+                    magicCount++;
+                    if (def.Texture == null || !def.Texture.StartsWith("Item_") || !int.TryParse(def.Texture.Substring(5), out int id)
+                        || !VanillaWeaponDamage.Values.TryGetValue(id, out var original) || def.Mana != original.Mana)
+                    {
+                        manaErrors++;
+                        Plugin.Log.LogError($"[AutoTest] 魔法蓝耗 {def.Type}={def.Mana} 与原版不一致，不通过");
+                    }
+                }
+            Plugin.Log.LogInfo($"[AutoTest] 魔法蓝耗核对 {magicCount} 件，差异 {manaErrors} 件");
             var recipeData = new List<object>();
             foreach (var r in Recipes.All)
             {

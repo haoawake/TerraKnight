@@ -19,7 +19,7 @@ namespace TerraKnight.Save
             public int Version = 7;
             /// <summary>A creative-mode save (UI.CreativeMenu): items never run out, anything can be made.</summary>
             public bool Creative;
-            /// <summary>World.DifficultyLevel (1 Normal to 4 Master); 0, from before the choice, is Master.</summary>
+            /// <summary>World.DifficultyLevel (1 Normal to 5 Hollow); 0, from before the choice, is Master.</summary>
             public int Difficulty;
             public List<SlotItem> Inventory = new List<SlotItem>();
             /// <summary>The worn set (the current loadout's).</summary>

@@ -164,7 +164,7 @@ namespace TerraKnight.Player
         /// </summary>
         /// <summary>The Terraria damage a touch of this many masks from this source would be (before defense).</summary>
         public static int RawContact(int amount, GameObject source) =>
-            amount * Mathf.RoundToInt(StageDamage(World.Areas.DamagePerMask) * SourceFactor(source));
+            TerraStats.NativeHitDamage(amount, Mathf.RoundToInt(StageDamage(World.Areas.DamagePerMask) * SourceFactor(source)));
 
         /// <summary>A mask's damage in the room now, at the level its enemies are met at (Areas.StatLevel), a little less when brought up to it.</summary>
         static float StageDamage(System.Func<int, int> perMask)
@@ -234,13 +234,13 @@ namespace TerraKnight.Player
                 // spikes are its traps.
                 if (hazardNow == 2 && Items.Equipment.Current.DeadMansSweater)
                 {
-                    perMask = Mathf.Max(1, Mathf.Min(perMask / 2, 300 / Mathf.Max(1, amount)));
+                    perMask = Mathf.Max(1, Mathf.Min(perMask / 2, 300 / (World.GameDifficulty.UsesMaskDamage ? Mathf.Max(1, amount) : 1)));
                     DevSweater++;
                 }
                 // The enemy's banner carried (its body, its attack, a shot it spawned): its DamageReceived before the defense (Pl:31624-31627, P:14906-14909).
                 if (hazardNow <= 1 && overrideDamage <= 0) perMask = Items.Banners.Taken(sourceNow, perMask);
                 float share = World.GameDifficulty.EnemyFactor;
-                int raw = overrideDamage > 0 ? overrideDamage : Mathf.Max(1, Mathf.RoundToInt(amount * perMask * share));
+                int raw = overrideDamage > 0 ? overrideDamage : TerraStats.NativeHitDamage(amount, perMask, share);
                 TerraHurt.BeforeHurt();
                 // An enemy's or a shot's hit (not a hazard): what the Solar flare answers.
                 Items.ArmorEffects.CounterHit = hazardNow <= 1;

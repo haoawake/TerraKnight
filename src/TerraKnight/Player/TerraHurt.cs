@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using HarmonyLib;
 using TerraKnight.Effects;
 using UnityEngine;
@@ -259,8 +259,8 @@ namespace TerraKnight.Player
             }
         }
 
-        internal static int CloakDamage => 75 * (World.GameDifficulty.Current == World.DifficultyLevel.Master ? 3 : World.GameDifficulty.Current == World.DifficultyLevel.Expert ? 2 : 1);
-        internal static int HoneyDamage(bool strong) => (int)((strong ? 18 : 13) * (World.GameDifficulty.Current == World.DifficultyLevel.Master ? 2f : World.GameDifficulty.Current == World.DifficultyLevel.Expert ? 1.5f : 1f));
+        internal static int CloakDamage => 75 * (World.GameDifficulty.MasterRules ? 3 : World.GameDifficulty.Current == World.DifficultyLevel.Expert ? 2 : 1);
+        internal static int HoneyDamage(bool strong) => (int)((strong ? 18 : 13) * (World.GameDifficulty.MasterRules ? 2f : World.GameDifficulty.Current == World.DifficultyLevel.Expert ? 1.5f : 1f));
 
         /// <summary>
         /// Each enemy, by chance (300 + 2·damage in 500), is confused for 1.5-5 s if within a

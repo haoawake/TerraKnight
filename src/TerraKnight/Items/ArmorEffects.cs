@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.Player;
 using UnityEngine;
@@ -582,7 +582,7 @@ namespace TerraKnight.Items
             if (cactus && !attacker.isDead)
             {
                 var d = World.GameDifficulty.Current;
-                melee.HitWith(col, d == World.DifficultyLevel.Master ? 45 : d == World.DifficultyLevel.Expert ? 30 : 15, 10f, 0f, dir, c);
+                melee.HitWith(col, d >= World.DifficultyLevel.Master ? 45 : d == World.DifficultyLevel.Expert ? 30 : 15, 10f, 0f, dir, c);
                 DevCactus++;
             }
         }

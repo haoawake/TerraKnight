@@ -1,4 +1,4 @@
-{
+﻿{
  "使用后在 1～3 倍之间切换刷怪倍率（在原本的翻倍上再乘，只出现一次的敌人仍只出一只）": {
   "en-US": "Use it to switch the spawn multiplier between 1 and 3 times (on top of the usual doubling; one-off enemies still come back alone)",
   "zh-Hant": "使用後在 1～3 倍之間切換刷怪倍率（在原本的翻倍上再乘，只出現一次的敵人仍只出一隻）",
@@ -8258,5 +8258,37 @@
   "it-IT": "Ripristina 600 salute",
   "pt-BR": "Restaura 600 de vida",
   "ru-RU": "Восстанавливает 600 здоровья"
+ },
+ "盔甲阶段 0 最多 +3，每高一阶段多 3 级，每级 +1 防御": {
+  "en-US": "Armor caps at +3 in stage 0, gaining 3 levels per stage; each level adds 1 defense",
+  "zh-Hant": "盔甲階段 0 最多 +3，每高一階段多 3 級，每級 +1 防禦",
+  "ja-JP": "防具は段階0で最大+3、段階ごとに上限+3。各レベルで防御+1",
+  "ko-KR": "방어구는 0단계 최대 +3, 단계마다 상한 +3, 강화마다 방어력 +1",
+  "de-DE": "Rüstung: Stufe 0 bis +3, pro Stufe 3 weitere Level; je Level +1 Verteidigung",
+  "fr-FR": "Armure : limite +3 au palier 0, puis 3 niveaux par palier ; +1 défense par niveau",
+  "es-ES": "Armadura: máximo +3 en etapa 0, 3 niveles más por etapa; +1 defensa por nivel",
+  "it-IT": "Armatura: massimo +3 alla fase 0, 3 livelli in più per fase; +1 difesa per livello",
+  "pt-BR": "Armadura: máximo +3 no estágio 0, mais 3 níveis por estágio; +1 defesa por nível",
+  "ru-RU": "Броня: до +3 на этапе 0, ещё 3 уровня за этап; +1 к защите за уровень"
+ },
+ "空洞": {
+  "en-US": "Hollow",
+  "zh-Hant": "空洞",
+  "ja-JP": "ホロウ",
+  "ko-KR": "공허",
+  "de-DE": "Hollow",
+  "fr-FR": "Hollow",
+  "es-ES": "Hollow",
+  "it-IT": "Hollow",
+  "pt-BR": "Hollow",
+  "ru-RU": "Полый"
+ },
+ "大师数值，恢复原版面具数量增伤": {
+  "en-US": "Master stats, with original mask-count damage multipliers",
+  "zh-Hant": "大師數值，恢復原版面具數量增傷"
+ },
+ "敌人血量与伤害 100%，不叠加面具数量": {
+  "en-US": "100% enemy life and damage, without mask-count multipliers",
+  "zh-Hant": "敵人血量與傷害 100%，不疊加面具數量"
  }
 }

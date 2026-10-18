@@ -87,6 +87,7 @@ namespace TerraKnight.Items
         static EnemyDrops.Drop[] Build(string key, EnemyDrops.Entry e, int stage, bool first, bool entry, bool final, bool boss)
         {
             var rows = new List<EnemyDrops.Drop>();
+            var specialties = new HashSet<ItemType>();
             if (key == "Zote") return new[] {Row(ItemType.Wood,Building,1,2,4)};
             bool elite = Elite(key,e);
             string area=LootArea(key,e);
@@ -172,7 +173,7 @@ namespace TerraKnight.Items
                         var t=ProgressionBalance.Core[tier][cls][local];
                         if (ProgressionBalance.Unlocked(t,stage,entry,final)) weapons.Add(t);
                     }
-                    AddExtras(weapons,key,tier,cls,0,entry,final);
+                    AddExtras(weapons,key,tier,cls,0,entry,final,specialties);
                     var armor=new List<ItemType>();
                     foreach (var t in stocked ? ProgressionBalance.ArmorFor(tier,cls) : Array.Empty<ItemType>())
                         if (ProgressionBalance.Unlocked(t,stage,entry,final)) armor.Add(t);
@@ -181,13 +182,13 @@ namespace TerraKnight.Items
                         var local=armor[RegionalVariant(area,cls,armor.Count)];
                         armor.Clear();armor.Add(local);
                     }
-                    AddExtras(armor,key,tier,cls,1,entry,final);
+                    AddExtras(armor,key,tier,cls,1,entry,final,specialties);
                     foreach (var t in weapons) rows.Add(Row(t,Rare,chance,weight:.175f/Math.Max(1,weapons.Count)));
                     foreach (var t in armor) rows.Add(Row(t,Rare,chance,weight:.05f/Math.Max(1,armor.Count)));
                     var accessories=new List<ItemType>();
                     var acc=ProgressionBalance.AccessoryPaths[tier][cls][1];
                     if (stocked && ProgressionBalance.Unlocked(acc,stage,entry,final)) accessories.Add(acc);
-                    AddExtras(accessories,key,tier,cls,2,entry,final);
+                    AddExtras(accessories,key,tier,cls,2,entry,final,specialties);
                     foreach(var t in accessories) rows.Add(Row(t,Rare,chance,weight:.025f/Math.Max(1,accessories.Count)));
                 }
             }
@@ -212,7 +213,7 @@ namespace TerraKnight.Items
             if (!boss)
             {
                 var inputs=new List<ItemType>();
-                AddExtras(inputs,key,stage,-1,3,entry,final);
+                AddExtras(inputs,key,stage,-1,3,entry,final,specialties);
                 foreach(var t in inputs) rows.Add(Row(t,Rare,elite ? .24f : .10f,weight:.025f));
             }
             var ores=new Dictionary<ItemType,float>();
@@ -334,7 +335,7 @@ namespace TerraKnight.Items
                 foreach(var t in exploration)
                     if(ProgressionBalance.Unlocked(t,stage,entry,final))rows.Add(Row(t,Essential,AccessoryChance(elite)));
             if (!boss) ConsolidateAccessories(rows, elite);
-            else ConsolidateAccessories(rows, elite, first ? 1f : .2f);
+            else ConsolidateAccessories(rows, elite, first ? 1f : .25f);
             // Each boss has its own signature, outside the shared accessory lottery.
             if(boss) {
                 var signature=ProgressionBalance.BossSignatures[key];
@@ -350,11 +351,13 @@ namespace TerraKnight.Items
             rows.RemoveAll(d=>ProgressionBalance.ShopOnlyWeapons.Contains(d.Type));
             // Fish (and the fish weapons, the seafood) come only from fishing, never from an ordinary enemy (Items/FishingOnly.cs).
             if(!boss)rows.RemoveAll(d=>Fishing.FishOnly(d.Type));
+            if(!boss)ImproveSpecialties(rows,specialties,elite);
             return rows.ToArray();
         }
 
-        internal static float AccessoryChance(bool elite) => elite ? .05f : .02f;
-        internal static float AccessoryPoolChance(bool elite, int count) => count > 0 ? AccessoryChance(elite) : 0f;
+        internal static float AccessoryChance(bool elite) => elite ? .075f : .03f;
+        internal static float AccessoryPoolChance(bool elite, int count) => count <= 0 ? 0f
+            : Math.Min(elite ? .25f : .12f,Math.Max(AccessoryChance(elite),count*(elite ? .01f : .005f)));
 
         static void ConsolidateAccessories(List<EnemyDrops.Drop> rows, bool elite, float bossChance = -1f)
         {
@@ -389,15 +392,65 @@ namespace TerraKnight.Items
                         rows[i]=d;
                     }
             foreach (var pair in weights)
-                // One fixed pool roll, followed by an equal N-way choice. Adding candidates
-                // must never increase the chance that a kill pays an accessory.
+                // One bounded pool roll, followed by an equal N-way choice. Larger pools
+                // get a modest budget adjustment so individual exploration items aren't diluted away.
                 rows.Add(Row(pair.Key,Essential,bossChance >= 0 ? bossChance : AccessoryPoolChance(elite, weights.Count),1,1,1f));
         }
 
         static float Value(Dictionary<ItemType,float> pool, ItemType t) => pool.TryGetValue(t,out float n) ? n : 0;
+
+        // Catalogue specialties used to have one source and a tiny share of a large equipment
+        // lottery. Give their two routes independent modest rolls, without inflating the
+        // remaining candidates when their weights leave that lottery.
+        static void ImproveSpecialties(List<EnemyDrops.Drop> rows,HashSet<ItemType> specialties,bool elite)
+        {
+            var types=new List<ItemType>();
+            foreach(var row in rows)
+                if(!row.Master && row.Chance>0 && specialties.Contains(row.Type) && !types.Contains(row.Type))
+                    types.Add(row.Type);
+            if(types.Count==0)return;
+            types.Sort();
+            var totals=new Dictionary<int,float>();
+            var remaining=new Dictionary<int,float>();
+            foreach(var row in rows)if(row.Group>0)
+            {
+                totals[row.Group]=(totals.TryGetValue(row.Group,out float sum) ? sum : 0)+Weight(row);
+                if(!types.Contains(row.Type))remaining[row.Group]=(remaining.TryGetValue(row.Group,out float left) ? left : 0)+Weight(row);
+            }
+            var promoted=new List<EnemyDrops.Drop>();
+            foreach(var type in types)
+            {
+                double miss=1;
+                var grouped=new Dictionary<int,float>();
+                var chances=new Dictionary<int,float>();
+                foreach(var row in rows)
+                {
+                    if(row.Group>0)
+                    {
+                        if(!chances.ContainsKey(row.Group))chances[row.Group]=row.Chance;
+                        if(row.Type==type)grouped[row.Group]=(grouped.TryGetValue(row.Group,out float weight) ? weight : 0)+Weight(row);
+                    }
+                    else if(row.Type==type)miss*=1-row.Chance;
+                }
+                foreach(var pair in grouped)miss*=1-chances[pair.Key]*pair.Value/totals[pair.Key];
+                float chance=Mathf.Clamp01(Math.Max(elite ? .025f : .01f,(float)(1-miss)*1.25f));
+                promoted.Add(Row(type,0,chance));
+            }
+            rows.RemoveAll(row=>types.Contains(row.Type));
+            for(int i=0;i<rows.Count;i++)if(rows[i].Group>0)
+            {
+                var row=rows[i];
+                float left=remaining.TryGetValue(row.Group,out float sum) ? sum : 0;
+                row.Num=Mathf.RoundToInt(row.Chance*left/totals[row.Group]*100000);
+                row.Den=100000;
+                rows[i]=row;
+            }
+            rows.AddRange(promoted);
+        }
+
         internal static bool CombatWeapon(ItemDef d) => d.IsWeapon && !d.IsAmmo && !d.GameTool && !d.HkItem && d.MaxStack==1
             && d.PickPower==0 && d.AxePower==0 && d.HammerPower==0 && d.FishingPower==0 && d.PlacesStation==World.StationKind.None;
-        static void AddExtras(List<ItemType> pool,string record,int stage,int cls,int category,bool entry,bool final)
+        static void AddExtras(List<ItemType> pool,string record,int stage,int cls,int category,bool entry,bool final,HashSet<ItemType> specialties=null)
         {
             if(legacyItems==null)
             {
@@ -434,16 +487,16 @@ namespace TerraKnight.Items
             if(candidates.Count==0) return;
             if(sources.TryGetValue(id,out var assigned))
             {
-                if(assigned.TryGetValue(record,out var local)) foreach(var t in local) if(!pool.Contains(t)) pool.Add(t);
+                if(assigned.TryGetValue(record,out var local)) foreach(var t in local) { if(!pool.Contains(t)) pool.Add(t); specialties?.Add(t); }
                 return;
             }
             sources[id]=assigned=new Dictionary<string,List<ItemType>>();
             void Assign(string rec,ItemType t)
             {
                 if(!assigned.TryGetValue(rec,out var list)) assigned[rec]=list=new List<ItemType>();
-                list.Add(t);
+                if(!list.Contains(t))list.Add(t);
             }
-            // Assign every catalogue item to a stable regional source. Main-route enemies
+            // Assign every catalogue item to two stable regional sources. Main-route enemies
             // carry progression staples and recipe inputs; side routes carry optional variants.
             // Build the eligible roster for this tier so future-area enemies cannot strand gear.
             foreach (var t in candidates)
@@ -468,7 +521,9 @@ namespace TerraKnight.Items
                 if (theme!=null && areas.TryGetValue(theme,out var themed))
                 {
                     themed.Sort(StringComparer.Ordinal);
-                    Assign(themed[(int)(StableHash(t.ToString())%(uint)themed.Count)],t);
+                    int pick=(int)(StableHash(t.ToString())%(uint)themed.Count);
+                    Assign(themed[pick],t);
+                    if(themed.Count>1)Assign(themed[(pick+1)%themed.Count],t);
                     continue;
                 }
                 var regionNames=new List<string>(areas.Keys);
@@ -477,8 +532,16 @@ namespace TerraKnight.Items
                 roster.Sort(StringComparer.Ordinal);
                 string source=roster[(int)((hash/(uint)regionNames.Count)%(uint)roster.Count)];
                 Assign(source,t);
+                // Keep the original route, then choose another eligible region when possible.
+                // A one-region tier still gets a distinct second monster in that region.
+                string region=regionNames[(int)(hash%(uint)regionNames.Count)];
+                var alternatives=new List<string>();
+                foreach(var pair in areas)if(pair.Key!=region)alternatives.AddRange(pair.Value);
+                if(alternatives.Count==0)foreach(var rec in roster)if(rec!=source)alternatives.Add(rec);
+                alternatives.Sort(StringComparer.Ordinal);
+                if(alternatives.Count>0)Assign(alternatives[(int)((hash/17u)%(uint)alternatives.Count)],t);
             }
-            if(assigned.TryGetValue(record,out var selected)) foreach(var t in selected) if(!pool.Contains(t)) pool.Add(t);
+            if(assigned.TryGetValue(record,out var selected)) foreach(var t in selected) { if(!pool.Contains(t)) pool.Add(t); specialties?.Add(t); }
         }
         static uint StableHash(string text)
         {

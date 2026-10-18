@@ -1,0 +1,7 @@
+{
+  "Fields": "damage, useTime, useAnimation, reuseDelay, rare and item defaults",
+  "Version": "1.4.5.8",
+  "Sha256": "960A03BFF6050CF7BE16DFC1A7B19E10FC2C4F8F835A6A3B135A50DD9E6BA2F3",
+  "Executable": "F:\\SteamLibrary\\steamapps\\common\\Terraria\\Terraria.exe",
+  "Extract": "tools/RecipeAudit/DumpCrafting.cs"
+}

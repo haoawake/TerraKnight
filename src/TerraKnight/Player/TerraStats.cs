@@ -93,11 +93,16 @@ namespace TerraKnight.Player
         /// <summary>Dev: hits leave at least one life (a test's fight against a boss that one-shots its starter gear).</summary>
         public static bool DevImmortal;
 
-        /// <summary>Applies a hit worth this many masks at the given Terraria damage per mask; returns the damage taken.</summary>
+        /// <summary>Stage and source set a native hit's damage; only Hollow restores mask-count multipliers.</summary>
+        public static int NativeHitDamage(int masks, int perMask, float share = 1f) =>
+            masks > 0 ? Mathf.Max(1, Mathf.RoundToInt(perMask * share * (World.GameDifficulty.UsesMaskDamage ? masks : 1))) : 0;
+
+        /// <summary>Applies one native hit, including mask-count scaling only in Hollow difficulty.</summary>
         public int TakeMasks(int masks, int perMask, float share = 1f)
         {
+            if (masks <= 0) return 0;
             // Enemy scaling precedes defense. Keep fractional defense through endurance, as Player.Hurt does.
-            int damage = Mitigate(Mathf.Max(1, Mathf.RoundToInt(masks * perMask * share)));
+            int damage = Mitigate(NativeHitDamage(masks, perMask, share));
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;

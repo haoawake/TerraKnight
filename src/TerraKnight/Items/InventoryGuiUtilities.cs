@@ -23,9 +23,10 @@ namespace TerraKnight.Items
         internal static Rect UtilityButtonRect(Rect view, float ui, int index)
         {
             var tex = TerrariaAssets.Texture("UI/ChestStack_0");
-            float x = view.x + (Margin + Inventory.Columns * SlotStep + 8f) * ui;
-            float y = view.y + (Margin + 18f + Inventory.Rows * SlotStep + 4f) * ui;
-            return new Rect(x + index % 2 * 36f * ui, y + (index / 2 + 1) * (tex.height + 8f) * ui, tex.width * ui, tex.height * ui);
+            float x = view.x + RightOfAmmo(ui);
+            // One button beside each ammo slot, centered on the same row.
+            float y = view.y + (Margin + 18f + (index + 1) * SlotStep + (SlotSize - tex.height) / 2f) * ui;
+            return new Rect(x, y, tex.width * ui, tex.height * ui);
         }
 
         static void DrawUtilityButtons(Rect view, float ui, Vector2 mouse)

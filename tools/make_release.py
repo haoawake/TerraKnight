@@ -5,7 +5,8 @@ staging folder, never into the game's own plugin folder (so it is safe while the
 
     python tools/make_release.py
 """
-import os, re, shutil, subprocess, sys, zipfile
+import argparse, os, re, shutil, subprocess, sys, zipfile
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = 'https://github.com/haoawake/TerraKnight'
@@ -41,10 +42,14 @@ Full documentation (English): {repo}/blob/main/README.en.md
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--atlas', type=Path, help='Reviewed native world atlas to include in this package')
+    args = parser.parse_args()
     plugin = open(os.path.join(ROOT, 'src', 'TerraKnight', 'Plugin.cs'), encoding='utf-8').read()
     version = re.search(r'Version\s*=\s*"([^"]+)"', plugin).group(1)
     name = f'TerraKnight-v{version}'
     stage = os.path.join(ROOT, 'release', name)
+    assert Path(stage).resolve().parent == (Path(ROOT) / 'release').resolve(), 'Invalid release staging directory'
     shutil.rmtree(stage, ignore_errors=True)
     plugin_dir = os.path.join(stage, 'BepInEx', 'plugins', 'TerraKnight')
     os.makedirs(plugin_dir)
@@ -58,6 +63,11 @@ def main():
             os.remove(os.path.join(plugin_dir, f))
     for f in ('空洞泰拉.bat', 'terraknight-launch.ps1'):
         shutil.copy2(os.path.join(ROOT, 'launcher', f), stage)
+    if args.atlas:
+        assert args.atlas.is_file() and args.atlas.stat().st_size > 100, 'Missing reviewed atlas'
+        atlas_dir = Path(stage) / 'BepInEx' / 'TerraKnight'
+        atlas_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(args.atlas, atlas_dir / 'worldatlas.bin')
     with open(os.path.join(stage, '安装说明.txt'), 'w', encoding='utf-8-sig', newline='\r\n') as f:
         f.write(NOTES.format(version=version, repo=REPO))
     with open(os.path.join(stage, 'Install (English).txt'), 'w', encoding='utf-8-sig', newline='\r\n') as f:

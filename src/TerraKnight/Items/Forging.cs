@@ -12,14 +12,16 @@ namespace TerraKnight.Items
     /// (its plain reforge price) and its level; a forging takes one time in two, the money gone and the level kept. Each
     /// weapon carries its own level (ItemStack.Forge, kept in the save); a reforge keeps it. A shop pays for the levels too:
     /// a fifth of their prices (Shop.SellValue), as it pays a fifth of an item's worth. A piece of armor is forged too, up
-    /// to +5 whatever its stage, each level +1 defense (a whole set +15), at a dearer price than a weapon's.
+    /// to three levels per stage (+3 .. +18), each level +1 defense. Its full-upgrade price stays near the former budget.
     /// </summary>
     internal static class Forging
     {
         public const int LevelsPerStage = 5;
         public const float DamagePerLevel = 0.05f;
-        /// <summary>A piece of armor's cap, and the defense each level adds.</summary>
-        public const int ArmorMax = 5, DefensePerLevel = 1;
+        /// <summary>A piece of armor gains three available levels per stage, each adding one defense.</summary>
+        public const int ArmorLevelsPerStage = 3, DefensePerLevel = 1;
+
+        public static int ArmorStageCap(int stage) => ArmorLevelsPerStage * (Mathf.Clamp(stage, 0, 5) + 1);
 
         /// <summary>The cap of a stage's weapons: five levels a stage (stage 0 +5 .. stage 5 +30).</summary>
         public static int StageCap(int stage) => LevelsPerStage * (Mathf.Clamp(stage, 0, 5) + 1);
@@ -32,7 +34,7 @@ namespace TerraKnight.Items
         {
             if (t == ItemType.KnightNail || t == ItemType.DreamNail) return MaxLevel;
             var d = ItemDb.Get(t);
-            if (IsArmorPiece(d)) return ArmorMax;
+            if (IsArmorPiece(d)) return ArmorStageCap(d.Stage);
             return StageCap(d != null ? d.Stage : 0);
         }
 
@@ -85,11 +87,18 @@ namespace TerraKnight.Items
         }
 
         /// <summary>
-        /// A piece of armor's next level, in copper: dearer than a weapon's of its stage, a point of defense on every hit
-        /// taken: 500 Geo a stage of its own (stage 0 500, stage 5 3000), ×(1 + level/2); +0 to +5 on one piece 5000 Geo
-        /// at stage 0, 30000 at stage 5.
+        /// Armor's full-upgrade budget remains about 5000 Geo per stage (5000 .. 30000).
+        /// Spread it across its stage's cap, with the last step costing three times the first.
+        /// Round each attempt up to whole Geo; this adds less than one Geo per available level.
         /// </summary>
-        public static long ArmorCost(ItemDef plain, int level) => 50000L * (Mathf.Clamp(plain.Stage, 0, 5) + 1) * (2 + level) / 2;
+        public static long ArmorCost(ItemDef plain, int level)
+        {
+            int stage = Mathf.Clamp(plain.Stage, 0, 5), cap = ArmorStageCap(stage);
+            long budget = 500000L * (stage + 1);
+            long numerator = budget * (cap - 1 + 2L * Mathf.Max(0, level));
+            long denominator = 2L * cap * (cap - 1) * 100;
+            return (numerator + denominator - 1) / denominator * 100;
+        }
 
         /// <summary>A weapon's prices for each step up to a level, summed, in copper.</summary>
         public static long PricesTo(ItemType t, int toLevel)

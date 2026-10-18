@@ -302,6 +302,13 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite.StartsWith("p4_"))
+            {
+                yield return Promo4(suite.Substring(3));
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "currencies") { yield return CurrenciesTest(); Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break; }
             if (suite == "rtorch" || suite.StartsWith("rtorch_")) { yield return RegionalTorchTest(suite.Length > 7 ? suite.Substring(7) : "all"); Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break; }
             if (suite == "housing")

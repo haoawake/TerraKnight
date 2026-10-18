@@ -1,0 +1,239 @@
+{
+  "MagicMissile": {
+    "Mana": 2
+  },
+  "Vilethorn": {
+    "Mana": 2
+  },
+  "AquaScepter": {
+    "Mana": 1
+  },
+  "Flamelash": {
+    "Mana": 4
+  },
+  "CrystalStorm": {
+    "Mana": 1
+  },
+  "CursedFlames": {
+    "Mana": 3
+  },
+  "GoldenShower": {
+    "Mana": 1
+  },
+  "FrostStaff": {
+    "Mana": 2
+  },
+  "PoisonStaff": {
+    "Mana": 7
+  },
+  "VenomStaff": {
+    "Mana": 6
+  },
+  "UnholyTrident": {
+    "Mana": 6
+  },
+  "MeteorStaff": {
+    "Mana": 2
+  },
+  "SpectreStaff": {
+    "Mana": 5
+  },
+  "InfernoFork": {
+    "Mana": 6
+  },
+  "ShadowbeamStaff": {
+    "Mana": 3
+  },
+  "HeatRay": {
+    "Mana": 2
+  },
+  "BubbleGun": {
+    "Mana": 2
+  },
+  "RazorbladeTyphoon": {
+    "Mana": 8
+  },
+  "BlizzardStaff": {
+    "Mana": 1
+  },
+  "SkyFracture": {
+    "Mana": 5
+  },
+  "LeafBlower": {
+    "Mana": 1
+  },
+  "LaserRifle": {
+    "Mana": 2
+  },
+  "BatScepter": {
+    "Mana": 3
+  },
+  "CrystalVileShard": {
+    "Mana": 6
+  },
+  "MagnetSphere": {
+    "Mana": 4
+  },
+  "RainbowRod": {
+    "Mana": 5
+  },
+  "NimbusRod": {
+    "Mana": 4
+  },
+  "MagicalHarp": {
+    "Mana": 2
+  },
+  "ClingerStaff": {
+    "Mana": 4
+  },
+  "ToxicFlask": {
+    "Mana": 8
+  },
+  "BookofSkulls": {
+    "Mana": 4
+  },
+  "SpiritFlame": {
+    "Mana": 4
+  },
+  "NebulaBlaze": {
+    "Mana": 3
+  },
+  "LunarFlareBook": {
+    "Mana": 2
+  },
+  "NebulaArcanum": {
+    "Mana": 6
+  },
+  "LastPrism": {
+    "Mana": 2
+  },
+  "ChargedBlasterCannon": {
+    "Mana": 4
+  },
+  "MedusaHead": {
+    "Mana": 15
+  },
+  "IceRod": {
+    "Mana": 2
+  },
+  "WandofSparking": {
+    "Mana": 2
+  },
+  "AmethystStaff": {
+    "Mana": 2
+  },
+  "RubyStaff": {
+    "Mana": 2
+  },
+  "DiamondStaff": {
+    "Mana": 2
+  },
+  "WaterBolt": {
+    "Mana": 1
+  },
+  "SpaceGun": {
+    "Mana": 2
+  },
+  "DemonScythe": {
+    "Mana": 2
+  },
+  "FlowerofFire": {
+    "Mana": 2
+  },
+  "MagicDagger": {
+    "Mana": 3
+  },
+  "TopazStaff": {
+    "Mana": 3
+  },
+  "SapphireStaff": {
+    "Mana": 3
+  },
+  "EmeraldStaff": {
+    "Mana": 3
+  },
+  "AmberStaff": {
+    "Mana": 2
+  },
+  "CrimsonRod": {
+    "Mana": 2
+  },
+  "FlowerofFrost": {
+    "Mana": 2
+  },
+  "BeeGun": {
+    "Mana": 2
+  },
+  "WaspGun": {
+    "Mana": 3
+  },
+  "NettleBurst": {
+    "Mana": 5
+  },
+  "RainbowGun": {
+    "Mana": 8
+  },
+  "StaffofEarth": {
+    "Mana": 5
+  },
+  "Razorpine": {
+    "Mana": 2
+  },
+  "CrystalSerpent": {
+    "Mana": 5
+  },
+  "SoulDrain": {
+    "Mana": 10
+  },
+  "ZapinatorGray": {
+    "Mana": 3
+  },
+  "ZapinatorOrange": {
+    "Mana": 7
+  },
+  "BetsysWrath": {
+    "Mana": 4
+  },
+  "SharpTears": {
+    "Mana": 2
+  },
+  "ShadowFlameHexDoll": {
+    "Mana": 1
+  },
+  "BookStaff": {
+    "Mana": 1
+  },
+  "LaserMachinegun": {
+    "Mana": 6
+  },
+  "SparkleGuitar": {
+    "Mana": 1
+  },
+  "Nightglow": {
+    "Mana": 1
+  },
+  "WeatherPain": {
+    "Mana": 5
+  },
+  "WandofFrosting": {
+    "Mana": 2
+  },
+  "DaybloomStaff": {
+    "Mana": 2
+  },
+  "GlacierFang": {
+    "Mana": 3
+  },
+  "Petalstorm": {
+    "Mana": 5
+  },
+  "KillingDeck": {
+    "Mana": 4
+  },
+  "ThunderStaff": {
+    "Mana": 1
+  },
+  "LightningStrike": {
+    "Mana": 7
+  }
+}

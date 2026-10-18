@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Terraria;
 using UnityEngine.InputSystem;
 using TerraKnight.UI;
@@ -925,7 +925,8 @@ namespace TerraKnight.Items
         // ------------------------------------------------------------------ the search (UIBestiaryTest's search bar)
 
         static string bookSearch = "", bookComposing = "";
-        static bool bookTyping, bookTextHooked;
+        static bool bookTyping;
+        static readonly UI.ImeTextEntry bookInput = new UI.ImeTextEntry(BookAppend);
         static int bookTypingEnded = -10;
 
         /// <summary>Something is searched for.</summary>
@@ -975,54 +976,19 @@ namespace TerraKnight.Items
             return false;
         }
 
-        /// <summary>
-        /// The game's own input (UnityEngine.Input) carries the typing: its IME mode left on Auto keeps the system's input
-        /// method off for a window with no text field of its own focused, which kept Chinese out of the box (the chat's
-        /// GUI.TextField turns it on itself). Without it (an input setup with no legacy input), the Input System's.
-        /// </summary>
-        static bool legacyText;
-
         static void StartBookSearch()
         {
+            EndRename(false);
             ResetBookSearchFilters();
             bookTyping = true;
-            try
-            {
-                _ = UnityEngine.Input.inputString;
-                // Chinese and the other languages typed through the system's input method, on while the box is typed into.
-                UnityEngine.Input.imeCompositionMode = IMECompositionMode.On;
-                legacyText = true;
-            }
-            catch (System.InvalidOperationException) { legacyText = false; }
-            var kb = Keyboard.current;
-            if (kb != null)
-            {
-                if (!bookTextHooked)
-                {
-                    bookTextHooked = true;
-                    kb.onTextInput += BookTyped;
-                    kb.onIMECompositionChange += BookComposing;
-                }
-                kb.SetIMEEnabled(true);
-            }
+            bookInput.Begin();
             Sound("Menu_Tick");
-        }
-
-        static void BookTyped(char c)
-        {
-            if (!legacyText) BookAppend(c);
         }
 
         static void BookAppend(char c)
         {
             if (!bookTyping || char.IsControl(c) || bookSearch.Length >= 32) return;
             SetBookSearch(bookSearch + c);
-            bookComposing = "";
-        }
-
-        static void BookComposing(UnityEngine.InputSystem.LowLevel.IMECompositionString s)
-        {
-            if (bookTyping && !legacyText) bookComposing = s.ToString();
         }
 
         static void EndBookSearch()
@@ -1031,31 +997,24 @@ namespace TerraKnight.Items
             bookTyping = false;
             bookComposing = "";
             bookTypingEnded = Time.frameCount;
-            Keyboard.current?.SetIMEEnabled(false);
-            if (legacyText)
-                try { UnityEngine.Input.imeCompositionMode = IMECompositionMode.Auto; }
-                catch (System.InvalidOperationException) { }
+            bookInput.End();
         }
 
-        /// <summary>Dev: whether the box reads the game's own input, and its IME mode now.</summary>
-        public static string DevBookIme => $"{(legacyText ? "旧输入" : "Input System")} {(legacyText ? UnityEngine.Input.imeCompositionMode.ToString() : "-")}";
+        /// <summary>Dev: the committed-text backend used by the active search.</summary>
+        public static string DevBookIme => bookInput.Backend;
 
         /// <summary>Each frame while typed into: Backspace; Enter or Esc ends the typing (the text stays); the book shut ends it.</summary>
         static void TickBookSearch()
         {
             if (!bookTyping) return;
             if (!Open || !bestiaryOpen) { EndBookSearch(); return; }
-            if (legacyText)
-            {
-                // What the input method put in this frame (a word chosen, or plain keys), and what it is composing.
-                foreach (char c in UnityEngine.Input.inputString) BookAppend(c);
-                bookComposing = UnityEngine.Input.compositionString ?? "";
-            }
+            bookInput.Tick();
+            bookComposing = bookInput.Composition;
             var kb = Keyboard.current;
-            if (kb == null) return;
+            if (kb == null || bookInput.EditingComposition) return;
             if (kb.backspaceKey.wasPressedThisFrame && bookComposing.Length == 0 && bookSearch.Length > 0)
             {
-                SetBookSearch(bookSearch.Substring(0, bookSearch.Length - 1));
+                SetBookSearch(UI.ImeTextEntry.Backspace(bookSearch));
             }
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame) EndBookSearch();
         }
@@ -1075,10 +1034,10 @@ namespace TerraKnight.Items
                 string caret = bookTyping && (int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : "";
                 BookOutlined(text, bookSearch + bookComposing + caret, bookSmall, Color.white);
                 // The input method's word list under the box, at the caret (as a text field puts it).
-                if (bookTyping && legacyText)
+                if (bookTyping)
                 {
                     float w = bookSmall.CalcSize(new GUIContent(bookSearch)).x;
-                    UnityEngine.Input.compositionCursorPos = new Vector2(text.x + Mathf.Min(w, text.width), box.yMax);
+                    bookInput.Anchor(new Vector2(text.x + Mathf.Min(w, text.width), box.yMax));
                 }
             }
             Add(box, Kind.BestiaryEntry, -4);

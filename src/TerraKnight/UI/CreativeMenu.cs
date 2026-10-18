@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using HarmonyLib;
 using TerraKnight.Terraria;
 using TerraKnight.World;
@@ -9,7 +9,7 @@ namespace TerraKnight.UI
 {
     /// <summary>
     /// Starting a save. Every new game first asks its difficulty, as Terraria's world creation
-    /// does (<see cref="GameDifficulty"/>: Normal, Hard, Expert, Master). And the save profiles
+    /// does (<see cref="GameDifficulty"/>: Normal, Hard, Expert, Master, Hollow). And the save profiles
     /// screen has a "创造模式" button in its bottom right: its panel lists the four save slots
     /// (empty, a save, a creative save); choosing one (a second click to confirm when it would
     /// overwrite a save), then a difficulty, clears it and starts a new game there in creative
@@ -46,12 +46,12 @@ namespace TerraKnight.UI
         public static void DevPick(DifficultyLevel d) => Pick(d);
         public static string DevStep => step.ToString();
 
-        /// <summary>Dev: where a part of the menu is drawn (GUI rect): "creative" (the profiles' button), "slot" s, "confirm", "difficulty" i (1-4).</summary>
+        /// <summary>Dev: where a part of the menu is drawn (GUI rect): "creative" (the profiles' button), "slot" s, "confirm", "difficulty" i (1-5).</summary>
         public static Rect DevRect(string what, int i = 0)
         {
             float ui = Screen.height / 1080f;
             if (what == "creative") return new Rect(Screen.width - 300f * ui, Screen.height - 120f * ui, 240f * ui, 58f * ui);
-            float w = 760f * ui, h = (step==Step.Choose ? 620f : 560f) * ui;
+            float w = 760f * ui, h = (step==Step.Difficulty ? 640f : step==Step.Choose ? 620f : 560f) * ui;
             var p = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
             if (what == "slot") return new Rect(p.x + 80f * ui, p.y + (224f + (i - FirstChoice) * 72f) * ui, w - 160f * ui, 58f * ui);
             if (what == "confirm") return new Rect(p.x + w / 2f - 230f * ui, p.y + 330f * ui, 210f * ui, 56f * ui);
@@ -179,7 +179,7 @@ namespace TerraKnight.UI
             }
             // The panel over the menu.
             Fill(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0f, 0f, 0f, 0.55f));
-            float w = 760f * ui, h = (step==Step.Choose ? 620f : 560f) * ui;
+            float w = 760f * ui, h = (step==Step.Difficulty ? 640f : step==Step.Choose ? 620f : 560f) * ui;
             var p = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
             Fill(p, Back);
             Rim(p, Line, 2f * ui);
@@ -213,13 +213,13 @@ namespace TerraKnight.UI
             else DrawDifficulty(p, ui);
         }
 
-        /// <summary>Terraria's four difficulty cards: its icon, its name in its colour, what it does to the enemies.</summary>
+        /// <summary>Five difficulty cards: its icon, its name in its colour, what it does to the enemies.</summary>
         static void DrawDifficulty(Rect p, float ui)
         {
             string head = forCreative ? Lang.F("存档 {0} 的难度（敌人的血量和伤害，大师是原本的数值）：", chosen) : Lang.T("选择难度（敌人的血量和伤害，大师是原本的数值）：");
             Shadowed(new Rect(p.x + 48f * ui, p.y + 140f * ui, p.width - 96f * ui, 30f * ui), head, text, new Color(0.8f, 0.8f, 0.85f));
             var mouse = TerraCursor.GuiMouse();
-            for (int i = 1; i <= 4; i++)
+            for (int i = 1; i <= (int)DifficultyLevel.Hollow; i++)
             {
                 var d = (DifficultyLevel)i;
                 var c = GameDifficulty.ColorOf(d);
@@ -236,13 +236,14 @@ namespace TerraKnight.UI
                     var ir = new Rect(r.x + 14f * ui, r.center.y - icon.height * s / 2f, icon.width * s, icon.height * s);
                     var prev = GUI.color;
                     // Hard has no icon of its own: Normal's, in Hard's colour.
-                    GUI.color = d == DifficultyLevel.Hard ? c : Color.white;
+                    GUI.color = d == DifficultyLevel.Hard || d == DifficultyLevel.Hollow ? c : Color.white;
                     GUI.DrawTexture(ir, icon);
                     GUI.color = prev;
                 }
                 Shadowed(new Rect(r.x + 78f * ui, r.y, 110f * ui, r.height), GameDifficulty.NameOf(d), big, c);
                 int pct = Mathf.RoundToInt(GameDifficulty.FactorOf(d) * 100f);
-                string what = d == DifficultyLevel.Master ? Lang.T("敌人血量与伤害 100%（原本的数值），最难") : Lang.F("敌人血量与伤害为大师的 {0}%", pct);
+                string what = d == DifficultyLevel.Hollow ? Lang.T("大师数值，恢复原版面具数量增伤")
+                    : d == DifficultyLevel.Master ? Lang.T("敌人血量与伤害 100%，不叠加面具数量") : Lang.F("敌人血量与伤害为大师的 {0}%", pct);
                 Shadowed(new Rect(r.x + 190f * ui, r.y, r.width - 200f * ui, r.height), what, small, over ? Color.white : new Color(0.82f, 0.82f, 0.86f));
                 if (Clicked(r)) Pick(d);
             }

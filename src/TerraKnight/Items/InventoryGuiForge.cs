@@ -8,7 +8,7 @@ namespace TerraKnight.Items
     /// <summary>
     /// The Goblin Tinkerer's forging (Forging): his "Forge" button opens the inventory with his slot under it, as his
     /// reforging does, for a weapon or a piece of armor. Beside it: its level and its cap (a weapon's own stage's, armor's
-    /// +5: Forging.MaxLevelOf), its damage (armor: its defense) now and after, or at the cap "武器已满级，无法再锻造"
+    /// three levels per stage: Forging.MaxLevelOf), its damage (armor: its defense) now and after, or at the cap "武器已满级，无法再锻造"
     /// ("盔甲已满级…") and no hammer; the odds,
     /// the price; the hammer under it forges (Item_37 when it takes, a dull clank when it fails). As a reforge's best
     /// prefix: a forging that takes pops the item's new name up over the player (in cycling colours, with the best_reforge
@@ -39,7 +39,7 @@ namespace TerraKnight.Items
             {
                 Outlined(text, Lang.T("将武器或盔甲放到此处锻造"), labelStyle, color);
                 Outlined(new Rect(text.x, text.y + 24f * ui, text.width, text.height), Lang.T("锻造上限看武器的阶段：阶段 0 的武器 +5，每高一个阶段多 5 级"), labelStyle, color);
-                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲最多锻造到 +5，每级 +1 防御"), labelStyle, color);
+                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲阶段 0 最多 +3，每高一阶段多 3 级，每级 +1 防御"), labelStyle, color);
                 forgeHover = false;
                 return;
             }

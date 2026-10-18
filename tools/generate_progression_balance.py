@@ -1,6 +1,7 @@
 """Compile the reviewed document's curated matrices into game-native data."""
 from pathlib import Path
 import importlib.util
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('plan', ROOT / 'tools/build_drop_balance_doc.py')
@@ -34,6 +35,8 @@ for m in re.finditer(r'new OreInfo\(ItemType\.(\w+), "[^"]+", \d+, ItemType\.(\w
 for t,s in stages.items():
     lines.append(f'            [ItemType.{t}] = {s},')
 lines += ['        };', '    }', '}']
-path = ROOT / 'src/TerraKnight/Items/ProgressionBalanceData.cs'
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output',type=Path,default=ROOT/'src/TerraKnight/Items/ProgressionBalanceData.cs')
+path=parser.parse_args().output
 path.write_text('\n'.join(lines)+'\n',encoding='utf-8')
 print(path)

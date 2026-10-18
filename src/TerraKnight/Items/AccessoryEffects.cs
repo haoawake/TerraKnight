@@ -88,7 +88,7 @@ namespace TerraKnight.Items
             if (mod.Stats.ShinyStill && (Random.Range(0, 30000) < mod.Stats.SinceHitTicks || Random.Range(0, 30) == 0)) ShinyMote(centre);
 
             // The Gold Ring (Pl:35409-35415, 35305-35316): geo within 42 + 350 px pulled in fast.
-            if (b.GoldRing) PullGeo(box);
+            if (b.GoldRing || b.TreasureMagnet) PullGeo(box);
 
             // The Discount Card is worn or not as a shop opens (Pl:25831-25834).
             if (!Town.TownNpcs.ShopOpen) Town.TownNpcs.DiscountLatched = b.Discount;
@@ -264,8 +264,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static void LuckyCoin(HealthManager hm, int dir, bool itemHit)
         {
-            if (hm == null || Random.Range(0, 5) != 0) return;
-            if (smallGeo(hm) + mediumGeo(hm) + largeGeo(hm) <= 0) return;
+            if (hm == null || !CoinTarget(hm) || Random.Range(0, 5) != 0) return;
             int type = 0;
             if (Random.Range(0, 10) == 0) type = 1;
             if (Random.Range(0, 100) == 0) type = 2;
@@ -275,13 +274,16 @@ namespace TerraKnight.Items
             if (type == 0)
             {
                 Shop.Earn(stack);
+                UI.CombatText.Show(hm.transform.position + Vector3.up, "+" + Shop.Money(stack), UI.CombatText.Notice);
                 return;
             }
             var prefab = type == 1 ? smallGeoPrefab(hm) : largeGeoPrefab(hm);
             int pieces = type == 1 ? stack : stack * 4;
             if (prefab == null)
             {
-                Shop.Earn(type == 1 ? stack * 100L : stack * 10000L);
+                long value = type == 1 ? stack * 100L : stack * 10000L;
+                Shop.Earn(value);
+                UI.CombatText.Show(hm.transform.position + Vector3.up, "+" + Shop.Money(value), UI.CombatText.Notice);
                 return;
             }
             FlingUtils.SpawnAndFling(new FlingUtils.Config
@@ -291,10 +293,23 @@ namespace TerraKnight.Items
             }, hm.transform, Vector3.zero);
         }
 
+        // Summoned/variant enemies can have empty native geo fields while their mod entry
+        // is worth money. Arena creatures and spawned helpers worth zero remain ineligible.
+        static bool CoinTarget(HealthManager hm)
+        {
+            if (smallGeo(hm) + mediumGeo(hm) + largeGeo(hm) > 0) return true;
+            var info = EnemyStats.Of(hm);
+            string record = info?.Record;
+            return record != null && EnemyDrops.GeoOf(EnemyDrops.KeyFor(record, EnemyDrops.VariantLevel(hm.gameObject.scene.name))) > 0;
+        }
+
         static readonly List<GameObject> geo = new List<GameObject>();
         static float geoScan;
 
-        /// <summary>The Gold Ring: geo within 392 px steered at the player at 12 px a tick (PullItem_Pickup(12, 5)).</summary>
+        internal static float GeoGrabRange(bool goldRing, bool treasureMagnet) =>
+            (42f + (goldRing ? 350f : treasureMagnet ? 150f : 0f)) * Px;
+
+        /// <summary>Money pickup accessories attract native geo too; overlapping ranges use the larger bonus.</summary>
         static void PullGeo(Bounds body)
         {
             if (Time.time >= geoScan)
@@ -303,7 +318,7 @@ namespace TerraKnight.Items
                 geo.Clear();
                 foreach (var go in GameObject.FindGameObjectsWithTag("Geo")) geo.Add(go);
             }
-            float reach = (42f + 350f) * Px;
+            float reach = GeoGrabRange(Equipment.Current.GoldRing, Equipment.Current.TreasureMagnet);
             var range = new Bounds(body.center, body.size + Vector3.one * reach * 2f);
             foreach (var g in geo)
             {

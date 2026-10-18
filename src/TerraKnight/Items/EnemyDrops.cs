@@ -178,7 +178,7 @@ namespace TerraKnight.Items
         {
             World.DifficultyLevel.Hard => 1.1f,
             World.DifficultyLevel.Expert => 1.2f,
-            World.DifficultyLevel.Master => 1.3f,
+            World.DifficultyLevel.Master or World.DifficultyLevel.Hollow => 1.3f,
             _ => 1f,
         };
 
@@ -186,7 +186,7 @@ namespace TerraKnight.Items
         {
             World.DifficultyLevel.Hard => 0.15f,
             World.DifficultyLevel.Expert => 0.3f,
-            World.DifficultyLevel.Master => 0.5f,
+            World.DifficultyLevel.Master or World.DifficultyLevel.Hollow => 0.5f,
             _ => 0f,
         };
 
@@ -195,7 +195,7 @@ namespace TerraKnight.Items
         {
             World.DifficultyLevel.Hard => 1.25f,
             World.DifficultyLevel.Expert => 1.5f,
-            World.DifficultyLevel.Master => 2f,
+            World.DifficultyLevel.Master or World.DifficultyLevel.Hollow => 2f,
             _ => 1f,
         };
 
@@ -306,7 +306,7 @@ namespace TerraKnight.Items
                 // Never reroll it as shared loot or as an opened treasure bag's contents.
                 if (IsBoss(record) && d.Type == ItemType.LifeCrystal) continue;
                 if (Locked(d)) continue;
-                if (d.Master && World.GameDifficulty.Current != World.DifficultyLevel.Master) continue;
+                if (d.Master && !World.GameDifficulty.MasterRules) continue;
                 if (bag != ItemType.None && !TreasureBags.Outside(d)) continue;
                 if (fromBag && TreasureBags.Outside(d)) continue;
                 if (d.Group > 0)

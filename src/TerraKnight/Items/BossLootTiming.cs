@@ -260,6 +260,25 @@ namespace TerraKnight.Items
             finally { Relics.ContextScene = Relics.ContextName = null; }
         }
 
+        // Grimm Control keeps running through the wake-up transition. Its native sequence is
+        // Ash Away -> Fade -> Set PD -> Divine Leaves? -> Return. The death visuals and kill
+        // records are complete at Divine Leaves?, while the dream is still loaded.
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HutongGames.PlayMaker.FsmState), nameof(HutongGames.PlayMaker.FsmState.OnEnter))]
+        static void NightmareSettled(HutongGames.PlayMaker.FsmState __instance)
+        {
+            if (pending.Count == 0 || __instance.Name != "Divine Leaves?") return;
+            var go = __instance.Fsm?.GameObject;
+            if (go == null || go.name != "Grimm Control" || go.scene.name != "Grimm_Nightmare") return;
+            for (int i = pending.Count - 1; i >= 0; i--)
+            {
+                var p = pending[i];
+                if (p.Scene != go.scene.name || p.Record.Split('@')[0] != "NightmareGrimm") continue;
+                pending.RemoveAt(i);
+                Fire(p, true, "格林王死亡演出结束，梦境内发放");
+            }
+        }
+
         /// <summary>Finish the bursting state, then wait for its one-shot sprite animation before paying.</summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HutongGames.PlayMaker.FsmState), nameof(HutongGames.PlayMaker.FsmState.OnExit))]

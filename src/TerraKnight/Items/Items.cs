@@ -1,4 +1,4 @@
-using TerraKnight.World;
+﻿using TerraKnight.World;
 
 namespace TerraKnight.Items
 {
@@ -2082,7 +2082,7 @@ namespace TerraKnight.Items
         public const int AccessorySlots = 7;
         /// <summary>The slots in use: the sixth once the Demon Heart is eaten (Player.IsItemSlotUnlockedAndUsable).</summary>
         public static int OpenAccessories =>
-            5 + (World.GameDifficulty.Current == World.DifficultyLevel.Master ? 1 : 0)
+            5 + (World.GameDifficulty.MasterRules ? 1 : 0)
               + (TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.DemonHeart) ? 1 : 0);
         public const int ArmorSlots = 3;
 

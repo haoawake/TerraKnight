@@ -19,7 +19,7 @@ namespace TerraKnight.Items
         // ChestUI's Rename (buttons 5 and 6, RenameChest / RenameChestCancel): the name typed in place of the label.
         static bool renaming;
         static string nameDraft = "";
-        static bool textHooked;
+        static readonly UI.ImeTextEntry nameInput = new UI.ImeTextEntry(TypedChar);
 
         /// <summary>A chest's name is being typed: the keys are the text's.</summary>
         public static bool TypingName => renaming || Time.frameCount - renameEnded <= 1 || BookTyping;
@@ -29,13 +29,10 @@ namespace TerraKnight.Items
         static void StartRename()
         {
             if (Chests.OpenName == null) return;
+            EndBookSearch();
             renaming = true;
             nameDraft = Chests.OpenName;
-            if (!textHooked && UnityEngine.InputSystem.Keyboard.current != null)
-            {
-                textHooked = true;
-                UnityEngine.InputSystem.Keyboard.current.onTextInput += TypedChar;
-            }
+            nameInput.Begin();
             Sound("Menu_Tick");
         }
 
@@ -50,6 +47,7 @@ namespace TerraKnight.Items
         {
             if (!renaming) return;
             renaming = false;
+            nameInput.End();
             renameEnded = Time.frameCount;
             if (keep) Chests.SetOpenName(nameDraft);
             Sound("Menu_Tick");
@@ -59,10 +57,12 @@ namespace TerraKnight.Items
         static void TickRename()
         {
             if (!renaming) return;
-            if (!Chests.IsOpen || !Open || Chests.BankOpen) { renaming = false; return; }
+            if (!Chests.IsOpen || !Open || Chests.BankOpen) { EndRename(false); return; }
+            nameInput.Tick();
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null) return;
-            if (kb.backspaceKey.wasPressedThisFrame && nameDraft.Length > 0) nameDraft = nameDraft.Substring(0, nameDraft.Length - 1);
+            if (nameInput.EditingComposition) return;
+            if (kb.backspaceKey.wasPressedThisFrame && nameDraft.Length > 0) nameDraft = UI.ImeTextEntry.Backspace(nameDraft);
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) EndRename(true);
             else if (kb.escapeKey.wasPressedThisFrame) EndRename(false);
         }
@@ -71,7 +71,7 @@ namespace TerraKnight.Items
         static string ChestTitle()
         {
             if (Chests.BankOpen) return Chests.BankTitle;
-            if (renaming) return nameDraft + ((int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : " ");
+            if (renaming) return nameDraft + nameInput.Composition + ((int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : " ");
             string name = Chests.OpenName;
             return string.IsNullOrEmpty(name) ? Lang.T("箱子") : name;
         }
@@ -210,6 +210,11 @@ namespace TerraKnight.Items
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
             float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f + SlotStep) * ui;   // a slot lower than Terraria's: the trash slot stays clear
             Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), ChestTitle(), nameStyleLeft(ui), renaming ? new Color(1f, 0.85f, 0.3f) : Color.white);
+            if (renaming)
+            {
+                float width = nameStyleLeft(ui).CalcSize(new GUIContent(nameDraft)).x;
+                nameInput.Anchor(new Vector2(view.x + 504f * ui + Mathf.Min(width, 280f * ui), y0 + 24f * ui));
+            }
             panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 224f * 0.755f * ui));
             var prev = GUI.color;
             for (int i = 0; i < Chests.Capacity; i++)

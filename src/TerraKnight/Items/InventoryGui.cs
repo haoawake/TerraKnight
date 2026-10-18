@@ -44,6 +44,8 @@ namespace TerraKnight.Items
                 // Closed with the inventory: the crafting window and the Hallownest bag go with it.
                 if (!value && open)
                 {
+                    EndRename(false);
+                    EndBookSearch();
                     grid = false;
                     hkOpen = false;
                     blacklistOpen = false;

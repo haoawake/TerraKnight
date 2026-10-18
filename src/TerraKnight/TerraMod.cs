@@ -1202,6 +1202,10 @@ namespace TerraKnight
         /// </summary>
         public bool CheckMana(ItemDef def, bool startOfUse = false)
         {
+            // Held spells call with ItemDb's base definition. Pay using the held
+            // stack's prefix too, just as ordinary casts and their tooltip do.
+            var held = Inventory.Current;
+            if (!held.IsEmpty && held.Type == def.Type) def = held.Def;
             int cost = Equipment.ManaCost(def);
             SlowMagicUse = false;
             DevManaChecks++;

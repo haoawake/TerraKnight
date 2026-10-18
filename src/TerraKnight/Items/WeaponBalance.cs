@@ -253,8 +253,10 @@ namespace TerraKnight.Items
                 var p=OutputOf(d);
                 float target=(WeaponTarget(d)+Mathf.Max(0,World.Areas.Defense(d.Stage)-WeaponArmorPen(d))*.5f*p.Hits)/p.Power-AmmoBudget(d);
                 d.Damage=Mathf.Max(3,Mathf.RoundToInt(target));
-                if(d.Class==DamageClass.Magic && !d.NoUseMana)
-                    d.Mana=d.Stage==0 ? 2 : Mathf.Clamp(Mathf.RoundToInt(Mathf.Max(1f/60,d.UseTime)*(3+d.Stage*2)),1,3+d.Stage);
+                // Damage progression must not replace Terraria's per-use mana cost.
+                if(d.Class==DamageClass.Magic && d.Texture!=null && d.Texture.StartsWith("Item_")
+                    && int.TryParse(d.Texture.Substring(5),out int itemId) && VanillaWeaponDamage.Values.TryGetValue(itemId,out var original))
+                    d.Mana=original.Mana;
             }
         }
     }

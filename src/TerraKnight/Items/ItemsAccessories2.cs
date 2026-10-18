@@ -110,7 +110,7 @@ namespace TerraKnight.Items
             list.Add(Acc2(ItemType.CoinRing, "钱币戒指", 3034, 5, "扩大钱币拾取范围\n击中敌人有时会掉落额外的钱币", bonus: new Bonuses { GoldRing = true, LuckyCoin = true }));
             list.Add(Acc2(ItemType.GreedyRing, "贪婪戒指", 3035, 6, "扩大钱币拾取范围\n击中敌人有时会掉落额外钱币\n商店价格降低20%",
                 bonus: new Bonuses { GoldRing = true, LuckyCoin = true, Discount = true }));
-            list.Add(Acc2(ItemType.TreasureMagnet, "宝藏磁石", 5010, 1, "扩大物品的拾取范围", bonus: new Bonuses { TreasureMagnet = true }));
+            list.Add(Acc2(ItemType.TreasureMagnet, "宝藏磁石", 5010, 1, "扩大物品的拾取范围\n吸引附近的吉欧", bonus: new Bonuses { TreasureMagnet = true }));
             list.Add(Acc2(ItemType.AncientChisel, "远古凿子", 4056, 1, "挖矿速度提高25%\n“古老的问题需要古老的解决方案”", bonus: new Bonuses { PickSpeed = -0.25f }));
             list.Add(Acc2(ItemType.SpectreGoggles, "幽灵护目镜", 4409, 5, "开启回声视觉，显示隐藏物块", bonus: new Bonuses { SeeInvisible = true }));
 

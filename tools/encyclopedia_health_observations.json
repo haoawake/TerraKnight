@@ -1,0 +1,6645 @@
+{
+  "game": "Hollow Knight 1.5.12620",
+  "method": "Isolated additive-scene HealthManager/FSM read; not a full fight replay",
+  "source_hashes": {
+    "Items/BossBalance.cs": "2c9610d3d247093d205612f41019c9a828dcbc6e3e95a15bff965d200750bca1",
+    "Items/BossStats.cs": "70b8deb6ff4c95eb4029acc25f1af599a4fed3f0901e846583874d44d1dc5270",
+    "Items/EnemyDropData.cs": "8ee717d54b35b95074c9fc14493c3542293ddc42ff9705fc7638f5288e06342f",
+    "Items/EnemyDrops.cs": "6c2d303b4e878ef098e8f944135ec403b6be09bdc5cf2e83d66008a83a8854fb",
+    "Items/EnemyStats.cs": "3ac1b7009bbbfb63c8b3026845405fd7111d273f0abd2c199c3dcf265120d114",
+    "UI/EnemyHover.cs": "69cca2300c1696dff6f4e710c2c8afd4893d35005d8d5ede60f7bee797e136ee",
+    "World/Areas.cs": "41e9499b153777ea2c077ae9fa621288a2cc34137fe6eb6267a8ad020f6001b2",
+    "World/GameDifficulty.cs": "6b5111d2dba89ee074c47296ddb6b8fa12c37cd0c1dec4ec48fd44a7f4d2623e"
+  },
+  "scenes": [
+    {
+      "scene": "Crossroads_10_boss",
+      "entries": [
+        {
+          "path": "Battle Scene/False Knight New",
+          "record": "FalseKnight",
+          "active": true,
+          "raw_hp": 65,
+          "max_hp": 65,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 633,
+              "whole": 3264,
+              "scale": 9.730769
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 807,
+              "whole": 4161,
+              "scale": 12.4050293
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 886,
+              "whole": 4570,
+              "scale": 13.6230764
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1130,
+              "whole": 5827,
+              "scale": 17.3724842
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1130,
+              "whole": 5827,
+              "scale": 17.3724842
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "state": "Cough",
+              "type": "SendHealthManagerDeathEvent",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "state": "Start Fall",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "Check Health",
+              "state": "Check",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "0",
+                "equal": "ev:STUN",
+                "lessThan": "ev:STUN",
+                "greaterThan": "null",
+                "everyFrame": "True"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "Check Health",
+              "state": "Stun",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Recover HP=65"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "Check Health",
+              "state": "Get HP",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$Recover HP=65"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New/Head",
+              "fsm": "Health Check",
+              "state": "Check 1",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "0",
+                "equal": "ev:STUN",
+                "lessThan": "ev:STUN",
+                "greaterThan": "null",
+                "everyFrame": "True"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New/Head",
+              "fsm": "Health Check",
+              "state": "State 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "40"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Battle Enemies",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Chooser Int",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "JA In A Row",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Jump Barrel Max",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Jump Barrel Min",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Rages",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Slam Barrel Max",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Slam Barrel Min",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Slam In A Row",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Stunned Amount",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "FalseyControl",
+              "name": "Turns",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "Check Health",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Battle Scene/False Knight New",
+              "fsm": "Check Health",
+              "name": "Recover HP",
+              "value": 65
+            },
+            {
+              "path": "Battle Scene/False Knight New/Head",
+              "fsm": "Health Check",
+              "name": "HP",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Battle Scene/False Knight New/Head",
+          "record": null,
+          "active": true,
+          "raw_hp": 40,
+          "max_hp": 40,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 190,
+              "whole": 3264,
+              "scale": 4.74375
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 242,
+              "whole": 4161,
+              "scale": 6.047452
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 266,
+              "whole": 4570,
+              "scale": 6.64125
+            },
+            {
+              "difficulty": "Master",
+              "pool": 339,
+              "whole": 5827,
+              "scale": 8.469087
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 339,
+              "whole": 5827,
+              "scale": 8.469087
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Scene/False Knight New/Head",
+              "fsm": "Health Check",
+              "state": "Check 1",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "0",
+                "equal": "ev:STUN",
+                "lessThan": "ev:STUN",
+                "greaterThan": "null",
+                "everyFrame": "True"
+              }
+            },
+            {
+              "path": "Battle Scene/False Knight New/Head",
+              "fsm": "Health Check",
+              "state": "State 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "40"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Scene/False Knight New/Head",
+              "fsm": "Health Check",
+              "name": "HP",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Battle Scene/Pre Battle Enemies/Zombie Barger",
+          "record": "ZombieBarger",
+          "active": true,
+          "raw_hp": 15,
+          "max_hp": 15,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 355,
+              "whole": 355,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 709,
+              "whole": 709,
+              "scale": 47.2499962
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1064,
+              "whole": 1064,
+              "scale": 70.875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 94.49999
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 94.49999
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Battle Scene/Pre Battle Enemies/Zombie Hornhead",
+          "record": "ZombieHornhead",
+          "active": true,
+          "raw_hp": 15,
+          "max_hp": 15,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 355,
+              "whole": 355,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 709,
+              "whole": 709,
+              "scale": 47.2499962
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1064,
+              "whole": 1064,
+              "scale": 70.875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 94.49999
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 94.49999
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Battle Scene/Pre Battle Enemies/Zombie Runner",
+          "record": "ZombieRunner",
+          "active": true,
+          "raw_hp": 15,
+          "max_hp": 15,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 355,
+              "whole": 355,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 709,
+              "whole": 709,
+              "scale": 47.2499962
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1064,
+              "whole": 1064,
+              "scale": 70.875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 94.49999
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 94.49999
+            }
+          ],
+          "actions": [],
+          "variables": []
+        }
+      ]
+    },
+    {
+      "scene": "Dream_01_False_Knight",
+      "entries": [
+        {
+          "path": "False Knight Dream",
+          "record": "FalseKnight",
+          "active": true,
+          "raw_hp": 360,
+          "max_hp": 360,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 19380,
+              "whole": 100000,
+              "scale": 53.83253
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 30004,
+              "whole": 154821,
+              "scale": 83.3442841
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 41252,
+              "whole": 212858,
+              "scale": 114.587181
+            },
+            {
+              "difficulty": "Master",
+              "pool": 52596,
+              "whole": 271394,
+              "scale": 146.099152
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 52596,
+              "whole": 271394,
+              "scale": 146.099152
+            }
+          ],
+          "actions": [
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "state": "Cough",
+              "type": "SendHealthManagerDeathEvent",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault"
+              }
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "state": "Start Fall",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "state": "Check",
+              "type": "GetHPEveryFrame",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=360"
+              }
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "state": "Check",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=360",
+                "integer2": "0",
+                "equal": "ev:STUN",
+                "lessThan": "ev:STUN",
+                "greaterThan": "null",
+                "everyFrame": "True"
+              }
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "state": "Stun",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=360"
+              }
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "state": "Stun",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Recover HP=360"
+              }
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "state": "Get Health",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$Recover HP=360"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "Check 1",
+              "type": "GetHPEveryFrame",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "Check 1",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "0",
+                "equal": "ev:STUN",
+                "lessThan": "ev:STUN",
+                "greaterThan": "null",
+                "everyFrame": "True"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "State 1",
+              "type": "SetIntValue",
+              "values": {
+                "intVariable": "$HP=0",
+                "intValue": "40",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "State 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "40"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "PAUSE",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Battle Enemies",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Chooser Int",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "JA In A Row",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Jump Barrel Max",
+              "value": 3
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Jump Barrel Min",
+              "value": 3
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Rages",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Recover HP",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Slam Barrel Max",
+              "value": 4
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Slam Barrel Min",
+              "value": 4
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Slam In A Row",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Stunned Amount",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "FalseyControl",
+              "name": "Turns",
+              "value": 0
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "name": "HP",
+              "value": 360
+            },
+            {
+              "path": "False Knight Dream",
+              "fsm": "Check Health",
+              "name": "Recover HP",
+              "value": 360
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "name": "HP",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "False Knight Dream/Head",
+          "record": null,
+          "active": false,
+          "raw_hp": 60,
+          "max_hp": 60,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 5814,
+              "whole": 100000,
+              "scale": 96.89856
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 9002,
+              "whole": 154821,
+              "scale": 150.019714
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 12376,
+              "whole": 212858,
+              "scale": 206.256912
+            },
+            {
+              "difficulty": "Master",
+              "pool": 15779,
+              "whole": 271394,
+              "scale": 262.978455
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 15779,
+              "whole": 271394,
+              "scale": 262.978455
+            }
+          ],
+          "actions": [
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "Check 1",
+              "type": "GetHPEveryFrame",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "Check 1",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "0",
+                "equal": "ev:STUN",
+                "lessThan": "ev:STUN",
+                "greaterThan": "null",
+                "everyFrame": "True"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "State 1",
+              "type": "SetIntValue",
+              "values": {
+                "intVariable": "$HP=0",
+                "intValue": "40",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "State 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "40"
+              }
+            },
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "state": "PAUSE",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "False Knight Dream/Head",
+              "fsm": "Health Check",
+              "name": "HP",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "False Knight Dream/Tinger",
+          "record": null,
+          "active": false,
+          "raw_hp": 0,
+          "max_hp": 1,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 15,
+              "whole": 15,
+              "scale": 14.175
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 29,
+              "whole": 29,
+              "scale": 28.35
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 43,
+              "whole": 43,
+              "scale": 42.525
+            },
+            {
+              "difficulty": "Master",
+              "pool": 57,
+              "whole": 57,
+              "scale": 56.7
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 57,
+              "whole": 57,
+              "scale": 56.7
+            }
+          ],
+          "actions": [],
+          "variables": []
+        }
+      ]
+    },
+    {
+      "scene": "Ruins1_24_boss",
+      "entries": [
+        {
+          "path": "Mage Lord",
+          "record": "MageLord",
+          "active": true,
+          "raw_hp": 275,
+          "max_hp": 275,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1037,
+              "whole": 2280,
+              "scale": 3.76781821
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 1438,
+              "whole": 3163,
+              "scale": 5.22672749
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1762,
+              "whole": 3875,
+              "scale": 6.40436363
+            },
+            {
+              "difficulty": "Master",
+              "pool": 2246,
+              "whole": 4940,
+              "scale": 8.164637
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 2246,
+              "whole": 4940,
+              "scale": 8.164637
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct Charge",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct HS",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct Quake",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct Shoot",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms Charge",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms HS",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms Quake",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms Shoot",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Shots",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Combo Counter",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Decrement",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Hits Total",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Stun Combo",
+              "value": 7
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Stun Hit Max",
+              "value": 8
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Stuns Max",
+              "value": 999
+            },
+            {
+              "path": "Mage Lord",
+              "fsm": "Stun",
+              "name": "Stuns Total",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Mage Lord Phase2",
+          "record": "MageLord",
+          "active": true,
+          "raw_hp": 110,
+          "max_hp": 110,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1244,
+              "whole": 2280,
+              "scale": 11.3034554
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 1725,
+              "whole": 3163,
+              "scale": 15.6801825
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2114,
+              "whole": 3875,
+              "scale": 19.2130928
+            },
+            {
+              "difficulty": "Master",
+              "pool": 2695,
+              "whole": 4940,
+              "scale": 24.49391
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 2695,
+              "whole": 4940,
+              "scale": 24.49391
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Charge",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct HS",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Quake",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Shoot",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Charge",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms HS",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Quake",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Shoot",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Quakes",
+              "value": 0
+            },
+            {
+              "path": "Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Shots",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Dream_02_Mage_Lord",
+      "entries": [
+        {
+          "path": "Dream Mage Lord",
+          "record": "MageLord",
+          "active": true,
+          "raw_hp": 900,
+          "max_hp": 900,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 54546,
+              "whole": 120000,
+              "scale": 60.6059456
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 69546,
+              "whole": 153000,
+              "scale": 77.27256
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 76364,
+              "whole": 168000,
+              "scale": 84.84842
+            },
+            {
+              "difficulty": "Master",
+              "pool": 97364,
+              "whole": 214201,
+              "scale": 108.181862
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 97364,
+              "whole": 214201,
+              "scale": 108.181862
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct Charge",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct HS",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct Quake",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ct Shoot",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms Charge",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms HS",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms Quake",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Ms Shoot",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Mage Lord",
+              "name": "Shots",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Combo Counter",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Decrement",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Hits Total",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Stun Combo",
+              "value": 10
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Stun Hit Max",
+              "value": 18
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Stuns Max",
+              "value": 999
+            },
+            {
+              "path": "Dream Mage Lord",
+              "fsm": "Stun",
+              "name": "Stuns Total",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Dream Mage Lord Phase2",
+          "record": "MageLord",
+          "active": true,
+          "raw_hp": 350,
+          "max_hp": 350,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 65455,
+              "whole": 120000,
+              "scale": 187.012634
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 83455,
+              "whole": 153000,
+              "scale": 238.44104
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 91637,
+              "whole": 168000,
+              "scale": 261.818
+            },
+            {
+              "difficulty": "Master",
+              "pool": 116837,
+              "whole": 214201,
+              "scale": 333.818329
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 116837,
+              "whole": 214201,
+              "scale": 333.818329
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Charge",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct HS",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Quake",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Shoot",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Charge",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms HS",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Quake",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Shoot",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Quakes",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Shots",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Combo Counter",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Decrement",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Hits Total",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stun Combo",
+              "value": 8
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stun Hit Max",
+              "value": 15
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stuns Max",
+              "value": 999
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stuns Total",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Dream Mage Lord Phase2",
+          "record": "MageLord",
+          "active": true,
+          "raw_hp": 350,
+          "max_hp": 350,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 65455,
+              "whole": 120000,
+              "scale": 187.012634
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 83455,
+              "whole": 153000,
+              "scale": 238.44104
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 91637,
+              "whole": 168000,
+              "scale": 261.818
+            },
+            {
+              "difficulty": "Master",
+              "pool": 116837,
+              "whole": 214201,
+              "scale": 333.818329
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 116837,
+              "whole": 214201,
+              "scale": 333.818329
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Charge",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct HS",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Quake",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ct Shoot",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Charge",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms HS",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Quake",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Ms Shoot",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Quakes",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "Mage Lord 2",
+              "name": "Shots",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Combo Counter",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Decrement",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Hits Total",
+              "value": 0
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stun Combo",
+              "value": 8
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stun Hit Max",
+              "value": 15
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stuns Max",
+              "value": 999
+            },
+            {
+              "path": "Dream Mage Lord Phase2",
+              "fsm": "FSM",
+              "name": "Stuns Total",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Fungus2_15_boss",
+      "entries": [
+        {
+          "path": "Mantis Battle/Battle Main/Mantis Lord",
+          "record": "MantisLord",
+          "active": false,
+          "raw_hp": 210,
+          "max_hp": 210,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1785,
+              "whole": 3928,
+              "scale": 8.5
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2764,
+              "whole": 6080,
+              "scale": 13.15881
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3800,
+              "whole": 8359,
+              "scale": 18.0928574
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4845,
+              "whole": 10658,
+              "scale": 23.06738
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4845,
+              "whole": 10658,
+              "scale": 23.06738
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ct Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ms Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Throws",
+              "value": 2
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Throws Crt",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Mantis Battle/Battle Main/Mantis Lord",
+          "record": "MantisLord",
+          "active": false,
+          "raw_hp": 210,
+          "max_hp": 210,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1785,
+              "whole": 3928,
+              "scale": 8.5
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2764,
+              "whole": 6080,
+              "scale": 13.15881
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3800,
+              "whole": 8359,
+              "scale": 18.0928574
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4845,
+              "whole": 10658,
+              "scale": 23.06738
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4845,
+              "whole": 10658,
+              "scale": 23.06738
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ct Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Ms Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Throws",
+              "value": 2
+            },
+            {
+              "path": "Mantis Battle/Battle Main/Mantis Lord",
+              "fsm": "Mantis Lord",
+              "name": "Throws Crt",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+          "record": "MantisLord",
+          "active": false,
+          "raw_hp": 160,
+          "max_hp": 160,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1071,
+              "whole": 3928,
+              "scale": 6.69375038
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 1659,
+              "whole": 6080,
+              "scale": 10.3625631
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2280,
+              "whole": 8359,
+              "scale": 14.248126
+            },
+            {
+              "difficulty": "Master",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ct Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ms Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Throws",
+              "value": 2
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Throws Crt",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+          "record": "MantisLord",
+          "active": false,
+          "raw_hp": 160,
+          "max_hp": 160,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1071,
+              "whole": 3928,
+              "scale": 6.69375038
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 1659,
+              "whole": 6080,
+              "scale": 10.3625631
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2280,
+              "whole": 8359,
+              "scale": 14.248126
+            },
+            {
+              "difficulty": "Master",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ct Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Ms Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Throws",
+              "value": 2
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S1",
+              "fsm": "Mantis Lord",
+              "name": "Throws Crt",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+          "record": "MantisLord",
+          "active": false,
+          "raw_hp": 160,
+          "max_hp": 160,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1071,
+              "whole": 3928,
+              "scale": 6.69375038
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 1659,
+              "whole": 6080,
+              "scale": 10.3625631
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2280,
+              "whole": 8359,
+              "scale": 14.248126
+            },
+            {
+              "difficulty": "Master",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ct Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ms Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Throws",
+              "value": 2
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Throws Crt",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+          "record": "MantisLord",
+          "active": false,
+          "raw_hp": 160,
+          "max_hp": 160,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1071,
+              "whole": 3928,
+              "scale": 6.69375038
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 1659,
+              "whole": 6080,
+              "scale": 10.3625631
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2280,
+              "whole": 8359,
+              "scale": 14.248126
+            },
+            {
+              "difficulty": "Master",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 2907,
+              "whole": 10658,
+              "scale": 18.1655636
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ct Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ct Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ms Dstab",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Ms Throw",
+              "value": 0
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Throws",
+              "value": 2
+            },
+            {
+              "path": "Mantis Battle/Battle Sub/Mantis Lord S2",
+              "fsm": "Mantis Lord",
+              "name": "Throws Crt",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Ruins2_03_boss",
+      "entries": [
+        {
+          "path": "Battle Control/Black Knight 4",
+          "record": "BlackKnight",
+          "active": true,
+          "raw_hp": 220,
+          "max_hp": 220,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 2287,
+              "whole": 14375,
+              "scale": 10.395
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2916,
+              "whole": 18330,
+              "scale": 13.2545
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3202,
+              "whole": 20125,
+              "scale": 14.553
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4083,
+              "whole": 25660,
+              "scale": 18.55525
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4083,
+              "whole": 25660,
+              "scale": 18.55525
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "state": "Set 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 1=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "state": "Set 2",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 2=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "state": "Set 3",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 3=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "state": "Set 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 4=240"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "state": "Set 5",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 5=260"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "Black Knight",
+              "name": "Charge Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "Black Knight",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "Black Knight",
+              "name": "Other Knights",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "Black Knight",
+              "name": "Roll Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "Black Knight",
+              "name": "Slash Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "name": "Level 1",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "name": "Level 2",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "name": "Level 3",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "name": "Level 4",
+              "value": 240
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "name": "Level 5",
+              "value": 260
+            },
+            {
+              "path": "Battle Control/Black Knight 4",
+              "fsm": "FSM",
+              "name": "Nail Level",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "path": "Battle Control/Black Knight 2",
+          "record": "BlackKnight",
+          "active": true,
+          "raw_hp": 220,
+          "max_hp": 220,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1961,
+              "whole": 14375,
+              "scale": 8.910001
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2500,
+              "whole": 18330,
+              "scale": 11.361001
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2745,
+              "whole": 20125,
+              "scale": 12.4740009
+            },
+            {
+              "difficulty": "Master",
+              "pool": 3499,
+              "whole": 25660,
+              "scale": 15.904501
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 3499,
+              "whole": 25660,
+              "scale": 15.904501
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "state": "Set 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 1=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "state": "Set 2",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 2=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "state": "Set 3",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 3=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "state": "Set 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 4=240"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "state": "Set 5",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 5=260"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "Black Knight",
+              "name": "Charge Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "Black Knight",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "Black Knight",
+              "name": "Other Knights",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "Black Knight",
+              "name": "Roll Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "Black Knight",
+              "name": "Slash Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "name": "Level 1",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "name": "Level 2",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "name": "Level 3",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "name": "Level 4",
+              "value": 240
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "name": "Level 5",
+              "value": 260
+            },
+            {
+              "path": "Battle Control/Black Knight 2",
+              "fsm": "FSM",
+              "name": "Nail Level",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "path": "Battle Control/Black Knight 3",
+          "record": "BlackKnight",
+          "active": true,
+          "raw_hp": 220,
+          "max_hp": 220,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1961,
+              "whole": 14375,
+              "scale": 8.910001
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2500,
+              "whole": 18330,
+              "scale": 11.361001
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 2745,
+              "whole": 20125,
+              "scale": 12.4740009
+            },
+            {
+              "difficulty": "Master",
+              "pool": 3499,
+              "whole": 25660,
+              "scale": 15.904501
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 3499,
+              "whole": 25660,
+              "scale": 15.904501
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "state": "Set 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 1=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "state": "Set 2",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 2=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "state": "Set 3",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 3=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "state": "Set 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 4=240"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "state": "Set 5",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 5=260"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "Black Knight",
+              "name": "Charge Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "Black Knight",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "Black Knight",
+              "name": "Other Knights",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "Black Knight",
+              "name": "Roll Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "Black Knight",
+              "name": "Slash Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "name": "Level 1",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "name": "Level 2",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "name": "Level 3",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "name": "Level 4",
+              "value": 240
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "name": "Level 5",
+              "value": 260
+            },
+            {
+              "path": "Battle Control/Black Knight 3",
+              "fsm": "FSM",
+              "name": "Nail Level",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "path": "Battle Control/Black Knight 5",
+          "record": "BlackKnight",
+          "active": true,
+          "raw_hp": 220,
+          "max_hp": 220,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 2287,
+              "whole": 14375,
+              "scale": 10.395
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2916,
+              "whole": 18330,
+              "scale": 13.2545
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3202,
+              "whole": 20125,
+              "scale": 14.553
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4083,
+              "whole": 25660,
+              "scale": 18.55525
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4083,
+              "whole": 25660,
+              "scale": 18.55525
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "state": "Set 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 1=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "state": "Set 2",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 2=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "state": "Set 3",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 3=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "state": "Set 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 4=240"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "state": "Set 5",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 5=260"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "Black Knight",
+              "name": "Charge Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "Black Knight",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "Black Knight",
+              "name": "Other Knights",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "Black Knight",
+              "name": "Roll Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "Black Knight",
+              "name": "Slash Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "name": "Level 1",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "name": "Level 2",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "name": "Level 3",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "name": "Level 4",
+              "value": 240
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "name": "Level 5",
+              "value": 260
+            },
+            {
+              "path": "Battle Control/Black Knight 5",
+              "fsm": "FSM",
+              "name": "Nail Level",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "path": "Battle Control/Black Knight 1",
+          "record": "BlackKnight",
+          "active": true,
+          "raw_hp": 220,
+          "max_hp": 220,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 3267,
+              "whole": 14375,
+              "scale": 14.85
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 4166,
+              "whole": 18330,
+              "scale": 18.935
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 4574,
+              "whole": 20125,
+              "scale": 20.79
+            },
+            {
+              "difficulty": "Master",
+              "pool": 5832,
+              "whole": 25660,
+              "scale": 26.5075
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 5832,
+              "whole": 25660,
+              "scale": 26.5075
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "state": "Set 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 1=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "state": "Set 2",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 2=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "state": "Set 3",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 3=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "state": "Set 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 4=240"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "state": "Set 5",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 5=260"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "Black Knight",
+              "name": "Charge Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "Black Knight",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "Black Knight",
+              "name": "Other Knights",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "Black Knight",
+              "name": "Roll Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "Black Knight",
+              "name": "Slash Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "name": "Level 1",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "name": "Level 2",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "name": "Level 3",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "name": "Level 4",
+              "value": 240
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "name": "Level 5",
+              "value": 260
+            },
+            {
+              "path": "Battle Control/Black Knight 1",
+              "fsm": "FSM",
+              "name": "Nail Level",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "path": "Battle Control/Black Knight 6",
+          "record": "BlackKnight",
+          "active": true,
+          "raw_hp": 220,
+          "max_hp": 220,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 2614,
+              "whole": 14375,
+              "scale": 11.88
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 3333,
+              "whole": 18330,
+              "scale": 15.1480007
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3660,
+              "whole": 20125,
+              "scale": 16.632
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4666,
+              "whole": 25660,
+              "scale": 21.2060013
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4666,
+              "whole": 25660,
+              "scale": 21.2060013
+            }
+          ],
+          "actions": [
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "state": "Set 1",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 1=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "state": "Set 2",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 2=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "state": "Set 3",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 3=220"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "state": "Set 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 4=240"
+              }
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "state": "Set 5",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$Level 5=260"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "Black Knight",
+              "name": "Charge Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "Black Knight",
+              "name": "Jump Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "Black Knight",
+              "name": "Other Knights",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "Black Knight",
+              "name": "Roll Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "Black Knight",
+              "name": "Slash Count",
+              "value": 0
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "name": "Level 1",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "name": "Level 2",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "name": "Level 3",
+              "value": 220
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "name": "Level 4",
+              "value": 240
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "name": "Level 5",
+              "value": 260
+            },
+            {
+              "path": "Battle Control/Black Knight 6",
+              "fsm": "FSM",
+              "name": "Nail Level",
+              "value": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "GG_Oblobbles",
+      "entries": [
+        {
+          "path": "Mega Fat Bee",
+          "record": "Oblobble",
+          "active": true,
+          "raw_hp": 450,
+          "max_hp": 450,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 750,
+            "level3": 750
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 58500,
+              "whole": 117000,
+              "scale": 130.0
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 78975,
+              "whole": 157950,
+              "scale": 175.5
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 93600,
+              "whole": 187200,
+              "scale": 208.0
+            },
+            {
+              "difficulty": "Master",
+              "pool": 119340,
+              "whole": 238680,
+              "scale": 265.199982
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 119340,
+              "whole": 238680,
+              "scale": 265.199982
+            }
+          ],
+          "actions": [
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntAdd",
+              "values": {
+                "intVariable": "$HP=0",
+                "add": "$HP Add=200",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntClamp",
+              "values": {
+                "intVariable": "$HP=0",
+                "minValue": "10",
+                "maxValue": "$HP Max=750",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$HP=0"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Fatty Fly Attack",
+              "name": "Attacks",
+              "value": 0
+            },
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "name": "HP Add",
+              "value": 200
+            },
+            {
+              "path": "Mega Fat Bee",
+              "fsm": "Set Rage",
+              "name": "HP Max",
+              "value": 750
+            }
+          ]
+        },
+        {
+          "path": "Mega Fat Bee (1)",
+          "record": "Oblobble",
+          "active": true,
+          "raw_hp": 450,
+          "max_hp": 450,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 750,
+            "level3": 750
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 58500,
+              "whole": 117000,
+              "scale": 130.0
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 78975,
+              "whole": 157950,
+              "scale": 175.5
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 93600,
+              "whole": 187200,
+              "scale": 208.0
+            },
+            {
+              "difficulty": "Master",
+              "pool": 119340,
+              "whole": 238680,
+              "scale": 265.199982
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 119340,
+              "whole": 238680,
+              "scale": 265.199982
+            }
+          ],
+          "actions": [
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntAdd",
+              "values": {
+                "intVariable": "$HP=0",
+                "add": "$HP Add=200",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntClamp",
+              "values": {
+                "intVariable": "$HP=0",
+                "minValue": "10",
+                "maxValue": "$HP Max=750",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$HP=0"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Fatty Fly Attack",
+              "name": "Attacks",
+              "value": 0
+            },
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "name": "HP Add",
+              "value": 200
+            },
+            {
+              "path": "Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "name": "HP Max",
+              "value": 750
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "GG_Nailmasters",
+      "entries": [
+        {
+          "path": "Brothers/Mato",
+          "record": "NailBros",
+          "active": true,
+          "raw_hp": 1000,
+          "max_hp": 1000,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 49637,
+              "whole": 182000,
+              "scale": 49.63626
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 65148,
+              "whole": 238875,
+              "scale": 65.14749
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 74455,
+              "whole": 273001,
+              "scale": 74.45466
+            },
+            {
+              "difficulty": "Master",
+              "pool": 94930,
+              "whole": 348077,
+              "scale": 94.92984
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 94930,
+              "whole": 348077,
+              "scale": 94.92984
+            }
+          ],
+          "actions": [
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "state": "Reactivate",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$P2 HP=600"
+              }
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "state": "P2 HP Adjust",
+              "type": "SetIntValue",
+              "values": {
+                "intVariable": "$P2 HP=600",
+                "intValue": "1000",
+                "everyFrame": "False"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "Ct Combo",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "Ct JA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "Ct NA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "Ms Combo",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "Ms JA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "Ms NA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Mato",
+              "fsm": "nailmaster",
+              "name": "P2 HP",
+              "value": 600
+            },
+            {
+              "path": "Brothers/Mato/Dash Slash",
+              "fsm": "Control Collider",
+              "name": "Frame Count",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Brothers/Oro",
+          "record": "NailBros",
+          "active": true,
+          "raw_hp": 500,
+          "max_hp": 500,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 800,
+            "level3": 800
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 82728,
+              "whole": 182000,
+              "scale": 165.4542
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 108580,
+              "whole": 238875,
+              "scale": 217.1583
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 124092,
+              "whole": 273001,
+              "scale": 248.18219
+            },
+            {
+              "difficulty": "Master",
+              "pool": 158217,
+              "whole": 348077,
+              "scale": 316.4328
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 158217,
+              "whole": 348077,
+              "scale": 316.4328
+            }
+          ],
+          "actions": [
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "state": "Reactivate",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$P2 HP=600"
+              }
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "state": "P2 HP Adjust",
+              "type": "SetIntValue",
+              "values": {
+                "intVariable": "$P2 HP=600",
+                "intValue": "1000",
+                "everyFrame": "False"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "Ct Combo",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "Ct JA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "Ct NA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "Ms Combo",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "Ms JA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "Ms NA",
+              "value": 0
+            },
+            {
+              "path": "Brothers/Oro",
+              "fsm": "nailmaster",
+              "name": "P2 HP",
+              "value": 600
+            },
+            {
+              "path": "Brothers/Oro/Dash Slash",
+              "fsm": "Control Collider",
+              "name": "Frame Count",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "GG_God_Tamer",
+      "entries": [
+        {
+          "path": "Entry Object/Lancer",
+          "record": "Dummy",
+          "active": false,
+          "raw_hp": 750,
+          "max_hp": 750,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 1000,
+            "level3": 1000
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1758,
+              "whole": 1758,
+              "scale": 2.34375
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 3516,
+              "whole": 3516,
+              "scale": 4.6875
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 5274,
+              "whole": 5274,
+              "scale": 7.03125
+            },
+            {
+              "difficulty": "Master",
+              "pool": 7032,
+              "whole": 7032,
+              "scale": 9.375
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 7032,
+              "whole": 7032,
+              "scale": 9.375
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Entry Object/Lobster",
+          "record": "LobsterLancer",
+          "active": true,
+          "raw_hp": 750,
+          "max_hp": 750,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 1000,
+            "level3": 1000
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 110500,
+              "whole": 110500,
+              "scale": 147.333328
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 149175,
+              "whole": 149175,
+              "scale": 198.9
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 176800,
+              "whole": 176800,
+              "scale": 235.733337
+            },
+            {
+              "difficulty": "Master",
+              "pool": 225420,
+              "whole": 225420,
+              "scale": 300.56
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 225420,
+              "whole": 225420,
+              "scale": 300.56
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ct Idle",
+              "value": 0
+            },
+            {
+              "path": "Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ct Roll",
+              "value": 0
+            },
+            {
+              "path": "Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ct Spit",
+              "value": 0
+            },
+            {
+              "path": "Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ms Idle",
+              "value": 0
+            },
+            {
+              "path": "Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ms Roll",
+              "value": 0
+            },
+            {
+              "path": "Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ms Spit",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Dream_Final_Boss",
+      "entries": [
+        {
+          "path": "Boss Control/Radiance",
+          "record": "FinalBoss",
+          "active": false,
+          "raw_hp": 3000,
+          "max_hp": 3000,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 220000,
+              "whole": 220000,
+              "scale": 73.3333359
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 288749,
+              "whole": 288749,
+              "scale": 96.2496643
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 330000,
+              "whole": 330000,
+              "scale": 110.0
+            },
+            {
+              "difficulty": "Master",
+              "pool": 420751,
+              "whole": 420751,
+              "scale": 140.250336
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 420751,
+              "whole": 420751,
+              "scale": 140.250336
+            }
+          ],
+          "actions": [
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 1",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 1",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$P2 Spike Waves=2650",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 2",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 2",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$P3 A1 Rage=2250",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 3",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 3",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$P4 Stun1=2000",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 4",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "state": "Check 4",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$P5 Acend=1300",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Control",
+              "name": "Last Tele Pos",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Control",
+              "name": "Loops",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Control",
+              "name": "Repeats",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Control",
+              "name": "Slashes",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Arena",
+              "value": 1
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Beam Sweep L",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Beam Sweep R",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Eye Beam",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Nail Fan",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Nail L Sweep",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Nail R Sweep",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Nail Top Sweep",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ct Orbs",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Beam Sweep L",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Beam Sweep R",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Eye Beam",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Nail Fan",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Nail L Sweep",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Nail R Sweep",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Nail Top Sweep",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Choices",
+              "name": "Ms Orbs",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Commands",
+              "name": "Arena",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Commands",
+              "name": "Quakes",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Commands",
+              "name": "Shots",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Attack Commands",
+              "name": "Spawns",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "name": "P2 Spike Waves",
+              "value": 2650
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "name": "P3 A1 Rage",
+              "value": 2250
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "name": "P4 Stun1",
+              "value": 2000
+            },
+            {
+              "path": "Boss Control/Radiance",
+              "fsm": "Phase Control",
+              "name": "P5 Acend",
+              "value": 1300
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Room_Final_Boss_Core",
+      "entries": [
+        {
+          "path": "Boss Control/Hollow Knight Boss",
+          "record": "HollowKnight",
+          "active": false,
+          "raw_hp": 1000,
+          "max_hp": 1000,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 140000,
+              "whole": 140000,
+              "scale": 140.0
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 183750,
+              "whole": 183750,
+              "scale": 183.75
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 210000,
+              "whole": 210000,
+              "scale": 210.0
+            },
+            {
+              "difficulty": "Master",
+              "pool": 267750,
+              "whole": 267750,
+              "scale": 267.75
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 267750,
+              "whole": 267750,
+              "scale": 267.75
+            }
+          ],
+          "actions": [
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 1",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 1",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$Phase2 HP=750",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 2",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 2",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$Phase3 HP=400",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 4",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 4",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "$Phase4 HP=0",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Set Phase 4",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "250"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 5",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 5",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "0",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 6",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 6",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "275",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 7",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Check 7",
+              "type": "IntCompare",
+              "values": {
+                "integer1": "$HP=0",
+                "integer2": "150",
+                "equal": "ev:NEXT",
+                "lessThan": "ev:NEXT",
+                "greaterThan": "null",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "state": "Hornet Cancel",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "250"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ct DStab",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ct Dash",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ct Jump",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ct Slash",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ct SmallShot",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ct Tele",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Loops",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ms DStab",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ms Dash",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ms Jump",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ms Slash",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ms SmallShot",
+              "value": 1
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Ms Tele",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Phase",
+              "value": 1
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Control",
+              "name": "Plumes",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Combo Counter",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Decrement",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Hits Total",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Stun Combo",
+              "value": 10
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Stun Hit Max",
+              "value": 12
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Stuns Max",
+              "value": 5
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Stun Control",
+              "name": "Stuns Total",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "name": "Phase2 HP",
+              "value": 750
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "name": "Phase3 HP",
+              "value": 400
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "name": "Phase4 HP",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss",
+              "fsm": "Phase Control",
+              "name": "Royal Charm State",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/Slashes/Dash Stab",
+              "fsm": "FSM",
+              "name": "Attack Strength",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/Slashes/Dash Stab",
+              "fsm": "FSM",
+              "name": "Attack Type",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/DStab Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/Slash Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/Above Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/Dash Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Boss Control/Hollow Knight Boss/Evade Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Room_Colosseum_Silver",
+      "entries": [
+        {
+          "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+          "record": "Oblobble",
+          "active": false,
+          "raw_hp": 260,
+          "max_hp": 260,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 45000,
+              "whole": 90000,
+              "scale": 173.07692
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 60750,
+              "whole": 121500,
+              "scale": 233.653839
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 72000,
+              "whole": 144000,
+              "scale": 276.923065
+            },
+            {
+              "difficulty": "Master",
+              "pool": 91800,
+              "whole": 183600,
+              "scale": 353.0769
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 91800,
+              "whole": 183600,
+              "scale": 353.0769
+            }
+          ],
+          "actions": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntAdd",
+              "values": {
+                "intVariable": "$HP=0",
+                "add": "$HP Add=100",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntClamp",
+              "values": {
+                "intVariable": "$HP=0",
+                "minValue": "10",
+                "maxValue": "$HP Max=300",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$HP=0"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Fatty Fly Attack",
+              "name": "Attacks",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "name": "HP Add",
+              "value": 100
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee",
+              "fsm": "Set Rage",
+              "name": "HP Max",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+          "record": "Oblobble",
+          "active": false,
+          "raw_hp": 260,
+          "max_hp": 260,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 45000,
+              "whole": 90000,
+              "scale": 173.07692
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 60750,
+              "whole": 121500,
+              "scale": 233.653839
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 72000,
+              "whole": 144000,
+              "scale": 276.923065
+            },
+            {
+              "difficulty": "Master",
+              "pool": 91800,
+              "whole": 183600,
+              "scale": 353.0769
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 91800,
+              "whole": 183600,
+              "scale": 353.0769
+            }
+          ],
+          "actions": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "GetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "storeValue": "$HP=0"
+              }
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntAdd",
+              "values": {
+                "intVariable": "$HP=0",
+                "add": "$HP Add=100",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "IntClamp",
+              "values": {
+                "intVariable": "$HP=0",
+                "minValue": "10",
+                "maxValue": "$HP Max=300",
+                "everyFrame": "False"
+              }
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "state": "Set",
+              "type": "SetHP",
+              "values": {
+                "target": "HutongGames.PlayMaker.FsmOwnerDefault",
+                "hp": "$HP=0"
+              }
+            }
+          ],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Fatty Fly Attack",
+              "name": "Attacks",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "name": "HP",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "name": "HP Add",
+              "value": 100
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 30 Obble/Mega Fat Bee (1)",
+              "fsm": "Set Rage",
+              "name": "HP Max",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "path": "Colosseum_Miner",
+          "record": "ColMiner",
+          "active": false,
+          "raw_hp": 80,
+          "max_hp": 80,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 473,
+              "whole": 473,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 945,
+              "whole": 945,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum_Miner/Terrain Detector",
+              "fsm": "hero_detect_bool",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum_Miner/Floor Detector",
+              "fsm": "hero_detect_bool",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum_Miner/Roof Check",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "Room_Colosseum_Gold",
+      "entries": [
+        {
+          "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lancer",
+          "record": "Dummy",
+          "active": false,
+          "raw_hp": 600,
+          "max_hp": 600,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1758,
+              "whole": 1758,
+              "scale": 2.9296875
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 3516,
+              "whole": 3516,
+              "scale": 5.859375
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 5274,
+              "whole": 5274,
+              "scale": 8.7890625
+            },
+            {
+              "difficulty": "Master",
+              "pool": 7032,
+              "whole": 7032,
+              "scale": 11.71875
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 7032,
+              "whole": 7032,
+              "scale": 11.71875
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+          "record": "LobsterLancer",
+          "active": true,
+          "raw_hp": 450,
+          "max_hp": 450,
+          "Boss": true,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 85000,
+              "whole": 85000,
+              "scale": 188.888885
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 114750,
+              "whole": 114750,
+              "scale": 255.0
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 136000,
+              "whole": 136000,
+              "scale": 302.222229
+            },
+            {
+              "difficulty": "Master",
+              "pool": 173400,
+              "whole": 173400,
+              "scale": 385.333344
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 173400,
+              "whole": 173400,
+              "scale": 385.333344
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ct Idle",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ct Roll",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ct Spit",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ms Idle",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ms Roll",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Lobster Lancer/Entry Object/Lobster",
+              "fsm": "Control",
+              "name": "Ms Spit",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 22/Mage",
+          "record": "Mage",
+          "active": true,
+          "raw_hp": 35,
+          "max_hp": 35,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 207,
+              "whole": 207,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 414,
+              "whole": 414,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 621,
+              "whole": 621,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage",
+              "fsm": "Mage",
+              "name": "Balls",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Fire",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Tele",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage",
+              "fsm": "Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage",
+              "fsm": "Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage",
+              "fsm": "Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+          "record": "Mage",
+          "active": true,
+          "raw_hp": 35,
+          "max_hp": 35,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 207,
+              "whole": 207,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 414,
+              "whole": 414,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 621,
+              "whole": 621,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+              "fsm": "Mage",
+              "name": "Balls",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Ball Fire",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Ball Tele",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 22/Mage (1)",
+              "fsm": "Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 23/Mage Blob 1",
+          "record": "MageBlob",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 23/Mage Blob 1 (1)",
+          "record": "MageBlob",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 23/Mage Blob 2",
+          "record": "MageBlob",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24/Mage Knight",
+          "record": "MageKnight",
+          "active": true,
+          "raw_hp": 180,
+          "max_hp": 180,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1064,
+              "whole": 1064,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2127,
+              "whole": 2127,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3190,
+              "whole": 3190,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4253,
+              "whole": 4253,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4253,
+              "whole": 4253,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 24/Mage Knight",
+              "fsm": "Mage Knight",
+              "name": "Count Dash",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 24/Mage Knight",
+              "fsm": "Mage Knight",
+              "name": "Count Shoot",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 24/Mage Knight/Dash Range R",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 24/Mage Knight/Dash Range L",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 24/Mage Knight/Stomp Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 24/Mage Knight/Evade Check",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (1)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (2)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (3)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (4)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (5)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (6)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (7)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 24a/Mage Balloon Spawner (8)",
+          "record": "MageBalloon",
+          "active": false,
+          "raw_hp": 13,
+          "max_hp": 13,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 77,
+              "whole": 77,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 154,
+              "whole": 154,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 231,
+              "whole": 231,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 308,
+              "whole": 308,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": []
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 25/Electric Mage New",
+          "record": "ElectricMage",
+          "active": false,
+          "raw_hp": 80,
+          "max_hp": 80,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 473,
+              "whole": 473,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 945,
+              "whole": 945,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 25/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 25/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 25/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 25/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Zaps",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 26/Mage",
+          "record": "Mage",
+          "active": true,
+          "raw_hp": 35,
+          "max_hp": 35,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 207,
+              "whole": 207,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 414,
+              "whole": 414,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 621,
+              "whole": 621,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 26/Mage",
+              "fsm": "Mage",
+              "name": "Balls",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 26/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Fire",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 26/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Tele",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 26/Mage",
+              "fsm": "Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 26/Mage",
+              "fsm": "Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 26/Mage",
+              "fsm": "Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 27/Electric Mage New (1)",
+          "record": "ElectricMage",
+          "active": false,
+          "raw_hp": 80,
+          "max_hp": 80,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 473,
+              "whole": 473,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 945,
+              "whole": 945,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 27/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 27/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 27/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 27/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Zaps",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 28/Mage",
+          "record": "Mage",
+          "active": true,
+          "raw_hp": 35,
+          "max_hp": 35,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 207,
+              "whole": 207,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 414,
+              "whole": 414,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 621,
+              "whole": 621,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Mage",
+              "fsm": "Mage",
+              "name": "Balls",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Fire",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Tele",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Mage",
+              "fsm": "Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Mage",
+              "fsm": "Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Mage",
+              "fsm": "Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 28/Electric Mage New (1)",
+          "record": "ElectricMage",
+          "active": false,
+          "raw_hp": 80,
+          "max_hp": 80,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 473,
+              "whole": 473,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 945,
+              "whole": 945,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 28/Electric Mage New (1)",
+              "fsm": "Electric Mage",
+              "name": "Zaps",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 29/Mage Knight",
+          "record": "MageKnight",
+          "active": true,
+          "raw_hp": 180,
+          "max_hp": 180,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 1064,
+              "whole": 1064,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 2127,
+              "whole": 2127,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 3190,
+              "whole": 3190,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 4253,
+              "whole": 4253,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 4253,
+              "whole": 4253,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage Knight",
+              "fsm": "Mage Knight",
+              "name": "Count Dash",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage Knight",
+              "fsm": "Mage Knight",
+              "name": "Count Shoot",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage Knight/Dash Range R",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage Knight/Dash Range L",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage Knight/Stomp Range",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage Knight/Evade Check",
+              "fsm": "FSM",
+              "name": "Frames",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 29/Mage",
+          "record": "Mage",
+          "active": true,
+          "raw_hp": 35,
+          "max_hp": 35,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 207,
+              "whole": 207,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 414,
+              "whole": 414,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 621,
+              "whole": 621,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage",
+              "fsm": "Mage",
+              "name": "Balls",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Fire",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage",
+              "fsm": "Mage",
+              "name": "Count Ball Tele",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage",
+              "fsm": "Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage",
+              "fsm": "Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 29/Mage",
+              "fsm": "Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+          "record": "Mage",
+          "active": true,
+          "raw_hp": 35,
+          "max_hp": 35,
+          "Boss": false,
+          "Elite": false,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 207,
+              "whole": 207,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 414,
+              "whole": 414,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 621,
+              "whole": 621,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 827,
+              "whole": 827,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+              "fsm": "Mage",
+              "name": "Balls",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Ball Fire",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Ball Tele",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+              "fsm": "Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 46/Mage (1)",
+              "fsm": "Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "path": "Colosseum Manager/Waves/Wave 47/Electric Mage New",
+          "record": "ElectricMage",
+          "active": false,
+          "raw_hp": 80,
+          "max_hp": 80,
+          "Boss": false,
+          "Elite": true,
+          "GodhomeTier": 1.0,
+          "hpScale": {
+            "level1": 0,
+            "level2": 0,
+            "level3": 0
+          },
+          "levels": [
+            {
+              "difficulty": "Normal",
+              "pool": 473,
+              "whole": 473,
+              "scale": 5.90624952
+            },
+            {
+              "difficulty": "Hard",
+              "pool": 945,
+              "whole": 945,
+              "scale": 11.812499
+            },
+            {
+              "difficulty": "Expert",
+              "pool": 1418,
+              "whole": 1418,
+              "scale": 17.71875
+            },
+            {
+              "difficulty": "Master",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            },
+            {
+              "difficulty": "Hollow",
+              "pool": 1890,
+              "whole": 1890,
+              "scale": 23.6249981
+            }
+          ],
+          "actions": [],
+          "variables": [
+            {
+              "path": "Colosseum Manager/Waves/Wave 47/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Count Summon",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 47/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Count Teleport",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 47/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Tele Attempts",
+              "value": 0
+            },
+            {
+              "path": "Colosseum Manager/Waves/Wave 47/Electric Mage New",
+              "fsm": "Electric Mage",
+              "name": "Zaps",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

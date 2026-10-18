@@ -100,6 +100,7 @@ namespace TerraKnight.Net
                 return;
             }
             if (Typing) return;
+            if (Items.InventoryGui.TypingName) return;
             if (!NetSession.Active && !GameHooks.PlayerHasControl() && !Items.InventoryGui.Open) return;
             var kb = Keyboard.current;
             if (kb == null || Time.frameCount - closedFrame <= 1) return;

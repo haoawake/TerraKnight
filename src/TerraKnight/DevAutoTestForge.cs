@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using TerraKnight.Items;
 using TerraKnight.Town;
 using UnityEngine;
@@ -140,32 +140,32 @@ namespace TerraKnight
             Shot("Town", "forge_panel");
             yield return null;
 
-            // Armor: forged too, to +5 whatever its stage, +1 defense a level, dearer than a weapon of its stage.
+            // Armor: three available levels per equipment stage, +1 defense per level.
             {
                 var helm = ItemStack.Of(ItemType.IronHelmet);
-                int def0 = helm.Def.Defense;
+                int def0 = helm.Def.Defense, armorCap = Forging.MaxLevelOf(helm.Type);
                 long helmCost = Forging.Cost(helm), swordCost = Forging.Cost(ItemStack.Of(ItemType.IronBroadsword));
                 Forging.DevOutcome = true;
-                for (int k = 0; k < 7; k++) Forging.Try(ref helm);
+                for (int k = 0; k < armorCap + 2; k++) Forging.Try(ref helm);
                 Forging.DevOutcome = null;
-                Check("盔甲能锻造：最多 +5，每级 +1 防御，名字带 +5", Forging.Forgeable(ItemDb.Get(ItemType.IronHelmet)) && helm.Forge == 5 && Forging.AtMax(helm) && helm.Def.Defense == def0 + 5 && helm.Def.Name.EndsWith("+5"),
+                Check("盔甲按装备阶段封顶，每级 +1 防御，名字带等级", Forging.Forgeable(ItemDb.Get(ItemType.IronHelmet)) && helm.Forge == armorCap && Forging.AtMax(helm) && helm.Def.Defense == def0 + armorCap && helm.Def.Name.EndsWith("+" + armorCap),
                     $"{helm.Def.Name}，防御 {def0}→{helm.Def.Defense}，上限 +{Forging.MaxLevelOf(ItemType.IronHelmet)}");
                 var solar = ItemStack.Of(ItemType.SolarFlareHelmet);
-                Check("盔甲不分阶段都是 +5，比同阶段武器贵", Forging.MaxLevelOf(ItemType.SolarFlareHelmet) == 5 && helmCost > swordCost && Forging.Cost(solar) > helmCost,
-                    $"铁头盔 +1 {Shop.Money(helmCost)}（铁阔剑 {Shop.Money(swordCost)}），日耀头盔 +1 {Shop.Money(Forging.Cost(solar))}；到 +5 共 {Shop.Money(Forging.PricesTo(ItemType.IronHelmet, 5))} / {Shop.Money(Forging.PricesTo(ItemType.SolarFlareHelmet, 5))}");
+                Check("盔甲上限随装备阶段递增，敲满总价接近原来", Forging.MaxLevelOf(solar.Type) == Forging.ArmorStageCap(solar.Def.Stage) && Forging.MaxLevelOf(solar.Type) >= armorCap && Forging.PricesTo(solar.Type, Forging.MaxLevelOf(solar.Type)) >= Forging.PricesTo(helm.Type, armorCap),
+                    $"铁头盔 +1 {Shop.Money(helmCost)}（铁阔剑 {Shop.Money(swordCost)}），日耀头盔 +1 {Shop.Money(Forging.Cost(solar))}；到各自上限共 {Shop.Money(Forging.PricesTo(ItemType.IronHelmet, armorCap))} / {Shop.Money(Forging.PricesTo(solar.Type, Forging.MaxLevelOf(solar.Type)))}");
                 var packedHelm = Save.ModSave.DevRoundTrip(helm);
                 var plainHelm = ItemStack.Of(ItemType.IronHelmet);
-                Check("盔甲的锻造等级存档保留、卖得更多", packedHelm.Forge == 5 && Shop.SellValue(helm) > Shop.SellValue(plainHelm),
+                Check("盔甲的锻造等级存档保留、卖得更多", packedHelm.Forge == armorCap && Shop.SellValue(helm) > Shop.SellValue(plainHelm),
                     $"读回 +{packedHelm.Forge}，卖 {Shop.Money(Shop.SellValue(helm))} / 原样 {Shop.Money(Shop.SellValue(plainHelm))}");
                 int plain = 0, forged = 0;
                 foreach (var t in new[] { ItemType.IronHelmet, ItemType.IronChainmail, ItemType.IronGreaves })
                 {
                     var p = ItemStack.Of(t);
                     plain += p.Def.Defense;
-                    p.Forge = 5;
+                    p.Forge = (byte)Forging.MaxLevelOf(t);
                     forged += p.Def.Defense;
                 }
-                Check("头身腿都 +5 共多 15 防御", forged - plain == 15, $"{plain} → {forged}");
+                Check("头身腿同阶敲满增加对应防御", forged - plain == 3 * armorCap, $"{plain} → {forged}");
                 TownNpcs.ReturnReforgeItem();
                 bool placed = InventoryGui.DevPutReforge(ItemStack.Of(ItemType.IronChainmail));
                 yield return new WaitForSeconds(0.3f);

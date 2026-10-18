@@ -19,7 +19,7 @@ namespace TerraKnight
     {
         bool recording;
         string recDir;
-        int recFrame;
+        int recFrame, recRun;
 
         /// <summary>The Chinese cut: the game's own text in Simplified Chinese too.</summary>
         bool zh;
@@ -49,7 +49,9 @@ namespace TerraKnight
             recording = true;
             // One physics step (50 a second) a frame: the motion is even, frame to frame.
             Time.captureFramerate = 50;
-            mod.StartCoroutine(RecordLoop());
+            // A clip started in the frame the last one stopped: the last loop sees it's no longer the current one and
+            // ends, so no frame is written twice (a doubled clip plays at half speed).
+            mod.StartCoroutine(RecordLoop(++recRun));
             Plugin.Log.LogInfo($"[AutoTest] 录制 开始 {clip}");
         }
 
@@ -61,12 +63,12 @@ namespace TerraKnight
             Plugin.Log.LogInfo($"[AutoTest] 录制 结束 {Path.GetFileName(recDir)}：{recFrame} 帧");
         }
 
-        IEnumerator RecordLoop()
+        IEnumerator RecordLoop(int run)
         {
-            while (recording)
+            while (recording && run == recRun)
             {
                 yield return new WaitForEndOfFrame();
-                if (!recording) break;
+                if (!recording || run != recRun) break;
                 var tex = ScreenCapture.CaptureScreenshotAsTexture();
                 var jpg = tex.EncodeToJPG(88);
                 Object.Destroy(tex);

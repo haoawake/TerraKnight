@@ -1,9 +1,10 @@
-param([string]$Suite = 'dreamnail', [int]$TimeoutSec = 600)
+param([string]$Suite = 'dreamnail', [int]$TimeoutSec = 600, [string]$BuildDir = 'artifacts\resume-build')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
+$testBuild = if ([IO.Path]::IsPathRooted($BuildDir)) { $BuildDir } else { Join-Path $root $BuildDir }
 $hk = 'F:\SteamLibrary\steamapps\common\Hollow Knight'
 $playerSaves = Join-Path $env:USERPROFILE 'AppData\LocalLow\Team Cherry\Hollow Knight'
-if (Get-Process hollow_knight -ErrorAction SilentlyContinue) { throw 'Game already running; refusing to interrupt it.' }
+if (Get-Process hollow_knight -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq (Join-Path $hk 'hollow_knight.exe') }) { throw 'Game already running from this installation; refusing to interrupt it.' }
 $run = Join-Path $root ('artifacts\resume-' + $Suite + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Path $run -Force | Out-Null
 $saveDir = Join-Path $run 'saves'
@@ -29,15 +30,15 @@ $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $run 'save-hashes
 $proc = $null
 $timedOut = $false
 try {
-    Copy-Item -LiteralPath (Join-Path $root 'artifacts\resume-build\TerraKnight.dll') -Destination (Join-Path $hk 'BepInEx\plugins\TerraKnight\TerraKnight.dll') -Force
-    Copy-Item -LiteralPath (Join-Path $root 'artifacts\resume-build\TerraKnight.pdb') -Destination (Join-Path $hk 'BepInEx\plugins\TerraKnight\TerraKnight.pdb') -Force
+    Copy-Item -LiteralPath (Join-Path $testBuild 'TerraKnight.dll') -Destination (Join-Path $hk 'BepInEx\plugins\TerraKnight\TerraKnight.dll') -Force
+    Copy-Item -LiteralPath (Join-Path $testBuild 'TerraKnight.pdb') -Destination (Join-Path $hk 'BepInEx\plugins\TerraKnight\TerraKnight.pdb') -Force
     $ini = Join-Path $hk 'doorstop_config.ini'
     [IO.File]::WriteAllText($ini, [regex]::Replace([IO.File]::ReadAllText($ini), '(?m)^enabled\s*=.*$', 'enabled = true'))
     $argsList = '-tk-copy "' + $name + '" -tk-savedir "' + $saveDir + '" -tk-suite "' + $Suite + '" -tk-slot 1 -screen-fullscreen 0 -screen-width 1280 -screen-height 720 -logFile "' + (Join-Path $run 'Player.log') + '"'
     $env:SteamAppId = '367520'
     $env:SteamGameId = '367520'
     [IO.File]::WriteAllText($appid, '367520')
-    $proc = Start-Process -FilePath (Join-Path $hk 'hollow_knight.exe') -WorkingDirectory $hk -ArgumentList $argsList -PassThru
+    $proc = Start-Process -FilePath (Join-Path $hk 'hollow_knight.exe') -WorkingDirectory $hk -ArgumentList $argsList -WindowStyle Hidden -PassThru
     if (-not $proc.WaitForExit($TimeoutSec * 1000)) { $timedOut = $true; $proc.Kill(); $proc.WaitForExit() }
 } finally {
     if ($proc -and -not $proc.HasExited) { $proc.Kill(); $proc.WaitForExit() }
@@ -80,7 +81,7 @@ try {
     $completed = $false
     if (Test-Path -LiteralPath $testLog) {
         $lines = Get-Content -LiteralPath $testLog
-        $failures = @($lines | Where-Object { $_ -match '\[AutoTest\].*不通过' })
+        $failures = @($lines | Where-Object { $_ -match '\[AutoTest\].*不通过' } | ForEach-Object { [string]$_ })
         $completed = [bool]($lines | Where-Object { $_ -match '\[AutoTest\] 完成' })
     }
     @{ Suite = $Suite; TimedOut = $timedOut; Completed = $completed; Failures = $failures; Run = $run; ChangedPlayerSaves = $changed; NewPlayerSaves = [string[]]@($new | ForEach-Object { $_.Name }); RestoredSettings = $settingsMatch } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $run 'result.json') -Encoding utf8

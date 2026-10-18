@@ -1,4 +1,22 @@
-# Changelog
+﻿# Changelog
+
+## 4.1.0 — Fixes and balance patch
+
+- Reduced Broken Vessel health to 40000/51000/56000/71400 on Normal/Hard/Expert/Master (Hollow). Lost Kin retains its separate budget.
+- Audited all 79 magic weapons and restored Terraria mana defaults, fixing 74 reduced costs. Water Bolt costs 10, Lunar Flare 9 and Last Prism 12 per payment. Held spells now honor mana prefix modifiers, preserving burst and channel payment timing.
+- Wiki recipes now load on demand in pages of 40. Catalogs initially render 60 entries, with full search data loaded only when a query is entered.
+- Added Hollow difficulty: currently inherits Master's stats, loot, defense rules and accessory slots, but restores original mask-count damage multipliers. Master and lower difficulties keep normalized single-hit damage. Existing saves retain their difficulty.
+- Armor forging caps now scale by equipment stage: +3, +6, +9, +12, +15 and +18, with +1 defense per level. Full-upgrade prices remain about 5,000–30,000 Geo per piece, excluding failures. The 50% success rate and legacy over-cap levels remain.
+- Specialty equipment gains a second ordinary-monster source, preferably in another eligible region. It still drops one item at a time, with modest independent chance increases.
+- Increased general accessory pool rates: ordinary enemies 2% to 3%, elites 5% to 7.5%, and repeat-boss pools 20% to 25%, with bounded compensation for large pools. Includes exploration items such as the Shiny Red Balloon.
+- Fixed Lucky Coin effects missing from minion, sentry and other hit paths; Coin Ring and Greedy Ring inherit the fix. Copper change now has a visible payout notice, without duplicate rolls.
+- Treasure Magnet now attracts Geo too, adding 150 pixels of range. Combined with Gold Ring, the larger range applies instead of adding both bonuses.
+- Moved the blacklist, Bestiary, Hallownest bag and quick-shop buttons beside the ammo column without changing their size.
+- Nightmare King Grimm now pays loot after his death sequence, before leaving the dream.
+- Fixed Chinese IME support in chest renaming and Bestiary search, including composition, candidate positioning, Enter/Esc/Backspace conflicts, focus recovery and keyboard replacement.
+
+Validation: Release build and relevant offline logic checks. No gameplay or full multiplayer testing was performed for this patch. Exit the game, extract the archive over the game folder, then launch through the existing TerraKnight BAT.
+
 
 > 1.0: playable from King's Pass all the way to the Radiance and Godhome: four classes, over a thousand Terraria items, enemy drops and a Bestiary assigned by Terraria progression, bosses with Terraria boss stats, town NPCs and shops, mining and building, pylon teleportation, four difficulties and Creative mode. The trailer is in [Releases](https://github.com/haoawake/TerraKnight/releases).
 >

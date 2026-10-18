@@ -1015,7 +1015,6 @@ namespace TerraKnight.Items
             if (p.Spec.Ai == Ai.Arrow && (p.Harpy & 1) != 0) p.Harpy |= 2;
             if (p.Arrow && p.Kind != ProjKind.PhantasmArrow && PhantasmTime > 0) PhantasmArrows(p, hm);
             if (b.HoneyedBarb && p.Arrow) HoneyedBarbBees(p);
-            if (b.LuckyCoin) AccessoryEffects.LuckyCoin(hm, p.Vel.x >= 0f ? 1 : -1, false);
             if (b.ManaCloak && ClassOf(p) == DamageClass.Magic && AccessoryEffects.ManaCloakCooldown == 0 && dealt > 0 && Chaseable(hm))
             {
                 AccessoryEffects.ManaCloakCooldown = 300;
