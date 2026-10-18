@@ -1,0 +1,51 @@
+name: Publish reviewed TerraKnight 4.1.0
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/release-v4.1.0.yml]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and verify the reviewed release package
+        env:
+          PACKAGE_SHA256: 0fd9a3d971d22c8277daba667c6ab17a6189fe1470ebf6e0751cc825eb4dc13d
+          SOURCE_SHA256: 6a05121bfae811bd58a66ab01787bce8995ab1b823e1e121bec7f86e3cb4fb21
+        run: |
+          curl --fail --location --retry 3 https://haoawake.xyz/terraknight-wiki/downloads/TerraKnight-v4.1.0-final.zip -o "$RUNNER_TEMP/TerraKnight-v4.1.0.zip"
+          echo "$PACKAGE_SHA256  $RUNNER_TEMP/TerraKnight-v4.1.0.zip" | sha256sum --check
+          curl --fail --location --retry 3 https://haoawake.xyz/terraknight-wiki/downloads/TerraKnight-v4.1.0-source.zip -o "$RUNNER_TEMP/source.zip"
+          echo "$SOURCE_SHA256  $RUNNER_TEMP/source.zip" | sha256sum --check
+      - name: Apply the checksum-verified source and publish it
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, zipfile
+          root = pathlib.Path.cwd()
+          with zipfile.ZipFile(pathlib.Path(os.environ['RUNNER_TEMP'])/'source.zip') as z:
+              manifest = json.loads(z.read('__manifest__.json'))
+              assert set(z.namelist()) == set(manifest) | {'__manifest__.json'}
+              for name, digest in manifest.items():
+                  path = pathlib.Path(name)
+                  assert not path.is_absolute() and '..' not in path.parts and '\\' not in name
+                  assert path.parts[0] not in ('.git', '.github', 'artifacts', 'release')
+                  assert path.suffix not in ('.exe', '.dll', '.pdb')
+                  data = z.read(name)
+                  assert hashlib.sha256(data).hexdigest() == digest, name
+                  (root/path).parent.mkdir(parents=True, exist_ok=True)
+                  (root/path).write_bytes(data)
+              (pathlib.Path(os.environ['RUNNER_TEMP'])/'paths').write_bytes(b'\0'.join(n.encode() for n in manifest)+b'\0')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add --pathspec-from-file="$RUNNER_TEMP/paths" --pathspec-file-nul
+          git commit -m "Release TerraKnight 4.1.0 with refreshed Wiki sources"
+          git push origin HEAD:main
+          echo "RELEASE_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Publish patch release at this source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v4.1.0 "$RUNNER_TEMP/TerraKnight-v4.1.0.zip" --target "$RELEASE_SOURCE_SHA" --title "TerraKnight v4.1.0" --notes-file docs/release-v4.1.0.md
