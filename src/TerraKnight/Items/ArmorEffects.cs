@@ -531,6 +531,11 @@ namespace TerraKnight.Items
         /// After defense and endurance (Pl:38589-38623): a Solar shield spent for 20% off and a
         /// flare; each Beetle Endurance orb 15% off, one spent.
         /// </summary>
+        /// <summary>Read-only preview; observing the next hit must never spend shields or orbs.</summary>
+        public static float PreviewHurtMultiplier(bool enemyHit) =>
+            (enemyHit && Set == ArmorSet.Solar && SolarShields > 0 ? 0.8f : 1f)
+            * (Set == ArmorSet.BeetleDefense && BeetleOrbs > 0 ? 1f - 0.15f * BeetleOrbs : 1f);
+
         public static int ModifyHurt(int damage)
         {
             bool counter = CounterHit;

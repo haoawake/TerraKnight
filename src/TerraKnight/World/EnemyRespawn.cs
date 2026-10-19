@@ -333,7 +333,7 @@ namespace TerraKnight.World
         }
 
         /// <summary>The game's ground (its terrain layer, the blocks put in it too) within reach of a body's centre that way.</summary>
-        static bool Felt(Vector2 body, Vector2 toGround, float reach) => Physics2D.Raycast(body, toGround, reach, 1 << ChunkColliders.TerrainLayer).collider != null;
+        static bool Felt(Vector2 body, Vector2 toGround, float reach) => ClimberSurfaces.Surface(body, toGround, reach).collider != null;
 
         static bool BoxSolid(Vector2 centre, Vector2 size)
         {
@@ -356,8 +356,12 @@ namespace TerraKnight.World
         static GameObject MakeTemplate(HealthManager hm, Transform holder)
         {
             var own = hm.GetComponentsInChildren<PlayMakerFSM>(true);
+            // Copied in its own colours, not half see-through from a steady second (Items.SteadyFade).
+            Items.SteadyFade.End(hm.gameObject);
             var t = Instantiate(hm.gameObject, holder, true);
             t.name = hm.gameObject.name + TK;
+            var fade = t.GetComponent<Items.SteadyFade>();
+            if (fade != null) DestroyImmediate(fade);
             // Paired one for one while the copy is still whole (its premade corpse, taken out below, has FSMs too).
             var copies = t.GetComponentsInChildren<PlayMakerFSM>(true);
             for (int i = 0; i < copies.Length; i++)
@@ -623,7 +627,7 @@ namespace TerraKnight.World
                 for (int x = lo.x; x <= hi.x; x++)
                 {
                     var k = TerraWorld.Get(x, y);
-                    if (k == CellKind.Platform || Cells.Blocks(k) && !(placedOnly && k == CellKind.Original)) return true;
+                    if (TerraKnight.World.Cells.IsPlatform(k) || Cells.Blocks(k) && !(placedOnly && k == CellKind.Original)) return true;
                 }
             return false;
         }
@@ -683,7 +687,7 @@ namespace TerraKnight.World
             for (int i = 1; i <= steps; i++)
             {
                 var k = TerraWorld.Get(cell.x, cell.y - i);
-                if (Cells.Blocks(k) || k == CellKind.Platform) return true;
+                if (Cells.Blocks(k) || TerraKnight.World.Cells.IsPlatform(k)) return true;
             }
             return false;
         }

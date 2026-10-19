@@ -1,4 +1,4 @@
-using TerraKnight.Effects;
+﻿using TerraKnight.Effects;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -14,6 +14,8 @@ namespace TerraKnight.Items
     {
         static void RegisterMinionShots()
         {
+            specs[ProjKind.MountScutlixLaser] = new Spec { Ai=Ai.Arrow, Texture="Projectile_606", W=6,H=6,Time=180,Extra=1,NoGravity=true,Look=Look.Bright };
+            specs[ProjKind.MountCannonball] = new Spec { Ai=Ai.Arrow, Texture="Projectile_930", W=14,H=14,Time=180,GravityDelay=0,Gravity=.1f,Look=Look.Bright };
             specs[ProjKind.SharknadoShark] = new Spec
             {
                 Ai = Ai.Custom, Texture = "Projectile_408", W = 10, H = 10, Time = 300, AlphaStart = 1f, TrailLength = 10,

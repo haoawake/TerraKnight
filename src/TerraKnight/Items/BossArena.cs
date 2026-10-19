@@ -52,7 +52,9 @@ namespace TerraKnight.Items
             ["DungDefender"] = Set(W("Waterways_05", "bot1"), beaten: new[] { F("defeatedDungDefender") }),
             ["TraitorLord"] = Set(W("Fungus3_23", "left1"), beaten: new[] { F("killedTraitorLord") }, needs: new[] { T("hasShadowDash") }, states: new[] { "Fungus3_23/Battle Scene" }),
             ["MantisLord"] = Set(W("Fungus2_15", "top1"), beaten: new[] { F("defeatedMantisLords") }),
-            ["MageLord"] = Set(W("Ruins1_24", "left1"), beaten: new[] { F("mageLordDefeated"), F("mageLordEncountered") }),
+            // left1 is the lower, second-phase exit (Y=19). Enter the first-phase
+            // approach from right1 (Y=43), before reviewed placement on the upper floor.
+            ["MageLord"] = Set(W("Ruins1_24", "right1"), beaten: new[] { F("mageLordDefeated"), F("mageLordEncountered") }),
             ["MegaJellyfish"] = Set(W("Fungus3_archive_02", "top1"), beaten: new[] { F("defeatedMegaJelly") }),
             ["FlukeMother"] = Set(W("Waterways_12", "right1"), beaten: new[] { F("flukeMotherDefeated") }),
             ["MegaBeamMiner"] = Set(W("Mines_18", "left1"), beaten: new[] { F("killedMegaBeamMiner"), F("defeatedMegaBeamMiner") }, states: new[] { "Mines_18/Battle Scene", "Mines_18/Mega Zombie Beam Miner (1)", "Mines_18/Mega Zombie Beam Miner" }),
@@ -97,7 +99,7 @@ namespace TerraKnight.Items
             ["FalseKnight"] = ("Crossroads_06", "right1"), ["BigFly"] = ("Crossroads_50", "left1"), ["Mawlek"] = ("Crossroads_33", "left1"),
             ["Hornet"] = ("Fungus1_25", "right1"), ["MegaMossCharger"] = ("Fungus1_12", "right1"), ["GhostAladar"] = ("Cliffs_01", "right1"),
             ["GhostNoEyes"] = ("Fungus1_34", "door1"), ["DungDefender"] = ("Waterways_02", "top2"), ["TraitorLord"] = ("Fungus3_48", "right1"),
-            ["MantisLord"] = ("Fungus2_14", "bot1"), ["MageLord"] = ("Ruins1_32", "right1"), ["MegaJellyfish"] = ("Fungus3_archive", "bot1"),
+            ["MantisLord"] = ("Fungus2_14", "bot1"), ["MageLord"] = ("Ruins1_30", "left1"), ["MegaJellyfish"] = ("Fungus3_archive", "bot1"),
             ["FlukeMother"] = ("Waterways_08", "left1"), ["MegaBeamMiner"] = ("Mines_11", "right1"), ["GhostHu"] = ("Fungus2_08", "right1"),
             ["GhostMarmu"] = ("Fungus3_13", "left2"), ["BlackKnight"] = ("Ruins2_Watcher_Room", "bot1"), ["HiveKnight"] = ("Hive_04", "right1"),
             ["JarCollector"] = ("Ruins2_11_b", "left1"), ["MimicSpider"] = ("Deepnest_31", "right2"), ["GhostGalien"] = ("Deepnest_35", "left1"),

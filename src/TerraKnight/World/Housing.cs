@@ -102,13 +102,14 @@ namespace TerraKnight.World
         {
             furniture.Clear();
             Stations.HousingTiles((gx, gy, type, frameX) => furniture[Key(gx, gy)] = (type, frameX));
-            foreach (var b in Chests.Boxes())
+            foreach (var pair in Chests.HousingBoxes())
             {
+                var b = pair.Box;
                 var lo = CellGrid.WorldToCell(new Vector2(b.xMin + 0.01f, b.yMin + 0.01f));
                 var hi = CellGrid.WorldToCell(new Vector2(b.xMax - 0.01f, b.yMax - 0.01f));
                 for (int x = lo.x; x <= hi.x; x++)
                     for (int y = lo.y; y <= hi.y; y++)
-                        furniture[Key(x, y)] = (21, (x - lo.x) * 18);
+                        furniture[Key(x, y)] = (pair.Type, (x - lo.x) * 18);
             }
         }
 
@@ -160,7 +161,8 @@ namespace TerraKnight.World
                 case CellKind.Rope: return 213;
                 case CellKind.MagicIce: return 127;
                 case CellKind.Meteorite: return 37;
-                default: return 1;
+                case CellKind.Obsidian: return 56;
+                default: return Cells.IsPlatform(kind) ? 19 : 1;
             }
         }
 

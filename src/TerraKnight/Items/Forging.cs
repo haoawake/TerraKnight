@@ -12,14 +12,51 @@ namespace TerraKnight.Items
     /// (its plain reforge price) and its level; a forging takes one time in two, the money gone and the level kept. Each
     /// weapon carries its own level (ItemStack.Forge, kept in the save); a reforge keeps it. A shop pays for the levels too:
     /// a fifth of their prices (Shop.SellValue), as it pays a fifth of an item's worth. A piece of armor is forged too, up
-    /// to three levels per stage (+3 .. +18), each level +1 defense. Its full-upgrade price stays near the former budget.
+    /// to three levels per stage (+3 .. +18), each level +1 defense, a warrior's piece +2 (<see cref="IsWarriorArmor"/>).
+    /// Its full-upgrade price stays near the former budget.
     /// </summary>
     internal static class Forging
     {
         public const int LevelsPerStage = 5;
         public const float DamagePerLevel = 0.05f;
-        /// <summary>A piece of armor gains three available levels per stage, each adding one defense.</summary>
-        public const int ArmorLevelsPerStage = 3, DefensePerLevel = 1;
+        /// <summary>A piece of armor gains three available levels per stage, each adding one defense (a warrior's two).</summary>
+        public const int ArmorLevelsPerStage = 3, DefensePerLevel = 1, WarriorDefensePerLevel = 2;
+
+        /// <summary>The defense a level of forging adds to a piece of armor: two for a warrior's, one for any other.</summary>
+        public static int DefensePerLevelOf(ItemDef d) => IsWarriorArmor(d) ? WarriorDefensePerLevel : DefensePerLevel;
+
+        static readonly Dictionary<ItemType, bool> warrior = new Dictionary<ItemType, bool>();
+
+        /// <summary>
+        /// A warrior's (melee) head, body or legs: one of the warrior's armor path (ProgressionBalance.ArmorPaths' melee kits: iron,
+        /// gold, shadow, molten, titanium, beetle), or a piece whose own bonuses with its set's lean to melee at least as much as to
+        /// any other class (the cobalt, mythril and adamantite helmets, the turtle, the solar flare, the frost, the monk's...). A piece
+        /// for no class (copper, wood), for every class alike or for another isn't.
+        /// </summary>
+        public static bool IsWarriorArmor(ItemDef d)
+        {
+            if (d == null) return false;
+            var plain = ItemDb.Get(d.Type);
+            if (plain == null || !plain.IsArmor) return false;
+            if (warrior.TryGetValue(plain.Type, out bool known)) return known;
+            bool yes = false;
+            foreach (var path in ProgressionBalance.ArmorPaths)
+                if (path.Class == Kit.Melee && System.Array.IndexOf(path.Items, plain.Type) >= 0) yes = true;
+            if (!yes)
+            {
+                var own = plain.Bonus;
+                var set = Equipment.SetBonus(plain.SetBonus != ArmorSet.None ? plain.SetBonus : plain.Set);
+                float melee = own.MeleeDamage + own.MeleeCrit + own.MeleeSpeed + set.MeleeDamage + set.MeleeCrit + set.MeleeSpeed;
+                float ranged = own.RangedDamage + own.RangedCrit + own.ArrowDamage + set.RangedDamage + set.RangedCrit + set.ArrowDamage;
+                float magic = own.MagicDamage + own.MagicCrit + own.ManaCost + own.ManaMax / 200f + set.MagicDamage + set.MagicCrit + set.ManaCost + set.ManaMax / 200f;
+                float summon = own.MinionDamage + 0.1f * (own.MaxMinions + own.MaxTurrets) + set.MinionDamage + 0.1f * (set.MaxMinions + set.MaxTurrets);
+                // A piece for every class alike (the ninja's, the hardmode families' shared chests and legs) is no warrior's.
+                bool everyClass = Mathf.Approximately(melee, ranged) && Mathf.Approximately(melee, magic);
+                yes = melee > 0f && melee >= ranged && melee >= magic && melee >= summon && !everyClass;
+            }
+            warrior[plain.Type] = yes;
+            return yes;
+        }
 
         public static int ArmorStageCap(int stage) => ArmorLevelsPerStage * (Mathf.Clamp(stage, 0, 5) + 1);
 
@@ -74,8 +111,12 @@ namespace TerraKnight.Items
         /// The cost of the next level, in copper (a Geo is 100): dear, as the plainest way to more damage, yet not out of
         /// reach for the strongest (whose damage isn't that much more): 20 Geo × the weapon's strength to the power 0.8
         /// (the Night's Edge about 500 Geo, the Terra Blade 1150, the Zenith 3150), 20 Geo at the least; ×(1 + level/2).
+        /// Four fifths of it with the Discount Card (<see cref="Shop.Discounted"/>).
         /// </summary>
-        public static long Cost(ItemStack s)
+        public static long Cost(ItemStack s) => Shop.Discounted(ListCost(s));
+
+        /// <summary>The next level's price before any discount (what a sale's levels are worth).</summary>
+        static long ListCost(ItemStack s)
         {
             if (s.IsEmpty) return 0;
             var plain = ItemDb.Get(s.Type);
@@ -105,7 +146,7 @@ namespace TerraKnight.Items
         {
             long sum = 0;
             var s = ItemStack.Of(t);
-            for (int l = 0; l < toLevel; l++) { s.Forge = (byte)l; sum += Cost(s); }
+            for (int l = 0; l < toLevel; l++) { s.Forge = (byte)l; sum += ListCost(s); }
             return sum;
         }
 
@@ -147,12 +188,17 @@ namespace TerraKnight.Items
         static readonly Dictionary<(ItemDef, byte), Entry> cache = new Dictionary<(ItemDef, byte), Entry>();
         static string cacheCulture;
 
-        /// <summary>The forged copy of a definition (its prefix's, if any): a weapon's damage up 5% a level, a piece of armor's defense +1 a level; " +N" after its name.</summary>
+        /// <summary>
+        /// The forged copy of a definition (its prefix's, if any): a weapon's damage up 5% a level, " +N" after its name; a
+        /// piece of armor's defense +1 a level, its level and its highest after its name, unforged too ("Wood Helmet(Lv.1/Lv.3)").
+        /// </summary>
         public static ItemDef Apply(ItemDef b, byte level)
         {
+            if (b == null) return b;
+            bool armor = IsArmorPiece(b.Unprefixed ?? b);
+            if (level == 0 && !armor) return b;
             // Only a weapon or armor is forged (a treasure bag keeps a mark in the same byte: TreasureBags).
-            if (b == null || level == 0) return b;
-            if (!Forgeable(b.Unprefixed ?? b)) return TreasureBags.Is(b.Type) ? TreasureBags.Marked(b,level) : b;
+            if (!armor && !Forgeable(b.Unprefixed ?? b)) return TreasureBags.Is(b.Type) ? TreasureBags.Marked(b,level) : b;
             if (cacheCulture != Lang.Culture)
             {
                 cache.Clear();
@@ -172,8 +218,12 @@ namespace TerraKnight.Items
             c.Forge = level;
             c.Unforged = b;
             c.Damage = Forged(b.Damage, level);
-            if (IsArmorPiece(b.Unprefixed ?? b)) c.Defense = b.Defense + DefensePerLevel * level;
-            c.Name = b.Name + " +" + level;
+            if (armor)
+            {
+                c.Defense = b.Defense + DefensePerLevelOf(b) * level;
+                c.Name = $"{b.Name}(Lv.{level}/Lv.{MaxLevelOf((b.Unprefixed ?? b).Type)})";
+            }
+            else c.Name = b.Name + " +" + level;
             cache[(b, level)] = new Entry { Def = c, BaseDamage = b.Damage };
             return c;
         }

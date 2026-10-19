@@ -26,7 +26,7 @@ namespace TerraKnight.UI
         const float C = CellGrid.CellSize;
         const int MapVersion = 2;
 
-        enum Tile : byte { None, Air, Terrain, Structure, Platform, Dirt, Stone, Wood, Sand, Ice, Torch, Rope, Dug, Meteorite }
+        enum Tile : byte { None, Air, Terrain, Structure, Platform, Dirt, Stone, Wood, Sand, Ice, Torch, Rope, Dug, Meteorite, Obsidian }
         enum Wet : byte { None, Water, Spikes, Acid, Lava }
         enum Obj : byte { Bench, Lamp, Door, Lever, Lift, Chest, Stag, Toll, Grub, GeoRock, Totem, Item, BreakableWall, Spring, Npc, Pylon, TerraChest, LifeCrystal }
 
@@ -146,7 +146,8 @@ namespace TerraKnight.UI
                 case CellKind.Torch: return Tile.Torch;
                 case CellKind.Rope: return Tile.Rope;
                 case CellKind.Meteorite: return Tile.Meteorite;
-                default: return Cells.IsAreaBlock(g.Get(x, y)) ? Tile.Stone : g.IsDug(x, y) ? Tile.Dug : Tile.Air;
+                case CellKind.Obsidian: return Tile.Obsidian;
+                default: return Cells.IsPlatform(g.Get(x, y)) ? Tile.Platform : Cells.IsAreaBlock(g.Get(x, y)) ? Tile.Stone : g.IsDug(x, y) ? Tile.Dug : Tile.Air;
             }
         }
 
@@ -414,6 +415,8 @@ namespace TerraKnight.UI
                 case Tile.Rope: return Rgb(137, 120, 67);
                 // Bright on the map (MapHelper's 104, 86, 84 lifted to a glow): a meteorite is found by it.
                 case Tile.Meteorite: return Rgb(255, 112, 40);
+                // MapHelper's obsidian (tile 56).
+                case Tile.Obsidian: return Rgb(87, 81, 173);
                 default: return Color.clear;
             }
         }
@@ -799,6 +802,7 @@ namespace TerraKnight.UI
             LiveOnTop(visible);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Open);
+            LiveAgain(visible);
             // Time to spare: the rooms of this layer off screen made ahead, so zooming out or dragging over them finds them made.
             if (buildWatch.Elapsed.TotalMilliseconds < BuildBudgetMs)
                 foreach (var room in rooms.Values)
@@ -906,6 +910,19 @@ namespace TerraKnight.UI
             var top = visible[i];
             visible.RemoveAt(i);
             visible.Add(top);
+        }
+
+        /// <summary>
+        /// The room the Knight is in drawn once more over everything: where a neighbour's passage lies on its rock (rooms
+        /// whose gates make a loop the map can't lay flat end up over each other), its own rock and passages show, so the
+        /// map round the Knight is the room as it is.
+        /// </summary>
+        static void LiveAgain(List<(Room room, Rect rect)> visible)
+        {
+            if (visible.Count == 0 || visible[visible.Count - 1].room.Name != TerraWorld.Live?.SceneName) return;
+            var (room, rect) = visible[visible.Count - 1];
+            GUI.DrawTexture(rect, room.Solid);
+            GUI.DrawTexture(rect, room.Open);
         }
 
         static readonly Rect[] layerTabs = new Rect[3];
@@ -1031,6 +1048,7 @@ namespace TerraKnight.UI
                 case Tile.Torch: return "火把";
                 case Tile.Rope: return "绳";
                 case Tile.Meteorite: return "陨石";
+                case Tile.Obsidian: return "黑曜石";
                 case Tile.Dug: return Lang.F("挖开的地方（{0}）", area);
                 default: return null;
             }

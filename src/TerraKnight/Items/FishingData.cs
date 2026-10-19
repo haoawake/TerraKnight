@@ -10,7 +10,8 @@ namespace TerraKnight.Items
         {
             new Rule(1, true, false, 0, 1, 6, 0xA6UL, ItemType.None, new[] { ItemType.LavaCrate }),
             new Rule(2, true, false, 0, 1, 6, 0xA5UL, ItemType.None, new[] { ItemType.LavaCrateHard }),
-            new Rule(3, true, false, 5, 1, 3, 0x85UL, ItemType.None, new[] { ItemType.ObsidianSwordfish }),
+            new Rule(3, true, false, 5, 1, 3, 0x85UL, ItemType.None, new[] { ItemType.BottomlessAcidBucket, ItemType.AcidAbsorbantSponge, ItemType.ObsidianSwordfish }),
+            new Rule(4, true, false, 5, 1, 3, 0x86UL, ItemType.None, new[] { ItemType.BottomlessAcidBucket, ItemType.AcidAbsorbantSponge }),
             new Rule(5, true, false, 4, 1, 1, 0x84UL, ItemType.None, new[] { ItemType.FlarefinKoi }),
             new Rule(6, true, false, 3, 1, 1, 0x84UL, ItemType.None, new[] { ItemType.Obsidifish }),
             new Rule(7, true, true, 0, 1, 1, 0x4UL, ItemType.None, new ItemType[0]),

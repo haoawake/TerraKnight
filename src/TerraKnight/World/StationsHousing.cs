@@ -27,16 +27,17 @@ namespace TerraKnight.World
         }
 
         /// <summary>A Wooden Door, shut or open.</summary>
-        public static bool IsDoor(StationKind k) => k == StationKind.Door || k == StationKind.DoorOpenRight || k == StationKind.DoorOpenLeft;
+        public static bool IsDoor(StationKind k) => RegionalFurniture.BaseKind(k) == StationKind.Door || RegionalFurniture.BaseKind(k) == StationKind.DoorOpenRight || RegionalFurniture.BaseKind(k) == StationKind.DoorOpenLeft;
 
         /// <summary>The door's hinge column (the one it stands in shut): the left one swung right, the right one swung left.</summary>
-        static int HingeColumn(StationKind k) => k == StationKind.DoorOpenLeft ? 1 : 0;
+        static int HingeColumn(StationKind k) => RegionalFurniture.BaseKind(k) == StationKind.DoorOpenLeft ? 1 : 0;
 
         /// <summary>Terraria's tile a station is: its sheet's number (Tiles_N), the relics' Master Mode trophy base 617, the door 10 shut and 11 open.</summary>
         static int TileTypeOf(Station s)
         {
-            if (s.Kind == StationKind.Door) return 10;
-            if (s.Kind == StationKind.DoorOpenRight || s.Kind == StationKind.DoorOpenLeft) return 11;
+            if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Door) return 10;
+            if (RegionalFurniture.BaseKind(s.Kind) == StationKind.DoorOpenRight || RegionalFurniture.BaseKind(s.Kind) == StationKind.DoorOpenLeft) return 11;
+            if (RegionalFurniture.IsRegional(s.Kind)) return RegionalFurniture.TileOf(s.Kind);
             var tex = s.Spec.Texture;
             if (tex != null && tex.StartsWith("Tiles_") && int.TryParse(tex.Substring(6), out int n)) return n;
             return 617;
@@ -117,18 +118,18 @@ namespace TerraKnight.World
         {
             const float c = CellGrid.CellSize;
             var b = s.Box;
-            return new Rect(b.xMin + (s.Kind == StationKind.Door ? 0 : HingeColumn(s.Kind)) * c, b.yMin, c, 3 * c);
+            return new Rect(b.xMin + (RegionalFurniture.BaseKind(s.Kind) == StationKind.Door ? 0 : HingeColumn(s.Kind)) * c, b.yMin, c, 3 * c);
         }
 
         /// <summary>WorldGen.OpenDoor: swung to that side (1 right, -1 left) when the column there is clear.</summary>
         static bool OpenDoor(Station s, int direction)
         {
-            if (s.Kind != StationKind.Door) return false;
+            if (RegionalFurniture.BaseKind(s.Kind) != StationKind.Door) return false;
             const float c = CellGrid.CellSize;
             var b = s.Box;
             float swing = direction == -1 ? b.xMin - c * 0.5f : b.xMax + c * 0.5f;
             if (ColumnTaken(swing, b.yMin, s)) return false;
-            s.Kind = direction == -1 ? StationKind.DoorOpenLeft : StationKind.DoorOpenRight;
+            s.Kind = RegionalFurniture.WithPose(s.Kind, direction == -1 ? StationKind.DoorOpenLeft : StationKind.DoorOpenRight);
             s.Local.x += direction * c * 0.5f;
             TerraMod.Instance?.PlaySound("Door_Opened");
             // Its body goes at once, not with the next look over the stations: the one walking in is already moving on.
@@ -142,7 +143,7 @@ namespace TerraKnight.World
         /// </summary>
         static bool CloseDoor(Station s)
         {
-            if (s.Kind != StationKind.DoorOpenRight && s.Kind != StationKind.DoorOpenLeft) return false;
+            if (RegionalFurniture.BaseKind(s.Kind) != StationKind.DoorOpenRight && RegionalFurniture.BaseKind(s.Kind) != StationKind.DoorOpenLeft) return false;
             const float c = CellGrid.CellSize;
             int hinge = HingeColumn(s.Kind);
             var doorway = Doorway(s);
@@ -154,7 +155,7 @@ namespace TerraKnight.World
             }
             if (Town.TownNpcs.AnyIn(doorway)) return false;
             s.Local.x += (hinge == 0 ? -1f : 1f) * c * 0.5f;
-            s.Kind = StationKind.Door;
+            s.Kind = RegionalFurniture.WithPose(s.Kind, StationKind.Door);
             TerraMod.Instance?.PlaySound("Door_Closed");
             return true;
         }
@@ -174,7 +175,7 @@ namespace TerraKnight.World
 
         static bool Toggle(Station s, int dir)
         {
-            if (s.Kind == StationKind.Door)
+            if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Door)
             {
                 bool opened = OpenDoor(s, dir) || OpenDoor(s, -dir);
                 if (opened) DevDoorToggles++;
@@ -196,7 +197,7 @@ namespace TerraKnight.World
         /// <summary>A shut door's body: a solid box over it on the terrain layer, gone while it is open.</summary>
         static void DoorBody(Station s)
         {
-            if (s.Kind != StationKind.Door)
+            if (RegionalFurniture.BaseKind(s.Kind) != StationKind.Door)
             {
                 if (s.Top != null)
                 {
@@ -246,7 +247,7 @@ namespace TerraKnight.World
                 for (int row = 0; row < 3; row++)
                 {
                     var cell = CellGrid.WorldToCell(new Vector2(d.xMin + 0.5f * c, d.yMin + (row + 0.5f) * c));
-                    if (s.Kind == StationKind.Door) shut.Add(cell);
+                    if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Door) shut.Add(cell);
                     else hinges.Add(cell);
                 }
             }
@@ -319,7 +320,7 @@ namespace TerraKnight.World
             {
                 var s = pushedOpen[i];
                 bool waiting = guest && askedAt.TryGetValue(s, out float at) && Time.time - at < 1f;
-                bool open = s.Region != null && stations.Contains(s) && (s.Kind == StationKind.DoorOpenLeft || s.Kind == StationKind.DoorOpenRight);
+                bool open = s.Region != null && stations.Contains(s) && (RegionalFurniture.BaseKind(s.Kind) == StationKind.DoorOpenLeft || RegionalFurniture.BaseKind(s.Kind) == StationKind.DoorOpenRight);
                 if (!open)
                 {
                     if (!waiting) pushedOpen.RemoveAt(i);
@@ -345,7 +346,7 @@ namespace TerraKnight.World
             bool flipped = Player.GravityGlobe.Flipped;
             foreach (var s in stations)
             {
-                if (s.Kind != StationKind.Door || s.Region == null || s.Fixed) continue;
+                if (RegionalFurniture.BaseKind(s.Kind) != StationKind.Door || s.Region == null || s.Fixed) continue;
                 var d = s.Box;
                 // The door and the tile it stands on (the one it hangs from, turned over by the Gravity Globe).
                 var area = flipped ? new Rect(d.xMin, d.yMin, d.width, d.height + c) : new Rect(d.xMin, d.yMin - c, d.width, d.height + c);
@@ -380,7 +381,7 @@ namespace TerraKnight.World
             if (body == null || Net.WorldSync.Guest) return false;
             foreach (var s in stations)
             {
-                if (s.Kind != StationKind.Door || s.Top == null || s.Top != body.gameObject) continue;
+                if (RegionalFurniture.BaseKind(s.Kind) != StationKind.Door || s.Top == null || s.Top != body.gameObject) continue;
                 if (!OpenDoor(s, dir) && !OpenDoor(s, -dir)) return false;
                 hinge = Doorway(s).center;
                 DevDoorToggles++;
@@ -395,7 +396,7 @@ namespace TerraKnight.World
         {
             foreach (var s in stations)
             {
-                if ((s.Kind != StationKind.DoorOpenLeft && s.Kind != StationKind.DoorOpenRight) || s.Region == null) continue;
+                if ((RegionalFurniture.BaseKind(s.Kind) != StationKind.DoorOpenLeft && RegionalFurniture.BaseKind(s.Kind) != StationKind.DoorOpenRight) || s.Region == null) continue;
                 if ((Doorway(s).center - hinge).sqrMagnitude > 0.01f) continue;
                 if (Net.WorldSync.Guest || !CloseDoor(s)) return false;
                 DevDoorToggles++;

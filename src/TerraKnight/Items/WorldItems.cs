@@ -23,7 +23,13 @@ namespace TerraKnight.Items
         const float Half = 8f * Px;
         const int MaxItems = 400;
         const int ThrowGrabDelay = 100;
-        const float GrabRange = 42f * Px;
+        /// <summary>
+        /// How far round the player's hitbox items come to them (Terraria's itemGrabRange, 42 px), in Terraria pixels:
+        /// almost twice Terraria's here, the Knight floating on Hallownest's pools while what falls in sinks to their floor.
+        /// The magnets' reach is added to it (items, hearts, stars; geo too, AccessoryEffects).
+        /// </summary>
+        internal const float BaseGrabPx = 80f;
+        const float GrabRange = BaseGrabPx * Px;
         const float Z = 0.0032f;
 
         sealed class Item
@@ -266,29 +272,19 @@ namespace TerraKnight.Items
                 bool star = it.Stack.Type == ItemType.Star;
                 if (box.Intersects(body))
                 {
-                    if (star && it.NetId == null)
+                    // A LAN game's shared heart or star is the host's to give: a guest claims it (WorldSync), then takes it as here.
+                    if ((heart || star) && !(it.NetId != null && Net.WorldSync.Guest))
                     {
-                        // Player.PickupItem: a star gives 100 mana and is gone (taken at full mana too), never carried.
-                        ManaStars.Give(it.Stack.Count);
-                        it.Stack = default;
-                        continue;
-                    }
-                    if (heart && it.NetId == null)
-                    {
-                        // Player.PickupItem: a heart heals 20 and is gone (taken at full life too), never carried.
-                        int n = it.Stack.Count;
-                        TerraMod.Instance.Stats.Heal(20 * n);
-                        UI.CombatText.Show(body.center + Vector3.up * 0.9f, (20 * n).ToString(), UI.CombatText.Heal);
-                        TerraMod.Instance.PlaySound("Grab", 0.7f);
+                        TakeAtOnce(it.Stack, body.center);
                         it.Stack = default;
                         continue;
                     }
                     if (it.NetId != null && Net.WorldSync.Guest)
                     {
-                        if (!it.ClaimPending && (Containers.Sells(inv, it.Stack.Type) || inv.Room(it.Stack.Type) > 0))
+                        if (!it.ClaimPending && (heart || star || Containers.Sells(inv, it.Stack.Type) || inv.Room(it.Stack.Type) > 0))
                         {
                             it.ClaimPending = true;
-                            Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Containers.Sells(inv, it.Stack.Type) ? it.Stack.Count : Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
+                            Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = ClaimCount(inv, it.Stack) });
                         }
                         continue;
                     }
@@ -321,7 +317,7 @@ namespace TerraKnight.Items
                     if (!it.ClaimPending)
                     {
                         it.ClaimPending = true;
-                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = Containers.Sells(inv, it.Stack.Type) ? it.Stack.Count : Mathf.Min(it.Stack.Count, inv.Room(it.Stack.Type)) });
+                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = ClaimCount(inv, it.Stack) });
                     }
                     continue;
                 }
@@ -349,6 +345,31 @@ namespace TerraKnight.Items
                 it.Grabbed = true;
             }
         }
+
+        /// <summary>
+        /// Player.PickupItem's heart and star: 20 life or 100 mana each, and gone (taken at full life or mana too), never
+        /// carried. True for those two; also for the ones a LAN game's host hands a guest (WorldSync's claim).
+        /// </summary>
+        internal static bool TakeAtOnce(ItemStack stack, Vector3 at)
+        {
+            var mod = TerraMod.Instance;
+            if (mod == null || stack.IsEmpty) return false;
+            if (stack.Type == ItemType.Star)
+            {
+                ManaStars.Give(stack.Count);
+                return true;
+            }
+            if (stack.Type != ItemType.Heart) return false;
+            int n = stack.Count;
+            mod.Stats.Heal(20 * n);
+            UI.CombatText.Show(at + Vector3.up * 0.9f, (20 * n).ToString(), UI.CombatText.Heal);
+            mod.PlaySound("Grab", 0.7f);
+            return true;
+        }
+
+        /// <summary>How much of a shared item a guest asks for: all of a heart, a star or what the Auto-Sell Bag sells, else what fits.</summary>
+        static int ClaimCount(Inventory inv, ItemStack s) =>
+            s.Type == ItemType.Heart || s.Type == ItemType.Star || Containers.Sells(inv, s.Type) ? s.Count : Mathf.Min(s.Count, inv.Room(s.Type));
 
         /// <summary>
         /// WorldItem.DespawnIfMeetingConditions: a Fallen Star lying in the daylight goes in ten sparkles (15) and

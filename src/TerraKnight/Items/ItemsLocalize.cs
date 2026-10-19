@@ -1,4 +1,4 @@
-using TerraKnight.Terraria;
+﻿using TerraKnight.Terraria;
 
 namespace TerraKnight.Items
 {
@@ -47,6 +47,8 @@ namespace TerraKnight.Items
                     continue;
                 }
                 d.Name = Lang.Pick(d.ZhName, TerrariaText.ItemName(Lang.Source, id), TerrariaText.ItemName(c, id));
+                // Mount acquisition and controls are mod-specific; keep them when no full translation exists.
+                if (d.IsMount) { d.Tooltip=Lang.IsSource ? d.ZhTooltip : (Lang.Lookup(d.ZhTooltip,c) ?? (c.StartsWith("zh") ? d.ZhTooltip : Player.Mounts.EnglishTooltip(d))); done++; continue; }
                 if (string.IsNullOrEmpty(d.ZhTooltip)) d.Tooltip = d.ZhTooltip;
                 else
                 {

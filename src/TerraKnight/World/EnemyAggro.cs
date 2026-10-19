@@ -34,7 +34,7 @@ namespace TerraKnight.World
         public static int DevStruck, DevHeld;
 
         /// <summary>A range that wakes the enemy (not one that starts an attack when the Knight is close).</summary>
-        static bool Wakes(string name)
+        internal static bool Wakes(string name)
         {
             string n = name.ToLowerInvariant();
             if (n.Contains("attack") || n.Contains("lunge") || n.Contains("slash") || n.Contains("dive") || n.Contains("jump") || n.Contains("spit") || n.Contains("shoot")) return false;

@@ -44,6 +44,8 @@ namespace TerraKnight.Items
             public bool SpaAcid;
             public int Tiles;
             public string Scene;
+            /// <summary>Liquid in the grid (poured by the player): Terraria's size rules apply (<see cref="Needed"/>).</summary>
+            public bool Poured;
             public bool Acid => Region != null ? HasFsm(Region, "Acid Armour Check") : SpaAcid;
         }
 
@@ -135,7 +137,8 @@ namespace TerraKnight.Items
             if (Active && floating && pond != null)
             {
                 int tiles = DevPondTiles > 0 ? DevPondTiles : pond.Tiles;
-                int need = Needed();
+                if (pond.Poured && tiles < TooLittle) return Lang.T("水量不足！");
+                int need = Needed(pond.Poured);
                 if (tiles < need) return Lang.F("{0}（{1}%）渔力", (int)(fl * (float)tiles / need), Mathf.RoundToInt(100f * tiles / need));
             }
             return Lang.F("{0} 渔力", fl);
@@ -206,7 +209,6 @@ namespace TerraKnight.Items
                 }
             }
             Cancel();
-            TerraMod.Instance?.PlaySound("Item_1");
             return true;
         }
 
@@ -345,7 +347,9 @@ namespace TerraKnight.Items
             var rod = ItemDb.Get(pole);
             int tiles = DevPondTiles > 0 ? DevPondTiles : pond.Tiles;
             var area = areas.TryGetValue(Areas.AreaName(pond.Scene), out var a) ? a : (Stage: 0, Height: 1, Zones: Zone.None);
-            int need = Needed(area.Height);
+            // Projectile.FishingCheck: under 75 tiles of water nothing bites (Not Enough Water).
+            if (pond.Poured && tiles < TooLittle) return;
+            int need = Needed(pond.Poured);
             if (tiles < need) fl = (int)(fl * (float)tiles / need);
             // Luck (Player.luck): the fishing power a little up or down, as often as the luck is strong.
             float luck = Mathf.Clamp(Equipment.Current.Luck, -0.7f, 1f);
@@ -380,10 +384,13 @@ namespace TerraKnight.Items
         }
 
         /// <summary>
-        /// The water a pond needs not to weaken the line (Terraria's waterNeededToFish, 300): any here (the user's, 2026-10-16:
-        /// every water fishes whatever its size; Hallownest's pools are small next to Terraria's lakes).
+        /// The water a pond needs not to weaken the line (Terraria's waterNeededToFish, 300): poured water needs it, and
+        /// fishes at all only from 75 tiles; Hallownest's own pools any (the user's, 2026-10-16: every water fishes whatever
+        /// its size; Hallownest's pools are small next to Terraria's lakes).
         /// </summary>
-        static int Needed(int height = -1) => 1;
+        static int Needed(bool poured) => poured ? 300 : 1;
+
+        const int TooLittle = 75;
 
         static ulong Flags((int Stage, int Height, Zone Zones) area, int tiles, ItemDef rod, Inventory inv, bool junk, bool crate)
         {
@@ -512,7 +519,7 @@ namespace TerraKnight.Items
                 float d = Mathf.Abs(p.y - b.max.y);
                 if (d < bestD) { bestD = d; best = q; }
             }
-            return best;
+            return best ?? GridPond(p, above);
         }
 
         /// <summary>
@@ -534,7 +541,66 @@ namespace TerraKnight.Items
                 if (position.x >= bounds.min.x && position.x <= bounds.max.x
                     && position.y >= bounds.min.y && position.y <= bounds.max.y) return true;
             }
+            // Poured liquid within the same reach.
+            var c0 = CellGrid.WorldToCell(position);
+            for (int dy = -8; dy <= 8; dy++)
+                for (int dx = -10; dx <= 10; dx++)
+                {
+                    int gx = c0.x + dx, gy = c0.y + dy;
+                    if (TerraWorld.LiquidAt(gx, gy) > 0 && TerraWorld.LiquidKindAt(gx, gy) == (acid ? LiquidKind.Acid : LiquidKind.Water)) return true;
+                }
             return false;
+        }
+
+        /// <summary>A point inside one of Hollow Knight's own pools (not the poured liquid): an Empty Bucket fills there.</summary>
+        internal static bool NativeLiquidAt(Vector2 p, out bool acid)
+        {
+            acid = false;
+            Scan();
+            foreach (var q in ponds)
+            {
+                var b = q.Area;
+                if (p.x < b.min.x || p.x > b.max.x || p.y < b.min.y || p.y > b.max.y) continue;
+                acid = q.Acid;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Poured liquid at a point (or its surface within `above` under it): Projectile.GetFishingPondState's pond, the row of
+        /// liquid at the surface spread left and right as far as it goes and every column of it counted down to its floor.
+        /// </summary>
+        static Pond GridPond(Vector2 p, float above)
+        {
+            var c = CellGrid.WorldToCell(p);
+            int x = c.x, y = c.y;
+            if (TerraWorld.LiquidAt(x, y) <= 0)
+            {
+                // The surface a little under the point, through open cells.
+                int reach = Mathf.CeilToInt(above / CellGrid.CellSize) + 1;
+                int k = 0;
+                while (k < reach && TerraWorld.LiquidAt(x, y) <= 0 && !TerraWorld.IsSolid(x, y)) { y--; k++; }
+                if (TerraWorld.LiquidAt(x, y) <= 0) return null;
+            }
+            while (TerraWorld.LiquidAt(x, y + 1) > 0 && !TerraWorld.IsSolid(x, y + 1)) y++;
+            var kind = TerraWorld.LiquidKindAt(x, y);
+            float surface = (y + TerraWorld.LiquidAt(x, y) / 255f) * CellGrid.CellSize;
+            if (p.y > surface + above) return null;
+            int minX = x, maxX = x;
+            while (maxX - minX < 400 && TerraWorld.LiquidAt(minX - 1, y) > 0 && !TerraWorld.IsSolid(minX - 1, y)) minX--;
+            while (maxX - minX < 400 && TerraWorld.LiquidAt(maxX + 1, y) > 0 && !TerraWorld.IsSolid(maxX + 1, y)) maxX++;
+            int tiles = 0, low = y;
+            for (int i = minX; i <= maxX; i++)
+                for (int j = y; j > y - 400 && TerraWorld.LiquidAt(i, j) > 0 && !TerraWorld.IsSolid(i, j); j--)
+                {
+                    tiles++;
+                    low = Mathf.Min(low, j);
+                }
+            var region = TerraWorld.RegionAt(x, y);
+            var area = new Bounds();
+            area.SetMinMax(new Vector3(minX * CellGrid.CellSize, low * CellGrid.CellSize), new Vector3((maxX + 1) * CellGrid.CellSize, surface));
+            return new Pond { Area = area, SpaAcid = kind == LiquidKind.Acid, Tiles = tiles, Scene = region?.SceneName ?? "", Poured = true };
         }
 
         static void Scan()
@@ -547,6 +613,8 @@ namespace TerraKnight.Items
             foreach (var fsm in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (fsm == null || fsm.FsmName != "Surface Water Region" || !fsm.gameObject.scene.isLoaded) continue;
+                // The mod's copies over poured liquid and their templates (World.LiquidView): the grid's ponds instead.
+                if (fsm.GetComponentInParent<TerraOwned>(true) != null) continue;
                 var box = fsm.GetComponent<BoxCollider2D>();
                 if (box == null) continue;
                 bool acid = HasFsm(fsm.gameObject, "Acid Armour Check");
@@ -567,7 +635,7 @@ namespace TerraKnight.Items
             // Acid that is only a hazard (no swim region over it): acid water too.
             foreach (var dh in Object.FindObjectsByType<DamageHero>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
-                if (dh == null || dh.hazardType != 3 || !dh.gameObject.scene.isLoaded) continue;
+                if (dh == null || dh.hazardType != 3 || !dh.gameObject.scene.isLoaded || dh.GetComponentInParent<TerraOwned>(true) != null) continue;
                 var c = dh.GetComponent<BoxCollider2D>();
                 if (c == null || !c.enabled) continue;
                 var b = BoxBounds(c);
@@ -650,7 +718,7 @@ namespace TerraKnight.Items
             pond = new Pond { SpaAcid = acid, Tiles = tiles, Scene = area };
             for (int i = 0; i < times; i++)
             {
-                int need = Needed(a.Height);
+                int need = Needed(false);
                 int f = tiles < need ? (int)(fl * (float)tiles / need) : fl;
                 f = Mathf.Max(1, f);
                 bool junk = Random.Range(0, 50) > f && Random.Range(0, 50) > f && tiles < need;

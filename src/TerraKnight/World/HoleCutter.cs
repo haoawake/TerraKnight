@@ -21,17 +21,89 @@ namespace TerraKnight.World
         public HoleCutter(Transform root, IEnumerable<SpriteRenderer> sceneArt)
         {
             this.root = root;
+            List<Bounds> hazards = null;
             foreach (var sr in sceneArt)
             {
                 if (sr == null) continue;
                 float z = sr.transform.position.z;
-                // Only scenery in front of the Terraria wall layer matters to either list.
-                if (z >= CellVisuals.WallZ || z <= -30f) continue;
+                bool spike = IsSpikeArt(sr);
+                if (!spike && IsThornArt(sr))
+                {
+                    hazards ??= HazardBounds(sr.gameObject.scene);
+                    spike = OnHazard(sr, hazards);
+                }
+                // Only scenery in front of the Terraria wall layer matters to either list; a spike's or thorn's art behind
+                // the gameplay plane too, as a mined spike's cell has no wall in front of it.
+                if (z >= (spike ? HazardArtBehind : CellVisuals.WallZ) || z <= -30f) continue;
                 if (sr.GetComponentInParent<TerraOwned>() != null || sr.GetComponentInParent<HealthManager>() != null) continue;
-                if (sr.gameObject.layer == 0 && sr.sortingLayerID == 0 && z >= -8f) art.Add(sr);
+                if (spike ? z > HazardArtFront : sr.gameObject.layer == 0 && sr.sortingLayerID == 0 && z >= -8f) art.Add(sr);
+                if (spike) DevHazardArt++;
                 if (z < 0f) cover.Add(sr);
                 if (z >= -8f && IsDecor(sr)) decor.Add(sr);
             }
+        }
+
+        public int DevHazardArt;
+
+        /// <summary>The layer Hollow Knight keeps its hazards on (their colliders and the spikes' own sprites: 17).</summary>
+        const int HazardLayer = 17;
+        /// <summary>
+        /// How far behind and in front of the gameplay plane a spike's or thorn's sprite still belongs to it: Crossroads' rows
+        /// reach z 1.15; a thorn bush (Greenpath's, the Queen's Gardens') is dozens of sprites from z -13.9 to 6.0, and the
+        /// spiky backdrops behind it start at z 10.
+        /// </summary>
+        const float HazardArtBehind = 6.5f, HazardArtFront = -14f;
+
+        /// <summary>The game's hazard type for spikes and thorns (DamageHero.hazardType 2).</summary>
+        const int SpikeHazard = 2;
+
+        /// <summary>A sprite named for spikes or thorns, itself or up to three parents up (fungd_spikes_29/fungd_spikes_12_0001_a, thorns_wall).</summary>
+        static bool IsThornArt(SpriteRenderer sr)
+        {
+            var t = sr.transform;
+            for (int k = 0; k < 4 && t != null; k++, t = t.parent)
+            {
+                string n = t.name.ToLowerInvariant();
+                if (n.Contains("lift")) return false;
+                if (n.Contains("spike") || n.Contains("thorn")) return true;
+            }
+            return false;
+        }
+
+        /// <summary>The world boxes of a scene's spike and thorn hazards (their DamageHero's colliders).</summary>
+        static List<Bounds> HazardBounds(UnityEngine.SceneManagement.Scene scene)
+        {
+            var list = new List<Bounds>();
+            foreach (var dh in Object.FindObjectsByType<DamageHero>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (dh == null || dh.hazardType != SpikeHazard || dh.gameObject.scene != scene) continue;
+                foreach (var col in dh.GetComponents<Collider2D>())
+                    if (col != null && col.enabled) list.Add(col.bounds);
+            }
+            return list;
+        }
+
+        /// <summary>Its picture's box reaches a hazard's (within half a unit): the bush's art, not a spiky backdrop elsewhere in the room.</summary>
+        static bool OnHazard(SpriteRenderer sr, List<Bounds> hazards)
+        {
+            var b = sr.bounds;
+            const float near = 0.5f;
+            foreach (var h in hazards)
+                if (b.max.x >= h.min.x - near && b.min.x <= h.max.x + near && b.max.y >= h.min.y - near && b.min.y <= h.max.y + near)
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// The art of a row of spikes (Cave Spikes, Deep Spikes, Enemy_spike, the White Palace's): sprites on the hazard layer,
+        /// where the terrain art's list (layer 0) never looked, so a mined spike's cell left its picture standing. Spikes riding
+        /// a lift move with it and are left whole.
+        /// </summary>
+        static bool IsSpikeArt(SpriteRenderer sr)
+        {
+            if (sr.gameObject.layer != HazardLayer) return false;
+            string n = sr.gameObject.name.ToLowerInvariant();
+            return n.Contains("spike") && !n.Contains("lift");
         }
 
         // ------------------------------------------------------------------ what grows on the ground
@@ -53,11 +125,13 @@ namespace TerraKnight.World
         }
 
         /// <summary>
-        /// A cell of the room's own ground dug out: the plants growing on it, hanging from it or in front of it go with it,
-        /// whole, as they would fall off with the ground they grew on; the cut alone left the rest of a hanging vine in the
-        /// air (Greenpath's roof vines). On a load, each dug cell takes them away again.
+        /// A cell of the room's own ground dug out (CellVisuals calls it for dug ground only, not for the overhang beside it
+        /// or a mined spike): the plants growing on it, hanging from it or in front of it go with it, whole, as they would
+        /// fall off with the ground they grew on; the cut alone left the rest of a hanging vine in the air (Greenpath's roof
+        /// vines). A plant counts where its picture itself crosses the cell, not its box with the sprite's transparent margin
+        /// (that took every vine of a cluster at once). On a load, each dug cell takes them away again.
         /// </summary>
-        void DropDecor(int x, int y)
+        public void DropDecor(int x, int y)
         {
             if (decor.Count == 0) return;
             var c = (Vector2)root.position + CellGrid.CellCenter(x, y);
@@ -68,10 +142,24 @@ namespace TerraKnight.World
                 if (sr == null) { decor.RemoveAt(i); continue; }
                 var b = sr.bounds;
                 if (b.max.x < c.x - half || b.min.x > c.x + half || b.max.y < c.y - half || b.min.y > c.y + half) continue;
+                if (!CrossesCell(sr, c, half)) continue;
                 sr.enabled = false;
                 decor.RemoveAt(i);
                 DevDecorHidden++;
             }
+        }
+
+        /// <summary>Whether the sprite's picture (its mesh, at its own depth) covers any of a 4×4 spread of points over the cell.</summary>
+        static bool CrossesCell(SpriteRenderer sr, Vector2 center, float half)
+        {
+            float z = sr.transform.position.z;
+            for (int j = 0; j < 4; j++)
+                for (int k = 0; k < 4; k++)
+                {
+                    var p = new Vector3(center.x - half + (k + 0.5f) * half * 0.5f, center.y - half + (j + 0.5f) * half * 0.5f, z);
+                    if (OverSpriteShape(sr, p)) return true;
+                }
+            return false;
         }
 
         public int ArtCount => art.Count;
@@ -269,7 +357,6 @@ namespace TerraKnight.World
         public void SetShape(int index, int x, int y, Sprite shape, bool cut)
         {
             if (cut) cutCells.Add(index); else cutCells.Remove(index);
-            if (cut) DropDecor(x, y);
             if (shape == null)
             {
                 if (masks.TryGetValue(index, out var old)) { Object.Destroy(old); masks.Remove(index); }

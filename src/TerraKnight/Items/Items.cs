@@ -326,6 +326,142 @@ namespace TerraKnight.Items
 
         // Append only: the Ultimate Healing Potion (Items/ItemsUltimatePotion.cs).
         UltimateHealingPotion,
+
+        // Append only: Terraria's buckets and sponges, acid in the place of lava (Items/Buckets.cs).
+        WaterBucket, AcidBucket, BottomlessWaterBucket, BottomlessAcidBucket, SuperAbsorbantSponge, AcidAbsorbantSponge,
+
+        // Append only: 24 regional furniture sets, 19 craftable items each.
+        AreaKingsPassTable, AreaKingsPassChair, AreaKingsPassWorkBench, AreaKingsPassDoor, AreaKingsPassPlatform,
+        AreaKingsPassBed, AreaKingsPassDresser, AreaKingsPassBookcase, AreaKingsPassSofa, AreaKingsPassBathtub,
+        AreaKingsPassToilet, AreaKingsPassSink, AreaKingsPassClock, AreaKingsPassPiano, AreaKingsPassCandle,
+        AreaKingsPassCandelabra, AreaKingsPassChandelier, AreaKingsPassLantern, AreaKingsPassLamp, AreaDirtmouthTable,
+        AreaDirtmouthChair, AreaDirtmouthWorkBench, AreaDirtmouthDoor, AreaDirtmouthPlatform, AreaDirtmouthBed,
+        AreaDirtmouthDresser, AreaDirtmouthBookcase, AreaDirtmouthSofa, AreaDirtmouthBathtub, AreaDirtmouthToilet,
+        AreaDirtmouthSink, AreaDirtmouthClock, AreaDirtmouthPiano, AreaDirtmouthCandle, AreaDirtmouthCandelabra,
+        AreaDirtmouthChandelier, AreaDirtmouthLantern, AreaDirtmouthLamp, AreaHowlingCliffsTable, AreaHowlingCliffsChair,
+        AreaHowlingCliffsWorkBench, AreaHowlingCliffsDoor, AreaHowlingCliffsPlatform, AreaHowlingCliffsBed, AreaHowlingCliffsDresser,
+        AreaHowlingCliffsBookcase, AreaHowlingCliffsSofa, AreaHowlingCliffsBathtub, AreaHowlingCliffsToilet, AreaHowlingCliffsSink,
+        AreaHowlingCliffsClock, AreaHowlingCliffsPiano, AreaHowlingCliffsCandle, AreaHowlingCliffsCandelabra, AreaHowlingCliffsChandelier,
+        AreaHowlingCliffsLantern, AreaHowlingCliffsLamp, AreaCrossroadsTable, AreaCrossroadsChair, AreaCrossroadsWorkBench,
+        AreaCrossroadsDoor, AreaCrossroadsPlatform, AreaCrossroadsBed, AreaCrossroadsDresser, AreaCrossroadsBookcase,
+        AreaCrossroadsSofa, AreaCrossroadsBathtub, AreaCrossroadsToilet, AreaCrossroadsSink, AreaCrossroadsClock,
+        AreaCrossroadsPiano, AreaCrossroadsCandle, AreaCrossroadsCandelabra, AreaCrossroadsChandelier, AreaCrossroadsLantern,
+        AreaCrossroadsLamp, AreaGreenpathTable, AreaGreenpathChair, AreaGreenpathWorkBench, AreaGreenpathDoor,
+        AreaGreenpathPlatform, AreaGreenpathBed, AreaGreenpathDresser, AreaGreenpathBookcase, AreaGreenpathSofa,
+        AreaGreenpathBathtub, AreaGreenpathToilet, AreaGreenpathSink, AreaGreenpathClock, AreaGreenpathPiano,
+        AreaGreenpathCandle, AreaGreenpathCandelabra, AreaGreenpathChandelier, AreaGreenpathLantern, AreaGreenpathLamp,
+        AreaFungalWastesTable, AreaFungalWastesChair, AreaFungalWastesWorkBench, AreaFungalWastesDoor, AreaFungalWastesPlatform,
+        AreaFungalWastesBed, AreaFungalWastesDresser, AreaFungalWastesBookcase, AreaFungalWastesSofa, AreaFungalWastesBathtub,
+        AreaFungalWastesToilet, AreaFungalWastesSink, AreaFungalWastesClock, AreaFungalWastesPiano, AreaFungalWastesCandle,
+        AreaFungalWastesCandelabra, AreaFungalWastesChandelier, AreaFungalWastesLantern, AreaFungalWastesLamp, AreaFogCanyonTable,
+        AreaFogCanyonChair, AreaFogCanyonWorkBench, AreaFogCanyonDoor, AreaFogCanyonPlatform, AreaFogCanyonBed,
+        AreaFogCanyonDresser, AreaFogCanyonBookcase, AreaFogCanyonSofa, AreaFogCanyonBathtub, AreaFogCanyonToilet,
+        AreaFogCanyonSink, AreaFogCanyonClock, AreaFogCanyonPiano, AreaFogCanyonCandle, AreaFogCanyonCandelabra,
+        AreaFogCanyonChandelier, AreaFogCanyonLantern, AreaFogCanyonLamp, AreaQueensGardensTable, AreaQueensGardensChair,
+        AreaQueensGardensWorkBench, AreaQueensGardensDoor, AreaQueensGardensPlatform, AreaQueensGardensBed, AreaQueensGardensDresser,
+        AreaQueensGardensBookcase, AreaQueensGardensSofa, AreaQueensGardensBathtub, AreaQueensGardensToilet, AreaQueensGardensSink,
+        AreaQueensGardensClock, AreaQueensGardensPiano, AreaQueensGardensCandle, AreaQueensGardensCandelabra, AreaQueensGardensChandelier,
+        AreaQueensGardensLantern, AreaQueensGardensLamp, AreaCityOfTearsTable, AreaCityOfTearsChair, AreaCityOfTearsWorkBench,
+        AreaCityOfTearsDoor, AreaCityOfTearsPlatform, AreaCityOfTearsBed, AreaCityOfTearsDresser, AreaCityOfTearsBookcase,
+        AreaCityOfTearsSofa, AreaCityOfTearsBathtub, AreaCityOfTearsToilet, AreaCityOfTearsSink, AreaCityOfTearsClock,
+        AreaCityOfTearsPiano, AreaCityOfTearsCandle, AreaCityOfTearsCandelabra, AreaCityOfTearsChandelier, AreaCityOfTearsLantern,
+        AreaCityOfTearsLamp, AreaRoyalWaterwaysTable, AreaRoyalWaterwaysChair, AreaRoyalWaterwaysWorkBench, AreaRoyalWaterwaysDoor,
+        AreaRoyalWaterwaysPlatform, AreaRoyalWaterwaysBed, AreaRoyalWaterwaysDresser, AreaRoyalWaterwaysBookcase, AreaRoyalWaterwaysSofa,
+        AreaRoyalWaterwaysBathtub, AreaRoyalWaterwaysToilet, AreaRoyalWaterwaysSink, AreaRoyalWaterwaysClock, AreaRoyalWaterwaysPiano,
+        AreaRoyalWaterwaysCandle, AreaRoyalWaterwaysCandelabra, AreaRoyalWaterwaysChandelier, AreaRoyalWaterwaysLantern, AreaRoyalWaterwaysLamp,
+        AreaCrystalPeakTable, AreaCrystalPeakChair, AreaCrystalPeakWorkBench, AreaCrystalPeakDoor, AreaCrystalPeakPlatform,
+        AreaCrystalPeakBed, AreaCrystalPeakDresser, AreaCrystalPeakBookcase, AreaCrystalPeakSofa, AreaCrystalPeakBathtub,
+        AreaCrystalPeakToilet, AreaCrystalPeakSink, AreaCrystalPeakClock, AreaCrystalPeakPiano, AreaCrystalPeakCandle,
+        AreaCrystalPeakCandelabra, AreaCrystalPeakChandelier, AreaCrystalPeakLantern, AreaCrystalPeakLamp, AreaRestingGroundsTable,
+        AreaRestingGroundsChair, AreaRestingGroundsWorkBench, AreaRestingGroundsDoor, AreaRestingGroundsPlatform, AreaRestingGroundsBed,
+        AreaRestingGroundsDresser, AreaRestingGroundsBookcase, AreaRestingGroundsSofa, AreaRestingGroundsBathtub, AreaRestingGroundsToilet,
+        AreaRestingGroundsSink, AreaRestingGroundsClock, AreaRestingGroundsPiano, AreaRestingGroundsCandle, AreaRestingGroundsCandelabra,
+        AreaRestingGroundsChandelier, AreaRestingGroundsLantern, AreaRestingGroundsLamp, AreaDeepnestTable, AreaDeepnestChair,
+        AreaDeepnestWorkBench, AreaDeepnestDoor, AreaDeepnestPlatform, AreaDeepnestBed, AreaDeepnestDresser,
+        AreaDeepnestBookcase, AreaDeepnestSofa, AreaDeepnestBathtub, AreaDeepnestToilet, AreaDeepnestSink,
+        AreaDeepnestClock, AreaDeepnestPiano, AreaDeepnestCandle, AreaDeepnestCandelabra, AreaDeepnestChandelier,
+        AreaDeepnestLantern, AreaDeepnestLamp, AreaBeastsDenTable, AreaBeastsDenChair, AreaBeastsDenWorkBench,
+        AreaBeastsDenDoor, AreaBeastsDenPlatform, AreaBeastsDenBed, AreaBeastsDenDresser, AreaBeastsDenBookcase,
+        AreaBeastsDenSofa, AreaBeastsDenBathtub, AreaBeastsDenToilet, AreaBeastsDenSink, AreaBeastsDenClock,
+        AreaBeastsDenPiano, AreaBeastsDenCandle, AreaBeastsDenCandelabra, AreaBeastsDenChandelier, AreaBeastsDenLantern,
+        AreaBeastsDenLamp, AreaKingdomsEdgeTable, AreaKingdomsEdgeChair, AreaKingdomsEdgeWorkBench, AreaKingdomsEdgeDoor,
+        AreaKingdomsEdgePlatform, AreaKingdomsEdgeBed, AreaKingdomsEdgeDresser, AreaKingdomsEdgeBookcase, AreaKingdomsEdgeSofa,
+        AreaKingdomsEdgeBathtub, AreaKingdomsEdgeToilet, AreaKingdomsEdgeSink, AreaKingdomsEdgeClock, AreaKingdomsEdgePiano,
+        AreaKingdomsEdgeCandle, AreaKingdomsEdgeCandelabra, AreaKingdomsEdgeChandelier, AreaKingdomsEdgeLantern, AreaKingdomsEdgeLamp,
+        AreaHiveTable, AreaHiveChair, AreaHiveWorkBench, AreaHiveDoor, AreaHivePlatform,
+        AreaHiveBed, AreaHiveDresser, AreaHiveBookcase, AreaHiveSofa, AreaHiveBathtub,
+        AreaHiveToilet, AreaHiveSink, AreaHiveClock, AreaHivePiano, AreaHiveCandle,
+        AreaHiveCandelabra, AreaHiveChandelier, AreaHiveLantern, AreaHiveLamp, AreaAncientBasinTable,
+        AreaAncientBasinChair, AreaAncientBasinWorkBench, AreaAncientBasinDoor, AreaAncientBasinPlatform, AreaAncientBasinBed,
+        AreaAncientBasinDresser, AreaAncientBasinBookcase, AreaAncientBasinSofa, AreaAncientBasinBathtub, AreaAncientBasinToilet,
+        AreaAncientBasinSink, AreaAncientBasinClock, AreaAncientBasinPiano, AreaAncientBasinCandle, AreaAncientBasinCandelabra,
+        AreaAncientBasinChandelier, AreaAncientBasinLantern, AreaAncientBasinLamp, AreaAbyssTable, AreaAbyssChair,
+        AreaAbyssWorkBench, AreaAbyssDoor, AreaAbyssPlatform, AreaAbyssBed, AreaAbyssDresser,
+        AreaAbyssBookcase, AreaAbyssSofa, AreaAbyssBathtub, AreaAbyssToilet, AreaAbyssSink,
+        AreaAbyssClock, AreaAbyssPiano, AreaAbyssCandle, AreaAbyssCandelabra, AreaAbyssChandelier,
+        AreaAbyssLantern, AreaAbyssLamp, AreaWhitePalaceTable, AreaWhitePalaceChair, AreaWhitePalaceWorkBench,
+        AreaWhitePalaceDoor, AreaWhitePalacePlatform, AreaWhitePalaceBed, AreaWhitePalaceDresser, AreaWhitePalaceBookcase,
+        AreaWhitePalaceSofa, AreaWhitePalaceBathtub, AreaWhitePalaceToilet, AreaWhitePalaceSink, AreaWhitePalaceClock,
+        AreaWhitePalacePiano, AreaWhitePalaceCandle, AreaWhitePalaceCandelabra, AreaWhitePalaceChandelier, AreaWhitePalaceLantern,
+        AreaWhitePalaceLamp, AreaBlackEggTempleTable, AreaBlackEggTempleChair, AreaBlackEggTempleWorkBench, AreaBlackEggTempleDoor,
+        AreaBlackEggTemplePlatform, AreaBlackEggTempleBed, AreaBlackEggTempleDresser, AreaBlackEggTempleBookcase, AreaBlackEggTempleSofa,
+        AreaBlackEggTempleBathtub, AreaBlackEggTempleToilet, AreaBlackEggTempleSink, AreaBlackEggTempleClock, AreaBlackEggTemplePiano,
+        AreaBlackEggTempleCandle, AreaBlackEggTempleCandelabra, AreaBlackEggTempleChandelier, AreaBlackEggTempleLantern, AreaBlackEggTempleLamp,
+        AreaColosseumTable, AreaColosseumChair, AreaColosseumWorkBench, AreaColosseumDoor, AreaColosseumPlatform,
+        AreaColosseumBed, AreaColosseumDresser, AreaColosseumBookcase, AreaColosseumSofa, AreaColosseumBathtub,
+        AreaColosseumToilet, AreaColosseumSink, AreaColosseumClock, AreaColosseumPiano, AreaColosseumCandle,
+        AreaColosseumCandelabra, AreaColosseumChandelier, AreaColosseumLantern, AreaColosseumLamp, AreaGrimmTroupeTable,
+        AreaGrimmTroupeChair, AreaGrimmTroupeWorkBench, AreaGrimmTroupeDoor, AreaGrimmTroupePlatform, AreaGrimmTroupeBed,
+        AreaGrimmTroupeDresser, AreaGrimmTroupeBookcase, AreaGrimmTroupeSofa, AreaGrimmTroupeBathtub, AreaGrimmTroupeToilet,
+        AreaGrimmTroupeSink, AreaGrimmTroupeClock, AreaGrimmTroupePiano, AreaGrimmTroupeCandle, AreaGrimmTroupeCandelabra,
+        AreaGrimmTroupeChandelier, AreaGrimmTroupeLantern, AreaGrimmTroupeLamp, AreaDreamTable, AreaDreamChair,
+        AreaDreamWorkBench, AreaDreamDoor, AreaDreamPlatform, AreaDreamBed, AreaDreamDresser,
+        AreaDreamBookcase, AreaDreamSofa, AreaDreamBathtub, AreaDreamToilet, AreaDreamSink,
+        AreaDreamClock, AreaDreamPiano, AreaDreamCandle, AreaDreamCandelabra, AreaDreamChandelier,
+        AreaDreamLantern, AreaDreamLamp, AreaGodhomeTable, AreaGodhomeChair, AreaGodhomeWorkBench,
+        AreaGodhomeDoor, AreaGodhomePlatform, AreaGodhomeBed, AreaGodhomeDresser, AreaGodhomeBookcase,
+        AreaGodhomeSofa, AreaGodhomeBathtub, AreaGodhomeToilet, AreaGodhomeSink, AreaGodhomeClock,
+        AreaGodhomePiano, AreaGodhomeCandle, AreaGodhomeCandelabra, AreaGodhomeChandelier, AreaGodhomeLantern,
+        AreaGodhomeLamp,
+        // Append only: Terraria mounts (1.4.5.8).
+        MountReindeerBells,
+        MountFuzzyCarrot,
+        MountScalyTruffle,
+        MountSlimySaddle,
+        MountHardySaddle,
+        MountHoneyedGoggles,
+        MountCosmicCarKey,
+        MountBrainScrambler,
+        MountBlessedApple,
+        MountShrimpyTruffle,
+        MountAncientHorn,
+        MountGolfCart,
+        MountWitchBroom,
+        MountMolluskWhistle,
+        MountPaintedHorseSaddle,
+        MountMajesticHorseSaddle,
+        MountDarkHorseSaddle,
+        MountPogoStick,
+        MountPirateShipMountItem,
+        MountSpookyWoodMountItem,
+        MountSantankMountItem,
+        MountWallOfFleshGoatMountItem,
+        MountDarkMageBookMountItem,
+        MountSuperheatedBlood,
+        MountQueenSlimeMountSaddle,
+        MountWolfMountItem,
+        MountVelociraptorMountItem,
+        MountRatMountItem,
+        MountBatMountItem,
+        MountRollerSkatesBlueMountItem,
+        MountRollerSkatesGreenMountItem,
+        MountRollerSkatesClassicMountItem,
+        MountRollerSkatesPartyMountItem,
+        MountEnchantedPixieDust,
+        MountPalworldPetChillet,
+        MountPalworldPetChilletIgnis,
+        MountPalworldMountTrustyChillet,
+        MountPalworldMountTrustyChilletIgnis,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -773,6 +909,7 @@ namespace TerraKnight.Items
         FallingStar, // 12 (the night sky's)
         HallowLance, ThunderBolt, LightningStrikeBolt,
         ReflectedOrb, // (a shot a shield sent back, as a slow orb)
+        MountScutlixLaser, MountCannonball,
     }
 
     /// <summary>
@@ -848,7 +985,7 @@ namespace TerraKnight.Items
         public int ArmorPen;
         /// <summary>Player.endurance: the share of damage taken away.</summary>
         public float Endurance;
-        /// <summary>Player.aggro (Flesh Knuckles +400, Putrid Scent −400...): inert in Hallownest, whose enemies don't pick targets by it.</summary>
+        /// <summary>Player.aggro (Flesh Knuckles +400, Putrid Scent −400...): in a LAN game, how much nearer than they are the enemies take the player for (Net.EnemyTargets).</summary>
         public int Aggro;
         /// <summary>arrowDamage, bulletDamage, rocketDamage ×(1 + x) (the Shroomite heads' ×1.12), multiplying together.</summary>
         public float ArrowMult, BulletMult, SpecialistMult;
@@ -1042,6 +1179,8 @@ namespace TerraKnight.Items
         /// <summary>Drawing scale of the held item.</summary>
         public float Scale = 1f;
         public CellKind Places = CellKind.Empty;
+        /// <summary>A bucket or a sponge: what it does to the liquid in a cell (Items/Buckets.cs).</summary>
+        public BucketUse Bucket;
         public int PlacesWall;
         public int MaxStack = 1;
         public AccessoryEffect Accessory;
@@ -1113,6 +1252,9 @@ namespace TerraKnight.Items
         public bool LifeCrystal, ManaCrystal;
         /// <summary>Kept for good: never sold, thrown, dropped or trashed (the Dream Nail).</summary>
         public bool Permanent;
+        /// <summary>Protected against selling/discarding, while still allowing accessory reforging and crafting.</summary>
+        public bool NoDiscard;
+        public bool CannotDiscard => Permanent || NoDiscard;
         /// <summary>Used by the game's own controls, not the Terraria item use (the Dream Nail's FSM).</summary>
         public bool GameTool;
         /// <summary>Item.buffType / buffTime (ticks): the buff a drink gives; potion (potion sickness on drinking).</summary>
@@ -1162,13 +1304,16 @@ namespace TerraKnight.Items
         /// <summary>A whip: which.</summary>
         public WhipKind Whip;
 
+        public int MountId = -1;
+        public bool IsMount => MountId >= 0;
+
         public bool IsWeapon => Damage > 0 && Ammo == AmmoKind.None;
         public bool IsAccessory => Accessory != AccessoryEffect.None;
         public bool IsArmor => Armor != ArmorSlot.None;
         public bool IsAmmo => Ammo != AmmoKind.None;
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
-        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsWeapon || FishingPower > 0 || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
+        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsMount || IsWeapon || FishingPower > 0 || Bucket != BucketUse.None || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
             || BuffType > 0 || PetBuff > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type) || Type == ItemType.WaterCandle || Type == ItemType.MoneyTrough || Type == ItemType.VoidBag || Type == ItemType.PotionOfReturn || Containers.IsContainer(Type));
 
         /// <summary>
@@ -1606,10 +1751,13 @@ namespace TerraKnight.Items
             TreasureBags.AddItems(list);
             AddWalls(list);
             World.AreaBlocks.AddItems(list);
+            World.RegionalFurniture.AddItems(list);
             AddRegionalTorches(list);
             Fishing.AddAreaCrates(list);
             World.RegionalChests.AddItems(list);
             BossSummons.AddItems(list);
+            AddBuckets(list);
+            Player.Mounts.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
             // Held-out items not given one by hand: Terraria's own hold (Main.DrawPlayerItemPos).
@@ -1971,6 +2119,7 @@ namespace TerraKnight.Items
                 case CellKind.Torch: return ItemType.Torch;
                 case CellKind.Rope: return ItemType.Rope;
                 case CellKind.Meteorite: return ItemType.Meteorite;
+                case CellKind.Obsidian: return ItemType.Obsidian;
                 default: return ItemType.None;
             }
         }
@@ -2076,13 +2225,14 @@ namespace TerraKnight.Items
         public static bool FillsEmptyAmmoSlot(ItemDef d) => FitsAmmoSlot(d) && d.BaitPower <= 0 && d.Type != ItemType.SandBlock && d.Type != ItemType.FallenStar &&
             d.Type != ItemType.Gel && d.Type != ItemType.PearlsandBlock && d.Type != ItemType.EbonsandBlock && d.Type != ItemType.CrimsandBlock && d.Type != ItemType.Ale;
         /// <summary>
-        /// Five accessory slots, Master Mode's own one more (Player.IsItemSlotUnlockedAndUsable: slot 9,
-        /// Main.masterMode) and the Demon Heart's (Player.extraAccessory; locked until it is eaten).
+        /// Terraria's five accessory slots and one more from the start (the mod's), Master Mode's own one more
+        /// (Player.IsItemSlotUnlockedAndUsable: slot 9, Main.masterMode) and the Demon Heart's (Player.extraAccessory;
+        /// locked until it is eaten, after the Wall of Flesh's stage).
         /// </summary>
-        public const int AccessorySlots = 7;
-        /// <summary>The slots in use: the sixth once the Demon Heart is eaten (Player.IsItemSlotUnlockedAndUsable).</summary>
+        public const int AccessorySlots = 8;
+        /// <summary>The slots in use: six, Master Mode's, and the Demon Heart's once it is eaten (Player.IsItemSlotUnlockedAndUsable).</summary>
         public static int OpenAccessories =>
-            5 + (World.GameDifficulty.MasterRules ? 1 : 0)
+            6 + (World.GameDifficulty.MasterRules ? 1 : 0)
               + (TerraMod.Instance != null && TerraMod.Instance.Stats.Boosts.Contains(PermanentBoost.DemonHeart) ? 1 : 0);
         public const int ArmorSlots = 3;
 
@@ -2109,9 +2259,9 @@ namespace TerraKnight.Items
         /// <summary>The Hallownest bag: Hallownest's key items not in the hotbar (HkItems).</summary>
         public readonly ItemStack[] HkBag = new ItemStack[HkItems.BagSlots];
 
-        /// <summary>ItemSlot.AccCheck for the misc slots (contexts 19, 20, 18, 17, 16): a pet, a light pet, a hook (no minecarts or mounts yet).</summary>
+        /// <summary>ItemSlot.AccCheck for the misc slots (contexts 19, 20, 18, 17, 16): a pet, a light pet, a mount or a hook (minecarts need rails).</summary>
         public static bool FitsMisc(ItemDef d, int slot) => d != null && (slot == HookSlot ? Player.GrapplingHook.Hooks.ContainsKey(d.Type)
-            : slot == Pets.PetSlot ? d.PetBuff > 0 && !d.LightPet : slot == Pets.LightSlot && d.PetBuff > 0 && d.LightPet);
+            : slot == 3 ? d.IsMount : slot == Pets.PetSlot ? d.PetBuff > 0 && !d.LightPet : slot == Pets.LightSlot && d.PetBuff > 0 && d.LightPet);
 
         /// <summary>The misc slot an item is worn in (a right click puts it there), -1 none.</summary>
         public static int MiscSlotOf(ItemDef d)

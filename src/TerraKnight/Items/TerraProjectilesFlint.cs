@@ -123,7 +123,7 @@ namespace TerraKnight.Items
         static bool Walkable(int i, int j)
         {
             var k = TerraWorld.Get(i, -j - 1);
-            return TerraWorld.IsSolid(i, -j - 1) || k == CellKind.Platform;
+            return TerraWorld.IsSolid(i, -j - 1) || TerraKnight.World.Cells.IsPlatform(k);
         }
 
         /// <summary>FindBlockSurface (P:53282-53310): up out of solid ground (10 at most), then down to the first walkable tile (10 at most).</summary>

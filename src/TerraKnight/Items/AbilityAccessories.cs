@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using HarmonyLib;
 using TerraKnight.Effects;
 using TerraKnight.Player;
@@ -17,18 +17,18 @@ namespace TerraKnight.Items
         {
             list.Add(new ItemDef
             {
-                Type = ItemType.ShadeCloak, Name = "暗影披风", Texture = HkItems.TexturePrefix + ItemType.ShadeCloak, Accessory = AccessoryEffect.Passive, Rare = 8,
+                Type = ItemType.ShadeCloak, Name = "暗影披风", Texture = HkItems.TexturePrefix + ItemType.ShadeCloak, Accessory = AccessoryEffect.Passive, Rare = 8, NoDiscard = true,
                 Tooltip = "按暗影冲刺键，或按住冲刺键时双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门",
             });
             list.Add(new ItemDef
             {
-                Type = ItemType.CrystalHeart, Name = "水晶之心", Texture = HkItems.TexturePrefix + ItemType.CrystalHeart, Accessory = AccessoryEffect.Passive, Rare = 5,
+                Type = ItemType.CrystalHeart, Name = "水晶之心", Texture = HkItems.TexturePrefix + ItemType.CrystalHeart, Accessory = AccessoryEffect.Passive, Rare = 5, NoDiscard = true,
                 Tooltip = "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺",
             });
             list.Add(new ItemDef
             {
                 Type = ItemType.HallownestShield, Name = "圣巢之盾", Texture = Relics.TexturePrefix + "item_hallownest_shield", Accessory = AccessoryEffect.ShieldDash,
-                Bonus = new Bonuses { DashKind = 2 }, Defense = 4, Rare = 8,
+                Bonus = new Bonuses { DashKind = 2 }, Defense = 4, Rare = 8, NoDiscard = true,
                 Tooltip = "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n长按冲刺键（空中也行）：水晶之心蓄力，松开超级冲刺\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门",
             });
         }
@@ -152,6 +152,7 @@ namespace TerraKnight.Items
             deferring = false;
             shadowAsked = true;
             // Hollow Knight's own dash, straight and level, made a shadow one.
+            Mounts.Dismount();
             TerraMovement.HkShadowDash(hero, dir);
             OnDashStart(hero, dir);
             return true;

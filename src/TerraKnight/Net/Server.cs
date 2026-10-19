@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -25,7 +25,7 @@ namespace TerraKnight.Net
         public const int MaxSlots = 16;
         /// <summary>What a client must say in its Hello (Terraria: "Terraria" + curRelease).</summary>
         public static string Protocol => "TerraKnight" + Plugin.Version + "/net" + NetVersion;
-        const int NetVersion = 4;
+        const int NetVersion = 7;
         /// <summary>RemoteClient's timeout: two minutes without a word (a scene loading on the other end can stall it for seconds).</summary>
         const double TimeoutSeconds = 120;
 
@@ -332,9 +332,12 @@ namespace TerraKnight.Net
                         return;
                     }
                     case Msg.EnemySnapshot:
+                    case Msg.EnemyAttacks:
+                    case Msg.SceneMirror:
                     {
                         r.ReadByte();
                         string scene = r.ReadString();
+                        if (!owners.TryGetValue(scene, out int sceneOwner) || sceneOwner != c.Slot) return;
                         Relay(c, body, o => o.Loaded.Contains(scene));
                         return;
                     }
@@ -403,6 +406,7 @@ namespace TerraKnight.Net
                     case Msg.EnemyHit:
                     case Msg.EnemyDeath:
                     case Msg.BossBeaten:
+                    case Msg.NetFx:
                         Relay(c, body);
                         return;
                 }
@@ -517,7 +521,10 @@ namespace TerraKnight.Net
                 owners.Remove(s);
                 Broadcast(OwnerPacket(s, 255), null);
             }
-            foreach (var s in scenes)
+            // The rooms before their boss scenes, which follow them.
+            var order = new List<string>(scenes);
+            order.Sort((a, b) => a.EndsWith("_boss").CompareTo(b.EndsWith("_boss")));
+            foreach (var s in order)
             {
                 owners.TryGetValue(s, out int now);
                 if (!owners.ContainsKey(s)) now = -1;
@@ -527,7 +534,11 @@ namespace TerraKnight.Net
                 foreach (var c in clients)
                     if (c != null && c.State == 2 && c.In.TryGetValue(s, out long since) && (inIt == null || since < inIt.In[s])) inIt = c;
                 Client pick;
-                if (curOk && (inIt == null || cur.In.ContainsKey(s))) pick = cur;
+                // A boss room's own boss scene (laid over it, "_boss") goes with the room: one game runs the boss, the
+                // room's battle and its other enemies together.
+                Client roomOwner = s.EndsWith("_boss") && owners.TryGetValue(s.Substring(0, s.Length - 5), out int ro) ? clients[ro] : null;
+                if (roomOwner != null && roomOwner.State == 2 && roomOwner.Loaded.Contains(s)) pick = roomOwner;
+                else if (curOk && (inIt == null || cur.In.ContainsKey(s))) pick = cur;
                 else if (inIt != null) pick = inIt;
                 else if (curOk) pick = cur;
                 else

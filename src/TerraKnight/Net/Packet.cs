@@ -53,6 +53,11 @@ namespace TerraKnight.Net
         BossBeaten = 208,
         /// <summary>Register a completed fight's reward, then release it after the death animation, to all players.</summary>
         BossLifeReward = 209,
+        EnemyAttacks = 210,
+        /// <summary>The mod's: what a player's game shows that the others see too (numbers, dust, gores: NetFx).</summary>
+        NetFx = 211,
+        /// <summary>The mod's: what a scene's owner shows there besides its enemies (what its fight spawned, a boss room's own objects: SceneMirror).</summary>
+        SceneMirror = 212,
     }
 
     /// <summary>

@@ -1,4 +1,8 @@
 ﻿{
+ "预览地区：{0}（跨地区掉落不同）": {
+  "en-US": "Loot region: {0} (drops vary elsewhere)",
+  "zh-Hant": "預覽地區：{0}（跨地區掉落不同）"
+ },
  "使用后在 1～3 倍之间切换刷怪倍率（在原本的翻倍上再乘，只出现一次的敌人仍只出一只）": {
   "en-US": "Use it to switch the spawn multiplier between 1 and 3 times (on top of the usual doubling; one-off enemies still come back alone)",
   "zh-Hant": "使用後在 1～3 倍之間切換刷怪倍率（在原本的翻倍上再乘，只出現一次的敵人仍只出一隻）",
@@ -8290,5 +8294,145 @@
  "敌人血量与伤害 100%，不叠加面具数量": {
   "en-US": "100% enemy life and damage, without mask-count multipliers",
   "zh-Hant": "敵人血量與傷害 100%，不疊加面具數量"
+ },
+ "光标": {
+  "en-US": "Cursor",
+  "zh-Hant": "游標"
+ },
+ "样式": {
+  "en-US": "Style",
+  "zh-Hant": "樣式"
+ },
+ "泰拉瑞亚": {
+  "en-US": "Terraria",
+  "zh-Hant": "泰拉瑞亞"
+ },
+ "空洞骑士": {
+  "en-US": "Hollow Knight",
+  "zh-Hant": "空洞騎士"
+ },
+ "大小：{0}%": {
+  "en-US": "Size: {0}%",
+  "zh-Hant": "大小：{0}%"
+ },
+ "颜色": {
+  "en-US": "Color",
+  "zh-Hant": "顏色"
+ },
+ "色相": {
+  "en-US": "Hue",
+  "zh-Hant": "色相"
+ },
+ "饱和度": {
+  "en-US": "Saturation",
+  "zh-Hant": "飽和度"
+ },
+ "亮度": {
+  "en-US": "Lightness",
+  "zh-Hant": "亮度"
+ },
+ "默认颜色": {
+  "en-US": "Default color",
+  "zh-Hant": "預設顏色"
+ },
+ "发光强度：{0}%": {
+  "en-US": "Glow: {0}%",
+  "zh-Hant": "發光強度：{0}%"
+ },
+ "0% 无描边，25% 是泰拉瑞亚原样的浅色描边，更高会加上同色光晕": {
+  "en-US": "0%: no rim; 25%: Terraria's own light rim; higher adds a halo of the cursor's color",
+  "zh-Hant": "0% 無描邊，25% 是泰拉瑞亞原樣的淺色描邊，更高會加上同色光暈"
+ },
+ "呼吸闪烁：开": {
+  "en-US": "Pulse: On",
+  "zh-Hant": "呼吸閃爍：開"
+ },
+ "呼吸闪烁：关": {
+  "en-US": "Pulse: Off",
+  "zh-Hant": "呼吸閃爍：關"
+ },
+ "恢复默认": {
+  "en-US": "Restore defaults",
+  "zh-Hant": "恢復預設"
+ },
+ "预览": {
+  "en-US": "Preview",
+  "zh-Hant": "預覽"
+ },
+ "泰拉瑞亚：原版指针，开启智能光标时换成智能光标的样子；空洞骑士：游戏自己的花纹指针": {
+  "en-US": "Terraria: the original cursor (the smart cursor's look while that is on); Hollow Knight: the game's own ornate cursor",
+  "zh-Hant": "泰拉瑞亞：原版指標，開啟智慧游標時換成智慧游標的樣子；空洞騎士：遊戲自己的花紋指標"
+ },
+ "水桶": {
+  "en-US": "Water Bucket",
+  "zh-Hant": "水桶"
+ },
+ "酸水桶": {
+  "en-US": "Acid Bucket",
+  "zh-Hant": "酸水桶"
+ },
+ "无底水桶": {
+  "en-US": "Bottomless Water Bucket",
+  "zh-Hant": "無底水桶"
+ },
+ "无底酸水桶": {
+  "en-US": "Bottomless Acid Bucket",
+  "zh-Hant": "無底酸水桶"
+ },
+ "超级吸水棉": {
+  "en-US": "Super Absorbant Sponge",
+  "zh-Hant": "超級吸水棉"
+ },
+ "酸水吸收棉": {
+  "en-US": "Acid Absorbant Sponge",
+  "zh-Hant": "酸水吸收棉"
+ },
+ "包含少量水": {
+  "en-US": "Contains a small amount of water",
+  "zh-Hant": "包含少量水"
+ },
+ "包含少量酸水": {
+  "en-US": "Contains a small amount of acid",
+  "zh-Hant": "包含少量酸水"
+ },
+ "可被倒出": {
+  "en-US": "Can be poured out",
+  "zh-Hant": "可被倒出"
+ },
+ "包含无穷无尽的水": {
+  "en-US": "Contains an endless amount of water",
+  "zh-Hant": "包含無窮無盡的水"
+ },
+ "包含无穷无尽的酸水": {
+  "en-US": "Contains an endless amount of acid",
+  "zh-Hant": "包含無窮無盡的酸水"
+ },
+ "能吸收无穷无尽的水": {
+  "en-US": "Capable of soaking up an endless amount of water",
+  "zh-Hant": "能吸收無窮無盡的水"
+ },
+ "能吸收无穷无尽的酸水": {
+  "en-US": "Capable of soaking up an endless amount of acid",
+  "zh-Hant": "能吸收無窮無盡的酸水"
+ },
+ "水量不足！": {
+  "en-US": "Not Enough Water!",
+  "zh-Hant": "水量不足！"
+ },
+ "黑曜石": {
+  "en-US": "Obsidian",
+  "zh-Hant": "黑曜石"
+ },
+ "掉落地区": {
+  "en-US": "Drop area",
+  "zh-Hant": "掉落地區",
+  "ja-JP": "ドロップ地域",
+  "ko-KR": "드롭 지역",
+  "de-DE": "Beutegebiet",
+  "fr-FR": "Zone de butin",
+  "es-ES": "Zona de botín",
+  "it-IT": "Zona di bottino",
+  "pt-BR": "Área de saque",
+  "ru-RU": "Область добычи"
  }
 }

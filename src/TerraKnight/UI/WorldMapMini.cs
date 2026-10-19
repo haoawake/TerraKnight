@@ -169,6 +169,7 @@ namespace TerraKnight.UI
             GUI.color = new Color(1f, 1f, 1f, alpha);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Open);
+            LiveAgain(visible);
             GUI.color = prev;
             return visible;
         }

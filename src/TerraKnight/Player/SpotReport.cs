@@ -136,8 +136,34 @@ namespace TerraKnight.Player
                     sb.Append(x == cell.x && y == cell.y ? char.ToUpper(ch == '.' ? 'o' : ch) : ch);
                 }
             }
+            Enemies(b.center, mouse, sb);
             Plugin.Log.LogInfo(sb.ToString());
             mod?.PlaySound("Menu_Tick", 0.7f);
+        }
+
+        /// <summary>
+        /// The live enemies within 15 units of the hero or the cursor, nearest the cursor first: their body's place, how
+        /// much of it is in solid cells, and their body's motion (an enemy said to be stuck in a wall is found by it).
+        /// </summary>
+        static void Enemies(Vector2 hero, Vector2 mouse, StringBuilder sb)
+        {
+            var near = new System.Collections.Generic.List<(float d, string line)>();
+            foreach (var info in Items.EnemyStats.All)
+            {
+                var hm = info.Hm;
+                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy) continue;
+                var col = hm.GetComponent<Collider2D>();
+                Bounds eb = col != null ? col.bounds : new Bounds(hm.transform.position, Vector3.one);
+                float dm = Vector2.Distance(eb.center, mouse), dh = Vector2.Distance(eb.center, hero);
+                if (Mathf.Min(dm, dh) > 15f) continue;
+                var rb = hm.GetComponent<Rigidbody2D>();
+                float share = EnemyUnstick.SolidShare(eb);
+                near.Add((dm, $"{hm.name}（{info.Name}）身体 {eb.min.x:F2},{eb.min.y:F2}..{eb.max.x:F2},{eb.max.y:F2}，中心实心 {TerraWorld.IsSolidAt(eb.center)}，压在实心格上 {share:P0}，" +
+                    $"刚体 {(rb != null ? $"{rb.bodyType} 速度 {rb.linearVelocity.x:F1},{rb.linearVelocity.y:F1}" : "无")}，离鼠标 {dm:F1}"));
+            }
+            near.Sort((a, c) => a.d.CompareTo(c.d));
+            sb.Append($"\n  附近的敌人（{near.Count} 只，离鼠标近的在前）：");
+            foreach (var (_, line) in near) sb.Append("\n    ").Append(line);
         }
     }
 }

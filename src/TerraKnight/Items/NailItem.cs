@@ -104,17 +104,16 @@ namespace TerraKnight.Items
         /// The Knight's own nail landing on an enemy (the Nail item in hand): the game's nail damage would
         /// come off the game's own health, a fixed share of the enemy's Terraria life whatever the stage.
         /// Instead the hit is the mod's, as every weapon's: the Nail item's damage, crits, knockback, the
-        /// number. The slash, its pogo, its parry and the Soul it gives stay the game's.
+        /// number. The slash, its pogo, its parry and the Soul it gives stay the game's. Before every other prefix of the
+        /// hit (a LAN game's puppet would send the game's nail damage on to its owner, a share of the enemy's life).
         /// </summary>
-        [HarmonyPrefix]
+        [HarmonyPrefix, HarmonyPriority(Priority.High)]
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Hit))]
         static bool NailHit(HealthManager __instance, HitInstance hitInstance)
         {
+            if (!Converts(__instance, hitInstance)) return true;
             var mod = TerraMod.Instance;
             var hero = HeroController.SilentInstance;
-            if (mod == null || hero == null || hitInstance.AttackType != AttackTypes.Nail || hitInstance.Source == null) return true;
-            if (!hitInstance.Source.transform.IsChildOf(hero.transform) || !Holding()) return true;
-            if (__instance == null || __instance.isDead || hitInstance.DamageDealt <= 0) return true;
             var col = __instance.GetComponent<Collider2D>() ?? __instance.GetComponentInChildren<Collider2D>();
             if (col == null) return true;
             // The slash strikes again every physics step it stays on the enemy (DamageEnemies.FixedUpdate), the game's own
@@ -138,6 +137,15 @@ namespace TerraKnight.Items
             }
             else DevLastRefused = $"{__instance.name}：场地外 {World.ArenaGuard.Outside(__instance)}，唤醒中 {BossWake.Asleep(__instance)}";
             return false;
+        }
+
+        /// <summary>A hit this turns into the Nail item's own: the Knight's nail (a slash of his) with the Nail in hand, on a live enemy.</summary>
+        public static bool Converts(HealthManager hm, HitInstance hit)
+        {
+            var hero = HeroController.SilentInstance;
+            if (TerraMod.Instance == null || hero == null || hit.AttackType != AttackTypes.Nail || hit.Source == null) return false;
+            if (!hit.Source.transform.IsChildOf(hero.transform) || !Holding()) return false;
+            return hm != null && !hm.isDead && hit.DamageDealt > 0;
         }
 
         /// <summary>What each of the Knight's slashes has struck since it began (NailSlash.StartSlash).</summary>

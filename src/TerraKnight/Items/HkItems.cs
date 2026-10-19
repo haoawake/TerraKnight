@@ -23,7 +23,10 @@ namespace TerraKnight.Items
         public const int DreamNailSlot = KeyBagSlots;
         public const int AbilityBagSlots = 8;
         public const int AbilityBagStart = DreamNailSlot + 1;
-        public const int BagSlots = AbilityBagStart + AbilityBagSlots;
+        // Append only: old dream/ability slots retain their saved indices.
+        public const int KnightNailSlot = AbilityBagStart + AbilityBagSlots;
+        public const int HallownestShieldSlot = KnightNailSlot + 1;
+        public const int BagSlots = HallownestShieldSlot + 1;
 
         enum Kind { Bool, Int, Royal, Charm }
 
@@ -89,9 +92,21 @@ namespace TerraKnight.Items
             return -1;
         }
 
-        public static bool CanStoreInBag(ItemStack s) => Is(s) || (!s.IsEmpty && (s.Type == ItemType.DreamNail || AbilityBagSlot(s.Type) >= 0));
+        public static int EquipmentBagSlot(ItemType type) => type == ItemType.KnightNail ? KnightNailSlot
+            : type == ItemType.HallownestShield ? HallownestShieldSlot : -1;
+
+        public static bool TryStoreEquipment(Inventory inv, ItemStack stack)
+        {
+            int slot = EquipmentBagSlot(stack.Type);
+            if (stack.IsEmpty || slot < 0 || !inv.HkBag[slot].IsEmpty) return false;
+            inv.HkBag[slot] = stack;
+            return true;
+        }
+
+        public static bool CanStoreInBag(ItemStack s) => Is(s) || (!s.IsEmpty && (s.Type == ItemType.DreamNail || AbilityBagSlot(s.Type) >= 0 || EquipmentBagSlot(s.Type) >= 0));
         public static bool BagAccepts(int slot, ItemStack s) => s.IsEmpty ||
-            (slot == DreamNailSlot ? s.Type == ItemType.DreamNail : slot >= AbilityBagStart
+            (slot == KnightNailSlot || slot == HallownestShieldSlot ? EquipmentBagSlot(s.Type) == slot
+                : slot == DreamNailSlot ? s.Type == ItemType.DreamNail : slot >= AbilityBagStart
                 ? AbilityBagSlot(s.Type) == slot : Is(s) || s.Type == ItemType.DreamNail);
 
         public static bool TryStoreAbility(Inventory inv, ItemStack stack)
@@ -116,8 +131,9 @@ namespace TerraKnight.Items
             return Has(type) || (type == ItemType.CrystalHeart || type == ItemType.ShadeCloak) && Has(ItemType.HallownestShield);
         }
 
-        public static string BagSlotHint(int slot) => slot == DreamNailSlot ? Lang.T("梦之钉专用格")
-            : slot >= AbilityBagStart && slot < BagSlots
+        public static string BagSlotHint(int slot) => slot == KnightNailSlot ? Lang.T("骨钉专用格")
+            : slot == HallownestShieldSlot ? Lang.T("圣巢之盾专用格") : slot == DreamNailSlot ? Lang.T("梦之钉专用格")
+            : slot >= AbilityBagStart && slot < AbilityBagStart + AbilityBagSlots
                 ? Lang.F("{0}专用格", ItemDb.Get(Player.PlayerHooks.AbilityItems[slot - AbilityBagStart].item).Name)
                 : Lang.T("圣巢物品格");
 

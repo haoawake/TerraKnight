@@ -14,7 +14,7 @@ namespace TerraKnight.World
         public static bool CanShape(Vector2Int cell)
         {
             var kind = TerraWorld.Get(cell.x, cell.y);
-            if (kind == CellKind.Original || kind == CellKind.MagicIce || (!Cells.Blocks(kind) && kind != CellKind.Platform)) return false;
+            if (kind == CellKind.Original || kind == CellKind.MagicIce || (!Cells.Blocks(kind) && !TerraKnight.World.Cells.IsPlatform(kind))) return false;
             return TerraWorld.CanDig(cell.x, cell.y) && !Stations.Covers(cell + Vector2Int.up);
         }
 

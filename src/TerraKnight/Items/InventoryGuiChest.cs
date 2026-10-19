@@ -73,7 +73,7 @@ namespace TerraKnight.Items
             if (Chests.BankOpen) return Chests.BankTitle;
             if (renaming) return nameDraft + nameInput.Composition + ((int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : " ");
             string name = Chests.OpenName;
-            return string.IsNullOrEmpty(name) ? Lang.T("箱子") : name;
+            return string.IsNullOrEmpty(name) ? Chests.DefaultTitle : name;
         }
 
         static string ChestButtonText(int i)

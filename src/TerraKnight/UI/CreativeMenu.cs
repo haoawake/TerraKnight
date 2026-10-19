@@ -14,13 +14,14 @@ namespace TerraKnight.UI
     /// (empty, a save, a creative save); choosing one (a second click to confirm when it would
     /// overwrite a save), then a difficulty, clears it and starts a new game there in creative
     /// mode: items never run out and the crafting column makes anything, free (the mod's
-    /// <see cref="TerraMod.Creative"/>). The game's own menu takes no clicks while a panel is
-    /// open. A save's slot shows its mode and difficulty before its area's name.
+    /// <see cref="TerraMod.Creative"/>). After the difficulty, a new game asks whether to follow the
+    /// Voice Beyond the Door's guidance (<see cref="Items.BossGuide"/>). The game's own menu takes no
+    /// clicks while a panel is open. A save's slot shows its mode and difficulty before its area's name.
     /// </summary>
     [HarmonyPatch]
     internal static class CreativeMenu
     {
-        enum Step { Closed, Choose, Confirm, Difficulty }
+        enum Step { Closed, Choose, Confirm, Difficulty, Guide }
 
         static Step step;
         static int chosen;
@@ -31,6 +32,8 @@ namespace TerraKnight.UI
         static bool forCreative, askPermaDeath, askBossRush;
         static DifficultyLevel pendingDifficulty;
         static float pendingAt;
+        /// <summary>The guidance chosen for the game starting now: followed or not.</summary>
+        static bool pendingGuide;
         internal static GUIStyle button, title, text, small, big;
         static readonly bool[] hasSave = new bool[SaveSlots.Max + 1], creative = new bool[SaveSlots.Max + 1];
 
@@ -43,7 +46,15 @@ namespace TerraKnight.UI
         public static void DevOpen() => Open();
         public static void DevChoose(int slot) => Choose(slot);
         public static void DevConfirm() { if (step == Step.Confirm) step = Step.Difficulty; }
-        public static void DevPick(DifficultyLevel d) => Pick(d);
+        public static void DevPick(DifficultyLevel d)
+        {
+            Pick(d);
+            // The autotests' games start without the guidance.
+            if (step == Step.Guide) Follow(false);
+        }
+
+        /// <summary>Dev: the guidance step's answer, as its buttons would.</summary>
+        public static void DevGuide(bool follow) { if (step == Step.Guide) Follow(follow); }
         public static string DevStep => step.ToString();
 
         /// <summary>Dev: where a part of the menu is drawn (GUI rect): "creative" (the profiles' button), "slot" s, "confirm", "difficulty" i (1-5).</summary>
@@ -71,6 +82,14 @@ namespace TerraKnight.UI
             bool yes = pendingSlot != 0 && pendingSlot == slot;
             pendingSlot = 0;
             return yes;
+        }
+
+        /// <summary>Whether the game starting now follows the guidance, taken once (not, when the menu didn't ask: the autotests' games).</summary>
+        public static bool TakeGuide()
+        {
+            bool on = pendingGuide;
+            pendingGuide = false;
+            return on;
         }
 
         /// <summary>The difficulty chosen for the game starting now, taken once (Master when none was).</summary>
@@ -163,7 +182,7 @@ namespace TerraKnight.UI
             TickUnblock();
             bool profiles = ProfilesShown();
             // An ordinary new game's difficulty is asked wherever it was started from (the profiles, the play mode menu).
-            bool shown = step == Step.Difficulty && !forCreative ? InMainMenu() : profiles;
+            bool shown = (step == Step.Difficulty || step == Step.Guide) && !forCreative ? InMainMenu() : profiles;
             if (!shown)
             {
                 if (step != Step.Closed) Close();
@@ -184,6 +203,11 @@ namespace TerraKnight.UI
             Fill(p, Back);
             Rim(p, Line, 2f * ui);
             Rim(new Rect(p.x + 8f * ui, p.y + 8f * ui, w - 16f * ui, h - 16f * ui), new Color(Line.r, Line.g, Line.b, 0.35f), 1f * ui);
+            if (step == Step.Guide)
+            {
+                DrawGuide(p, ui);
+                return;
+            }
             Shadowed(new Rect(p.x, p.y + 24f * ui, w, 40f * ui), Lang.T(forCreative || step != Step.Difficulty ? "创造模式" : "新的存档"), title, Gold);
             string intro = forCreative || step != Step.Difficulty
                 ? Lang.T("物品用不完，获得一次就是无数个；制作栏随时随地可以免费做出任何物品，商店也不要钱。")
@@ -211,6 +235,20 @@ namespace TerraKnight.UI
                 if (Button(new Rect(p.x + w / 2f + 20f * ui, p.y + 330f * ui, 210f * ui, 56f * ui), Lang.T("返回"), ui)) step = Step.Choose;
             }
             else DrawDifficulty(p, ui);
+        }
+
+        /// <summary>
+        /// The guidance: whether the voice that pulled the player through the portal speaks after each boss fight's first
+        /// win (the win, then where the next fight is). Changed later in the Terraria settings' guidance tab.
+        /// </summary>
+        static void DrawGuide(Rect p, float ui)
+        {
+            Shadowed(new Rect(p.x, p.y + 24f * ui, p.width, 40f * ui), Items.BossGuide.Title, title, new Color(0.82f, 0.7f, 1f));
+            Shadowed(new Rect(p.x + 48f * ui, p.y + 90f * ui, p.width - 96f * ui, 150f * ui), Items.BossGuide.Question, text, new Color(0.9f, 0.9f, 0.9f));
+            Shadowed(new Rect(p.x + 48f * ui, p.y + 250f * ui, p.width - 96f * ui, 60f * ui), Items.BossGuide.QuestionNote, text, new Color(0.75f, 0.75f, 0.82f));
+            if (Button(new Rect(p.x + p.width / 2f - 230f * ui, p.y + 330f * ui, 210f * ui, 56f * ui), Items.BossGuide.FollowLabel, ui, new Color(0.82f, 0.7f, 1f))) Follow(true);
+            if (Button(new Rect(p.x + p.width / 2f + 20f * ui, p.y + 330f * ui, 210f * ui, 56f * ui), Items.BossGuide.RefuseLabel, ui)) Follow(false);
+            if (Button(new Rect(p.x + (p.width - 200f * ui) / 2f, p.yMax - 78f * ui, 200f * ui, 50f * ui), Lang.T("返回"), ui)) step = Step.Difficulty;
         }
 
         /// <summary>Five difficulty cards: its icon, its name in its colour, what it does to the enemies.</summary>
@@ -331,17 +369,25 @@ namespace TerraKnight.UI
             }
         }
 
+        /// <summary>A difficulty chosen: on to the guidance.</summary>
         static void Pick(DifficultyLevel d)
         {
             pendingDifficulty = d;
+            step = Step.Guide;
+        }
+
+        /// <summary>The guidance answered: the game starts (the creative panel's in its slot).</summary>
+        static void Follow(bool on)
+        {
+            pendingGuide = on;
             pendingAt = Time.realtimeSinceStartup;
+            Plugin.Log.LogInfo($"[新存档] 难度：{GameDifficulty.NameOf(pendingDifficulty)}，神的指引：{(on ? "听从" : "拒绝")}");
             if (forCreative)
             {
                 Begin(chosen);
                 return;
             }
             Close();
-            Plugin.Log.LogInfo($"[新存档] 难度：{GameDifficulty.NameOf(d)}");
             UIManager.instance?.StartNewGame(askPermaDeath, askBossRush);
         }
 

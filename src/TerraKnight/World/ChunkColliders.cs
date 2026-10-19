@@ -103,7 +103,7 @@ namespace TerraKnight.World
         bool Blocks(int x, int y) => grid.InClip(x, y) && grid.IsFullSolid(x, y) && (Skip == null || !Skip(x, y));
 
         // Only flat platforms collide here; a stair is walked by StairCollision instead.
-        bool IsPlatform(int x, int y) => grid.InClip(x, y) && grid.Get(x, y) == CellKind.Platform && (grid.GetSlope(x, y) == 0 || grid.GetSlope(x, y) == CellGrid.HalfBrick) && (Skip == null || !Skip(x, y));
+        bool IsPlatform(int x, int y) => grid.InClip(x, y) && TerraKnight.World.Cells.IsPlatform(grid.Get(x, y)) && (grid.GetSlope(x, y) == 0 || grid.GetSlope(x, y) == CellGrid.HalfBrick) && (Skip == null || !Skip(x, y));
 
         void Rebuild(int cx, int cy)
         {

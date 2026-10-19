@@ -1105,7 +1105,7 @@ namespace TerraKnight.Town
         public static void Sell(ref ItemStack stack)
         {
             // Money isn't sold.
-            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.Permanent || Currencies.Is(stack.Type)) return;
+            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.CannotDiscard || Currencies.Is(stack.Type)) return;
             long money = Shop.SellValue(stack);
             Shop.Earn(money);
             int at = -1;

@@ -282,6 +282,8 @@ namespace TerraKnight.World
             // nothing, for what reads it (shots against the ground, the map).
             SceneOwnGround = BossRooms.IsRoom(sceneName);
             Region.SceneOwnGround = SceneOwnGround;
+            try { Region.ClearInsideGamePools(map.gameObject.scene); }
+            catch (System.Exception e) { Plugin.Log.LogError($"[液体] {sceneName} 清原版水池里的液体失败：{e}"); }
             // Only the part the boss fights in (BossArenaZone): there the game's outlines are kept, cut at its edge, and
             // the rest of the room is the grid's. A zone of most of the room, or none found: the whole room, as before.
             Rect? zone = null;

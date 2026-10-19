@@ -11,8 +11,9 @@ namespace TerraKnight.UI
     /// (UI.AutoReuseAllOn / Off, Main.SettingsEnabled_AutoReuseAllItems: every weapon goes on being
     /// used while the button is held), the enemy health bars, the camera lock and Autopause (UI.AutoPause:
     /// the inventory stops a single-player game); in a LAN game where it is, who is
-    /// in it and a way out. Keybindings (Terraria's Controls menu): every Terraria action with its
-    /// key, a click and a key press to change one (Escape keeps it), "Reset to Default". Choices are
+    /// in it and a way out. On the right, two tabs. Keybindings (Terraria's Controls menu): every Terraria action with its
+    /// key, a click and a key press to change one (Escape keeps it), "Reset to Default". Cursor (Terraria's Cursor
+    /// settings): Terraria's or Hollow Knight's picture, its size, colour, glow and pulse, with a preview. Choices are
     /// saved in the mod's config. The mod's version stands in gold at the top right. Escape or a
     /// click outside closes it.
     /// </summary>
@@ -187,12 +188,37 @@ namespace TerraKnight.UI
                 }
             }
 
-            // Keybindings, on the right: two columns of Terraria's actions.
+            // On the right, two tabs: the keybindings (two or three columns of Terraria's actions), or the cursor's look.
             float rx = lx + lw + 30f * ui, rw = p.xMax - 30f * ui - rx, ry = p.y + 70f * ui;
             CreativeMenu.Fill(new Rect(rx - 15f * ui, ry, 2f * ui, p.yMax - 100f * ui - ry), new Color(0.05f, 0.05f, 0.12f, 0.7f));
             // UI.Keybindings: "Keybindings"
-            CreativeMenu.Shadowed(new Rect(rx, ry, rw, 34f * ui), TT("UI.Keybindings", "按键绑定"), section, new Color(0.75f, 0.85f, 1f));
+            if (Tab(new Rect(rx, ry, 220f * ui, 34f * ui), TT("UI.Keybindings", "按键绑定"), rightPage == 0, ui)) rightPage = 0;
+            if (Tab(new Rect(rx + 240f * ui, ry, 160f * ui, 34f * ui), Lang.T("光标"), rightPage == 1, ui))
+            {
+                rightPage = 1;
+                if (TerraKeys.Listening.HasValue) TerraKeys.StopListening();
+            }
+            // The Voice Beyond the Door's guidance, this save's (Items.BossGuide).
+            if (Tab(new Rect(rx + 420f * ui, ry, 200f * ui, 34f * ui), Items.BossGuide.Title, rightPage == 2, ui))
+            {
+                rightPage = 2;
+                if (TerraKeys.Listening.HasValue) TerraKeys.StopListening();
+            }
             ry += 44f * ui;
+            if (rightPage == 2)
+            {
+                Items.BossGuide.DrawSettings(new Rect(rx, ry + 10f * ui, rw, p.yMax - 110f * ui - ry), ui);
+                // LegacyMenu.5: "Back"
+                if (CreativeMenu.Button(new Rect(p.center.x - 130f * ui, p.yMax - 76f * ui, 260f * ui, 50f * ui), TT("LegacyMenu.5", "返回"), ui)) Hide();
+                return;
+            }
+            if (rightPage == 1)
+            {
+                DrawCursorPage(new Rect(rx, ry, rw, p.yMax - 100f * ui - ry), ui);
+                // LegacyMenu.5: "Back"
+                if (CreativeMenu.Button(new Rect(p.center.x - 130f * ui, p.yMax - 76f * ui, 260f * ui, 50f * ui), TT("LegacyMenu.5", "返回"), ui)) Hide();
+                return;
+            }
             var all = TerraKeys.Ordered;
             int columns = all.Length > 30 ? 3 : 2;
             // Three columns: a size smaller, each on one line.
@@ -236,6 +262,222 @@ namespace TerraKnight.UI
 
             // LegacyMenu.5: "Back"
             if (CreativeMenu.Button(new Rect(p.center.x - 130f * ui, p.yMax - 76f * ui, 260f * ui, 50f * ui), TT("LegacyMenu.5", "返回"), ui)) Hide();
+        }
+
+        /// <summary>The right column's page: 0 the keybindings, 1 the cursor.</summary>
+        static int rightPage;
+
+        /// <summary>Dev: shows a page of the right column (0 keybindings, 1 cursor).</summary>
+        public static void DevPage(int page) => rightPage = page;
+
+        /// <summary>A tab over the right column: the chosen one bright with a line under it, the other dim (gold under the mouse).</summary>
+        static bool Tab(Rect r, string text, bool chosen, float ui)
+        {
+            bool over = r.Contains(TerraCursor.GuiMouse());
+            CreativeMenu.Shadowed(r, text, section, chosen ? new Color(0.75f, 0.85f, 1f) : over ? Gold : new Color(0.6f, 0.62f, 0.75f));
+            if (chosen) CreativeMenu.Fill(new Rect(r.x, r.yMax + 2f * ui, Mathf.Min(r.width, section.CalcSize(new GUIContent(text)).x), 3f * ui), new Color(0.75f, 0.85f, 1f, 0.9f));
+            return !chosen && CreativeMenu.Clicked(r);
+        }
+
+        // ------------------------------------------------------------------ the cursor page
+
+        /// <summary>The slider being dragged (-1 none): 0 size, 1 glow, 2 hue, 3 saturation, 4 lightness.</summary>
+        static int dragging = -1;
+        static float hue, saturation, lightness;
+        static Color? hslOf;
+        static Texture2D hueBar, saturationBar, lightnessBar;
+        static Vector3 barsFor = new Vector3(-1f, -1f, -1f);
+
+        /// <summary>
+        /// The cursor's look (TerraCursor): its picture (Terraria's or Hollow Knight's), size, colour by Terraria's hue,
+        /// saturation and lightness bars, glow and pulse, with a live preview on a dark and a light ground. A slider follows
+        /// the mouse while held and the choice is written to the config when it is let go.
+        /// </summary>
+        static void DrawCursorPage(Rect a, float ui)
+        {
+            var e = Event.current;
+            if (dragging >= 0 && (e.type == EventType.MouseUp || !TerraCursor.LeftHeld(UnityEngine.InputSystem.Mouse.current)))
+            {
+                dragging = -1;
+                TerraCursor.Save();
+            }
+            var note = new Color(0.85f, 0.85f, 0.95f, 0.85f);
+            float previewW = Mathf.Min(320f * ui, a.width * 0.36f);
+            float cx = a.x, cw = a.width - previewW - 30f * ui, y = a.y;
+            float labelW = 210f * ui, barX = cx + labelW, barW = cw - labelW - 10f * ui, barH = 16f * ui;
+
+            // The picture.
+            CreativeMenu.Shadowed(new Rect(cx, y, labelW, 40f * ui), Lang.T("样式"), keyStyle, Color.white);
+            float bw = (cw - labelW - 20f * ui) / 2f;
+            for (int i = 0; i < 2; i++)
+            {
+                var st = (TerraCursor.Style)i;
+                bool chosen = TerraCursor.CurrentStyle == st;
+                var r = new Rect(barX + i * (bw + 10f * ui), y, bw, 40f * ui);
+                if (CreativeMenu.Button(r, Lang.T(i == 0 ? "泰拉瑞亚" : "空洞骑士"), ui, chosen ? Gold : (Color?)null) && !chosen)
+                {
+                    TerraCursor.CurrentStyle = st;
+                    TerraCursor.Save();
+                }
+                if (chosen) CreativeMenu.Rim(r, Gold, 2.5f * ui);
+            }
+            y += 46f * ui;
+            CreativeMenu.Shadowed(new Rect(cx, y, cw, 26f * ui), Lang.T("泰拉瑞亚：原版指针，开启智能光标时换成智能光标的样子；空洞骑士：游戏自己的花纹指针"), CreativeMenu.text, note);
+            y += 44f * ui;
+
+            // Size.
+            CreativeMenu.Shadowed(new Rect(cx, y, labelW, 30f * ui), Lang.F("大小：{0}%", Mathf.RoundToInt(TerraCursor.Size * 100f)), keyStyle, Color.white);
+            float size01 = Slider(0, new Rect(barX, y + 7f * ui, barW, barH), Mathf.InverseLerp(TerraCursor.MinSize, TerraCursor.MaxSize, TerraCursor.Size), null, ui);
+            TerraCursor.Size = Mathf.Round(Mathf.Lerp(TerraCursor.MinSize, TerraCursor.MaxSize, size01) * 20f) / 20f;
+            y += 50f * ui;
+
+            // Colour: Terraria's three bars, the swatch, the style's own colour back.
+            SyncHsl();
+            CreativeMenu.Shadowed(new Rect(cx, y, labelW, 30f * ui), Lang.T("颜色"), keyStyle, Color.white);
+            var swatch = new Rect(barX, y + 2f * ui, 60f * ui, 26f * ui);
+            CreativeMenu.Fill(swatch, TerraCursor.BaseColor);
+            CreativeMenu.Rim(swatch, new Color(0f, 0f, 0f, 0.8f), 2f * ui);
+            if (CreativeMenu.Button(new Rect(swatch.xMax + 14f * ui, y, 170f * ui, 30f * ui), Lang.T("默认颜色"), ui) && TerraCursor.CustomColor.HasValue)
+            {
+                TerraCursor.CustomColor = null;
+                TerraCursor.Save();
+            }
+            y += 40f * ui;
+            RebuildBars();
+            string[] names = { "色相", "饱和度", "亮度" };
+            var bars = new[] { hueBar, saturationBar, lightnessBar };
+            float[] values = { hue, saturation, lightness };
+            bool colourChanged = false;
+            for (int i = 0; i < 3; i++)
+            {
+                CreativeMenu.Shadowed(new Rect(cx + 20f * ui, y, labelW - 20f * ui, 30f * ui), Lang.T(names[i]), keyStyle, new Color(0.85f, 0.9f, 1f));
+                float v = Slider(2 + i, new Rect(barX, y + 7f * ui, barW, barH), values[i], bars[i], ui);
+                if (!Mathf.Approximately(v, values[i])) { values[i] = v; colourChanged = true; }
+                y += 38f * ui;
+            }
+            if (colourChanged)
+            {
+                hue = values[0];
+                saturation = values[1];
+                lightness = values[2];
+                var c = Effects.FxParticles.HslToRgb(hue, saturation, lightness);
+                TerraCursor.CustomColor = new Color(c.r, c.g, c.b, 1f);
+                hslOf = TerraCursor.CustomColor;
+            }
+            y += 8f * ui;
+
+            // Glow.
+            CreativeMenu.Shadowed(new Rect(cx, y, labelW, 30f * ui), Lang.F("发光强度：{0}%", Mathf.RoundToInt(TerraCursor.Glow * 100f)), keyStyle, Color.white);
+            TerraCursor.Glow = Mathf.Round(Slider(1, new Rect(barX, y + 7f * ui, barW, barH), TerraCursor.Glow, null, ui) * 100f) / 100f;
+            y += 34f * ui;
+            CreativeMenu.Shadowed(new Rect(cx, y, cw, 26f * ui), Lang.T("0% 无描边，25% 是泰拉瑞亚原样的浅色描边，更高会加上同色光晕"), CreativeMenu.text, note);
+            y += 40f * ui;
+
+            // Pulse, and every choice back to Terraria's.
+            if (CreativeMenu.Button(new Rect(cx, y, 260f * ui, 40f * ui), Lang.T(TerraCursor.Pulse ? "呼吸闪烁：开" : "呼吸闪烁：关"), ui))
+            {
+                TerraCursor.Pulse = !TerraCursor.Pulse;
+                TerraCursor.Save();
+            }
+            if (CreativeMenu.Button(new Rect(cx + 280f * ui, y, 220f * ui, 40f * ui), Lang.T("恢复默认"), ui))
+            {
+                TerraCursor.ResetLook();
+                hslOf = null;
+            }
+
+            // The preview: the cursor as chosen, pulsing as it will, over a dark and a light ground.
+            var box = new Rect(a.xMax - previewW, a.y, previewW, Mathf.Min(360f * ui, a.height));
+            CreativeMenu.Shadowed(new Rect(box.x, box.y, box.width, 30f * ui), Lang.T("预览"), keyStyle, new Color(0.75f, 0.85f, 1f));
+            var dark = new Rect(box.x, box.y + 36f * ui, box.width, (box.height - 36f * ui) / 2f);
+            var light = new Rect(box.x, dark.yMax, box.width, dark.height);
+            CreativeMenu.Fill(dark, new Color(0.04f, 0.05f, 0.09f, 1f));
+            CreativeMenu.Fill(light, new Color(0.82f, 0.84f, 0.88f, 1f));
+            CreativeMenu.Rim(new Rect(dark.x, dark.y, dark.width, dark.height * 2f), new Color(0.05f, 0.05f, 0.12f, 0.95f), 2f * ui);
+            if (e.type == EventType.Repaint)
+            {
+                TerraCursor.DrawPreview(dark.center - new Vector2(10f, 14f) * ui, ui);
+                TerraCursor.DrawPreview(light.center - new Vector2(10f, 14f) * ui, ui);
+            }
+        }
+
+        /// <summary>The bars' hue, saturation and lightness from the colour the cursor has, when that changed outside them.</summary>
+        static void SyncHsl()
+        {
+            var c = TerraCursor.BaseColor;
+            if (dragging >= 2 || hslOf.HasValue && hslOf.Value == c) return;
+            RgbToHsl(c, out float h, out float s, out float l);
+            // A grey has no hue of its own: the bar keeps where it was.
+            if (s > 0.01f && l > 0.01f && l < 0.99f) hue = h;
+            saturation = s;
+            lightness = l;
+            hslOf = c;
+        }
+
+        /// <summary>Main.rgbToHsl.</summary>
+        static void RgbToHsl(Color c, out float h, out float s, out float l)
+        {
+            float max = Mathf.Max(c.r, Mathf.Max(c.g, c.b)), min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+            l = (max + min) / 2f;
+            if (max - min < 1e-5f) { h = 0f; s = 0f; return; }
+            float d = max - min;
+            s = l > 0.5f ? d / (2f - max - min) : d / (max + min);
+            if (max == c.r) h = (c.g - c.b) / d + (c.g < c.b ? 6f : 0f);
+            else if (max == c.g) h = (c.b - c.r) / d + 2f;
+            else h = (c.r - c.g) / d + 4f;
+            h /= 6f;
+        }
+
+        /// <summary>Terraria's colour bars: every hue; grey to the hue; black through the colour to white.</summary>
+        static void RebuildBars()
+        {
+            if (hueBar == null) hueBar = Bar(t => Effects.FxParticles.HslToRgb(t, 1f, 0.5f));
+            var now = new Vector3(hue, saturation, lightness);
+            if (saturationBar != null && now == barsFor) return;
+            barsFor = now;
+            saturationBar = Bar(t => Effects.FxParticles.HslToRgb(hue, t, lightness), saturationBar);
+            lightnessBar = Bar(t => Effects.FxParticles.HslToRgb(hue, saturation, t), lightnessBar);
+        }
+
+        static Texture2D Bar(System.Func<float, Color> at, Texture2D reuse = null)
+        {
+            const int W = 128;
+            var tex = reuse ?? new Texture2D(W, 1, TextureFormat.RGBA32, false) { name = "Cursor Colour Bar", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color[W];
+            for (int i = 0; i < W; i++)
+            {
+                var c = at(i / (W - 1f));
+                px[i] = new Color(c.r, c.g, c.b, 1f);
+            }
+            tex.SetPixels(px);
+            tex.Apply(false);
+            return tex;
+        }
+
+        /// <summary>A bar to drag along (a gradient, or a fill to the value), its knob gold while held or under the mouse.</summary>
+        static float Slider(int id, Rect bar, float v, Texture2D gradient, float ui)
+        {
+            var e = Event.current;
+            var m = TerraCursor.GuiMouse();
+            var hit = new Rect(bar.x - 8f * ui, bar.y - 10f * ui, bar.width + 16f * ui, bar.height + 20f * ui);
+            if (e.type == EventType.MouseDown && e.button == 0 && hit.Contains(m))
+            {
+                dragging = id;
+                e.Use();
+                TerraMod.Instance?.PlaySound("Menu_Tick", 0.5f);
+            }
+            if (dragging == id) v = Mathf.Clamp01((m.x - bar.x) / bar.width);
+            if (e.type != EventType.Repaint) return v;
+            CreativeMenu.Fill(new Rect(bar.x - 2f * ui, bar.y - 2f * ui, bar.width + 4f * ui, bar.height + 4f * ui), new Color(0f, 0f, 0f, 0.6f));
+            if (gradient != null) GUI.DrawTexture(bar, gradient, ScaleMode.StretchToFill);
+            else
+            {
+                CreativeMenu.Fill(bar, new Color(0.2f, 0.25f, 0.45f, 0.9f));
+                CreativeMenu.Fill(new Rect(bar.x, bar.y, bar.width * v, bar.height), new Color(0.75f, 0.85f, 1f, 0.9f));
+            }
+            var knob = new Rect(bar.x + bar.width * v - 5f * ui, bar.y - 6f * ui, 10f * ui, bar.height + 12f * ui);
+            CreativeMenu.Fill(knob, dragging == id || hit.Contains(m) ? Gold : Color.white);
+            CreativeMenu.Rim(knob, new Color(0f, 0f, 0f, 0.8f), 1.5f * ui);
+            return v;
         }
 
         /// <summary>A line to click, Terraria's way: bigger and yellow under the mouse.</summary>

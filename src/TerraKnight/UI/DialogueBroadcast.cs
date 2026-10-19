@@ -113,7 +113,7 @@ namespace TerraKnight.UI
         /// <summary>Whether the player is kept in the talk's room now: lines still to come, or the last one's second not over.</summary>
         public static bool Holding => holdRect.HasValue && Telling;
 
-        static bool Telling => waiting.Count > 0 || Time.unscaledTime < nextLine;
+        internal static bool Telling => waiting.Count > 0 || Time.unscaledTime < nextLine;
 
         static void HoldInRoom()
         {

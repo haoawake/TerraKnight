@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.IO;
 using BepInEx;
 using GlobalEnums;
@@ -56,8 +56,16 @@ namespace TerraKnight
         IEnumerator Boot()
         {
             GameManager gm;
+            float bootProbeAt=Time.realtimeSinceStartup+8f;
             while ((gm = GameManager.UnsafeInstance) == null || gm.sceneName != "Menu_Title" || UIManager.instance == null)
+            {
+                if(suite=="mounts" && Time.realtimeSinceStartup>=bootProbeAt) {
+                    bootProbeAt=Time.realtimeSinceStartup+15f;
+                    Plugin.Log.LogInfo("[AutoTest] mount boot gm="+(gm!=null?gm.sceneName:"null")+" active="+UnityEngine.SceneManagement.SceneManager.GetActiveScene().name+" ui="+(UIManager.instance!=null));
+                    ScreenCapture.CaptureScreenshot(Path.Combine(outDir,"mount_boot.png"));
+                }
                 yield return null;
+            }
             yield return new WaitForSeconds(4f);
             if (zh) PromoChinese(gm);
             // A second copy of the game (DevCopy) never starts a game unless its saves go to its own folder.
@@ -113,6 +121,7 @@ namespace TerraKnight
             if (suite == "net2host" || suite == "net2client" || suite == "networldhost" || suite == "networldclient") yield return Net2Boot();
             if (suite == "netloothost" || suite == "netlootclient") yield return NetLootBoot();
             if (suite == "netaudit_host" || suite == "netaudit_client") yield return NetAuditBoot();
+            if (suite.StartsWith("netboss_host") || suite == "netboss_client") yield return NetBossBoot();
             if (suite == "slots") yield return SlotsBoot();
             if (suite == "menuflow")
             {
@@ -557,6 +566,11 @@ namespace TerraKnight
                 yield return UtilityBlacklistTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "observatory")
+            {
+                yield return ObservatoryTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "godhomemap")
             {
                 yield return GodhomeMapSurvey();
@@ -577,6 +591,11 @@ namespace TerraKnight
                 yield return BossLifecycleTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "hkprotected")
+            {
+                yield return HkProtectedTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "abilitybag")
             {
                 yield return AbilityBagTest();
@@ -595,6 +614,41 @@ namespace TerraKnight
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
+            }
+            if (suite == "miniongrowth")
+            {
+                yield return MinionGrowthTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "bosscurve" || suite == "bosscurvebefore")
+            {
+                yield return BossCurveTest(suite == "bosscurvebefore");
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "mounts")
+            {
+                yield return MountTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "soularrival")
+            {
+                yield return SoulArrivalInspect();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "masterattack")
+            {
+                yield return BossLoadoutTest(false, true);
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "masterattackforge")
+            {
+                yield return BossLoadoutTest(false, true, true);
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "masterattackvariants")
+            {
+                yield return BossLoadoutTest(false, true, false, true);
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
             if (suite == "bossloadouts" || suite == "bossloadoutsendgame")
             {
@@ -925,7 +979,7 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
-            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "respawnblock" || suite == "lightmap" || suite == "worldspawn" || suite == "hookjump" || suite == "terrarecoil" || suite == "v241" || suite == "dropscroll" || suite == "shopcheck" || suite == "dropvisible" || suite == "craftchest" || suite == "crystalmove" || suite == "v250" || suite.StartsWith("npcfloor") || suite.StartsWith("quakeall") || suite == "quakepick" || suite == "quakedump" || suite == "essence" || suite == "sealscan" || suite == "mapbuy" || suite == "shopsell" || suite == "spaenemies" || suite == "lemm" || suite == "hatchling" || suite == "quirrel" || suite == "sealroom" || suite == "clothenemies" || suite == "v250e" || suite == "v250f" || suite == "v250d" || suite == "v250c" || suite == "v250b" || suite == "hook" || suite == "v240fix" || suite == "quit" || suite == "suicide" || suite == "bossrecipes" || suite == "dreamnailfull" || suite == "dreamnail" || suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "dreamers" || suite == "dreamwalk" || suite == "getup" || suite == "dreamreturn" || suite == "dreamers1" || suite == "furniture" || suite == "fkhead" || suite == "drops2" || suite == "skystars" || suite == "skyscan" || suite == "sewer" || suite == "wormscan" || suite == "wormkill" || suite == "carvers" || suite == "chain" || suite == "flinx" || suite == "v270a" || suite == "v270b" || suite == "bosszones" || suite == "bookscan" || suite == "shotgun" || suite == "killscan" || suite == "manatest" || suite == "maplayers" || suite == "acid" || suite == "talkaway" || suite == "relics" || suite == "ghost" || suite == "liquidscan" || suite == "arenadoors" || suite == "fishing" || suite == "hksprites" || suite == "hkitems" || suite == "invnails" || suite == "reforge" || suite == "quicksell" || suite == "crafttele" || suite == "keys" || suite == "pets" || suite == "bossprops" || suite == "coinslot" || suite == "guardianwake" || suite == "food" || suite == "v281" || suite == "meteor" || suite == "forge" || suite == "treasurebags" || suite == "torchfar" || suite == "townall" || suite == "artref" || suite.StartsWith("bossvis_") || suite == "ggkills" || suite.StartsWith("ggkills_") || suite == "v251" || suite == "v251diag" || suite == "hkflagdump" || suite == "invlag" || suite == "nailhits" || suite == "hkuse" || suite == "v301" || suite == "spikymenu" || suite == "prefixkeep" || suite == "stationaudit" || suite == "craftrule" || suite == "sourceaudit" || suite == "tombstone" || suite == "abilityprobe" || suite == "dashes" || suite == "furniture2" || suite == "geostack" || suite == "campfire")
+            if (suite == "torch" || suite == "door" || suite == "pylon" || suite == "fsmdump" || suite == "prompts" || suite == "balance" || suite == "wall" || suite == "onewall" || suite == "blockers" || suite == "blockfix" || suite == "route" || suite == "tunnel" || suite == "layout" || suite == "layoutmissing" || suite == "v10" || suite == "bossgates" || suite == "arena" || suite == "ammoslots" || suite == "worldmap" || suite == "showcase" || suite == "welldump" || suite == "well" || suite == "creative2" || suite == "holdpose" || suite == "pylonall" || suite == "bags" || suite.StartsWith("tour") || suite == "boss1" || suite == "boss2" || suite == "stations" || suite == "l10n" || suite == "promo" || suite == "promo2" || suite == "promo3" || suite == "promoA" || suite == "promoB" || suite == "promoC" || suite == "promoD" || suite == "promoE" || suite == "promoF" || suite == "pylonfade" || suite == "stag" || suite == "fk" || suite == "bell" || suite == "plat" || suite == "guide" || suite == "respawn" || suite == "respawnblock" || suite == "lightmap" || suite == "worldspawn" || suite == "hookjump" || suite == "terrarecoil" || suite == "v241" || suite == "dropscroll" || suite == "shopcheck" || suite == "dropvisible" || suite == "craftchest" || suite == "crystalmove" || suite == "v250" || suite.StartsWith("npcfloor") || suite.StartsWith("quakeall") || suite == "quakepick" || suite == "quakedump" || suite == "essence" || suite == "sealscan" || suite == "mapbuy" || suite == "shopsell" || suite == "spaenemies" || suite == "lemm" || suite == "hatchling" || suite == "quirrel" || suite == "sealroom" || suite == "clothenemies" || suite == "v250e" || suite == "v250f" || suite == "v250d" || suite == "v250c" || suite == "v250b" || suite == "hook" || suite == "v240fix" || suite == "quit" || suite == "suicide" || suite == "bossrecipes" || suite == "dreamnailfull" || suite == "dreamnail" || suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "dreamers" || suite == "dreamwalk" || suite == "getup" || suite == "dreamreturn" || suite == "dreamers1" || suite == "regionalfurniture" || suite == "furniture" || suite == "fkhead" || suite == "drops2" || suite == "skystars" || suite == "skyscan" || suite == "sewer" || suite == "wormscan" || suite == "wormkill" || suite == "carvers" || suite == "chain" || suite == "flinx" || suite == "v270a" || suite == "v270b" || suite == "bosszones" || suite == "bookscan" || suite == "shotgun" || suite == "killscan" || suite == "manatest" || suite == "maplayers" || suite == "acid" || suite == "talkaway" || suite == "relics" || suite == "ghost" || suite == "liquidscan" || suite == "arenadoors" || suite == "fishing" || suite == "hksprites" || suite == "hkitems" || suite == "invnails" || suite == "reforge" || suite == "quicksell" || suite == "crafttele" || suite == "keys" || suite == "pets" || suite == "bossprops" || suite == "coinslot" || suite == "guardianwake" || suite == "food" || suite == "v281" || suite == "meteor" || suite == "forge" || suite == "treasurebags" || suite == "torchfar" || suite == "townall" || suite == "artref" || suite.StartsWith("bossvis_") || suite == "ggkills" || suite.StartsWith("ggkills_") || suite == "v251" || suite == "v251diag" || suite == "hkflagdump" || suite == "invlag" || suite == "nailhits" || suite == "hkuse" || suite == "v301" || suite == "spikymenu" || suite == "prefixkeep" || suite == "stationaudit" || suite == "craftrule" || suite == "sourceaudit" || suite == "tombstone" || suite == "abilityprobe" || suite == "dashes" || suite == "furniture2" || suite == "geostack" || suite == "campfire")
             {
                 if (suite == "fsmdump") yield return FsmDumpTest();
                 else if (suite == "stag") yield return StagTest(hero);
@@ -973,6 +1027,7 @@ namespace TerraKnight
                 else if (suite == "dreamers1") yield return DreamersTest("Ruins2_Watcher_Room");
                 else if (suite == "dreamwalk") yield return DreamersWalkInTest();
                 else if (suite == "getup") yield return GetUpTest();
+                else if (suite == "regionalfurniture") yield return RegionalFurnitureTest();
                 else if (suite == "furniture") yield return FurnitureTest();
                 else if (suite == "fkhead") yield return FalseKnightHeadTest();
                 else if (suite == "drops2") yield return Drops2Test();
@@ -1162,6 +1217,14 @@ namespace TerraKnight
             {
                 if (suite == "networldhost") yield return NetWorldHost(scene, hero);
                 else yield return NetWorldClient(scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
+                Finish();
+                yield break;
+            }
+            if (suite.StartsWith("netboss_host") || suite == "netboss_client")
+            {
+                if (suite == "netboss_client") yield return NetBossClient(scene, hero);
+                else yield return NetBossHost(scene, hero);
                 Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
                 Finish();
                 yield break;

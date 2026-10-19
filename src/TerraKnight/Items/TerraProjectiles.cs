@@ -1168,7 +1168,7 @@ namespace TerraKnight.Items
                     var k = TerraWorld.Get(x, y);
                     if (Cells.Blocks(k)) return true;
                     // A platform holds up what comes down onto its top from above it.
-                    if (platforms && k == CellKind.Platform && p.Pos.y - half.y >= (y + 1) * c - 0.02f) return true;
+                    if (platforms && TerraKnight.World.Cells.IsPlatform(k) && p.Pos.y - half.y >= (y + 1) * c - 0.02f) return true;
                 }
             return false;
         }

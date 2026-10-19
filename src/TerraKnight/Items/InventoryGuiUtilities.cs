@@ -13,17 +13,18 @@ namespace TerraKnight.Items
         internal static void DevBlacklistClick(int index, bool right = false) => ActBlacklist(index, right);
         internal static void DevUtilityClick(int index) => Act(new Hit
         {
-            Kind = index == 0 ? Kind.BlacklistButton : index == 1 ? Kind.BestiaryButton : index == 2 ? Kind.HkButton : Kind.SellButton,
+            Kind = index == 4 ? Kind.StatsButton : index == 0 ? Kind.BlacklistButton : index == 1 ? Kind.BestiaryButton : index == 2 ? Kind.HkButton : Kind.SellButton,
             Index = 0,
         }, true, false, false, false);
-        internal static void ClearUtilities() { blacklistOpen = false; blacklistPage = 0; utilityHover = -1; }
-        static readonly string[] utilityTextures = { "UtilityBlacklist", "UtilityBestiary", "UtilityHallownest", "UtilityQuickShop" };
-        static readonly string[] utilityNames = { "掉落物黑名单", "怪物图鉴", "圣巢背包", "快捷商店" };
+        internal static void ClearUtilities() { blacklistOpen = statsOpen = false; blacklistPage = 0; utilityHover = -1; statsScroll = 0; }
+        static readonly string[] utilityTextures = { "UtilityBlacklist", "UtilityBestiary", "UtilityHallownest", "UtilityQuickShop", "UtilityStats" };
+        static readonly string[] utilityNames = { "掉落物黑名单", "怪物图鉴", "圣巢背包", "快捷商店", "紫晶属性观测仪" };
 
         internal static Rect UtilityButtonRect(Rect view, float ui, int index)
         {
             var tex = TerrariaAssets.Texture("UI/ChestStack_0");
             float x = view.x + RightOfAmmo(ui);
+            if (index == 4) { x += (tex.width + 8f) * ui; index = 0; }
             // One button beside each ammo slot, centered on the same row.
             float y = view.y + (Margin + 18f + (index + 1) * SlotStep + (SlotSize - tex.height) / 2f) * ui;
             return new Rect(x, y, tex.width * ui, tex.height * ui);
@@ -32,21 +33,23 @@ namespace TerraKnight.Items
         static void DrawUtilityButtons(Rect view, float ui, Vector2 mouse)
         {
             int over = -1;
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < utilityTextures.Length; i++)
             {
                 var r = UtilityButtonRect(view, ui, i);
                 bool hover = r.Contains(mouse);
-                bool active = i == 0 ? blacklistOpen : i == 1 ? bestiaryOpen : i == 2 ? hkOpen : sellMode;
+                bool active = i == 4 ? statsOpen : i == 0 ? blacklistOpen : i == 1 ? bestiaryOpen : i == 2 ? hkOpen : sellMode;
                 var prev = GUI.color;
                 if (hover || active) GUI.color = new Color(1f, .88f, .5f);
-                GUI.DrawTexture(r, TerrariaAssets.Texture(utilityTextures[i]), ScaleMode.StretchToFill);
+                if (i == 4) DrawStatsIcon(r);
+                else GUI.DrawTexture(r, TerrariaAssets.Texture(utilityTextures[i]), ScaleMode.StretchToFill);
                 GUI.color = prev;
-                Add(r, i == 0 ? Kind.BlacklistButton : i == 1 ? Kind.BestiaryButton : i == 2 ? Kind.HkButton : Kind.SellButton, 0);
+                Add(r, i == 4 ? Kind.StatsButton : i == 0 ? Kind.BlacklistButton : i == 1 ? Kind.BestiaryButton : i == 2 ? Kind.HkButton : Kind.SellButton, 0);
                 if (!hover) continue;
                 over = i;
                 var lines = new List<string> { Lang.T(utilityNames[i]) };
                 if (i == 0) lines.Add(Lang.T("名单中的掉落物拾取时自动出售"));
                 if (i == 3) lines.Add(Lang.T("点击背包物品出售，可在出售栏按原价买回"));
+                if (i == 4) lines.Add("查看含锻造、词缀与当前增益的人物属性");
                 DrawLines(mouse, lines, Color.white);
             }
             if (over >= 0 && over != utilityHover) Sound("Menu_Tick");
@@ -58,7 +61,7 @@ namespace TerraKnight.Items
             blacklistOpen = !blacklistOpen;
             if (blacklistOpen)
             {
-                bestiaryOpen = hkOpen = sellMode = false;
+                statsOpen = bestiaryOpen = hkOpen = sellMode = false;
                 grid = false;
                 if (World.Chests.IsOpen) World.Chests.Close(false);
                 if (Town.TownNpcs.ShopOpen || Town.TownNpcs.ReforgeOpen) Town.TownNpcs.Close(false);

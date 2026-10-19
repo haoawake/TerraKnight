@@ -1081,7 +1081,7 @@ namespace TerraKnight.Items
             if (SolidBox(new Rect(points[points.Count - 1] - new Vector2(m.W, m.H) / 2f, new Vector2(m.W, m.H)))) points.Add(pCenter);
             var from = m.Center;
             float each = Mathf.Min(20f, 30f / points.Count), wait = 0f;
-            int damage = (int)(m.Damage * (1.5f + Mathf.Max(0, TigerGems() - 1) * 0.4f));
+            int damage = MinionGrowth.TigerPounce(m.Damage, TigerGems());
             foreach (var pt in points)
             {
                 var to = pt;

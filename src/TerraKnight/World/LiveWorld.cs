@@ -65,6 +65,8 @@ namespace TerraKnight.World
             public readonly Dictionary<string, List<Renderer>> HiddenArt = new Dictionary<string, List<Renderer>>();
             /// <summary>The scene's own scenery renderers (not enemies, not ours), gathered once.</summary>
             public List<Renderer> ArtCandidates;
+            /// <summary>The scene's grade markers (GradeMarker), gathered once.</summary>
+            public GradeMarker[] Markers;
             public Vector2 World => (Vector2)Offset * CellGrid.CellSize;
         }
 
@@ -295,6 +297,8 @@ namespace TerraKnight.World
                 gradeTarget = null;
                 scm.SetFactor(0f);
                 scm.UpdateScript(forceUpdate: true);
+                // The blend's other side back to the scene's own markers' colours: they take it from here.
+                WakeMarkers(current);
                 return;
             }
             float factor = bestK;
@@ -1507,9 +1511,30 @@ namespace TerraKnight.World
             {
                 Promoting = false;
             }
-            // The scene's own grade just replaced the blend's A side; blend towards the scene left behind now, not next frame.
+            // Its grade markers, idle while it was a neighbour, set their colours again; then (the scene's own grade just
+            // replaced the blend's A side) the blend towards the scene left behind, now, not next frame.
+            WakeMarkers(to);
             UpdateGradeBlend();
         }
+
+        /// <summary>A scene's grade markers that are on give the blend their colours again (GradeMarker.Activate, as at their Start).</summary>
+        static void WakeMarkers(LiveScene ls)
+        {
+            if (ls == null || !ls.Scene.IsValid() || !ls.Scene.isLoaded) return;
+            if (ls.Markers == null)
+            {
+                var found = new List<GradeMarker>();
+                foreach (var root in ls.Scene.GetRootGameObjects()) found.AddRange(root.GetComponentsInChildren<GradeMarker>(true));
+                ls.Markers = found.ToArray();
+            }
+            foreach (var m in ls.Markers)
+                if (m != null && m.isActiveAndEnabled && m.enableGrade && GameCameras.instance != null && HeroController.SilentInstance != null) m.Activate();
+        }
+
+        /// <summary>A grade marker in a neighbour (a scene loaded beside the player's, not entered).</summary>
+        static bool InNeighbour(GradeMarker m) =>
+            Enabled && Instance != null && Instance.current != null && m != null && Instance.scenes.TryGetValue(m.gameObject.scene.name, out var ls)
+            && ls.Scene == m.gameObject.scene && ls != Instance.current;
 
         /// <summary>
         /// The scene's SceneManager.Start, held back while it was only a neighbour. It places the
@@ -1554,6 +1579,20 @@ namespace TerraKnight.World
         [HarmonyPatch(typeof(SceneManager), "Start")]
         static bool HoldSceneStart(SceneManager __instance) =>
             !Enabled || Instance == null || !Instance.IsWaiting(__instance.gameObject.scene);
+
+        /// <summary>
+        /// A grade marker tints the screen by how near the player is to it (the pink round the Grimm Troupe's tent in
+        /// Dirtmouth reaches 39 units, into the rooms beside), for as long as its scene runs. In a neighbour it would tint
+        /// the room the player is in and leave its colours on the blend: there it waits, set going again as the player
+        /// walks into its scene (<see cref="WakeMarkers"/>).
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(GradeMarker), "UpdateLow")]
+        static bool MarkerHere(GradeMarker __instance) => !InNeighbour(__instance);
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(GradeMarker), nameof(GradeMarker.Activate))]
+        static bool MarkerActivateHere(GradeMarker __instance) => !InNeighbour(__instance);
 
         /// <summary>So does its area title.</summary>
         [HarmonyPrefix]

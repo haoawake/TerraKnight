@@ -29,6 +29,9 @@ namespace TerraKnight.Items
 
         public static int Count => names.Length;
 
+        /// <summary>Hard, Guarding, Armored: +1, +2, +3 defense as in Terraria; Warding (护佑) +6, Terraria's +4 raised.</summary>
+        public static int AccessoryDefense(int prefix) => prefix == 65 ? 6 : prefix >= 62 && prefix <= 64 ? prefix - 61 : 0;
+
         /// <summary>A prefix's multipliers and additions (TryGetPrefixStatMultipliersForItem's dmg, kb, spd, size, shtspd, mcst, crt, tagdmg, arpen).</summary>
         struct Stat
         {
@@ -196,9 +199,11 @@ namespace TerraKnight.Items
         /// <summary>
         /// The cost of reforging (Main.DrawInventory: the item's value with its prefix, times the stack, a third), in copper;
         /// never under its rarity's and stage's floor (a geo a rarity step and a stage), so a rarer or later item never
-        /// reforges for less than a plainer one whose value happens to be set higher.
+        /// reforges for less than a plainer one whose value happens to be set higher. Four fifths of it with the Discount Card.
         /// </summary>
-        public static long ReforgeCost(ItemStack s)
+        public static long ReforgeCost(ItemStack s) => Shop.Discounted(ListReforgeCost(s));
+
+        static long ListReforgeCost(ItemStack s)
         {
             if (s.IsEmpty) return 0;
             var d = s.Def;
@@ -263,7 +268,7 @@ namespace TerraKnight.Items
             // Player.GrantPrefixBenefits: an accessory's own, while worn.
             switch (p)
             {
-                case 62: case 63: case 64: case 65: c.Bonus.Defense += p - 61; break;
+                case 62: case 63: case 64: case 65: c.Bonus.Defense += AccessoryDefense(p); break;
                 case 66: c.Bonus.ManaMax += 20; break;
                 case 67: case 68:
                 {
@@ -364,7 +369,7 @@ namespace TerraKnight.Items
                 lines.Add((Format("CommonItemTooltip.PrefixTagDamage", n), n >= 0));
             }
             int p = d.Prefix;
-            if (p >= 62 && p <= 65) lines.Add(("+" + (p - 61) + Tip(25), true));
+            if (p >= 62 && p <= 65) lines.Add(("+" + AccessoryDefense(p) + Tip(25), true));
             if (p == 66) lines.Add(("+20 " + Tip(31), true));
             if (p == 67 || p == 68) lines.Add(("+" + (p == 67 ? 2 : 4) + Tip(5), true));
             if (p >= 69 && p <= 72) lines.Add(("+" + (p - 68) + Tip(39), true));

@@ -278,6 +278,10 @@ namespace TerraKnight.Items
             if (counted.Count > 4096) counted.Clear();
             // The book keeps a stage's own table apart (Hornet in Greenpath and in Kingdom's Edge).
             string record = EnemyDrops.KeyFor(rec, EnemyDrops.VariantLevel(__instance.gameObject.scene.name));
+            // Runs only after the whole-fight/multi-body gate above, before the book count
+            // changes so legacy migration cannot mistake this new variant for its base boss.
+            if (BossMastery.Record(record, __instance.gameObject.scene.name, __instance.gameObject.name))
+                BossGuide.FirstWin(record, __instance.gameObject.scene.name, __instance.gameObject.name);
             // Killed before it was ever on screen (a minion's, a shot from afar): it is seen now.
             if (!Stats.ContainsKey(record) && EnemyDrops.KindOf(rec) != "non_enemy")
             {

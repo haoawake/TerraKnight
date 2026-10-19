@@ -108,8 +108,60 @@ namespace TerraKnight.World
             fill.Skip = visuals.FillElsewhere;
             grid.CellChanged += OnCellChanged;
             grid.WallChanged += OnWallChanged;
+            Liquid = new LiquidSim(grid);
+            Liquid.Merged += OnLiquidMerged;
+            liquidView = new LiquidView(this);
             if (buildNow) Build();
             else pendingBuild = true;
+            Liquid.WakeAll();
+        }
+
+        /// <summary>The grid's liquid, moving (World.LiquidSim), and how it is drawn and felt (World.LiquidView).</summary>
+        public readonly LiquidSim Liquid;
+        readonly LiquidView liquidView;
+
+        /// <summary>
+        /// Poured liquid inside one of the scene's own water or acid pools is none (pouring there is refused; a save from
+        /// before may hold some): cleared once the scene's objects are in place (TerrainSystem).
+        /// </summary>
+        public void ClearInsideGamePools(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!Grid.HasLiquids) return;
+            int cleared = 0;
+            const float c = CellGrid.CellSize;
+            var origin = (Vector2)Root.position;
+            void Clear(BoxCollider2D box)
+            {
+                var t = box.transform;
+                Vector2 center = t.TransformPoint(box.offset), size = Vector2.Scale(box.size, t.lossyScale);
+                size = new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y));
+                int x0 = Mathf.FloorToInt((center.x - size.x / 2f - origin.x) / c), x1 = Mathf.CeilToInt((center.x + size.x / 2f - origin.x) / c);
+                int y0 = Mathf.FloorToInt((center.y - size.y / 2f - origin.y) / c) - 40, y1 = Mathf.CeilToInt((center.y + size.y / 2f - origin.y) / c);
+                for (int y = Mathf.Max(0, y0); y < Mathf.Min(Grid.Height, y1); y++)
+                    for (int x = Mathf.Max(0, x0); x < Mathf.Min(Grid.Width, x1); x++)
+                        if (Grid.GetLiquid(x, y) > 0) { Liquid.Set(x, y, 0, LiquidKind.Water); cleared++; }
+            }
+            foreach (var fsm in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (fsm != null && fsm.gameObject.scene == scene && fsm.FsmName == "Surface Water Region" && fsm.GetComponentInParent<TerraOwned>(true) == null
+                    && fsm.GetComponent<BoxCollider2D>() is BoxCollider2D region) Clear(region);
+            foreach (var dh in Object.FindObjectsByType<DamageHero>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (dh != null && dh.hazardType == 3 && dh.gameObject.scene == scene && dh.GetComponentInParent<TerraOwned>(true) == null
+                    && dh.GetComponent<BoxCollider2D>() is BoxCollider2D acid) Clear(acid);
+            if (cleared > 0) Plugin.Log.LogInfo($"[液体] {SceneName}：原版水池里留着的 {cleared} 格倒出来的液体清掉");
+        }
+
+        bool liquidFailed;
+
+        /// <summary>This grid's liquid into the scene's record (WorldLiquids).</summary>
+        public void CaptureLiquids() => WorldLiquids.Capture(SceneName, Grid);
+        float liquidClock;
+
+        /// <summary>Water met acid: obsidian there (Liquid.CreateLiquidMergeTile), with a hiss.</summary>
+        void OnLiquidMerged(int x, int y)
+        {
+            if (Grid.Get(x, y) != CellKind.Empty) return;
+            Grid.Set(x, y, CellKind.Obsidian);
+            TerraMod.Instance?.PlaySound("Splash_1", 0.5f);
         }
 
         bool pendingBuild;
@@ -142,6 +194,7 @@ namespace TerraKnight.World
                 grid.Restore(e.Key, kind, wasDug, slope);
             }
             RegionalTorches.Replay(grid, sceneName);
+            WorldLiquids.Replay(grid, sceneName);
         }
 
         /// <summary>Ties the art of the scene's hand-placed terrain to its cells (call while those colliders are still on).</summary>
@@ -193,6 +246,7 @@ namespace TerraKnight.World
             colliders.MarkDirty(x, y);
             visuals.MarkDirty(x, y);
             handPlaced?.CellChanged(x, y);
+            Liquid?.CellChanged(x, y);
             TerraWorld.RaiseChanged(x + CellOffset.x, y + CellOffset.y, Grid.GetAt(i));
             Edited?.Invoke(this, x, y);
         }
@@ -203,10 +257,35 @@ namespace TerraKnight.World
             colliders.RebuildDirty();
             visuals.RefreshDirty();
             fill.RebuildDirty();
+            if (liquidFailed) return;
+            try
+            {
+                // Terraria's liquid steps 60 times a second; a slow frame catches up at most four steps.
+                liquidClock += Mathf.Min(Time.deltaTime, 0.1f);
+                int steps = 0;
+                while (liquidClock >= LiquidStep && steps < 4)
+                {
+                    liquidClock -= LiquidStep;
+                    Liquid.Step();
+                    steps++;
+                }
+                if (steps == 4) liquidClock = 0f;
+                liquidView.Tick();
+            }
+            catch (System.Exception e)
+            {
+                // Once: the terrain goes on, this region's liquid stops.
+                liquidFailed = true;
+                Plugin.Log.LogError($"[液体] {SceneName} 的液体出错，本场景的液体停下：{e}");
+            }
         }
+
+        const float LiquidStep = 1f / 60f;
 
         public void Destroy()
         {
+            CaptureLiquids();
+            liquidView.Destroy();
             Grid.CellChanged -= OnCellChanged;
             Grid.WallChanged -= OnWallChanged;
             fill.DestroyMeshes();

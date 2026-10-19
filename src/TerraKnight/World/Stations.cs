@@ -6,7 +6,7 @@ using UnityEngine;
 namespace TerraKnight.World
 {
     /// <summary>The crafting stations that can be set down (the furniture Recipe.requiredTile asks for).</summary>
-    internal enum StationKind : byte
+    internal enum StationKind : ushort
     {
         None, WorkBench, Furnace, IronAnvil, LeadAnvil, MythrilAnvil, OrichalcumAnvil, Sawmill, Loom, TinkerersWorkshop, Bottle,
         /// <summary>Not a crafting station: the Piggy Bank, opened with a right click (Items.GeoWallet).</summary>
@@ -46,6 +46,8 @@ namespace TerraKnight.World
         /// built with besides the chair (World/StationsHousing.cs, World/Housing.cs).
         /// </summary>
         Door, DoorOpenRight, DoorOpenLeft, Table,
+        Dresser, Sofa, Bathtub, Toilet, Sink, Clock, Piano, Candle, Candelabra, Chandelier, Lantern, Lamp, Platform,
+        RegionalFirst = 1000, RegionalLast = 1503,
     }
 
     /// <summary>
@@ -89,6 +91,8 @@ namespace TerraKnight.World
             public int Buff, BuffTicks;
             /// <summary>A picture of the mod's own (a relic's), whole, 32 px a cell, instead of a Terraria sheet's tiles.</summary>
             public string Custom;
+            public string Native;
+            public bool Ceiling;
             /// <summary>
             /// TileObjectData.Direction: it is placed facing the way the player faces (PlaceLeft, and an alternate
             /// PlaceRight), the right-facing one RightX px further along its sheet (the chair's 18, the bed's 72); a
@@ -109,6 +113,7 @@ namespace TerraKnight.World
                 specs[kv.Key] = new Spec { Custom = kv.Value.Texture, W = kv.Value.W, H = kv.Value.H, Heights = h, Item = kv.Value.Item, Counts = new string[0], Faces = true };
             }
             AddHousingSpecs();
+            AddRegionalSpecs();
         }
 
         static Spec Grave(int style, ItemType item) =>
@@ -423,8 +428,9 @@ namespace TerraKnight.World
             float w = spec.W * cell, h = spec.H * cell;
             // An odd width centres on a cell, an even one on a cell edge.
             float x = spec.W % 2 == 1 ? (Mathf.Floor(aim.x / cell) + 0.5f) * cell : Mathf.Round(aim.x / cell) * cell;
-            if (!SpotGround(x, aim.y + 0.25f, out float y)) { DevWhy = "下面没有地"; return false; }
-            for (int i = 0; i < spec.W; i++)
+            float y;
+            if (spec.Ceiling ? !CeilingSpot(x, aim.y, spec, out y) : !SpotGround(x, aim.y + 0.25f, out y)) { DevWhy = "下面没有地"; return false; }
+            for (int i = 0; !spec.Ceiling && i < spec.W; i++)
             {
                 float cx = x - w / 2f + (i + 0.5f) * cell;
                 if (!SpotGround(cx, y + 0.1f, out float gy) || Mathf.Abs(gy - y) > 0.06f) { DevWhy = $"第 {i + 1} 格下面不平（地面 {y:F2}）"; return false; }
@@ -477,7 +483,12 @@ namespace TerraKnight.World
                     Chests.ToggleBank(s.Scene, s.Region, s.Local);
                     return true;
                 }
-                if (s.Kind == StationKind.Bed)
+                if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Clock)
+                {
+                    Net.NetChat.Add(UI.InfoAccessories.ClockText(),new Color(1f,.94f,.08f));
+                    return true;
+                }
+                if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Bed)
                 {
                     Beds.Toggle(s.Scene, s.Local);
                     return true;
@@ -519,7 +530,7 @@ namespace TerraKnight.World
             world = default;
             foreach (var s in stations)
             {
-                if (s.Kind != StationKind.Bed || s.Scene != scene || (s.Local - local).sqrMagnitude > 0.0004f) continue;
+                if (RegionalFurniture.BaseKind(s.Kind) != StationKind.Bed || s.Scene != scene || (s.Local - local).sqrMagnitude > 0.0004f) continue;
                 var region = s.Region ?? RegionNamed(scene);
                 if (region == null) return false;
                 world = region.Root.TransformPoint(s.Local);
@@ -553,6 +564,7 @@ namespace TerraKnight.World
         /// </summary>
         public static void PlaceFixed(StationKind kind, string scene, Vector2 local)
         {
+            if (!specs.ContainsKey(kind)) return;
             foreach (var s in stations) if (s.Fixed && s.Kind == kind && s.Scene == scene) return;
             stations.Add(new Station { Kind = kind, Scene = scene, Local = local, Fixed = true });
         }
@@ -586,7 +598,7 @@ namespace TerraKnight.World
                 }
                 Dust(px, s, 10);
                 WorldItems.Drop(ItemStack.Of(s.Spec.Item), s.Box.center);
-                if (s.Kind == StationKind.Bed) Beds.Gone(s.Scene, s.Local);
+                if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Bed) Beds.Gone(s.Scene, s.Local);
                 Remove(i);
                 DevBroken++;
                 return true;
@@ -599,7 +611,7 @@ namespace TerraKnight.World
             var p = Effects.TerraParticles.Instance;
             if (p == null) return;
             // Wood for the wooden ones, stone and metal sparks for the rest.
-            int dust = s.Kind == StationKind.WorkBench || s.Kind == StationKind.Chair || s.Kind == StationKind.Loom || s.Kind == StationKind.Sawmill || IsDoor(s.Kind) || s.Kind == StationKind.Table ? 7 : 1;
+            int dust = RegionalFurniture.BaseKind(s.Kind) == StationKind.WorkBench || RegionalFurniture.BaseKind(s.Kind) == StationKind.Chair || s.Kind == StationKind.Loom || s.Kind == StationKind.Sawmill || IsDoor(s.Kind) || RegionalFurniture.BaseKind(s.Kind) == StationKind.Table ? 7 : 1;
             float hw = s.Spec.W * 8f, hh = s.Spec.H * 8f;
             for (int k = 0; k < n; k++) p.NewDust(px - new Vector2(hw, hh), (int)(hw * 2f), (int)(hh * 2f), dust);
         }
@@ -621,7 +633,7 @@ namespace TerraKnight.World
             bool found = false;
             foreach (var s in stations)
             {
-                if (s.Kind != StationKind.Chair || s.Region == null) continue;
+                if ((RegionalFurniture.BaseKind(s.Kind) != StationKind.Chair && RegionalFurniture.BaseKind(s.Kind) != StationKind.Sofa && RegionalFurniture.BaseKind(s.Kind) != StationKind.Toilet) || s.Region == null) continue;
                 var b = s.Box;
                 // The chair's own box, a little wider all round: the whole seat is clickable, the tiles
                 // beside it are not.
@@ -676,7 +688,7 @@ namespace TerraKnight.World
                     Dust(Effects.TerraParticles.ToPx(s.Box.center), s, 10);
                     WorldItems.Drop(ItemStack.Of(s.Spec.Item), s.Box.center);
                     TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
-                    if (s.Kind == StationKind.Bed) Beds.Gone(s.Scene, s.Local);
+                    if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Bed) Beds.Gone(s.Scene, s.Local);
                     Remove(i);
                     DevFell++;
                     continue;
@@ -688,7 +700,7 @@ namespace TerraKnight.World
             {
                 if (s.Region == null)
                 {
-                    if (s.Renderer != null) s.Renderer.enabled = false;
+                    if (s.Renderer != null) s.Renderer.gameObject.SetActive(false);
                     if (s.Relic != null) s.Relic.SetVisible(false);
                     continue;
                 }
@@ -703,6 +715,7 @@ namespace TerraKnight.World
                         s.Relic.Init(s.Spec.Custom, s.Renderer);
                     }
                 }
+                s.Renderer.gameObject.SetActive(true);
                 s.Renderer.enabled = true;
                 if (s.Relic != null)
                 {
@@ -710,6 +723,8 @@ namespace TerraKnight.World
                     s.Relic.Face(s.Right);
                 }
                 s.Renderer.sprite = SpriteOf(s.Kind, s.Right);
+                s.Renderer.flipX = s.Spec.Native != null && s.Spec.Faces && s.Right;
+                UpdateRegionalLight(s);
                 // A bottom row 18 px tall sinks its last 2 px into the ground; DrawYOffset lowers it more.
                 var spec = s.Spec;
                 float sink = (spec.Heights[spec.Heights.Length - 1] - 16) + spec.DrawY;
@@ -734,6 +749,7 @@ namespace TerraKnight.World
         static Sprite SpriteOf(StationKind kind, bool right = false)
         {
             var spec = specs[kind];
+            if (spec.Native != null) return RegionalFurniture.Sprite(kind);
             right &= spec.RightX > 0 && spec.Custom == null;
             var cache = right ? rightSprites : sprites;
             if (cache.TryGetValue(kind, out var sp) && sp != null) return sp;
@@ -780,6 +796,7 @@ namespace TerraKnight.World
         /// </summary>
         static bool HasGround(Station s)
         {
+            if (s.Spec.Ceiling) return SolidTileAt(s.Box.center.x, s.Box.yMax, true);
             var box = s.Box;
             const float cell = CellGrid.CellSize;
             for (int i = 0; i < s.Spec.W; i++)
@@ -797,6 +814,7 @@ namespace TerraKnight.World
         /// <summary>A solid-top station (other than one) whose top is at that height over that point.</summary>
         static bool TopAt(float x, float y, Station except = null)
         {
+            if (StorageTop.TopAt(x,y)) return true;
             foreach (var o in stations)
             {
                 if (o == except || o.Region == null || !o.Spec.SolidTop) continue;
@@ -865,7 +883,7 @@ namespace TerraKnight.World
         /// </summary>
         public static bool DropThrough(Bounds feet, float seconds)
         {
-            bool any = false;
+            bool any = StorageTop.DropThrough(feet,seconds);
             foreach (var s in stations)
             {
                 if (s.Region == null || !s.Spec.SolidTop || s.Top == null) continue;

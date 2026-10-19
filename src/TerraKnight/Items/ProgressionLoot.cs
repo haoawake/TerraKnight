@@ -37,6 +37,9 @@ namespace TerraKnight.Items
             {
                 result=Build(key,e,stage,first,entry,final,boss);
                 if(!boss && !NamedElites.Contains(key)) result=RetainEarlierDrops(key,e,stage,entry,final,result);
+                var mounted = new List<EnemyDrops.Drop>(result);
+                Player.Mounts.AddDrops(mounted,key,stage,entry,final);
+                result=mounted.ToArray();
                 NormalizeGroupChances(result);
                 cache[id]=result;
             }

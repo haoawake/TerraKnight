@@ -88,7 +88,7 @@ namespace TerraKnight.Items
             if (mod.Stats.ShinyStill && (Random.Range(0, 30000) < mod.Stats.SinceHitTicks || Random.Range(0, 30) == 0)) ShinyMote(centre);
 
             // The Gold Ring (Pl:35409-35415, 35305-35316): geo within 42 + 350 px pulled in fast.
-            if (b.GoldRing || b.TreasureMagnet) PullGeo(box);
+            if (b.GoldRing || b.TreasureMagnet) PullGeo(hero, box);
 
             // The Discount Card is worn or not as a shop opens (Pl:25831-25834).
             if (!Town.TownNpcs.ShopOpen) Town.TownNpcs.DiscountLatched = b.Discount;
@@ -305,12 +305,38 @@ namespace TerraKnight.Items
 
         static readonly List<GameObject> geo = new List<GameObject>();
         static float geoScan;
+        static readonly AccessTools.FieldRef<GeoControl, bool> geoAttracted = AccessTools.FieldRefAccess<GeoControl, bool>("attracted");
+        static readonly AccessTools.FieldRef<GeoControl, bool> geoTaken = AccessTools.FieldRefAccess<GeoControl, bool>("activated");
+        static readonly AccessTools.FieldRef<GeoControl, float> geoPickupAt = AccessTools.FieldRefAccess<GeoControl, float>("pickupStartTime");
+        static readonly AccessTools.FieldRef<GeoControl, BoxCollider2D> geoBox = AccessTools.FieldRefAccess<GeoControl, BoxCollider2D>("boxCollider");
+        static readonly AccessTools.FieldRef<GeoControl, Rigidbody2D> geoBody = AccessTools.FieldRefAccess<GeoControl, Rigidbody2D>("body");
+        static readonly System.Action<GeoControl, Collider2D> geoTouched =
+            AccessTools.MethodDelegate<System.Action<GeoControl, Collider2D>>(AccessTools.Method(typeof(GeoControl), "OnTriggerEnter2D"));
+        static Collider2D heroBox;
+        static HeroController heroBoxOf;
+        public static int DevGeoTouched;
+
+        /// <summary>The hero's HeroBox, the trigger a geo piece is picked up by.</summary>
+        static Collider2D HeroBox(HeroController hero)
+        {
+            if (heroBoxOf == hero && heroBox != null) return heroBox;
+            heroBoxOf = hero;
+            heroBox = null;
+            foreach (var c in hero.GetComponentsInChildren<Collider2D>(true))
+                if (c.CompareTag("HeroBox")) { heroBox = c; break; }
+            return heroBox;
+        }
 
         internal static float GeoGrabRange(bool goldRing, bool treasureMagnet) =>
-            (42f + (goldRing ? 350f : treasureMagnet ? 150f : 0f)) * Px;
+            (WorldItems.BaseGrabPx + (goldRing ? 350f : treasureMagnet ? 150f : 0f)) * Px;
 
-        /// <summary>Money pickup accessories attract native geo too; overlapping ranges use the larger bonus.</summary>
-        static void PullGeo(Bounds body)
+        /// <summary>
+        /// Money pickup accessories attract native geo too; overlapping ranges use the larger bonus. Drawn in, a piece
+        /// flies through the walls as Terraria's coins do (a trigger with no gravity, the game's own Gatherer pull from
+        /// then on), and one already on the player once it can be picked up (a quarter second after it drops, after its
+        /// trigger's touch has come and gone) is picked up there.
+        /// </summary>
+        static void PullGeo(HeroController hero, Bounds body)
         {
             if (Time.time >= geoScan)
             {
@@ -323,6 +349,23 @@ namespace TerraKnight.Items
             foreach (var g in geo)
             {
                 if (g == null || !g.activeInHierarchy || !range.Contains(new Vector3(g.transform.position.x, g.transform.position.y, body.center.z))) continue;
+                var gc = g.GetComponent<GeoControl>();
+                if (gc != null)
+                {
+                    if (geoTaken(gc)) continue;
+                    var box = geoBox(gc);
+                    var touch = HeroBox(hero);
+                    if (box != null && touch != null && Time.time >= geoPickupAt(gc) && box.bounds.Intersects(touch.bounds))
+                    {
+                        DevGeoTouched++;
+                        geoTouched(gc, touch);
+                        continue;
+                    }
+                    if (box != null) box.isTrigger = true;
+                    var body2 = geoBody(gc);
+                    if (body2 != null) body2.gravityScale = 0f;
+                    geoAttracted(gc) = true;
+                }
                 var rb = g.GetComponent<Rigidbody2D>();
                 if (rb == null) continue;
                 var to = ((Vector2)body.center - (Vector2)g.transform.position).normalized * 12f * Player.TerraMovement.PxT;

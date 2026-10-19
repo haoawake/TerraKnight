@@ -27,7 +27,7 @@ namespace TerraKnight.Items
         static void ToggleHkBag()
         {
             hkOpen = !hkOpen;
-            if (hkOpen) blacklistOpen = sellMode = false;
+            if (hkOpen) statsOpen = blacklistOpen = sellMode = false;
             if (hkOpen) bestiaryOpen = false;
             Sound(hkOpen ? "Menu_Open" : "Menu_Close");
         }
@@ -110,6 +110,12 @@ namespace TerraKnight.Items
         /// <summary>Shift+click on a Hallownest item in the hotbar: into the bag. True when it was one.</summary>
         static bool ShiftHkToBag(ref ItemStack slot)
         {
+            if (!slot.IsEmpty && HkItems.EquipmentBagSlot(slot.Type) >= 0)
+            {
+                if (HkItems.TryStoreEquipment(inv, slot)) slot = default;
+                Sound("Grab");
+                return true;
+            }
             if (!slot.IsEmpty && HkItems.AbilityBagSlot(slot.Type) >= 0)
             {
                 if (HkItems.TryStoreAbility(inv, slot)) slot = default;

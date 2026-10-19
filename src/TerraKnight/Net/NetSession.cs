@@ -283,6 +283,7 @@ namespace TerraKnight.Net
                     Items.TerraProjectiles.Instance?.NetSend();
                     Items.Minions.Instance?.NetSend();
                     Enemies.SendSnapshots();
+                    SceneMirror.SendMine();
                 }
             }
             if (Hosting && inGame && now >= nextTime)
@@ -445,6 +446,15 @@ namespace TerraKnight.Net
                     }
                     case Msg.EnemySnapshot:
                         Enemies.ReceiveSnapshot(slot, r);
+                        return;
+                    case Msg.EnemyAttacks:
+                        EnemyAttacks.Receive(slot, r);
+                        return;
+                    case Msg.SceneMirror:
+                        SceneMirror.Receive(slot, r);
+                        return;
+                    case Msg.NetFx:
+                        NetFx.Receive(slot, r);
                         return;
                     case Msg.DamageNpc:
                         Enemies.ReceiveDamage(slot, r);

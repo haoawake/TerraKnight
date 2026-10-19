@@ -44,7 +44,7 @@ namespace TerraKnight
             inv.HkBag[HkItems.DreamNailSlot] = ItemStack.Of(ItemType.DreamNail);
             Check("普通包无空位", inv.Room(ItemType.CrystalHeart) == 0);
             Grant();
-            Check("容量为20普通加梦钉加8能力格", inv.HkBag.Length == 29 && HkItems.AbilityBagSlots == PlayerHooks.AbilityItems.Length);
+            Check("容量为20普通加梦钉加8能力格", inv.HkBag.Length == HkItems.BagSlots && HkItems.AbilityBagSlots == PlayerHooks.AbilityItems.Length);
             foreach (var (flag, item) in PlayerHooks.AbilityItems)
             {
                 int slot = HkItems.AbilityBagSlot(item);
@@ -105,7 +105,7 @@ namespace TerraKnight
             old["HkBag"] = new JArray(((JArray)old["HkBag"]).Take(21));
             File.WriteAllText(path, old.ToString());
             Save.ModSave.Read(profile, mod);
-            Check("旧21格存档梦钉位置不变", inv.HkBag[20].Type == ItemType.DreamNail && inv.HkBag.Length == 29);
+            Check("旧21格存档梦钉位置不变", inv.HkBag[20].Type == ItemType.DreamNail && inv.HkBag.Length == HkItems.BagSlots);
             Check("旧存档追加能力格为空", inv.HkBag.Skip(21).All(s => s.IsEmpty));
             // Scene changes cannot strand rewards on the previous room's floor.
             mod.GrantedAbilities.Remove("hasSuperDash");

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using TerraKnight.Items;
 using TerraKnight.Player;
@@ -16,7 +16,7 @@ namespace TerraKnight.Net
         public bool Grounded, Upside, Seated, WingAir, Glow;
         public float Facing, Swing, ItemScale, Opacity;
         public ItemType Item;
-        public int BodyOverride, LegOverride, Shadows, Wing, WingFrame;
+        public int BodyOverride, LegOverride, Shadows, Wing, WingFrame, Mount;
         public TerraPlayerSprite.Equips Equips;
         public TerraPlayerSprite.Hold Hold;
         /// <summary>The hero's box (world).</summary>
@@ -36,7 +36,7 @@ namespace TerraKnight.Net
         public bool Shown, Grounded, FacingRight, Upside, Seated, Dead, WingAir, Glow;
         public float Swing, ItemScale, Opacity;
         public ItemType Item;
-        public int Body, Leg, Shadows, Wing, WingFrame;
+        public int Body, Leg, Shadows, Wing, WingFrame, Mount;
         public byte HoldFlags;
         public float HoldAngle, IdleRot;
         public Vector2 HoldOffset, IdleLoc;
@@ -44,6 +44,8 @@ namespace TerraKnight.Net
         public ItemType HoldItem;
         public TerraPlayerSprite.Equips Eq;
         public int Life, LifeMax;
+        /// <summary>Player.aggro (EnemyTargets.LocalAggro): how much nearer than they are the enemies take them for.</summary>
+        public int Aggro;
         public bool Melee;
         public Rect MeleeBox;
         public int MeleeSerial, MeleeDamage, MeleeCrit;
@@ -57,6 +59,7 @@ namespace TerraKnight.Net
             var s = new PlayerState
             {
                 Scene = scene ?? "",
+                Mount = p.Mount,
                 Shown = p.Shown,
                 Feet = NetScenes.ToLocal(scene, p.Feet),
                 Vel = p.Velocity,
@@ -86,6 +89,7 @@ namespace TerraKnight.Net
                 HoldItem = p.Hold.Item != null ? p.Hold.Item.Type : ItemType.None,
                 Life = mod.Stats.Life,
                 LifeMax = mod.Stats.LifeMax,
+                Aggro = EnemyTargets.LocalAggro(),
             };
             var hero = HeroController.SilentInstance;
             s.Dead = hero != null && hero.cState.dead;
@@ -166,6 +170,8 @@ namespace TerraKnight.Net
             w.Write(e.LegsGlow ?? "");
             w.Write((short)Life);
             w.Write((short)LifeMax);
+            w.Write((short)Mathf.Clamp(Aggro, short.MinValue, short.MaxValue));
+            w.Write((sbyte)Mount);
             w.Write(Melee);
             if (!Melee) return;
             W(w, MeleeBox.position);
@@ -227,6 +233,8 @@ namespace TerraKnight.Net
             s.Eq = e;
             s.Life = r.ReadInt16();
             s.LifeMax = r.ReadInt16();
+            s.Aggro = r.ReadInt16();
+            s.Mount = r.ReadSByte();
             s.Melee = r.ReadBoolean();
             if (s.Melee)
             {
@@ -266,6 +274,7 @@ namespace TerraKnight.Net
         public readonly List<string> In = new List<string>(), Loaded = new List<string>();
         public PlayerState Latest;
         public bool HasState;
+        public float LastStateAt;
         /// <summary>Their chat line over their head (Player.chatOverhead) and until when.</summary>
         public string Overhead;
         public float OverheadUntil;
@@ -295,6 +304,7 @@ namespace TerraKnight.Net
         {
             Latest = s;
             HasState = true;
+            LastStateAt = UnityEngine.Time.unscaledTime;
             if (samples.Count > 0 && samples[samples.Count - 1].Scene != s.Scene) samples.Clear();
             samples.Add(new Sample { Time = UnityEngine.Time.unscaledTime, Scene = s.Scene, Feet = s.Feet, Vel = s.Vel });
             while (samples.Count > 20) samples.RemoveAt(0);
@@ -362,6 +372,9 @@ namespace TerraKnight.Net
             }
             float facing = s.FacingRight ? 1f : -1f;
             sprite.Pose(Feet, s.Vel, s.Grounded, facing, s.Swing, item, s.ItemScale, s.Opacity, s.Body, s.Eq, s.Shadows, s.Hold(), s.Leg, s.Seated);
+            var mount=Mounts.Get(s.Mount);
+            sprite.gameObject.SetActive(mount==null || !mount.Transform);
+            if(mount!=null)Mounts.Draw(s.Mount,Feet-Vector2.up*Mathf.Max(0,mount.Lift)/32f,s.Vel,s.Grounded,facing,s.Opacity);
             // DrawPlayer_09_Wings, on their wings' frame.
             var wing = TerraWings.Get(s.Wing);
             if (wing != null && Effects.FxBatch.Instance != null)

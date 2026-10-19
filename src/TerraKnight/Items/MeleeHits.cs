@@ -352,6 +352,7 @@ namespace TerraKnight.Items
                 carryBefore = info.Carry;
                 // Struck by the player: it comes for him (Terraria's npc.target), from wherever it stands.
                 World.EnemyAggro.Struck(hm, info);
+                if (Net.NetSession.Active) Net.EnemyTargets.Struck(hm, Net.NetSession.MySlot);
                 damage = EnemyStats.Strike(info, damage, crit, armorPen);
                 LastStruck = damage;
                 // Bosses and elites don't budge (knockBackResist 0), the rest by their level.
@@ -498,11 +499,9 @@ namespace TerraKnight.Items
             if (!dot && terra > 0)
             {
                 dealtHk = EnemyStats.ToGameDamage(info, terra);
+                // Its number and blood came with the one who struck (Net.NetFx).
                 if (dealtHk <= 0)
                 {
-                    var c0 = hm.GetComponent<Collider2D>();
-                    var b0 = c0 != null ? c0.bounds : new Bounds(hm.transform.position, Vector3.one);
-                    CombatText.Show(b0.center + Vector3.up * b0.extents.y, terra.ToString(), crit ? CombatText.EnemyCrit : CombatText.EnemyHurt, crit);
                     info.LastHit = Time.time;
                     return;
                 }
@@ -551,10 +550,7 @@ namespace TerraKnight.Items
             if (push > 0f && !hm.isDead) TerraKnockback.Push(hm, push, facing, bigHit, World.Areas.KnockbackTaken(info.Level));
             info.LastHit = Time.time;
             if (dot) return;
-            var col = hm.GetComponent<Collider2D>();
-            var b = col != null ? col.bounds : new Bounds(hm.transform.position, Vector3.one);
-            if (terra > 0) CombatText.Show(b.center + Vector3.up * b.extents.y, terra.ToString(), crit ? CombatText.EnemyCrit : CombatText.EnemyHurt, crit);
-            TerraHitFx.Bleed(hm, b, Mathf.Max(1, terra), facing, EnemyStats.LifeMax(info));
+            // The number and the blood: the striker's own, sent from there (Net.NetFx).
             TerraMod.Instance?.PlaySound(hm.isDead ? "NPC_Killed_1" : "NPC_Hit_1");
         }
 

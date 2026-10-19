@@ -83,6 +83,27 @@ namespace TerraKnight.World
             if (told.Count < 20 && told.Add(who)) Plugin.Log.LogInfo($"[原版] {who} 要设的粒子已经没了：跳过");
             return false;
         }
+
+        public static int DevDiggerKept;
+
+        /// <summary>
+        /// Deepnest's Dirtcarver (BabyCentipede) sets its health back to what it started with each time it burrows (its
+        /// Centipede FSM's Dig state: SetHP to Init Health), a full heal mid-fight with Terraria's life. It keeps what it
+        /// has left; a set that lowers it still goes through.
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(SetHP), nameof(SetHP.OnEnter))]
+        static bool KeepDiggerHealth(SetHP __instance)
+        {
+            var fsm = __instance.Fsm;
+            if (fsm == null || fsm.Name != "Centipede" || __instance.hp == null || __instance.hp.IsNone) return true;
+            var go = fsm.GetOwnerDefaultTarget(__instance.target);
+            var hm = go != null ? go.GetComponent<HealthManager>() : null;
+            if (hm == null || hm.isDead || hm.hp <= 0 || __instance.hp.Value <= hm.hp) return true;
+            DevDiggerKept++;
+            __instance.Finish();
+            return false;
+        }
     }
 
     /// <summary>

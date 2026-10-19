@@ -39,9 +39,9 @@ namespace TerraKnight.World
                 }
                 else if (held.PlacesChest)
                 {
-                    ok = Chests.FindSpot(hero, mouse, out bottom);
-                    if (!ok && !Chests.GuessSpot(hero, mouse, out bottom)) bottom = default;
-                    if (bottom != default) { sprite = Chests.GhostSprite(); sink = 2f * Effects.TerraParticles.Px; }
+                    ok = Chests.FindSpot(hero, mouse, out bottom, held.ChestStyle);
+                    if (!ok && !Chests.GuessSpot(hero, mouse, out bottom, held.ChestStyle)) bottom = default;
+                    if (bottom != default) { sprite = Chests.GhostSprite(held.ChestStyle); sink = RegionalFurniture.IsDresser(held.ChestStyle) ? 0 : 2f * Effects.TerraParticles.Px; }
                 }
                 else if (held.PlacesWall > 0)
                 {
@@ -79,6 +79,7 @@ namespace TerraKnight.World
             }
             ghost.enabled = true;
             ghost.sprite = sprite;
+            ghost.flipX = held != null && RegionalFurniture.IsRegional(held.PlacesStation) && DevRight;
             ghost.transform.position = new Vector3(bottom.x, bottom.y - sink, 0.003f);
             ghost.color = ok ? new Color(1f, 1f, 1f, 0.5f) : new Color(1f, 0f, 0f, 0.35f);
         }
@@ -124,7 +125,7 @@ namespace TerraKnight.World
 
     internal sealed partial class Chests
     {
-        public static Sprite GhostSprite() => FrameSprite(0);
+        public static Sprite GhostSprite(int style = 0) => RegionalChests.FrameSprite(style,0) ?? FrameSprite(0);
 
         /// <summary>A chest stands under a point.</summary>
         public static bool At(Vector2 p)
@@ -134,14 +135,15 @@ namespace TerraKnight.World
         }
 
         /// <summary>Where a chest would stand at the cursor if it fitted, within reach.</summary>
-        public static bool GuessSpot(HeroController hero, Vector2 aim, out Vector2 bottom)
+        public static bool GuessSpot(HeroController hero, Vector2 aim, out Vector2 bottom, int style = 0)
         {
             const float cell = CellGrid.CellSize;
-            float x = Mathf.Round(aim.x / cell) * cell;
+            float w=WidthOf(style);
+            float x = RegionalFurniture.IsDresser(style) ? (Mathf.Floor(aim.x/cell)+.5f)*cell : Mathf.Round(aim.x / cell) * cell;
             var down = Physics2D.Raycast(new Vector2(x, aim.y + 0.25f), Vector2.down, 1.5f, 1 << ChunkColliders.TerrainLayer);
             float y = down.collider != null ? down.point.y : Mathf.Floor(aim.y / cell) * cell;
             bottom = new Vector2(x, y);
-            return InReach(hero, new Rect(x - Width / 2f, y, Width, Height));
+            return InReach(hero, new Rect(x - w / 2f, y, w, Height));
         }
     }
 }

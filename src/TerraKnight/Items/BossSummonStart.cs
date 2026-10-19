@@ -547,16 +547,80 @@ namespace TerraKnight.Items
             return boss;
         }
 
-        /// <summary>The player to a spot: its feet there, or the first place straight above it the player fits.</summary>
+        /// <summary>
+        /// The player to a spot: its feet there, or the first place straight above it the player fits; never where the
+        /// fall from there ends in acid (Uumuu's floor): then the nearest floor out of the pools.
+        /// </summary>
         static void Put(HeroController hero, Vector2 feet)
         {
             var box = hero.GetComponent<BoxCollider2D>().bounds;
             Vector2 offset = (Vector2)box.center - (Vector2)hero.transform.position;
             float footToCentre = box.extents.y;
             var pos = Clear(hero, feet + new Vector2(0f, footToCentre) - offset);
+            if (LandsInAcid(pos + offset, box.extents))
+            {
+                var dry = DryFloor(pos + offset, box.extents);
+                if (dry != null)
+                {
+                    Plugin.Log.LogInfo($"[首领召唤物] 落点 {pos + offset:F1} 下面是酸水：改站到 {dry.Value:F1}");
+                    pos = dry.Value - offset;
+                }
+            }
             hero.transform.position = new Vector3(pos.x, pos.y, hero.transform.position.z);
             var rb = hero.GetComponent<Rigidbody2D>();
             if (rb != null) { rb.position = pos; rb.linearVelocity = Vector2.zero; }
+        }
+
+        /// <summary>Whether a fall from there (the player's box centre) meets the acid before a floor.</summary>
+        static bool LandsInAcid(Vector2 centre, Vector3 ext)
+        {
+            const float c = CellGrid.CellSize;
+            float top = centre.y + ext.y, bottom = centre.y - ext.y, floor = bottom - 40f * c;
+            var lo = CellGrid.WorldToCell(new Vector2(centre.x - ext.x, bottom));
+            var hi = CellGrid.WorldToCell(new Vector2(centre.x + ext.x, bottom));
+            for (int y = lo.y; y > lo.y - 40; y--)
+            {
+                bool hit = false;
+                for (int x = lo.x; x <= hi.x && !hit; x++) hit = TerraWorld.IsSolid(x, y) || TerraWorld.IsPlatform(x, y);
+                if (!hit) continue;
+                floor = CellGrid.CellCenter(lo.x, y).y + c / 2f;
+                break;
+            }
+            return Player.AcidLiquid.InAcid(new Bounds(new Vector3(centre.x, (top + floor) / 2f - 0.125f), new Vector3(2f * ext.x, top - floor + 0.25f)));
+        }
+
+        /// <summary>The nearest floor (a block or platform with room above it for the player) out of the acid, as the player's box centre on it.</summary>
+        static Vector2? DryFloor(Vector2 centre, Vector3 ext)
+        {
+            const float c = CellGrid.CellSize;
+            var start = CellGrid.WorldToCell(new Vector2(centre.x, centre.y - ext.y));
+            Vector2? best = null;
+            int bestD = int.MaxValue;
+            for (int dx = -80; dx <= 80; dx++)
+                for (int dy = -40; dy <= 40; dy++)
+                {
+                    // Sideways first: a floor a little higher or lower beats one far across the room.
+                    int d = dx * dx + 4 * dy * dy;
+                    if (d >= bestD) continue;
+                    int x = start.x + dx, y = start.y + dy - 1;
+                    if (!TerraWorld.IsSolid(x, y) && !TerraWorld.IsPlatform(x, y)) continue;
+                    var at = new Vector2(CellGrid.CellCenter(x, y).x, CellGrid.CellCenter(x, y).y + c / 2f + ext.y + 0.02f);
+                    if (!Fits(at, ext)) continue;
+                    if (Player.AcidLiquid.InAcid(new Bounds(new Vector3(at.x, at.y - 0.25f), new Vector3(2f * ext.x, 2f * ext.y + 0.5f)))) continue;
+                    best = at;
+                    bestD = d;
+                }
+            return best;
+        }
+
+        static bool Fits(Vector2 centre, Vector3 ext)
+        {
+            var lo = CellGrid.WorldToCell(centre - (Vector2)ext);
+            var hi = CellGrid.WorldToCell(centre + (Vector2)ext);
+            for (int y = lo.y; y <= hi.y; y++)
+                for (int x = lo.x; x <= hi.x; x++)
+                    if (TerraWorld.IsSolid(x, y)) return false;
+            return true;
         }
 
         static Vector2 Clear(HeroController hero, Vector2 pos)

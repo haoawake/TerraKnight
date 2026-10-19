@@ -7,7 +7,7 @@ namespace TerraKnight.World
     /// Spikes and thorns grow out of the terrain, and digging that terrain out cuts their art away
     /// with it (the dug cells, and the open cells next to them that the terrain's edge hangs over).
     /// Where their art has been cut away they no longer hurt: a spike hit counts only if the hero
-    /// touches the hazard somewhere it can still be seen.
+    /// touches the hazard in a spike cell still standing.
     /// </summary>
     [HarmonyPatch]
     internal static class DugHazards
@@ -30,17 +30,24 @@ namespace TerraKnight.World
                 heroBox = box != null ? box.GetComponent<Collider2D>() : __instance.GetComponent<Collider2D>();
             }
             if (heroBox == null) return true;
-            bool dugAway = DugAway(go, heroBox.bounds);
+            bool dugAway = DugAway(go, heroBox.bounds, out var uncut, out bool anyCut);
             // The hero's box reports the touch every frame; note it once per hazard.
             if (dugAway && go != lastLogged)
             {
                 lastLogged = go;
                 Plugin.Log.LogInfo($"[挖掉的尖刺] {go.name}（{go.scene.name}）碰到的部分都已挖掉，不受伤");
             }
+            else if (!dugAway && anyCut && Time.unscaledTime >= nextHurtLog)
+            {
+                // Hurt beside a dug-out stretch: the cell still standing, for a report of thorns that "were mined".
+                nextHurtLog = Time.unscaledTime + 2f;
+                Plugin.Log.LogInfo($"[挖掉的尖刺] {go.name}（{go.scene.name}）旁边挖过，但碰到了没挖的格 {uncut}，照常受伤");
+            }
             return !dugAway;
         }
 
         static GameObject lastLogged;
+        static float nextHurtLog;
 
         static readonly Collider2D[] probe = new Collider2D[16];
 
@@ -83,13 +90,34 @@ namespace TerraKnight.World
                 }
         }
 
+        enum Touch { Neutral, Cut, Standing }
+
+        static readonly System.Collections.Generic.Dictionary<Vector2Int, Touch> touched = new System.Collections.Generic.Dictionary<Vector2Int, Touch>();
+
         /// <summary>
-        /// Every point where the hero's box overlaps the hazard's colliders lies in a dug cell.
-        /// False when the overlap can't be found (touching at an edge): the hit then stands.
+        /// What touching the hazard in a cell means: its art cut away there (mined, or the overhang of dug ground) is
+        /// harmless; a spike cell still standing (one the pick can take: open air the hazard reaches into) hurts; the
+        /// rest — solid ground the box only grazes, a cell the hazard's edge only skims past the pick's reach — doesn't
+        /// decide either way.
         /// </summary>
-        static bool DugAway(GameObject hazard, Bounds hero)
+        static Touch TouchAt(Vector2Int c)
         {
-            bool any = false;
+            if (!touched.TryGetValue(c, out var t))
+                touched[c] = t = TerraWorld.ArtCutAt(c.x, c.y) ? Touch.Cut : IsSpikeCell(c) ? Touch.Standing : Touch.Neutral;
+            return t;
+        }
+
+        /// <summary>
+        /// The hero touches the hazard only where it has been dug away: some point of the overlap in a cut cell, none in a
+        /// spike cell still standing. False when the overlap can't be found (touching at an edge) or lies only in cells that
+        /// decide nothing: the hit then stands.
+        /// </summary>
+        static bool DugAway(GameObject hazard, Bounds hero, out Vector2Int uncut, out bool anyCut)
+        {
+            anyCut = false;
+            bool standing = false;
+            uncut = default;
+            touched.Clear();
             foreach (var col in hazard.GetComponents<Collider2D>())
             {
                 if (col == null || !col.enabled) continue;
@@ -104,12 +132,13 @@ namespace TerraKnight.World
                 {
                     var p = new Vector2(Mathf.Lerp(x0, x1, i / (float)nx), Mathf.Lerp(y0, y1, j / (float)ny));
                     if (!col.OverlapPoint(p)) continue;
-                    any = true;
                     var c = CellGrid.WorldToCell(p);
-                    if (!TerraWorld.ArtCutAt(c.x, c.y)) return false;
+                    var t = TouchAt(c);
+                    if (t == Touch.Cut) anyCut = true;
+                    else if (t == Touch.Standing) { standing = true; uncut = c; }
                 }
             }
-            return any;
+            return anyCut && !standing;
         }
     }
 }

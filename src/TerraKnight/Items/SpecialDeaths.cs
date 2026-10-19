@@ -72,6 +72,28 @@ namespace TerraKnight.Items
             if (Rage(__instance.Name)) raging.Add(hm.GetInstanceID());
         }
 
+        public static int DevCrushed;
+
+        /// <summary>
+        /// The Watcher Knights' chandelier cut down puts the knight under it away rather than killing it: Black Knight 3's
+        /// "Chandelier Smash" FSM takes CHANDELIER CRASH to Remove and switches it off, and Battle Control skips it
+        /// (watcherChandelier). Crushed is beaten: not a body still to come, so the fight is won, its treasure bag
+        /// with it, when the other five are down.
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HutongGames.PlayMaker.FsmState), nameof(HutongGames.PlayMaker.FsmState.OnEnter))]
+        static void Crushed(HutongGames.PlayMaker.FsmState __instance)
+        {
+            if (__instance.Name != "Remove") return;
+            var fsm = __instance.Fsm;
+            if (fsm == null || fsm.Name != "Chandelier Smash" || fsm.GameObject == null) return;
+            var hm = fsm.GameObject.GetComponentInChildren<HealthManager>(true) ?? fsm.GameObject.GetComponentInParent<HealthManager>();
+            if (hm == null || EnemyStats.Defeated(hm)) return;
+            EnemyStats.MarkDefeated(hm);
+            DevCrushed++;
+            Plugin.Log.LogInfo($"[首领] {hm.gameObject.scene.name}/{hm.name} 被吊灯砸掉：算作打倒，其余守望者倒下时结算这场战斗");
+        }
+
         static bool Rage(string state) => state == "Rage Jump Antic" || state == "Rise 2" || state == "Fall 2" || state == "State 2" || state == "R Attack Antic"
             || state == "Rage Begin" || state == "Rage" || state == "Particle Pause" || state == "Anim End";
 

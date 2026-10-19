@@ -95,6 +95,7 @@ namespace TerraKnight.World
                 if (i >= 0) return BlockItem(i);
             }
             if (kind == CellKind.Torch) return RegionalTorches.ItemAt(cell);
+            if (kind >= CellKind.AreaPlatformFirst && kind <= CellKind.AreaPlatformLast) return RegionalFurniture.Item((int)kind - (int)CellKind.AreaPlatformFirst, RegionalFurniture.PlatformIndex);
             int a = IndexOf(kind);
             return a >= 0 ? BlockItem(a) : ItemDb.DropFor(kind);
         }

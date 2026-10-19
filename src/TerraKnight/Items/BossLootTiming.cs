@@ -19,6 +19,12 @@ namespace TerraKnight.Items
         public static bool Enabled = true;
         /// <summary>Stable idle time for a persistent corpse; never interrupts a playing death animation.</summary>
         public const float MaxWait = 6f;
+        /// <summary>
+        /// However a death plays out, its loot falls in the room in the end: a body whose state machine idles in a looping
+        /// wait (the False Knight's armour after its maggot has burst) would otherwise hold it until the room is left.
+        /// Most deaths settle well within this (the Mantis Lords 3 s, the Soul Master 5 s, Grimm 10 s).
+        /// </summary>
+        public const float HardCap = 12f, AfterBurst = 2.5f;
         public static int DevDeferred, DevByGone, DevByBurst, DevByTime, DevByLeft;
         public static string DevLastWhy = "";
 
@@ -34,6 +40,7 @@ namespace TerraKnight.Items
             public float Since;
             public int GoneFrames;
             public bool Burst;
+            public float BurstAt;
             public float StableSince;
             public string StateKey;
             public float NextCorpseScan;
@@ -238,6 +245,8 @@ namespace TerraKnight.Items
                 // Gone two frames running (not the frame its object hands over to its corpse).
                 else if (p.GoneFrames >= 2 && !animating && !deathFlow) { why = "身体消失"; DevByGone++; }
                 else if (!animating && !deathFlow && Time.time - p.StableSince >= MaxWait) { why = "死亡流程结束，遗体静止"; DevByTime++; }
+                else if (p.Burst && Time.time - p.BurstAt >= AfterBurst) { why = "爆开后遗体仍在循环，按爆开时间发放"; DevByBurst++; }
+                else if (Time.time - p.Since >= HardCap) { why = "死亡演出超过上限，在遗体处发放"; DevByTime++; }
                 if (why == null) continue;
                 pending.RemoveAt(i);
                 Fire(p, EnemyDrops.LeavesOnItsOwn(p.Scene), why);
@@ -294,6 +303,7 @@ namespace TerraKnight.Items
                 if (p.Body != null && go.transform.IsChildOf(p.Body.transform) || corpse != null && go.transform.IsChildOf(corpse.transform)) p.Burst = true;
                 foreach (var related in p.Related)
                     if (related != null && go.transform.IsChildOf(related.transform)) p.Burst = true;
+                if (p.Burst) p.BurstAt = Time.time;
             }
         }
 

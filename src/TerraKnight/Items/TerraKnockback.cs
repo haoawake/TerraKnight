@@ -60,24 +60,27 @@ namespace TerraKnight.Items
             return Distance(speed) * Effects.TerraParticles.Px / perOne;
         }
 
+        /// <summary>Push speeds (px/tick, after the resistance and a crit) above <see cref="SoftPush"/> (a broadsword's on the first
+        /// areas' enemies) grow at <see cref="SoftRate"/> of the rate, and none passes <see cref="MaxPush"/>.</summary>
+        public const float SoftPush = 3.5f, SoftRate = 0.45f, MaxPush = 6.5f;
+
         /// <summary>
-        /// NPC.StrikeNPC's push speed in px/tick: knockBack × knockBackResist, squeezed above 8 and
-        /// capped at 16, 1.4 times on a crit. Every hit counts as a full one (damage × 15 above
-        /// lifeMax): Hallownest's enemies carry many times a Terraria enemy's life for the game's
-        /// longer fights, and the light-hit rule would take the resistance off a second time on
-        /// nearly every hit, where in Terraria (Classic) a common enemy takes the whole push from
-        /// the first weapons on.
+        /// NPC.StrikeNPC's push speed in px/tick: knockBack × knockBackResist, 1.4 times on a crit. Every hit counts as a
+        /// full one (damage × 15 above lifeMax): Hallownest's enemies carry many times a Terraria enemy's life for the game's
+        /// longer fights, and the light-hit rule would take the resistance off a second time on nearly every hit, where in
+        /// Terraria (Classic) a common enemy takes the whole push from the first weapons on.
+        /// A launch's length grows with the square of its speed (as fast back, as long up in the air), and Hallownest's rooms
+        /// and its light enemies are no Terraria surface: Terraria's own squeeze (above 8, capped at 16, the crit on top)
+        /// let the Enchanted Boomerang (8) throw a Volatile Mosskin four units, eight on a crit. Above a broadsword's push the
+        /// speed grows at under half the rate, the crit counted before that, so a strong weapon still throws farther, not
+        /// across the room.
         /// </summary>
         public static float Launch(float knockBack, float resist, bool crit)
         {
             if (knockBack <= 0f || resist <= 0f) return 0f;
-            float k = knockBack * resist;
-            if (k > 8f) k = 8f + (k - 8f) * 0.9f;
-            if (k > 10f) k = 10f + (k - 10f) * 0.8f;
-            if (k > 12f) k = 12f + (k - 12f) * 0.7f;
-            if (k > 14f) k = 14f + (k - 14f) * 0.6f;
-            if (k > 16f) k = 16f;
-            return crit ? k * 1.4f : k;
+            float k = knockBack * resist * (crit ? 1.4f : 1f);
+            if (k > SoftPush) k = SoftPush + (k - SoftPush) * SoftRate;
+            return Mathf.Min(k, MaxPush);
         }
 
         public static int DevOwnPushes, DevLaunches, DevPushCalls, DevImmune, DevPushUps, DevHeldInFlight;
@@ -153,7 +156,7 @@ namespace TerraKnight.Items
         public const float SteadyWindow = 3f;
         /// <summary>How many knockbacks in that window: the last of them still moves it.</summary>
         public const int SteadyAfter = 5;
-        /// <summary>How long it then takes no knockback at all (s); after that the count starts again.</summary>
+        /// <summary>How long it then takes no knockback at all (s), drawn half see-through (<see cref="SteadyFade"/>); after that the count starts again.</summary>
         public const float SteadyFor = 1f;
 
         sealed class Recent
@@ -201,6 +204,7 @@ namespace TerraKnight.Items
                 r.SteadyUntil = now + SteadyFor;
                 r.Count = 0;
                 DevSteadied++;
+                SteadyFade.Show(hm, r.SteadyUntil);
             }
             return true;
         }
@@ -246,7 +250,10 @@ namespace TerraKnight.Items
             if (body != null && body.bodyType == RigidbodyType2D.Dynamic)
             {
                 var flight = flying ?? hm.gameObject.AddComponent<KnockFlight>();
-                flight.Begin(body, col, speed, facing >= 0f ? 1f : -1f, body.gravityScale <= 0.01f, bigHit, resist);
+                // A launch still braking on the ground has its body's gravity off (Terraria's carries it): whether it is a
+                // flyer is the gravity it had before, or a walker hit again then drifted off as a flyer, weightless.
+                bool flyer = (flying != null && flying.Active ? flying.OwnGravity : body.gravityScale) <= 0.01f;
+                flight.Begin(body, col, speed, facing >= 0f ? 1f : -1f, flyer, bigHit, resist);
                 DevLaunches++;
                 DevLastLaunch = speed;
                 return;
@@ -288,6 +295,9 @@ namespace TerraKnight.Items
         float age;
 
         public bool Active => active;
+
+        /// <summary>The body's own gravity scale, kept while the launch has it off.</summary>
+        public float OwnGravity => gravity;
 
         /// <summary>Up in the air from the push (a flyer: still drifting back), not yet down and braking.</summary>
         public bool Airborne => active && (flying || !grounded);
@@ -416,6 +426,112 @@ namespace TerraKnight.Items
             // A walker goes on as it went (the crawlid only sets its pace when it starts or turns).
             body.linearVelocity = walker ? new Vector2(before.x, body.linearVelocity.y) : body.linearVelocity * 0.3f;
         }
+    }
+
+    /// <summary>
+    /// A steady enemy (<see cref="TerraKnockback.Steady"/>: five knockbacks within three seconds, then a second of none) drawn
+    /// half see-through for that second, easing in and out, so the player sees why his hits stop pushing it. Its own sprites
+    /// (tk2d and plain, not those of a part that is an enemy of its own) get their colours back after; a colour its scripts
+    /// give one meanwhile is taken as the one to give back.
+    /// </summary>
+    internal sealed class SteadyFade : MonoBehaviour
+    {
+        /// <summary>The sprites' alpha while steady (times their own), and the ease in and out (s).</summary>
+        public const float Alpha = 0.5f, Ease = 0.1f;
+
+        sealed class Look
+        {
+            public tk2dBaseSprite Tk;
+            public SpriteRenderer Sr;
+            /// <summary>The sprite's own colour, and the one last put on it here.</summary>
+            public Color Own, Set;
+            public bool Alive => Tk != null || Sr != null;
+            public Color Color
+            {
+                get => Tk != null ? Tk.color : Sr.color;
+                set { if (Tk != null) Tk.color = value; else Sr.color = value; }
+            }
+        }
+
+        readonly System.Collections.Generic.List<Look> looks = new System.Collections.Generic.List<Look>();
+        HealthManager hm;
+        float from, until;
+        bool finishing;
+
+        public static int DevShown;
+
+        public static void Show(HealthManager hm, float until)
+        {
+            if (hm == null || !hm.gameObject.activeInHierarchy) return;
+            var fade = hm.GetComponent<SteadyFade>() ?? hm.gameObject.AddComponent<SteadyFade>();
+            fade.Begin(hm, until);
+            DevShown++;
+        }
+
+        /// <summary>An enemy's own colours back now (before it is copied).</summary>
+        public static void End(GameObject go)
+        {
+            var fade = go != null ? go.GetComponent<SteadyFade>() : null;
+            if (fade != null) fade.Finish();
+        }
+
+        void Begin(HealthManager owner, float end)
+        {
+            hm = owner;
+            if (looks.Count == 0) from = Time.time;
+            until = end;
+            foreach (var s in GetComponentsInChildren<tk2dBaseSprite>()) Track(s, null);
+            foreach (var s in GetComponentsInChildren<SpriteRenderer>()) Track(null, s);
+            enabled = true;
+        }
+
+        void Track(tk2dBaseSprite tk, SpriteRenderer sr)
+        {
+            var go = tk != null ? tk.gameObject : sr.gameObject;
+            var owner = go.GetComponentInParent<HealthManager>();
+            if (owner != null && owner != hm) return;
+            if (go.GetComponentInParent<World.TerraOwned>() != null) return;
+            foreach (var l in looks) if (l.Tk == tk && l.Sr == sr) return;
+            var look = new Look { Tk = tk, Sr = sr };
+            look.Own = look.Set = look.Color;
+            looks.Add(look);
+        }
+
+        void LateUpdate()
+        {
+            float now = Time.time;
+            if (hm == null || hm.isDead || now >= until)
+            {
+                Finish();
+                return;
+            }
+            float k = Mathf.Clamp01((now - from) / Ease) * Mathf.Clamp01((until - now) / Ease);
+            float a = Mathf.Lerp(1f, Alpha, k);
+            foreach (var l in looks)
+            {
+                if (!l.Alive) continue;
+                var c = l.Color;
+                // Changed by its own scripts since: that is its colour now.
+                if (c != l.Set) l.Own = c;
+                c = l.Own;
+                c.a *= a;
+                l.Color = c;
+                l.Set = c;
+            }
+        }
+
+        void Finish()
+        {
+            if (finishing) return;
+            finishing = true;
+            foreach (var l in looks)
+                if (l.Alive && l.Color == l.Set) l.Color = l.Own;
+            looks.Clear();
+            enabled = false;
+            finishing = false;
+        }
+
+        void OnDisable() => Finish();
     }
 
     /// <summary>

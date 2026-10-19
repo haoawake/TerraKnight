@@ -68,6 +68,7 @@ namespace TerraKnight
                 World.LiveWorld.Instance?.ClearAll();
                 World.WorldEdits.Clear();
                 World.RegionalTorches.Clear();
+                World.WorldLiquids.Clear();
                 Items.BreakableDrops.Load(null);
             });
             Safely("重置角色", () => TerraMod.Instance?.ResetPlayer());
@@ -82,6 +83,7 @@ namespace TerraKnight
             {
                 TerraMod.Instance?.ApplyCreative(gm != null && UI.CreativeMenu.TakePending(gm.profileID));
                 World.GameDifficulty.Current = UI.CreativeMenu.TakeDifficulty();
+                Items.BossGuide.NewGame(UI.CreativeMenu.TakeGuide());
             });
             // A creative save starts with the showcase kit: every class's best, worn and in the bag.
             if (TerraMod.Instance != null && TerraMod.Instance.Creative) Safely("创造模式开局装备", () => Items.ShowcaseKit.Give(TerraMod.Instance));

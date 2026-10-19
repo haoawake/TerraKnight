@@ -303,6 +303,22 @@ namespace TerraKnight.Items
             return 0;
         }
 
+        int GrowthDamage(M m) => m.Kind == Kind.Abigail
+            ? MinionGrowth.Abigail(m.Damage, DevCount(Kind.AbigailCounter), Shop.UnlockedStage() >= 4)
+            : IsTiger(m.Kind) ? MinionGrowth.Tiger(m.Damage, TigerGems()) : m.Damage;
+
+        public int DevContactDamage(Kind kind)
+        {
+            foreach (var m in live) if (!m.Dead && m.Kind == kind) return GrowthDamage(m);
+            return 0;
+        }
+
+        public int DevSerial(Kind kind)
+        {
+            foreach (var m in live) if (!m.Dead && m.Kind == kind) return m.Serial;
+            return -1;
+        }
+
         /// <summary>Dev: hits dealt by minions (and their shots) so far, and their total damage before variance.</summary>
         public static int DevHits, DevHitDamage;
         /// <summary>Dev: the biggest single minion hit (before variance) and the Firecracker blasts so far.</summary>
@@ -946,7 +962,7 @@ namespace TerraKnight.Items
             foreach (var m in list)
             {
                 if (!(total - killed > Equipment.MaxMinions - need)) break;
-                if (m.Kind == twinSkip || m.Kind == Kind.DragonHead || m.Kind == Kind.DragonTail) continue;
+                if (m.S.Slots <= 0f || m.Kind == twinSkip || m.Kind == Kind.DragonHead || m.Kind == Kind.DragonTail) continue;
                 if (m.Kind == Kind.Spazmamini && twinSkip == Kind.Retanimini) twinSkip = Kind.Spazmamini;
                 if (m.Kind == Kind.Retanimini && twinSkip == Kind.Spazmamini) twinSkip = Kind.Retanimini;
                 killed += m.S.Slots;
@@ -1166,7 +1182,7 @@ namespace TerraKnight.Items
         // ------------------------------------------------------------------ tiles
 
         static bool SolidTile(int i, int j) => Cells.Blocks(TerraWorld.Get(i, -j - 1));
-        static bool PlatformTile(int i, int j) => TerraWorld.Get(i, -j - 1) == CellKind.Platform;
+        static bool PlatformTile(int i, int j) => TerraKnight.World.Cells.IsPlatform(TerraWorld.Get(i, -j - 1));
         /// <summary>A background wall: the mod's only walls are the dug-out cells.</summary>
         static bool WallTile(int i, int j) => TerraWorld.IsDug(i, -j - 1);
         static int TileOf(float px) => Mathf.FloorToInt(px / 16f);
@@ -1438,10 +1454,9 @@ namespace TerraKnight.Items
                 if (m.S.TypeCooldown > 0 && typeImmune.ContainsKey((m.Kind, id))) continue;
                 // Abigail stops once she holds immunity on as many enemies as she may hit at once.
                 if (immune.Count >= abigailCap) break;
-                int num7 = m.Damage;
+                int num7 = GrowthDamage(m);
                 // P:14619: a hot sphere (two bounces close together) hits for half.
                 if (m.Kind == Kind.DeadlySphere && m.LocalAi2 >= 40f) num7 = (int)(num7 * 0.5f);
-                if (m.Kind == Kind.Abigail) num7 = (int)(num7 * (1f + AbigailExtra() * 0.55f));
                 // The dragon hits harder the longer it is: by its scale, (scale − 1)·100 capped at 50.
                 if (IsDragon(m.Kind)) num7 = (int)(num7 * (1f + 0.23f * Mathf.Clamp((m.Scale - 1f) * 100f, 0f, 50f)));
                 float kb = m.Knockback;

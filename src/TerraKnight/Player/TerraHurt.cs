@@ -218,6 +218,7 @@ namespace TerraKnight.Player
             var mod = TerraMod.Instance;
             var b = Items.Equipment.Current;
             if (mod == null || hero == null) return;
+            if (Mounts.Riding && Mounts.Current.Native==56 && damage>0) Mounts.Dismount();
             Items.ArmorEffects.AfterHurt();
             if (b.MagicCuffs && raw > 0)
             {

@@ -47,7 +47,7 @@ namespace TerraKnight.Items
         static void ToggleSellMode()
         {
             sellMode = !sellMode;
-            if (sellMode) blacklistOpen = hkOpen = bestiaryOpen = false;
+            if (sellMode) statsOpen = blacklistOpen = hkOpen = bestiaryOpen = false;
             if (sellMode)
             {
                 if (World.Chests.IsOpen) World.Chests.Close(false);
@@ -62,7 +62,7 @@ namespace TerraKnight.Items
             why = null;
             if (s.IsEmpty) return false;
             if (s.Favorite) why = "收藏的物品不会卖出";
-            else if (s.Def.Permanent || s.Def.HkItem || Currencies.Is(s.Type)) why = "这件不能卖";
+            else if (s.Def.CannotDiscard || s.Def.HkItem || Currencies.Is(s.Type)) why = "这件不能卖";
             return why == null;
         }
 

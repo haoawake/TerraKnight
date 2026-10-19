@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using TerraKnight.Items;
 using TerraKnight.Net;
 using TerraKnight.World;
@@ -75,7 +76,7 @@ namespace TerraKnight
 
         IEnumerator Net2Host(string scene, HeroController hero)
         {
-            PlayerData.instance.isInvincible = false;
+            PlayerData.instance.isInvincible = true;
             var col = hero.GetComponent<BoxCollider2D>();
             // The client's character arrives in King's Pass.
             RemotePlayer other = null;
@@ -94,6 +95,7 @@ namespace TerraKnight
             yield return WaitChat("client: puppets ok", 60f);
             yield return new WaitForSeconds(1f);
             NetCheck(Net.Enemies.DevApplied > 0, $"客户端打傀儡的伤害在主机结算：{Net.Enemies.DevReport()}");
+            NetCheck(EnemyStats.All.Any(i => i.Hm != null && EnemyTargets.DevTarget(i.Hm) == Other()?.Slot), "小怪将远端命中玩家作为仇恨目标");
 
             // Shots and a minion for the client to see.
             mod.DevUse(ItemType.SlimeStaff, (Vector2)col.bounds.center + Vector2.right * 2f);
@@ -109,6 +111,7 @@ namespace TerraKnight
 
             // PvP: the client swings at the host.
             yield return WaitChat("client: pvp", 60f);
+            PlayerData.instance.isInvincible = false;
             NetSession.SetPvp(true);
             mod.Stats.FullHeal();
             int life0 = mod.Stats.Life;
@@ -116,8 +119,11 @@ namespace TerraKnight
             for (float t = 0f; t < 15f && mod.Stats.Life >= life0; t += Time.deltaTime) yield return null;
             NetCheck(mod.Stats.Life < life0, $"PvP：客户端砍到主机 {life0}->{mod.Stats.Life}（{PvpHits.DevHits} 下）");
             NetSession.SetPvp(false);
+            PlayerData.instance.isInvincible = true;
             mod.Stats.FullHeal();
             yield return new WaitForSeconds(1.5f);
+
+            yield return NetCombatHost(scene, hero);
 
             // An enemy killed here: the client's puppet of it dies too.
             var target = NearestEnemy(hero.transform.position, false);
@@ -137,6 +143,7 @@ namespace TerraKnight
             yield return WaitChat("client: done", 90f);
             yield return new WaitForSeconds(1f);
             NetCheck(TileSync.DevApplied > 0, $"客户端挖的方块在主机这边也没了：收到 {TileSync.DevApplied} 格");
+            yield return NetCombatBossHost();
             Shot(scene, "net2_host_3_end");
             yield return new WaitForSeconds(0.5f);
             NetChat.Say("host: bye");
@@ -145,7 +152,7 @@ namespace TerraKnight
 
         IEnumerator Net2Client(string scene, HeroController hero)
         {
-            PlayerData.instance.isInvincible = false;
+            PlayerData.instance.isInvincible = true;
             var col = hero.GetComponent<BoxCollider2D>();
             for (float t = 0f; t < 60f && !(NetSession.Owners.TryGetValue(scene, out int o) && o != NetSession.MySlot && Net.Enemies.DevPuppets > 0); t += Time.unscaledDeltaTime) yield return null;
             NetCheck(Net.Enemies.DevPuppets > 0, $"主机的敌人在这边是傀儡：{Net.Enemies.DevReport()}");
@@ -205,6 +212,8 @@ namespace TerraKnight
             NetSession.SetPvp(false);
             Plugin.Log.LogInfo($"[AutoTest] 联机2 PvP：收到主机受伤 {PvpHitsLanded()} 次");
 
+            yield return NetCombatClient(scene, hero);
+
             // The host kills an enemy; the puppet here dies with it.
             yield return WaitChat("host: killed", 60f);
             yield return new WaitForSeconds(1f);
@@ -219,6 +228,7 @@ namespace TerraKnight
             yield return new WaitForSeconds(0.5f);
             NetCheck(TileSync.DevSent > 0, $"挖掉的方块发给主机 {TileSync.DevSent} 格");
             NetChat.Say("client: done");
+            yield return NetCombatBossClient();
             yield return WaitChat("host: bye", 30f);
             yield return new WaitForSeconds(1f);
         }

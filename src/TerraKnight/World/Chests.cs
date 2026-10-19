@@ -21,6 +21,7 @@ namespace TerraKnight.World
         public const int Capacity = 40;
         const float Px = Effects.TerraParticles.Px;
         const float Width = 32f * Px, Height = 32f * Px;
+        static float WidthOf(int style) => RegionalFurniture.IsDresser(style) ? 48f * Px : Width;
         // Behind the minions, pets and shots (FxBatch.BehindZ 0.0047), the townsfolk and the player, as the furniture (Stations.Z).
         const float Z = 0.00475f;
 
@@ -46,6 +47,8 @@ namespace TerraKnight.World
             public Chest(ItemStack[] items) { Items = items; }
             public int FrameCounter, Damage;
             public SpriteRenderer Renderer;
+            /// <summary>The smart cursor's outline over it (Images/Misc/TileOutlines/Tiles_21).</summary>
+            public SpriteRenderer Outline;
             TerrainRegion region;
             public TerrainRegion Region
             {
@@ -53,7 +56,7 @@ namespace TerraKnight.World
                 set => region = value;
             }
             public Vector2 World => Region != null ? (Vector2)Region.Root.position + Local : Local;
-            public Rect Box => new Rect(World.x - Width / 2f, World.y, Width, Height);
+            public Rect Box => new Rect(World.x - WidthOf(Style) / 2f, World.y, WidthOf(Style), Height);
             public bool Empty
             {
                 get
@@ -146,7 +149,7 @@ namespace TerraKnight.World
         {
             if (!Net.WorldSync.CanInteract) return false;
             if (hero == null) return false;
-            if (!FindSpot(hero, aim, out var bottom)) return false;
+            if (!FindSpot(hero, aim, out var bottom, style)) return false;
             if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var region = TerraWorld.RegionAt(CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).x, CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).y)
                          ?? TerrainSystem.Current?.Region;
@@ -166,25 +169,26 @@ namespace TerraKnight.World
         public static int DevPlaced, DevBroken, DevOpened;
 
         /// <summary>Where a chest would stand for this aim (its bottom middle), if it can.</summary>
-        public static bool FindSpot(HeroController hero, Vector2 aim, out Vector2 bottom)
+        public static bool FindSpot(HeroController hero, Vector2 aim, out Vector2 bottom, int style = 0)
         {
             bottom = default;
             const int mask = 1 << ChunkColliders.TerrainLayer;
             const float cell = CellGrid.CellSize;
             // The cursor is on the chest's lower right tile (TileObjectData origin (0,1)).
-            float x = Mathf.Round(aim.x / cell) * cell;
+            float w = WidthOf(style);
+            float x = RegionalFurniture.IsDresser(style) ? (Mathf.Floor(aim.x/cell)+.5f)*cell : Mathf.Round(aim.x / cell) * cell;
             var down = Physics2D.Raycast(new Vector2(x, aim.y + 0.25f), Vector2.down, 1.5f, mask);
             if (down.collider == null) return false;
             float y = down.point.y;
             // Both cells need ground under them, at the same height.
-            foreach (float dx in new[] { -cell / 2f, cell / 2f })
+            for (int col=0;col<Mathf.RoundToInt(w/cell);col++)
             {
-                var side = Physics2D.Raycast(new Vector2(x + dx, y + 0.1f), Vector2.down, 0.2f, mask);
+                var side = Physics2D.Raycast(new Vector2(x - w/2f + (col+.5f)*cell, y + 0.1f), Vector2.down, 0.2f, mask);
                 if (side.collider == null || Mathf.Abs(side.point.y - y) > 0.06f) return false;
             }
             var centre = new Vector2(x, y + Height / 2f + 0.02f);
-            if (Physics2D.OverlapBox(centre, new Vector2(Width, Height) * 0.9f, 0f, mask) != null) return false;
-            var box = new Rect(x - Width / 2f, y, Width, Height);
+            if (Physics2D.OverlapBox(centre, new Vector2(w, Height) * 0.9f, 0f, mask) != null) return false;
+            var box = new Rect(x - w / 2f, y, w, Height);
             foreach (var c in chests)
                 if (c.Region != null && c.Box.Overlaps(box)) return false;
             if (Stations.Overlaps(box)) return false;
@@ -217,6 +221,46 @@ namespace TerraKnight.World
                 return true;
             }
             return false;
+        }
+
+        // ------------------------------------------------------------------ the smart cursor's choice (SmartInteractSystem)
+
+        /// <summary>The chest the smart cursor has picked (nearest the cursor of those in reach), or none.</summary>
+        static Chest smart;
+        public static int DevSmartOpened;
+
+        /// <summary>
+        /// SmartInteractSystem: with the smart cursor on and the pointer off the interface, of the chests within the
+        /// player's reach (the world's, an area's, his own) the one nearest the cursor is picked: a gold outline on it,
+        /// a grey one on the others in reach (TileDrawing's highlight), and a right click anywhere opens it.
+        /// </summary>
+        static void PickSmart(HeroController hero)
+        {
+            smart = null;
+            var mod = TerraMod.Instance;
+            if (mod == null || !mod.SmartCursor || InventoryGui.MouseOverUi || !Net.WorldSync.CanInteract) return;
+            Vector2 aim = mod.AimPoint;
+            float best = float.MaxValue;
+            foreach (var c in chests)
+            {
+                if (c.Region == null || !InReach(hero, c.Box)) continue;
+                var b = c.Box;
+                float dx = Mathf.Max(b.xMin - aim.x, 0f, aim.x - b.xMax), dy = Mathf.Max(b.yMin - aim.y, 0f, aim.y - b.yMax);
+                float d = dx * dx + dy * dy;
+                if (d < best) { best = d; smart = c; }
+            }
+        }
+
+        /// <summary>A right click that nothing under the cursor took: the smart cursor's chest opens (or shuts, the open one).</summary>
+        public static bool TrySmartOpen()
+        {
+            if (smart == null || smart.Region == null) return false;
+            var hero = HeroController.SilentInstance;
+            if (hero == null || !InReach(hero, smart.Box)) return false;
+            if (open == smart) Close(true);
+            else Open(smart);
+            DevSmartOpened++;
+            return true;
         }
 
         /// <summary>A Piggy Bank's right click (Stations): the player's bank opens there, or shuts if it was open at that one.</summary>
@@ -490,6 +534,8 @@ namespace TerraKnight.World
         /// bank). Each currency goes too, from anywhere in the bag and the coin slots: into the Piggy Bank
         /// when one stands in range, else onto the chests in range that hold it, else into the nearest of
         /// them. How many stacks moved.
+        /// A LAN game's chests are the host's (Net.WorldSync): the ones this player hasn't open go there, in one request
+        /// (QuickStacking's packet 85, Chest.ServerPlaceItem), and what they had no room for comes back to its slot.
         /// </summary>
         public static int QuickStackNearby(Inventory inv, Vector2 from)
         {
@@ -498,30 +544,44 @@ namespace TerraKnight.World
             var near = new List<Chest>();
             if (Stations.PiggyBankWithin(from, range)) near.Add(new Chest(inv.Bank) { Bank = true });
             foreach (var c in chests)
-                if (c.Region != null && !c.Bank && Net.WorldSync.OwnsChest(c.Scene, c.Local) && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
+                if (c.Region != null && !c.Bank && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
             near.Sort((a, b) => a.Bank != b.Bank ? (a.Bank ? -1 : 1) : (a.Bank ? 0 : Vector2.Distance(a.Box.center, from).CompareTo(Vector2.Distance(b.Box.center, from))));
+            // Here: the bank and a chest this player has open (alone, every chest); the host's: the rest.
+            bool Here(Chest c) => c.Bank || Net.WorldSync.OwnsChest(c.Scene, c.Local);
+            var shared = near.FindAll(c => !Here(c));
+            var sent = new List<(int Slot, ItemStack Stack, int Target)>();
+            bool Sent(int slot) => sent.Exists(e => e.Slot == slot);
             // Each currency: the bank first, else a chest that has some, else the nearest chest.
             if (near.Count > 0)
                 foreach (var t in Currencies.All)
                 {
                     Chest to = near[0].Bank ? near[0] : near.Find(c => Holds(c, t)) ?? near[0];
-                    moved += MoveCoins(inv, to, t);
+                    if (Here(to)) { moved += MoveCoins(inv, to, t); continue; }
+                    for (int i = 0; i < Inventory.Total; i++)
+                    {
+                        var s = inv.Slots[i];
+                        if (!s.IsEmpty && !s.Favorite && s.Type == t) sent.Add((i, s, shared.IndexOf(to)));
+                    }
                 }
             foreach (var c in near)
             {
+                if (!Here(c)) continue;
                 for (int i = Inventory.HotbarSize; i < Inventory.Size; i++)
                 {
                     ref var s = ref inv.Slots[i];
-                    if (s.IsEmpty || s.Favorite) continue;
-                    bool held = false;
-                    foreach (var it in c.Items) held |= !it.IsEmpty && it.Type == s.Type;
-                    if (!held) continue;
+                    if (s.IsEmpty || s.Favorite || Sent(i) || !Holds(c, s.Type)) continue;
                     int before = s.Count;
                     PutIn(c, ref s);
                     if (s.IsEmpty || s.Count != before) moved++;
                 }
             }
-            return moved;
+            if (shared.Count == 0) return moved;
+            for (int i = Inventory.HotbarSize; i < Inventory.Size; i++)
+            {
+                var s = inv.Slots[i];
+                if (!s.IsEmpty && !s.Favorite && !Sent(i) && shared.Exists(c => Holds(c, s.Type))) sent.Add((i, s, -1));
+            }
+            return moved + Net.WorldSync.QuickStack(inv, shared.ConvertAll(c => Net.WorldSync.Key("c", c.Scene, c.Local)).ToArray(), sent);
         }
 
         /// <summary>
@@ -670,6 +730,7 @@ namespace TerraKnight.World
                     if (c.Damage > 0 && Random.Range(0, 60) == 0) c.Damage = 0;
                 }
             }
+            PickSmart(hero);
             Draw();
         }
 
@@ -693,9 +754,90 @@ namespace TerraKnight.World
                 c.Renderer.enabled = true;
                 var area = c.Style > 0 ? RegionalChests.FrameSprite(c.Style, Frame(c)) : null;
                 c.Renderer.sprite = area ?? FrameSprite(Frame(c));
+                if (RegionalFurniture.IsDresser(c.Style) && c.Renderer.GetComponent<StorageTop>() == null) c.Renderer.gameObject.AddComponent<StorageTop>().Init(c.Box, c.Region.Material);
                 // Terraria's bottom tile is 18 px tall: its last 2 px sink into the ground (an area's chest its last one, its feet on it).
-                c.Renderer.transform.localPosition = new Vector3(c.Local.x, c.Local.y - (area != null ? 1f : 2f) * Px, Z - c.Region.Root.position.z);
+                c.Renderer.transform.localPosition = new Vector3(c.Local.x, c.Local.y - (RegionalFurniture.IsDresser(c.Style) ? 0f : area != null ? 1f : 2f) * Px, Z - c.Region.Root.position.z);
+                DrawOutline(c);
             }
+        }
+
+        /// <summary>
+        /// TileDrawing's smart cursor highlight: the chest's outline (Images/Misc/TileOutlines/Tiles_21, its lid's frame)
+        /// over it, gold and breathing with the mouse text's pulse on the one picked ((n, n, n/3, n), n = (mouseTextColor × 2
+        /// + 255) / 3), grey on the others in reach; none with the smart cursor off.
+        /// </summary>
+        static void DrawOutline(Chest c)
+        {
+            var hero = HeroController.SilentInstance;
+            var mod = TerraMod.Instance;
+            bool show = hero != null && mod != null && mod.SmartCursor && !InventoryGui.MouseOverUi && InReach(hero, c.Box);
+            var sprite = show && !RegionalFurniture.IsDresser(c.Style) ? OutlineSprite(Frame(c)) : null;
+            if (sprite == null)
+            {
+                if (c.Outline != null) c.Outline.enabled = false;
+                return;
+            }
+            if (c.Outline == null)
+            {
+                var go = new GameObject("Terra Chest Outline");
+                go.transform.SetParent(c.Renderer.transform, false);
+                go.transform.localPosition = new Vector3(0f, 0f, -0.0001f);
+                c.Outline = go.AddComponent<SpriteRenderer>();
+            }
+            c.Outline.enabled = true;
+            c.Outline.sprite = sprite;
+            c.Outline.sortingLayerID = c.Renderer.sortingLayerID;
+            c.Outline.sortingOrder = c.Renderer.sortingOrder + 1;
+            // Main.mouseTextColor: 190..255 and back, 1 a tick.
+            float pulse = 190f + 65f * Mathf.PingPong(Time.unscaledTime * 60f / 65f, 1f);
+            float n = (pulse * 2f + 255f) / 3f / 255f;
+            c.Outline.color = c == smart ? new Color(n, n, n / 3f, n) : new Color(n / 2f, n / 2f, n / 2f, n);
+        }
+
+        static readonly Sprite[] outlines = new Sprite[3];
+        static bool outlineMissing;
+
+        /// <summary>The outline of one lid frame, put together from TileOutlines/Tiles_21 as the chest's own frames are (none without the file).</summary>
+        static Sprite OutlineSprite(int f)
+        {
+            if (outlines[f] != null || outlineMissing) return outlines[f];
+            Color32[] src;
+            int sw, sh;
+            try { src = TerrariaAssets.Pixels("Misc/TileOutlines/Tiles_21", out sw, out sh); }
+            catch (System.Exception)
+            {
+                outlineMissing = true;
+                Plugin.Log.LogWarning("[箱子] 没有找到泰拉瑞亚的箱子描边贴图 Images/Misc/TileOutlines/Tiles_21，智能光标不画描边");
+                return null;
+            }
+            if (src == null) { outlineMissing = true; return null; }
+            // The highlight mask is laid out as the tile sheet itself (the same frames at the same places); one that isn't
+            // would draw a frame out of place.
+            TerrariaAssets.Pixels("Tiles_21", out int tw, out int th0);
+            if (tw != sw || th0 != sh)
+            {
+                outlineMissing = true;
+                Plugin.Log.LogWarning($"[箱子] 箱子描边贴图 {sw}x{sh} 和箱子贴图 {tw}x{th0} 排布不同，智能光标不画描边");
+                return null;
+            }
+            const int w = 32, h = 34;
+            var dst = new Color32[w * h];
+            for (int r = 0; r < 2; r++)
+            for (int col = 0; col < 2; col++)
+            {
+                int th = r == 0 ? 16 : 18;
+                for (int y = 0; y < th; y++)
+                for (int x = 0; x < 16; x++)
+                {
+                    int sx = col * 18 + x, sy = r * 18 + f * 38 + y;
+                    int dx = col * 16 + x, dy = r * 16 + y;
+                    if (sx >= sw || sy >= sh) continue;
+                    dst[(h - 1 - dy) * w + dx] = src[(sh - 1 - sy) * sw + sx];
+                }
+            }
+            var tex = TerrariaAssets.Make("Tiles_21#outline" + f, dst, w, h);
+            outlines[f] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0f), 1f / Px, 0, SpriteMeshType.FullRect);
+            return outlines[f];
         }
 
         /// <summary>One of the three lid frames, put together from Tiles_21's four tiles (16 px apart, 18 in the sheet; the bottom row 18 tall).</summary>

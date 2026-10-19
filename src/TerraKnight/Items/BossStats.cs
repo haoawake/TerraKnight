@@ -180,9 +180,9 @@ namespace TerraKnight.Items
         public static bool InGodhome(string scene) => scene != null && scene.StartsWith("GG_");
 
         /// <summary>
-        /// The health unit distributed by EnemyStats over native phases and bodies. Dream/late bosses
-        /// and Godhome rematches have explicit whole-fight budgets; early world encounters keep their
-        /// stand-in's life. Godhome's existing challenge profile is selected using godhomeTier.
+        /// The health unit distributed by EnemyStats over native phases and bodies. Registered bosses
+        /// have explicit progression-based whole-fight budgets, with the stand-in as fallback.
+        /// Godhome's existing challenge profile is selected using godhomeTier.
         /// </summary>
         internal static float CombatLifeShare(int stage) => stage switch
             { 0 => .715f, 1 => .754f, 2 => .75f, 3 => .7425f, 4 => .725f, _ => .64f };

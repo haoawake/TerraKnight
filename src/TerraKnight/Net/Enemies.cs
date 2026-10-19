@@ -19,11 +19,11 @@ namespace TerraKnight.Net
     /// (as Terraria's server drops an NPC's); only a boss's treasure bag is each player's own.
     /// When the owner leaves, the next player in the scene takes over from where things are; a boss
     /// room's owner keeps it while still in the room with its fight on (NetScenes.Collect).
-    /// What doesn't carry over: the shots and spawned attacks of an enemy's scripts (only the
-    /// owner's game has them), and enemies go after their owner, who is the only one they see.
+    /// Attack hitboxes and spawned shots are mirrored by EnemyAttacks; EnemyTargets lets the
+    /// authoritative AI see the other living players without moving the local hero.
     /// </summary>
     [HarmonyPatch]
-    internal static class Enemies
+    internal static partial class Enemies
     {
         public static bool Enabled => NetSettings.SyncEnemies == null || NetSettings.SyncEnemies.Value;
 
@@ -67,6 +67,8 @@ namespace TerraKnight.Net
             public readonly List<(float T, Vector2 P)> Samples = new List<(float, Vector2)>();
             public int Clip = -1, Frame;
             public bool Active, Visible;
+            /// <summary>Died (the owner said so): it goes on as the owner's does, its scripts still for good.</summary>
+            public bool Dead;
         }
 
         static readonly Dictionary<HealthManager, Tracked> tracked = new Dictionary<HealthManager, Tracked>();
@@ -131,7 +133,16 @@ namespace TerraKnight.Net
 
         public static void Reset()
         {
+            EnemyAttacks.Reset();
+            EnemyTargets.Reset();
+            SceneMirror.Reset();
+            NetFx.Reset();
+            adopted.Clear();
+            partLists.Clear();
             foreach (var p in new List<Puppet>(puppets.Values)) Release(p);
+            foreach (var go in new List<GameObject>(clones)) DropClone(go, 0f);
+            clones.Clear();
+            cloneMissed.Clear();
             puppets.Clear();
             puppetOf.Clear();
             foreach (var kv in frozen) if (kv.Key != null) kv.Key.enabled = kv.Value.On;
@@ -167,7 +178,24 @@ namespace TerraKnight.Net
                 foreach (var hm in root.GetComponentsInChildren<HealthManager>(true))
                     if (!UnderTemplates(hm.transform)) list.Add(hm);
             }
+            if (adopted.TryGetValue(scene, out var more))
+            {
+                more.RemoveAll(h => h == null);
+                foreach (var hm in more) if (!list.Contains(hm)) list.Add(hm);
+            }
             return list;
+        }
+
+        /// <summary>Enemies a fight of the scene made from a pool (outside every scene): sent with the scene's own.</summary>
+        static readonly Dictionary<string, List<HealthManager>> adopted = new Dictionary<string, List<HealthManager>>();
+
+        /// <summary>An enemy a FSM of this owned scene made from the global pool (SceneMirror): a puppet in the others' games like the scene's own.</summary>
+        public static void Adopt(HealthManager hm, string scene)
+        {
+            if (hm == null || string.IsNullOrEmpty(scene)) return;
+            if (!adopted.TryGetValue(scene, out var list)) adopted[scene] = list = new List<HealthManager>();
+            if (!list.Contains(hm)) list.Add(hm);
+            sceneScanned.Remove(scene);
         }
 
         static bool UnderTemplates(Transform t)
@@ -179,18 +207,21 @@ namespace TerraKnight.Net
 
         /// <summary>
         /// How an enemy is found in another game's copy of its scene: the names down from its root,
-        /// each with its place among its siblings. A copy the mod made (name ending "(TK)") is
-        /// "name@*" under its parent: the copies differ from game to game, the nearest one is taken.
+        /// each with its place among its siblings. A copy the mod made (name ending "(TK)") or one the
+        /// game made as the fight went (a boss's brood or summons, "(Clone)") is "name@*" under its
+        /// parent: the copies differ from game to game, the nearest one is taken.
         /// </summary>
         static string PathOf(Transform t)
         {
             var parts = new List<string>();
-            bool copy = t.name.EndsWith("(TK)");
+            bool copy = IsCopy(t.name);
             parts.Add(t.name + "@" + (copy ? "*" : t.GetSiblingIndex().ToString()));
             for (var p = t.parent; p != null; p = p.parent) parts.Add(p.name + "@" + p.GetSiblingIndex());
             parts.Reverse();
             return string.Join("/", parts);
         }
+
+        static bool IsCopy(string name) => name.EndsWith("(TK)") || name.EndsWith("(Clone)");
 
         static Transform FindPath(string scene, string path, Vector2 near)
         {
@@ -247,8 +278,57 @@ namespace TerraKnight.Net
         /// <summary>A copy the owner has and this game hasn't made yet: made from this game's template of it.</summary>
         static Transform SpawnCopy(string scene, Transform parent, string name, Vector2 at)
         {
+            if (name.EndsWith("(Clone)")) return SpawnClone(scene, parent, name, at);
             var go = World.EnemyRespawn.Instance != null ? World.EnemyRespawn.Instance.NetSpawn(scene, name, parent, at) : null;
             return go != null ? go.transform : null;
+        }
+
+        /// <summary>The enemies this game made to follow ones the owner's game made mid-fight: gone with their puppets.</summary>
+        static readonly HashSet<GameObject> clones = new HashSet<GameObject>();
+        static readonly Dictionary<string, float> cloneMissed = new Dictionary<string, float>();
+        public static int DevClones;
+
+        /// <summary>
+        /// An enemy the owner's game made as the fight went ("name(Clone)": a boss's brood, a jar's catch, a summoned
+        /// fly, from a prefab its FSM holds): made here from the same prefab (else a copy of one of that name lying in
+        /// this game), switched off before it wakes, into the same scene at the owner's spot, to be its puppet.
+        /// </summary>
+        static Transform SpawnClone(string scene, Transform parent, string name, Vector2 at)
+        {
+            if (cloneMissed.TryGetValue(name, out float missed) && Time.unscaledTime - missed < 2f) return null;
+            string bare = name;
+            while (bare.EndsWith("(Clone)")) bare = bare.Substring(0, bare.Length - 7).TrimEnd();
+            GameObject template = null;
+            foreach (var hm in Resources.FindObjectsOfTypeAll<HealthManager>())
+            {
+                if (hm == null || (hm.name != bare && hm.name != name) || puppetOf.ContainsKey(hm)) continue;
+                if (!hm.gameObject.scene.IsValid()) { template = hm.gameObject; break; }
+                if (template == null || (!hm.gameObject.activeSelf && template.activeSelf)) template = hm.gameObject;
+            }
+            if (template == null) { cloneMissed[name] = Time.unscaledTime; return null; }
+            bool prefab = !template.scene.IsValid(), was = template.activeSelf;
+            // A prefab made switched off: none of its scripts run before it is a puppet.
+            if (prefab && was) template.SetActive(false);
+            GameObject copy;
+            try { copy = Object.Instantiate(template, new Vector3(at.x, at.y, template.transform.position.z), template.transform.rotation); }
+            finally { if (prefab && was) template.SetActive(true); }
+            copy.SetActive(false);
+            copy.name = name;
+            var s = NetScenes.FindScene(scene);
+            if (parent != null) copy.transform.SetParent(parent, true);
+            else if (s.IsValid() && copy.scene != s) UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(copy, s);
+            clones.Add(copy);
+            DevClones++;
+            sceneScanned.Remove(scene);
+            return copy.transform;
+        }
+
+        /// <summary>A clone of this game's, its puppet let go: gone (after its death's own scene, when it died).</summary>
+        static void DropClone(GameObject go, float after)
+        {
+            if (go == null || !clones.Remove(go)) return;
+            if (after > 0f) Object.Destroy(go, after);
+            else Object.Destroy(go);
         }
 
         // ------------------------------------------------------------------ the owner
@@ -265,6 +345,12 @@ namespace TerraKnight.Net
             deadKeys.Clear();
             foreach (var kv in hidden) if (kv.Key == null) deadKeys.Add(kv.Key);
             foreach (var k in deadKeys) hidden.Remove(k);
+            deadKeys.Clear();
+            foreach (var kv in partLists) if (kv.Key == null) deadKeys.Add(kv.Key);
+            foreach (var k in deadKeys) partLists.Remove(k);
+            var stillFsms = new List<PlayMakerFSM>();
+            foreach (var kv in frozen) if (ReferenceEquals(kv.Key, null) || kv.Key == null) stillFsms.Add(kv.Key);
+            foreach (var f in stillFsms) { if (frozen.TryGetValue(f, out var r) && r.Fsm != null) frozenFsms.Remove(r.Fsm); frozen.Remove(f); }
         }
 
         static Tracked Track(HealthManager hm, string scene)
@@ -276,7 +362,7 @@ namespace TerraKnight.Net
             return t;
         }
 
-        static bool Watched(string scene)
+        internal static bool Watched(string scene)
         {
             foreach (var p in NetSession.Players.Values)
                 if (p.In.Contains(scene) || p.Loaded.Contains(scene)) return true;
@@ -294,6 +380,7 @@ namespace TerraKnight.Net
             if (++snapshotTick % 4 == 3) return;
             // Every ten seconds: enemies destroyed with their scenes leave the tables.
             if (snapshotTick % 200 == 0) Prune();
+            SceneMirror.Prune();
             ownedScenes.Clear();
             foreach (var kv in NetSession.Owners)
                 if (kv.Value == NetSession.MySlot && NetSession.HaveScene(kv.Key) && Watched(kv.Key)) ownedScenes.Add(kv.Key);
@@ -317,6 +404,8 @@ namespace TerraKnight.Net
                 data[countAt + 0] = (byte)n;
                 data[countAt + 1] = (byte)(n >> 8);
                 NetSession.Send(data);
+                EnemyAttacks.Send(scene, shift);
+                SceneMirror.Send(scene, shift);
             }
         }
 
@@ -346,6 +435,12 @@ namespace TerraKnight.Net
             w.Write((short)clip);
             w.Write((byte)Mathf.Clamp(frame, 0, 255));
             w.Write(hm.hp);
+            // Its Terraria numbers as this game has them (EnemyStats.Info.Net): the others show and strike the same.
+            var info = EnemyStats.Of(hm);
+            w.Write(EnemyStats.Life(hm, info));
+            w.Write(EnemyStats.LifeMax(info));
+            w.Write(info.Defense);
+            WriteParts(w, hm);
         }
 
         /// <summary>HealthManager.Die in the owner's game: everyone's copy dies with it.</summary>
@@ -383,6 +478,7 @@ namespace TerraKnight.Net
             if (!Owned(scene) || !trackedById.TryGetValue((scene, id), out var t) || t.Hm == null || t.Hm.isDead) return;
             NetScenes.ToWorld(scene, fromLocal, out var fromWorld);
             DevApplied++;
+            if ((flags & 4) == 0) EnemyTargets.Struck(t.Hm, from);
             MeleeHits.ApplyNetHit(t.Hm, hk, dir, type, push, terra, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0, fromWorld);
         }
 
@@ -404,6 +500,8 @@ namespace TerraKnight.Net
         static bool BeforeHit(HealthManager __instance, HitInstance hitInstance)
         {
             if (!puppetOf.TryGetValue(__instance, out var pup)) return true;
+            // The Knight's nail with the Nail item in hand: turned into a Terraria hit first (NailItem), which comes back here.
+            if (NailItem.Converts(__instance, hitInstance)) return true;
             var ctx = Context;
             Context = default;
             if (__instance.isDead || hitInstance.DamageDealt <= 0) return false;
@@ -461,6 +559,8 @@ namespace TerraKnight.Net
                 int clip = r.ReadInt16();
                 int frame = r.ReadByte();
                 int hp = r.ReadInt32();
+                int life = r.ReadInt32(), lifeMax = r.ReadInt32(), defense = r.ReadInt32();
+                var parts = ReadParts(r);
                 if (!ours) continue;
                 var world = local + shift;
                 if (!puppets.TryGetValue((scene, id), out var pup) || pup.Hm == null)
@@ -472,11 +572,21 @@ namespace TerraKnight.Net
                     }
                     var t = FindPath(scene, path, world);
                     var hm = t != null ? t.GetComponent<HealthManager>() : null;
-                    if (hm == null || puppetOf.ContainsKey(hm) || hm.isDead) continue;
+                    if (hm == null || puppetOf.ContainsKey(hm) || hm.isDead)
+                    {
+                        complete = false;
+                        continue;
+                    }
                     pup = MakePuppet(hm, scene, id, owner);
                 }
                 seenThisSnapshot.Add(pup.Hm);
                 Apply(pup, f, world, scale, rot, clip, frame, hp);
+                var info = EnemyStats.Of(pup.Hm);
+                info.Net = true;
+                info.NetLife = life;
+                info.NetLifeMax = lifeMax;
+                info.NetDefense = defense;
+                ApplyParts(pup, parts);
             }
             if (!ours) return;
             // Once every one of the owner's has been named (its path came), the local ones that aren't among them go.
@@ -550,8 +660,11 @@ namespace TerraKnight.Net
             puppets.Remove((p.Scene, p.Id));
             // By reference: a destroyed enemy (its scene unloaded) goes from the table too.
             puppetOf.Remove(p.Hm);
+            // A dead one stays as it is, its scripts still: its fight is over (a boss's FSM let go would start it again).
+            if (p.Dead) return;
             foreach (var f in p.Fsms) Thaw(f);
             if (p.Hm == null) return;
+            EnemyStats.Of(p.Hm).Net = false;
             for (int i = 0; i < p.Parts.Length; i++)
                 if (p.Parts[i] != null) p.Parts[i].enabled = p.PartOn[i];
             if (p.Body != null) p.Body.bodyType = p.BodyType;
@@ -562,9 +675,16 @@ namespace TerraKnight.Net
             var go = p.Hm.gameObject;
             p.Seen = Time.unscaledTime;
             bool active = (f & FActive) != 0;
+            // The local intro may have left an entire boss container inactive. Turning on
+            // only the HealthManager cannot make a child of that container visible.
+            if (active)
+                for (var parent = go.transform.parent; parent != null; parent = parent.parent)
+                    if (!parent.gameObject.activeSelf) parent.gameObject.SetActive(true);
             if (active && !go.activeSelf) go.SetActive(true);
-            else if (!active && go.activeSelf && (f & FDead) == 0) go.SetActive(false);
-            if ((f & FDead) != 0) return;
+            // Dead or not, put away with the owner's (a dead one's own corpse, made by its death here, stays). A dead one
+            // still up goes on as the owner's: a boss's death is its own scene (the fall, the burst, the bow, the leaving).
+            else if (!active && go.activeSelf && ((f & FDead) == 0 || p.Dead)) go.SetActive(false);
+            if ((f & FDead) != 0 && !p.Dead) return;
             if (p.Samples.Count > 0 && (p.Samples[p.Samples.Count - 1].P - world).sqrMagnitude > 64f) p.Samples.Clear();
             p.Samples.Add((Time.unscaledTime, world));
             while (p.Samples.Count > 12) p.Samples.RemoveAt(0);
@@ -573,7 +693,7 @@ namespace TerraKnight.Net
             var e = tr.eulerAngles;
             tr.eulerAngles = new Vector3(e.x, e.y, rot);
             if (p.Rend != null) p.Rend.enabled = (f & FRend) != 0;
-            if (hp > 0) p.Hm.hp = hp;
+            if (hp > 0 && !p.Dead) p.Hm.hp = hp;
             p.Clip = clip;
             p.Frame = frame;
             if (p.Anim != null && clip >= 0 && go.activeInHierarchy)
@@ -587,7 +707,12 @@ namespace TerraKnight.Net
             }
         }
 
-        /// <summary>EnemyDeath from a scene's owner: the puppet given its scripts back and killed the game's way.</summary>
+        /// <summary>
+        /// EnemyDeath from a scene's owner: the puppet killed here the game's way (HealthManager.Die: its corpse, its death's
+        /// effects, its geo, the book, its battle counted) with its scripts still and deaf, and kept a puppet: a boss whose
+        /// death is its FSM's own (the False Knight's fall, Hornet leaving, the Mantis Lords' bow) goes on as the owner's,
+        /// pose, clip and parts, instead of its FSM starting again from where it stood when it became a puppet.
+        /// </summary>
         public static void ReceiveDeath(int owner, BinaryReader r)
         {
             string scene = r.ReadString();
@@ -597,7 +722,9 @@ namespace TerraKnight.Net
             if (!puppets.TryGetValue((scene, id), out var p) || p.Hm == null) return;
             DevDeathsReceived++;
             var hm = p.Hm;
-            Release(p);
+            p.Dead = true;
+            EnemyStats.Of(hm).Net = false;
+            if (clones.Contains(hm.gameObject)) DropClone(hm.gameObject, 12f);
             if (!hm.gameObject.activeSelf) hm.gameObject.SetActive(true);
             if (hm.isDead) return;
             // A splatter would destroy it at once; a plain death leaves the corpse.
@@ -605,7 +732,35 @@ namespace TerraKnight.Net
             hm.Die(dir, type == AttackTypes.Splatter ? AttackTypes.Generic : type, true);
         }
 
-        public static void ReceiveHit(int from, BinaryReader r) { }
+        public static int DevHitsSent, DevHitsShown;
+
+        /// <summary>A hit on an enemy this game runs, whoever dealt it: the others' puppet of it shows the game's hit (its flash, its blood, its sound).</summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HealthManager), "TakeDamage")]
+        static void AfterTakeDamage(HealthManager __instance, HitInstance hitInstance)
+        {
+            if (__instance == null || !NetSession.Active || !Enabled || puppetOf.ContainsKey(__instance)) return;
+            if (!tracked.TryGetValue(__instance, out var t) || !Owned(t.Scene) || !Watched(t.Scene)) return;
+            var p = NetSession.Mine(Msg.EnemyHit);
+            p.W.Write(t.Scene);
+            p.W.Write(t.Id);
+            p.W.Write(hitInstance.GetActualDirection(__instance.transform));
+            NetSession.Send(p.Done());
+            DevHitsSent++;
+        }
+
+        /// <summary>EnemyHit from a scene's owner: the hit's own effects on the puppet here (EnemyHitEffects: the flash, the blood, the sound).</summary>
+        public static void ReceiveHit(int from, BinaryReader r)
+        {
+            string scene = r.ReadString();
+            int id = r.ReadInt32();
+            float dir = r.ReadSingle();
+            if (!puppets.TryGetValue((scene, id), out var p) || p.Hm == null || p.Dead || !p.Hm.gameObject.activeInHierarchy) return;
+            var fx = p.Hm.GetComponent<IHitEffectReciever>();
+            if (fx == null || (fx as Object) == null) return;
+            fx.RecieveHitEffect(dir);
+            DevHitsShown++;
+        }
 
         public static int DevBeatenSent, DevBeatenReceived;
 
@@ -654,8 +809,16 @@ namespace TerraKnight.Net
         /// <summary>Ownership moved: the scene's puppets and hidden ones are this game's again (the new owner's numbers come with its snapshots).</summary>
         public static void OwnerChanged(string scene)
         {
+            EnemyAttacks.OwnerChanged(scene);
+            EnemyTargets.OwnerChanged(scene);
+            SceneMirror.OwnerChanged(scene);
+            adopted.Remove(scene);
             foreach (var p in new List<Puppet>(puppets.Values))
-                if (p.Scene == scene) Release(p);
+                if (p.Scene == scene)
+                {
+                    Release(p);
+                    if (p.Hm != null && clones.Contains(p.Hm.gameObject)) DropClone(p.Hm.gameObject, 0f);
+                }
             Unhide(scene);
             var gone = new List<HealthManager>();
             foreach (var kv in tracked)
@@ -671,6 +834,9 @@ namespace TerraKnight.Net
         /// <summary>Each frame: the puppets eased along the owner's track (a tenth of a second behind); one the owner has stopped sending goes.</summary>
         public static void Tick()
         {
+            EnemyTargets.Tick();
+            EnemyAttacks.Tick();
+            SceneMirror.Tick();
             if (puppets.Count == 0) return;
             float t = Time.unscaledTime - 0.1f;
             List<Puppet> stale = null;
@@ -704,6 +870,7 @@ namespace TerraKnight.Net
                 bool own = p.Hm != null && RemoteOwned(p.Scene);
                 var hm = p.Hm;
                 Release(p);
+                if (hm != null && clones.Contains(hm.gameObject)) { DropClone(hm.gameObject, 0f); continue; }
                 if (own && hm != null && !hm.isDead && hm.gameObject.activeSelf)
                 {
                     hidden[hm] = p.Scene;

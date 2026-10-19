@@ -16,8 +16,9 @@ namespace TerraKnight.Items
         /// <summary>Estimated acquisition stage for documentation and loot planning; never a crafting gate.</summary>
         public readonly int StationStage;
         public readonly (ItemType Type, int Count)[] Ingredients;
-        /// <summary>A basic item's price in copper (a geo is 100); 0 for a real recipe.</summary>
-        public readonly int Cost;
+        /// <summary>A basic item's price in copper (a geo is 100), less with the Discount Card; 0 for a real recipe.</summary>
+        public int Cost => (int)Shop.Discounted(listCost);
+        readonly int listCost;
         public CraftEnvironment Environment;
 
         public Recipe(ItemType result, int count, string station, int stationStage, params (ItemType, int)[] ingredients)
@@ -35,7 +36,7 @@ namespace TerraKnight.Items
             Count = 1;
             Station = "";
             Ingredients = new (ItemType, int)[0];
-            Cost = cost;
+            listCost = cost;
         }
 
         /// <summary>A basic item bought for its value (or, while testing, anything for free).</summary>
@@ -87,6 +88,8 @@ namespace TerraKnight.Items
             result.AddRange(SupplementRecipes());
             result.AddRange(WallRecipes());
             result.AddRange(World.AreaBlocks.Recipes());
+            result.AddRange(Buckets.Recipes());
+            result.AddRange(World.RegionalFurniture.Recipes());
             result.AddRange(World.RegionalChests.Recipes());
             result.AddRange(FoodRecipes());
             result.AddRange(BossSummons.Recipes());

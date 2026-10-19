@@ -192,25 +192,25 @@ namespace TerraKnight.World
             CellKind L = g.Get(x - 1, y), R = g.Get(x + 1, y);
             if (s == 1)
             {
-                if (R == CellKind.Platform && g.GetSlope(x + 1, y) == 0) return 468;
+                if (TerraKnight.World.Cells.IsPlatform(R) && g.GetSlope(x + 1, y) == 0) return 468;
                 bool low = g.Get(x + 1, y - 1) != CellKind.Empty;
-                bool up = L != CellKind.Empty || (g.Get(x - 1, y + 1) == CellKind.Platform && g.GetSlope(x - 1, y + 1) == 1);
+                bool up = L != CellKind.Empty || (TerraKnight.World.Cells.IsPlatform(g.Get(x - 1, y + 1)) && g.GetSlope(x - 1, y + 1) == 1);
                 return low ? (up ? 180 : 396) : (up ? 360 : 432);
             }
             if (s == 2)
             {
-                if (L == CellKind.Platform && g.GetSlope(x - 1, y) == 0) return 450;
+                if (TerraKnight.World.Cells.IsPlatform(L) && g.GetSlope(x - 1, y) == 0) return 450;
                 bool low = g.Get(x - 1, y - 1) != CellKind.Empty;
-                bool up = R != CellKind.Empty || (g.Get(x + 1, y + 1) == CellKind.Platform && g.GetSlope(x + 1, y + 1) == 2);
+                bool up = R != CellKind.Empty || (TerraKnight.World.Cells.IsPlatform(g.Get(x + 1, y + 1)) && g.GetSlope(x + 1, y + 1) == 2);
                 return low ? (up ? 144 : 378) : (up ? 342 : 414);
             }
             const int Self = 1, Other = 2, None = 0;
-            int Side(CellKind k) => k == CellKind.Platform ? Self : Cells.Blocks(k) ? Other : None;
+            int Side(CellKind k) => TerraKnight.World.Cells.IsPlatform(k) ? Self : Cells.Blocks(k) ? Other : None;
             int left = Side(L), right = Side(R);
-            int ls = L == CellKind.Platform ? g.GetSlope(x - 1, y) : 0, rs = R == CellKind.Platform ? g.GetSlope(x + 1, y) : 0;
+            int ls = TerraKnight.World.Cells.IsPlatform(L) ? g.GetSlope(x - 1, y) : 0, rs = TerraKnight.World.Cells.IsPlatform(R) ? g.GetSlope(x + 1, y) : 0;
             // A "\" stair ending on our top-left corner, a "/" on our top-right.
-            if (left == None && g.Get(x - 1, y + 1) == CellKind.Platform && g.GetSlope(x - 1, y + 1) == 1) left = Self;
-            if (right == None && g.Get(x + 1, y + 1) == CellKind.Platform && g.GetSlope(x + 1, y + 1) == 2) right = Self;
+            if (left == None && TerraKnight.World.Cells.IsPlatform(g.Get(x - 1, y + 1)) && g.GetSlope(x - 1, y + 1) == 1) left = Self;
+            if (right == None && TerraKnight.World.Cells.IsPlatform(g.Get(x + 1, y + 1)) && g.GetSlope(x + 1, y + 1) == 2) right = Self;
             if (left == Self && ls == 2 && right != Self) right = None;
             if (right == Self && rs == 1 && left != Self) left = None;
             if (left == Self && right == Self) return ls == 2 && rs == 1 ? 252 : ls == 2 ? 216 : rs == 1 ? 234 : 0;
@@ -234,10 +234,10 @@ namespace TerraKnight.World
             if ((s != 1 && s != 2) || !g.InBounds(x, y - 1) || Cells.Blocks(g.Get(x, y - 1))) return -1;
             int nx = s == 1 ? x + 1 : x - 1;
             var n = g.Get(nx, y - 1);
-            bool solid = Cells.Blocks(n) || n == CellKind.Platform;
-            int ns = n == CellKind.Platform ? g.GetSlope(nx, y - 1) : 0;
+            bool solid = Cells.Blocks(n) || TerraKnight.World.Cells.IsPlatform(n);
+            int ns = TerraKnight.World.Cells.IsPlatform(n) ? g.GetSlope(nx, y - 1) : 0;
             if (!solid || ns == (s == 1 ? 2 : 1)) return -1;
-            bool flat = n == CellKind.Platform && ns == 0;
+            bool flat = TerraKnight.World.Cells.IsPlatform(n) && ns == 0;
             return s == 1 ? (flat ? 324 : 198) : (flat ? 306 : 162);
         }
     }

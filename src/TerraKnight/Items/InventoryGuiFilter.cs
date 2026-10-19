@@ -64,10 +64,14 @@ namespace TerraKnight.Items
             return true;
         }
 
-        /// <summary>The offered recipes cut down to the chosen entry (ResetRecipes).</summary>
+        /// <summary>
+        /// The offered recipes cut down to the chosen entry (ResetRecipes), while the crafting window is up.
+        /// The tabs live in the window only, so the column beside the bag (and the Guide's list) always offers
+        /// everything; the chosen tab is kept for the next time the window opens.
+        /// </summary>
         static void ApplyFilter()
         {
-            if (filterChosen != null) recipes.RemoveAll(r => { var d = ItemDb.Get(r.Result); return d != null && !filterChosen.Fits(d); });
+            if (grid && filterChosen != null) recipes.RemoveAll(r => { var d = ItemDb.Get(r.Result); return d != null && !filterChosen.Fits(d); });
         }
 
         static string FilterName(Filter f) => TerrariaText.Get(Lang.Culture, f.Key) ?? Lang.T(f.Zh);

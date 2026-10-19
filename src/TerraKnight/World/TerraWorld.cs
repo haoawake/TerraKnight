@@ -40,10 +40,23 @@ namespace TerraKnight.World
         /// <summary>A block in the way (platforms, torches and rope are not).</summary>
         public static bool IsSolid(int gx, int gy) => Cells.Blocks(Get(gx, gy));
 
+        /// <summary>A cell's liquid, 0..255 (World.LiquidSim), none outside the regions loaded.</summary>
+        public static int LiquidAt(int gx, int gy)
+        {
+            var r = RegionAt(gx, gy);
+            return r == null ? 0 : r.Grid.GetLiquid(gx - r.CellOffset.x, gy - r.CellOffset.y);
+        }
+
+        public static LiquidKind LiquidKindAt(int gx, int gy)
+        {
+            var r = RegionAt(gx, gy);
+            return r == null ? LiquidKind.Water : r.Grid.GetLiquidKind(gx - r.CellOffset.x, gy - r.CellOffset.y);
+        }
+
         /// <summary>Anything at all in the cell.</summary>
         public static bool IsOccupied(int gx, int gy) => Get(gx, gy) != CellKind.Empty;
 
-        public static bool IsPlatform(int gx, int gy) => Get(gx, gy) == CellKind.Platform;
+        public static bool IsPlatform(int gx, int gy) => TerraKnight.World.Cells.IsPlatform(Get(gx, gy));
 
         /// <summary>A platform's slope: 0 flat, 1 "\" (high on the left), 2 "/" (high on the right).</summary>
         public static int GetSlope(int gx, int gy)

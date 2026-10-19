@@ -39,7 +39,7 @@ namespace TerraKnight.Items
             {
                 Outlined(text, Lang.T("将武器或盔甲放到此处锻造"), labelStyle, color);
                 Outlined(new Rect(text.x, text.y + 24f * ui, text.width, text.height), Lang.T("锻造上限看武器的阶段：阶段 0 的武器 +5，每高一个阶段多 5 级"), labelStyle, color);
-                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲阶段 0 最多 +3，每高一阶段多 3 级，每级 +1 防御"), labelStyle, color);
+                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲阶段 0 最多 +3，每高一阶段多 3 级，每级 +1 防御（战士的头盔、胸甲和腿甲 +2）"), labelStyle, color);
                 forgeHover = false;
                 return;
             }

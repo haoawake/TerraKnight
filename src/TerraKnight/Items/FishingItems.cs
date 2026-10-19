@@ -171,6 +171,10 @@ namespace TerraKnight.Items
                     case ItemType.FishingBobberGlowingRainbow: d.Tooltip = "渔力增加10\n你的浮标现在会发光"; break;
                     case ItemType.LavaMoss: d.Name = "酸液苔藓"; d.Tooltip = "材料"; break;
                 }
+            // Every pole is swung (useStyle 1) to cast and to reel in, with Item1's swish (the wood and reinforced ones came
+            // in as materials, soundless).
+            foreach (var d in list)
+                if (d.FishingPower > 0) { d.HoldOut = false; d.UseSound ??= "Item_1"; }
         }
 
         static IEnumerable<(ItemType, int, ItemSource, int)> FishingSources()

@@ -212,6 +212,12 @@ namespace TerraKnight.Items
         public static long SellValue(ItemStack s) => s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type) ? 0 : (System.Math.Max(1L, PriceOf(s.Def) / 5) + Forging.SellBonus(s)) * s.Count;
 
         /// <summary>
+        /// A price paid with the Discount Card worn: four fifths (Pl:35648-35657 for a shop, Main.DrawInventory for the
+        /// Goblin's reforging); here the geo bought at a bench, the forging and the reforging too. Never under a copper.
+        /// </summary>
+        public static long Discounted(long price) => price > 0 && Equipment.Current.Discount ? System.Math.Max(1L, (long)(price * 0.8f)) : price;
+
+        /// <summary>
         /// What an item costs at the townsfolk's, in copper (a geo is 100): Terraria's value up to a
         /// silver, past it growing as the value's 0.8th power, so the dear end of Terraria's money
         /// (gold and platinum) stays within reach of Hallownest's geo and selling the drops of

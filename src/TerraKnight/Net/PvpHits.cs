@@ -87,7 +87,7 @@ namespace TerraKnight.Net
             bool crit = r.ReadBoolean();
             var rp = NetSession.Player(victim);
             if (rp == null || !rp.Visible) return;
-            UI.CombatText.Show(new Vector3(rp.Center.x, rp.Center.y + 0.9f, 0f), damage.ToString(), crit ? UI.CombatText.EnemyCrit : UI.CombatText.PlayerHurt, crit);
+            // The number over them is their own hurt's, sent from their game (Net.NetFx).
             if (attacker == NetSession.MySlot) TerraMod.Instance?.PlaySound("Player_Hit_" + Random.Range(0, 3), 0.6f);
         }
 

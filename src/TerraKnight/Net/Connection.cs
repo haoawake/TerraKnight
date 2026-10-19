@@ -26,6 +26,36 @@ namespace TerraKnight.Net
         public string Remote { get; }
         /// <summary>Bytes in and out so far.</summary>
         public long BytesIn, BytesOut;
+        /// <summary>Bytes waiting to be written, and the messages left out because too much was waiting.</summary>
+        long queued;
+        public long Queued => Interlocked.Read(ref queued);
+        public int Dropped;
+
+        /// <summary>
+        /// How much may wait to go out before what a later message replaces anyway is left out: a player's state, an
+        /// owner's enemy and scene snapshots, projectiles and minions, their dust and numbers. The rest (the world, chat,
+        /// deaths, hits, tiles, a seal) always goes. A slow link then falls behind by a moment instead of without end,
+        /// with ever more memory held for it.
+        /// </summary>
+        const long MaxQueued = 192 * 1024;
+
+        static bool Superseded(byte[] packet)
+        {
+            if (packet.Length < 3) return false;
+            switch ((Msg)packet[2])
+            {
+                case Msg.PlayerState:
+                case Msg.EnemySnapshot:
+                case Msg.ProjectileSnapshot:
+                case Msg.MinionSnapshot:
+                case Msg.EnemyAttacks:
+                case Msg.NetFx:
+                case Msg.SceneMirror:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         /// <summary>Seconds since the last message came in.</summary>
         public double Silence => (DateTime.UtcNow.Ticks - Interlocked.Read(ref lastReceived)) / (double)TimeSpan.TicksPerSecond;
@@ -45,8 +75,10 @@ namespace TerraKnight.Net
         public void Send(byte[] packet)
         {
             if (closed || packet == null) return;
+            if (Interlocked.Read(ref queued) > MaxQueued && Superseded(packet)) { Interlocked.Increment(ref Dropped); return; }
+            Interlocked.Add(ref queued, packet.Length);
             try { outbox.Add(packet); }
-            catch (InvalidOperationException) { }
+            catch (InvalidOperationException) { Interlocked.Add(ref queued, -packet.Length); }
         }
 
         /// <summary>The next whole message received (its type and fields), if one is waiting.</summary>
@@ -96,6 +128,7 @@ namespace TerraKnight.Net
                 {
                     stream.Write(p, 0, p.Length);
                     Interlocked.Add(ref BytesOut, p.Length);
+                    Interlocked.Add(ref queued, -p.Length);
                 }
                 stream.Flush();
             }

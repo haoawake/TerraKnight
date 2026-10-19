@@ -71,6 +71,7 @@ namespace TerraKnight.World
                 s.Damage += Mathf.Clamp(a.Power, 0, 1000);
                 if (s.Damage < 100) return true;
                 WorldItems.NetDrop(ItemStack.Of(s.Spec.Item), s.Scene, s.Local + Vector2.up * (s.Spec.H * 8f * Px));
+                if (RegionalFurniture.BaseKind(s.Kind) == StationKind.Bed) Beds.Gone(s.Scene,s.Local);
                 Remove(i);
                 DevBroken++;
                 return true;
@@ -126,6 +127,48 @@ namespace TerraKnight.World
             return true;
         }
 
+        /// <summary>
+        /// A player's Quick Stack to Nearby Chests into the host's chests (Chest.ServerPlaceItem, PutItemInNearbyChest): each
+        /// stack onto the named chests, nearest first, that hold that item; a currency into the one it is meant for (its
+        /// target). None that another player has open, none in a scene that player isn't in. What is left of each stack,
+        /// and how many moved; null for a request out of bounds.
+        /// </summary>
+        internal static WorldSync.Stack[] NetQuickStack(WorldSync.Action a, int slot, System.Func<string, bool> busy, out int moved)
+        {
+            moved = 0;
+            if (a.Keys == null || a.Slots == null || a.Keys.Length > 64 || a.Slots.Length > Inventory.Total) return null;
+            var player = slot == NetSession.MySlot ? null : NetSession.Player(slot);
+            var near = new Chest[a.Keys.Length];
+            for (int k = 0; k < a.Keys.Length; k++)
+            {
+                var c = chests.Find(ch => WorldSync.Key("c", ch.Scene, ch.Local) == a.Keys[k]);
+                if (c == null || busy(a.Keys[k])) continue;
+                if (slot != NetSession.MySlot && (player == null || !player.HasState
+                    || (c.Scene != player.Latest.Scene && !player.Loaded.Contains(c.Scene) && !player.In.Contains(c.Scene)))) continue;
+                near[k] = c;
+            }
+            var left = new WorldSync.Stack[a.Slots.Length];
+            for (int i = 0; i < a.Slots.Length; i++)
+            {
+                var s = a.Slots[i]?.Item() ?? default;
+                int target = a.Targets != null && i < a.Targets.Length ? a.Targets[i] : -1;
+                if (!s.IsEmpty && target >= 0)
+                {
+                    if (target < near.Length && near[target] != null && PutIn(near[target], ref s)) moved++;
+                }
+                else if (!s.IsEmpty)
+                    foreach (var c in near)
+                    {
+                        if (c == null || s.IsEmpty || !Holds(c, s.Type)) continue;
+                        int before = s.Count;
+                        PutIn(c, ref s);
+                        if (s.IsEmpty || s.Count != before) moved++;
+                    }
+                left[i] = WorldSync.Stack.From(s);
+            }
+            return left;
+        }
+
         internal static void NetOpen(string key, WorldSync.Stack[] slots)
         {
             var c = chests.Find(ch => WorldSync.Key("c", ch.Scene, ch.Local) == key);
@@ -144,21 +187,21 @@ namespace TerraKnight.World
         internal static bool NetOverlaps(string scene, Rect box)
         {
             foreach (var c in chests)
-                if (c.Scene == scene && new Rect(c.Local.x - Width / 2f, c.Local.y, Width, Height).Overlaps(box)) return true;
+                if (c.Scene == scene && new Rect(c.Local.x - WidthOf(c.Style) / 2f, c.Local.y, WidthOf(c.Style), Height).Overlaps(box)) return true;
             return false;
         }
 
         internal static bool NetRestsOn(string scene, Rect box)
         {
             foreach (var c in chests)
-                if (c.Scene == scene && c.Local.x + Width / 2f > box.xMin + 0.01f && c.Local.x - Width / 2f < box.xMax - 0.01f && Mathf.Abs(c.Local.y - box.yMax) < 0.06f) return true;
+                if (c.Scene == scene && c.Local.x + WidthOf(c.Style) / 2f > box.xMin + 0.01f && c.Local.x - WidthOf(c.Style) / 2f < box.xMax - 0.01f && Mathf.Abs(c.Local.y - box.yMax) < 0.06f) return true;
             return false;
         }
 
         internal static bool NetPlace(WorldSync.Action a)
         {
             if (string.IsNullOrEmpty(a.Scene)) return false;
-            var box = new Rect(a.X - Width / 2f, a.Y, Width, Height);
+            var box = new Rect(a.X - WidthOf(a.Kind) / 2f, a.Y, WidthOf(a.Kind), Height);
             if (NetOverlaps(a.Scene, box) || Stations.NetOverlaps(a.Scene, box)) return false;
             var at = new Vector2(a.X, a.Y);
             chests.Add(new Chest { Scene = a.Scene, Local = at, Region = RegionNamed(a.Scene), Style = a.Kind });

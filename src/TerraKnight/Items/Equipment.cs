@@ -107,6 +107,7 @@ namespace TerraKnight.Items
             b.Add(MeleeSpecials.DynamicBonuses());
             b.Add(Player.PotionBuffs.Bonuses());
             b.MagicDamage -= Player.PlayerBuffs.ManaSicknessPenalty;
+            BossMastery.Apply(ref b);
             Current = b;
         }
 

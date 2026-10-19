@@ -149,10 +149,13 @@ namespace TerraKnight.Town
             Try(q == 10, ItemType.AnglerHat);
             Try(q == 15, ItemType.AnglerVest);
             Try(q == 20, ItemType.AnglerPants);
+            Try(q == 25, ItemType.BottomlessWaterBucket);
             Try(q == 30, ItemType.GoldenFishingRod);
             Try(q > 75 && Roll(250), ItemType.GoldenFishingRod);
             Try(hard && q > 25 && Roll(100), ItemType.HotlineFishingHook);
             Try(hard && q > 10 && Roll(70), ItemType.FinWings);
+            Try(q > 10 && Roll(70), ItemType.BottomlessWaterBucket);
+            Try(q > 10 && Roll(70), ItemType.SuperAbsorbantSponge);
             Try(Roll(60), ItemType.FishHook);
             if (!main)
             {

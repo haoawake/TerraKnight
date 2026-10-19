@@ -34,6 +34,18 @@ namespace TerraKnight.Effects
             public bool Additive;
         }
 
+        /// <summary>A gore as another player's game made it (Net.NetFx).</summary>
+        internal struct GoreState
+        {
+            public bool Active;
+            public int Type;
+            public Vector2 Position, Velocity;
+            public float Scale, Rotation;
+            public int Alpha;
+            public bool Falls;
+            public int TimeLeft;
+        }
+
         struct Gore
         {
             public bool Active;
@@ -112,7 +124,54 @@ namespace TerraKnight.Effects
                 // Torch dust: Dust.NewDust's own start for the torch family.
                 dust[i].Velocity = new Vector2(dust[i].Velocity.x * 0.3f, Random.Range(-10, 6) * 0.1f);
             }
+            if (NetSending) fresh.Add(i);
             return i;
+        }
+
+        // ------------------------------------------------------------------ a LAN game (Net.NetFx)
+
+        /// <summary>The dust made this frame, sent at its end as its makers left it.</summary>
+        readonly List<int> fresh = new List<int>();
+        int sendingFrame = -1;
+        bool sending;
+
+        /// <summary>What is made here now goes to the others too (once a frame: someone else has this scene).</summary>
+        bool NetSending
+        {
+            get
+            {
+                if (Net.NetFx.Applying) return false;
+                if (sendingFrame != Time.frameCount)
+                {
+                    sendingFrame = Time.frameCount;
+                    sending = Net.NetSession.Active && Net.NetFx.Sending;
+                }
+                return sending;
+            }
+        }
+
+        void LateUpdate()
+        {
+            if (fresh.Count == 0) { Net.NetFx.Flush(); return; }
+            foreach (int i in fresh) if (dust[i].Active) Net.NetFx.QueueDust(dust[i]);
+            fresh.Clear();
+            Net.NetFx.Flush();
+        }
+
+        /// <summary>A dust another player's game made, as it was.</summary>
+        internal void NetDust(Dust d)
+        {
+            int i = AllocateDust();
+            dust[i] = d;
+        }
+
+        /// <summary>A gore another player's game made, as it was.</summary>
+        internal void NetGore(GoreState g)
+        {
+            int i = System.Array.FindIndex(gore, x => !x.Active);
+            if (i < 0) return;
+            gore[i] = new Gore { Active = true, Type = g.Type, Position = g.Position, Velocity = g.Velocity, Scale = g.Scale, Rotation = g.Rotation,
+                Alpha = g.Alpha, Falls = g.Falls, TimeLeft = g.TimeLeft };
         }
 
         public ref Dust this[int index] => ref dust[index];
@@ -170,6 +229,12 @@ namespace TerraKnight.Effects
             {
                 gore[i].Alpha = 100;
                 gore[i].Scale = 0.7f;
+            }
+            if (NetSending)
+            {
+                var g = gore[i];
+                Net.NetFx.QueueGore(new GoreState { Active = true, Type = g.Type, Position = g.Position, Velocity = g.Velocity, Scale = g.Scale,
+                    Rotation = g.Rotation, Alpha = g.Alpha, Falls = g.Falls, TimeLeft = g.TimeLeft });
             }
         }
 

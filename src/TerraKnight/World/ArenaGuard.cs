@@ -85,8 +85,17 @@ namespace TerraKnight.World
             if (gates.Count == 0) return false;
             string room = Room(hm.gameObject.scene.name);
             Vector2 a = hero.GetComponent<BoxCollider2D>().bounds.center, b = hm.transform.position;
+            // The Knight between gates of the room on both sides (at his height): in the arena. What of the fight goes to
+            // or past a gate is still fought from there (Grimm's firebats from the tent's two ends, beyond its gates).
+            bool gateLeft = false, gateRight = false;
+            foreach (var g in gates)
+            {
+                if (g.Scene != room || a.y < g.Bottom - 1.5f || a.y > g.Top + 1.5f) continue;
+                if (g.X < a.x) gateLeft = true;
+                else gateRight = true;
+            }
+            if (gateLeft && gateRight) return false;
             float lo = Mathf.Min(a.x, b.x), hi = Mathf.Max(a.x, b.x);
-            float low = Mathf.Min(a.y, b.y), high = Mathf.Max(a.y, b.y);
             foreach (var g in gates)
             {
                 if (g.Scene != room) continue;

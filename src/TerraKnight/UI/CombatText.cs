@@ -35,12 +35,14 @@ namespace TerraKnight.UI
 
         public static void Show(Vector3 world, string text, Color color, bool big = false)
         {
-            // The damage the player deals, counted for the DPS Meter.
-            if ((color == EnemyHurt || color == EnemyCrit) && int.TryParse(text, out int dealt))
+            // The damage the player deals, counted for the DPS Meter (another player's, shown here too, isn't).
+            if (!Net.NetFx.Applying && (color == EnemyHurt || color == EnemyCrit) && int.TryParse(text, out int dealt))
             {
                 InfoAccessories.Dealt(dealt);
                 DevEnemyNumbers++;
             }
+            // A LAN game: the others with this scene see the number too.
+            if (Net.NetSession.Active) Net.NetFx.Text(world, text, color, big);
             entries.Add(new Entry
             {
                 World = world,

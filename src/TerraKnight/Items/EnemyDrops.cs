@@ -91,6 +91,13 @@ namespace TerraKnight.Items
 
         internal static IReadOnlyList<Drop> At(string record,int stage,bool first,bool entry,bool final) =>
             record != null && table.TryGetValue(record,out var e) ? EssentialDrops.With(record, stage, ProgressionLoot.Of(record,e,stage,first,entry,final)) : none;
+
+        /// <summary>A kill's drops in that scene (its area's), as Roll makes them there: now, or at a stage.</summary>
+        public static IReadOnlyList<Drop> In(string record, string scene) => record != null && table.TryGetValue(record, out var e)
+            ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,e,Shop.UnlockedStage(),Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene)) : none;
+
+        internal static IReadOnlyList<Drop> At(string record,int stage,bool first,bool entry,bool final,string scene) =>
+            record != null && table.TryGetValue(record,out var e) ? EssentialDrops.With(record, stage, ProgressionLoot.Of(record,e,stage,first,entry,final,scene)) : none;
         internal static IReadOnlyList<Drop> LegacyOf(string record) => record!=null && table.TryGetValue(record,out var e) ? e.Drops ?? none : none;
         internal static Entry EntryFor(string record) => record!=null && table.TryGetValue(record,out var e) ? e : default;
 

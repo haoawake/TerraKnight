@@ -60,6 +60,11 @@ namespace TerraKnight.Net
             public bool Placed, Sky;
             public Stack[] Slots;
             public Record[] Motion;
+            /// <summary>A quick stack's chests (nearest first), and each stack's own chest among them (a currency's; -1: any that holds it).</summary>
+            public string[] Keys;
+            public int[] Targets;
+            /// <summary>The sender's own: the bag slots a quick stack's stacks came out of, for what comes back.</summary>
+            [JsonIgnore] public int[] FromSlots;
         }
 
         sealed class Result
@@ -77,7 +82,7 @@ namespace TerraKnight.Net
         public static bool Guest => NetSession.Active && !NetSession.Hosting;
         public static bool CanInteract => !NetSession.Active || Ready;
         public static int DevSnapshots, DevActions, DevRejected, DevPickups;
-        static float nextSnapshot, nextRequest;
+        static float nextSnapshot, nextRequest, nextChestFlush;
         static int serial;
         static readonly Dictionary<string, string> published = new Dictionary<string, string>();
         static readonly Dictionary<string, Record> incoming = new Dictionary<string, Record>();
@@ -101,12 +106,26 @@ namespace TerraKnight.Net
         static List<Record> Capture()
         {
             var list = new List<Record>();
-            list.AddRange(Stations.NetRecords());
-            list.AddRange(Chests.NetRecords());
-            list.AddRange(LifeCrystals.NetRecords());
+            list.AddRange(Furniture());
             list.AddRange(WorldItems.NetRecords());
+            list.AddRange(Layers(null));
+            return list;
+        }
+
+        static IEnumerable<Record> Furniture()
+        {
+            foreach (var r in Stations.NetRecords()) yield return r;
+            foreach (var r in Chests.NetRecords()) yield return r;
+            foreach (var r in LifeCrystals.NetRecords()) yield return r;
+        }
+
+        /// <summary>The terrain, walls and torch styles changed in a scene (all scenes: null), a record a chunk of 512 cells.</summary>
+        static List<Record> Layers(string only)
+        {
+            var list = new List<Record>();
             foreach (var scene in WorldEdits.All)
             {
+                if (only != null && scene.Key != only) continue;
                 var chunks = new Dictionary<int, List<long>>();
                 foreach (var cell in scene.Value)
                 {
@@ -122,6 +141,7 @@ namespace TerraKnight.Net
             }
             foreach (var scene in WorldWalls.All)
             {
+                if (only != null && scene.Key != only) continue;
                 var chunks = new Dictionary<int, List<long>>();
                 foreach (var wall in scene.Value)
                 {
@@ -135,8 +155,102 @@ namespace TerraKnight.Net
                     list.Add(new Record { Key = "w:" + scene.Key + ":" + chunk.Key, Scene = scene.Key, Walls = chunk.Value.ToArray() });
                 }
             }
-            foreach (var (key, scene, torches) in RegionalTorches.NetRecords()) list.Add(new Record { Key = key, Scene = scene, Torches = torches });
+            foreach (var (key, scene, torches) in RegionalTorches.NetRecords())
+                if (only == null || scene == only) list.Add(new Record { Key = key, Scene = scene, Torches = torches });
             return list;
+        }
+
+        // ------------------------------------------------------------------ the host's changes, cheaply
+
+        /// <summary>Each published record's signature (Sig): a record whose signature is unchanged isn't written out again.</summary>
+        static readonly Dictionary<string, ulong> signed = new Dictionary<string, ulong>();
+        /// <summary>The published keys by scope ("i:", "c:"..., and "t:scene", "w:scene", "r:scene" for the layers).</summary>
+        static readonly Dictionary<string, HashSet<string>> scoped = new Dictionary<string, HashSet<string>>();
+        /// <summary>Scenes whose terrain or walls changed since they were last looked at (TerrainRegion's edits).</summary>
+        static readonly HashSet<string> dirtyScenes = new HashSet<string>();
+        static bool furnitureDirty = true, editsHooked;
+        static float nextFurniture;
+        static int layerCursor;
+        public static int DevSigned, DevWritten;
+
+        static string ScopeOf(string key)
+        {
+            if (key.Length > 2 && (key[0] == 't' || key[0] == 'w' || key[0] == 'r') && key[1] == ':')
+            {
+                int cut = key.LastIndexOf(':');
+                return cut > 2 ? key.Substring(0, cut) : key.Substring(0, 2);
+            }
+            return key.Length >= 2 ? key.Substring(0, 2) : key;
+        }
+
+        static void HookEdits()
+        {
+            if (editsHooked) return;
+            editsHooked = true;
+            TerrainRegion.Edited += (region, x, y) => { if (NetSession.Hosting && region != null && region.SceneName != null) dirtyScenes.Add(region.SceneName); };
+            TerrainRegion.WallEdited += (region, x, y) => { if (NetSession.Hosting && region != null && region.SceneName != null) dirtyScenes.Add(region.SceneName); };
+        }
+
+        /// <summary>
+        /// A record's signature: its fields hashed (a dropped item's place to a 64th of a unit, and its age left out, as it
+        /// counts up every tick), so the host writes a record out as JSON only when something the others see of it changed.
+        /// </summary>
+        static ulong Sig(Record r)
+        {
+            ulong h = 14695981039346656037UL;
+            void Mix(long v) { h ^= (ulong)v; h *= 1099511628211UL; }
+            void Str(string t) { if (t == null) { Mix(-1); return; } foreach (char c in t) Mix(c); Mix(t.Length); }
+            Str(r.Key);
+            Str(r.Scene);
+            bool item = r.Key.StartsWith("i:", StringComparison.Ordinal);
+            Mix(Mathf.RoundToInt(r.X * 64f)); Mix(Mathf.RoundToInt(r.Y * 64f));
+            Mix(Mathf.RoundToInt(r.Vx * 16f)); Mix(Mathf.RoundToInt(r.Vy * 16f));
+            Mix(r.Kind); Mix(r.Seed); Mix(r.Dropper); Mix(r.Owner); Mix(r.Prefix); Mix(r.Forge);
+            Mix(item ? (r.Delay > 0 ? 1 : 0) : r.Delay);
+            if (!item) Mix(r.Age);
+            Mix((r.Placed ? 1 : 0) | (r.Taken ? 2 : 0) | (r.Sky ? 4 : 0));
+            if (r.Slots != null) foreach (var st in r.Slots) { if (st == null) Mix(-2); else { Mix(st.Type); Mix(st.Count); Mix(st.Favorite ? 1 : 0); Mix(st.Prefix); Mix(st.Forge); } }
+            if (r.Cells != null) { Mix(r.Cells.Length); foreach (long c in r.Cells) Mix(c); }
+            if (r.Walls != null) { Mix(r.Walls.Length); foreach (long c in r.Walls) Mix(c); }
+            if (r.Torches != null) { Mix(r.Torches.Length); foreach (long c in r.Torches) Mix(c); }
+            return h;
+        }
+
+        /// <summary>One scope's records now: the changed ones to everyone, the gone ones taken away.</summary>
+        static void Publish(string scopePrefix, bool exact, IEnumerable<Record> records)
+        {
+            var now = new HashSet<string>();
+            foreach (var r in records)
+            {
+                if (r?.Key == null) continue;
+                now.Add(r.Key);
+                ulong sig = Sig(r);
+                DevSigned++;
+                if (signed.TryGetValue(r.Key, out ulong was) && was == sig && published.ContainsKey(r.Key)) continue;
+                signed[r.Key] = sig;
+                string json = JsonConvert.SerializeObject(r);
+                DevWritten++;
+                if (published.TryGetValue(r.Key, out var before) && before == json) continue;
+                published[r.Key] = json;
+                string scope = ScopeOf(r.Key);
+                if (!scoped.TryGetValue(scope, out var keys)) scoped[scope] = keys = new HashSet<string>();
+                keys.Add(r.Key);
+                SendState(255, 1, r.Key, json);
+            }
+            // What this scope held and holds no more.
+            var gone = new List<string>();
+            foreach (var kv in scoped)
+            {
+                if (exact ? kv.Key != scopePrefix : !kv.Key.StartsWith(scopePrefix, StringComparison.Ordinal)) continue;
+                foreach (var key in kv.Value) if (!now.Contains(key)) gone.Add(key);
+            }
+            foreach (var key in gone)
+            {
+                published.Remove(key);
+                signed.Remove(key);
+                if (scoped.TryGetValue(ScopeOf(key), out var keys)) keys.Remove(key);
+                SendState(255, 2, key, "");
+            }
         }
 
         public static void Tick()
@@ -145,23 +259,8 @@ namespace TerraKnight.Net
             if (NetSession.Hosting)
             {
                 Ready = true;
-                if (Time.unscaledTime < nextSnapshot && waiting.Count == 0) return;
-                nextSnapshot = Time.unscaledTime + 0.1f;
-                var current = new Dictionary<string, string>();
-                foreach (var record in Capture()) current[record.Key] = JsonConvert.SerializeObject(record);
-                foreach (var kv in current)
-                    if (!published.TryGetValue(kv.Key, out var before) || before != kv.Value) SendState(255, 1, kv.Key, kv.Value);
-                foreach (var key in published.Keys)
-                    if (!current.ContainsKey(key)) SendState(255, 2, key, "");
-                published.Clear();
-                foreach (var kv in current) published[kv.Key] = kv.Value;
-                foreach (int slot in waiting)
-                {
-                    SendState(slot, 0, "", "");
-                    foreach (var kv in current) SendState(slot, 1, kv.Key, kv.Value);
-                    SendState(slot, 3, "", "");
-                }
-                waiting.Clear();
+                HookEdits();
+                if (Time.unscaledTime >= nextSnapshot || waiting.Count > 0) HostTick();
             }
             else if (!Ready && Time.unscaledTime >= nextRequest)
             {
@@ -170,9 +269,68 @@ namespace TerraKnight.Net
             }
             if (Ready)
             {
-                Chests.NetFlush();
+                // The open chest's slots compared (as JSON) ten times a second, not every frame.
+                if (Time.unscaledTime >= nextChestFlush) { nextChestFlush = Time.unscaledTime + 0.1f; Chests.NetFlush(); }
                 WorldItems.NetFlushMotion();
             }
+        }
+
+        /// <summary>
+        /// The host's world to the others, ten times a second, by what can have changed: the lying items each time; the
+        /// furniture (stations, chests, crystals) after an action on it and every two seconds; the terrain, walls and torch
+        /// styles of a scene edited since, and of one more scene each time round (so every scene is looked at again). A record
+        /// is written out only when its signature changed. A player joining gets the whole world first.
+        /// </summary>
+        static void HostTick()
+        {
+            nextSnapshot = Time.unscaledTime + 0.1f;
+            if (waiting.Count > 0)
+            {
+                // Everything, for the newcomers (and the others brought up to date with it).
+                Publish("i:", true, WorldItems.NetRecords());
+                Publish("s:", true, Stations.NetRecords());
+                Publish("c:", true, Chests.NetRecords());
+                Publish("l:", true, LifeCrystals.NetRecords());
+                var layers = Layers(null);
+                Publish("t:", false, layers.FindAll(r => r.Key.StartsWith("t:", StringComparison.Ordinal)));
+                Publish("w:", false, layers.FindAll(r => r.Key.StartsWith("w:", StringComparison.Ordinal)));
+                Publish("r:", false, layers.FindAll(r => r.Key.StartsWith("r:", StringComparison.Ordinal)));
+                dirtyScenes.Clear();
+                furnitureDirty = false;
+                nextFurniture = Time.unscaledTime + 2f;
+                foreach (int slot in waiting)
+                {
+                    SendState(slot, 0, "", "");
+                    foreach (var kv in published) SendState(slot, 1, kv.Key, kv.Value);
+                    SendState(slot, 3, "", "");
+                }
+                waiting.Clear();
+                return;
+            }
+            Publish("i:", true, WorldItems.NetRecords());
+            if (furnitureDirty || Time.unscaledTime >= nextFurniture)
+            {
+                furnitureDirty = false;
+                nextFurniture = Time.unscaledTime + 2f;
+                Publish("s:", true, Stations.NetRecords());
+                Publish("c:", true, Chests.NetRecords());
+                Publish("l:", true, LifeCrystals.NetRecords());
+            }
+            // One more scene round the edited ones, in turn.
+            var scenes = new List<string>();
+            foreach (var kv in WorldEdits.All) if (!scenes.Contains(kv.Key)) scenes.Add(kv.Key);
+            foreach (var kv in WorldWalls.All) if (!scenes.Contains(kv.Key)) scenes.Add(kv.Key);
+            foreach (var key in scoped.Keys)
+                if (key.Length > 2 && key[1] == ':' && key[0] != 'i' && key[0] != 's' && key[0] != 'c' && key[0] != 'l' && !scenes.Contains(key.Substring(2))) scenes.Add(key.Substring(2));
+            if (scenes.Count > 0) dirtyScenes.Add(scenes[layerCursor++ % scenes.Count]);
+            foreach (var scene in new List<string>(dirtyScenes))
+            {
+                var layers = Layers(scene);
+                Publish("t:" + scene, true, layers.FindAll(r => r.Key.StartsWith("t:", StringComparison.Ordinal)));
+                Publish("w:" + scene, true, layers.FindAll(r => r.Key.StartsWith("w:", StringComparison.Ordinal)));
+                Publish("r:" + scene, true, layers.FindAll(r => r.Key.StartsWith("r:", StringComparison.Ordinal)));
+            }
+            dirtyScenes.Clear();
         }
 
         public static void RequestSnapshot(int slot) => waiting.Add(slot);
@@ -312,6 +470,7 @@ namespace TerraKnight.Net
             if (highestRequest.TryGetValue(slot, out int highest) && a.Id <= highest) { SendResult(slot, result); return; }
             highestRequest[slot] = a.Id;
             DevActions++;
+            if (a.Op != "motion" && a.Op != "claim" && a.Op != "drop") furnitureDirty = true;
             // All actions are processed sequentially on the host main thread. A request's result
             // is cached before responding, so a repeated request never spends or awards twice.
             switch (a.Op)
@@ -332,6 +491,10 @@ namespace TerraKnight.Net
                 case "claim":
                     WorldItems.NetClaim(a, slot, out result.Type, out result.Count, out result.Prefix, out result.Forge);
                     result.Ok = result.Count > 0;
+                    break;
+                case "stack":
+                    result.Slots = Chests.NetQuickStack(a, slot, key => leases.ContainsKey(key), out result.Count);
+                    result.Ok = result.Slots != null;
                     break;
                 case "lease":
                     if (!leases.ContainsKey(a.Key) || leases[a.Key] == slot)
@@ -397,15 +560,65 @@ namespace TerraKnight.Net
                     got.Prefix = result.Prefix;
                     got.Forge = result.Forge;
                     var hero = HeroController.SilentInstance;
-                    if (TerraMod.Instance == null || !Containers.AutoSell(TerraMod.Instance.Inventory, got, hero != null ? (Vector2)hero.transform.position : Vector2.zero)) Give(got);
+                    Vector2 at = hero != null ? (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center : Vector2.zero;
+                    // A heart or a star heals or gives mana as it is taken, never into the bag.
+                    if (WorldItems.TakeAtOnce(got, at)) { }
+                    else if (TerraMod.Instance == null || !Containers.AutoSell(TerraMod.Instance.Inventory, got, at)) Give(got);
                     DevPickups++;
                 }
             }
+            else if (result.Op == "stack") Restack(action, result);
             else if (!result.Ok && action.Count > 0 && (result.Op == "station" || result.Op == "chest"))
             {
                 // The caller consumed one item on submitting placement; rejection refunds it.
                 Give(result.Op == "chest" ? RegionalChests.ItemOf(action.Kind) : Stations.ItemOf((StationKind)action.Kind), 1);
                 Notice("放置位置已被占用，物品已退回");
+            }
+        }
+
+        public static int DevStacked, DevStackReturned;
+
+        /// <summary>
+        /// Quick Stack to Nearby Chests onto the host's chests (Chests.QuickStackNearby): the stacks out of their bag slots
+        /// now, sent with the chests' keys; what the host had no room for comes back (Restack). How many stacks went.
+        /// </summary>
+        public static int QuickStack(Inventory inv, string[] keys, List<(int Slot, ItemStack Stack, int Target)> stacks)
+        {
+            if (!CanInteract || stacks.Count == 0 || keys.Length == 0) return 0;
+            var a = new Action { Op = "stack", Keys = keys, Slots = new Stack[stacks.Count], Targets = new int[stacks.Count], FromSlots = new int[stacks.Count] };
+            for (int i = 0; i < stacks.Count; i++)
+            {
+                a.Slots[i] = Stack.From(stacks[i].Stack);
+                a.Targets[i] = stacks[i].Target;
+                a.FromSlots[i] = stacks[i].Slot;
+                inv.Slots[stacks[i].Slot] = default;
+            }
+            Submit(a);
+            return stacks.Count;
+        }
+
+        /// <summary>A quick stack's answer: what is left of each stack back into its slot (else the bag, else the floor); all of it with no answer.</summary>
+        static void Restack(Action action, Result result)
+        {
+            var mod = TerraMod.Instance;
+            if (mod == null || action.Slots == null) return;
+            var inv = mod.Inventory;
+            for (int i = 0; i < action.Slots.Length; i++)
+            {
+                var back = result != null && result.Ok && result.Slots != null && i < result.Slots.Length ? result.Slots[i]?.Item() ?? default : action.Slots[i]?.Item() ?? default;
+                var sent = action.Slots[i]?.Item() ?? default;
+                if (result != null && result.Ok && sent.Count > back.Count) DevStacked++;
+                if (back.IsEmpty) continue;
+                DevStackReturned++;
+                int at = action.FromSlots != null && i < action.FromSlots.Length ? action.FromSlots[i] : -1;
+                if (at >= 0 && at < inv.Slots.Length && inv.Slots[at].IsEmpty) { inv.Slots[at] = back; continue; }
+                int left = inv.Pickup(back);
+                var hero = HeroController.SilentInstance;
+                if (left > 0 && hero != null)
+                {
+                    back.Count = left;
+                    WorldItems.Drop(back, hero.transform.position);
+                }
             }
         }
 
@@ -469,11 +682,14 @@ namespace TerraKnight.Net
         public static void Reset()
         {
             bool wasGuestWorld = personal != null;
+            // A quick stack the host never answered: the stacks back to the player.
+            foreach (var a in pending.Values) if (a.Op == "stack") Restack(a, null);
             if (personal != null && TerrainSystem.Current != null) Install(personal);
             personal = null;
             Ready = receiving = leasePending = false;
             ownLease = lastChest = null;
             incoming.Clear(); published.Clear(); waiting.Clear(); results.Clear(); pending.Clear(); leases.Clear(); throttled.Clear();
+            signed.Clear(); scoped.Clear(); dirtyScenes.Clear(); furnitureDirty = true;
             resultOrder.Clear(); highestRequest.Clear();
             nextSnapshot = nextRequest = 0f;
             if (wasGuestWorld) WorldItems.NetClear();

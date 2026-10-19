@@ -466,23 +466,33 @@ namespace TerraKnight.Player
         }
 
         /// <summary>
-        /// The Featherfall potion (Pl:27222-27231): falling, gravity a third (a tenth holding up)
-        /// unless down is held; no fall damage meanwhile.
+        /// The Featherfall potion (slowFall): never any fall damage, the fall's start following the
+        /// player every tick down held or not (Pl:25574); falling, gravity a third (a tenth holding
+        /// up) and at most a third of the fall speed (holding up, past a fifth of it, back to a
+        /// tenth), unless down is held (Pl:27222-27231, 27569-27590). Upside down with the Gravity
+        /// Globe or the Gravitation potion the same, the other way.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
         static void SlowFall(HeroController __instance, Rigidbody2D ___rb2d)
         {
             var mod = TerraMod.Instance;
-            if (mod == null || !Equipment.Current.SlowFall || __instance.cState.onGround || __instance.cState.dead || GrapplingHook.IsLatched) return;
-            if (TerraMovement.DownHeld || TerraMovement.Flying) return;
+            if (mod == null || !Equipment.Current.SlowFall || __instance.cState.onGround || __instance.cState.dead) return;
+            mod.ResetFall();
+            if (GrapplingHook.IsLatched || TerraMovement.DownHeld || TerraMovement.Flying) return;
             var v = ___rb2d.linearVelocity;
-            if (v.y >= 0f) return;
-            float g = -Physics2D.gravity.y * ___rb2d.gravityScale * Time.fixedDeltaTime;
+            float down = ___rb2d.gravityScale < 0f ? -1f : 1f;
+            float fall = -v.y * down;
+            if (fall <= 0f) return;
+            float g = Mathf.Abs(Physics2D.gravity.y * ___rb2d.gravityScale) * Time.fixedDeltaTime;
             bool up = GameHooks.Input != null && GameHooks.Input.inputActions.up.IsPressed;
             // The step's gravity is paid in advance: give back all but a third (a tenth).
-            ___rb2d.linearVelocity = new Vector2(v.x, v.y + g * (up ? 0.9f : 2f / 3f));
-            mod.ResetFall();
+            fall -= g * (up ? 0.9f : 2f / 3f);
+            // The speed after the step's gravity, capped.
+            float max = __instance.MAX_FALL_VELOCITY;
+            float cap = up && fall + g > max / 5f ? max / 10f : max / 3f;
+            if (fall + g > cap) fall = cap - g;
+            ___rb2d.linearVelocity = new Vector2(v.x, -fall * down);
         }
 
         /// <summary>The flask's touch on a melee or whip hit (StatusToNPC, Pl:6496-6531; the Confetti flask's burst, Pl:44829).</summary>

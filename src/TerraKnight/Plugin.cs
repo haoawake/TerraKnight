@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "4.1.0";
+        public const string Version = "4.2.0";
 
         internal static ManualLogSource Log;
 
@@ -101,6 +101,7 @@ namespace TerraKnight
             UI.WorldMap.StyleSetting = Config.Bind("Gameplay", "MapStyle", 1,
                 "泰拉瑞亚地图的显示方式（Tab 切换，会记住）：0 = 不显示，1 = 右上角小地图，2 = 半透明覆盖在画面上。\nHow the Terraria map shows (Tab cycles it and is remembered): 0 = hidden, 1 = minimap at the top right, 2 = translucent overlay over the screen.");
             Player.TerraCamera.Bind(Config);
+            UI.TerraCursor.Bind(Config);
             UI.DialogueBroadcast.Bind(Config);
             Items.NailAim.Bind(Config);
             World.HoleShapes.Bind(Config);

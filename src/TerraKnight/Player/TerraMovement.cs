@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using TerraKnight.Effects;
@@ -174,6 +174,7 @@ namespace TerraKnight.Player
             hero.WJ_KICKOFF_SPEED = WallJumpPush * PxT;
             hero.WJLOCK_STEPS_SHORT = 1;
             hero.WJLOCK_STEPS_LONG = 1;
+            Mounts.ApplyJump(hero);
         }
 
         /// <summary>A double tap of a direction (Terraria's dash input); acted on in the next physics step.</summary>
@@ -279,6 +280,7 @@ namespace TerraKnight.Player
                 if (___rb2d != null) ___rb2d.gravityScale = hkDashGravity;
             }
             if (!Active || !__instance.acceptingInput) return;
+            if (Mounts.Move(__instance, ___rb2d, DevMove != 0 ? DevMove : move_direction)) return;
             float ticks = Time.fixedDeltaTime * 60f;
             var cs = __instance.cState;
             float vx = __state / PxT;
@@ -474,6 +476,7 @@ namespace TerraKnight.Player
             float moveSpeed = MoveSpeed * Items.MeleeSpecials.MoveSpeedMult;
             float maxRun = MaxRunSpeed * stealthSlow * moveSpeed, accel = RunAcceleration * moveSpeed;
             // The Sand Boots on sand (desertBoots, Pl:26740-26747): run speeds and acceleration ×1.75.
+            if (Mounts.Riding && Mounts.Current.Skates) { maxRun+=1f; accel+=.1f; }
             float slowdown = RunSlowdown;
             bool sand = DesertBoots && grounded && OnSand(hero);
             // While an extra jump's lift lasts it speeds the run (Player.cs:26771).
@@ -488,7 +491,7 @@ namespace TerraKnight.Player
             }
             // WingAirLogicTweaks (Pl:29534-29558): wings in the air allow their own top speed and acceleration; hovering down
             // with the hover wings, their hover speed (assigned) and acceleration.
-            float accRun = AccRunSpeed * stealthSlow;
+            float accRun = AccRunSpeed * stealthSlow + (Mounts.Riding && Mounts.Current.Skates ? 1f : 0f);
             // The Psycho Knife hidden (Pl:26816-26821): maxRunSpeed less half of it as hidden, and the boots' speed only that.
             float psycho = Items.MeleeSpecials.PsychoSlow;
             if (psycho > 0f)
@@ -981,7 +984,7 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
         static void AfterFixedUpdate(HeroController __instance, Rigidbody2D ___rb2d)
         {
-            if (!Active || !__instance.cState.wallSliding || __instance.cState.onConveyorV) return;
+            if (!Active || Mounts.OwnMovement || !__instance.cState.wallSliding || __instance.cState.onConveyorV) return;
             // The physics step still adds its gravity after this: pay it in advance, so the slide is the slide speed.
             float g = -Physics2D.gravity.y * ___rb2d.gravityScale * Time.fixedDeltaTime;
             ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x, __instance.WALLSLIDE_SPEED + g);
@@ -1038,6 +1041,37 @@ namespace TerraKnight.Player
         static bool Passing(Collision2D collision) =>
             Active && collision != null && !collision.enabled && collision.collider != null && collision.collider.usedByEffector;
 
+        /// <summary>The platform composites the hero's collider is passing through (Down held, or still inside one since).</summary>
+        static readonly List<Collider2D> passedPlatforms = new List<Collider2D>();
+        static readonly HashSet<Collider2D> passedSet = new HashSet<Collider2D>();
+
+        /// <summary>
+        /// Down held: no platform stops the hero (those built meanwhile too). Let go: each catches him again, except one his
+        /// box is still inside, passed on until he is clear of it, as Terraria's platforms only catch feet coming down onto them.
+        /// </summary>
+        static void PassPlatforms(BoxCollider2D hero, bool down)
+        {
+            if (hero == null) return;
+            if (down)
+            {
+                foreach (var p in World.ChunkColliders.AllPlatforms)
+                {
+                    if (p == null || !passedSet.Add(p)) continue;
+                    Physics2D.IgnoreCollision(hero, p, true);
+                    passedPlatforms.Add(p);
+                }
+                return;
+            }
+            for (int i = passedPlatforms.Count - 1; i >= 0; i--)
+            {
+                var p = passedPlatforms[i];
+                if (p != null && p.isActiveAndEnabled && p.bounds.Intersects(hero.bounds) && hero.Distance(p).isOverlapped) continue;
+                if (p != null) Physics2D.IgnoreCollision(hero, p, false);
+                passedPlatforms.RemoveAt(i);
+                passedSet.Remove(p);
+            }
+        }
+
         /// <summary>
         /// Standing on platforms and holding down drops through them (Terraria lets the player
         /// fall through while down is held). Touching rope and pressing up or down grabs it: the
@@ -1052,15 +1086,18 @@ namespace TerraKnight.Player
             // fall goes on through). Swept collision meets the platform's top as it is reached.
             if (Active && ___rb2d != null && ___rb2d.collisionDetectionMode != CollisionDetectionMode2D.Continuous)
                 ___rb2d.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-            if (!Active || !__instance.acceptingInput || __instance.cState.dead || __instance.cState.transitioning) { OnRope = false; return; }
+            if (!Active || Mounts.OwnMovement || !__instance.acceptingInput || __instance.cState.dead || __instance.cState.transitioning) { OnRope = false; return; }
             var cs = __instance.cState;
             var b = __instance.GetComponent<BoxCollider2D>().bounds;
             const float c = World.CellGrid.CellSize;
             int x0 = Mathf.FloorToInt(b.min.x / c), x1 = Mathf.FloorToInt((b.max.x - 0.001f) / c);
             int below = Mathf.FloorToInt((b.min.y - 0.05f) / c);
 
-            // Dropping through.
-            if (DownHeld && !OnRope && (cs.onGround || ___rb2d.linearVelocity.y <= 0.01f))
+            // Dropping through: Terraria's fallThrough is controlDown, so every platform lets him by while Down is held and
+            // the next one catches him once it is let go. Only his own collider passes; whatever else stands on them stays.
+            bool drop = DownHeld && !OnRope;
+            PassPlatforms(__instance.GetComponent<BoxCollider2D>(), drop);
+            if (drop && (cs.onGround || ___rb2d.linearVelocity.y <= 0.01f))
             {
                 bool platform = false, solid = false;
                 for (int x = x0; x <= x1; x++)
@@ -1070,8 +1107,6 @@ namespace TerraKnight.Player
                 }
                 if (platform && !solid)
                 {
-                    var area = new RectInt(x0 - 1, below - 1, x1 - x0 + 3, 4);
-                    foreach (var t in World.TerrainSystem.All) t.Region?.SuspendPlatforms(area, 0.3f);
                     if (___rb2d.linearVelocity.y > -2f * PxT) ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x, -2f * PxT);
                 }
                 // A Work Bench or an anvil stood on: through its top the same way.
@@ -1191,6 +1226,7 @@ namespace TerraKnight.Player
             if (!Active) return;
             float t = Time.fixedDeltaTime * 60f;
             var cs = __instance.cState;
+            if (Mounts.FixedStep(__instance, ___rb2d, t)) return;
             if (rocketSoundDelay > 0f) rocketSoundDelay -= t;
             if (!JumpHeld) rocketRelease = true;
             DownDashStep(__instance, ___rb2d, t);
@@ -1468,6 +1504,7 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "DoDoubleJump")]
         static bool DoDoubleJump(HeroController __instance, Rigidbody2D ___rb2d)
         {
+            if (Mounts.OwnMovement) return false;
             if (!Active) return true;
             // The Ram Rune's dash comes before the extra jumps and uses none of them (Pl:20893-20896).
             if (DownDash && DownHeld && !DownDashing)
@@ -1556,6 +1593,7 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "DoubleJump")]
         static bool DoubleJump(HeroController __instance, Rigidbody2D ___rb2d)
         {
+            if (Mounts.OwnMovement) return false;
             if (!Active) return true;
             var cs = __instance.cState;
             float t = Time.fixedDeltaTime * 60f;

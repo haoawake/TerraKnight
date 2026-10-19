@@ -211,12 +211,48 @@ namespace TerraKnight.Player
         /// camera inside the area at once. This camera pays no heed to lock areas, and walking
         /// over a gate line starts the scene again without the camera ever leaving the player:
         /// that would throw the view aside for a frame.
+        ///
+        /// The game's own camera (the camera lock off) keeps them: a lock area holds the view within bounds drawn for
+        /// where Hollow Knight lets the player stand. Digging reaches places it never meant, such as the shaft beside the
+        /// Hunter's lair under his room (locked to the lair until his mark is had), and there the lock pulled the view
+        /// away with the player off the screen. A lock that would leave him out of view isn't taken (one held is let go)
+        /// until he stands where its view shows him; the game asks again every step he is inside it.
         /// </summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(CameraController), nameof(CameraController.LockToArea))]
-        static void BeforeLockToArea(CameraController __instance)
+        static bool BeforeLockToArea(CameraController __instance, CameraLockArea lockArea)
         {
-            if (Active) startLockedTimer(__instance) = 0f;
+            if (Active)
+            {
+                startLockedTimer(__instance) = 0f;
+                return true;
+            }
+            var hero = HeroController.SilentInstance;
+            if (TerraMod.Instance == null || World.TerrainSystem.Current == null || lockArea == null || hero == null) return true;
+            if (LockShows(__instance, lockArea, HeroCenter(hero))) return true;
+            if (__instance.lockZoneList != null && __instance.lockZoneList.Contains(lockArea)) __instance.ReleaseLock(lockArea);
+            DevLocksRefused++;
+            return false;
+        }
+
+        /// <summary>Dev: lock areas not taken because their view would leave the player off the screen.</summary>
+        public static int DevLocksRefused;
+
+        /// <summary>
+        /// Whether the view a lock area holds the camera in (CameraController.LockToArea's bounds for its centre) still
+        /// shows a point, a little inside the screen's edge, at the view's size now (the zoom included).
+        /// </summary>
+        static bool LockShows(CameraController cc, CameraLockArea area, Vector2 p)
+        {
+            var cam = cc.cam != null ? cc.cam : GameCameras.instance != null ? GameCameras.instance.mainCamera : null;
+            if (cam == null) return true;
+            float halfH = cam.orthographic ? cam.orthographicSize : Mathf.Abs(cam.transform.position.z) * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            float halfW = halfH * cam.aspect;
+            if (halfH <= 0f) return true;
+            float xMin = area.cameraXMin < 0f ? 14.6f : area.cameraXMin, xMax = area.cameraXMax < 0f ? cc.xLimit : area.cameraXMax;
+            float yMin = area.cameraYMin < 0f ? 8.3f : area.cameraYMin, yMax = area.cameraYMax < 0f ? cc.yLimit : area.cameraYMax;
+            const float inside = 1.5f;
+            return p.x >= xMin - halfW + inside && p.x <= xMax + halfW - inside && p.y >= yMin - halfH + inside && p.y <= yMax + halfH - inside;
         }
 
         static IEnumerator SnapToHero(CameraController cc)

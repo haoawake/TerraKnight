@@ -82,6 +82,13 @@ namespace TerraKnight.Items
         [HarmonyLib.HarmonyPatch(typeof(GeoControl), "OnTriggerEnter2D")]
         static void PickupEnd() => collecting = Mathf.Max(0, collecting - 1);
 
+        static readonly HarmonyLib.AccessTools.FieldRef<GeoControl, bool> drawnIn = HarmonyLib.AccessTools.FieldRefAccess<GeoControl, bool>("attracted");
+
+        /// <summary>A geo piece drawn in (a money accessory's pull, the Gatherer's) passes over the acid on its way to the player instead of dissolving.</summary>
+        [HarmonyLib.HarmonyPrefix]
+        [HarmonyLib.HarmonyPatch(typeof(GeoControl), "OnTriggerEnter2D")]
+        static bool NotInAcid(GeoControl __instance, Collider2D collision) => collision == null || !collision.CompareTag("Acid") || !drawnIn(__instance);
+
         /// <summary>A geo piece picked up (small, medium or large): how much, over the player, as Terraria pops a coin's (PopupText, merged with the last).</summary>
         [HarmonyLib.HarmonyPostfix]
         [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.AddGeo))]
@@ -92,7 +99,11 @@ namespace TerraKnight.Items
             DevPopped++;
         }
 
-        /// <summary>The shade's geo at a death: what the bag carried, not the Piggy Bank's share of the counter.</summary>
+        /// <summary>
+        /// The shade's geo at a death: what the bag carried, not the Piggy Bank's share of the counter. On Master (and
+        /// Hollow) the shade keeps half of it and the other half is gone with the death; struck, the shade gives back what
+        /// it keeps, and a second death before that leaves the old shade's geo lost (the game's own way).
+        /// </summary>
         [HarmonyLib.HarmonyPrefix]
         [HarmonyLib.HarmonyPatch(typeof(PlayerData), nameof(PlayerData.SetInt))]
         static void ShadeGeo(string intName, ref int value)
@@ -100,6 +111,10 @@ namespace TerraKnight.Items
             var mod = TerraMod.Instance;
             if (intName != "geoPool" || value <= 0 || mod == null || mod.Creative) return;
             value = Clamp(System.Math.Min(value, Held(mod.Inventory)));
+            if (!World.GameDifficulty.MasterRules) return;
+            int kept = value / 2;
+            Plugin.Log.LogInfo($"[吉欧] 大师规则下死亡：阴影保管 {kept}，另外 {value - kept} 吉欧丢失");
+            value = kept;
         }
 
         static int Clamp(long n) => Currencies.Clamp(n);

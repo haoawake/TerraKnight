@@ -49,6 +49,7 @@ namespace TerraKnight.Items
                     grid = false;
                     hkOpen = false;
                     blacklistOpen = false;
+                    statsOpen = false;
                 }
                 open = value;
             }
@@ -57,7 +58,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll }
 
         struct Hit
         {
@@ -103,7 +104,12 @@ namespace TerraKnight.Items
             {
                 // Terraria: with the inventory open the wheel scrolls the crafting column.
                 float wheel = mouse.scroll.ReadValue().y;
-                if (bestiaryOpen)
+                if (statsOpen)
+                {
+                    if (wheel > 0.1f) statsScroll = Mathf.Max(0, statsScroll - 3);
+                    else if (wheel < -0.1f) statsScroll += 3;
+                }
+                else if (bestiaryOpen)
                 {
                     // The monster book's list scrolls instead while it is open; over a long list of drops, those.
                     if (OverDrops)
@@ -311,6 +317,15 @@ namespace TerraKnight.Items
                 case Kind.BlacklistButton:
                     if (leftPress) ToggleBlacklist();
                     return;
+                case Kind.StatsButton:
+                    if (leftPress) ToggleStats();
+                    return;
+                case Kind.StatsTab:
+                    if (leftPress) { statsTab = hit.Index; statsScroll = 0; Sound("Menu_Tick"); }
+                    return;
+                case Kind.StatsScroll:
+                    if (leftPress) statsScroll = Mathf.Max(0, statsScroll + hit.Index);
+                    return;
                 case Kind.BlacklistEntry:
                     if (leftPress || rightPress) ActBlacklist(hit.Index, rightPress);
                     return;
@@ -405,12 +420,12 @@ namespace TerraKnight.Items
             // Quick selling on: the click sells the stack (InventoryGuiSell.cs).
             if (SellFromSlot(ref slot)) return;
             // ItemSlot.OverrideHover / SellOrTrash: with an NPC's shop open, Shift+click sells the stack too.
-            if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.Permanent)
+            if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.CannotDiscard)
             {
                 Town.TownNpcs.Sell(ref slot);
                 return;
             }
-            if (Ctrl && !slot.IsEmpty && !slot.Favorite && !slot.Def.Permanent)
+            if (Ctrl && !slot.IsEmpty && !slot.Favorite && !slot.Def.CannotDiscard)
             {
                 if (Town.TownNpcs.ShopOpen)
                 {
@@ -680,7 +695,7 @@ namespace TerraKnight.Items
             if (!inv.Mouse.IsEmpty)
             {
                 // Kept for good (the Dream Nail): the trash won't take it.
-                if (inv.Mouse.Def.Permanent) return;
+                if (inv.Mouse.Def.CannotDiscard) return;
                 // The old trash is destroyed and the cursor's item takes its place.
                 inv.Trash = inv.Mouse;
                 inv.Trash.Favorite = false;
@@ -1089,18 +1104,25 @@ namespace TerraKnight.Items
                     else if (sellMode) DrawSellRow(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
                     DrawCrafting(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
                 }
-                DrawUtilityButtons(view, ui, mouse);
+                // The four utility buttons stand where an open chest's buttons go (Loot All...): as Terraria's own buttons
+                // beside the bag, they give way while a chest, a shop or the Goblin's forge is open.
+                if (!World.Chests.IsOpen && !Town.TownNpcs.ShopOpen && !Town.TownNpcs.ForgeMode && !Town.TownNpcs.ReforgeOpen)
+                    DrawUtilityButtons(view, ui, mouse);
 
                 // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
-                // Terraria's (the autoswing switch, the key bindings).
+                // Terraria's (the autoswing switch, the key bindings). Drawn in plain white whatever tint is left on the GUI.
+                var settingsTint = GUI.color;
                 for (int k = 0; k < 2; k++)
                 {
                     var settings = new Rect(view.xMax - 330f * ui, view.yMax - (k == 0 ? 50f : 92f) * ui, 310f * ui, 36f * ui);
                     Add(settings, Kind.Settings, k);
                     bool hover = settings.Contains(mouse);
                     buttonStyle.fontSize = Mathf.RoundToInt((hover ? 30 : 26) * ui);
+                    if (k == 0) CheckSettingsLook(settings, settingsTint);
+                    GUI.color = Color.white;
                     Outlined(settings, Lang.T(k == 0 ? "设置" : "泰拉瑞亚设置"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
                 }
+                GUI.color = settingsTint;
             }
 
             DrawChat(view, ui, mouse);
@@ -1108,6 +1130,13 @@ namespace TerraKnight.Items
             if (Open && bestiaryOpen) DrawBestiary(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             if (Open && hkOpen && !bestiaryOpen) DrawHkBag(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             if (Open && blacklistOpen) DrawBlacklist(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+            if (Open && statsOpen)
+            {
+                DrawStats(view, ui, mouse);
+                // Do not let a slot underneath the attributes panel draw its tooltip on top.
+                hovered = default;
+                hoveredExtra = null;
+            }
             MouseOverUi = UI.WorldMap.MouseOnMinimap(mouse);
             foreach (var p in panels)
                 if (p.Contains(mouse)) MouseOverUi = true;
@@ -1394,7 +1423,24 @@ namespace TerraKnight.Items
             GUI.DrawTextureWithTexCoords(rect, tex, new Rect(0f, 0.5f, 1f / 3f, 0.5f));
             Outlined(new Rect(rect.x, rect.y + rect.height * 0.25f, rect.width, 22f * ui), defense.ToString(), nameStyle, Color.white);
             if (!rect.Contains(UI.TerraCursor.GuiMouse())) return;
-            var lines = new List<string> { Lang.F("{0} 防御力", defense), Lang.F("受到的伤害减少 {0}", defense / 2) };
+            var stats = TerraMod.Instance.Stats;
+            var bonus = Equipment.Current;
+            var lines = new List<string>
+            {
+                Lang.F("{0} 防御力", defense),
+                Lang.F("受到的伤害减少 {0}", (defense * World.GameDifficulty.DefenseEffectiveness).ToString("0.##")),
+                Lang.T("免伤：") + PlayerStatReport.Percent(stats.Endurance),
+            };
+            float enemyReduction = PlayerStatReport.EnemyHitReduction(stats.Endurance);
+            if (Mathf.Abs(enemyReduction - stats.Endurance) > .00001f)
+                lines.Add(Lang.T("当前敌袭总比例免伤：") + PlayerStatReport.Percent(enemyReduction));
+            lines.Add(Lang.T("近战增伤：") + PlayerStatReport.Percent(bonus.MeleeDamage)
+                + "  ·  " + Lang.T("远程增伤：") + PlayerStatReport.Percent(bonus.RangedDamage));
+            lines.Add(Lang.T("魔法增伤：") + PlayerStatReport.Percent(bonus.MagicDamage)
+                + "  ·  " + Lang.T("召唤增伤：") + PlayerStatReport.Percent(bonus.MinionDamage));
+            var weapon = PlayerStatReport.CurrentWeapon(out _);
+            if (weapon != null && weapon.Forge > 0 && Forging.CanForge(weapon.Unprefixed ?? weapon))
+                lines.Add(Lang.T("手持武器锻造增伤：") + PlayerStatReport.Percent(weapon.Forge * Forging.DamagePerLevel));
             var set = Equipment.SetBonusText(Equipment.FullSet);
             if (set != null) lines.Add(Lang.T("套装奖励：") + Lang.T(set));
             DrawLines(UI.TerraCursor.GuiMouse(), lines, Color.white);
@@ -1657,7 +1703,7 @@ namespace TerraKnight.Items
                 if (lineColors == null) lineColors = new Dictionary<int, Color>();
                 lineColors[lines.Count] = new Color(1f, 0.82f, 0.35f);
                 lines.Add(Forging.IsArmorPiece(def.Unforged ?? def)
-                    ? Lang.F("锻造 +{0}：防御 +{1}", def.Forge, def.Forge * Forging.DefensePerLevel)
+                    ? Lang.F("锻造 +{0}：防御 +{1}", def.Forge, def.Forge * Forging.DefensePerLevelOf(def.Unforged ?? def))
                     : Lang.F("锻造 +{0}：伤害 +{1}%", def.Forge, Mathf.RoundToInt(def.Forge * Forging.DamagePerLevel * 100f)));
             }
             if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None
@@ -1705,6 +1751,25 @@ namespace TerraKnight.Items
                 if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 1.5f * ui, r.y + oy * 1.5f * ui, r.width, r.height), text, style);
             style.normal.textColor = color;
             GUI.Label(r, text, style);
+        }
+
+        static float nextSettingsLookLog;
+        /// <summary>Dev: times the Settings buttons were about to be drawn with something off (tint, place, size).</summary>
+        public static int DevSettingsLookOff;
+
+        /// <summary>
+        /// The bottom-right Settings buttons have been reported gone now and then: note, at most every ten seconds, what
+        /// was off when they were about to be drawn (the GUI's tint, a place outside the screen, no font size).
+        /// </summary>
+        static void CheckSettingsLook(Rect r, Color tint)
+        {
+            bool tinted = tint != Color.white;
+            bool outside = r.xMax < 0f || r.yMax < 0f || r.x > Screen.width || r.y > Screen.height;
+            if (!tinted && !outside && buttonStyle.fontSize > 0) return;
+            DevSettingsLookOff++;
+            if (Time.unscaledTime < nextSettingsLookLog) return;
+            nextSettingsLookLog = Time.unscaledTime + 10f;
+            Plugin.Log.LogWarning($"[界面] 设置按钮绘制前：GUI.color {tint}，位置 {r}，屏幕 {Screen.width}x{Screen.height}，字号 {buttonStyle.fontSize}，视图 {UI.GameView.Rect}");
         }
 
         static void Sound(string name) => TerraMod.Instance?.PlaySound(name, 0.7f);

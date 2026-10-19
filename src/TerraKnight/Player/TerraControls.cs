@@ -12,6 +12,7 @@ namespace TerraKnight.Player
     internal static class TerraControls
     {
         static HeroActions boundFor;
+        internal static bool DevNoRealKeys;
         static int boundVersion = -1;
         /// <summary>The keys this mod added to each of the Knight's actions (so a new binding can take the old one's place).</summary>
         static readonly System.Collections.Generic.Dictionary<PlayerAction, BindingSource> added = new System.Collections.Generic.Dictionary<PlayerAction, BindingSource>();
@@ -40,7 +41,7 @@ namespace TerraKnight.Player
             }
 
             // Typing (the LAN chat, a name or an address in the multiplayer menu): no key moves the Knight or the menus.
-            bool typing = Net.NetChat.Typing || Net.NetMenu.TextFocused || Items.InventoryGui.TypingName;
+            bool typing = DevNoRealKeys || Net.NetChat.Typing || Net.NetMenu.TextFocused || Items.InventoryGui.TypingName;
             if (a.Enabled == typing) a.Enabled = !typing;
 
             a.attack.Enabled = false;

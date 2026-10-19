@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using TerraKnight.Items;
@@ -78,6 +78,7 @@ namespace TerraKnight.Player
         {
             if (Flipped == flip) return;
             // Pl:26915-26929: turned at once, the fall measured from here, the jump cut.
+            Mounts.Dismount();
             Flipped = flip;
             var rb = hero.GetComponent<Rigidbody2D>();
             if (rb != null) rb.gravityScale = flip ? -Mathf.Abs(rb.gravityScale) : Mathf.Abs(rb.gravityScale);

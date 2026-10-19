@@ -71,7 +71,7 @@ namespace TerraKnight.Items
         static bool Blocks(int x, int y)
         {
             var k = TerraWorld.Get(x, y);
-            return (k != CellKind.Empty && k != CellKind.Platform) || DugHazards.IsSpikeCell(new Vector2Int(x, y));
+            return (k != CellKind.Empty && !TerraKnight.World.Cells.IsPlatform(k)) || DugHazards.IsSpikeCell(new Vector2Int(x, y));
         }
 
         /// <summary>

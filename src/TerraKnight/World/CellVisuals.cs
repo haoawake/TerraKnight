@@ -119,9 +119,12 @@ namespace TerraKnight.World
             }
             var kind = grid.Get(x, y);
             bool cut = grid.IsCut(x, y) || Overhang(x, y);
-            var shape = HoleShapes.Hollow ? ShapeAt(x, y) : null;
+            // A spike's or thorn's art mined out of open air is cut square, just that cell: no terrain was dug there to shape a hole.
+            bool openArt = grid.IsDug(x, y) && !grid.IsDugGround(x, y);
+            var shape = HoleShapes.Hollow && !openArt ? ShapeAt(x, y) : null;
             if (shape != null) holes.SetShape(i, x, y, shape.Mask, cut);
             else holes.SetCut(i, x, y, cut);
+            if (grid.IsDugGround(x, y)) holes.DropDecor(x, y);
 
             // A wall set there; Terraria's way, the area's wall behind every dug cell.
             if (grid.GetWall(x, y) > 0 || (shape == null && grid.HasWall(x, y)))
@@ -164,11 +167,11 @@ namespace TerraKnight.World
                     TileFraming.Variant(x, y));
                 Show(blocks, i, x, y, BlockZ, GetShapedSprite(sheet, fx, fy, grid.GetSlope(x, y)), BlockTint);
             }
-            else if (kind == CellKind.Platform)
+            else if (TerraKnight.World.Cells.IsPlatform(kind))
             {
                 // Tiles_19, wood (row 0): the frame its neighbours call for, flat or stair.
                 int fx = PlatformStairs.FrameX(grid, x, y);
-                var sprite = grid.GetSlope(x, y) == CellGrid.HalfBrick ? GetShapedSprite("Tiles_19", fx, 0, CellGrid.HalfBrick) : GetSprite("Tiles_19", fx, 0, TileFraming.FrameSize);
+                var sprite = grid.GetSlope(x, y) == CellGrid.HalfBrick ? GetShapedSprite(RegionalFurniture.PlatformSheet(kind), fx, 0, CellGrid.HalfBrick) : GetSprite(RegionalFurniture.PlatformSheet(kind), fx, 0, TileFraming.FrameSize);
                 Show(blocks, i, x, y, BlockZ, sprite, BlockTint);
             }
             else if (kind == CellKind.Rope)
@@ -195,8 +198,8 @@ namespace TerraKnight.World
             if (kind != CellKind.Torch) flamesLayer?.Hide(i);
             if (kind == CellKind.Torch) ShowLight(i, x, y, grid.TorchStyleAt(i));
             else HideLight(i);
-            int brace = kind == CellKind.Platform ? PlatformStairs.SupportFrameX(grid, x, y) : -1;
-            if (brace >= 0) Show(supports, i, x, y - 1, BlockZ + 0.0005f, GetSprite("Tiles_19", brace, 0, TileFraming.FrameSize), BlockTint);
+            int brace = TerraKnight.World.Cells.IsPlatform(kind) ? PlatformStairs.SupportFrameX(grid, x, y) : -1;
+            if (brace >= 0) Show(supports, i, x, y - 1, BlockZ + 0.0005f, GetSprite(RegionalFurniture.PlatformSheet(kind), brace, 0, TileFraming.FrameSize), BlockTint);
             else Hide(supports, i);
         }
 
@@ -210,6 +213,7 @@ namespace TerraKnight.World
                 case CellKind.Sand: return "Tiles_53";
                 case CellKind.MagicIce: return "Tiles_127";
                 case CellKind.Meteorite: return "Tiles_37";
+                case CellKind.Obsidian: return "Tiles_56";
                 default: return AreaBlocks.Sheet(kind);
             }
         }
@@ -261,6 +265,7 @@ namespace TerraKnight.World
         /// Open air beside a dug edge. The scene's terrain art overhangs its colliders (grass, rock
         /// lips), and with the terrain under it dug away that lip would be left floating, so it is
         /// cut too. Air right beside intact terrain keeps it: that lip still belongs to something.
+        /// A mined spike or thorn has no lip: only dug ground counts.
         /// </summary>
         bool Overhang(int x, int y)
         {
@@ -268,15 +273,16 @@ namespace TerraKnight.World
             if (IsOriginal(x + 1, y) || IsOriginal(x - 1, y) || IsOriginal(x, y + 1) || IsOriginal(x, y - 1)) return false;
             for (int dy = -OverhangReach; dy <= OverhangReach; dy++)
                 for (int dx = -OverhangReach; dx <= OverhangReach; dx++)
-                    if (grid.IsDug(x + dx, y + dy)) return true;
+                    if (grid.IsDugGround(x + dx, y + dy)) return true;
             return false;
         }
 
         bool IsOriginal(int x, int y) => grid.InBounds(x, y) && grid.Get(x, y) == CellKind.Original;
 
         /// <summary>
-        /// A smooth hole's pictures for the cell (World.HoleShapes), from its 5×5 neighbourhood: which cells are cut (dug,
-        /// or the overhang beside a dig) and which are standing terrain; null with nothing cut that near.
+        /// A smooth hole's pictures for the cell (World.HoleShapes), from its 5×5 neighbourhood: which cells are cut (dug
+        /// ground, or the overhang beside a dig; a mined spike's cell is cut on its own) and which are standing terrain;
+        /// null with nothing cut that near.
         /// </summary>
         HoleShapes.Shape ShapeAt(int x, int y)
         {
@@ -285,7 +291,7 @@ namespace TerraKnight.World
                 for (int dx = -2; dx <= 2; dx++)
                 {
                     int k = (dy + 2) * 5 + dx + 2, cx = x + dx, cy = y + dy;
-                    bool o = grid.InBounds(cx, cy) && (grid.IsCut(cx, cy) || Overhang(cx, cy));
+                    bool o = grid.InBounds(cx, cy) && (grid.IsDugGround(cx, cy) || Overhang(cx, cy));
                     open5[k] = o;
                     terrain5[k] = !o && IsOriginal(cx, cy);
                     any |= o;

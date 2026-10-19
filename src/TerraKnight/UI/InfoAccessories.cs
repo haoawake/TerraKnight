@@ -204,6 +204,7 @@ namespace TerraKnight.UI
         }
 
         /// <summary>The watch's line (Main.DrawInfoAccs, accWatch 1-3) from Terraria's clock.</summary>
+        public static string ClockText() => WatchText(3);
         static string WatchText(int watch)
         {
             float now = TerraTime.Now;

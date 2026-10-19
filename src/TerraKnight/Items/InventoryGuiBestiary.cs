@@ -30,15 +30,79 @@ namespace TerraKnight.Items
         // Independent of the enemy list's area/stage grouping: -1 follows this save.
         static int bestiaryDropStage = -1;
         static int BookDropStage => bestiaryDropStage < 0 ? Shop.UnlockedStage() : bestiaryDropStage;
-        static IReadOnlyList<EnemyDrops.Drop> BookDrops(string record)
+        /// <summary>The chosen entry's drops in the area chosen for it (a kill's there: BestiaryHabitats).</summary>
+        static IReadOnlyList<EnemyDrops.Drop> BookDrops(string record) => BookDropsIn(record, HomeScene(record));
+
+        static IReadOnlyList<EnemyDrops.Drop> BookDropsIn(string record, string scene)
         {
-            if (bestiaryDropStage < 0) return EnemyDrops.Of(record);
+            if (bestiaryDropStage < 0) return EnemyDrops.In(record, scene);
             int stage = BookDropStage;
             // A fixed boss reward belongs to its own stage, even though At promotes it.
             if (ProgressionBalance.FormalBoss(record) && ProgressionBalance.BossRewards.TryGetValue(record, out var boss) && stage < boss.Stage)
                 return System.Array.Empty<EnemyDrops.Drop>();
-            return EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5);
+            return EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5, scene);
         }
+
+        static string homeFor, homeSearch;
+        static int bookHome;
+
+        /// <summary>
+        /// Which of the entry's areas its drops are shown for: the one picked by its button; for another entry or search,
+        /// the first of its areas (the player's own first) whose drops the search finds when an item is looked for, else the
+        /// area the book lists it under.
+        /// </summary>
+        static int HomeIndex(string rec)
+        {
+            var homes = BestiaryHabitats.Of(rec);
+            if (homes.Count == 0) return -1;
+            if (rec != homeFor || bookSearch != homeSearch)
+            {
+                homeFor = rec;
+                homeSearch = bookSearch;
+                bookHome = DefaultHome(rec, homes);
+            }
+            return Mathf.Clamp(bookHome, 0, homes.Count - 1);
+        }
+
+        static int DefaultHome(string rec, IReadOnlyList<BestiaryHabitats.Home> homes)
+        {
+            if (Searching && !Matches(Bestiary.NameOf(rec)))
+            {
+                int any = -1;
+                for (int i = 0; i < homes.Count; i++)
+                {
+                    if (!HomeMatches(rec, homes[i].Scene)) continue;
+                    if (BestiaryHabitats.Visited(homes[i].Area)) return i;
+                    if (any < 0) any = i;
+                }
+                if (any >= 0) return any;
+            }
+            string listed = BestiaryRoute.AreaOf(rec);
+            for (int i = 0; i < homes.Count; i++) if (homes[i].Area == listed) return i;
+            return 0;
+        }
+
+        static string HomeScene(string rec)
+        {
+            int i = HomeIndex(rec);
+            return i < 0 ? EnemyDrops.SceneOf(rec) : BestiaryHabitats.Of(rec)[i].Scene;
+        }
+
+        /// <summary>Whether a kill in that scene can drop something the search finds (at the stage shown).</summary>
+        static bool HomeMatches(string rec, string scene)
+        {
+            string era = bookSearch + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + Lang.Culture;
+            if (era != homeMatchEra) { homeMatchEra = era; homeMatches.Clear(); }
+            string key = rec + "|" + scene;
+            if (homeMatches.TryGetValue(key, out bool yes)) return yes;
+            foreach (var dr in BookDropsIn(rec, scene))
+                if (!EnemyDrops.Locked(dr, BookDropStage) && Matches(ItemDb.Get(dr.Type).Name)) { yes = true; break; }
+            homeMatches[key] = yes;
+            return yes;
+        }
+
+        static readonly Dictionary<string, bool> homeMatches = new Dictionary<string, bool>();
+        static string homeMatchEra;
         public static int DevBestiaryDropStage => bestiaryDropStage;
         public static IReadOnlyList<EnemyDrops.Drop> DevBestiaryDrops(string record) => BookDrops(record);
         public static bool DevBestiarySearchMatches(string record) => MatchesSearch(record);
@@ -253,7 +317,7 @@ namespace TerraKnight.Items
         static void ToggleBestiary()
         {
             bestiaryOpen = !bestiaryOpen;
-            if (bestiaryOpen) hkOpen = blacklistOpen = sellMode = false;
+            if (bestiaryOpen) statsOpen = hkOpen = blacklistOpen = sellMode = false;
             Sound(bestiaryOpen ? "Menu_Open" : "Menu_Close");
         }
 
@@ -263,6 +327,19 @@ namespace TerraKnight.Items
             if (i == -4) { if (!bookTyping) StartBookSearch(); return; }
             if (i == -5) { SetBookSearch(""); EndBookSearch(); Sound("Menu_Tick"); return; }
             EndBookSearch();
+            // -30 - k: the drops of the entry's k-th area.
+            if (i <= -30 && i >= -49)
+            {
+                int k = -30 - i;
+                if (bookHome == k && homeFor == bestiaryChosen) return;
+                bookHome = k;
+                homeFor = bestiaryChosen;
+                homeSearch = bookSearch;
+                dropScroll = 0;
+                dropTextKey = null;
+                Sound("Menu_Tick");
+                return;
+            }
             // -10 follows the save, -11 through -16 preview stages 0 through 5.
             if (i <= -10 && i >= -16)
             {
@@ -724,6 +801,30 @@ namespace TerraKnight.Items
                 Add(button, Kind.BestiaryEntry, -11 - s);
             }
             y += 30f * ui;
+            // The areas it lives in: a kill's drops are its area's (ores, materials, equipment), shown for the one chosen.
+            // While an item is looked for, the areas whose drops have it are rimmed; areas not yet been to are greyed.
+            var homes = BestiaryHabitats.Of(rec);
+            if (beaten && homes.Count > 0 && !EnemyDrops.IsBoss(rec))
+            {
+                int home = HomeIndex(rec);
+                bool byItem = Searching && !Matches(Bestiary.NameOf(rec));
+                BookOutlined(new Rect(d.x, y, 66f * ui, 24f * ui), Lang.T("掉落地区"), bookSmall, Gold);
+                float left = d.x + 70f * ui, hx = left;
+                for (int k = 0; k < homes.Count && k < 20; k++)
+                {
+                    string label = World.Areas.Display(homes[k].Area);
+                    float w = bookCentre.CalcSize(new GUIContent(label)).x + 14f * ui;
+                    if (hx + w > d.xMax && hx > left) { hx = left; y += 28f * ui; }
+                    var button = new Rect(hx, y, w, 24f * ui);
+                    bool on = k == home, found = byItem && HomeMatches(rec, homes[k].Scene);
+                    Fill(button, on ? BookRim : button.Contains(mouse) ? BookHeadColor : BookBack);
+                    Rim(button, on || found ? Gold : BookRim, (found ? 2f : 1f) * ui);
+                    BookOutlined(button, label, bookCentre, on ? Gold : BestiaryHabitats.Visited(homes[k].Area) ? Color.white : new Color(0.6f, 0.62f, 0.72f));
+                    Add(button, Kind.BestiaryEntry, -30 - k);
+                    hx += w + 4f * ui;
+                }
+                y += 30f * ui;
+            }
             if (beaten && drops.Count == 0) BookOutlined(new Rect(d.x, y, d.width, 22f * ui),
                 Lang.T(bestiaryDropStage < 0 ? "只掉吉欧" : "该阶段无物品掉落"), bookSmall, new Color(0.75f, 0.75f, 0.8f));
             int cols = Mathf.Clamp((int)(d.width / (170f * ui)), 1, 4);
@@ -731,7 +832,7 @@ namespace TerraKnight.Items
             int maxRows = Mathf.Max(1, (int)((d.yMax - y) / rowH));
             // More than fit: they scroll by rows (the wheel over them), with a bar at the side.
             int rows = (view.Count + cols - 1) / cols;
-            if (dropFor != rec) { dropFor = rec; dropScroll = 0; }
+            if (dropFor != rec + "|" + HomeScene(rec)) { dropFor = rec + "|" + HomeScene(rec); dropScroll = 0; }
             dropMaxScroll = Mathf.Max(0, rows - maxRows);
             dropScroll = Mathf.Clamp(dropScroll, 0, dropMaxScroll);
             dropArea = new Rect(d.x, y, d.width, maxRows * rowH);
@@ -833,7 +934,7 @@ namespace TerraKnight.Items
         /// <summary>The chosen entry's drops as text, worked out again only for another entry, language, difficulty or stage.</summary>
         static List<DropText> DropTexts(string rec, IReadOnlyList<EnemyDrops.Drop> drops)
         {
-            string key = rec + "|" + Lang.Culture + "|" + World.GameDifficulty.Current + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + drops.Count;
+            string key = rec + "|" + HomeScene(rec) + "|" + Lang.Culture + "|" + World.GameDifficulty.Current + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + drops.Count;
             if (key == dropTextKey) return dropTexts;
             dropTextKey = key;
             dropTexts.Clear();
@@ -971,8 +1072,8 @@ namespace TerraKnight.Items
             if (!Bestiary.IsSeen(rec)) return false;
             if (Matches(Bestiary.NameOf(rec))) return true;
             if (!Bestiary.IsDefeated(rec)) return false;
-            foreach (var dr in BookDrops(rec))
-                if (!EnemyDrops.Locked(dr, BookDropStage) && Matches(ItemDb.Get(dr.Type).Name)) return true;
+            foreach (var home in BestiaryHabitats.Of(rec))
+                if (HomeMatches(rec, home.Scene)) return true;
             return false;
         }
 

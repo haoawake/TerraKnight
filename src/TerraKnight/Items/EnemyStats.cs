@@ -42,6 +42,13 @@ namespace TerraKnight.Items
             /// <summary>A boss's life for the players there when it was first seen (NPC.GetMyBalance; 1 alone, or below Expert).</summary>
             public float Players = 1f;
             /// <summary>
+            /// A LAN game's puppet (Net.Enemies: another player's game runs it): its Terraria life, most life and defense as
+            /// that game has them, sent with its place, so both show and hit the same numbers whatever each save's own
+            /// difficulty, progress or player count when it first saw the enemy.
+            /// </summary>
+            public bool Net;
+            public int NetLife, NetLifeMax, NetDefense;
+            /// <summary>
             /// Terraria life per point of the enemy's own health: a boss's, its stand-in's life over its
             /// health; any other, the level's (its toughness, <see cref="World.Areas.LevelHealth"/>, included).
             /// </summary>
@@ -49,7 +56,7 @@ namespace TerraKnight.Items
                 ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossPhases.Factor(this) / (float)Mathf.Max(1, MaxHp)
                 : Boss ? World.Areas.HealthScale * World.Areas.LevelHealth(Level, true) : World.Areas.LifeScale(Level)) * Players;
             /// <summary>Terraria defense: a boss's stand-in's (<see cref="BossDefense"/>), else the level's.</summary>
-            public int Defense => Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
+            public int Defense => Net ? NetDefense : Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }
@@ -220,9 +227,9 @@ namespace TerraKnight.Items
 
         /// <summary>Life in Terraria points.</summary>
         public static int Life(HealthManager hm, Info info) =>
-            hm.isDead ? 0 : Mathf.Max(0, Mathf.CeilToInt((hm.hp - info.Carry) * info.Scale));
+            hm.isDead ? 0 : info.Net ? info.NetLife : Mathf.Max(0, Mathf.CeilToInt((hm.hp - info.Carry) * info.Scale));
 
-        public static int LifeMax(Info info) => Mathf.CeilToInt(info.MaxHp * info.Scale);
+        public static int LifeMax(Info info) => info.Net ? info.NetLifeMax : Mathf.CeilToInt(info.MaxHp * info.Scale);
 
         /// <summary>
         /// A boss's whole fight, every phase of it (its stand-in's life, tuned: <see cref="BossBalance"/>, a whole one a

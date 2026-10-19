@@ -106,6 +106,8 @@ namespace TerraKnight.Save
             public Dictionary<string, List<long>> ScenesHigh;
             /// <summary>Scene name -> the regional torches' styles on its torch cells (index &lt;&lt; 8 | style, World.RegionalTorches).</summary>
             public Dictionary<string, List<long>> TorchStyles;
+            /// <summary>Scene name -> the liquid poured there (index &lt;&lt; 16 | kind &lt;&lt; 8 | amount, World.WorldLiquids).</summary>
+            public Dictionary<string, List<long>> Liquids;
             /// <summary>The breakables that have given their drop (Items.BreakableDrops): scene, name and place.</summary>
             public List<string> LootedBreakables;
         }
@@ -376,6 +378,14 @@ namespace TerraKnight.Save
                     return kind == World.CellKind.Torch;
                 });
             }
+            World.WorldLiquids.CaptureLive();
+            foreach (var kv in World.WorldLiquids.All)
+            {
+                if (kv.Value.Count == 0) continue;
+                var cells = new List<long>(kv.Value.Count);
+                foreach (var cell in kv.Value) cells.Add(((long)cell.Key << 16) | cell.Value);
+                (file.Liquids ??= new Dictionary<string, List<long>>())[kv.Key] = cells;
+            }
             file.LootedBreakables = BreakableDrops.Save();
             try
             {
@@ -435,6 +445,7 @@ namespace TerraKnight.Save
             World.WorldEdits.Clear();
             World.WorldWalls.Clear();
             World.RegionalTorches.Clear();
+            World.WorldLiquids.Clear();
             BreakableDrops.Load(null);
             mod.ResetPlayer();
             stateOf = slot;
@@ -614,6 +625,12 @@ namespace TerraKnight.Save
                         }
                     }
                 World.RegionalTorches.Load(file.TorchStyles);
+                if (file.Liquids != null)
+                    foreach (var scene in file.Liquids)
+                    {
+                        var cells = World.WorldLiquids.For(scene.Key);
+                        foreach (long v in scene.Value) cells[(int)(v >> 16)] = (ushort)(v & 0xFFFF);
+                    }
                 BreakableDrops.Load(file.LootedBreakables);
                 Plugin.Log.LogInfo($"已读取 mod 存档：{path}（{file.Scenes.Count} 个场景有改动），调用：{Caller()}");
                 mod.ApplyCreativeWorld();

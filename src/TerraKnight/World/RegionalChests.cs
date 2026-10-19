@@ -65,7 +65,7 @@ namespace TerraKnight.World
         };
 
         /// <summary>The chest item of a look (0, or none known: Terraria's chest).</summary>
-        public static ItemType ItemOf(int style) => style >= 1 && style <= AreaBlocks.All.Length ? ItemType.ChestKingsPass + (style - 1) : ItemType.Chest;
+        public static ItemType ItemOf(int style) => RegionalFurniture.IsDresser(style) ? RegionalFurniture.Item(style-1001,RegionalFurniture.DresserIndex) : style >= 1 && style <= AreaBlocks.All.Length ? ItemType.ChestKingsPass + (style - 1) : ItemType.Chest;
 
         /// <summary>An area's chest look (1..24), 0 for a place not one of the areas.</summary>
         public static int StyleOf(string area)
@@ -103,6 +103,7 @@ namespace TerraKnight.World
         /// <summary>An area's chest's lid frame (0 shut, 1 half, 2 open): Resources/hk_HkChest_&lt;key&gt;_&lt;f&gt;.png, 32×40 px standing on its bottom.</summary>
         public static Sprite FrameSprite(int style, int f)
         {
+            if (RegionalFurniture.IsDresser(style)) return RegionalFurniture.Sprite(RegionalFurniture.DresserKind(style));
             if (style < 1 || style > AreaBlocks.All.Length || f < 0 || f > 2) return null;
             var s = frames[style, f];
             if (s != null) return s;

@@ -25,17 +25,21 @@ namespace TerraKnight.World
         MagicIce = 9,
         /// <summary>Meteorite (tile 37, World.Meteorites): a 50% pickaxe's, glowing, burning to the touch.</summary>
         Meteorite = 10,
+        /// <summary>Terraria's obsidian (tile 56): what water and acid make where they meet (World.LiquidSim); a 55% pickaxe's.</summary>
+        Obsidian = 11,
         /// <summary>Each Hallownest area's own block (World/AreaBlocks.cs): 24 kinds from here, in that file's order.</summary>
         AreaBlockFirst = 32,
         AreaBlockLast = 55,
+        AreaPlatformFirst = 64, AreaPlatformLast = 87,
     }
 
     internal static class Cells
     {
+        public static bool IsPlatform(CellKind k) => k == CellKind.Platform || (k >= CellKind.AreaPlatformFirst && k <= CellKind.AreaPlatformLast);
         /// <summary>Kinds that block movement as a full block.</summary>
         public static bool Blocks(CellKind k) =>
             k == CellKind.Original || k == CellKind.Dirt || k == CellKind.Stone || k == CellKind.Wood || k == CellKind.Sand || k == CellKind.MagicIce
-            || k == CellKind.Meteorite || IsAreaBlock(k);
+            || k == CellKind.Meteorite || k == CellKind.Obsidian || IsAreaBlock(k);
 
         /// <summary>An area's own block (World/AreaBlocks.cs).</summary>
         public static bool IsAreaBlock(CellKind k) => k >= CellKind.AreaBlockFirst && k <= CellKind.AreaBlockLast;
@@ -105,6 +109,33 @@ namespace TerraKnight.World
             foreach (int i in indices) SetTorchStyle(i % Width, i / Width, 0);
         }
 
+        // Terraria's liquid (Tile.liquid, liquidType): how full each cell is, 0..255, and of what; made with the first drop.
+        // World.LiquidSim moves it.
+        byte[] liquid, liquidKind;
+        public bool HasLiquids => liquid != null;
+        public byte[] LiquidArray => liquid;
+        public byte[] LiquidKindArray => liquidKind;
+        public void EnsureLiquids()
+        {
+            if (liquid != null) return;
+            liquid = new byte[cells.Length];
+            liquidKind = new byte[cells.Length];
+        }
+        public int LiquidAt(int index) => liquid != null ? liquid[index] : 0;
+        public LiquidKind LiquidKindAt(int index) => liquid != null ? (LiquidKind)liquidKind[index] : LiquidKind.Water;
+        public int GetLiquid(int x, int y) => InBounds(x, y) ? LiquidAt(y * Width + x) : 0;
+        public LiquidKind GetLiquidKind(int x, int y) => InBounds(x, y) ? LiquidKindAt(y * Width + x) : LiquidKind.Water;
+
+        /// <summary>Restores a saved cell's liquid during scene setup (the simulation wakes it after).</summary>
+        public void RestoreLiquid(int index, int amount, LiquidKind kind)
+        {
+            if (index < 0 || index >= cells.Length) return;
+            if (amount <= 0 && liquid == null) return;
+            EnsureLiquids();
+            liquid[index] = (byte)Mathf.Clamp(amount, 0, 255);
+            liquidKind[index] = amount > 0 ? (byte)kind : (byte)0;
+        }
+
         public event Action<int, int> CellChanged;
 
         public CellGrid(int width, int height)
@@ -165,6 +196,13 @@ namespace TerraKnight.World
         /// <summary>Cells where the game's own terrain art is cut away: exactly the dug cells.</summary>
         public bool IsCut(int x, int y) => IsDug(x, y);
 
+        /// <summary>
+        /// A dug cell that wasn't open air when the grid was made (the scene's terrain dug out). A spike's or thorn's art
+        /// mined out of open air (<see cref="CutOpenArt"/>) is dug but no ground: it opens no hole in the terrain around it.
+        /// </summary>
+        public bool IsDugGround(int x, int y) =>
+            IsDug(x, y) && (networkBase == null || networkBase[y * Width + x] != CellKind.Empty);
+
         /// <summary>Sets a cell during scene setup without raising change events.</summary>
         public void Init(int x, int y, CellKind kind) => cells[y * Width + x] = kind;
 
@@ -177,6 +215,7 @@ namespace TerraKnight.World
             slopes[index] = ValidShape(kind, slope);
         }
 
+        // The cells as rasterised, before the saved edits were replayed (LAN resets go back to it; IsDugGround reads it).
         CellKind[] networkBase;
         public void CaptureNetworkBase() => networkBase = (CellKind[])cells.Clone();
 
@@ -202,7 +241,7 @@ namespace TerraKnight.World
         /// <summary>Shape 5 is a lower half brick; 1..4 are Terraria slope values.</summary>
         public const int HalfBrick = 5;
         static byte ValidShape(CellKind kind, int shape) =>
-            kind == CellKind.Platform ? (byte)(shape == 1 || shape == 2 || shape == HalfBrick ? shape : 0) :
+            TerraKnight.World.Cells.IsPlatform(kind) ? (byte)(shape == 1 || shape == 2 || shape == HalfBrick ? shape : 0) :
             Cells.Blocks(kind) && kind != CellKind.Original && shape >= 0 && shape <= HalfBrick ? (byte)shape : (byte)0;
 
         public bool IsFullSolid(int x, int y) => IsSolid(x, y) && GetSlope(x, y) == 0;
@@ -230,6 +269,11 @@ namespace TerraKnight.World
             Array.Copy(slopes, copy.slopes, slopes.Length);
             foreach (var wall in walls) copy.walls[wall.Key] = wall.Value;
             foreach (var style in torchStyles) copy.torchStyles[style.Key] = style.Value;
+            if (liquid != null)
+            {
+                copy.liquid = (byte[])liquid.Clone();
+                copy.liquidKind = (byte[])liquidKind.Clone();
+            }
             copy.networkBase = networkBase != null ? (CellKind[])networkBase.Clone() : null;
             return copy;
         }

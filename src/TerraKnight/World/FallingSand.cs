@@ -41,7 +41,7 @@ namespace TerraKnight.World
         void OnChanged(int x, int y, CellKind kind)
         {
             // Something left this cell: the sand above it may fall now.
-            if (!Cells.Blocks(kind) && kind != CellKind.Platform) toCheck.Enqueue(new Vector2Int(x, y + 1));
+            if (!Cells.Blocks(kind) && !TerraKnight.World.Cells.IsPlatform(kind)) toCheck.Enqueue(new Vector2Int(x, y + 1));
         }
 
         /// <summary>Looks at one cell: sand over empty space starts falling.</summary>

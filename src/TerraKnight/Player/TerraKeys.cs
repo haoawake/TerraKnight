@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using UnityEngine;
@@ -30,7 +30,7 @@ namespace TerraKnight.Player
             // The mod's own: the shadow dash (the Shade Cloak, the Hallownest Shield).
             ShadowDash,
             // Terraria's Zoom In and Zoom Out (Main.UpdateViewZoomKeys), held.
-            ViewZoomIn, ViewZoomOut,
+            ViewZoomIn, ViewZoomOut, Mount,
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace TerraKnight.Player
         public static readonly Action[] Ordered =
         {
             Action.UseItem, Action.Interact, Action.Up, Action.Down, Action.Left, Action.Right, Action.Jump, Action.Grapple, Action.AutoSelect, Action.SmartCursor, Action.Favorite,
-            Action.QuickHeal, Action.QuickMana, Action.QuickBuff, Action.Throw, Action.Inventory, Action.Chat, Action.ViewZoomIn, Action.ViewZoomOut,
+            Action.Mount, Action.QuickHeal, Action.QuickMana, Action.QuickBuff, Action.Throw, Action.Inventory, Action.Chat, Action.ViewZoomIn, Action.ViewZoomOut,
             Action.Loadout1, Action.Loadout2, Action.Loadout3, Action.Loadout4, Action.NextLoadout, Action.PreviousLoadout, Action.ArmorSetAbility, Action.Dash, Action.ShadowDash,
             Action.MapZoomIn, Action.MapZoomOut, Action.MapAlphaUp, Action.MapAlphaDown, Action.FullMap, Action.MapStyle,
             Action.Hotbar1, Action.Hotbar2, Action.Hotbar3, Action.Hotbar4, Action.Hotbar5, Action.Hotbar6, Action.Hotbar7, Action.Hotbar8, Action.Hotbar9, Action.Hotbar10,
@@ -80,7 +80,7 @@ namespace TerraKnight.Player
 
         static readonly Dictionary<Action, Key> defaults = new Dictionary<Action, Key>
         {
-            [Action.Up] = Key.W, [Action.Down] = Key.S, [Action.Left] = Key.A, [Action.Right] = Key.D, [Action.Jump] = Key.Space,
+            [Action.Mount] = Key.R, [Action.Up] = Key.W, [Action.Down] = Key.S, [Action.Left] = Key.A, [Action.Right] = Key.D, [Action.Jump] = Key.Space,
             [Action.Throw] = Key.T, [Action.Inventory] = Key.Escape, [Action.Grapple] = Key.E, [Action.QuickHeal] = Key.H, [Action.QuickMana] = Key.J,
             [Action.AutoSelect] = Key.LeftShift, [Action.SmartCursor] = Key.LeftCtrl, [Action.FullMap] = Key.M, [Action.MapStyle] = Key.Tab, [Action.Chat] = Key.Enter,
             [Action.Hotbar1] = Key.Digit1, [Action.Hotbar2] = Key.Digit2, [Action.Hotbar3] = Key.Digit3, [Action.Hotbar4] = Key.Digit4, [Action.Hotbar5] = Key.Digit5,
@@ -256,7 +256,7 @@ namespace TerraKnight.Player
             if (IsHotbar(a)) key = "LegacyMenu." + (176 + (a - Action.Hotbar1));
             string zh = a switch
             {
-                Action.Chat => "聊天", Action.Loadout4 => "配装4", Action.Jump => "跳", Action.Throw => "丢下", Action.Grapple => "抓钩", Action.FullMap => "切换完整地图",
+                Action.Mount => "上下坐骑", Action.Chat => "聊天", Action.Loadout4 => "配装4", Action.Jump => "跳", Action.Throw => "丢下", Action.Grapple => "抓钩", Action.FullMap => "切换完整地图",
                 Action.MapStyle => "切换地图类型", Action.Dash => "冲刺", Action.QuickBuff => "快速增益", Action.MapZoomIn => "放大", Action.MapZoomOut => "缩小",
                 Action.MapAlphaUp => "降低透明度", Action.MapAlphaDown => "提高透明度", Action.NextLoadout => "下一配装", Action.PreviousLoadout => "上一配装",
                 Action.ArmorSetAbility => "盔甲套装能力", Action.ShadowDash => "暗影冲刺", Action.UseItem => "使用物品", Action.Interact => "交互", Action.Favorite => "收藏",

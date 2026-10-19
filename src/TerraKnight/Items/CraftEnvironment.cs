@@ -14,7 +14,7 @@ namespace TerraKnight.Items
                 // The Resting Grounds, or seven tombstones about (Items.Tombstones: SceneMetrics' graveyard).
                 case CraftEnvironment.Graveyard: return scene.StartsWith("RestingGrounds") || Tombstones.InGraveyard;
                 case CraftEnvironment.Honey: return scene.StartsWith("Hive") || Stations.Near("蜂蜜分配机", HeroController.SilentInstance);
-                case CraftEnvironment.Water: return Fishing.NearCraftingLiquid(false);
+                case CraftEnvironment.Water: return Stations.Near("水槽", HeroController.SilentInstance) || Fishing.NearCraftingLiquid(false);
                 case CraftEnvironment.Lava: return Fishing.NearCraftingLiquid(true);
                 default: return true;
             }

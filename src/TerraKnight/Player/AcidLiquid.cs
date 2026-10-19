@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.World;
 using UnityEngine;
 using USM = UnityEngine.SceneManagement.SceneManager;
@@ -13,7 +13,8 @@ namespace TerraKnight.Player
     /// is worn: the flippers (the shells, the diving gear, the Flipper potion: accFlipper) swim in acid as Isma's Tear
     /// does, put on or taken off in the room (taken off, the acid hurts again once the Knight is out of it). Water
     /// walking (the boots, the Water Walking potion: Player.waterWalk) walks on it: a one-way top over each pool, gone
-    /// while down is held (Terraria's way in).
+    /// while down is held (Terraria's way in). Obsidian Skin (lavaImmune) goes into the acid unharmed as into lava, the
+    /// flippers' way here; the Lava Charm and its kin (lavaMax 420) for seven seconds at a time, filled again out of it.
     /// </summary>
     internal static class AcidLiquid
     {
@@ -30,6 +31,9 @@ namespace TerraKnight.Player
         static float rescanAt = -1f;
         static PlayMakerFSM surfaceFsm;
         static HeroController surfaceHero;
+
+        /// <summary>The Lava Charm's time left in the acid, seconds (Terraria's lavaTime, a tick each tick in and out); full to begin with, as on spawning.</summary>
+        static float lavaTime = float.MaxValue;
 
         public static int DevPools => pools.Count;
         public static bool DevSwimOn { get; private set; }
@@ -58,14 +62,9 @@ namespace TerraKnight.Player
             return surfaceFsm != null ? surfaceFsm.ActiveStateName : "无";
         }
 
-        /// <summary>Call every frame in gameplay.</summary>
-        public static void Tick()
+        /// <summary>The rooms loaded (a neighbour joining the seamless world adds one): their pools, found again, and once more a moment later, after their own check has run.</summary>
+        static void Refresh()
         {
-            var hero = HeroController.SilentInstance;
-            var pd = PlayerData.instance;
-            if (hero == null || pd == null) return;
-            // The rooms loaded (a neighbour joining the seamless world adds one): their pools, found again, and once
-            // more a moment later, after their own check has run.
             int sig = 17;
             for (int i = 0; i < USM.sceneCount; i++) sig = sig * 31 + USM.GetSceneAt(i).handle;
             if (sig != sceneSignature)
@@ -79,11 +78,38 @@ namespace TerraKnight.Player
                 rescanAt = -1f;
                 Scan();
             }
-            if (pools.Count == 0) return;
+        }
+
+        /// <summary>Call every frame in gameplay.</summary>
+        public static void Tick()
+        {
+            var hero = HeroController.SilentInstance;
+            var pd = PlayerData.instance;
+            if (hero == null || pd == null) return;
+            Refresh();
             var gear = Items.Equipment.Current;
-            bool swim = pd.hasAcidArmour || gear.Swim;
-            // Out of the pool before the acid hurts again (the region turned off under a floating Knight drops him in).
-            if (!swim && Swimming(hero)) swim = true;
+            float lavaMax = gear.LavaImmuneTicks / 60f;
+            lavaTime = Mathf.Min(lavaTime, lavaMax);
+            if (pools.Count == 0)
+            {
+                lavaTime = Mathf.Min(lavaMax, lavaTime + Time.deltaTime);
+                return;
+            }
+            // Obsidian Skin, or the Ash Wood set with the Lava Rose (Pl:27883), as the flippers.
+            bool swim = Mounts.LavaImmune || pd.hasAcidArmour || gear.Swim || gear.LavaImmune || gear.AshWood && gear.LavaRose;
+            bool spent = false;
+            if (!swim && lavaMax > 0f)
+            {
+                // The charm's seconds go while the Knight is in the acid and come back out of it (Pl:27889-27931).
+                bool inAcid = Swimming(hero);
+                lavaTime = inAcid ? Mathf.Max(0f, lavaTime - Time.deltaTime) : Mathf.Min(lavaMax, lavaTime + Time.deltaTime);
+                if (lavaTime > 0f) swim = true;
+                else spent = inAcid;
+            }
+            else lavaTime = Mathf.Min(lavaMax, lavaTime + Time.deltaTime);
+            // Out of the pool before the acid hurts again (the region turned off under a floating Knight drops him in);
+            // the charm's time run out in it, the acid hurts at once, as the lava does.
+            if (!swim && !spent && Swimming(hero)) swim = true;
             bool walk = gear.WaterWalk > 0 && !TerraMovement.DownHeld;
             DevSwimOn = swim;
             DevWalkOn = walk;
@@ -151,6 +177,8 @@ namespace TerraKnight.Player
             {
                 if (fsm == null || fsm.FsmName != "Acid Armour Check") continue;
                 var go = fsm.gameObject;
+                // The mod's own acid (World.LiquidView) comes in through Add; its templates are no pools.
+                if (go.GetComponentInParent<TerraOwned>(true) != null) continue;
                 var parent = go.transform.parent != null ? go.transform.parent : go.transform;
                 var dh = go.GetComponent<DamageHero>();
                 var region = PlayMakerFSM.FindFsmOnGameObject(go, "Surface Water Region") != null ? go.GetComponent<BoxCollider2D>() : null;
@@ -174,6 +202,18 @@ namespace TerraKnight.Player
                 pool.Top = MakeTop(pool);
                 pools.Add(pool);
             }
+        }
+
+        /// <summary>
+        /// Acid poured by the player (World.LiquidView): its box and the swim region over it (none for shallow acid, or
+        /// before a scene's acid pool was met) follow the gear as the scene's own pools do. Dropped once both are gone.
+        /// </summary>
+        public static void Add(DamageHero box, BoxCollider2D region)
+        {
+            if (box == null && region == null) return;
+            var pool = new Pool { Box = box, Region = region, Damage = 1 };
+            pool.Top = MakeTop(pool);
+            pools.Add(pool);
         }
 
         /// <summary>A one-way top over the pool, on the terrain layer as the grid's platforms are (the Knight's ground rays meet it).</summary>
@@ -220,6 +260,25 @@ namespace TerraKnight.Player
             Vector2 c = t.TransformPoint(box.offset), s = Vector2.Scale(box.size, t.lossyScale);
             return new Bounds(c, new Vector3(Mathf.Abs(s.x), Mathf.Abs(s.y), 0f));
         }
+
+        /// <summary>Whether an area (world units) reaches into one of the loaded rooms' acid pools: its hurting box or the swim region over it.</summary>
+        public static bool InAcid(Bounds area)
+        {
+            Refresh();
+            foreach (var p in pools)
+            {
+                if (p.Box != null && Overlaps(AreaOf(p.Box.GetComponent<Collider2D>()), area)) return true;
+                if (p.Region != null && Overlaps(AreaOf(p.Region), area)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A collider's area; one switched off has no bounds, a box's worked out by hand.</summary>
+        static Bounds AreaOf(Collider2D c) =>
+            c == null ? default : c.enabled && c.gameObject.activeInHierarchy ? c.bounds : BoxBounds(c as BoxCollider2D);
+
+        static bool Overlaps(Bounds a, Bounds b) =>
+            a.size != Vector3.zero && a.min.x < b.max.x && b.min.x < a.max.x && a.min.y < b.max.y && b.min.y < a.max.y;
 
         /// <summary>Dev: the pools found, each box's damage, region and top as they are now.</summary>
         public static string DevReport()
