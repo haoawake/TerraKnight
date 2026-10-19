@@ -2,10 +2,10 @@
   "game": "Hollow Knight 1.5.12620",
   "method": "Game Mono runtime calling EnemyStats.LifeMax/LifeWhole on roster-based Info; actual multipart overrides from component survey",
   "source_hashes": {
-    "Items/EnemyStats.cs": "3ac1b7009bbbfb63c8b3026845405fd7111d273f0abd2c199c3dcf265120d114",
-    "Items/BossStats.cs": "70b8deb6ff4c95eb4029acc25f1af599a4fed3f0901e846583874d44d1dc5270",
+    "Items/EnemyStats.cs": "3b881201606ca6999a32454069b17e9f85b9c50819968c1ddbf2fd3ed76740fc",
+    "Items/BossStats.cs": "edb469473ed80b7ff5aa1cddebaeef0a731e7798a8af8b1862352122b0cd510c",
     "Items/BossBalance.cs": "2c9610d3d247093d205612f41019c9a828dcbc6e3e95a15bff965d200750bca1",
-    "Items/EnemyDrops.cs": "6c2d303b4e878ef098e8f944135ec403b6be09bdc5cf2e83d66008a83a8854fb",
+    "Items/EnemyDrops.cs": "5439303c3bfa90a5398b5b31993d52c5e97cfa5775776e25e8f212300002f08b",
     "Items/EnemyDropData.cs": "8ee717d54b35b95074c9fc14493c3542293ddc42ff9705fc7638f5288e06342f",
     "UI/EnemyHover.cs": "69cca2300c1696dff6f4e710c2c8afd4893d35005d8d5ede60f7bee797e136ee",
     "World/Areas.cs": "41e9499b153777ea2c077ae9fa621288a2cc34137fe6eb6267a8ad020f6001b2",
@@ -570,43 +570,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1259,
-          "pool_life": 1259,
-          "scale": 13.9822226,
-          "raw_budget": 1258.4,
-          "godhome": 91000
+          "life": 1232,
+          "pool_life": 1232,
+          "scale": 13.6888895,
+          "raw_budget": 1232.0,
+          "godhome": 61905
         },
         {
           "difficulty": "Hard",
-          "life": 1605,
-          "pool_life": 1605,
-          "scale": 17.832222,
-          "raw_budget": 1604.9,
-          "godhome": 116025
+          "life": 1572,
+          "pool_life": 1572,
+          "scale": 17.4655552,
+          "raw_budget": 1571.9,
+          "godhome": 78929
         },
         {
           "difficulty": "Expert",
-          "life": 1763,
-          "pool_life": 1763,
-          "scale": 19.58,
-          "raw_budget": 1762.20007,
-          "godhome": 127400
+          "life": 1726,
+          "pool_life": 1726,
+          "scale": 19.1766663,
+          "raw_budget": 1725.9,
+          "godhome": 86667
         },
         {
           "difficulty": "Master",
-          "life": 2247,
-          "pool_life": 2247,
-          "scale": 24.9577789,
-          "raw_budget": 2246.2,
-          "godhome": 162435
+          "life": 2200,
+          "pool_life": 2200,
+          "scale": 24.4444447,
+          "raw_budget": 2200.0,
+          "godhome": 110501
         },
         {
           "difficulty": "Hollow",
-          "life": 2247,
-          "pool_life": 2247,
-          "scale": 24.9577789,
-          "raw_budget": 2246.2,
-          "godhome": 162435
+          "life": 2200,
+          "pool_life": 2200,
+          "scale": 24.4444447,
+          "raw_budget": 2200.0,
+          "godhome": 110501
         }
       ]
     },
@@ -616,43 +616,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 14375,
-          "pool_life": 6534,
-          "scale": 29.7,
-          "raw_budget": 6534.0,
-          "godhome": 85683
+          "life": 9412,
+          "pool_life": 4278,
+          "scale": 19.445,
+          "raw_budget": 4277.9,
+          "godhome": 46347
         },
         {
           "difficulty": "Hard",
-          "life": 18330,
-          "pool_life": 8332,
-          "scale": 37.87,
-          "raw_budget": 8331.4,
-          "godhome": 109245
+          "life": 12001,
+          "pool_life": 5455,
+          "scale": 24.795,
+          "raw_budget": 5454.9,
+          "godhome": 59091
         },
         {
           "difficulty": "Expert",
-          "life": 20125,
-          "pool_life": 9148,
-          "scale": 41.58,
-          "raw_budget": 9147.601,
-          "godhome": 119955
+          "life": 13177,
+          "pool_life": 5990,
+          "scale": 27.225,
+          "raw_budget": 5989.5,
+          "godhome": 64885
         },
         {
           "difficulty": "Master",
-          "life": 25660,
-          "pool_life": 11664,
-          "scale": 53.015,
-          "raw_budget": 11663.3,
-          "godhome": 152942
+          "life": 16800,
+          "pool_life": 7637,
+          "scale": 34.71,
+          "raw_budget": 7636.2,
+          "godhome": 82728
         },
         {
           "difficulty": "Hollow",
-          "life": 25660,
-          "pool_life": 11664,
-          "scale": 53.015,
-          "raw_budget": 11663.3,
-          "godhome": 152942
+          "life": 16800,
+          "pool_life": 7637,
+          "scale": 34.71,
+          "raw_budget": 7636.2,
+          "godhome": 82728
         }
       ]
     },
@@ -1628,43 +1628,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 4146,
-          "pool_life": 4146,
-          "scale": 5.922714,
-          "raw_budget": 4145.9,
-          "godhome": 136501
+          "life": 3362,
+          "pool_life": 3362,
+          "scale": 4.80228567,
+          "raw_budget": 3361.6,
+          "godhome": 83750
         },
         {
           "difficulty": "Hard",
-          "life": 5286,
-          "pool_life": 5286,
-          "scale": 7.55071449,
-          "raw_budget": 5285.5,
-          "godhome": 174041
+          "life": 4286,
+          "pool_life": 4286,
+          "scale": 6.122286,
+          "raw_budget": 4285.6,
+          "godhome": 106784
         },
         {
           "difficulty": "Expert",
-          "life": 5804,
-          "pool_life": 5804,
-          "scale": 8.290857,
-          "raw_budget": 5803.6,
-          "godhome": 191100
+          "life": 4706,
+          "pool_life": 4706,
+          "scale": 6.72257137,
+          "raw_budget": 4705.80029,
+          "godhome": 117251
         },
         {
           "difficulty": "Master",
-          "life": 7401,
-          "pool_life": 7401,
-          "scale": 10.5725718,
-          "raw_budget": 7400.80029,
-          "godhome": 243664
+          "life": 6001,
+          "pool_life": 6001,
+          "scale": 8.572143,
+          "raw_budget": 6000.5,
+          "godhome": 149500
         },
         {
           "difficulty": "Hollow",
-          "life": 7401,
-          "pool_life": 7401,
-          "scale": 10.5725718,
-          "raw_budget": 7400.80029,
-          "godhome": 243664
+          "life": 6001,
+          "pool_life": 6001,
+          "scale": 8.572143,
+          "raw_budget": 6000.5,
+          "godhome": 149500
         }
       ]
     },
@@ -1766,43 +1766,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 3264,
-          "pool_life": 1645,
-          "scale": 25.3,
-          "raw_budget": 1644.5,
-          "godhome": 72223
+          "life": 1680,
+          "pool_life": 847,
+          "scale": 13.0215378,
+          "raw_budget": 846.399963,
+          "godhome": 40461
         },
         {
           "difficulty": "Hard",
-          "life": 4161,
-          "pool_life": 2097,
-          "scale": 32.2530746,
-          "raw_budget": 2096.45,
-          "godhome": 92083
+          "life": 2144,
+          "pool_life": 1080,
+          "scale": 16.6130772,
+          "raw_budget": 1079.85,
+          "godhome": 51588
         },
         {
           "difficulty": "Expert",
-          "life": 4570,
-          "pool_life": 2303,
-          "scale": 35.42,
-          "raw_budget": 2302.3,
-          "godhome": 101112
+          "life": 2354,
+          "pool_life": 1186,
+          "scale": 18.2407684,
+          "raw_budget": 1185.65,
+          "godhome": 56645
         },
         {
           "difficulty": "Master",
-          "life": 5827,
-          "pool_life": 2936,
-          "scale": 45.16846,
-          "raw_budget": 2935.95,
-          "godhome": 128917
+          "life": 2999,
+          "pool_life": 1512,
+          "scale": 23.2476921,
+          "raw_budget": 1511.1,
+          "godhome": 72223
         },
         {
           "difficulty": "Hollow",
-          "life": 5827,
-          "pool_life": 2936,
-          "scale": 45.16846,
-          "raw_budget": 2935.95,
-          "godhome": 128917
+          "life": 2999,
+          "pool_life": 1512,
+          "scale": 23.2476921,
+          "raw_budget": 1511.1,
+          "godhome": 72223
         }
       ]
     },
@@ -1812,43 +1812,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 100000,
-          "pool_life": 50388,
-          "scale": 775.1884,
-          "raw_budget": 50387.25,
-          "godhome": 72223
+          "life": 3132,
+          "pool_life": 1578,
+          "scale": 24.2738457,
+          "raw_budget": 1577.79993,
+          "godhome": 34596
         },
         {
           "difficulty": "Hard",
-          "life": 154821,
-          "pool_life": 78011,
-          "scale": 1200.15771,
-          "raw_budget": 78010.25,
-          "godhome": 111816
+          "life": 4850,
+          "pool_life": 2444,
+          "scale": 37.5961533,
+          "raw_budget": 2443.75,
+          "godhome": 53562
         },
         {
           "difficulty": "Expert",
-          "life": 212858,
-          "pool_life": 107254,
-          "scale": 1650.0553,
-          "raw_budget": 107253.6,
-          "godhome": 153730
+          "life": 6667,
+          "pool_life": 3360,
+          "scale": 51.67923,
+          "raw_budget": 3359.15,
+          "godhome": 73638
         },
         {
           "difficulty": "Master",
-          "life": 271394,
-          "pool_life": 136749,
-          "scale": 2103.82764,
-          "raw_budget": 136748.8,
-          "godhome": 196006
+          "life": 8500,
+          "pool_life": 4283,
+          "scale": 65.8861542,
+          "raw_budget": 4282.6,
+          "godhome": 93890
         },
         {
           "difficulty": "Hollow",
-          "life": 271394,
-          "pool_life": 136749,
-          "scale": 2103.82764,
-          "raw_budget": 136748.8,
-          "godhome": 196006
+          "life": 8500,
+          "pool_life": 4283,
+          "scale": 65.8861542,
+          "raw_budget": 4282.6,
+          "godhome": 93890
         }
       ]
     },
@@ -1904,43 +1904,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 220000,
-          "pool_life": 220000,
-          "scale": 73.3333359,
-          "raw_budget": 220000.0,
-          "godhome": 286000
+          "life": 104575,
+          "pool_life": 104575,
+          "scale": 34.8583336,
+          "raw_budget": 104575.0,
+          "godhome": 135947
         },
         {
           "difficulty": "Hard",
-          "life": 288749,
-          "pool_life": 288749,
-          "scale": 96.2496643,
-          "raw_budget": 288749.0,
-          "godhome": 375374
+          "life": 137254,
+          "pool_life": 137254,
+          "scale": 45.7513351,
+          "raw_budget": 137254.0,
+          "godhome": 178431
         },
         {
           "difficulty": "Expert",
-          "life": 330000,
-          "pool_life": 330000,
-          "scale": 110.0,
-          "raw_budget": 330000.0,
-          "godhome": 429000
+          "life": 156862,
+          "pool_life": 156862,
+          "scale": 52.2873344,
+          "raw_budget": 156862.0,
+          "godhome": 203921
         },
         {
           "difficulty": "Master",
-          "life": 420751,
-          "pool_life": 420751,
-          "scale": 140.250336,
-          "raw_budget": 420751.0,
-          "godhome": 546976
+          "life": 200000,
+          "pool_life": 200000,
+          "scale": 66.6666641,
+          "raw_budget": 200000.0,
+          "godhome": 260000
         },
         {
           "difficulty": "Hollow",
-          "life": 420751,
-          "pool_life": 420751,
-          "scale": 140.250336,
-          "raw_budget": 420751.0,
-          "godhome": 546976
+          "life": 200000,
+          "pool_life": 200000,
+          "scale": 66.6666641,
+          "raw_budget": 200000.0,
+          "godhome": 260000
         }
       ]
     },
@@ -2134,43 +2134,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1950,
-          "pool_life": 1951,
-          "scale": 5.571429,
-          "raw_budget": 1950.0,
-          "godhome": 110500
+          "life": 2399,
+          "pool_life": 2399,
+          "scale": 6.85428572,
+          "raw_budget": 2399.0,
+          "godhome": 56983
         },
         {
           "difficulty": "Hard",
-          "life": 2705,
-          "pool_life": 2705,
-          "scale": 7.72857141,
-          "raw_budget": 2705.0,
-          "godhome": 153298
+          "life": 3329,
+          "pool_life": 3329,
+          "scale": 9.511429,
+          "raw_budget": 3329.0,
+          "godhome": 79053
         },
         {
           "difficulty": "Expert",
-          "life": 3315,
-          "pool_life": 3315,
-          "scale": 9.471429,
-          "raw_budget": 3315.0,
-          "godhome": 187850
+          "life": 4079,
+          "pool_life": 4079,
+          "scale": 11.6542854,
+          "raw_budget": 4079.0,
+          "godhome": 96871
         },
         {
           "difficulty": "Master",
-          "life": 4226,
-          "pool_life": 4226,
-          "scale": 12.0742855,
-          "raw_budget": 4226.0,
-          "godhome": 239488
+          "life": 5200,
+          "pool_life": 5200,
+          "scale": 14.8571424,
+          "raw_budget": 5200.0,
+          "godhome": 123500
         },
         {
           "difficulty": "Hollow",
-          "life": 4226,
-          "pool_life": 4226,
-          "scale": 12.0742855,
-          "raw_budget": 4226.0,
-          "godhome": 239488
+          "life": 5200,
+          "pool_life": 5200,
+          "scale": 14.8571424,
+          "raw_budget": 5200.0,
+          "godhome": 123500
         }
       ]
     },
@@ -2594,43 +2594,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1077,
-          "pool_life": 1077,
-          "scale": 5.38475037,
-          "raw_budget": 1076.95007,
-          "godhome": 97501
+          "life": 1931,
+          "pool_life": 1931,
+          "scale": 9.651751,
+          "raw_budget": 1930.3501,
+          "godhome": 62736
         },
         {
           "difficulty": "Hard",
-          "life": 1333,
-          "pool_life": 1333,
-          "scale": 6.664,
-          "raw_budget": 1332.8,
-          "godhome": 120657
+          "life": 2389,
+          "pool_life": 2389,
+          "scale": 11.9425,
+          "raw_budget": 2388.5,
+          "godhome": 77636
         },
         {
           "difficulty": "Expert",
-          "life": 1400,
-          "pool_life": 1400,
-          "scale": 6.99975,
-          "raw_budget": 1399.95007,
-          "godhome": 126751
+          "life": 2510,
+          "pool_life": 2510,
+          "scale": 12.5460005,
+          "raw_budget": 2509.2,
+          "godhome": 81557
         },
         {
           "difficulty": "Master",
-          "life": 1785,
-          "pool_life": 1785,
-          "scale": 8.925,
-          "raw_budget": 1785.0,
-          "godhome": 161630
+          "life": 3201,
+          "pool_life": 3201,
+          "scale": 16.0012512,
+          "raw_budget": 3200.25,
+          "godhome": 104001
         },
         {
           "difficulty": "Hollow",
-          "life": 1785,
-          "pool_life": 1785,
-          "scale": 8.925,
-          "raw_budget": 1785.0,
-          "godhome": 161630
+          "life": 3201,
+          "pool_life": 3201,
+          "scale": 16.0012512,
+          "raw_budget": 3200.25,
+          "godhome": 104001
         }
       ]
     },
@@ -2640,43 +2640,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 2970,
-          "pool_life": 2970,
-          "scale": 14.85,
-          "raw_budget": 2970.0,
-          "godhome": 117000
+          "life": 5322,
+          "pool_life": 5322,
+          "scale": 26.61,
+          "raw_budget": 5322.0,
+          "godhome": 72829
         },
         {
           "difficulty": "Hard",
-          "life": 3787,
-          "pool_life": 3787,
-          "scale": 18.935,
-          "raw_budget": 3787.0,
-          "godhome": 149175
+          "life": 6786,
+          "pool_life": 6786,
+          "scale": 33.93,
+          "raw_budget": 6786.0,
+          "godhome": 92857
         },
         {
           "difficulty": "Expert",
-          "life": 4158,
-          "pool_life": 4158,
-          "scale": 20.79,
-          "raw_budget": 4158.0,
-          "godhome": 163800
+          "life": 7451,
+          "pool_life": 7451,
+          "scale": 37.255,
+          "raw_budget": 7451.0,
+          "godhome": 101961
         },
         {
           "difficulty": "Master",
-          "life": 5301,
-          "pool_life": 5301,
-          "scale": 26.505,
-          "raw_budget": 5301.0,
-          "godhome": 208845
+          "life": 9500,
+          "pool_life": 9500,
+          "scale": 47.5,
+          "raw_budget": 9500.0,
+          "godhome": 130000
         },
         {
           "difficulty": "Hollow",
-          "life": 5301,
-          "pool_life": 5301,
-          "scale": 26.505,
-          "raw_budget": 5301.0,
-          "godhome": 208845
+          "life": 9500,
+          "pool_life": 9500,
+          "scale": 47.5,
+          "raw_budget": 9500.0,
+          "godhome": 130000
         }
       ]
     },
@@ -2686,43 +2686,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1462,
-          "pool_life": 1462,
-          "scale": 7.31,
-          "raw_budget": 1462.0,
-          "godhome": 104000
+          "life": 1753,
+          "pool_life": 1754,
+          "scale": 8.765,
+          "raw_budget": 1753.0,
+          "godhome": 50988
         },
         {
           "difficulty": "Hard",
-          "life": 2029,
-          "pool_life": 2030,
-          "scale": 10.145,
-          "raw_budget": 2029.0,
-          "godhome": 144267
+          "life": 2432,
+          "pool_life": 2432,
+          "scale": 12.16,
+          "raw_budget": 2432.0,
+          "godhome": 70729
         },
         {
           "difficulty": "Expert",
-          "life": 2486,
-          "pool_life": 2486,
-          "scale": 12.43,
-          "raw_budget": 2486.0,
-          "godhome": 176800
+          "life": 2981,
+          "pool_life": 2981,
+          "scale": 14.905,
+          "raw_budget": 2981.0,
+          "godhome": 86679
         },
         {
           "difficulty": "Master",
-          "life": 3170,
-          "pool_life": 3170,
-          "scale": 15.85,
-          "raw_budget": 3170.0,
-          "godhome": 225387
+          "life": 3800,
+          "pool_life": 3800,
+          "scale": 19.0,
+          "raw_budget": 3800.0,
+          "godhome": 110500
         },
         {
           "difficulty": "Hollow",
-          "life": 3170,
-          "pool_life": 3170,
-          "scale": 15.85,
-          "raw_budget": 3170.0,
-          "godhome": 225387
+          "life": 3800,
+          "pool_life": 3800,
+          "scale": 19.0,
+          "raw_budget": 3800.0,
+          "godhome": 110500
         }
       ]
     },
@@ -2732,43 +2732,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 75000,
-          "pool_life": 75000,
-          "scale": 374.9985,
-          "raw_budget": 74999.6953,
-          "godhome": 97500
+          "life": 15687,
+          "pool_life": 15687,
+          "scale": 78.4305,
+          "raw_budget": 15686.1,
+          "godhome": 95163
         },
         {
           "difficulty": "Hard",
-          "life": 98439,
-          "pool_life": 98439,
-          "scale": 492.192,
-          "raw_budget": 98438.4,
-          "godhome": 127971
+          "life": 20589,
+          "pool_life": 20589,
+          "scale": 102.941994,
+          "raw_budget": 20588.4,
+          "godhome": 124902
         },
         {
           "difficulty": "Expert",
-          "life": 112500,
-          "pool_life": 112500,
-          "scale": 562.5,
-          "raw_budget": 112500.0,
-          "godhome": 146250
+          "life": 23530,
+          "pool_life": 23530,
+          "scale": 117.647995,
+          "raw_budget": 23529.6,
+          "godhome": 142745
         },
         {
           "difficulty": "Master",
-          "life": 143439,
-          "pool_life": 143439,
-          "scale": 717.191956,
-          "raw_budget": 143438.391,
-          "godhome": 186471
+          "life": 30000,
+          "pool_life": 30000,
+          "scale": 149.998489,
+          "raw_budget": 29999.7,
+          "godhome": 182000
         },
         {
           "difficulty": "Hollow",
-          "life": 143439,
-          "pool_life": 143439,
-          "scale": 717.191956,
-          "raw_budget": 143438.391,
-          "godhome": 186471
+          "life": 30000,
+          "pool_life": 30000,
+          "scale": 149.998489,
+          "raw_budget": 29999.7,
+          "godhome": 182000
         }
       ]
     },
@@ -2778,43 +2778,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1170,
-          "pool_life": 1170,
-          "scale": 5.848,
-          "raw_budget": 1169.6,
-          "godhome": 110500
+          "life": 4153,
+          "pool_life": 4153,
+          "scale": 20.764,
+          "raw_budget": 4152.80029,
+          "godhome": 56987
         },
         {
           "difficulty": "Hard",
-          "life": 1624,
-          "pool_life": 1624,
-          "scale": 8.116,
-          "raw_budget": 1623.20007,
-          "godhome": 153284
+          "life": 5761,
+          "pool_life": 5761,
+          "scale": 28.804,
+          "raw_budget": 5760.80029,
+          "godhome": 79051
         },
         {
           "difficulty": "Expert",
-          "life": 1989,
-          "pool_life": 1989,
-          "scale": 9.944,
-          "raw_budget": 1988.8,
-          "godhome": 187850
+          "life": 7060,
+          "pool_life": 7060,
+          "scale": 35.3,
+          "raw_budget": 7060.0,
+          "godhome": 96877
         },
         {
           "difficulty": "Master",
-          "life": 2536,
-          "pool_life": 2536,
-          "scale": 12.68,
-          "raw_budget": 2536.0,
-          "godhome": 239474
+          "life": 9000,
+          "pool_life": 9000,
+          "scale": 45.0,
+          "raw_budget": 9000.0,
+          "godhome": 123500
         },
         {
           "difficulty": "Hollow",
-          "life": 2536,
-          "pool_life": 2536,
-          "scale": 12.68,
-          "raw_budget": 2536.0,
-          "godhome": 239474
+          "life": 9000,
+          "pool_life": 9000,
+          "scale": 45.0,
+          "raw_budget": 9000.0,
+          "godhome": 123500
         }
       ]
     },
@@ -2824,43 +2824,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1077,
-          "pool_life": 1077,
-          "scale": 5.38475037,
-          "raw_budget": 1076.95007,
-          "godhome": 110500
+          "life": 2172,
+          "pool_life": 2172,
+          "scale": 10.85875,
+          "raw_budget": 2171.75,
+          "godhome": 66657
         },
         {
           "difficulty": "Hard",
-          "life": 1333,
-          "pool_life": 1333,
-          "scale": 6.664,
-          "raw_budget": 1332.8,
-          "godhome": 136744
+          "life": 2688,
+          "pool_life": 2688,
+          "scale": 13.4385,
+          "raw_budget": 2687.7002,
+          "godhome": 82489
         },
         {
           "difficulty": "Expert",
-          "life": 1400,
-          "pool_life": 1400,
-          "scale": 6.99975,
-          "raw_budget": 1399.95007,
-          "godhome": 143650
+          "life": 2823,
+          "pool_life": 2823,
+          "scale": 14.11425,
+          "raw_budget": 2822.85,
+          "godhome": 86655
         },
         {
           "difficulty": "Master",
-          "life": 1785,
-          "pool_life": 1785,
-          "scale": 8.925,
-          "raw_budget": 1785.0,
-          "godhome": 183181
+          "life": 3600,
+          "pool_life": 3600,
+          "scale": 17.99875,
+          "raw_budget": 3599.75,
+          "godhome": 110500
         },
         {
           "difficulty": "Hollow",
-          "life": 1785,
-          "pool_life": 1785,
-          "scale": 8.925,
-          "raw_budget": 1785.0,
-          "godhome": 183181
+          "life": 3600,
+          "pool_life": 3600,
+          "scale": 17.99875,
+          "raw_budget": 3599.75,
+          "godhome": 110500
         }
       ]
     },
@@ -2870,43 +2870,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 2673,
-          "pool_life": 2673,
-          "scale": 13.365,
-          "raw_budget": 2673.0,
-          "godhome": 110501
+          "life": 3082,
+          "pool_life": 3082,
+          "scale": 15.408,
+          "raw_budget": 3081.59985,
+          "godhome": 65547
         },
         {
           "difficulty": "Hard",
-          "life": 3409,
-          "pool_life": 3409,
-          "scale": 17.0415,
-          "raw_budget": 3408.2998,
-          "godhome": 140888
+          "life": 3929,
+          "pool_life": 3929,
+          "scale": 19.6425,
+          "raw_budget": 3928.5,
+          "godhome": 83572
         },
         {
           "difficulty": "Expert",
-          "life": 3743,
-          "pool_life": 3743,
-          "scale": 18.711,
-          "raw_budget": 3742.2,
-          "godhome": 154701
+          "life": 4314,
+          "pool_life": 4314,
+          "scale": 21.5684986,
+          "raw_budget": 4313.69971,
+          "godhome": 91765
         },
         {
           "difficulty": "Master",
-          "life": 4771,
-          "pool_life": 4771,
-          "scale": 23.8545,
-          "raw_budget": 4770.9,
-          "godhome": 197243
+          "life": 5500,
+          "pool_life": 5500,
+          "scale": 27.4994984,
+          "raw_budget": 5499.9,
+          "godhome": 117000
         },
         {
           "difficulty": "Hollow",
-          "life": 4771,
-          "pool_life": 4771,
-          "scale": 23.8545,
-          "raw_budget": 4770.9,
-          "godhome": 197243
+          "life": 5500,
+          "pool_life": 5500,
+          "scale": 27.4994984,
+          "raw_budget": 5499.9,
+          "godhome": 117000
         }
       ]
     },
@@ -3100,43 +3100,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 100000,
-          "pool_life": 100000,
-          "scale": 83.33325,
-          "raw_budget": 99999.9,
-          "godhome": 130001
+          "life": 25000,
+          "pool_life": 25000,
+          "scale": 20.8330841,
+          "raw_budget": 24999.7012,
+          "godhome": 65001
         },
         {
           "difficulty": "Hard",
-          "life": 150001,
-          "pool_life": 150001,
-          "scale": 125.000336,
-          "raw_budget": 150000.4,
-          "godhome": 195001
+          "life": 37501,
+          "pool_life": 37501,
+          "scale": 31.2500839,
+          "raw_budget": 37500.1,
+          "godhome": 97500
         },
         {
           "difficulty": "Expert",
-          "life": 200000,
-          "pool_life": 200000,
-          "scale": 166.6665,
-          "raw_budget": 199999.8,
-          "godhome": 260001
+          "life": 50001,
+          "pool_life": 50001,
+          "scale": 41.6670837,
+          "raw_budget": 50000.5,
+          "godhome": 130001
         },
         {
           "difficulty": "Master",
-          "life": 300000,
-          "pool_life": 300000,
-          "scale": 249.999756,
-          "raw_budget": 299999.719,
-          "godhome": 390000
+          "life": 75001,
+          "pool_life": 75001,
+          "scale": 62.5001678,
+          "raw_budget": 75000.2,
+          "godhome": 195001
         },
         {
           "difficulty": "Hollow",
-          "life": 300000,
-          "pool_life": 300000,
-          "scale": 249.999756,
-          "raw_budget": 299999.719,
-          "godhome": 390000
+          "life": 75001,
+          "pool_life": 75001,
+          "scale": 62.5001678,
+          "raw_budget": 75000.2,
+          "godhome": 195001
         }
       ]
     },
@@ -3146,43 +3146,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 100000,
-          "pool_life": 100000,
-          "scale": 133.333267,
-          "raw_budget": 99999.95,
-          "godhome": 130000
+          "life": 39216,
+          "pool_life": 39216,
+          "scale": 52.287468,
+          "raw_budget": 39215.6,
+          "godhome": 109804
         },
         {
           "difficulty": "Hard",
-          "life": 123750,
-          "pool_life": 123750,
-          "scale": 164.999741,
-          "raw_budget": 123749.805,
-          "godhome": 160876
+          "life": 48530,
+          "pool_life": 48530,
+          "scale": 64.7054,
+          "raw_budget": 48529.05,
+          "godhome": 135883
         },
         {
           "difficulty": "Expert",
-          "life": 130000,
-          "pool_life": 130000,
-          "scale": 173.333145,
-          "raw_budget": 129999.852,
-          "godhome": 169001
+          "life": 50981,
+          "pool_life": 50981,
+          "scale": 67.97394,
+          "raw_budget": 50980.4531,
+          "godhome": 142745
         },
         {
           "difficulty": "Master",
-          "life": 165750,
-          "pool_life": 165750,
-          "scale": 221.0,
-          "raw_budget": 165750.0,
-          "godhome": 215475
+          "life": 65001,
+          "pool_life": 65001,
+          "scale": 86.66714,
+          "raw_budget": 65000.35,
+          "godhome": 182001
         },
         {
           "difficulty": "Hollow",
-          "life": 165750,
-          "pool_life": 165750,
-          "scale": 221.0,
-          "raw_budget": 165750.0,
-          "godhome": 215475
+          "life": 65001,
+          "pool_life": 65001,
+          "scale": 86.66714,
+          "raw_budget": 65000.35,
+          "godhome": 182001
         }
       ]
     },
@@ -3422,43 +3422,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 50000,
-          "pool_life": 50000,
-          "scale": 62.5,
-          "raw_budget": 50000.0,
-          "godhome": 65000
+          "life": 12255,
+          "pool_life": 12255,
+          "scale": 15.31875,
+          "raw_budget": 12255.0,
+          "godhome": 76471
         },
         {
           "difficulty": "Hard",
-          "life": 67500,
-          "pool_life": 67500,
-          "scale": 84.375,
-          "raw_budget": 67500.0,
-          "godhome": 87750
+          "life": 16544,
+          "pool_life": 16544,
+          "scale": 20.68,
+          "raw_budget": 16544.0,
+          "godhome": 103235
         },
         {
           "difficulty": "Expert",
-          "life": 80000,
-          "pool_life": 80000,
-          "scale": 100.0,
-          "raw_budget": 80000.0,
-          "godhome": 104000
+          "life": 19608,
+          "pool_life": 19608,
+          "scale": 24.51,
+          "raw_budget": 19608.0,
+          "godhome": 122353
         },
         {
           "difficulty": "Master",
-          "life": 102000,
-          "pool_life": 102000,
-          "scale": 127.5,
-          "raw_budget": 102000.0,
-          "godhome": 132600
+          "life": 25000,
+          "pool_life": 25000,
+          "scale": 31.25,
+          "raw_budget": 25000.0,
+          "godhome": 156000
         },
         {
           "difficulty": "Hollow",
-          "life": 102000,
-          "pool_life": 102000,
-          "scale": 127.5,
-          "raw_budget": 102000.0,
-          "godhome": 132600
+          "life": 25000,
+          "pool_life": 25000,
+          "scale": 31.25,
+          "raw_budget": 25000.0,
+          "godhome": 156000
         }
       ]
     },
@@ -3468,43 +3468,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 140000,
-          "pool_life": 140000,
-          "scale": 140.0,
-          "raw_budget": 140000.0,
-          "godhome": 182000
+          "life": 57516,
+          "pool_life": 57516,
+          "scale": 57.516,
+          "raw_budget": 57516.0,
+          "godhome": 74771
         },
         {
           "difficulty": "Hard",
-          "life": 183750,
-          "pool_life": 183750,
-          "scale": 183.75,
-          "raw_budget": 183750.0,
-          "godhome": 238875
+          "life": 75490,
+          "pool_life": 75490,
+          "scale": 75.49,
+          "raw_budget": 75490.0,
+          "godhome": 98137
         },
         {
           "difficulty": "Expert",
-          "life": 210000,
-          "pool_life": 210000,
-          "scale": 210.0,
-          "raw_budget": 210000.0,
-          "godhome": 273000
+          "life": 86275,
+          "pool_life": 86275,
+          "scale": 86.275,
+          "raw_budget": 86275.0,
+          "godhome": 112157
         },
         {
           "difficulty": "Master",
-          "life": 267750,
-          "pool_life": 267750,
-          "scale": 267.75,
-          "raw_budget": 267750.0,
-          "godhome": 348075
+          "life": 110000,
+          "pool_life": 110000,
+          "scale": 110.0,
+          "raw_budget": 110000.0,
+          "godhome": 143000
         },
         {
           "difficulty": "Hollow",
-          "life": 267750,
-          "pool_life": 267750,
-          "scale": 267.75,
-          "raw_budget": 267750.0,
-          "godhome": 348075
+          "life": 110000,
+          "pool_life": 110000,
+          "scale": 110.0,
+          "raw_budget": 110000.0,
+          "godhome": 143000
         }
       ]
     },
@@ -3514,43 +3514,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 260001,
-          "pool_life": 260001,
-          "scale": 162.500061,
-          "raw_budget": 260000.1,
-          "godhome": 260001
+          "life": 122353,
+          "pool_life": 122353,
+          "scale": 76.4701843,
+          "raw_budget": 122352.3,
+          "godhome": 122353
         },
         {
           "difficulty": "Hard",
-          "life": 341250,
-          "pool_life": 341250,
-          "scale": 213.280869,
-          "raw_budget": 341249.4,
-          "godhome": 341250
+          "life": 160588,
+          "pool_life": 160588,
+          "scale": 100.367432,
+          "raw_budget": 160587.891,
+          "godhome": 160588
         },
         {
           "difficulty": "Expert",
-          "life": 390000,
-          "pool_life": 390000,
-          "scale": 243.7498,
-          "raw_budget": 389999.7,
-          "godhome": 390000
+          "life": 183529,
+          "pool_life": 183529,
+          "scale": 114.705559,
+          "raw_budget": 183528.891,
+          "godhome": 183529
         },
         {
           "difficulty": "Master",
-          "life": 497251,
-          "pool_life": 497251,
-          "scale": 310.7818,
-          "raw_budget": 497250.875,
-          "godhome": 497251
+          "life": 234000,
+          "pool_life": 234000,
+          "scale": 146.25,
+          "raw_budget": 234000.0,
+          "godhome": 234000
         },
         {
           "difficulty": "Hollow",
-          "life": 497251,
-          "pool_life": 497251,
-          "scale": 310.7818,
-          "raw_budget": 497250.875,
-          "godhome": 497251
+          "life": 234000,
+          "pool_life": 234000,
+          "scale": 146.25,
+          "raw_budget": 234000.0,
+          "godhome": 234000
         }
       ]
     },
@@ -3606,43 +3606,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 80000,
-          "pool_life": 80000,
-          "scale": 355.555573,
-          "raw_budget": 80000.0,
-          "godhome": 104000
+          "life": 21961,
+          "pool_life": 21961,
+          "scale": 97.60355,
+          "raw_budget": 21960.8,
+          "godhome": 28549
         },
         {
           "difficulty": "Hard",
-          "life": 105000,
-          "pool_life": 105001,
-          "scale": 466.6667,
-          "raw_budget": 105000.0,
-          "godhome": 136500
+          "life": 28824,
+          "pool_life": 28824,
+          "scale": 128.103119,
+          "raw_budget": 28823.2012,
+          "godhome": 37471
         },
         {
           "difficulty": "Expert",
-          "life": 120000,
-          "pool_life": 120000,
-          "scale": 533.3333,
-          "raw_budget": 120000.0,
-          "godhome": 156000
+          "life": 32941,
+          "pool_life": 32941,
+          "scale": 146.403564,
+          "raw_budget": 32940.8,
+          "godhome": 42824
         },
         {
           "difficulty": "Master",
-          "life": 153000,
-          "pool_life": 153000,
-          "scale": 680.0,
-          "raw_budget": 153000.0,
-          "godhome": 198900
+          "life": 42000,
+          "pool_life": 42000,
+          "scale": 186.666672,
+          "raw_budget": 42000.0,
+          "godhome": 54600
         },
         {
           "difficulty": "Hollow",
-          "life": 153000,
-          "pool_life": 153000,
-          "scale": 680.0,
-          "raw_budget": 153000.0,
-          "godhome": 198900
+          "life": 42000,
+          "pool_life": 42000,
+          "scale": 186.666672,
+          "raw_budget": 42000.0,
+          "godhome": 54600
         }
       ]
     },
@@ -3652,43 +3652,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 80000,
-          "pool_life": 80000,
-          "scale": 355.555573,
-          "raw_budget": 80000.0,
-          "godhome": 104000
+          "life": 21961,
+          "pool_life": 21961,
+          "scale": 97.60355,
+          "raw_budget": 21960.8,
+          "godhome": 28549
         },
         {
           "difficulty": "Hard",
-          "life": 105000,
-          "pool_life": 105001,
-          "scale": 466.6667,
-          "raw_budget": 105000.0,
-          "godhome": 136500
+          "life": 28824,
+          "pool_life": 28824,
+          "scale": 128.103119,
+          "raw_budget": 28823.2012,
+          "godhome": 37471
         },
         {
           "difficulty": "Expert",
-          "life": 120000,
-          "pool_life": 120000,
-          "scale": 533.3333,
-          "raw_budget": 120000.0,
-          "godhome": 156000
+          "life": 32941,
+          "pool_life": 32941,
+          "scale": 146.403564,
+          "raw_budget": 32940.8,
+          "godhome": 42824
         },
         {
           "difficulty": "Master",
-          "life": 153000,
-          "pool_life": 153000,
-          "scale": 680.0,
-          "raw_budget": 153000.0,
-          "godhome": 198900
+          "life": 42000,
+          "pool_life": 42000,
+          "scale": 186.666672,
+          "raw_budget": 42000.0,
+          "godhome": 54600
         },
         {
           "difficulty": "Hollow",
-          "life": 153000,
-          "pool_life": 153000,
-          "scale": 680.0,
-          "raw_budget": 153000.0,
-          "godhome": 198900
+          "life": 42000,
+          "pool_life": 42000,
+          "scale": 186.666672,
+          "raw_budget": 42000.0,
+          "godhome": 54600
         }
       ]
     },
@@ -3698,43 +3698,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 40000,
-          "pool_life": 40000,
-          "scale": 76.19,
-          "raw_budget": 39999.75,
-          "godhome": 52001
+          "life": 8740,
+          "pool_life": 8740,
+          "scale": 16.64581,
+          "raw_budget": 8739.05,
+          "godhome": 91037
         },
         {
           "difficulty": "Hard",
-          "life": 51000,
-          "pool_life": 51000,
-          "scale": 97.14247,
-          "raw_budget": 50999.8,
-          "godhome": 66300
+          "life": 11143,
+          "pool_life": 11143,
+          "scale": 21.2239037,
+          "raw_budget": 11142.55,
+          "godhome": 116071
         },
         {
           "difficulty": "Expert",
-          "life": 56000,
-          "pool_life": 56000,
-          "scale": 106.666,
-          "raw_budget": 55999.65,
-          "godhome": 72801
+          "life": 12236,
+          "pool_life": 12236,
+          "scale": 23.3048573,
+          "raw_budget": 12235.05,
+          "godhome": 127452
         },
         {
           "difficulty": "Master",
-          "life": 71401,
-          "pool_life": 71401,
-          "scale": 136.000183,
-          "raw_budget": 71400.1,
-          "godhome": 92820
+          "life": 15600,
+          "pool_life": 15600,
+          "scale": 29.71419,
+          "raw_budget": 15599.95,
+          "godhome": 162501
         },
         {
           "difficulty": "Hollow",
-          "life": 71401,
-          "pool_life": 71401,
-          "scale": 136.000183,
-          "raw_budget": 71400.1,
-          "godhome": 92820
+          "life": 15600,
+          "pool_life": 15600,
+          "scale": 29.71419,
+          "raw_budget": 15599.95,
+          "godhome": 162501
         }
       ]
     },
@@ -3744,43 +3744,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 110000,
-          "pool_life": 110000,
-          "scale": 209.522949,
-          "raw_budget": 109999.547,
-          "godhome": 143000
+          "life": 20916,
+          "pool_life": 20916,
+          "scale": 39.8384743,
+          "raw_budget": 20915.2,
+          "godhome": 101961
         },
         {
           "difficulty": "Hard",
-          "life": 144376,
-          "pool_life": 144376,
-          "scale": 275.00058,
-          "raw_budget": 144375.3,
-          "godhome": 187688
+          "life": 27452,
+          "pool_life": 27452,
+          "scale": 52.288,
+          "raw_budget": 27451.2,
+          "godhome": 133824
         },
         {
           "difficulty": "Expert",
-          "life": 165000,
-          "pool_life": 165000,
-          "scale": 314.285339,
-          "raw_budget": 164999.8,
-          "godhome": 214500
+          "life": 31373,
+          "pool_life": 31373,
+          "scale": 59.7577133,
+          "raw_budget": 31372.7988,
+          "godhome": 152942
         },
         {
           "difficulty": "Master",
-          "life": 210375,
-          "pool_life": 210375,
-          "scale": 400.713623,
-          "raw_budget": 210374.641,
-          "godhome": 273488
+          "life": 40000,
+          "pool_life": 40000,
+          "scale": 76.19,
+          "raw_budget": 39999.75,
+          "godhome": 195000
         },
         {
           "difficulty": "Hollow",
-          "life": 210375,
-          "pool_life": 210375,
-          "scale": 400.713623,
-          "raw_budget": 210374.641,
-          "godhome": 273488
+          "life": 40000,
+          "pool_life": 40000,
+          "scale": 76.19,
+          "raw_budget": 39999.75,
+          "godhome": 195000
         }
       ]
     },
@@ -3836,43 +3836,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 4040,
-          "pool_life": 4040,
-          "scale": 5.3856,
-          "raw_budget": 4039.2002,
-          "godhome": 143000
+          "life": 6163,
+          "pool_life": 6163,
+          "scale": 8.216667,
+          "raw_budget": 6162.5,
+          "godhome": 83754
         },
         {
           "difficulty": "Hard",
-          "life": 5151,
-          "pool_life": 5151,
-          "scale": 6.866867,
-          "raw_budget": 5150.15,
-          "godhome": 182325
+          "life": 7858,
+          "pool_life": 7858,
+          "scale": 10.4765339,
+          "raw_budget": 7857.40039,
+          "godhome": 106786
         },
         {
           "difficulty": "Expert",
-          "life": 5656,
-          "pool_life": 5656,
-          "scale": 7.54006672,
-          "raw_budget": 5655.05029,
-          "godhome": 200200
+          "life": 8628,
+          "pool_life": 8628,
+          "scale": 11.503334,
+          "raw_budget": 8627.5,
+          "godhome": 117255
         },
         {
           "difficulty": "Master",
-          "life": 7210,
-          "pool_life": 7210,
-          "scale": 9.612933,
-          "raw_budget": 7209.7,
-          "godhome": 255255
+          "life": 11000,
+          "pool_life": 11000,
+          "scale": 14.6664667,
+          "raw_budget": 10999.8506,
+          "godhome": 149500
         },
         {
           "difficulty": "Hollow",
-          "life": 7210,
-          "pool_life": 7210,
-          "scale": 9.612933,
-          "raw_budget": 7209.7,
-          "godhome": 255255
+          "life": 11000,
+          "pool_life": 11000,
+          "scale": 14.6664667,
+          "raw_budget": 10999.8506,
+          "godhome": 149500
         }
       ]
     },
@@ -4112,43 +4112,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 85000,
-          "pool_life": 85000,
-          "scale": 188.888885,
-          "raw_budget": 85000.0,
-          "godhome": 110500
+          "life": 29412,
+          "pool_life": 29412,
+          "scale": 65.36,
+          "raw_budget": 29412.0,
+          "godhome": 92402
         },
         {
           "difficulty": "Hard",
-          "life": 114750,
-          "pool_life": 114750,
-          "scale": 255.0,
-          "raw_budget": 114750.0,
-          "godhome": 149175
+          "life": 39706,
+          "pool_life": 39706,
+          "scale": 88.23556,
+          "raw_budget": 39706.0,
+          "godhome": 124743
         },
         {
           "difficulty": "Expert",
-          "life": 136000,
-          "pool_life": 136000,
-          "scale": 302.222229,
-          "raw_budget": 136000.0,
-          "godhome": 176800
+          "life": 47059,
+          "pool_life": 47059,
+          "scale": 104.575554,
+          "raw_budget": 47059.0,
+          "godhome": 147843
         },
         {
           "difficulty": "Master",
-          "life": 173400,
-          "pool_life": 173400,
-          "scale": 385.333344,
-          "raw_budget": 173400.0,
-          "godhome": 225420
+          "life": 60000,
+          "pool_life": 60000,
+          "scale": 133.333328,
+          "raw_budget": 60000.0,
+          "godhome": 188500
         },
         {
           "difficulty": "Hollow",
-          "life": 173400,
-          "pool_life": 173400,
-          "scale": 385.333344,
-          "raw_budget": 173400.0,
-          "godhome": 225420
+          "life": 60000,
+          "pool_life": 60000,
+          "scale": 133.333328,
+          "raw_budget": 60000.0,
+          "godhome": 188500
         }
       ]
     },
@@ -4342,43 +4342,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 2280,
-          "pool_life": 2073,
-          "scale": 7.53563643,
-          "raw_budget": 2072.3,
-          "godhome": 135910
+          "life": 3599,
+          "pool_life": 3272,
+          "scale": 11.89691,
+          "raw_budget": 3271.65015,
+          "godhome": 62707
         },
         {
           "difficulty": "Hard",
-          "life": 3163,
-          "pool_life": 2875,
-          "scale": 10.453455,
-          "raw_budget": 2874.7002,
-          "godhome": 188559
+          "life": 4993,
+          "pool_life": 4539,
+          "scale": 16.505455,
+          "raw_budget": 4539.0,
+          "godhome": 86999
         },
         {
           "difficulty": "Expert",
-          "life": 3875,
-          "pool_life": 3523,
-          "scale": 12.8087273,
-          "raw_budget": 3522.40015,
-          "godhome": 231046
+          "life": 6118,
+          "pool_life": 5562,
+          "scale": 20.2238178,
+          "raw_budget": 5561.55029,
+          "godhome": 106602
         },
         {
           "difficulty": "Master",
-          "life": 4940,
-          "pool_life": 4491,
-          "scale": 16.3292732,
-          "raw_budget": 4490.55029,
-          "godhome": 294568
+          "life": 7800,
+          "pool_life": 7091,
+          "scale": 25.7843647,
+          "raw_budget": 7090.7,
+          "godhome": 135910
         },
         {
           "difficulty": "Hollow",
-          "life": 4940,
-          "pool_life": 4491,
-          "scale": 16.3292732,
-          "raw_budget": 4490.55029,
-          "godhome": 294568
+          "life": 7800,
+          "pool_life": 7091,
+          "scale": 25.7843647,
+          "raw_budget": 7090.7,
+          "godhome": 135910
         }
       ]
     },
@@ -4388,43 +4388,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 120000,
-          "pool_life": 109091,
-          "scale": 396.693451,
-          "raw_budget": 109090.7,
-          "godhome": 141819
+          "life": 9524,
+          "pool_life": 8659,
+          "scale": 31.4840012,
+          "raw_budget": 8658.101,
+          "godhome": 92692
         },
         {
           "difficulty": "Hard",
-          "life": 153000,
-          "pool_life": 139091,
-          "scale": 505.784027,
-          "raw_budget": 139090.609,
-          "godhome": 180818
+          "life": 12143,
+          "pool_life": 11039,
+          "scale": 40.1416359,
+          "raw_budget": 11038.95,
+          "godhome": 118182
         },
         {
           "difficulty": "Expert",
-          "life": 168000,
-          "pool_life": 152728,
-          "scale": 555.37146,
-          "raw_budget": 152727.156,
-          "godhome": 198546
+          "life": 13334,
+          "pool_life": 12122,
+          "scale": 44.0763664,
+          "raw_budget": 12121.0,
+          "godhome": 129769
         },
         {
           "difficulty": "Master",
-          "life": 214201,
-          "pool_life": 194728,
-          "scale": 708.0995,
-          "raw_budget": 194727.359,
-          "godhome": 253146
+          "life": 17001,
+          "pool_life": 15455,
+          "scale": 56.19891,
+          "raw_budget": 15454.7,
+          "godhome": 165455
         },
         {
           "difficulty": "Hollow",
-          "life": 214201,
-          "pool_life": 194728,
-          "scale": 708.0995,
-          "raw_budget": 194727.359,
-          "godhome": 253146
+          "life": 17001,
+          "pool_life": 15455,
+          "scale": 56.19891,
+          "raw_budget": 15454.7,
+          "godhome": 165455
         }
       ]
     },
@@ -4572,43 +4572,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 3928,
-          "pool_life": 3570,
-          "scale": 17.0,
-          "raw_budget": 3570.0,
-          "godhome": 153637
+          "life": 3095,
+          "pool_life": 2814,
+          "scale": 13.3976192,
+          "raw_budget": 2813.5,
+          "godhome": 52256
         },
         {
           "difficulty": "Hard",
-          "life": 6080,
-          "pool_life": 5527,
-          "scale": 26.31762,
-          "raw_budget": 5526.7,
-          "godhome": 237863
+          "life": 4792,
+          "pool_life": 4357,
+          "scale": 20.74405,
+          "raw_budget": 4356.25,
+          "godhome": 80903
         },
         {
           "difficulty": "Expert",
-          "life": 8359,
-          "pool_life": 7599,
-          "scale": 36.1857147,
-          "raw_budget": 7599.0,
-          "godhome": 327026
+          "life": 6589,
+          "pool_life": 5990,
+          "scale": 28.5195255,
+          "raw_budget": 5989.1,
+          "godhome": 111231
         },
         {
           "difficulty": "Master",
-          "life": 10658,
-          "pool_life": 9689,
-          "scale": 46.13476,
-          "raw_budget": 9688.3,
-          "godhome": 416959
+          "life": 8401,
+          "pool_life": 7637,
+          "scale": 36.36381,
+          "raw_budget": 7636.40039,
+          "godhome": 141819
         },
         {
           "difficulty": "Hollow",
-          "life": 10658,
-          "pool_life": 9689,
-          "scale": 46.13476,
-          "raw_budget": 9688.3,
-          "godhome": 416959
+          "life": 8401,
+          "pool_life": 7637,
+          "scale": 36.36381,
+          "raw_budget": 7636.40039,
+          "godhome": 141819
         }
       ]
     },
@@ -4618,43 +4618,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1717,
-          "pool_life": 1717,
-          "scale": 5.72000027,
-          "raw_budget": 1716.00012,
-          "godhome": 110500
+          "life": 1569,
+          "pool_life": 1569,
+          "scale": 5.228,
+          "raw_budget": 1568.4,
+          "godhome": 72830
         },
         {
           "difficulty": "Hard",
-          "life": 2188,
-          "pool_life": 2188,
-          "scale": 7.29200029,
-          "raw_budget": 2187.6,
-          "godhome": 140888
+          "life": 2001,
+          "pool_life": 2001,
+          "scale": 6.668,
+          "raw_budget": 2000.4,
+          "godhome": 92858
         },
         {
           "difficulty": "Expert",
-          "life": 2403,
-          "pool_life": 2403,
-          "scale": 8.008,
-          "raw_budget": 2402.40015,
-          "godhome": 154701
+          "life": 2196,
+          "pool_life": 2196,
+          "scale": 7.32,
+          "raw_budget": 2196.0,
+          "godhome": 101961
         },
         {
           "difficulty": "Master",
-          "life": 3064,
-          "pool_life": 3064,
-          "scale": 10.2120008,
-          "raw_budget": 3063.6,
-          "godhome": 197243
+          "life": 2800,
+          "pool_life": 2800,
+          "scale": 9.332001,
+          "raw_budget": 2799.6,
+          "godhome": 130000
         },
         {
           "difficulty": "Hollow",
-          "life": 3064,
-          "pool_life": 3064,
-          "scale": 10.2120008,
-          "raw_budget": 3063.6,
-          "godhome": 197243
+          "life": 2800,
+          "pool_life": 2800,
+          "scale": 9.332001,
+          "raw_budget": 2799.6,
+          "godhome": 130000
         }
       ]
     },
@@ -4710,43 +4710,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 4200,
-          "pool_life": 4200,
-          "scale": 15.0,
-          "raw_budget": 4200.0,
-          "godhome": 123500
+          "life": 3433,
+          "pool_life": 3433,
+          "scale": 12.2607145,
+          "raw_budget": 3433.0,
+          "godhome": 62976
         },
         {
           "difficulty": "Hard",
-          "life": 5828,
-          "pool_life": 5828,
-          "scale": 20.8142853,
-          "raw_budget": 5828.0,
-          "godhome": 171356
+          "life": 4763,
+          "pool_life": 4763,
+          "scale": 17.0107136,
+          "raw_budget": 4763.0,
+          "godhome": 87379
         },
         {
           "difficulty": "Expert",
-          "life": 7140,
-          "pool_life": 7140,
-          "scale": 25.5,
-          "raw_budget": 7140.0,
-          "godhome": 209950
+          "life": 5835,
+          "pool_life": 5835,
+          "scale": 20.8392849,
+          "raw_budget": 5835.0,
+          "godhome": 107059
         },
         {
           "difficulty": "Master",
-          "life": 9104,
-          "pool_life": 9104,
-          "scale": 32.514286,
-          "raw_budget": 9104.0,
-          "godhome": 267686
+          "life": 7440,
+          "pool_life": 7440,
+          "scale": 26.5714283,
+          "raw_budget": 7440.0,
+          "godhome": 136500
         },
         {
           "difficulty": "Hollow",
-          "life": 9104,
-          "pool_life": 9104,
-          "scale": 32.514286,
-          "raw_budget": 9104.0,
-          "godhome": 267686
+          "life": 7440,
+          "pool_life": 7440,
+          "scale": 26.5714283,
+          "raw_budget": 7440.0,
+          "godhome": 136500
         }
       ]
     },
@@ -4756,43 +4756,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1951,
-          "pool_life": 1951,
-          "scale": 6.501333,
-          "raw_budget": 1950.4,
-          "godhome": 123500
+          "life": 2676,
+          "pool_life": 2676,
+          "scale": 8.92,
+          "raw_budget": 2676.0,
+          "godhome": 59980
         },
         {
           "difficulty": "Hard",
-          "life": 2706,
-          "pool_life": 2706,
-          "scale": 9.018667,
-          "raw_budget": 2705.6,
-          "godhome": 171342
+          "life": 3713,
+          "pool_life": 3713,
+          "scale": 12.376,
+          "raw_budget": 3712.8,
+          "godhome": 83216
         },
         {
           "difficulty": "Expert",
-          "life": 3316,
-          "pool_life": 3316,
-          "scale": 11.0506668,
-          "raw_budget": 3315.2,
-          "godhome": 209951
+          "life": 4550,
+          "pool_life": 4550,
+          "scale": 15.1653337,
+          "raw_budget": 4549.6,
+          "godhome": 101967
         },
         {
           "difficulty": "Master",
-          "life": 4227,
-          "pool_life": 4227,
-          "scale": 14.088,
-          "raw_budget": 4226.4,
-          "godhome": 267672
+          "life": 5800,
+          "pool_life": 5800,
+          "scale": 19.333334,
+          "raw_budget": 5800.0,
+          "godhome": 130000
         },
         {
           "difficulty": "Hollow",
-          "life": 4227,
-          "pool_life": 4227,
-          "scale": 14.088,
-          "raw_budget": 4226.4,
-          "godhome": 267672
+          "life": 5800,
+          "pool_life": 5800,
+          "scale": 19.333334,
+          "raw_budget": 5800.0,
+          "godhome": 130000
         }
       ]
     },
@@ -4802,43 +4802,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 1858,
-          "pool_life": 1858,
-          "scale": 18.579,
-          "raw_budget": 1857.9,
-          "godhome": 104000
+          "life": 2172,
+          "pool_life": 2172,
+          "scale": 21.714,
+          "raw_budget": 2171.40015,
+          "godhome": 66664
         },
         {
           "difficulty": "Hard",
-          "life": 2299,
-          "pool_life": 2299,
-          "scale": 22.99,
-          "raw_budget": 2299.0,
-          "godhome": 128700
+          "life": 2688,
+          "pool_life": 2688,
+          "scale": 26.8730011,
+          "raw_budget": 2687.3,
+          "godhome": 82496
         },
         {
           "difficulty": "Expert",
-          "life": 2416,
-          "pool_life": 2416,
-          "scale": 24.156,
-          "raw_budget": 2415.6,
-          "godhome": 135200
+          "life": 2824,
+          "pool_life": 2824,
+          "scale": 28.2370014,
+          "raw_budget": 2823.7,
+          "godhome": 86663
         },
         {
           "difficulty": "Master",
-          "life": 3080,
-          "pool_life": 3080,
-          "scale": 30.8000011,
-          "raw_budget": 3080.0,
-          "godhome": 172390
+          "life": 3601,
+          "pool_life": 3601,
+          "scale": 36.0030022,
+          "raw_budget": 3600.3,
+          "godhome": 110501
         },
         {
           "difficulty": "Hollow",
-          "life": 3080,
-          "pool_life": 3080,
-          "scale": 30.8000011,
-          "raw_budget": 3080.0,
-          "godhome": 172390
+          "life": 3601,
+          "pool_life": 3601,
+          "scale": 36.0030022,
+          "raw_budget": 3600.3,
+          "godhome": 110501
         }
       ]
     },
@@ -4894,43 +4894,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 5228,
-          "pool_life": 5228,
-          "scale": 7.687059,
-          "raw_budget": 5227.2,
-          "godhome": 149500
+          "life": 7003,
+          "pool_life": 7003,
+          "scale": 10.2979412,
+          "raw_budget": 7002.6,
+          "godhome": 91036
         },
         {
           "difficulty": "Hard",
-          "life": 6665,
-          "pool_life": 6665,
-          "scale": 9.801324,
-          "raw_budget": 6664.9,
-          "godhome": 190613
+          "life": 8929,
+          "pool_life": 8929,
+          "scale": 13.1304417,
+          "raw_budget": 8928.7,
+          "godhome": 116071
         },
         {
           "difficulty": "Expert",
-          "life": 7319,
-          "pool_life": 7319,
-          "scale": 10.7622061,
-          "raw_budget": 7318.30029,
-          "godhome": 209301
+          "life": 9805,
+          "pool_life": 9805,
+          "scale": 14.4180889,
+          "raw_budget": 9804.3,
+          "godhome": 127452
         },
         {
           "difficulty": "Master",
-          "life": 9331,
-          "pool_life": 9331,
-          "scale": 13.7208824,
-          "raw_budget": 9330.2,
-          "godhome": 266858
+          "life": 12501,
+          "pool_life": 12501,
+          "scale": 18.3829422,
+          "raw_budget": 12500.4,
+          "godhome": 162500
         },
         {
           "difficulty": "Hollow",
-          "life": 9331,
-          "pool_life": 9331,
-          "scale": 13.7208824,
-          "raw_budget": 9330.2,
-          "godhome": 266858
+          "life": 12501,
+          "pool_life": 12501,
+          "scale": 18.3829422,
+          "raw_budget": 12500.4,
+          "godhome": 162500
         }
       ]
     },
@@ -5630,43 +5630,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 182000,
-          "pool_life": 165455,
-          "scale": 165.4542,
-          "raw_budget": 165454.2,
-          "godhome": 165455
+          "life": 84967,
+          "pool_life": 77243,
+          "scale": 77.2425,
+          "raw_budget": 77242.5,
+          "godhome": 77243
         },
         {
           "difficulty": "Hard",
-          "life": 238875,
-          "pool_life": 217159,
-          "scale": 217.1583,
-          "raw_budget": 217158.3,
-          "godhome": 217159
+          "life": 111520,
+          "pool_life": 101382,
+          "scale": 101.3814,
+          "raw_budget": 101381.4,
+          "godhome": 101382
         },
         {
           "difficulty": "Expert",
-          "life": 273001,
-          "pool_life": 248183,
-          "scale": 248.18219,
-          "raw_budget": 248182.188,
-          "godhome": 248183
+          "life": 127451,
+          "pool_life": 115865,
+          "scale": 115.8642,
+          "raw_budget": 115864.195,
+          "godhome": 115865
         },
         {
           "difficulty": "Master",
-          "life": 348077,
-          "pool_life": 316433,
-          "scale": 316.4328,
-          "raw_budget": 316432.781,
-          "godhome": 316433
+          "life": 162500,
+          "pool_life": 147727,
+          "scale": 147.7269,
+          "raw_budget": 147726.891,
+          "godhome": 147727
         },
         {
           "difficulty": "Hollow",
-          "life": 348077,
-          "pool_life": 316433,
-          "scale": 316.4328,
-          "raw_budget": 316432.781,
-          "godhome": 316433
+          "life": 162500,
+          "pool_life": 147727,
+          "scale": 147.7269,
+          "raw_budget": 147726.891,
+          "godhome": 147727
         }
       ]
     },
@@ -5676,43 +5676,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 208000,
-          "pool_life": 208000,
-          "scale": 260.0,
-          "raw_budget": 208000.0,
-          "godhome": 208000
+          "life": 101961,
+          "pool_life": 101961,
+          "scale": 127.451004,
+          "raw_budget": 101960.805,
+          "godhome": 101961
         },
         {
           "difficulty": "Hard",
-          "life": 273000,
-          "pool_life": 273000,
-          "scale": 341.249,
-          "raw_budget": 272999.219,
-          "godhome": 273000
+          "life": 133824,
+          "pool_life": 133824,
+          "scale": 167.279,
+          "raw_budget": 133823.2,
+          "godhome": 133824
         },
         {
           "difficulty": "Expert",
-          "life": 312000,
-          "pool_life": 312000,
-          "scale": 390.0,
-          "raw_budget": 312000.0,
-          "godhome": 312000
+          "life": 152941,
+          "pool_life": 152941,
+          "scale": 191.17601,
+          "raw_budget": 152940.8,
+          "godhome": 152941
         },
         {
           "difficulty": "Master",
-          "life": 397801,
-          "pool_life": 397801,
-          "scale": 497.251,
-          "raw_budget": 397800.8,
-          "godhome": 397801
+          "life": 195000,
+          "pool_life": 195000,
+          "scale": 243.75,
+          "raw_budget": 195000.0,
+          "godhome": 195000
         },
         {
           "difficulty": "Hollow",
-          "life": 397801,
-          "pool_life": 397801,
-          "scale": 497.251,
-          "raw_budget": 397800.8,
-          "godhome": 397801
+          "life": 195000,
+          "pool_life": 195000,
+          "scale": 243.75,
+          "raw_budget": 195000.0,
+          "godhome": 195000
         }
       ]
     },
@@ -5722,43 +5722,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 160000,
-          "pool_life": 160000,
-          "scale": 106.666504,
-          "raw_budget": 159999.75,
-          "godhome": 208001
+          "life": 84465,
+          "pool_life": 84465,
+          "scale": 56.30967,
+          "raw_budget": 84464.5,
+          "godhome": 109804
         },
         {
           "difficulty": "Hard",
-          "life": 198000,
-          "pool_life": 198000,
-          "scale": 131.999908,
-          "raw_budget": 197999.859,
-          "godhome": 257401
+          "life": 104525,
+          "pool_life": 104525,
+          "scale": 69.683,
+          "raw_budget": 104524.5,
+          "godhome": 135883
         },
         {
           "difficulty": "Expert",
-          "life": 208001,
-          "pool_life": 208001,
-          "scale": 138.666733,
-          "raw_budget": 208000.109,
-          "godhome": 270401
+          "life": 109804,
+          "pool_life": 109804,
+          "scale": 73.20257,
+          "raw_budget": 109803.852,
+          "godhome": 142745
         },
         {
           "difficulty": "Master",
-          "life": 265200,
-          "pool_life": 265200,
-          "scale": 176.8,
-          "raw_budget": 265200.0,
-          "godhome": 344760
+          "life": 140001,
+          "pool_life": 140001,
+          "scale": 93.3334045,
+          "raw_budget": 140000.109,
+          "godhome": 182001
         },
         {
           "difficulty": "Hollow",
-          "life": 265200,
-          "pool_life": 265200,
-          "scale": 176.8,
-          "raw_budget": 265200.0,
-          "godhome": 344760
+          "life": 140001,
+          "pool_life": 140001,
+          "scale": 93.3334045,
+          "raw_budget": 140000.109,
+          "godhome": 182001
         }
       ]
     },
@@ -5768,43 +5768,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 90000,
-          "pool_life": 45000,
-          "scale": 173.07692,
-          "raw_budget": 90000.0,
-          "godhome": 117000
+          "life": 15687,
+          "pool_life": 7844,
+          "scale": 30.1655769,
+          "raw_budget": 15686.1,
+          "godhome": 86030
         },
         {
           "difficulty": "Hard",
-          "life": 121500,
-          "pool_life": 60750,
-          "scale": 233.653839,
-          "raw_budget": 121500.0,
-          "godhome": 157950
+          "life": 21177,
+          "pool_life": 10589,
+          "scale": 40.7232666,
+          "raw_budget": 21176.1,
+          "godhome": 116140
         },
         {
           "difficulty": "Expert",
-          "life": 144000,
-          "pool_life": 72000,
-          "scale": 276.923065,
-          "raw_budget": 144000.0,
-          "godhome": 187200
+          "life": 25099,
+          "pool_life": 12550,
+          "scale": 48.26596,
+          "raw_budget": 25098.2988,
+          "godhome": 137647
         },
         {
           "difficulty": "Master",
-          "life": 183600,
-          "pool_life": 91800,
-          "scale": 353.0769,
-          "raw_budget": 183600.0,
-          "godhome": 238680
+          "life": 32001,
+          "pool_life": 16001,
+          "scale": 61.53923,
+          "raw_budget": 32000.3984,
+          "godhome": 175500
         },
         {
           "difficulty": "Hollow",
-          "life": 183600,
-          "pool_life": 91800,
-          "scale": 353.0769,
-          "raw_budget": 183600.0,
-          "godhome": 238680
+          "life": 32001,
+          "pool_life": 16001,
+          "scale": 61.53923,
+          "raw_budget": 32000.3984,
+          "godhome": 175500
         }
       ]
     },
@@ -5906,43 +5906,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 195000,
-          "pool_life": 195000,
-          "scale": 205.263153,
-          "raw_budget": 195000.0,
-          "godhome": 195000
+          "life": 91765,
+          "pool_life": 91765,
+          "scale": 96.5947342,
+          "raw_budget": 91765.0,
+          "godhome": 91765
         },
         {
           "difficulty": "Hard",
-          "life": 255937,
-          "pool_life": 255938,
-          "scale": 269.407379,
-          "raw_budget": 255937.0,
-          "godhome": 255937
+          "life": 120441,
+          "pool_life": 120441,
+          "scale": 126.78,
+          "raw_budget": 120441.0,
+          "godhome": 120441
         },
         {
           "difficulty": "Expert",
-          "life": 292500,
-          "pool_life": 292500,
-          "scale": 307.894745,
-          "raw_budget": 292500.0,
-          "godhome": 292500
+          "life": 137647,
+          "pool_life": 137647,
+          "scale": 144.891586,
+          "raw_budget": 137647.0,
+          "godhome": 137647
         },
         {
           "difficulty": "Master",
-          "life": 372938,
-          "pool_life": 372938,
-          "scale": 392.5663,
-          "raw_budget": 372938.0,
-          "godhome": 372938
+          "life": 175500,
+          "pool_life": 175500,
+          "scale": 184.736847,
+          "raw_budget": 175500.0,
+          "godhome": 175500
         },
         {
           "difficulty": "Hollow",
-          "life": 372938,
-          "pool_life": 372938,
-          "scale": 392.5663,
-          "raw_budget": 372938.0,
-          "godhome": 372938
+          "life": 175500,
+          "pool_life": 175500,
+          "scale": 184.736847,
+          "raw_budget": 175500.0,
+          "godhome": 175500
         }
       ]
     },
@@ -6918,43 +6918,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 3581,
-          "pool_life": 3581,
-          "scale": 4.4756875,
-          "raw_budget": 3580.55,
-          "godhome": 149500
+          "life": 28010,
+          "pool_life": 28010,
+          "scale": 35.01225,
+          "raw_budget": 28009.7988,
+          "godhome": 94675
         },
         {
           "difficulty": "Hard",
-          "life": 4565,
-          "pool_life": 4565,
-          "scale": 5.70593739,
-          "raw_budget": 4564.75,
-          "godhome": 190617
+          "life": 35714,
+          "pool_life": 35714,
+          "scale": 44.6416855,
+          "raw_budget": 35713.3477,
+          "godhome": 120712
         },
         {
           "difficulty": "Expert",
-          "life": 5013,
-          "pool_life": 5013,
-          "scale": 6.26524973,
-          "raw_budget": 5012.19971,
-          "godhome": 209301
+          "life": 39215,
+          "pool_life": 39215,
+          "scale": 49.0176239,
+          "raw_budget": 39214.0977,
+          "godhome": 132544
         },
         {
           "difficulty": "Master",
-          "life": 6392,
-          "pool_life": 6392,
-          "scale": 7.9895,
-          "raw_budget": 6391.6,
-          "godhome": 266869
+          "life": 50001,
+          "pool_life": 50001,
+          "scale": 62.5005,
+          "raw_budget": 50000.4,
+          "godhome": 169001
         },
         {
           "difficulty": "Hollow",
-          "life": 6392,
-          "pool_life": 6392,
-          "scale": 7.9895,
-          "raw_budget": 6391.6,
-          "godhome": 266869
+          "life": 50001,
+          "pool_life": 50001,
+          "scale": 62.5005,
+          "raw_budget": 50000.4,
+          "godhome": 169001
         }
       ]
     },
@@ -6964,43 +6964,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 120001,
-          "pool_life": 120001,
-          "scale": 75.00006,
-          "raw_budget": 120000.1,
-          "godhome": 156000
+          "life": 48266,
+          "pool_life": 48266,
+          "scale": 30.1661263,
+          "raw_budget": 48265.8,
+          "godhome": 117648
         },
         {
           "difficulty": "Hard",
-          "life": 148500,
-          "pool_life": 148500,
-          "scale": 92.8125,
-          "raw_budget": 148500.0,
-          "godhome": 193050
+          "life": 59729,
+          "pool_life": 59729,
+          "scale": 37.3305626,
+          "raw_budget": 59728.9023,
+          "godhome": 145589
         },
         {
           "difficulty": "Expert",
-          "life": 156000,
-          "pool_life": 156000,
-          "scale": 97.49988,
-          "raw_budget": 155999.8,
-          "godhome": 202801
+          "life": 62746,
+          "pool_life": 62746,
+          "scale": 39.2156868,
+          "raw_budget": 62745.1,
+          "godhome": 152941
         },
         {
           "difficulty": "Master",
-          "life": 198900,
-          "pool_life": 198900,
-          "scale": 124.312378,
-          "raw_budget": 198899.8,
-          "godhome": 258571
+          "life": 80000,
+          "pool_life": 80000,
+          "scale": 49.9998131,
+          "raw_budget": 79999.7,
+          "godhome": 195001
         },
         {
           "difficulty": "Hollow",
-          "life": 198900,
-          "pool_life": 198900,
-          "scale": 124.312378,
-          "raw_budget": 198899.8,
-          "godhome": 258571
+          "life": 80000,
+          "pool_life": 80000,
+          "scale": 49.9998131,
+          "raw_budget": 79999.7,
+          "godhome": 195001
         }
       ]
     },
@@ -7562,43 +7562,43 @@
       "difficulties": [
         {
           "difficulty": "Normal",
-          "life": 12000,
-          "pool_life": 12001,
-          "scale": 60.0000038,
-          "raw_budget": 12000.0,
-          "godhome": 15601
+          "life": 491,
+          "pool_life": 491,
+          "scale": 2.45100021,
+          "raw_budget": 490.2,
+          "godhome": 7648
         },
         {
           "difficulty": "Hard",
-          "life": 16201,
-          "pool_life": 16200,
-          "scale": 81.0,
-          "raw_budget": 16200.001,
-          "godhome": 21060
+          "life": 662,
+          "pool_life": 662,
+          "scale": 3.309,
+          "raw_budget": 661.800049,
+          "godhome": 10324
         },
         {
           "difficulty": "Expert",
-          "life": 19200,
-          "pool_life": 19200,
-          "scale": 96.0,
-          "raw_budget": 19200.0,
-          "godhome": 24961
+          "life": 785,
+          "pool_life": 785,
+          "scale": 3.92100024,
+          "raw_budget": 784.2,
+          "godhome": 12236
         },
         {
           "difficulty": "Master",
-          "life": 24480,
-          "pool_life": 24480,
-          "scale": 122.4,
-          "raw_budget": 24480.0,
-          "godhome": 31825
+          "life": 1001,
+          "pool_life": 1001,
+          "scale": 5.0010004,
+          "raw_budget": 1000.2,
+          "godhome": 15601
         },
         {
           "difficulty": "Hollow",
-          "life": 24480,
-          "pool_life": 24480,
-          "scale": 122.4,
-          "raw_budget": 24480.0,
-          "godhome": 31825
+          "life": 1001,
+          "pool_life": 1001,
+          "scale": 5.0010004,
+          "raw_budget": 1000.2,
+          "godhome": 15601
         }
       ]
     },

@@ -3,10 +3,10 @@
   "method": "Isolated additive-scene HealthManager/FSM read; not a full fight replay",
   "source_hashes": {
     "Items/BossBalance.cs": "2c9610d3d247093d205612f41019c9a828dcbc6e3e95a15bff965d200750bca1",
-    "Items/BossStats.cs": "70b8deb6ff4c95eb4029acc25f1af599a4fed3f0901e846583874d44d1dc5270",
+    "Items/BossStats.cs": "edb469473ed80b7ff5aa1cddebaeef0a731e7798a8af8b1862352122b0cd510c",
     "Items/EnemyDropData.cs": "8ee717d54b35b95074c9fc14493c3542293ddc42ff9705fc7638f5288e06342f",
-    "Items/EnemyDrops.cs": "6c2d303b4e878ef098e8f944135ec403b6be09bdc5cf2e83d66008a83a8854fb",
-    "Items/EnemyStats.cs": "3ac1b7009bbbfb63c8b3026845405fd7111d273f0abd2c199c3dcf265120d114",
+    "Items/EnemyDrops.cs": "5439303c3bfa90a5398b5b31993d52c5e97cfa5775776e25e8f212300002f08b",
+    "Items/EnemyStats.cs": "3b881201606ca6999a32454069b17e9f85b9c50819968c1ddbf2fd3ed76740fc",
     "UI/EnemyHover.cs": "69cca2300c1696dff6f4e710c2c8afd4893d35005d8d5ede60f7bee797e136ee",
     "World/Areas.cs": "41e9499b153777ea2c077ae9fa621288a2cc34137fe6eb6267a8ad020f6001b2",
     "World/GameDifficulty.cs": "6b5111d2dba89ee074c47296ddb6b8fa12c37cd0c1dec4ec48fd44a7f4d2623e"
@@ -32,33 +32,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 633,
-              "whole": 3264,
-              "scale": 9.730769
+              "pool": 326,
+              "whole": 1680,
+              "scale": 5.008284
             },
             {
               "difficulty": "Hard",
-              "pool": 807,
-              "whole": 4161,
-              "scale": 12.4050293
+              "pool": 416,
+              "whole": 2144,
+              "scale": 6.389645
             },
             {
               "difficulty": "Expert",
-              "pool": 886,
-              "whole": 4570,
-              "scale": 13.6230764
+              "pool": 457,
+              "whole": 2354,
+              "scale": 7.01568031
             },
             {
               "difficulty": "Master",
-              "pool": 1130,
-              "whole": 5827,
-              "scale": 17.3724842
+              "pool": 582,
+              "whole": 2999,
+              "scale": 8.941421
             },
             {
               "difficulty": "Hollow",
-              "pool": 1130,
-              "whole": 5827,
-              "scale": 17.3724842
+              "pool": 582,
+              "whole": 2999,
+              "scale": 8.941421
             }
           ],
           "actions": [
@@ -256,33 +256,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 190,
-              "whole": 3264,
-              "scale": 4.74375
+              "pool": 98,
+              "whole": 1680,
+              "scale": 2.44153833
             },
             {
               "difficulty": "Hard",
-              "pool": 242,
-              "whole": 4161,
-              "scale": 6.047452
+              "pool": 125,
+              "whole": 2144,
+              "scale": 3.11495185
             },
             {
               "difficulty": "Expert",
-              "pool": 266,
-              "whole": 4570,
-              "scale": 6.64125
+              "pool": 137,
+              "whole": 2354,
+              "scale": 3.420144
             },
             {
               "difficulty": "Master",
-              "pool": 339,
-              "whole": 5827,
-              "scale": 8.469087
+              "pool": 175,
+              "whole": 2999,
+              "scale": 4.358942
             },
             {
               "difficulty": "Hollow",
-              "pool": 339,
-              "whole": 5827,
-              "scale": 8.469087
+              "pool": 175,
+              "whole": 2999,
+              "scale": 4.358942
             }
           ],
           "actions": [
@@ -489,33 +489,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 19380,
-              "whole": 100000,
-              "scale": 53.83253
+              "pool": 607,
+              "whole": 3132,
+              "scale": 1.68568373
             },
             {
               "difficulty": "Hard",
-              "pool": 30004,
-              "whole": 154821,
-              "scale": 83.3442841
+              "pool": 940,
+              "whole": 4850,
+              "scale": 2.610844
             },
             {
               "difficulty": "Expert",
-              "pool": 41252,
-              "whole": 212858,
-              "scale": 114.587181
+              "pool": 1292,
+              "whole": 6667,
+              "scale": 3.58883548
             },
             {
               "difficulty": "Master",
-              "pool": 52596,
-              "whole": 271394,
-              "scale": 146.099152
+              "pool": 1648,
+              "whole": 8500,
+              "scale": 4.57542753
             },
             {
               "difficulty": "Hollow",
-              "pool": 52596,
-              "whole": 271394,
-              "scale": 146.099152
+              "pool": 1648,
+              "whole": 8500,
+              "scale": 4.57542753
             }
           ],
           "actions": [
@@ -776,33 +776,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 5814,
-              "whole": 100000,
-              "scale": 96.89856
+              "pool": 183,
+              "whole": 3132,
+              "scale": 3.03423071
             },
             {
               "difficulty": "Hard",
-              "pool": 9002,
-              "whole": 154821,
-              "scale": 150.019714
+              "pool": 282,
+              "whole": 4850,
+              "scale": 4.699519
             },
             {
               "difficulty": "Expert",
-              "pool": 12376,
-              "whole": 212858,
-              "scale": 206.256912
+              "pool": 388,
+              "whole": 6667,
+              "scale": 6.45990372
             },
             {
               "difficulty": "Master",
-              "pool": 15779,
-              "whole": 271394,
-              "scale": 262.978455
+              "pool": 495,
+              "whole": 8500,
+              "scale": 8.235769
             },
             {
               "difficulty": "Hollow",
-              "pool": 15779,
-              "whole": 271394,
-              "scale": 262.978455
+              "pool": 495,
+              "whole": 8500,
+              "scale": 8.235769
             }
           ],
           "actions": [
@@ -942,33 +942,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1037,
-              "whole": 2280,
-              "scale": 3.76781821
+              "pool": 1636,
+              "whole": 3599,
+              "scale": 5.948455
             },
             {
               "difficulty": "Hard",
-              "pool": 1438,
-              "whole": 3163,
-              "scale": 5.22672749
+              "pool": 2270,
+              "whole": 4993,
+              "scale": 8.25272751
             },
             {
               "difficulty": "Expert",
-              "pool": 1762,
-              "whole": 3875,
-              "scale": 6.40436363
+              "pool": 2781,
+              "whole": 6118,
+              "scale": 10.1119089
             },
             {
               "difficulty": "Master",
-              "pool": 2246,
-              "whole": 4940,
-              "scale": 8.164637
+              "pool": 3546,
+              "whole": 7800,
+              "scale": 12.8921824
             },
             {
               "difficulty": "Hollow",
-              "pool": 2246,
-              "whole": 4940,
-              "scale": 8.164637
+              "pool": 3546,
+              "whole": 7800,
+              "scale": 12.8921824
             }
           ],
           "actions": [],
@@ -1088,33 +1088,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1244,
-              "whole": 2280,
-              "scale": 11.3034554
+              "pool": 1963,
+              "whole": 3599,
+              "scale": 17.8453655
             },
             {
               "difficulty": "Hard",
-              "pool": 1725,
-              "whole": 3163,
-              "scale": 15.6801825
+              "pool": 2724,
+              "whole": 4993,
+              "scale": 24.7581844
             },
             {
               "difficulty": "Expert",
-              "pool": 2114,
-              "whole": 3875,
-              "scale": 19.2130928
+              "pool": 3337,
+              "whole": 6118,
+              "scale": 30.33573
             },
             {
               "difficulty": "Master",
-              "pool": 2695,
-              "whole": 4940,
-              "scale": 24.49391
+              "pool": 4255,
+              "whole": 7800,
+              "scale": 38.676548
             },
             {
               "difficulty": "Hollow",
-              "pool": 2695,
-              "whole": 4940,
-              "scale": 24.49391
+              "pool": 4255,
+              "whole": 7800,
+              "scale": 38.676548
             }
           ],
           "actions": [],
@@ -1203,33 +1203,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 54546,
-              "whole": 120000,
-              "scale": 60.6059456
+              "pool": 4330,
+              "whole": 9524,
+              "scale": 4.81005573
             },
             {
               "difficulty": "Hard",
-              "pool": 69546,
-              "whole": 153000,
-              "scale": 77.27256
+              "pool": 5520,
+              "whole": 12143,
+              "scale": 6.13275
             },
             {
               "difficulty": "Expert",
-              "pool": 76364,
-              "whole": 168000,
-              "scale": 84.84842
+              "pool": 6061,
+              "whole": 13334,
+              "scale": 6.733889
             },
             {
               "difficulty": "Master",
-              "pool": 97364,
-              "whole": 214201,
-              "scale": 108.181862
+              "pool": 7728,
+              "whole": 17001,
+              "scale": 8.585945
             },
             {
               "difficulty": "Hollow",
-              "pool": 97364,
-              "whole": 214201,
-              "scale": 108.181862
+              "pool": 7728,
+              "whole": 17001,
+              "scale": 8.585945
             }
           ],
           "actions": [],
@@ -1349,33 +1349,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 65455,
-              "whole": 120000,
-              "scale": 187.012634
+              "pool": 5195,
+              "whole": 9524,
+              "scale": 14.8424578
             },
             {
               "difficulty": "Hard",
-              "pool": 83455,
-              "whole": 153000,
-              "scale": 238.44104
+              "pool": 6624,
+              "whole": 12143,
+              "scale": 18.9239159
             },
             {
               "difficulty": "Expert",
-              "pool": 91637,
-              "whole": 168000,
-              "scale": 261.818
+              "pool": 7273,
+              "whole": 13334,
+              "scale": 20.7788582
             },
             {
               "difficulty": "Master",
-              "pool": 116837,
-              "whole": 214201,
-              "scale": 333.818329
+              "pool": 9273,
+              "whole": 17001,
+              "scale": 26.4937725
             },
             {
               "difficulty": "Hollow",
-              "pool": 116837,
-              "whole": 214201,
-              "scale": 333.818329
+              "pool": 9273,
+              "whole": 17001,
+              "scale": 26.4937725
             }
           ],
           "actions": [],
@@ -1501,33 +1501,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 65455,
-              "whole": 120000,
-              "scale": 187.012634
+              "pool": 5195,
+              "whole": 9524,
+              "scale": 14.8424578
             },
             {
               "difficulty": "Hard",
-              "pool": 83455,
-              "whole": 153000,
-              "scale": 238.44104
+              "pool": 6624,
+              "whole": 12143,
+              "scale": 18.9239159
             },
             {
               "difficulty": "Expert",
-              "pool": 91637,
-              "whole": 168000,
-              "scale": 261.818
+              "pool": 7273,
+              "whole": 13334,
+              "scale": 20.7788582
             },
             {
               "difficulty": "Master",
-              "pool": 116837,
-              "whole": 214201,
-              "scale": 333.818329
+              "pool": 9273,
+              "whole": 17001,
+              "scale": 26.4937725
             },
             {
               "difficulty": "Hollow",
-              "pool": 116837,
-              "whole": 214201,
-              "scale": 333.818329
+              "pool": 9273,
+              "whole": 17001,
+              "scale": 26.4937725
             }
           ],
           "actions": [],
@@ -1658,33 +1658,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1785,
-              "whole": 3928,
-              "scale": 8.5
+              "pool": 1407,
+              "whole": 3095,
+              "scale": 6.69880962
             },
             {
               "difficulty": "Hard",
-              "pool": 2764,
-              "whole": 6080,
-              "scale": 13.15881
+              "pool": 2179,
+              "whole": 4792,
+              "scale": 10.3720245
             },
             {
               "difficulty": "Expert",
-              "pool": 3800,
-              "whole": 8359,
-              "scale": 18.0928574
+              "pool": 2995,
+              "whole": 6589,
+              "scale": 14.2597628
             },
             {
               "difficulty": "Master",
-              "pool": 4845,
-              "whole": 10658,
-              "scale": 23.06738
+              "pool": 3819,
+              "whole": 8401,
+              "scale": 18.1819057
             },
             {
               "difficulty": "Hollow",
-              "pool": 4845,
-              "whole": 10658,
-              "scale": 23.06738
+              "pool": 3819,
+              "whole": 8401,
+              "scale": 18.1819057
             }
           ],
           "actions": [],
@@ -1756,33 +1756,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1785,
-              "whole": 3928,
-              "scale": 8.5
+              "pool": 1407,
+              "whole": 3095,
+              "scale": 6.69880962
             },
             {
               "difficulty": "Hard",
-              "pool": 2764,
-              "whole": 6080,
-              "scale": 13.15881
+              "pool": 2179,
+              "whole": 4792,
+              "scale": 10.3720245
             },
             {
               "difficulty": "Expert",
-              "pool": 3800,
-              "whole": 8359,
-              "scale": 18.0928574
+              "pool": 2995,
+              "whole": 6589,
+              "scale": 14.2597628
             },
             {
               "difficulty": "Master",
-              "pool": 4845,
-              "whole": 10658,
-              "scale": 23.06738
+              "pool": 3819,
+              "whole": 8401,
+              "scale": 18.1819057
             },
             {
               "difficulty": "Hollow",
-              "pool": 4845,
-              "whole": 10658,
-              "scale": 23.06738
+              "pool": 3819,
+              "whole": 8401,
+              "scale": 18.1819057
             }
           ],
           "actions": [],
@@ -1854,33 +1854,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1071,
-              "whole": 3928,
-              "scale": 6.69375038
+              "pool": 845,
+              "whole": 3095,
+              "scale": 5.275313
             },
             {
               "difficulty": "Hard",
-              "pool": 1659,
-              "whole": 6080,
-              "scale": 10.3625631
+              "pool": 1307,
+              "whole": 4792,
+              "scale": 8.16797
             },
             {
               "difficulty": "Expert",
-              "pool": 2280,
-              "whole": 8359,
-              "scale": 14.248126
+              "pool": 1797,
+              "whole": 6589,
+              "scale": 11.2295637
             },
             {
               "difficulty": "Master",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             },
             {
               "difficulty": "Hollow",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             }
           ],
           "actions": [],
@@ -1952,33 +1952,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1071,
-              "whole": 3928,
-              "scale": 6.69375038
+              "pool": 845,
+              "whole": 3095,
+              "scale": 5.275313
             },
             {
               "difficulty": "Hard",
-              "pool": 1659,
-              "whole": 6080,
-              "scale": 10.3625631
+              "pool": 1307,
+              "whole": 4792,
+              "scale": 8.16797
             },
             {
               "difficulty": "Expert",
-              "pool": 2280,
-              "whole": 8359,
-              "scale": 14.248126
+              "pool": 1797,
+              "whole": 6589,
+              "scale": 11.2295637
             },
             {
               "difficulty": "Master",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             },
             {
               "difficulty": "Hollow",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             }
           ],
           "actions": [],
@@ -2050,33 +2050,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1071,
-              "whole": 3928,
-              "scale": 6.69375038
+              "pool": 845,
+              "whole": 3095,
+              "scale": 5.275313
             },
             {
               "difficulty": "Hard",
-              "pool": 1659,
-              "whole": 6080,
-              "scale": 10.3625631
+              "pool": 1307,
+              "whole": 4792,
+              "scale": 8.16797
             },
             {
               "difficulty": "Expert",
-              "pool": 2280,
-              "whole": 8359,
-              "scale": 14.248126
+              "pool": 1797,
+              "whole": 6589,
+              "scale": 11.2295637
             },
             {
               "difficulty": "Master",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             },
             {
               "difficulty": "Hollow",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             }
           ],
           "actions": [],
@@ -2148,33 +2148,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1071,
-              "whole": 3928,
-              "scale": 6.69375038
+              "pool": 845,
+              "whole": 3095,
+              "scale": 5.275313
             },
             {
               "difficulty": "Hard",
-              "pool": 1659,
-              "whole": 6080,
-              "scale": 10.3625631
+              "pool": 1307,
+              "whole": 4792,
+              "scale": 8.16797
             },
             {
               "difficulty": "Expert",
-              "pool": 2280,
-              "whole": 8359,
-              "scale": 14.248126
+              "pool": 1797,
+              "whole": 6589,
+              "scale": 11.2295637
             },
             {
               "difficulty": "Master",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             },
             {
               "difficulty": "Hollow",
-              "pool": 2907,
-              "whole": 10658,
-              "scale": 18.1655636
+              "pool": 2291,
+              "whole": 8401,
+              "scale": 14.3182507
             }
           ],
           "actions": [],
@@ -2251,33 +2251,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 2287,
-              "whole": 14375,
-              "scale": 10.395
+              "pool": 1498,
+              "whole": 9412,
+              "scale": 6.80575
             },
             {
               "difficulty": "Hard",
-              "pool": 2916,
-              "whole": 18330,
-              "scale": 13.2545
+              "pool": 1910,
+              "whole": 12001,
+              "scale": 8.67825
             },
             {
               "difficulty": "Expert",
-              "pool": 3202,
-              "whole": 20125,
-              "scale": 14.553
+              "pool": 2097,
+              "whole": 13177,
+              "scale": 9.52875
             },
             {
               "difficulty": "Master",
-              "pool": 4083,
-              "whole": 25660,
-              "scale": 18.55525
+              "pool": 2673,
+              "whole": 16800,
+              "scale": 12.1485
             },
             {
               "difficulty": "Hollow",
-              "pool": 4083,
-              "whole": 25660,
-              "scale": 18.55525
+              "pool": 2673,
+              "whole": 16800,
+              "scale": 12.1485
             }
           ],
           "actions": [
@@ -2418,33 +2418,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1961,
-              "whole": 14375,
-              "scale": 8.910001
+              "pool": 1284,
+              "whole": 9412,
+              "scale": 5.83350039
             },
             {
               "difficulty": "Hard",
-              "pool": 2500,
-              "whole": 18330,
-              "scale": 11.361001
+              "pool": 1637,
+              "whole": 12001,
+              "scale": 7.4385004
             },
             {
               "difficulty": "Expert",
-              "pool": 2745,
-              "whole": 20125,
-              "scale": 12.4740009
+              "pool": 1797,
+              "whole": 13177,
+              "scale": 8.1675005
             },
             {
               "difficulty": "Master",
-              "pool": 3499,
-              "whole": 25660,
-              "scale": 15.904501
+              "pool": 2291,
+              "whole": 16800,
+              "scale": 10.4130011
             },
             {
               "difficulty": "Hollow",
-              "pool": 3499,
-              "whole": 25660,
-              "scale": 15.904501
+              "pool": 2291,
+              "whole": 16800,
+              "scale": 10.4130011
             }
           ],
           "actions": [
@@ -2585,33 +2585,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 1961,
-              "whole": 14375,
-              "scale": 8.910001
+              "pool": 1284,
+              "whole": 9412,
+              "scale": 5.83350039
             },
             {
               "difficulty": "Hard",
-              "pool": 2500,
-              "whole": 18330,
-              "scale": 11.361001
+              "pool": 1637,
+              "whole": 12001,
+              "scale": 7.4385004
             },
             {
               "difficulty": "Expert",
-              "pool": 2745,
-              "whole": 20125,
-              "scale": 12.4740009
+              "pool": 1797,
+              "whole": 13177,
+              "scale": 8.1675005
             },
             {
               "difficulty": "Master",
-              "pool": 3499,
-              "whole": 25660,
-              "scale": 15.904501
+              "pool": 2291,
+              "whole": 16800,
+              "scale": 10.4130011
             },
             {
               "difficulty": "Hollow",
-              "pool": 3499,
-              "whole": 25660,
-              "scale": 15.904501
+              "pool": 2291,
+              "whole": 16800,
+              "scale": 10.4130011
             }
           ],
           "actions": [
@@ -2752,33 +2752,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 2287,
-              "whole": 14375,
-              "scale": 10.395
+              "pool": 1498,
+              "whole": 9412,
+              "scale": 6.80575
             },
             {
               "difficulty": "Hard",
-              "pool": 2916,
-              "whole": 18330,
-              "scale": 13.2545
+              "pool": 1910,
+              "whole": 12001,
+              "scale": 8.67825
             },
             {
               "difficulty": "Expert",
-              "pool": 3202,
-              "whole": 20125,
-              "scale": 14.553
+              "pool": 2097,
+              "whole": 13177,
+              "scale": 9.52875
             },
             {
               "difficulty": "Master",
-              "pool": 4083,
-              "whole": 25660,
-              "scale": 18.55525
+              "pool": 2673,
+              "whole": 16800,
+              "scale": 12.1485
             },
             {
               "difficulty": "Hollow",
-              "pool": 4083,
-              "whole": 25660,
-              "scale": 18.55525
+              "pool": 2673,
+              "whole": 16800,
+              "scale": 12.1485
             }
           ],
           "actions": [
@@ -2919,33 +2919,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 3267,
-              "whole": 14375,
-              "scale": 14.85
+              "pool": 2139,
+              "whole": 9412,
+              "scale": 9.7225
             },
             {
               "difficulty": "Hard",
-              "pool": 4166,
-              "whole": 18330,
-              "scale": 18.935
+              "pool": 2728,
+              "whole": 12001,
+              "scale": 12.3975
             },
             {
               "difficulty": "Expert",
-              "pool": 4574,
-              "whole": 20125,
-              "scale": 20.79
+              "pool": 2995,
+              "whole": 13177,
+              "scale": 13.6125
             },
             {
               "difficulty": "Master",
-              "pool": 5832,
-              "whole": 25660,
-              "scale": 26.5075
+              "pool": 3819,
+              "whole": 16800,
+              "scale": 17.355
             },
             {
               "difficulty": "Hollow",
-              "pool": 5832,
-              "whole": 25660,
-              "scale": 26.5075
+              "pool": 3819,
+              "whole": 16800,
+              "scale": 17.355
             }
           ],
           "actions": [
@@ -3086,33 +3086,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 2614,
-              "whole": 14375,
-              "scale": 11.88
+              "pool": 1712,
+              "whole": 9412,
+              "scale": 7.77800035
             },
             {
               "difficulty": "Hard",
-              "pool": 3333,
-              "whole": 18330,
-              "scale": 15.1480007
+              "pool": 2182,
+              "whole": 12001,
+              "scale": 9.918
             },
             {
               "difficulty": "Expert",
-              "pool": 3660,
-              "whole": 20125,
-              "scale": 16.632
+              "pool": 2396,
+              "whole": 13177,
+              "scale": 10.89
             },
             {
               "difficulty": "Master",
-              "pool": 4666,
-              "whole": 25660,
-              "scale": 21.2060013
+              "pool": 3055,
+              "whole": 16800,
+              "scale": 13.8840008
             },
             {
               "difficulty": "Hollow",
-              "pool": 4666,
-              "whole": 25660,
-              "scale": 21.2060013
+              "pool": 3055,
+              "whole": 16800,
+              "scale": 13.8840008
             }
           ],
           "actions": [
@@ -3258,33 +3258,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 58500,
-              "whole": 117000,
-              "scale": 130.0
+              "pool": 43015,
+              "whole": 86030,
+              "scale": 95.588
             },
             {
               "difficulty": "Hard",
-              "pool": 78975,
-              "whole": 157950,
-              "scale": 175.5
+              "pool": 58070,
+              "whole": 116140,
+              "scale": 129.043991
             },
             {
               "difficulty": "Expert",
-              "pool": 93600,
-              "whole": 187200,
-              "scale": 208.0
+              "pool": 68824,
+              "whole": 137647,
+              "scale": 152.941
             },
             {
               "difficulty": "Master",
-              "pool": 119340,
-              "whole": 238680,
-              "scale": 265.199982
+              "pool": 87750,
+              "whole": 175500,
+              "scale": 195.0
             },
             {
               "difficulty": "Hollow",
-              "pool": 119340,
-              "whole": 238680,
-              "scale": 265.199982
+              "pool": 87750,
+              "whole": 175500,
+              "scale": 195.0
             }
           ],
           "actions": [
@@ -3376,33 +3376,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 58500,
-              "whole": 117000,
-              "scale": 130.0
+              "pool": 43015,
+              "whole": 86030,
+              "scale": 95.588
             },
             {
               "difficulty": "Hard",
-              "pool": 78975,
-              "whole": 157950,
-              "scale": 175.5
+              "pool": 58070,
+              "whole": 116140,
+              "scale": 129.043991
             },
             {
               "difficulty": "Expert",
-              "pool": 93600,
-              "whole": 187200,
-              "scale": 208.0
+              "pool": 68824,
+              "whole": 137647,
+              "scale": 152.941
             },
             {
               "difficulty": "Master",
-              "pool": 119340,
-              "whole": 238680,
-              "scale": 265.199982
+              "pool": 87750,
+              "whole": 175500,
+              "scale": 195.0
             },
             {
               "difficulty": "Hollow",
-              "pool": 119340,
-              "whole": 238680,
-              "scale": 265.199982
+              "pool": 87750,
+              "whole": 175500,
+              "scale": 195.0
             }
           ],
           "actions": [
@@ -3499,33 +3499,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 49637,
-              "whole": 182000,
-              "scale": 49.63626
+              "pool": 23173,
+              "whole": 84967,
+              "scale": 23.17275
             },
             {
               "difficulty": "Hard",
-              "pool": 65148,
-              "whole": 238875,
-              "scale": 65.14749
+              "pool": 30415,
+              "whole": 111520,
+              "scale": 30.4144211
             },
             {
               "difficulty": "Expert",
-              "pool": 74455,
-              "whole": 273001,
-              "scale": 74.45466
+              "pool": 34760,
+              "whole": 127451,
+              "scale": 34.7592621
             },
             {
               "difficulty": "Master",
-              "pool": 94930,
-              "whole": 348077,
-              "scale": 94.92984
+              "pool": 44319,
+              "whole": 162500,
+              "scale": 44.31807
             },
             {
               "difficulty": "Hollow",
-              "pool": 94930,
-              "whole": 348077,
-              "scale": 94.92984
+              "pool": 44319,
+              "whole": 162500,
+              "scale": 44.31807
             }
           ],
           "actions": [
@@ -3619,33 +3619,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 82728,
-              "whole": 182000,
-              "scale": 165.4542
+              "pool": 38622,
+              "whole": 84967,
+              "scale": 77.2425
             },
             {
               "difficulty": "Hard",
-              "pool": 108580,
-              "whole": 238875,
-              "scale": 217.1583
+              "pool": 50691,
+              "whole": 111520,
+              "scale": 101.3814
             },
             {
               "difficulty": "Expert",
-              "pool": 124092,
-              "whole": 273001,
-              "scale": 248.18219
+              "pool": 57933,
+              "whole": 127451,
+              "scale": 115.8642
             },
             {
               "difficulty": "Master",
-              "pool": 158217,
-              "whole": 348077,
-              "scale": 316.4328
+              "pool": 73864,
+              "whole": 162500,
+              "scale": 147.7269
             },
             {
               "difficulty": "Hollow",
-              "pool": 158217,
-              "whole": 348077,
-              "scale": 316.4328
+              "pool": 73864,
+              "whole": 162500,
+              "scale": 147.7269
             }
           ],
           "actions": [
@@ -3793,33 +3793,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 110500,
-              "whole": 110500,
-              "scale": 147.333328
+              "pool": 92402,
+              "whole": 92402,
+              "scale": 123.202667
             },
             {
               "difficulty": "Hard",
-              "pool": 149175,
-              "whole": 149175,
-              "scale": 198.9
+              "pool": 124743,
+              "whole": 124743,
+              "scale": 166.324
             },
             {
               "difficulty": "Expert",
-              "pool": 176800,
-              "whole": 176800,
-              "scale": 235.733337
+              "pool": 147843,
+              "whole": 147843,
+              "scale": 197.124
             },
             {
               "difficulty": "Master",
-              "pool": 225420,
-              "whole": 225420,
-              "scale": 300.56
+              "pool": 188500,
+              "whole": 188500,
+              "scale": 251.333328
             },
             {
               "difficulty": "Hollow",
-              "pool": 225420,
-              "whole": 225420,
-              "scale": 300.56
+              "pool": 188500,
+              "whole": 188500,
+              "scale": 251.333328
             }
           ],
           "actions": [],
@@ -3884,33 +3884,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 220000,
-              "whole": 220000,
-              "scale": 73.3333359
+              "pool": 104575,
+              "whole": 104575,
+              "scale": 34.8583336
             },
             {
               "difficulty": "Hard",
-              "pool": 288749,
-              "whole": 288749,
-              "scale": 96.2496643
+              "pool": 137254,
+              "whole": 137254,
+              "scale": 45.7513351
             },
             {
               "difficulty": "Expert",
-              "pool": 330000,
-              "whole": 330000,
-              "scale": 110.0
+              "pool": 156862,
+              "whole": 156862,
+              "scale": 52.2873344
             },
             {
               "difficulty": "Master",
-              "pool": 420751,
-              "whole": 420751,
-              "scale": 140.250336
+              "pool": 200000,
+              "whole": 200000,
+              "scale": 66.6666641
             },
             {
               "difficulty": "Hollow",
-              "pool": 420751,
-              "whole": 420751,
-              "scale": 140.250336
+              "pool": 200000,
+              "whole": 200000,
+              "scale": 66.6666641
             }
           ],
           "actions": [
@@ -4216,33 +4216,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 140000,
-              "whole": 140000,
-              "scale": 140.0
+              "pool": 57516,
+              "whole": 57516,
+              "scale": 57.516
             },
             {
               "difficulty": "Hard",
-              "pool": 183750,
-              "whole": 183750,
-              "scale": 183.75
+              "pool": 75490,
+              "whole": 75490,
+              "scale": 75.49
             },
             {
               "difficulty": "Expert",
-              "pool": 210000,
-              "whole": 210000,
-              "scale": 210.0
+              "pool": 86275,
+              "whole": 86275,
+              "scale": 86.275
             },
             {
               "difficulty": "Master",
-              "pool": 267750,
-              "whole": 267750,
-              "scale": 267.75
+              "pool": 110000,
+              "whole": 110000,
+              "scale": 110.0
             },
             {
               "difficulty": "Hollow",
-              "pool": 267750,
-              "whole": 267750,
-              "scale": 267.75
+              "pool": 110000,
+              "whole": 110000,
+              "scale": 110.0
             }
           ],
           "actions": [
@@ -4640,33 +4640,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 45000,
-              "whole": 90000,
-              "scale": 173.07692
+              "pool": 7844,
+              "whole": 15687,
+              "scale": 30.1655769
             },
             {
               "difficulty": "Hard",
-              "pool": 60750,
-              "whole": 121500,
-              "scale": 233.653839
+              "pool": 10589,
+              "whole": 21177,
+              "scale": 40.7232666
             },
             {
               "difficulty": "Expert",
-              "pool": 72000,
-              "whole": 144000,
-              "scale": 276.923065
+              "pool": 12550,
+              "whole": 25099,
+              "scale": 48.26596
             },
             {
               "difficulty": "Master",
-              "pool": 91800,
-              "whole": 183600,
-              "scale": 353.0769
+              "pool": 16001,
+              "whole": 32001,
+              "scale": 61.53923
             },
             {
               "difficulty": "Hollow",
-              "pool": 91800,
-              "whole": 183600,
-              "scale": 353.0769
+              "pool": 16001,
+              "whole": 32001,
+              "scale": 61.53923
             }
           ],
           "actions": [
@@ -4758,33 +4758,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 45000,
-              "whole": 90000,
-              "scale": 173.07692
+              "pool": 7844,
+              "whole": 15687,
+              "scale": 30.1655769
             },
             {
               "difficulty": "Hard",
-              "pool": 60750,
-              "whole": 121500,
-              "scale": 233.653839
+              "pool": 10589,
+              "whole": 21177,
+              "scale": 40.7232666
             },
             {
               "difficulty": "Expert",
-              "pool": 72000,
-              "whole": 144000,
-              "scale": 276.923065
+              "pool": 12550,
+              "whole": 25099,
+              "scale": 48.26596
             },
             {
               "difficulty": "Master",
-              "pool": 91800,
-              "whole": 183600,
-              "scale": 353.0769
+              "pool": 16001,
+              "whole": 32001,
+              "scale": 61.53923
             },
             {
               "difficulty": "Hollow",
-              "pool": 91800,
-              "whole": 183600,
-              "scale": 353.0769
+              "pool": 16001,
+              "whole": 32001,
+              "scale": 61.53923
             }
           ],
           "actions": [
@@ -4998,33 +4998,33 @@
           "levels": [
             {
               "difficulty": "Normal",
-              "pool": 85000,
-              "whole": 85000,
-              "scale": 188.888885
+              "pool": 29412,
+              "whole": 29412,
+              "scale": 65.36
             },
             {
               "difficulty": "Hard",
-              "pool": 114750,
-              "whole": 114750,
-              "scale": 255.0
+              "pool": 39706,
+              "whole": 39706,
+              "scale": 88.23556
             },
             {
               "difficulty": "Expert",
-              "pool": 136000,
-              "whole": 136000,
-              "scale": 302.222229
+              "pool": 47059,
+              "whole": 47059,
+              "scale": 104.575554
             },
             {
               "difficulty": "Master",
-              "pool": 173400,
-              "whole": 173400,
-              "scale": 385.333344
+              "pool": 60000,
+              "whole": 60000,
+              "scale": 133.333328
             },
             {
               "difficulty": "Hollow",
-              "pool": 173400,
-              "whole": 173400,
-              "scale": 385.333344
+              "pool": 60000,
+              "whole": 60000,
+              "scale": 133.333328
             }
           ],
           "actions": [],
