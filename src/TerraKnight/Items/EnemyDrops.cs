@@ -135,7 +135,9 @@ namespace TerraKnight.Items
         internal static bool Locked(Drop d, int stage) => d.LockStage > stage;
 
         /// <summary>The geo a record's kill drops on the current difficulty (-1: the game's own).</summary>
-        public static int GeoOf(string key) => key != null && table.TryGetValue(key, out var e) && e.Geo >= 0 ? Mathf.RoundToInt(e.Geo * GeoScale) : -1;
+        public static int GeoOf(string key) => ScaleGeo(BaseGeoOf(key));
+        internal static int BaseGeoOf(string key) => key != null && table.TryGetValue(key, out var e) ? e.Geo : -1;
+        internal static int ScaleGeo(int geo) => geo < 0 ? -1 : Mathf.RoundToInt(geo * GeoScale);
 
         /// <summary>The bosses of the table (their records; a boss's stage variants "Record@n" are the same boss).</summary>
         public static IEnumerable<string> BossRecords()
@@ -199,14 +201,14 @@ namespace TerraKnight.Items
             _ => 0f,
         };
 
-        /// <summary>The geo an enemy drops (the game's own, HealthManager's geo drops) on the current difficulty: money goes up more than items.</summary>
-        public static float GeoScale => World.GameDifficulty.Current switch
+        /// <summary>Enemy money raised by 50%, on top of the existing difficulty bonus. Zero-geo summons remain zero.</summary>
+        public static float GeoScale => 1.5f * (World.GameDifficulty.Current switch
         {
             World.DifficultyLevel.Hard => 1.25f,
             World.DifficultyLevel.Expert => 1.5f,
             World.DifficultyLevel.Master or World.DifficultyLevel.Hollow => 2f,
             _ => 1f,
-        };
+        });
 
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> smallGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("smallGeoDrops");
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, int> mediumGeo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("mediumGeoDrops");
@@ -223,19 +225,13 @@ namespace TerraKnight.Items
             if (__instance == null || __instance.isDead || TerraMod.Instance == null) return;
             string rec = UI.EnemyHover.RecordOf(__instance);
             int geo = rec != null ? GeoOf(KeyFor(rec, VariantLevel(__instance.gameObject.scene.name))) : -1;
-            if (geo >= 0)
-            {
-                largeGeo(__instance) = geo / 25;
-                mediumGeo(__instance) = geo % 25 / 5;
-                smallGeo(__instance) = geo % 5;
-                DevGeo = geo;
-                return;
-            }
-            float k = GeoScale;
-            if (k <= 1f) return;
-            smallGeo(__instance) = Mathf.RoundToInt(smallGeo(__instance) * k);
-            mediumGeo(__instance) = Mathf.RoundToInt(mediumGeo(__instance) * k);
-            largeGeo(__instance) = Mathf.RoundToInt(largeGeo(__instance) * k);
+            // Scale the monetary total once, not each denomination's coin count (one 25-geo coin must not
+            // become two just because 1.5 rounds up). This also handles enemies absent from our table.
+            if (geo < 0) geo = ScaleGeo(smallGeo(__instance) + mediumGeo(__instance) * 5 + largeGeo(__instance) * 25);
+            largeGeo(__instance) = geo / 25;
+            mediumGeo(__instance) = geo % 25 / 5;
+            smallGeo(__instance) = geo % 5;
+            DevGeo = geo;
         }
 
         /// <summary>Dev: the geo the last kill with a table value was given.</summary>

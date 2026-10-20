@@ -22,7 +22,7 @@ def main():
         chunks = {u for u in requests if '/data/recipes/' in u and not u.endswith('/index.json')}
         assert chunks == {base + 'data/recipes/0.json'}, chunks
         first = page.locator('#recipe-results tbody tr').first.inner_text()
-        page.locator('#recipe-next').click()
+        page.locator('.pagination').first.get_by_role('button', name='下一页').click()
         page.wait_for_function("document.querySelector('#recipe-page').textContent.includes('第 2 /')")
         assert page.locator('#recipe-results tbody tr').count() == 40
         assert page.locator('#recipe-results tbody tr').first.inner_text() != first
@@ -30,7 +30,7 @@ def main():
         page.locator('#recipe-query').fill('天顶剑')
         page.wait_for_function("document.querySelector('#recipe-results tbody').textContent.includes('天顶剑')")
         assert all('天顶剑' in s for s in page.locator('#recipe-results tbody tr').all_text_contents())
-        assert page.locator('#recipe-prev').is_disabled()
+        page.locator('.pagination').first.wait_for(state='hidden')
         page.reload(wait_until='networkidle')
         assert page.locator('#recipe-query').input_value() == '天顶剑'
         page.locator('#recipe-query').fill('')
@@ -43,7 +43,7 @@ def main():
         requests.clear()
         page.goto(base + 'items.html', wait_until='networkidle')
         page.wait_for_function("document.querySelector('#result-count').textContent.includes('已显示')")
-        assert page.locator('.entry-card').count() == 60
+        assert page.locator('.entry-card').count() == 24
         assert not any(u.endswith('search-index.json') or u.endswith('items-index.json') for u in requests)
         page.locator('#browse-query').fill('Zenith')
         page.wait_for_function("performance.getEntriesByType('resource').some(r => r.name.includes('items-index.json')) && document.querySelector('#result-count').textContent.includes('已显示')")
@@ -54,7 +54,7 @@ def main():
         page.screenshot(path=str(ROOT / 'artifacts/wiki-recipes-desktop.png'), full_page=True)
         browser.close()
     assert not errors, errors
-    print(json.dumps({'recipe_page_size': 40, 'initial_recipe_chunks': 1, 'initial_item_cards': 60,
+    print(json.dumps({'recipe_page_size': 40, 'initial_recipe_chunks': 1, 'initial_item_cards': 24,
                       'full_search_loaded_on_demand': True, 'pagination_search_stage_mobile': 'passed'}))
 
 

@@ -61,3 +61,17 @@
 .release-note[open]>summary{border-bottom:1px solid var(--line)}
 .release-note-body{padding:20px;overflow-wrap:anywhere}
 @media(max-width:650px){.release-note>summary{padding:13px 14px}.release-meta{display:block;margin-left:17px;font-size:11px}.release-note-body{padding:14px}}
+
+/* Bounded catalogs with matching controls above and below the results. */
+.pagination{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:16px 0;margin:12px 0;border-block:1px solid var(--line);scroll-margin-top:110px}
+.pagination[hidden],.browse-controls[hidden]{display:none}
+.pagination button{font:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);cursor:pointer;min-height:38px}
+.pagination button:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.pagination button[aria-current="page"]{background:var(--green);color:var(--bg);border-color:var(--green);font-weight:700}
+.pagination button:disabled{opacity:.4;cursor:default}
+.page-numbers{display:flex;align-items:center;gap:5px}
+.page-numbers>span{color:var(--muted)}
+.page-jump{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:12px;color:var(--muted)}
+.page-jump input{width:68px;padding:7px 5px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--text);font:inherit}
+.pagination :focus-visible{outline:2px solid var(--green);outline-offset:3px}
+@media(max-width:650px){.pagination{gap:8px}.pagination button{padding:8px 10px}.page-jump{width:100%;justify-content:flex-end}.page-numbers{gap:3px}.entry-grid{gap:12px}}

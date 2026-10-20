@@ -254,11 +254,11 @@ namespace TerraKnight.Town
             int frames = Mathf.Max(1, tex.height / 32);
             int fh = tex.height / frames;
             sleeper.sprite = Sprite.Create(tex, new Rect(0, tex.height - fh, tex.width, fh), new Vector2(0.5f, 0f), 1f / TerraParticles.Px);
-            // Drawn as the Knight is (his sorting layer), just behind him.
-            var heroSr = HeroController.SilentInstance != null ? HeroController.SilentInstance.GetComponent<MeshRenderer>() : null;
-            if (heroSr != null) { sleeper.sortingLayerID = heroSr.sortingLayerID; sleeper.sortingOrder = heroSr.sortingOrder - 1; }
-            else sleeper.sortingOrder = 5;
-            go.transform.position = new Vector3(x, feet, 0.01f);
+            // Match the townsfolk: distance puts him behind the player. A lower sorting order would put him
+            // behind the lake's backgrounds as well, making the rescue target invisible.
+            sleeper.sortingLayerName = "Default";
+            sleeper.sortingOrder = 0;
+            go.transform.position = new Vector3(x, feet, FxBatch.TownZ);
             float w = tex.width * TerraParticles.Px, h = fh * TerraParticles.Px;
             sleeperBox = new Rect(x - w / 2f, feet, w, h);
             Plugin.Log.LogInfo($"[渔夫] 沉睡的渔夫在蓝湖岸边 ({x:F1}, {feet:F1})");

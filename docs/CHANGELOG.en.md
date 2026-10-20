@@ -1,5 +1,10 @@
 ﻿# Changelog
 
+## 4.4.1 — The Angler and Geo
+
+- The Angler asleep on the Blue Lake's left shore is drawn in front of the lake's background and mist, so you can see him on the way past; woken with a right click, he moves into town as before.
+- Enemies drop one and a half times the game's Geo, times the difficulty's bonus on top (Normal 1.5×, Hard 1.875×, Expert 2.25×, Master and Hollow 3×), the total paid out in large, medium and small Geo; summoned small fry that dropped none still drop none.
+
 ## 4.4.0 — The Shimmer, the Traveling Merchant, a stage review of drops and spikes
 
 - **Relics**: the other 45 Master relics are newly drawn golden statues on Terraria's own pedestal too, so all 48 are new; names and saves are unchanged, and relics already placed show the new pictures once the game is loaded again.

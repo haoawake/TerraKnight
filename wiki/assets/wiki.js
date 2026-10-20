@@ -81,19 +81,66 @@
       if (input) input.focus(); else location.href = base + 'search.html';
     }
   });
+  function pageNumber(value) {
+    const n = Number(value);
+    return Number.isSafeInteger(n) && n > 0 ? n - 1 : 0;
+  }
+  function pagination(root, change) {
+    const bars = ['上方', '下方'].map((position, i) => {
+      const nav = document.createElement('nav');
+      nav.className = 'pagination';
+      nav.setAttribute('aria-label', position + '分页');
+      if (i) root.after(nav); else root.before(nav);
+      nav.addEventListener('click', event => {
+        const button = event.target.closest('button[data-page]');
+        if (!button || button.disabled) return;
+        change(Number(button.dataset.page));
+        if (i) bars[0].scrollIntoView({block: 'start'});
+      });
+      nav.addEventListener('submit', event => {
+        event.preventDefault();
+        const input = nav.querySelector('input');
+        if (input.checkValidity()) change(Number(input.value) - 1);
+        if (i) bars[0].scrollIntoView({block: 'start'});
+      });
+      return nav;
+    });
+    return (page, pages, busy = false) => bars.forEach(nav => {
+      nav.hidden = pages <= 1;
+      const button = (target, label, disabled = false, current = false) => `<button type="button" data-page="${target}" ${disabled || busy ? 'disabled' : ''} ${current ? 'aria-current="page"' : ''}>${label}</button>`;
+      const numbers = [...new Set([0, page - 1, page, page + 1, pages - 1])].filter(n => n >= 0 && n < pages).sort((a, b) => a - b);
+      nav.innerHTML = button(page - 1, '上一页', page === 0) + '<div class="page-numbers">' + numbers.map((n, i) => (i && n > numbers[i - 1] + 1 ? '<span aria-hidden="true">…</span>' : '') + button(n, n + 1, false, n === page)).join('') + '</div>' + button(page + 1, '下一页', page + 1 >= pages) + `<form class="page-jump"><label>跳至 <input type="number" min="1" max="${pages}" value="${page + 1}" aria-label="跳转页码" required ${busy ? 'disabled' : ''}> / ${pages} 页</label><button ${busy ? 'disabled' : ''}>前往</button></form>`;
+    });
+  }
+  document.querySelectorAll('.prose .table-scroll').forEach(root => {
+    if (root.closest('[data-recipes]')) return;
+    const rows = [...root.querySelectorAll('tbody > tr')];
+    if (rows.length <= 24) return;
+    const size = 24, pages = Math.ceil(rows.length / size);
+    const summary = document.createElement('p');
+    summary.className = 'muted';
+    summary.setAttribute('aria-live', 'polite');
+    root.before(summary);
+    const updatePages = pagination(root, draw);
+    function draw(page) {
+      rows.forEach((row, i) => { row.hidden = i < page * size || i >= (page + 1) * size; });
+      summary.textContent = `共 ${rows.length} 条 · 第 ${page + 1} / ${pages} 页`;
+      updatePages(page, pages);
+    }
+    draw(0);
+  });
   const recipeBrowser = document.querySelector('[data-recipes]');
   if (recipeBrowser) {
     const query = document.querySelector('#recipe-query');
     const stage = document.querySelector('#recipe-stage');
     const count = document.querySelector('#recipe-count');
     const label = document.querySelector('#recipe-page');
-    const prev = document.querySelector('#recipe-prev');
-    const next = document.querySelector('#recipe-next');
     const tableBody = document.querySelector('#recipe-results tbody');
     const state = new URLSearchParams(location.search);
     query.value = state.get('q') || '';
     stage.value = state.get('stage') || '';
-    let page = Math.max(0, (Number(state.get('page')) || 1) - 1), index = [], filtered = [], revision = 0;
+    let page = pageNumber(state.get('page')), index = [], filtered = [], revision = 0;
+    const updatePages = pagination(document.querySelector('#recipe-results'), target => { page = target; draw(); });
     const chunks = new Map();
     function chunk(id) {
       if (!chunks.has(id)) chunks.set(id, fetch(`${base}data/recipes/${id}.json${version}`).then(r => {
@@ -105,8 +152,8 @@
       const current = ++revision;
       const pages = Math.max(1, Math.ceil(filtered.length / 40));
       page = Math.min(page, pages - 1);
+      updatePages(page, pages, true);
       const rows = filtered.slice(page * 40, (page + 1) * 40);
-      prev.disabled = next.disabled = true;
       count.textContent = '正在加载配方…';
       tableBody.setAttribute('aria-busy', 'true');
       const params = new URLSearchParams();
@@ -121,13 +168,12 @@
         tableBody.innerHTML = rows.length ? rows.map(r => data.get(r.chunk)[r.row]).join('') : '<tr><td colspan="5">没有找到匹配配方。</td></tr>';
         count.textContent = `找到 ${filtered.length} 条配方 · 每页最多 40 条`;
         label.textContent = `第 ${page + 1} / ${pages} 页`;
-        prev.disabled = page === 0;
-        next.disabled = page + 1 >= pages;
+        updatePages(page, pages);
         decorate(tableBody);
       } catch {
         if (current === revision) {
           count.textContent = '配方加载失败，请重试翻页或搜索。';
-          prev.disabled = page === 0; next.disabled = page + 1 >= pages;
+          updatePages(page, pages);
         }
       } finally { if (current === revision) tableBody.removeAttribute('aria-busy'); }
     }
@@ -137,8 +183,6 @@
       filtered = index.filter(r => (!stage.value || r.stage === stage.value) && terms.every(t => r.search.includes(t)));
       draw();
     }
-    prev.addEventListener('click', () => { page--; draw(); });
-    next.addEventListener('click', () => { page++; draw(); });
     let timer;
     query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(filter, 150); });
     stage.addEventListener('change', () => filter());
@@ -156,20 +200,27 @@
   const onlySaved = document.querySelector('#saved-filter');
   const results = document.querySelector('#browse-results');
   const count = document.querySelector('#result-count');
-  const more = document.querySelector('#load-more');
-  let records = [], filtered = [], visible = 60, fullLoaded = false, fullRequest = null;
+  let records = [], filtered = [], fullLoaded = false, fullRequest = null;
+  const pageSize = 24;
   const catalogIndex = {'物品': 'items', '怪物': 'enemies', 'NPC': 'npcs'}[browser.dataset.browser];
   const searchable = data => data.map(record => ({...record, search: `${record.title} ${record.id} ${record.category} ${record.text}`.toLocaleLowerCase()}));
   const params = new URLSearchParams(location.search);
+  let page = pageNumber(params.get('page'));
+  const updatePages = pagination(results, target => { page = target; draw(); });
   input.value = params.get('q') || '';
   if (stage) stage.value = params.get('stage') || '';
   if (category) category.value = params.get('category') || '';
   if (kind) kind.value = params.get('kind') || '';
   if (onlySaved) onlySaved.checked = params.get('saved') === '1';
   function draw() {
+    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    page = Math.min(page, pages - 1);
+    const state = new URLSearchParams(location.search);
+    if (page) state.set('page', String(page + 1)); else state.delete('page');
+    history.replaceState(null, '', location.pathname + (state.size ? '?' + state : '') + location.hash);
     const query = input.value.trim().toLocaleLowerCase();
-    count.textContent = `找到 ${filtered.length.toLocaleString()} 条记录 · 已显示 ${Math.min(visible, filtered.length)} 条`;
-    results.innerHTML = filtered.length ? '<div class="entry-grid">' + filtered.slice(0, visible).map(record => {
+    count.textContent = `找到 ${filtered.length.toLocaleString()} 条记录 · 已显示 ${filtered.length ? page * pageSize + 1 : 0}–${Math.min((page + 1) * pageSize, filtered.length)} 条 · 第 ${page + 1} / ${pages} 页`;
+    results.innerHTML = filtered.length ? '<div class="entry-grid">' + filtered.slice(page * pageSize, (page + 1) * pageSize).map(record => {
       let snippet = '';
       if (query) {
         const pos = record.text.toLocaleLowerCase().indexOf(query);
@@ -178,10 +229,11 @@
       }
       return `<a class="entry-card" href="${escape(record.url)}"><span class="entry-type">${escape(record.category)}${record.stage ? ' · 阶段 ' + escape(record.stage) : ''}</span><h3>${escape(record.title)}</h3>${snippet ? `<p class="entry-snippet">${escape(snippet)}</p>` : ''}<span class="entry-action">查看词条 ↗</span></a>`;
     }).join('') + '</div>' : '<div class="empty">没有找到匹配词条。试试更短的关键词，或清除筛选条件。</div>';
-    more.hidden = visible >= filtered.length;
+    updatePages(page, pages);
     decorate(results);
   }
-  function filter() {
+  function filter(reset = true) {
+    if (reset) page = 0;
     const query = input.value.trim().toLocaleLowerCase();
     if (query && !fullLoaded) {
       count.textContent = '正在载入搜索内容…';
@@ -189,7 +241,7 @@
         .then(r => { if (!r.ok) throw new Error('search'); return r.json(); })
         .then(data => { records = searchable(data); fullLoaded = true; })
         .catch(error => { fullRequest = null; throw error; });
-      fullRequest.then(filter).catch(() => { count.textContent = '搜索内容加载失败，请重试输入。'; });
+      fullRequest.then(() => filter(false)).catch(() => { count.textContent = '搜索内容加载失败，请重试输入。'; });
       return;
     }
     const tokens = query.split(/\s+/).filter(Boolean);
@@ -206,7 +258,6 @@
       const score = r => r.title.toLocaleLowerCase() === query ? 0 : r.title.toLocaleLowerCase().includes(query) ? 1 : r.id.includes(query) ? 2 : 3;
       return score(a) - score(b);
     });
-    visible = 60;
     const state = new URLSearchParams();
     if (query) state.set('q', input.value.trim());
     if (stage && stage.value) state.set('stage', stage.value);
@@ -235,8 +286,7 @@
     const control = link.closest('[data-filter]').dataset.filter === 'stage' ? stage : category;
     if (control) { control.value = link.dataset.value; filter(); }
   }));
-  more.addEventListener('click', () => { visible += 60; draw(); });
   fetch(base + (catalogIndex ? `data/${catalogIndex}-browse.json` : 'data/browse-index.json') + version).then(response => { if (!response.ok) throw new Error('index'); return response.json(); })
-    .then(data => { if (!fullLoaded) records = searchable(data); filter(); })
+    .then(data => { if (!fullLoaded) records = searchable(data); filter(false); })
     .catch(() => { count.textContent = '搜索索引暂时不可用。请刷新重试；下方静态词条仍可直接阅读。'; });
 })();

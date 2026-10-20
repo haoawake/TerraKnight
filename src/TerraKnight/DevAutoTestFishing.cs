@@ -18,6 +18,7 @@ namespace TerraKnight
     {
         IEnumerator FishingTest()
         {
+            if (suite == "fishingangler") { yield return AnglerVisibilityTest(); yield break; }
             int ok = 0, all = 0;
             void Check(string what, bool pass, string detail = "")
             {
@@ -215,6 +216,80 @@ namespace TerraKnight
             Shop.DevStage = stageWas;
             inv.Infinite = infinite;
             Plugin.Log.LogInfo($"[AutoTest] 钓鱼 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
+        }
+
+        IEnumerator AnglerVisibilityTest()
+        {
+            mod.DevNoFallDamage = true;
+            PlayerData.instance.isInvincible = true;
+            Angler.Clear();
+            yield return GoTo("Crossroads_50", "left1");
+            yield return new WaitForSeconds(3f);
+            var sleeper = GameObject.Find("Terra Sleeping Angler")?.GetComponent<SpriteRenderer>();
+            var hero = HeroController.instance;
+            bool shown = sleeper != null && sleeper.enabled && sleeper.sprite != null;
+            Plugin.Log.LogInfo($"[AutoTest] 渔夫生成 {(shown ? "通过" : "不通过")}：{Angler.DevSleeperAt}");
+            if (!shown) yield break;
+            hero.transform.position = Clear(hero, Angler.DevSleeperAt + Vector2.right * 2f + Vector2.up);
+            yield return new WaitForSeconds(3f);
+            var camera = Camera.main;
+            Plugin.Log.LogInfo($"[AutoTest] 渔夫渲染：{sleeper.sortingLayerName}/{sleeper.sortingOrder} z={sleeper.transform.position.z}；相机 {camera?.name}");
+            LogRenderersAt(Angler.DevSleeperAt, "沉睡渔夫遮挡", 100f);
+            void Capture(string name)
+            {
+                if (camera == null) return;
+                var previousTarget = camera.targetTexture;
+                var previousActive = RenderTexture.active;
+                var target = RenderTexture.GetTemporary(1280, 720, 24);
+                var pixels = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+                var captureObject = new GameObject("Angler diagnostic camera");
+                var captureCamera = captureObject.AddComponent<Camera>();
+                captureCamera.CopyFrom(camera);
+                captureCamera.transform.SetPositionAndRotation(camera.transform.position, camera.transform.rotation);
+                captureCamera.enabled = false;
+                captureCamera.cullingMask = 1; // Default-layer world art, without HUD/darkness overlays.
+                try
+                {
+                    captureCamera.targetTexture = target;
+                    captureCamera.Render();
+                    RenderTexture.active = target;
+                    pixels.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                    pixels.Apply();
+                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(outDir, name + ".png"), pixels.EncodeToPNG());
+                }
+                finally
+                {
+                    camera.targetTexture = previousTarget;
+                    RenderTexture.active = previousActive;
+                    RenderTexture.ReleaseTemporary(target);
+                    Object.Destroy(pixels);
+                    Object.Destroy(captureObject);
+                }
+            }
+            bool correctLayer = sleeper.sortingLayerName == "Default" && sleeper.sortingOrder == 0
+                && Mathf.Abs(sleeper.transform.position.z - Effects.FxBatch.TownZ) < 0.00001f;
+            Plugin.Log.LogInfo($"[AutoTest] 渔夫和城镇居民使用相同绘制层 {(correctLayer ? "通过" : "不通过")}");
+            // Isolate world rendering from the game's full-screen darkness mask in this diagnostic capture.
+            var blackout = GameObject.Find("Masker Blackout")?.GetComponent<Renderer>();
+            bool blackoutEnabled = blackout != null && blackout.enabled;
+            if (blackout != null) blackout.enabled = false;
+            try
+            {
+                Capture("angler-fixed-world");
+                sleeper.sortingOrder = -1;
+                Capture("angler-old-order-world");
+            }
+            finally
+            {
+                sleeper.sortingOrder = 0;
+                if (blackout != null) blackout.enabled = blackoutEnabled;
+            }
+            bool woke = Angler.TryRightClick(Angler.DevSleeperAt);
+            Plugin.Log.LogInfo($"[AutoTest] 渔夫右键救醒 {(woke && Angler.Saved && !Angler.DevSleeperShown ? "通过" : "不通过")}");
+            yield return GoTo("Town", "left1");
+            yield return new WaitForSeconds(3f);
+            bool moved = TownNpcs.DevPos("Angler").HasValue;
+            Plugin.Log.LogInfo($"[AutoTest] 渔夫救醒后入住 {(moved ? "通过" : "不通过")}");
         }
     }
 }

@@ -39,9 +39,16 @@ def main():
             page.wait_for_function("document.querySelector('#result-count').textContent.includes('已显示')")
 
         def shown():
-            while page.locator('#load-more').is_visible():
-                page.locator('#load-more').click()
-            links = page.locator('#browse-results .entry-card').evaluate_all('(links) => links.map(a => a.getAttribute("href").split("/").pop().replace(".html", ""))')
+            links = []
+            nav = page.locator('.pagination').first
+            if nav.is_visible():
+                nav.locator('button[data-page="0"]').click()
+            while True:
+                links.extend(page.locator('#browse-results .entry-card').evaluate_all('(links) => links.map(a => a.getAttribute("href").split("/").pop().replace(".html", ""))'))
+                next_page = nav.get_by_role('button', name='下一页')
+                if not nav.is_visible() or next_page.is_disabled():
+                    break
+                next_page.click()
             assert len(links) == len(set(links))
             return set(links)
 

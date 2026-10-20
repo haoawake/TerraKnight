@@ -17,6 +17,7 @@ namespace TerraKnight
     {
         IEnumerator Drops2Test()
         {
+            if (suite == "dropsgeo") { yield return EnemyGeoTest(); yield break; }
             yield return GoTo("Crossroads_01", EntryGateOf("Crossroads_01"));
             var pd = PlayerData.instance;
             pd.isInvincible = true;
@@ -128,6 +129,67 @@ namespace TerraKnight
             InventoryGui.Open = false;
             Shop.DevStage = -1;
             Plugin.Log.LogInfo($"[AutoTest] 掉落2 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
+        }
+
+        IEnumerator EnemyGeoTest()
+        {
+            mod.DevNoFallDamage = true;
+            PlayerData.instance.isInvincible = true;
+            yield return GoTo("Crossroads_01", EntryGateOf("Crossroads_01"));
+            var previous = GameDifficulty.Current;
+            int checks = 0, failed = 0;
+            var small = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("smallGeoDrops");
+            var medium = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("mediumGeoDrops");
+            var large = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, int>("largeGeoDrops");
+            var prepare = HarmonyLib.AccessTools.Method(typeof(EnemyDrops), "MoreGeo");
+            var probe = new GameObject("Geo reward fallback probe");
+            var health = probe.AddComponent<HealthManager>();
+            try
+            {
+                foreach (DifficultyLevel level in System.Enum.GetValues(typeof(DifficultyLevel)))
+                {
+                    GameDifficulty.Current = level;
+                    float oldScale = level == DifficultyLevel.Hard ? 1.25f : level == DifficultyLevel.Expert ? 1.5f : level >= DifficultyLevel.Master ? 2f : 1f;
+                    foreach (string record in EnemyDrops.DevRecords)
+                    {
+                        int raw = EnemyDrops.BaseGeoOf(record);
+                        int expected = raw < 0 ? -1 : Mathf.RoundToInt(raw * oldScale * 1.5f);
+                        checks++;
+                        if (EnemyDrops.GeoOf(record) != expected) failed++;
+                    }
+                    foreach (int original in new[] { 0, 1, 5, 25, 57, 100 })
+                    {
+                        small(health) = original % 5;
+                        medium(health) = original % 25 / 5;
+                        large(health) = original / 25;
+                        prepare.Invoke(null, new object[] { health });
+                        int actual = small(health) + 5 * medium(health) + 25 * large(health);
+                        checks++;
+                        if (actual != Mathf.RoundToInt(original * oldScale * 1.5f)) failed++;
+                    }
+                }
+                GameDifficulty.Current = DifficultyLevel.Master;
+                yield return new WaitForSeconds(1f);
+                var target = EnemyRespawn.Instance.DevLive("Crossroads_01").FirstOrDefault(hm =>
+                    UI.EnemyHover.RecordOf(hm) == "ZombieRunner" || UI.EnemyHover.RecordOf(hm) == "Climber");
+                checks++;
+                if (target == null) failed++;
+                else
+                {
+                    string record = UI.EnemyHover.RecordOf(target);
+                    int expected = EnemyDrops.GeoOf(EnemyDrops.KeyFor(record, EnemyDrops.VariantLevel("Crossroads_01")));
+                    EnemyDrops.DevGeo = -1;
+                    Kill(target);
+                    Plugin.Log.LogInfo($"[AutoTest] 吉欧实际击杀 {record}：期望 {expected}，实际 {EnemyDrops.DevGeo}");
+                    if (expected <= 0 || EnemyDrops.DevGeo != expected) failed++;
+                }
+                Plugin.Log.LogInfo($"[AutoTest] 吉欧增量检查 {checks} 项、失败 {failed} {(failed == 0 ? "通过" : "不通过")}");
+            }
+            finally
+            {
+                GameDifficulty.Current = previous;
+                Object.Destroy(probe);
+            }
         }
     }
 }

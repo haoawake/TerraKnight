@@ -212,7 +212,7 @@ def main():
             if kind == '怪物':
                 notes = re.split(r'^### 战斗阶段 ', body, maxsplit=1, flags=re.M)[0].strip()
                 intro_html = '<p>按小怪、精英、首领与战斗阶段组合筛选，也可搜索名称、内部 ID 或掉落物。</p><details><summary>分类与血量说明</summary>' + render(rewrite(notes)) + '</details>'
-            listing = cards(subset[:60])
+            listing = cards(subset[:24])
             categories = ['小怪', '精英', '首领'] if kind == '怪物' else sorted(set(e['category'] for e in subset))
             shortcuts = ''
             if kind in ('物品', '怪物'):
@@ -225,7 +225,7 @@ def main():
                     for value, label in [('', f'全部 {len(subset)}')] + [(c, f'{c} {sum(e["category"] == c for e in subset)}') for c in categories]) + '</nav>' + shortcuts
             # Bound the initial DOM; the full catalog remains available through filtering.
             filters = shortcuts + f'<div class="browse-controls"><label class="field">检索词条<input id="browse-query" type="search" placeholder="输入名称、内部 ID 或获取方式"></label><label class="field">阶段<select id="stage-filter"><option value="">全部阶段</option>{"".join(f"<option>{i}</option>" for i in range(6))}</select></label><label class="field">分类<select id="category-filter"><option value="">全部分类</option>{"".join(f"<option>{html.escape(c)}</option>" for c in categories)}</select></label></div><p id="result-count" class="muted" aria-live="polite">共 {len(subset)} 条记录</p>'
-            content = f'<div class="page-wrap"><span class="eyebrow">THE FIELD GUIDE</span><h1>{section["title"]}</h1><div class="prose intro">{intro_html}</div><section data-browser="{kind}">{filters}<div id="browse-results">{listing}</div><button id="load-more" class="button secondary" hidden>加载更多</button></section></div>'
+            content = f'<div class="page-wrap"><span class="eyebrow">THE FIELD GUIDE</span><h1>{section["title"]}</h1><div class="prose intro">{intro_html}</div><section data-browser="{kind}">{filters}<div id="browse-results">{listing}</div></section></div>'
         elif key == 'recipes':
             rendered = render(rewrite(body))
             table = re.search(r'<div class="table-scroll"[^>]*>(<table>.*?</table>)</div>', rendered, re.S)
@@ -242,7 +242,7 @@ def main():
                     cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.S)
                     recipe_index.append({'chunk': offset // size, 'row': i, 'text': html.unescape(plain(row)), 'stage': plain(cells[-1])})
             write('data/recipes/index.json', json.dumps(recipe_index, ensure_ascii=False, separators=(',', ':')))
-            controls = '<section data-recipes><div class="browse-controls"><label class="field grow">搜索配方<input id="recipe-query" type="search" placeholder="结果、材料或制作站"></label><label class="field">门槛<select id="recipe-stage"><option value="">全部阶段</option>' + ''.join(f'<option>{i}</option>' for i in range(6)) + '</select></label></div><p id="recipe-count" aria-live="polite"></p><div id="recipe-results" class="table-scroll" tabindex="0"><table>' + head + '<tbody>' + ''.join(rows[:size]) + '</tbody></table></div><div class="browse-controls"><button class="button secondary" id="recipe-prev" disabled>上一页</button><span id="recipe-page" aria-live="polite"></span><button class="button secondary" id="recipe-next">下一页</button></div><noscript>启用 JavaScript 可翻页和搜索；也可下载页脚的完整百科。</noscript></section>'
+            controls = '<section data-recipes><div class="browse-controls"><label class="field grow">搜索配方<input id="recipe-query" type="search" placeholder="结果、材料或制作站"></label><label class="field">门槛<select id="recipe-stage"><option value="">全部阶段</option>' + ''.join(f'<option>{i}</option>' for i in range(6)) + '</select></label></div><p id="recipe-count" aria-live="polite"></p><div id="recipe-results" class="table-scroll" tabindex="0"><table>' + head + '<tbody>' + ''.join(rows[:size]) + '</tbody></table></div><p id="recipe-page" class="muted" aria-live="polite"></p><noscript>启用 JavaScript 可翻页和搜索；也可下载页脚的完整百科。</noscript></section>'
             rendered = rendered[:table.start()] + controls + rendered[table.end():]
             content = f'<div class="article-wrap"><h1>{section["title"]}</h1><article class="prose wide">{rendered}</article></div>'
         elif key == 'changelog':
@@ -252,7 +252,7 @@ def main():
         active = 'items' if key == 'index' else 'changelog' if key.startswith('release-') else key
         write(('item-index' if key == 'index' else key) + '.html', shell(section['title'], content, active))
 
-    search_content = f'''<div class="page-wrap"><span class="eyebrow">FIND YOUR NEXT DISCOVERY</span><h1>搜索百科</h1><p class="lead">从一个名字，找到它的获取方式、掉落、配方和故事。</p><section data-browser="all"><div class="browse-controls"><label class="field grow">关键词<input id="browse-query" type="search" placeholder="试试：天顶剑、假骑士、矿石、Zenith" autofocus></label><label class="field">类型<select id="kind-filter"><option value="">全部类型</option><option>物品</option><option>怪物</option><option>NPC</option><option>指南</option></select></label><label class="field">阶段<select id="stage-filter"><option value="">全部阶段</option>{''.join(f'<option>{i}</option>' for i in range(6))}</select></label><label class="field check"><input id="saved-filter" type="checkbox">仅看收藏</label></div><p id="result-count" class="muted" aria-live="polite">正在载入搜索索引…</p><div id="browse-results"></div><button id="load-more" class="button secondary" hidden>加载更多</button><noscript>搜索需要启用 JavaScript。也可以从主导航浏览全部静态词条。</noscript></section></div>'''
+    search_content = f'''<div class="page-wrap"><span class="eyebrow">FIND YOUR NEXT DISCOVERY</span><h1>搜索百科</h1><p class="lead">从一个名字，找到它的获取方式、掉落、配方和故事。</p><section data-browser="all"><div class="browse-controls"><label class="field grow">关键词<input id="browse-query" type="search" placeholder="试试：天顶剑、假骑士、矿石、Zenith" autofocus></label><label class="field">类型<select id="kind-filter"><option value="">全部类型</option><option>物品</option><option>怪物</option><option>NPC</option><option>指南</option></select></label><label class="field">阶段<select id="stage-filter"><option value="">全部阶段</option>{''.join(f'<option>{i}</option>' for i in range(6))}</select></label><label class="field check"><input id="saved-filter" type="checkbox">仅看收藏</label></div><p id="result-count" class="muted" aria-live="polite">正在载入搜索索引…</p><div id="browse-results"></div><noscript>搜索需要启用 JavaScript。也可以从主导航浏览全部静态词条。</noscript></section></div>'''
     write('search.html', shell('搜索百科', search_content))
     recipe_count = len(re.findall(r'^\| \[', sections['recipes']['body'], re.M))
     stats = ''.join(f'<div><strong>{number:,}</strong><span>{label}</span></div>' for number, label in [(counts['物品'], '物品与材料'), (counts['怪物'], '怪物 / 场景变体'), (recipe_count, '合成配方'), (counts['NPC'], '城镇 NPC')])
