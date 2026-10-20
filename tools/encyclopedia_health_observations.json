@@ -8,7 +8,7 @@
     "Items/EnemyDrops.cs": "5439303c3bfa90a5398b5b31993d52c5e97cfa5775776e25e8f212300002f08b",
     "Items/EnemyStats.cs": "3b881201606ca6999a32454069b17e9f85b9c50819968c1ddbf2fd3ed76740fc",
     "UI/EnemyHover.cs": "69cca2300c1696dff6f4e710c2c8afd4893d35005d8d5ede60f7bee797e136ee",
-    "World/Areas.cs": "41e9499b153777ea2c077ae9fa621288a2cc34137fe6eb6267a8ad020f6001b2",
+    "World/Areas.cs": "7e7985a8a173fc7c5a543cfe2e8a80542a5de3daf87536cfb9ac0009b6e7965d",
     "World/GameDifficulty.cs": "6b5111d2dba89ee074c47296ddb6b8fa12c37cd0c1dec4ec48fd44a7f4d2623e"
   },
   "scenes": [
