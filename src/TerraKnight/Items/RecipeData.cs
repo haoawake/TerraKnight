@@ -543,6 +543,7 @@ namespace TerraKnight.Items
             new Recipe(ItemType.HunterPotion, 1, "玻璃瓶", 0, (ItemType.BottledWater, 1), (ItemType.Daybloom, 1), (ItemType.Blinkroot, 1), (ItemType.SharkFin, 1)), // Recipe.cs:1808-1814
             new Recipe(ItemType.GravitationPotion, 1, "玻璃瓶", 0, (ItemType.BottledWater, 1), (ItemType.Fireblossom, 1), (ItemType.Deathweed, 1), (ItemType.Blinkroot, 1), (ItemType.Feather, 1)), // Recipe.cs:1815-1822
             new Recipe(ItemType.GreaterHealingPotion, 3, "玻璃瓶", 0, (ItemType.BottledWater, 3), (ItemType.PixieDust, 3), (ItemType.CrystalShard, 1)), // Recipe.cs:1614-1623
+            new Recipe(ItemType.BottledWater, 1, "徒手", 0, (ItemType.Bottle, 1)) { Environment = CraftEnvironment.Water }, // Recipe.cs:1559-1562 (needWater)
             new Recipe(ItemType.BottledHoney, 1, "徒手", 0, (ItemType.Bottle, 1)) { Environment = CraftEnvironment.Honey }, // Recipe.cs (needHoney)
             new Recipe(ItemType.FlaskofVenom, 1, "灌注站", 2, (ItemType.BottledWater, 1), (ItemType.VialofVenom, 5)), // Recipe.cs:2017-2022
             new Recipe(ItemType.FlaskofCursedFlames, 1, "灌注站", 2, (ItemType.BottledWater, 1), (ItemType.CursedFlame, 2)), // Recipe.cs:2035-2040

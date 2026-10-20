@@ -1,5 +1,10 @@
 ﻿# Changelog
 
+## 4.3.1 — Fixes
+
+- Hornet's cutscene video before the City of Tears fountain statue (and any other video played in the game's own view) skipped just as it starts lifts its black screen and gives control back, and the scene carries on: a video stopped before it was seen playing gets the ending a video's own end gives it.
+- Bottled Water is made from a Bottle by hand near water (a Hallownest pool, poured water or a Sink), as in Terraria; the Merchant still sells it.
+
 ## 4.3.0 — Story moments, interface scale and fixes
 
 - **Story moments**: at your first fall, first bench, a pitch-dark room, life below 30%, a mask shard or Pale Ore, the Crossroads infected, the Grimm Troupe in town, the Grimmchild and all three Dreamers fallen, your character says a line or two and a tip says what to do, once per save, finishing after an interruption (the inventory, the map). They are apart from the guidance, with their own switch in Terraria settings → Guidance, and off in Creative saves to begin with.
