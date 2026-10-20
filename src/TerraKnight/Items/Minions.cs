@@ -981,6 +981,7 @@ namespace TerraKnight.Items
         {
             RefreshOwner();
             if (!hasOwner) return;
+            MinionEngage.Engage("指定目标");
             FindNpcs();
             var m = TerraParticles.ToPx(mouseWorld);
             Npc best = null;
@@ -1003,7 +1004,9 @@ namespace TerraKnight.Items
         /// <summary>A whip strike makes its enemy the minions' target.</summary>
         public void SetTarget(HealthManager hm)
         {
-            if (hm != null && !hm.isDead) Target = hm;
+            if (hm == null || hm.isDead) return;
+            MinionEngage.Engage("鞭子");
+            Target = hm;
         }
 
         /// <summary>UpdateMinionTarget: gone, unchaseable or over 3000 px from the player, it's dropped.</summary>
@@ -1033,6 +1036,8 @@ namespace TerraKnight.Items
             npcs.Clear();
             npcById.Clear();
             overlaps.Clear();
+            // Nothing to fight until the player attacks in the room (MinionEngage).
+            if (!MinionEngage.Engaged) return;
             Physics2D.OverlapBox(TerraParticles.ToWorld(pCenter), new Vector2(7000f, 5000f) * Px, 0f, enemyFilter, overlaps);
             foreach (var col in overlaps)
             {
@@ -1392,6 +1397,7 @@ namespace TerraKnight.Items
         /// </summary>
         void Damage(M m)
         {
+            if (!MinionEngage.Engaged) return;
             if (IsAura(m.Kind))
             {
                 if (m.Ai0 == 0f && m.LocalAi0 != 0f) AuraDamage(m);

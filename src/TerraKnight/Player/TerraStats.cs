@@ -74,6 +74,9 @@ namespace TerraKnight.Player
         /// <summary>Burning (World.Meteorites): lifeRegen held at 0 or under, so no regeneration.</summary>
         public bool Burning;
 
+        /// <summary>Poisoned (Player.Poison): no regeneration, its clock held at 0.</summary>
+        public bool Poisoned;
+
         /// <summary>Recomputes the maximums from crystals, the Knight's masks and vessels, and equipment.</summary>
         public void UpdateMaximums(PlayerData pd, int manaBonus)
         {
@@ -117,6 +120,19 @@ namespace TerraKnight.Player
         {
             if (Items.Charms.Enabled && PlayerData.instance != null && PlayerData.instance.overcharmed) raw *= 2;
             int damage = Mitigate(raw);
+            Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
+            sinceHit = 0f;
+            regenAccumulator = 0f;
+            return damage;
+        }
+
+        /// <summary>
+        /// A share of the life, as Hollow Knight's spikes and thorns take a mask (PlayerHooks.TakeHealth): no defense, no
+        /// endurance, nor overcharm doubled again (the game doubled the masks already); lifeblood's silver hearts take it first.
+        /// </summary>
+        public int TakeShare(int damage)
+        {
+            damage = Mathf.Max(1, damage);
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
@@ -196,7 +212,13 @@ namespace TerraKnight.Player
                 if (sinceHit > 1.5f && sinceHit < 30f) sinceHit = 30f;
                 sinceHit += dt * 4f;
             }
-            if (Life > 0 && Life < LifeMax && !Burning)
+            // Poisoned (Player.UpdateLifeRegen): lifeRegenTime 0, lifeRegen no more than 0.
+            if (Poisoned)
+            {
+                sinceHit = 0f;
+                regenAccumulator = 0f;
+            }
+            if (Life > 0 && Life < LifeMax && !Burning && !Poisoned)
             {
                 // Rapid Healing (Palladium) adds whatever the time since a hit (Pl:19382-19386).
                 float perSecond = (LifeRegenBonus + (honey ? 2 : 0) + (shiny ? 4 : 0) + soul + Items.ArmorEffects.RegenBonus) * 0.5f;

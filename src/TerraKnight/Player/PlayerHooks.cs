@@ -226,17 +226,15 @@ namespace TerraKnight.Player
             inTakeHealth = true;
             try
             {
+                if (hazardNow == SpikeHazard && overrideDamage <= 0)
+                {
+                    SpikeHit(__instance, ref amount, mod);
+                    return;
+                }
                 // Scale the enemy's raw damage first; TerraStats then applies this difficulty's defense rule.
                 int perMask = Mathf.RoundToInt((hazardNow > 1
                     ? StageDamage(World.Areas.MasterHazardDamagePerMask)
                     : StageDamage(World.Areas.MasterDamagePerMask)) * SourceFactor(sourceNow));
-                // The Dead Man's Sweater (deadMansSweater, P:14920-14924, 15120-15124): a trap's hit halved, at most 300; Hallownest's
-                // spikes are its traps.
-                if (hazardNow == 2 && Items.Equipment.Current.DeadMansSweater)
-                {
-                    perMask = Mathf.Max(1, Mathf.Min(perMask / 2, 300 / (World.GameDifficulty.UsesMaskDamage ? Mathf.Max(1, amount) : 1)));
-                    DevSweater++;
-                }
                 // The enemy's banner carried (its body, its attack, a shot it spawned): its DamageReceived before the defense (Pl:31624-31627, P:14906-14909).
                 if (hazardNow <= 1 && overrideDamage <= 0) perMask = Items.Banners.Taken(sourceNow, perMask);
                 float share = World.GameDifficulty.EnemyFactor;
@@ -249,17 +247,55 @@ namespace TerraKnight.Player
                 // Hazards are Terraria's touch and lava damage: no stars or bees for them.
                 TerraHurt.AfterHurt(HeroController.SilentInstance, raw, damage, hazardNow <= 1);
                 TerraHurt.LastDamage = damage;
-                var hero = HeroController.SilentInstance;
-                if (hero != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), UI.CombatText.PlayerHurt);
-                // Player.PlayHurtSound, the default (male) voice: one of three.
-                // The werewolf yelps as a wolf does (NPC_Hit_6, Pl:38977-38981).
-                if (!mod.Stats.IsDead) mod.PlaySound(Items.Equipment.WerewolfNow ? "NPC_Hit_6" : "Player_Hit_" + Random.Range(0, 3));
-                amount = mod.Stats.IsDead ? __instance.health + __instance.healthBlue + 10 : 0;
+                Hurt(__instance, ref amount, mod, damage);
             }
             finally
             {
                 inTakeHealth = false;
             }
+        }
+
+        /// <summary>DamageHero.hazardType for spikes and thorns.</summary>
+        const int SpikeHazard = 2;
+
+        /// <summary>
+        /// Spikes and thorns hurt as in Hollow Knight, by a share of the life rather than the room's enemy damage: each mask
+        /// of the hit its share of the masks (one of five masks, a fifth of the life), past defense. The Dead Man's Sweater
+        /// halves a trap's hit, at most 300 (deadMansSweater, P:14920-14924). A thorn also poisons as Terraria's poison dart
+        /// does (Player.Poison).
+        /// </summary>
+        static void SpikeHit(PlayerData pd, ref int amount, TerraMod mod)
+        {
+            int masks = Mathf.Max(1, pd.maxHealth);
+            int share = Mathf.Max(1, Mathf.RoundToInt(mod.Stats.LifeMax * (float)amount / masks));
+            if (Items.Equipment.Current.DeadMansSweater)
+            {
+                share = Mathf.Max(1, Mathf.Min(share / 2, 300));
+                DevSweater++;
+            }
+            TerraHurt.BeforeHurt();
+            Items.ArmorEffects.CounterHit = false;
+            int damage = mod.Stats.TakeShare(share);
+            TerraHurt.AfterHurt(HeroController.SilentInstance, share, damage, false);
+            TerraHurt.LastDamage = damage;
+            bool thorn = Poison.IsThorn(sourceNow);
+            if (thorn && !mod.Stats.IsDead) Poison.Prick();
+            DevSpikeHits++;
+            Plugin.Log.LogInfo($"[尖刺] {(sourceNow != null ? sourceNow.name : "?")}：{amount} 面具 / {masks}，扣 {damage} 生命（上限 {mod.Stats.LifeMax}）{(thorn ? "，荆棘中毒" : "")}");
+            Hurt(pd, ref amount, mod, damage);
+        }
+
+        public static int DevSpikeHits;
+
+        /// <summary>A hit taken: its number over the head, the hurt voice, and the masks spent only when it killed.</summary>
+        static void Hurt(PlayerData pd, ref int amount, TerraMod mod, int damage)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), UI.CombatText.PlayerHurt);
+            // Player.PlayHurtSound, the default (male) voice: one of three.
+            // The werewolf yelps as a wolf does (NPC_Hit_6, Pl:38977-38981).
+            if (!mod.Stats.IsDead) mod.PlaySound(Items.Equipment.WerewolfNow ? "NPC_Hit_6" : "Player_Hit_" + Random.Range(0, 3));
+            amount = mod.Stats.IsDead ? pd.health + pd.healthBlue + 10 : 0;
         }
 
         /// <summary>Benches, respawns and loading a save refill the masks; refill Terraria life with them.</summary>

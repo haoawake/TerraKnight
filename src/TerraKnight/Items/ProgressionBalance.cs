@@ -88,7 +88,7 @@ namespace TerraKnight.Items
             tiers[ItemType.MagicQuiver] = tiers[ItemType.MagicCuffs] = 2;
             tiers[ItemType.Hellforge] = 2;
             tiers[ItemType.MythrilAnvil] = tiers[ItemType.OrichalcumAnvil] = 3;
-            tiers[ItemType.AdamantiteForge] = 4;
+            tiers[ItemType.AdamantiteForge] = tiers[ItemType.TitaniumForge] = 3;
             tiers[ItemType.Autohammer] = 5;
             tiers[ItemType.ZapinatorGray] = 1;
             tiers[ItemType.LunarCraftingStation] = 5;
@@ -106,17 +106,20 @@ namespace TerraKnight.Items
             tiers[ItemType.BeeWax] = 1;
             tiers[ItemType.FishermansGuide] = tiers[ItemType.WeatherRadio] = tiers[ItemType.Sextant] = 2;
             tiers[ItemType.AnglerHat] = tiers[ItemType.AnglerVest] = tiers[ItemType.AnglerPants] = 2;
+            // The reviewed resource/workstation policy is authoritative even when
+            // a legacy class matrix or a generated source table still has an older tier.
+            foreach(var pair in ResourceStages) tiers[pair.Key]=pair.Value;
             foreach (var d in items)
             {
                 if (d == null || d.Type == ItemType.None) continue;
                 if (tiers.TryGetValue(d.Type, out int stage)) d.Stage = stage;
                 if(ShopOnlyWeapons.Contains(d.Type))d.Source=ItemSource.Shop;
+                // Terraria sells Dry Rockets; liquid conversions are additional
+                // recipes, not the source of the first rocket in that cycle.
+                if(d.Type==ItemType.DryRocket)d.Source=ItemSource.Shop;
                 if (d.Stage < 0 || d.Stage > 5) continue;
                 // Stage changes acquisition only. Preserve all piece stats and descriptions.
             }
-            // Keep the existing regional acquisition tier without rewriting Bee armour bonuses.
-            foreach (var t in new[] {ItemType.BeeHeadgear,ItemType.BeeBreastplate,ItemType.BeeGreaves})
-                items[(int)t].Stage = 4;
             foreach (var t in new[] {ItemType.WoodenSword,ItemType.WoodenBow,ItemType.WandofSparking,ItemType.FinchStaff})
             { items[(int)t].Value = 3000; items[(int)t].Price = 30; }
             foreach (var t in new[] {ItemType.WoodenArrow,ItemType.Seed,ItemType.MusketBall})

@@ -37,6 +37,7 @@ namespace TerraKnight.World
                 if (z >= (spike ? HazardArtBehind : CellVisuals.WallZ) || z <= -30f) continue;
                 if (sr.GetComponentInParent<TerraOwned>() != null || sr.GetComponentInParent<HealthManager>() != null) continue;
                 if (spike ? z > HazardArtFront : sr.gameObject.layer == 0 && sr.sortingLayerID == 0 && z >= -8f) art.Add(sr);
+                if (spike && z > HazardArtFront) spikeArt.Add(sr);
                 if (spike) DevHazardArt++;
                 if (z < 0f) cover.Add(sr);
                 if (z >= -8f && IsDecor(sr)) decor.Add(sr);
@@ -44,6 +45,26 @@ namespace TerraKnight.World
         }
 
         public int DevHazardArt;
+
+        /// <summary>The spikes' and thorns' own sprites among the art (what is left of them over a cell, DugHazards.TidyArt).</summary>
+        readonly List<SpriteRenderer> spikeArt = new List<SpriteRenderer>();
+        public bool HasSpikeArt => spikeArt.Count > 0;
+
+        /// <summary>Whether a spike's or thorn's picture (its mesh, not its box) is drawn over the cell: one still showing.</summary>
+        public bool SpikeArtOver(int x, int y)
+        {
+            if (spikeArt.Count == 0) return false;
+            var c = (Vector2)root.position + CellGrid.CellCenter(x, y);
+            const float half = CellGrid.CellSize * 0.5f;
+            foreach (var sr in spikeArt)
+            {
+                if (sr == null || !sr.enabled || !sr.gameObject.activeInHierarchy) continue;
+                var b = sr.bounds;
+                if (b.max.x < c.x - half || b.min.x > c.x + half || b.max.y < c.y - half || b.min.y > c.y + half) continue;
+                if (CrossesCell(sr, c, half)) return true;
+            }
+            return false;
+        }
 
         /// <summary>The layer Hollow Knight keeps its hazards on (their colliders and the spikes' own sprites: 17).</summary>
         const int HazardLayer = 17;

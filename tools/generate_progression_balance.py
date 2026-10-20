@@ -2,6 +2,7 @@
 from pathlib import Path
 import importlib.util
 import argparse
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('plan', ROOT / 'tools/build_drop_balance_doc.py')
@@ -28,6 +29,12 @@ for key, stage, reason, ts, acc in plan.BOSSES:
     lines.append(f'            ["{key}"] = new BossReward({stage}, new[] {{ {ids(ts.split())} }}, ItemType.{acc}),')
 lines += ['        };', '        internal static readonly Dictionary<ItemType, int> ResourceStages = new Dictionary<ItemType, int>', '        {']
 stages = {t:s for ts,_,s,*_ in plan.MINERALS for t in ts.split()}
+# The full reviewed acquisition policy supersedes the historical balance plan.
+# Rates, quantities and regional preferences remain in the runtime loot tables.
+policy = json.loads((ROOT / 'tools/resource_stage_policy.json').read_text('utf-8'))
+for group in policy['groups'] + policy['stations']:
+    for t in group['items'].split():
+        stages[t] = group['stage']
 # Ore and bar share the same processing gate.
 import re
 for m in re.finditer(r'new OreInfo\(ItemType\.(\w+), "[^"]+", \d+, ItemType\.(\w+)', plan.read('Items/ItemsOres.cs')):

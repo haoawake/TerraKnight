@@ -26,6 +26,8 @@ namespace TerraKnight
             }
             var inv = mod.Inventory;
             bool wasInfinite = inv.Infinite;
+            bool wasNoFallDamage = mod.DevNoFallDamage;
+            mod.DevNoFallDamage = true;
             mod.SetInfiniteItems(false);
             Shop.DevStage = 0;
             yield return GoTo("Town", "left1");
@@ -33,7 +35,7 @@ namespace TerraKnight
             var hero = HeroController.instance;
             var at = TownNpcs.DevPos("GoblinTinkerer");
             Check("开局哥布林就在镇上", at.HasValue, "阶段 0");
-            if (!at.HasValue) { Shop.DevStage = -1; mod.SetInfiniteItems(wasInfinite); yield break; }
+            if (!at.HasValue) { Shop.DevStage = -1; mod.SetInfiniteItems(wasInfinite); mod.DevNoFallDamage = wasNoFallDamage; yield break; }
             hero.transform.position = Clear(hero, at.Value + Vector2.left * 0.8f);
             yield return null;
             TownNpcs.Close(false);
@@ -97,6 +99,59 @@ namespace TerraKnight
             long v0 = Shop.SellValue(s0), v5 = Shop.SellValue(s5), v15 = Shop.SellValue(s15);
             Check("锻造等级越高卖得越多", v0 > 0 && v5 > v0 && v15 > v5 && v5 - v0 == Forging.PricesTo(ItemType.NightsEdge, 5) / 5,
                 $"永夜刃 +0 {Shop.Money(v0)}，+5 {Shop.Money(v5)}（锻造共 {Shop.Money(Forging.PricesTo(ItemType.NightsEdge, 5))}），+15 {Shop.Money(v15)}");
+            // Reproduce the transaction, then audit every forgeable item against the cheapest successful path.
+            var saleFailures = new System.Collections.Generic.List<string>();
+            int saleChecks = 0, cappedAtOne = 0;
+            ItemType arbitrageWeapon = ItemType.None;
+            foreach (var definition in ItemDb.All)
+            {
+                if (!Forging.Forgeable(definition)) continue;
+                var audit = ItemStack.Of(definition.Type);
+                long minimumSpent = 0;
+                for (int level = 1; level <= Forging.MaxLevelOf(audit.Type); level++)
+                {
+                    long stepCost = Forging.Cost(audit);
+                    minimumSpent += Equipment.Current.Discount ? stepCost : Shop.Discounted(stepCost, true);
+                    audit.Forge = (byte)level;
+                    long sale = Shop.SellValue(audit);
+                    saleChecks++;
+                    if (sale > minimumSpent) saleFailures.Add($"{audit.Type}+{level}: {sale}>{minimumSpent}");
+                    if (level == 1)
+                    {
+                        long oldSale = System.Math.Max(1L, Shop.PriceOf(audit.Def) / 5) + Forging.SellBonus(audit);
+                        if (definition.Value > 0 && !Recipes.Worthless(audit.Type) && oldSale > minimumSpent)
+                        {
+                            cappedAtOne++;
+                            if (arbitrageWeapon == ItemType.None && Forging.CanForge(definition)) arbitrageWeapon = audit.Type;
+                        }
+                        if (Prefixes.CanHave(definition)) foreach (var prefixOption in Prefixes.DevRollable(definition))
+                        {
+                            var prefixed = audit; prefixed.Prefix = (byte)prefixOption.Id;
+                            saleChecks++;
+                            if (Shop.SellValue(prefixed) > minimumSpent) saleFailures.Add($"{audit.Type} prefix {prefixOption.Id}");
+                        }
+                    }
+                }
+                // Old saves can contain levels beyond today's cap.
+                audit.Forge = byte.MaxValue;
+                saleChecks++;
+                if (Shop.SellValue(audit) > Forging.PricesTo(audit.Type, audit.Forge, minimumPaid: true))
+                    saleFailures.Add($"{audit.Type}+255");
+            }
+            Check("全装备、词缀、旧等级出售不超过最低锻造投入", saleFailures.Count == 0,
+                $"{saleChecks} 项；+1 原本可套利 {cappedAtOne} 种；{string.Join("，", saleFailures)}");
+            var transaction = ItemStack.Of(arbitrageWeapon == ItemType.None ? ItemType.Zenith : arbitrageWeapon);
+            long beforeForgeSale = Shop.Purse;
+            Forging.DevOutcome = true;
+            var transactionResult = Forging.Try(ref transaction);
+            long invested = beforeForgeSale - Shop.Purse;
+            var savedSlot = inv.Slots[20];
+            inv.Slots[20] = transaction;
+            bool soldForged = InventoryGui.DevSell(20);
+            Check("实际锻造+1再出售不会增加钱包", transactionResult == Forging.Result.Forged && soldForged
+                && inv.Slots[20].IsEmpty && Shop.Purse <= beforeForgeSale,
+                $"{transaction.Type}，锻造花费 {Shop.Money(invested)}，出售 {Shop.Money(Shop.SellValue(transaction))}，净变化 {Shop.Purse - beforeForgeSale}");
+            inv.Slots[20] = savedSlot;
             Forging.DevOutcome = null;
 
             // Price and odds by the weapon and its level.
@@ -140,7 +195,7 @@ namespace TerraKnight
             Shot("Town", "forge_panel");
             yield return null;
 
-            // Armor: three available levels per equipment stage, +1 defense per level.
+            // Iron is warrior armor: three levels per stage, +2 defense per level, with a level/cap label.
             {
                 var helm = ItemStack.Of(ItemType.IronHelmet);
                 int def0 = helm.Def.Defense, armorCap = Forging.MaxLevelOf(helm.Type);
@@ -148,14 +203,17 @@ namespace TerraKnight
                 Forging.DevOutcome = true;
                 for (int k = 0; k < armorCap + 2; k++) Forging.Try(ref helm);
                 Forging.DevOutcome = null;
-                Check("盔甲按装备阶段封顶，每级 +1 防御，名字带等级", Forging.Forgeable(ItemDb.Get(ItemType.IronHelmet)) && helm.Forge == armorCap && Forging.AtMax(helm) && helm.Def.Defense == def0 + armorCap && helm.Def.Name.EndsWith("+" + armorCap),
+                Check("战士盔甲按装备阶段封顶，每级 +2 防御，名字带等级", Forging.Forgeable(ItemDb.Get(ItemType.IronHelmet)) && helm.Forge == armorCap && Forging.AtMax(helm) && helm.Def.Defense == def0 + 2 * armorCap && helm.Def.Name.EndsWith($"(Lv.{armorCap}/Lv.{armorCap})"),
                     $"{helm.Def.Name}，防御 {def0}→{helm.Def.Defense}，上限 +{Forging.MaxLevelOf(ItemType.IronHelmet)}");
                 var solar = ItemStack.Of(ItemType.SolarFlareHelmet);
                 Check("盔甲上限随装备阶段递增，敲满总价接近原来", Forging.MaxLevelOf(solar.Type) == Forging.ArmorStageCap(solar.Def.Stage) && Forging.MaxLevelOf(solar.Type) >= armorCap && Forging.PricesTo(solar.Type, Forging.MaxLevelOf(solar.Type)) >= Forging.PricesTo(helm.Type, armorCap),
                     $"铁头盔 +1 {Shop.Money(helmCost)}（铁阔剑 {Shop.Money(swordCost)}），日耀头盔 +1 {Shop.Money(Forging.Cost(solar))}；到各自上限共 {Shop.Money(Forging.PricesTo(ItemType.IronHelmet, armorCap))} / {Shop.Money(Forging.PricesTo(solar.Type, Forging.MaxLevelOf(solar.Type)))}");
                 var packedHelm = Save.ModSave.DevRoundTrip(helm);
                 var plainHelm = ItemStack.Of(ItemType.IronHelmet);
-                Check("盔甲的锻造等级存档保留、卖得更多", packedHelm.Forge == armorCap && Shop.SellValue(helm) > Shop.SellValue(plainHelm),
+                Check("盔甲的锻造等级存档保留、出售遵守价值和投入上限", packedHelm.Forge == armorCap
+                    && Shop.SellValue(helm) >= Shop.SellValue(plainHelm)
+                    && Shop.SellValue(helm) <= Forging.PricesTo(helm.Type, armorCap, minimumPaid: true)
+                    && (!Recipes.Worthless(helm.Type) || Shop.SellValue(helm) == 0),
                     $"读回 +{packedHelm.Forge}，卖 {Shop.Money(Shop.SellValue(helm))} / 原样 {Shop.Money(Shop.SellValue(plainHelm))}");
                 int plain = 0, forged = 0;
                 foreach (var t in new[] { ItemType.IronHelmet, ItemType.IronChainmail, ItemType.IronGreaves })
@@ -165,7 +223,7 @@ namespace TerraKnight
                     p.Forge = (byte)Forging.MaxLevelOf(t);
                     forged += p.Def.Defense;
                 }
-                Check("头身腿同阶敲满增加对应防御", forged - plain == 3 * armorCap, $"{plain} → {forged}");
+                Check("战士头身腿同阶敲满增加对应防御", forged - plain == 6 * armorCap, $"{plain} → {forged}");
                 TownNpcs.ReturnReforgeItem();
                 bool placed = InventoryGui.DevPutReforge(ItemStack.Of(ItemType.IronChainmail));
                 yield return new WaitForSeconds(0.3f);
@@ -177,6 +235,7 @@ namespace TerraKnight
             TownNpcs.Close(false);
             Shop.DevStage = -1;
             mod.SetInfiniteItems(wasInfinite);
+            mod.DevNoFallDamage = wasNoFallDamage;
             Plugin.Log.LogInfo($"[AutoTest] 锻造 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
     }

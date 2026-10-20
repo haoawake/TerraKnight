@@ -133,7 +133,7 @@ namespace TerraKnight.Town
             int q = QuestsDone;
             float r0 = q <= 50 ? 1f - 0.01f * q : q <= 100 ? 0.5f - 0.005f * (q - 50) : q > 150 ? 0.15f : 0.25f - 0.002f * (q - 100);
             float r = r0 * 0.9f;
-            bool hard = Shop.UnlockedStage() >= 4;
+            bool hard = Shop.UnlockedStage() >= 3;
             int N(float n) => Mathf.Max(0, (int)(n * r));
             bool Roll(float n) => Random.Range(0, Mathf.Max(1, N(n))) == 0;
             var got = new List<(ItemType, int)>();

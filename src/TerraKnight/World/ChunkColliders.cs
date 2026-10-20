@@ -199,11 +199,21 @@ namespace TerraKnight.World
             composite.sharedMaterial = material;
             var chunk = new Chunk { Go = go, Composite = composite };
             chunks[cy * cols + cx] = chunk;
+            Mirror(composite);
             return chunk;
         }
 
         /// <summary>Every platform composite built, in every scene (for the bosses that go through them, BossPlatforms).</summary>
         internal static readonly List<CompositeCollider2D> AllPlatforms = new List<CompositeCollider2D>();
+
+        /// <summary>The colliders that are the grid itself (its blocks and platforms), for what reads the grid and the game's other colliders apart (WorldItems).</summary>
+        internal static readonly HashSet<Collider2D> Mirrors = new HashSet<Collider2D>();
+
+        static void Mirror(Collider2D c)
+        {
+            if (Mirrors.Count > 8192) Mirrors.RemoveWhere(m => m == null);
+            Mirrors.Add(c);
+        }
 
         void CreatePlatforms(Chunk chunk)
         {
@@ -224,6 +234,7 @@ namespace TerraKnight.World
             chunk.PlatformGo = go;
             chunk.Platforms = composite;
             AllPlatforms.Add(composite);
+            Mirror(composite);
         }
 
         static BoxCollider2D AddBox(GameObject go, List<BoxCollider2D> list, bool platform = false)

@@ -27,6 +27,8 @@ namespace TerraKnight.Items
             public int Group;
             /// <summary>Relative weight inside a group; legacy zero means one.</summary>
             public float Weight;
+            /// <summary>Original group budget after illegal outcomes are removed; zero uses the sum of live weights.</summary>
+            public float GroupWeightTotal;
             /// <summary>Exact mean count for calibrated material pools; zero uses the legacy uniform range.</summary>
             public float MeanCount;
             /// <summary>
@@ -327,6 +329,7 @@ namespace TerraKnight.Items
                     foreach (var o in drops) if (o.Group == d.Group && !Locked(o)) options.Add(o);
                     if (options.Count == 0) continue;
                     var pick = Pick(options);
+                    if(pick.Type==ItemType.None)continue;
                     Pay(pick);
                     DevGroupPicks++;
                     if(d.Group==100)DevMainPicks++;
@@ -356,24 +359,34 @@ namespace TerraKnight.Items
 
         internal static Drop Pick(IReadOnlyList<Drop> options)
         {
-            float total=0;
-            foreach(var d in options) total+=ProgressionLoot.Weight(d);
+            float total=GroupWeightTotal(options);
             float roll=Random.value*total;
             foreach(var d in options)
             { roll-=ProgressionLoot.Weight(d); if(roll<0) return d; }
+            float live=0;foreach(var d in options)live+=ProgressionLoot.Weight(d);
+            if(total>live)return default;
             return options[options.Count-1];
+        }
+
+        internal static float GroupWeightTotal(IReadOnlyList<Drop> options)
+        {
+            float live=0,reserved=0;
+            foreach(var d in options){live+=ProgressionLoot.Weight(d);reserved=System.Math.Max(reserved,d.GroupWeightTotal);}
+            return System.Math.Max(live,reserved);
         }
 
         public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d) => MarginalChance(drops, d, Shop.UnlockedStage());
         internal static float MarginalChance(IReadOnlyList<Drop> drops,Drop d,int stage)
         {
             if(d.Group<=0) return EffectiveChance(d);
-            float total=0,chance=0;
+            float total=0,chance=0,reserved=0;
             foreach(var other in drops) if(other.Group==d.Group && !Locked(other, stage))
             {
                 if(total==0)chance=EffectiveChance(other);
                 total+=ProgressionLoot.Weight(other);
+                reserved=System.Math.Max(reserved,other.GroupWeightTotal);
             }
+            total=System.Math.Max(total,reserved);
             return total>0 ? chance*ProgressionLoot.Weight(d)/total : 0;
         }
 

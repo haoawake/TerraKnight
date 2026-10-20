@@ -100,6 +100,20 @@ namespace TerraKnight.World
             return a >= 0 ? BlockItem(a) : ItemDb.DropFor(kind);
         }
 
+        // Natural terrain is acquired by mining its own region, not by a global
+        // stage-0 material roll. Recipes inherit this estimate without changing ingredients.
+        public static int AcquisitionStage(int i)
+        {
+            switch(All[i].Name) {
+                case "国王山道":case "德特茅斯":case "遗忘十字路":case "苍绿之径":case "黑卵神殿":return 0;
+                case "呼啸悬崖":case "真菌荒地":case "雾之峡谷":return 1;
+                case "泪水之城":case "皇家水道":case "水晶山峰":case "安息之地":case "梦境":return 2;
+                case "王后花园":case "深巢":case "野兽巢穴":case "远古盆地":return 3;
+                case "王国边缘":case "蜂巢":case "深渊":case "愚人斗兽场":return 4;
+                default:return 5;
+            }
+        }
+
         public static void AddItems(List<ItemDef> list)
         {
             for (int i = 0; i < All.Length; i++)
@@ -107,12 +121,12 @@ namespace TerraKnight.World
                 var a = All[i];
                 list.Add(new ItemDef
                 {
-                    Type = BlockItem(i), Name = a.Block, Texture = "HkTileItem_" + a.Key, Source = ItemSource.Drop, Places = Kind(i), MaxStack = 999,
+                    Type = BlockItem(i), Name = a.Block, Texture = "HkTileItem_" + a.Key, Source = ItemSource.Drop, Stage = AcquisitionStage(i), Places = Kind(i), MaxStack = 999,
                     UseAnimation = 15 * Tick, UseTime = 10 * Tick, Tooltip = "可放置",
                 });
                 list.Add(new ItemDef
                 {
-                    Type = WallItem(i), Name = a.Wall, Texture = "HkWallItem_" + a.Key, Source = ItemSource.Craft, PlacesWall = WallId(i), MaxStack = 9999,
+                    Type = WallItem(i), Name = a.Wall, Texture = "HkWallItem_" + a.Key, Source = ItemSource.Craft, Stage = AcquisitionStage(i), PlacesWall = WallId(i), MaxStack = 9999,
                     Consumable = true, UseTime = 7 * Tick, UseAnimation = 15 * Tick, Tooltip = "可放置背景墙\n用锤子拆除",
                 });
             }

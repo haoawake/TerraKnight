@@ -129,8 +129,8 @@ namespace TerraKnight.Items
                     list.Add(new ItemDef
                     {
                         Type = t, Name = name, Texture = (hard ? "HkCoffer_" : "HkCrate_") + a.Key, Opens = true, MaxStack = 9999, Rare = 2, Tooltip = "右键单击打开", UseSound = null,
-                        // Fished up only (never one of the basics a bench or Dirtmouth sells); worth a biome crate's, the coffer from stage 4.
-                        Source = ItemSource.Drop, Value = 50000, Price = 500, Stage = hard ? 4 : 0,
+                        // Hardmode coffers follow the same stage-3 gate as fishing.
+                        Source = ItemSource.Drop, Value = 50000, Price = 500, Stage = hard ? 3 : 0,
                     });
                 }
         }

@@ -232,7 +232,8 @@ namespace TerraKnight.UI
                 if (CreativeMenu.Button(new Rect(p.center.x - 130f * ui, p.yMax - 76f * ui, 260f * ui, 50f * ui), TT("LegacyMenu.5", "返回"), ui)) Hide();
                 return;
             }
-            var all = TerraKeys.Ordered;
+            // The charm skill key only with the charm page (still being made, off by default).
+            var all = Items.Charms.Enabled ? TerraKeys.Ordered : System.Array.FindAll(TerraKeys.Ordered, k => k != TerraKeys.Action.CharmSkill);
             int columns = all.Length > 30 ? 3 : 2;
             // Three columns: a size smaller, each on one line.
             keyStyle.fontSize = Mathf.RoundToInt((columns == 3 ? 17 : 20) * ui);

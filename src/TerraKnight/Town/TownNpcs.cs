@@ -285,6 +285,8 @@ namespace TerraKnight.Town
             Dismissed.Clear();
             ClearHouses();
             lastStage = -1;
+            travelerCame = -1;
+            travelerWasHere = null;
         }
 
         // ------------------------------------------------------------------ the town
@@ -310,6 +312,7 @@ namespace TerraKnight.Town
                     Place(region, stage, hero);
                 }
             }
+            WatchTraveler();
             HousingTick(hero);
             CollectTaxTime();
             tickAccumulator += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
@@ -355,14 +358,88 @@ namespace TerraKnight.Town
         }
 
         /// <summary>
-        /// The Traveling Merchant's days (Main.UpdateTime: at dawn, some days): one day in three, by the day's number, from
-        /// dawn to dusk. His stock (Chest.SetupTravelShop) is chosen for the day from what he may bring: four to six things.
+        /// Main.UpdateTime's Traveling Merchant: through the morning (the day's first 27000 ticks, 450 s here) each tick a
+        /// one in 108000 chance (27000 / dayRate × 4) that he comes, when two or more townsfolk are in town (not the Old
+        /// Man or the Skeleton Merchant), so on about one day in four and a half (1 − e^−¼) at some time of the morning.
+        /// Rolled here once for the day, by its number (the same in a LAN game): whether he comes and when. He goes after
+        /// the day's 48600th tick (810 s) or at nightfall, once no player is by him (UnspawnTravelNPC: off screen). His
+        /// stock (Chest.SetupTravelShop) is chosen for the day from what he may bring: four to six things.
         /// </summary>
         static bool TravelerVisiting()
         {
-            if (PlayerData.instance == null || !World.TerraTime.IsDay) return false;
+            if (PlayerData.instance == null) return false;
             int day = World.TerraTime.Day;
-            return new System.Random(day * 7919 + 17).Next(3) == 0;
+            float now = World.TerraTime.Now;
+            bool came = travelerCame == day;
+            if (!World.TerraTime.IsDay || now > TravelerLeaves)
+            {
+                if (came && TravelerByPlayer()) return true;
+                return false;
+            }
+            if (came) return true;
+            var rng = new System.Random(day * 7919 + 17);
+            if (rng.NextDouble() >= TravelerOdds) return false;
+            float at = (float)rng.NextDouble() * TravelerMorning;
+            if (now < at || TownsfolkHere() < 2) return false;
+            travelerCame = day;
+            return true;
+        }
+
+        const float TravelerMorning = 450f, TravelerLeaves = 810f;
+        /// <summary>1 − (1 − 1/108000)^27000.</summary>
+        const double TravelerOdds = 0.2212;
+        /// <summary>The day he came on (−1: not come).</summary>
+        static int travelerCame = -1;
+        /// <summary>Whether he was in town at the last look (null: no look yet since loading, nothing to tell).</summary>
+        static bool? travelerWasHere;
+        static float nextTravelerLook;
+
+        /// <summary>The townsfolk in town now, the Traveling Merchant aside.</summary>
+        static int TownsfolkHere()
+        {
+            int stage = Shop.UnlockedStage(), n = 0;
+            foreach (var d in All)
+                if (d.Kind != NpcKind.Visitor && InTown(d, stage)) n++;
+            return n;
+        }
+
+        /// <summary>A player beside him on the street (about a screen round him): he waits to go till they're away.</summary>
+        static bool TravelerByPlayer()
+        {
+            var hero = HeroController.SilentInstance;
+            var him = npcs.Find(n => n.Def.Kind == NpcKind.Visitor);
+            if (hero == null || him == null) return false;
+            if (talk == him) return true;
+            var at = hero.transform.position;
+            return Mathf.Abs(at.x - him.X) < 20f && Mathf.Abs(at.y - him.FeetY) < 12f;
+        }
+
+        /// <summary>
+        /// His coming and going told wherever the player is (Main.NewText, Announcement.HasArrived; LegacyMisc.35), not only
+        /// in Dirtmouth; each visit has a name of its own. A look a second; nothing told at the first look after loading.
+        /// </summary>
+        static void WatchTraveler()
+        {
+            if (Time.unscaledTime < nextTravelerLook) return;
+            nextTravelerLook = Time.unscaledTime + 1f;
+            var def = System.Array.Find(All, d => d.Kind == NpcKind.Visitor);
+            if (def == null) return;
+            bool here = InTown(def, Shop.UnlockedStage());
+            if (travelerWasHere == here) return;
+            bool tell = travelerWasHere != null;
+            travelerWasHere = here;
+            if (here && !Names.ContainsKey(def.Internal))
+            {
+                var pool = GivenNames(def.Internal);
+                Names[def.Internal] = pool[Random.Range(0, pool.Length)];
+            }
+            string name = new Npc { Def = def, Given = Names.TryGetValue(def.Internal, out var given) ? given : "" }.Name;
+            if (!here) Names.Remove(def.Internal);
+            if (!tell) return;
+            var color = new Color(50 / 255f, 125 / 255f, 255 / 255f);
+            string line = Terraria.TerrariaText.Get(Lang.Culture, here ? "Announcement.HasArrived" : "LegacyMisc.35");
+            Net.NetChat.Add(line != null ? line.Replace("{0}", name) : Lang.F(here ? "{0}已到达！" : "{0}已离去！", name), color);
+            Plugin.Log.LogInfo($"[城镇] {name} {(here ? "已到达" : "已离去")}");
         }
 
         static int travelDay = -1,travelStage=-1;
@@ -432,6 +509,7 @@ namespace TerraKnight.Town
                 if (talk == gone) Close(false);
                 npcs.RemoveAt(k);
                 Arrived.Remove(gone.Def.Internal);
+                if (gone.Def.Kind == NpcKind.Visitor) continue;
                 string left = Terraria.TerrariaText.Get(Lang.Culture, "LegacyMisc.35");
                 Net.NetChat.Add(left != null ? left.Replace("{0}", gone.Name) : Lang.F("{0}已离去！", gone.Name), new Color(50 / 255f, 125 / 255f, 255 / 255f));
             }
@@ -496,7 +574,7 @@ namespace TerraKnight.Town
                 n.Range = World.Stations.ChairNear(new Vector2(n.HomeX, n.FeetY + 0.3f), out _, out _) ? ChairRange : RoamRange;
                 npcs.Add(n);
                 i++;
-                if (Arrived.Add(def.Internal) && !fresh)
+                if (Arrived.Add(def.Internal) && !fresh && def.Kind != NpcKind.Visitor)
                 {
                     // Main.NewText(Language.GetTextValue("Announcement.HasArrived", FullName), 50, 125, 255): in the chat at the bottom left.
                     string line = Terraria.TerrariaText.Get(Lang.Culture, "Announcement.HasArrived");

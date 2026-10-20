@@ -22,7 +22,10 @@ namespace TerraKnight.Items
                 {added.Add(pair.Item1);yield return new Stock(pair.Item1,pair.Item2,null);}
             }
             foreach(var stock in original)
-                if(added.Add(stock.Type)) yield return new Stock(stock.Type,System.Math.Max(stock.Stage,ItemDb.Get(stock.Type).Stage),stock.Phases);
+                if(added.Add(stock.Type)) {
+                    int sourceStage=ResourceStages.TryGetValue(stock.Type,out int reviewed) ? reviewed : stock.Stage;
+                    yield return new Stock(stock.Type,System.Math.Max(sourceStage,ItemDb.Get(stock.Type).Stage),stock.Phases);
+                }
         }
     }
 }

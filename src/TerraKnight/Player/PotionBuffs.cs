@@ -64,6 +64,7 @@ namespace TerraKnight.Player
             D(WellFed, "吃得好", "所有属性小幅提升"); D(PlentySatisfied, "很满意", "所有属性中幅提升"); D(ExquisitelyStuffed, "酒足饭饱", "所有属性大幅提升");
             D(Tipsy, "醉醺醺", "近战能力提升，防御力降低");
             PlayerBuffs.Define(World.Meteorites.Burning, "燃烧", "正在损失生命值且移动已放缓", debuff: true);
+            PlayerBuffs.Define(Poison.Buff, "中毒", "缓慢损失生命值", debuff: true);
             return true;
         }
 

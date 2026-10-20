@@ -220,7 +220,8 @@ namespace TerraKnight.UI
                 if (dh != null && dh.hazardType >= 2 && dh.hazardType <= 4)
                 {
                     var col = go.GetComponent<Collider2D>();
-                    if (col != null) Wetten(room, CellsOf(col.bounds, region, 400), dh.hazardType == 2 ? Wet.Spikes : dh.hazardType == 3 ? Wet.Acid : Wet.Lava);
+                    if (col != null && dh.hazardType == 2) SpikeCells(room, CellsOf(col.bounds, region, 400), region);
+                    else if (col != null) Wetten(room, CellsOf(col.bounds, region, 400), dh.hazardType == 3 ? Wet.Acid : Wet.Lava);
                     continue;
                 }
                 if (go.layer == 4)
@@ -269,6 +270,22 @@ namespace TerraKnight.UI
                 case Obj.Spring: return (120, 60);
                 default: return (8, 8);
             }
+        }
+
+        /// <summary>
+        /// Spikes and thorns only on the cells their colliders really reach (DugHazards.HazardOver, the cells a pickaxe takes
+        /// them from), not their whole box: a thorn bush's slanting collider, or a row's box grazing the next row, left cells on
+        /// the map red that no pick could ever clear.
+        /// </summary>
+        static void SpikeCells(Room room, RectInt r, Vector2Int region)
+        {
+            for (int y = Mathf.Max(0, r.yMin); y < Mathf.Min(room.H, r.yMax); y++)
+                for (int x = Mathf.Max(0, r.xMin); x < Mathf.Min(room.W, r.xMax); x++)
+                {
+                    int i = y * room.W + x;
+                    if ((Wet)room.Wets[i] == Wet.Spikes) continue;
+                    if (DugHazards.HazardOver(new Vector2Int(x + region.x, y + region.y))) room.Wets[i] = (byte)Wet.Spikes;
+                }
         }
 
         static void Wetten(Room room, RectInt r, Wet wet)

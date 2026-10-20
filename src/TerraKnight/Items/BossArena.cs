@@ -183,6 +183,8 @@ namespace TerraKnight.Items
             public bool AtDoor;
             /// <summary>The boss's kills when the visit began; when it was beaten in this one; its gates opened since.</summary>
             public int KillsBefore;
+            /// <summary>A boss beaten before: its first-win rewards (a warrior's Dream Essence) aren't given again.</summary>
+            public bool Rematch;
             public float WonAt = -1f;
             public bool GatesOpened;
             /// <summary>The arena scenes' solid colliders (not their ground, not a gate) off when first seen in the visit: true
@@ -197,6 +199,8 @@ namespace TerraKnight.Items
         /// <summary>A creative challenge is on: its records are being set back and forth (SpecialDeaths leaves them be).</summary>
         public static bool Visiting => visit != null;
         internal static string VisitKey => visit?.Key;
+        /// <summary>A visit to a boss beaten before is on (EssenceWallet keeps its essence out).</summary>
+        internal static bool Rematching => visit != null && visit.Rematch;
         /// <summary>Where a dream's or Godhome's fight sends the player back to: the scene and the spot they left from.</summary>
         static string returnScene;
         /// <summary>
@@ -257,6 +261,7 @@ namespace TerraKnight.Items
             // (the game's own way back into a fight it has seen); never beaten (the Creative book's button): met as the
             // first time, intro and all.
             rematch |= Bestiary.KillsOf(key) > 0;
+            v.Rematch = rematch;
             // These writes are the visit's own, not a fight's (SpecialDeaths leaves them be).
             Writing = true;
             foreach (var (n, val) in a.Beaten) { v.Bools[n] = pd.GetBool(n); pd.SetBool(n, rematch && Encountered(n) ? true : val); }
@@ -709,7 +714,12 @@ namespace TerraKnight.Items
                     else won.Add(n);
                 foreach (var (n, val) in a.BeatenInts)
                     if (!keepWins || pd.GetInt(n) == val) pd.SetInt(n, v.Ints[n]);
-                    else won.Add(n);
+                    else
+                    {
+                        // A warrior's 1 (beaten) after a rematch never undoes the 2 (absorbed) from before: no second absorbing.
+                        pd.SetInt(n, Mathf.Max(v.Ints[n], pd.GetInt(n)));
+                        won.Add(n);
+                    }
                 foreach (var (n, _) in a.Needs)
                     if (!Contains(a.Beaten, n)) pd.SetBool(n, v.Bools[n]);
                 foreach (var (n, _) in a.NeedInts)

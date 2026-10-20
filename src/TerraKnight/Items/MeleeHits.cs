@@ -282,9 +282,21 @@ namespace TerraKnight.Items
             // As a spell's DamageEnemies does, the struck enemy's FSMs hear TAKE DAMAGE first (what wakes some of them).
             if (hm != null && !quiet && !Net.Enemies.IsPuppet(hm)) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
             source.transform.position = new Vector3(from.x, from.y, 0f);
-            int accepted = Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation, quiet);
+            int accepted;
+            Autonomous = autonomous;
+            try
+            {
+                accepted = Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation, quiet);
+            }
+            finally
+            {
+                Autonomous = false;
+            }
             return hm != null && accepted > 0;
         }
+
+        /// <summary>A minion's or sentry's blow is being dealt (HitWith autonomous): not the player's own (MinionEngage).</summary>
+        public static bool Autonomous;
 
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, PlayMakerFSM> stunFsm = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, PlayMakerFSM>("stunControlFSM");
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, GameObject> sendHitTo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, GameObject>("sendHitTo");
@@ -322,6 +334,8 @@ namespace TerraKnight.Items
             // Who dealt it, for the armor sets' on-hit effects (cleared whatever happens).
             var armorCtx = ArmorEffects.Context;
             ArmorEffects.Context = default;
+            // The player's own blow on an enemy: his minions join in (MinionEngage).
+            if (hm != null && !Autonomous) MinionEngage.Engage("命中");
             // The enemy's banner carried: its DamageDealt before the variation (Pl:20597-20600, 44656-44659; P:13388-13391).
             if (hm != null) baseDamage = Banners.Dealt(hm, baseDamage);
             bool crit = Random.value * 100f < critChance;

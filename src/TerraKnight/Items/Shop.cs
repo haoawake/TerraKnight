@@ -207,15 +207,24 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// What a stack sells for, in copper: a fifth of the value apiece (Player.GetItemExpectedPrice); a forged weapon a
-        /// fifth of its levels' prices more (Forging.SellBonus), the higher its level the more.
+        /// fifth of its levels' prices more (Forging.SellBonus). Forged equipment's total return is capped at the
+        /// minimum cost of reaching that level, so forging and selling cannot turn a profit, even with a discount.
         /// </summary>
-        public static long SellValue(ItemStack s) => s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type) ? 0 : (System.Math.Max(1L, PriceOf(s.Def) / 5) + Forging.SellBonus(s)) * s.Count;
+        public static long SellValue(ItemStack s)
+        {
+            if (s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type)) return 0;
+            long value = System.Math.Max(1L, PriceOf(s.Def) / 5) + Forging.SellBonus(s);
+            if (s.Forge > 0 && Forging.Forgeable(ItemDb.Get(s.Type)))
+                value = System.Math.Min(value, Forging.PricesTo(s.Type, s.Forge, minimumPaid: true));
+            return value * s.Count;
+        }
 
         /// <summary>
         /// A price paid with the Discount Card worn: four fifths (Pl:35648-35657 for a shop, Main.DrawInventory for the
         /// Goblin's reforging); here the geo bought at a bench, the forging and the reforging too. Never under a copper.
         /// </summary>
-        public static long Discounted(long price) => price > 0 && Equipment.Current.Discount ? System.Math.Max(1L, (long)(price * 0.8f)) : price;
+        public static long Discounted(long price) => Discounted(price, Equipment.Current.Discount);
+        internal static long Discounted(long price, bool discount) => price > 0 && discount ? System.Math.Max(1L, (long)(price * 0.8f)) : price;
 
         /// <summary>
         /// What an item costs at the townsfolk's, in copper (a geo is 100): Terraria's value up to a

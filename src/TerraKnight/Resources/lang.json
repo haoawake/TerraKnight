@@ -8460,5 +8460,12 @@
  "在浏览器中打开空洞泰拉 Wiki": { "en-US": "Open the TerraKnight wiki in your browser", "zh-Hant": "在瀏覽器中打開空洞泰拉 Wiki" },
  "已在浏览器中打开 Wiki": { "en-US": "Wiki opened in your browser", "zh-Hant": "已在瀏覽器中打開 Wiki" },
  "时装": { "en-US": "Social", "zh-Hant": "時裝" },
- "在时装栏中不起作用": { "en-US": "Not functional in social slot", "zh-Hant": "在時裝欄中不起作用" }
+ "在时装栏中不起作用": { "en-US": "Not functional in social slot", "zh-Hant": "在時裝欄中不起作用" },
+ "这个角色已经用过了": { "en-US": "This character has already used one", "zh-Hant": "這個角色已經用過了" },
+ "护符技": { "en-US": "Charm Skill", "zh-Hant": "護符技" },
+ "护符技冷却": { "en-US": "Charm skill cooling down", "zh-Hant": "護符技冷卻" },
+ "冷却": { "en-US": " Cooldown", "zh-Hant": "冷卻" },
+ "护符技（{0}）：从身上荡漾出一圈光晕扫过整个房间，捡起碰到的所有掉落物，只在当前房间。冷却 5 秒": { "en-US": "Charm Skill ({0}): a ripple of light spreads from you across the whole room and picks up every dropped item it reaches; this room only. 5 second cooldown", "zh-Hant": "護符技（{0}）：從身上蕩漾出一圈光暈掃過整個房間，撿起碰到的所有掉落物，只在當前房間。冷卻 5 秒" },
+ "微光里的岩石挖不动": { "en-US": "The rock in the shimmer can't be dug", "zh-Hant": "微光裡的岩石挖不動" },
+ "长按空格跳过": { "en-US": "Hold Space to skip", "zh-Hant": "長按空白鍵跳過" }
 }

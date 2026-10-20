@@ -185,6 +185,35 @@ namespace TerraKnight.Items
             Plugin.Log.LogInfo($"[护符] 护符页关闭：卸下 {was}，凹槽 {pd.charmSlotsFilled}/{pd.charmSlots}");
         }
 
+        /// <summary>
+        /// A creative save, each time it is loaded, with the charm page: every charm (the royal one is HkItems', the Void
+        /// Heart), all eleven notches, the three fragile charms unbreakable and whole, and overcharming open at once, so any
+        /// set can be tried.
+        /// </summary>
+        public static void GiveAllForCreative(PlayerData pd)
+        {
+            if (pd == null || !Enabled) return;
+            int raised = 0;
+            for (int id = 1; id <= Count; id++)
+            {
+                if (id == Royal || pd.GetBool("gotCharm_" + id)) continue;
+                pd.SetBool("gotCharm_" + id, true);
+                raised++;
+            }
+            pd.fragileHealth_unbreakable = pd.fragileGreed_unbreakable = pd.fragileStrength_unbreakable = true;
+            pd.brokenCharm_23 = pd.brokenCharm_24 = pd.brokenCharm_25 = false;
+            if (pd.grimmChildLevel < 1) pd.grimmChildLevel = 1;
+            if (pd.charmSlots < MaxNotches)
+            {
+                pd.charmSlots = MaxNotches;
+                raised++;
+            }
+            pd.canOvercharm = true;
+            if (raised > 0) Plugin.Log.LogInfo($"[护符] 创造模式：补齐护符和凹槽（{raised} 项），凹槽 {pd.charmSlots} 个");
+        }
+
+        const int MaxNotches = 11;
+
         static void Migrate(TerraMod mod, PlayerData pd)
         {
             mod.GrantedAbilities.Add(MigratedKey);

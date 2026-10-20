@@ -11,7 +11,8 @@ namespace TerraKnight.Items
     /// its cap before (an old save's) keeps its level and is forged no further. The price rises with the weapon's worth
     /// (its plain reforge price) and its level; a forging takes one time in two, the money gone and the level kept. Each
     /// weapon carries its own level (ItemStack.Forge, kept in the save); a reforge keeps it. A shop pays for the levels too:
-    /// a fifth of their prices (Shop.SellValue), as it pays a fifth of an item's worth. A piece of armor is forged too, up
+    /// a fifth of their prices, with the total sale capped at the cheapest forging investment (Shop.SellValue).
+    /// A piece of armor is forged too, up
     /// to three levels per stage (+3 .. +18), each level +1 defense, a warrior's piece +2 (<see cref="IsWarriorArmor"/>).
     /// Its full-upgrade price stays near the former budget.
     /// </summary>
@@ -141,12 +142,17 @@ namespace TerraKnight.Items
             return (numerator + denominator - 1) / denominator * 100;
         }
 
-        /// <summary>A weapon's prices for each step up to a level, summed, in copper.</summary>
-        public static long PricesTo(ItemType t, int toLevel)
+        /// <summary>Prices for each successful step, in copper. Minimum paid assumes a discount and no failed attempts.</summary>
+        public static long PricesTo(ItemType t, int toLevel, bool minimumPaid = false)
         {
             long sum = 0;
             var s = ItemStack.Of(t);
-            for (int l = 0; l < toLevel; l++) { s.Forge = (byte)l; sum += ListCost(s); }
+            for (int l = 0; l < toLevel; l++)
+            {
+                s.Forge = (byte)l;
+                long cost = ListCost(s);
+                sum += minimumPaid ? Shop.Discounted(cost, true) : cost;
+            }
             return sum;
         }
 

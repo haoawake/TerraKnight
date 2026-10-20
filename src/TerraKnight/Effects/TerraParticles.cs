@@ -197,8 +197,9 @@ namespace TerraKnight.Effects
             || type == 226 || type == 228
             // The Flameburst towers' embers; the Frost Hydra's frost, Houndius's motes, the Lunar Portal's and the Rainbow Crystal's glitter.
             || type == 270 || type == 185 || type == 219 || type == 229 || type == 261
-            // The Soul Drain's wisps; the rainbow's and the shimmer's sparks (GetAlpha: their own colour, alpha 0 / 25).
-            || type == 235 || type == 66 || type == 310;
+            // The Soul Drain's wisps; the rainbow's and the shimmer's sparks (GetAlpha: their own colour, alpha 0 / 25), the shimmer's
+            // splash and sparkles (308, 309).
+            || type == 235 || type == 66 || type == 310 || type == 308 || type == 309;
 
         /// <summary>Terraria's Gore.NewGore for the drifting smoke and cloud gores (11-13, 61-63).</summary>
         public void NewGore(Vector2 topLeft, Vector2 velocity, int type, float scale = 1f, float velocityScale = 1f, Vector2 velocityAdd = default, bool exact = false, int alpha = 0,

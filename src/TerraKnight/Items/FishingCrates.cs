@@ -227,12 +227,12 @@ namespace TerraKnight.Items
             if (areaBait.TryGetValue(area, out var baits) && Random.Range(0, elite ? 100 : 200) == 0)
             {
                 var t = Pick(baits);
-                if (t != ItemType.None) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
+                if (t != ItemType.None && !CraftOnlyLoot.OnlyCrafted(t)) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
             }
             if (areaMoss.TryGetValue(area, out var moss) && Random.Range(0, 50) == 0)
             {
                 var t = Pick(moss);
-                if (t != ItemType.None) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
+                if (t != ItemType.None && !CraftOnlyLoot.OnlyCrafted(t)) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
             }
         }
     }

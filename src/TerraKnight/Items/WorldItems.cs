@@ -48,6 +48,19 @@ namespace TerraKnight.Items
             public bool Grabbed;
             /// <summary>A Fallen Star that fell from the night sky: gone at daybreak unless picked up.</summary>
             public bool FromSky;
+            /// <summary>The game's collider it lies on that the grid doesn't hold (a lift, a conveyor...), where that was, and its belt's speed (units a second).</summary>
+            public Collider2D On;
+            public Vector2 OnAt;
+            public float Belt;
+            /// <summary>WorldItem.shimmerTime (0-1: how long it has lain in the shimmer) and shimmered (it came out of the shimmer: it floats).</summary>
+            public float ShimmerTime;
+            public bool Shimmered;
+            /// <summary>Ticks left of the pop it gives as the shimmer changes it.</summary>
+            public int Pop;
+            /// <summary>Where in its bob a floating item is (each its own).</summary>
+            public float Bob = Random.Range(0f, 6.283f);
+            /// <summary>In water (or the shimmer) at the last tick: drawn behind it.</summary>
+            public bool Wet;
             public SpriteRenderer Renderer;
             TerrainRegion region;
             /// <summary>The item's scene while it is laid out; null from the moment that scene goes (not only from the next tick).</summary>
@@ -161,10 +174,11 @@ namespace TerraKnight.Items
             items.Add(new Item { Stack = stack, Scene = scene, Local = local, Vel = Vector2.zero });
         }
 
-        static void Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false, bool personal = false)
+        /// <summary>The item made (null: none, or a LAN game's, which the host makes).</summary>
+        static Item Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false, bool personal = false)
         {
             var region = RegionAt(centre) ?? TerrainSystem.Current?.Region;
-            if (region == null) return;
+            if (region == null) return null;
             if (Net.NetSession.Active && !personal && (Net.NetSession.Hosting || Net.WorldSync.CanInteract))
             {
                 var local = centre - (Vector2)region.Root.position;
@@ -172,7 +186,7 @@ namespace TerraKnight.Items
                     Vx = vel.x, Vy = vel.y, Power = grabDelay, Sky = fromSky, Kind = (int)stack.Type, Count = stack.Count, Prefix = stack.Prefix, Forge = stack.Forge };
                 if (Net.NetSession.Hosting) NetSpawn(action, Net.NetSession.MySlot);
                 else Net.WorldSync.Submit(action);
-                return;
+                return null;
             }
             stack.Favorite = false;
             if (items.Count >= MaxItems)
@@ -183,11 +197,13 @@ namespace TerraKnight.Items
                     if (items[i].NetId == null && (oldest < 0 || items[i].Age > items[oldest].Age)) oldest = i;
                 if (oldest >= 0) Remove(oldest);
             }
-            items.Add(new Item
+            var made = new Item
             {
                 Stack = stack, Region = region, Scene = region.SceneName,
                 Local = centre - (Vector2)region.Root.position, Vel = vel, GrabDelay = grabDelay, FromSky = fromSky,
-            });
+            };
+            items.Add(made);
+            return made;
         }
 
         // --- Per tick. ---
@@ -224,11 +240,19 @@ namespace TerraKnight.Items
                 else
                 {
                     if (it.NetId == null || !Net.WorldSync.Guest) Combine(i);
-                    // MoveInWorld: gravity, sideways friction, then the blocks.
-                    it.Vel.y = Mathf.Max(it.Vel.y - 0.1f, -7f);
-                    it.Vel.x *= 0.95f;
+                    // MoveInWorld: gravity (none for what came out of the shimmer), sideways friction, then the blocks. In water
+                    // (any: Hallownest's pools, acid, the hot springs, poured liquid, the shimmer) it floats instead, buoyed up to
+                    // the surface and riding there with its lower part in the water.
+                    float? surface = it.Shimmered ? null : Fishing.SurfaceAt(it.World - new Vector2(0f, Half));
+                    if (!ShimmerTick(it))
+                    {
+                        if (surface != null) Float(it, surface.Value);
+                        else it.Vel.y = Mathf.Max(it.Vel.y - 0.1f, -7f);
+                    }
+                    it.Vel.x *= surface != null ? 0.9f : 0.95f;
                     if (Mathf.Abs(it.Vel.x) < 0.1f) it.Vel.x = 0f;
                     Move(it);
+                    it.Wet = surface != null || Shimmer.In(it.World);
                 }
                 Adopt(it);
                 if (it.GrabDelay > 0) it.GrabDelay--;
@@ -245,6 +269,75 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Player.GrabItems: pick up what touches the player, pull in what's within reach and fits.</summary>
+        /// <summary>
+        /// Player.PickupItem for an item touching the player: a heart or a star taken at once; a LAN guest's shared item claimed
+        /// from the host (WorldSync); else sold by the Auto-Sell Bag, or into the Banner Case or the Potion Box, the bag, the
+        /// Void Vault, as far as there is room (the rest stays lying), with its popup and the Grab sound.
+        /// </summary>
+        static void TakeTouching(Item it, Inventory inv, Vector3 at)
+        {
+            bool heart = it.Stack.Type == ItemType.Heart;
+            bool star = it.Stack.Type == ItemType.Star;
+            // A LAN game's shared heart or star is the host's to give: a guest claims it (WorldSync), then takes it as here.
+            if ((heart || star) && !(it.NetId != null && Net.WorldSync.Guest))
+            {
+                TakeAtOnce(it.Stack, at);
+                it.Stack = default;
+                return;
+            }
+            if (it.NetId != null && Net.WorldSync.Guest)
+            {
+                if (!it.ClaimPending && (heart || star || Containers.Sells(inv, it.Stack.Type) || inv.Room(it.Stack.Type) > 0))
+                {
+                    it.ClaimPending = true;
+                    Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = ClaimCount(inv, it.Stack) });
+                }
+                return;
+            }
+            int count = it.Stack.Count;
+            // The Auto-Sell Bag carried: an item on its list is sold as it is picked up (Containers).
+            if (Containers.AutoSell(inv, it.Stack, at))
+            {
+                it.Stack = default;
+                return;
+            }
+            // The Banner Case or the Potion Box carried: its banners or potions go into it first (Containers).
+            int left = Containers.Store(inv, it.Stack, count);
+            if (left > 0) left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, left);
+            // The Void Bag carried: what the bag had no room for goes into the Void Vault (Player.GetItem's void bag).
+            if (left > 0 && World.Chests.VoidBagCarried(inv)) left = World.Chests.StoreInVoid(inv, it.Stack, left);
+            if (left == count) return;
+            UI.PopupText.Show(it.Stack.Def, count - left, at);
+            TerraMod.Instance.PlaySound("Grab", 0.7f);
+            it.Stack.Count = left;
+            if (left <= 0) it.Stack = default;
+        }
+
+        /// <summary>
+        /// The Gathering Swarm's ripple (CharmSkills): every item lying in this scene within the radius round the centre is
+        /// picked up as if it touched the player (TakeTouching), what the player may not pick up yet (one just thrown) aside.
+        /// How many it took in.
+        /// </summary>
+        internal static int SweepPickup(Vector2 centre, float radius, string scene)
+        {
+            var hero = HeroController.SilentInstance;
+            var mod = TerraMod.Instance;
+            if (hero == null || mod == null || hero.cState.dead || !Net.WorldSync.CanInteract) return 0;
+            var at = hero.GetComponent<BoxCollider2D>().bounds.center;
+            float r2 = radius * radius;
+            int n = 0;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var it = items[i];
+                if (it.Region == null || it.Stack.IsEmpty || it.Scene != scene) continue;
+                if (it.GrabDelay > 0 && (it.NetId == null || it.Dropper == Net.NetSession.MySlot)) continue;
+                if ((it.World - centre).sqrMagnitude > r2) continue;
+                TakeTouching(it, mod.Inventory, at);
+                if (it.Stack.IsEmpty) n++;
+            }
+            return n;
+        }
+
         static void GrabItems(HeroController hero, Inventory inv)
         {
             if (!Net.WorldSync.CanInteract) return;
@@ -272,39 +365,7 @@ namespace TerraKnight.Items
                 bool star = it.Stack.Type == ItemType.Star;
                 if (box.Intersects(body))
                 {
-                    // A LAN game's shared heart or star is the host's to give: a guest claims it (WorldSync), then takes it as here.
-                    if ((heart || star) && !(it.NetId != null && Net.WorldSync.Guest))
-                    {
-                        TakeAtOnce(it.Stack, body.center);
-                        it.Stack = default;
-                        continue;
-                    }
-                    if (it.NetId != null && Net.WorldSync.Guest)
-                    {
-                        if (!it.ClaimPending && (heart || star || Containers.Sells(inv, it.Stack.Type) || inv.Room(it.Stack.Type) > 0))
-                        {
-                            it.ClaimPending = true;
-                            Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = ClaimCount(inv, it.Stack) });
-                        }
-                        continue;
-                    }
-                    int count = it.Stack.Count;
-                    // The Auto-Sell Bag carried: an item on its list is sold as it is picked up (Containers).
-                    if (Containers.AutoSell(inv, it.Stack, body.center))
-                    {
-                        it.Stack = default;
-                        continue;
-                    }
-                    // The Banner Case or the Potion Box carried: its banners or potions go into it first (Containers).
-                    int left = Containers.Store(inv, it.Stack, count);
-                    if (left > 0) left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, left);
-                    // The Void Bag carried: what the bag had no room for goes into the Void Vault (Player.GetItem's void bag).
-                    if (left > 0 && World.Chests.VoidBagCarried(inv)) left = World.Chests.StoreInVoid(inv, it.Stack, left);
-                    if (left == count) continue;
-                    UI.PopupText.Show(it.Stack.Def, count - left, body.center);
-                    TerraMod.Instance.PlaySound("Grab", 0.7f);
-                    it.Stack.Count = left;
-                    if (left <= 0) it.Stack = default;
+                    TakeTouching(it, inv, body.center);
                     continue;
                 }
                 if (star && !starsCome) continue;
@@ -410,7 +471,7 @@ namespace TerraKnight.Items
             for (int j = i + 1; j < items.Count && it.Stack.Count < max; j++)
             {
                 var o = items[j];
-                if (o.Region == null || o.Grabbed || o.Stack.IsEmpty || o.Stack.Type != it.Stack.Type || o.FromSky != it.FromSky
+                if (o.Region == null || o.Grabbed || o.Stack.IsEmpty || o.Stack.Type != it.Stack.Type || o.FromSky != it.FromSky || o.Shimmered != it.Shimmered
                     || (o.NetId == null) != (it.NetId == null) || o.Dropper != it.Dropper || o.GrabDelay > 0 || it.GrabDelay > 0) continue;
                 var d = o.World - c;
                 if ((Mathf.Abs(d.x) + Mathf.Abs(d.y)) / Px > 30f) continue;
@@ -424,17 +485,22 @@ namespace TerraKnight.Items
         /// <summary>
         /// Collision.TileCollision for a 16×16 box with fallThrough off: blocks stop it on every
         /// side, platforms only from above (it rests on them and passes up and sideways through).
-        /// It stops flush against what it meets, with no bounce.
+        /// It stops flush against what it meets, with no bounce. The game's own colliders that the grid leaves to the
+        /// game (lifts, moving platforms, conveyors, one-way platforms) stop it too, and it rides the ones that move.
         /// </summary>
         static void Move(Item it)
         {
             var c = it.World;
+            var was = it.On;
+            Ride(it, ref c);
             // A boss room's own ground (World.BossRooms): the game's colliders are the floor there, not the grid.
             if (TerraWorld.OwnGroundAt(c))
             {
-                MoveOnOwnGround(it, c);
+                MoveOnOwnGround(it, c, was);
                 return;
             }
+            it.On = null;
+            float belt = it.Belt / 60f;
             // Sunk in a block (let out inside the ground, or the ground laid over it): up to the first open cell, six
             // units at most, as an item never rests inside a tile.
             if (TerraWorld.IsSolidAt(c))
@@ -447,7 +513,7 @@ namespace TerraKnight.Items
                     DevUnstuck++;
                     break;
                 }
-            float dx = it.Vel.x * Px;
+            float dx = it.Vel.x * Px + belt;
             if (dx != 0f)
             {
                 float nx = c.x + dx;
@@ -456,6 +522,13 @@ namespace TerraKnight.Items
                 if (SolidColumn(gx, c.y - Half + 0.001f, c.y + Half - 0.001f))
                 {
                     nx = dx > 0f ? gx * CellGrid.CellSize - Half : (gx + 1) * CellGrid.CellSize + Half;
+                    it.Vel.x = 0f;
+                }
+                // The game's own walls the grid doesn't hold (a breakable wall, a lift's side), if one comes first.
+                float g = GameCast(c, dx > 0f ? Vector2.right : Vector2.left, Mathf.Abs(dx), out var wall);
+                if (wall != null && g < Mathf.Abs(nx - c.x))
+                {
+                    nx = c.x + Mathf.Sign(dx) * g;
                     it.Vel.x = 0f;
                 }
                 c.x = nx;
@@ -475,6 +548,15 @@ namespace TerraKnight.Items
                         ny = top + Half;
                         it.Vel.y = 0f;
                     }
+                    // The game's own ground the grid doesn't hold (a lift, a moving platform, a conveyor, a one-way
+                    // platform, a station's top), if it comes first: it lands there and rides it.
+                    float g = GameCast(c, Vector2.down, -dy, out var under);
+                    if (under != null && c.y - g > ny)
+                    {
+                        ny = c.y - g;
+                        it.Vel.y = 0f;
+                        Land(it, under, was);
+                    }
                 }
                 else
                 {
@@ -487,10 +569,24 @@ namespace TerraKnight.Items
                 }
                 c.y = ny;
             }
+            // A belt's run only while it lies on the belt.
+            if (it.On == null) it.Belt = 0f;
             it.Local = c - (Vector2)it.Region.Root.position;
         }
 
         public static int DevUnstuck;
+
+        /// <summary>
+        /// Floating: pushed up while under the waterline (a fall into the water dips it under, then it comes back up), held
+        /// with a little under half of it below the surface, bobbing gently; the water's drag settles it.
+        /// </summary>
+        static void Float(Item it, float surface)
+        {
+            it.Bob += 0.04f;
+            float target = surface - Half * 0.35f + Mathf.Sin(it.Bob) * Half * 0.12f;
+            float off = (target - it.World.y) / Px;
+            it.Vel.y = it.Vel.y * 0.86f + Mathf.Clamp(off * 0.035f, -0.25f, 0.35f);
+        }
 
         static readonly RaycastHit2D[] groundHits = new RaycastHit2D[8];
         static readonly Collider2D[] groundOverlap = new Collider2D[4];
@@ -506,8 +602,10 @@ namespace TerraKnight.Items
         /// born inside them (a boss's loot let out in the floor) first rises to the first free spot over it and is set down
         /// on what it rose out of.
         /// </summary>
-        static void MoveOnOwnGround(Item it, Vector2 c)
+        static void MoveOnOwnGround(Item it, Vector2 c, Collider2D was)
         {
+            it.On = null;
+            float belt = it.Belt / 60f;
             if (Physics2D.OverlapBox(c, coreSize, 0f, groundFilter, groundOverlap) > 0)
                 for (float up = 0.1f; up <= 6f; up += 0.1f)
                 {
@@ -518,26 +616,33 @@ namespace TerraKnight.Items
                     DevUnstuck++;
                     break;
                 }
-            float dx = it.Vel.x * Px;
+            float dx = it.Vel.x * Px + belt;
             if (dx != 0f)
             {
-                float d = GroundCast(c, dx > 0f ? Vector2.right : Vector2.left, Mathf.Abs(dx), false);
+                float d = GroundCast(c, dx > 0f ? Vector2.right : Vector2.left, Mathf.Abs(dx), false, out _);
                 if (d < Mathf.Abs(dx)) it.Vel.x = 0f;
                 c.x += Mathf.Sign(dx) * d;
             }
             float dy = it.Vel.y * Px;
             if (dy != 0f)
             {
-                float d = GroundCast(c, dy > 0f ? Vector2.up : Vector2.down, Mathf.Abs(dy), dy > 0f);
-                if (d < Mathf.Abs(dy)) it.Vel.y = 0f;
+                float d = GroundCast(c, dy > 0f ? Vector2.up : Vector2.down, Mathf.Abs(dy), dy > 0f, out var under);
+                if (d < Mathf.Abs(dy))
+                {
+                    it.Vel.y = 0f;
+                    if (dy < 0f && under != null) Land(it, under, was);
+                }
                 c.y += Mathf.Sign(dy) * d;
             }
+            // A belt's run only while it lies on the belt.
+            if (it.On == null) it.Belt = 0f;
             it.Local = c - (Vector2)it.Region.Root.position;
         }
 
-        /// <summary>How far the box goes along a direction before the ground stops it (one-way platforms not on the way up).</summary>
-        static float GroundCast(Vector2 c, Vector2 dir, float dist, bool up)
+        /// <summary>How far the box goes along a direction before the ground stops it (one-way platforms not on the way up), and what stops it.</summary>
+        static float GroundCast(Vector2 c, Vector2 dir, float dist, bool up, out Collider2D hit)
         {
+            hit = null;
             int n = Physics2D.BoxCast(c, boxSize, 0f, dir, groundFilter, groundHits, dist);
             float free = dist;
             for (int i = 0; i < n; i++)
@@ -545,9 +650,69 @@ namespace TerraKnight.Items
                 var h = groundHits[i];
                 if (h.collider == null || h.distance <= 0f) continue;
                 if (up && h.collider.GetComponent<PlatformEffector2D>() != null) continue;
-                free = Mathf.Min(free, Mathf.Max(0f, h.distance - CastGap));
+                float d = Mathf.Max(0f, h.distance - CastGap);
+                if (d < free)
+                {
+                    free = d;
+                    hit = h.collider;
+                }
             }
             return free;
+        }
+
+        static float GroundCast(Vector2 c, Vector2 dir, float dist, bool up) => GroundCast(c, dir, dist, up, out _);
+
+        /// <summary>
+        /// How far the box goes along a direction before one of the game's own colliders that the grid doesn't hold
+        /// stops it (World.TerrainSystem leaves lifts, moving platforms, conveyors, one-way platforms and breakable
+        /// walls to the game; a station's top is the mod's), and which. Sideways a one-way platform lets it by, and
+        /// nothing it is already in stops it (it passes up through a one-way platform and falls back on to it).
+        /// </summary>
+        static float GameCast(Vector2 c, Vector2 dir, float dist, out Collider2D hit)
+        {
+            hit = null;
+            int n = Physics2D.BoxCast(c, boxSize, 0f, dir, groundFilter, groundHits, dist);
+            float free = dist;
+            for (int i = 0; i < n; i++)
+            {
+                var h = groundHits[i];
+                if (h.collider == null || h.distance <= 0f || ChunkColliders.Mirrors.Contains(h.collider)) continue;
+                if (dir.y >= 0f && h.collider.usedByEffector) continue;
+                float d = Mathf.Max(0f, h.distance - CastGap);
+                if (d < free)
+                {
+                    free = d;
+                    hit = h.collider;
+                }
+            }
+            return free;
+        }
+
+        /// <summary>Lying on one of the game's colliders: it is carried along by it, and along a conveyor's run (ConveyorBelt.speed; not a wall's).</summary>
+        static void Land(Item it, Collider2D on, Collider2D was)
+        {
+            it.On = on;
+            it.OnAt = on.transform.position;
+            if (on == was) return;
+            var belt = on.GetComponentInParent<ConveyorBelt>();
+            it.Belt = belt != null && !belt.vertical ? belt.speed : 0f;
+        }
+
+        /// <summary>Carried by what it lay on last tick: a lift's or a moving platform's move since then (a jump of a unit or more is not a ride).</summary>
+        static void Ride(Item it, ref Vector2 c)
+        {
+            var on = it.On;
+            if (on == null) return;
+            if (!on.isActiveAndEnabled)
+            {
+                it.On = null;
+                it.Belt = 0f;
+                return;
+            }
+            Vector2 p = on.transform.position;
+            var d = p - it.OnAt;
+            it.OnAt = p;
+            if (d.sqrMagnitude < 1f) c += d;
         }
 
         static bool SolidColumn(int gx, float y0, float y1)
@@ -603,10 +768,11 @@ namespace TerraKnight.Items
                     var go = new GameObject("Terra World Item " + it.Stack.Type);
                     go.transform.SetParent(holder, false);
                     it.Renderer = go.AddComponent<SpriteRenderer>();
-                    // Over the scenery (its foreground and the black of its ground draw nearer than z 0) and under the light map.
-                    it.Renderer.sortingOrder = World.LightMap.Order - 5;
                 }
                 else if (it.Renderer.transform.parent != holder) it.Renderer.transform.SetParent(holder, false);
+                // Over the scenery (its foreground and the black of its ground draw nearer than z 0) and under the light map;
+                // in water, among the scenery, behind the pool's surface and its water (drawn nearer than z 0), poured water too.
+                it.Renderer.sortingOrder = it.Wet && !it.Shimmered ? 0 : World.LightMap.Order - 5;
                 // An animated sheet's frame of the moment (the Fallen Star twinkles, souls pulse).
                 it.Renderer.sprite = SpriteOf(it.Stack.Type, ItemFrames.FrameNow(ItemDb.Get(it.Stack.Type).Texture));
                 it.Renderer.enabled = true;
@@ -615,6 +781,8 @@ namespace TerraKnight.Items
                 var t = it.Renderer.transform;
                 t.localPosition = new Vector3(it.Local.x, it.Local.y - Half + h / 2f, Z - it.Region.Root.position.z);
                 t.localRotation = Quaternion.Euler(0f, 0f, -it.Vel.x * 0.2f * Mathf.Rad2Deg);
+                float pop = it.Pop / (float)PopTicks;
+                t.localScale = Vector3.one * (1f + 0.7f * pop * pop);
             }
         }
 

@@ -1813,27 +1813,41 @@ namespace TerraKnight.Items
 
         static bool IsGrenade(ProjKind k) => k == ProjKind.Grenade || k == ProjKind.StickyGrenadeProj || k == ProjKind.BouncyGrenadeProj || k == ProjKind.PartyGrenadeProj;
 
-        /// <summary>Projectile.ExplodeTiles: every diggable cell within the radius (in tiles) goes, as if mined.</summary>
+        /// <summary>
+        /// Projectile.ExplodeTiles: every diggable cell within the radius (in tiles) goes, as if mined; the spikes and thorns
+        /// in it, and those the ground held up, with it (DugHazards.Blasted).
+        /// </summary>
         static int BlastTiles(Vector2 center, int radius)
         {
             const float c = CellGrid.CellSize;
             var cc = new Vector2(center.x / c, center.y / c);
             int n = 0;
             var mod = TerraMod.Instance;
-            for (int x = Mathf.FloorToInt(cc.x - radius); x <= Mathf.CeilToInt(cc.x + radius); x++)
-                for (int y = Mathf.FloorToInt(cc.y - radius); y <= Mathf.CeilToInt(cc.y + radius); y++)
+            blasted.Clear();
+            bool Inside(int x, int y)
+            {
+                float dx = x + 0.5f - cc.x, dy = y + 0.5f - cc.y;
+                return dx * dx + dy * dy < radius * radius;
+            }
+            var min = new Vector2Int(Mathf.FloorToInt(cc.x - radius), Mathf.FloorToInt(cc.y - radius));
+            var max = new Vector2Int(Mathf.CeilToInt(cc.x + radius), Mathf.CeilToInt(cc.y + radius));
+            for (int x = min.x; x <= max.x; x++)
+                for (int y = min.y; y <= max.y; y++)
                 {
-                    float dx = x + 0.5f - cc.x, dy = y + 0.5f - cc.y;
-                    if (dx * dx + dy * dy >= radius * radius) continue;
+                    if (!Inside(x, y)) continue;
                     if (!TerraWorld.CanDig(x, y)) continue;
                     var kind = TerraWorld.Get(x, y);
                     TerraWorld.Set(x, y, CellKind.Empty);
                     n++;
+                    blasted.Add(new Vector2Int(x, y));
                     var drop = World.AreaBlocks.DropFor(kind, new Vector2Int(x, y));
                     if (drop != ItemType.None && mod != null && !mod.Inventory.Infinite) WorldItems.Drop(ItemStack.Of(drop), CellGrid.CellCenter(x, y));
                 }
+            DugHazards.Blasted(min, max, Inside, blasted);
             return n;
         }
+
+        static readonly List<Vector2Int> blasted = new List<Vector2Int>();
 
         /// <summary>The floors broken by a dive or by striking them, in a blast (World.DiveFloors).</summary>
         static int BreakSpecialFloors(Vector2 center, float radius) => World.DiveFloors.BreakAround(center, radius);

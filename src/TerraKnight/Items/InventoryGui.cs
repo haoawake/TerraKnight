@@ -1009,7 +1009,13 @@ namespace TerraKnight.Items
                 var st = inv.Slots[i];
                 string back = st.Favorite && !st.IsEmpty ? "Inventory_Back10" : selected ? "Inventory_Back14" : Open && r == 0 ? "Inventory_Back9" : "Inventory_Back";
                 DrawSlot(rect, st, back, inv.Infinite);
-                if (r == 0) Outlined(new Rect(rect.x + 4f * ui, rect.y + 1f * ui, 20f * ui, 18f * ui), ((c + 1) % 10).ToString(), labelStyle, Color.white);
+                if (r == 0)
+                {
+                    Outlined(new Rect(rect.x + 4f * ui, rect.y + 1f * ui, 20f * ui, 18f * ui), ((c + 1) % 10).ToString(), labelStyle, Color.white);
+                    long left = HotbarCount(st);
+                    if (left >= 0)
+                        Outlined(new Rect(rect.x + 6f * ui, rect.yMax - 20f * ui, rect.width, 18f * ui), inv.Infinite && left > 0 ? "∞" : left.ToString(), labelStyle, Color.white);
+                }
                 if (rect.Contains(mouse))
                 {
                     hovered = st;
@@ -1714,6 +1720,25 @@ namespace TerraKnight.Items
             GUI.color = prev;
         }
 
+        /// <summary>
+        /// ItemSlot.Draw's count in a hotbar slot (context 13): what a weapon fires (every stack in the inventory, its ammo
+        /// slots too, of the ammo it uses), the bait for a fishing pole; −1 for anything else (its stack shows then).
+        /// </summary>
+        static long HotbarCount(ItemStack st)
+        {
+            if (st.IsEmpty) return -1;
+            var d = st.Def;
+            bool pole = d.Bobber > 0 && d.FishingPower > 0;
+            if (d.UseAmmo == AmmoKind.None && !pole) return -1;
+            long n = 0;
+            foreach (var s in inv.Slots)
+            {
+                if (s.IsEmpty) continue;
+                if (pole ? s.Def.BaitPower > 0 : s.Def.Ammo == d.UseAmmo) n += s.Count;
+            }
+            return n;
+        }
+
         static void DrawIcon(Rect rect, ItemStack stack, bool infinite)
         {
             float ui = GameView.Scale;
@@ -1774,6 +1799,11 @@ namespace TerraKnight.Items
             if (def.IsAccessory) lines.Add(Lang.T("可装备"));
             if (def.Places != World.CellKind.Empty || def.PlacesStation != World.StationKind.None || def.PlacesChest) lines.Add(Lang.T("可放置"));
             if (def.Consumable && !def.IsAmmo) lines.Add(Lang.T("消耗品"));
+            // A permanent booster this character has had already (each once; the Life Fruit twenty times): it can't be used again.
+            var stats = TerraMod.Instance?.Stats;
+            if (stats != null && def.Boost != PermanentBoost.None
+                && (def.Boost == PermanentBoost.LifeFruit ? stats.LifeFruits >= Player.TerraStats.MaxLifeFruits : stats.Boosts.Contains(def.Boost)))
+                lines.Add(Lang.T("这个角色已经用过了"));
             // Item.material (Main.MouseText_DrawItemTooltip, tip[36]): whatever goes into a recipe, from the recipes themselves.
             if (Recipes.IsMaterial(def.Type)) lines.Add(Lang.T("材料"));
             if (!string.IsNullOrEmpty(def.Tooltip))

@@ -7,7 +7,7 @@ namespace TerraKnight.Items
     /// Master Mode relics (Terraria's MasterTrophy items: ItemDropRule.MasterModeCommonDrop, one every kill in Master
     /// Mode and never in another; placed as furniture on MasterTrophyBase; 5 gold to buy, so a gold to sell). Each of
     /// Hallownest's bosses has one (空洞骑士大师圣物素材包, RelicsGenerated.cs): its picture fitted to a relic's place,
-    /// a three-cell-wide base and floating sculpture in a 3x4-cell space, split from a 64x96 texture. A fight the
+    /// a three-cell-wide base and floating sculpture in a 3x4-cell space (its own sculpture over Terraria's pedestal, NativeArt). A fight the
     /// drop tables key as another (the Absolute Radiance, the
     /// Enraged Guardian, the Sisters of Battle, the Winged Nosk) gives its own, told apart by its scene or its boss's name.
     /// </summary>
@@ -19,11 +19,23 @@ namespace TerraKnight.Items
         /// <summary>The prefix of a relic's texture name (TerrariaAssets.Texture loads it from the mod's resources).</summary>
         public const string TexturePrefix = "TKRelic:";
 
-        // These revised resources have a separate native 50x50 sculpture and tile-617 pedestal.
+        static HashSet<string> statues;
+
+        /// <summary>
+        /// A relic drawn the native way: its own 50x50 sculpture (Resources/relic_*_statue.png) over Terraria's tile-617
+        /// pedestal; every relic has one now (空洞骑士大师圣物素材包-原版规格重制候选, the three revised ones from 三件构图修订版).
+        /// One without falls back to its 64x96 picture split into base and sculpture.
+        /// </summary>
         public static bool NativeArt(string name)
         {
             string file = name.StartsWith(TexturePrefix) ? name.Substring(TexturePrefix.Length) : name;
-            return file == "relic_mantislord" || file == "relic_sistersofbattle" || file == "relic_ghostgalien";
+            if (statues == null)
+            {
+                statues = new HashSet<string>();
+                foreach (var r in typeof(Relics).Assembly.GetManifestResourceNames())
+                    if (r.StartsWith("TerraKnight.relic_") && r.EndsWith("_statue.png")) statues.Add(r.Substring("TerraKnight.".Length, r.Length - "TerraKnight.".Length - "_statue.png".Length));
+            }
+            return statues.Contains(file);
         }
 
         public static Texture2D SculptureTexture(string name) => Texture(name + "_statue");

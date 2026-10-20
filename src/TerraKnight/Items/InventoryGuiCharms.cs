@@ -425,6 +425,14 @@ namespace TerraKnight.Items
             lines.Add(cost > 0 ? Lang.F("消耗 {0} 个凹槽", cost) : Lang.T("不占凹槽"));
             colors[lines.Count - 1] = new Color(0.95f, 0.85f, 0.55f);
             lines.AddRange(Wrapped(Charms.Desc(id)));
+            // Its skill, on the charm skill key.
+            string skill = CharmSkills.Describe(id);
+            if (skill != null)
+                foreach (var l in Wrapped(skill))
+                {
+                    lines.Add(l);
+                    colors[lines.Count - 1] = new Color(0.6f, 0.85f, 1f);
+                }
             bool worn = Charms.Worn(id);
             string state = null;
             var stateColor = new Color(0.55f, 0.95f, 0.55f);

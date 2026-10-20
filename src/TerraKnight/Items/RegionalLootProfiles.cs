@@ -11,15 +11,15 @@ namespace TerraKnight.Items
 
         internal static readonly Dictionary<string,ItemType[]> RegionalProfiles=new Dictionary<string,ItemType[]> {
             ["国王山道"]=new[]{ItemType.CopperOre,ItemType.Gel,ItemType.Feather},
-            ["遗忘十字路"]=new[]{ItemType.IronOre,ItemType.Lens,ItemType.RottenChunk},
-            ["苍绿之径"]=new[]{ItemType.TinOre,ItemType.Vine,ItemType.Daybloom},
-            ["雾之峡谷"]=new[]{ItemType.SilverOre,ItemType.Amethyst,ItemType.Emerald,ItemType.Coral},
+            ["遗忘十字路"]=new[]{ItemType.IronOre,ItemType.Lens,ItemType.RottenChunk,ItemType.Acorn,ItemType.PinkGel,ItemType.VilePowder},
+            ["苍绿之径"]=new[]{ItemType.TinOre,ItemType.Vine,ItemType.Daybloom,ItemType.CrispyHoneyBlock},
+            ["雾之峡谷"]=new[]{ItemType.SilverOre,ItemType.Amethyst,ItemType.Emerald,ItemType.Coral,ItemType.PixieDust,ItemType.UnicornHorn,ItemType.LightShard,ItemType.Pearlwood,ItemType.PearlsandBlock,ItemType.DjinnLamp},
             ["真菌荒地"]=new[]{ItemType.TungstenOre,ItemType.JungleSpores,ItemType.GlowingMushroom},
             ["泪水之城"]=new[]{ItemType.DemoniteOre,ItemType.Bone,ItemType.Diamond},
-            ["水晶山峰"]=new[]{ItemType.Meteorite,ItemType.Topaz,ItemType.Ruby,ItemType.Diamond,ItemType.CrystalShard},
+            ["水晶山峰"]=new[]{ItemType.Meteorite,ItemType.Topaz,ItemType.Ruby,ItemType.Diamond,ItemType.CrystalShard,ItemType.AshWood,ItemType.FrostCore,ItemType.IceFeather},
             ["安息之地"]=new[]{ItemType.Ectoplasm,ItemType.Amber,ItemType.Moonglow},
             ["皇家水道"]=new[]{ItemType.CrimtaneOre,ItemType.RottenChunk,ItemType.Ichor},
-            ["呼啸悬崖"]=new[]{ItemType.GoldOre,ItemType.Feather,ItemType.Sapphire},
+            ["呼啸悬崖"]=new[]{ItemType.GoldOre,ItemType.Feather,ItemType.Sapphire,ItemType.FrostCore,ItemType.IceFeather},
             ["远古盆地"]=new[]{ItemType.Hellstone,ItemType.Obsidian,ItemType.CursedFlame},
             ["王国边缘"]=new[]{ItemType.AdamantiteOre,ItemType.AntlionMandible,ItemType.DarkShard},
             ["愚人斗兽场"]=new[]{ItemType.TitaniumOre,ItemType.SoulofLight,ItemType.UnicornHorn},
@@ -35,8 +35,9 @@ namespace TerraKnight.Items
             ["神居"]=new[]{ItemType.LunarOre,ItemType.BeetleHusk,ItemType.ButterflyDust},
         };
 
-        // Acquisition bands follow Terraria: surface, evil ores, dungeon/hell,
-        // early Hardmode, mechanical/Chlorophyte, lunar. Early routes cap below lunar.
+        // Regional ore preferences, not unlock gates (see ResourceStages).
+        // Keep the existing pool weights: all six Hardmode ores unlock at stage 3,
+        // while stage 4 favours the top ores and introduces Chlorophyte.
         internal static readonly ItemType[][] MineralBands = {
             new[]{ItemType.CopperOre,ItemType.TinOre,ItemType.IronOre,ItemType.LeadOre,ItemType.SilverOre,ItemType.TungstenOre,ItemType.GoldOre,ItemType.PlatinumOre},
             new[]{ItemType.DemoniteOre,ItemType.CrimtaneOre},

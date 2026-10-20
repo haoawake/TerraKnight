@@ -142,6 +142,7 @@ namespace TerraKnight
             Pylons.UnlockAllForCreative();
             Pylons.UnlockTollBenches(PlayerData.instance);
             HkItems.GiveAllForCreative(PlayerData.instance);
+            Charms.GiveAllForCreative(PlayerData.instance);
             AbilityAccessories.GiveForCreative(Inventory);
         }
 
@@ -248,6 +249,7 @@ namespace TerraKnight
                 if (shotCooldown <= 0f && Inventory.Current.Type == readyCueItem) ReadyCue();
             }
             CombatText.Tick(dt);
+            UI.EndingSkip.Tick();
             UpdateRevolver(dt);
             UpdateSwing(dt);
             ApplyAccessories();
@@ -279,6 +281,7 @@ namespace TerraKnight
             ShardRepair.Tick(gameplay && gm != null && !gm.isPaused);
             if (gameplay) AcidLiquid.Tick();
             if (gm == null || !gm.isPaused) Fishing.Tick(gameplay ? hero : null);
+            Shimmer.Tick();
             if (gameplay) BossPhases.Tick();
             if (gameplay)
             {
@@ -305,6 +308,8 @@ namespace TerraKnight
                 SceneMasks.Tick(hero);
                 EnemyDrops.Tick(hero);
                 World.Meteorites.Tick(hero, this);
+                Player.Poison.Tick(hero, this);
+                World.DugHazards.TidyEntered();
                 PotionBuffs.Tick(hero);
                 Bestiary.Tick(hero);
                 Pylons.Tick(hero);
@@ -313,6 +318,7 @@ namespace TerraKnight
                 Town.Angler.Tick();
                 // Before the Hallownest items: an older save's Grimmchild and Kingsoul items are looked at as they move onto the charm page.
                 Charms.Tick(this);
+                CharmSkills.Tick(hero);
                 Items.HkItems.Tick(this);
                 Items.Tombstones.Start();
                 AbilityAccessories.Tick(hero);
@@ -424,6 +430,8 @@ namespace TerraKnight
             if (!overUi && !talked && !usable && rock == null && !DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem)
                 && (def.PickPower > 0 || def.HammerPower > 0 || def.PlacesWall > 0 || def.Places != CellKind.Empty || def.PlacesChest || def.PlacesStation != StationKind.None) && BossRooms.Locked(mouse))
                 BossRooms.Notice(mouse);
+            if (!overUi && !talked && !usable && !DevNoRealMouse && def.PickPower > 0 && TerraKeys.Held(TerraKeys.Action.UseItem) && Shimmer.Protects(cell.x, cell.y))
+                Shimmer.Notice(mouse);
             // Potions and crystals take a click each; everything else keeps going while held.
             bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def);
             bool pressed = !DevNoRealMouse && !uiPress && (once ? TerraKeys.Pressed(TerraKeys.Action.UseItem) : TerraKeys.Held(TerraKeys.Action.UseItem));
@@ -2003,6 +2011,7 @@ namespace TerraKnight
         void BeginUse(ItemDef def)
         {
             UseSerial++;
+            MinionEngage.Used(def);
             if (def.UseSound != null) PlaySound(def.UseSound, 0.6f * def.UseSoundVolume);
             if (!def.NoMelee) melee.Begin(def, UseDirection);
             finalFractalShots = 0;
@@ -2669,6 +2678,7 @@ namespace TerraKnight
             Net.NetMenu.Draw();
             // Fifty save slots: the profiles screen's pages.
             SaveSlots.Draw(CreativeMenu.IsOpen || Net.NetMenu.IsOpen);
+            UI.EndingSkip.Draw();
             if (TerrainSystem.Current == null || !GameHooks.IsGameplay(GameManager.UnsafeInstance)) return;
             // The text, at the sizes the view is actually laid out at (the menu's scale differs).
             InventoryGui.WarmText();

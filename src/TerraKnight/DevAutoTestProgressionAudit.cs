@@ -25,6 +25,23 @@ namespace TerraKnight
             {
                 UnityEngine.Random.InitState(10162026);
                 var records = EnemyDrops.DevRecords.ToArray();
+                export["enemies"]=records.ToDictionary(r=>r,r=>new {Boss=EnemyDrops.IsBoss(r),Scene=EnemyDrops.SceneOf(r),Kind=EnemyDrops.KindOf(r)});
+                export["basicSources"]=Shop.Basics.Select(d=>d.Type.ToString()).ToArray();
+                // Export the real station compatibility table, not a second copy of
+                // the recipe schedule. A crafted station must itself have a route.
+                var stationSources=new Dictionary<string,HashSet<string>>();
+                var stationSpecs=(System.Collections.IDictionary)typeof(Stations).GetField("specs",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);
+                foreach(var spec in stationSpecs.Values) {
+                    var specType=spec.GetType();
+                    var item=(ItemType)specType.GetField("Item").GetValue(spec);
+                    foreach(var name in (string[])specType.GetField("Counts").GetValue(spec)) {
+                        if(!stationSources.TryGetValue(name,out var set))stationSources[name]=set=new HashSet<string>();
+                        if(item!=ItemType.None)set.Add(item.ToString());
+                    }
+                }
+                export["stationSources"]=stationSources.ToDictionary(p=>p.Key,p=>p.Value.ToArray());
+                // FixedStations.Ensure places both original altars at Dirtmouth.
+                export["worldStationStages"]=new Dictionary<string,int>{{"恶魔祭坛 / 猩红祭坛",0}};
                 foreach (var pair in ProgressionBalance.OriginalAccessories)
                 {
                     var d = ItemDb.Get(pair.Key);
@@ -60,12 +77,20 @@ namespace TerraKnight
                             for (int n = 0; n < 300; n++) Fishing.KillDrops(rec, Vector2.zero, true, EnemyDrops.SceneOf(rec));
                     }
                     finally { EnemyDrops.DevSink = oldSink; }
-                    var sources = new HashSet<ItemType>(ItemDb.All.Where(d=>d!=null && d.Stage<=s && d.Source==ItemSource.Basic).Select(d=>d.Type));
+                    var sources = new HashSet<ItemType>(Shop.Basics.Where(d=>d.Stage<=s).Select(d=>d.Type));
                     sources.UnionWith(Town.TownNpcs.DevSourcesAt(s).Select(x=>x.Type));
                     foreach (var rec in drops.Keys)
                         foreach (var row in EnemyDrops.At(rec,s,false,s>=4,s>=5))
                             if (!row.Master && ItemDb.Get(row.Type).Stage<=s) sources.Add(row.Type);
                     sources.UnionWith(fish); sources.UnionWith(crateContents); sources.UnionWith(bait);
+                    var worldSources=new HashSet<ItemType>();
+                    for(int i=0;i<AreaBlocks.All.Length;i++)
+                        if(AreaBlocks.AcquisitionStage(i)<=s)worldSources.Add(AreaBlocks.BlockItem(i));
+                    // These two crafting inputs are granted by the original ability pickups,
+                    // rather than by ordinary enemy rolls. Do not invent duplicate kill drops.
+                    if(s>=3)worldSources.Add(ItemType.CrystalHeart);
+                    if(s>=5)worldSources.Add(ItemType.ShadeCloak);
+                    sources.UnionWith(worldSources);
                     if (s>=2) sources.UnionWith(Town.Angler.DevRewardSources());
                     sources.RemoveWhere(t=>ItemDb.Get(t).Stage>s);
                     bool more = true;
@@ -95,7 +120,8 @@ namespace TerraKnight
                     }
                     stages.Add(new { Stage=s, Drops=drops, Shops=Town.TownNpcs.DevSourcesAt(s).Select(x=>new {x.Npc,Type=x.Type.ToString()}).ToArray(),
                         Fishing=fish.Select(t=>t.ToString()).ToArray(), Bait=bait.Select(t=>t.ToString()).ToArray(),
-                        Quests=s>=2 ? Town.Angler.DevRewardSources().Select(t=>t.ToString()).ToArray() : new string[0], Crates=crateContents.Select(t=>t.ToString()).ToArray(), Health=health });
+                        Quests=s>=2 ? Town.Angler.DevRewardSources().Select(t=>t.ToString()).ToArray() : new string[0], Crates=crateContents.Select(t=>t.ToString()).ToArray(),
+                        WorldSources=worldSources.Select(t=>t.ToString()).ToArray(),Health=health });
                     yield return null;
                 }
                 export["stages"] = stages;
@@ -118,7 +144,9 @@ namespace TerraKnight
                         for (int n=0;n<100;n++) EnemyDrops.Roll(boss.Key,Vector2.zero,true,false);
                     }
                     finally { EnemyDrops.DevSink=oldSink; }
-                    bool pass=bars>=1500 && souls>=2000 && (boss.Value.Stage<5 || husks>=400 && fragments>=1800);
+                    // Beetle husks belong to the Golem analogue, not every late boss.
+                    bool pass=bars>=1500 && souls>=2000 && (boss.Value.Stage<5 || fragments>=1800)
+                        && (boss.Key!="LobsterLancer" || husks>=400);
                     materialChecks.Add(new {Boss=boss.Key,Trials=100,Bars=bars,Souls=souls,Fragments=fragments,Husks=husks,Pass=pass});
                     Plugin.Log.LogInfo($"[AutoTest] Boss重复击杀材料 {boss.Key} 100次：锭{bars} 魂{souls} 碎片{fragments} 外壳{husks} {(pass ? "通过" : "不通过")}");
                 }
@@ -131,7 +159,8 @@ namespace TerraKnight
                     yield return BalanceTest("Crossroads_01",HeroController.instance);
                 }
                 export["combat"] = output;
-                export["items"] = ItemDb.All.Where(d=>d!=null).ToDictionary(d=>d.Type.ToString(), d=>new {d.Stage,Source=d.Source.ToString(),d.Texture,d.Damage,d.Defense,d.Bonus,d.Tooltip});
+                export["items"] = ItemDb.All.Where(d=>d!=null).ToDictionary(d=>d.Type.ToString(), d=>new {d.Name,d.Stage,Source=d.Source.ToString(),d.Texture,d.Damage,d.Defense,d.Bonus,d.Tooltip,
+                    d.IsWeapon,d.IsArmor,d.IsAccessory,d.MaxStack,d.Placeholder,Material=Recipes.IsMaterial(d.Type),Station=d.PlacesStation.ToString()});
                 export["recipes"] = Recipes.All.Select(r=>new {Result=r.Result.ToString(),r.Count,r.Station,r.StationStage,Environment=r.Environment.ToString(),Ingredients=r.Ingredients.Select(i=>new {Type=i.Type.ToString(),i.Count}).ToArray()}).ToArray();
                 File.WriteAllText(Path.Combine(DevCopy.SaveDir,"progression-audit.json"),JsonConvert.SerializeObject(export,Formatting.Indented));
                 Plugin.Log.LogInfo($"[AutoTest] 阶段来源、四难度血量与 {ProgressionBalance.OriginalAccessories.Count} 个饰品原值导出通过");

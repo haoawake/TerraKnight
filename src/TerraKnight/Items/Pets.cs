@@ -220,7 +220,9 @@ namespace TerraKnight.Items
             if (record == null || !EnemyDrops.Known(record)) return;
             var all = Eggs;
             if (Random.value >= KillChance * all.Count) return;
-            EnemyDrops.Spill(ItemStack.Of(all[Random.Range(0, all.Count)], 1), at, direct);
+            var picked=all[Random.Range(0, all.Count)];
+            if(!EnemyDrops.IsBoss(record) && CraftOnlyLoot.OnlyCrafted(picked))return;
+            EnemyDrops.Spill(ItemStack.Of(picked, 1), at, direct);
         }
     }
 }

@@ -36,11 +36,14 @@ namespace TerraKnight
                     GameDifficulty.Current=difficulty;
                     foreach (var test in cases)
                     {
-                        for(int s=0;s<4;s++)
+                        for(int s=0;s<3;s++)
                             Check($"魂不提前掉落 {test.Item1}/{s}/{difficulty}",!EnemyDrops.At(test.Item1,s,false,true,true).Any(d=>d.Type==test.Item2));
-                        Shop.DevStage=4;
-                        var rows=EnemyDrops.At(test.Item1,4,false,true,true);
+                        Shop.DevStage=3;
+                        var rows=EnemyDrops.At(test.Item1,3,false,false,false);
                         var soul=rows.Single(d=>d.Type==test.Item2);
+                        var laterSoul=EnemyDrops.At(test.Item1,4,false,true,true).Single(d=>d.Type==test.Item2);
+                        Check($"原阶段魂掉率保持 {test.Item1}/{difficulty}",soul.Num==laterSoul.Num && soul.Den==laterSoul.Den
+                            && soul.Min==laterSoul.Min && soul.Max==laterSoul.Max && soul.Group==laterSoul.Group);
                         bool elite=ProgressionLoot.Elite(test.Item1,EnemyDrops.EntryFor(test.Item1));
                         Check($"独立魂规则 {test.Item1}/{difficulty}",soul.Group==0 && soul.Min==(elite ? 2 : 1) && soul.Max==(elite ? 4 : 3)
                             && Math.Abs(soul.Chance-(elite ? 1 : .6f))<.00001f);
@@ -64,8 +67,22 @@ namespace TerraKnight
                 }
                 GameDifficulty.Current=DifficultyLevel.Normal;
                 Shop.DevStage=0;
+                foreach(var scene in new[]{"Fungus1_01","Fungus2_01"})
+                {
+                    var early=EnemyDrops.At("Crawler",0,false,false,false,scene);
+                    foreach(var type in new[]{ItemType.JungleSpores,ItemType.Vine,ItemType.Stinger})
+                        Check($"开局丛林材料 {scene}/{type}",early.Any(d=>d.Type==type && d.Chance>0));
+                }
+                foreach(var type in new[]{ItemType.AdamantiteOre,ItemType.TitaniumOre,ItemType.AdamantiteBar,ItemType.TitaniumBar,
+                    ItemType.AdamantiteForge,ItemType.TitaniumForge,ItemType.CrystalShard,ItemType.PixieDust,ItemType.UnicornHorn,
+                    ItemType.CursedFlame,ItemType.Ichor})
+                    Check($"困难模式初期材料 {type}",!ProgressionBalance.Unlocked(type,2,false,false)
+                        && ProgressionBalance.Unlocked(type,3,false,false));
+                foreach(var type in new[]{ItemType.ChlorophyteOre,ItemType.HallowedBar,ItemType.SoulofMight,ItemType.SoulofSight,ItemType.SoulofFright})
+                    Check($"机械阶段不提前 {type}",!ProgressionBalance.Unlocked(type,3,false,false));
                 var ordinary=EnemyDrops.At("Crawler",0,false,false,false).Where(d=>d.Group==201).ToArray();
-                Check("普通材料池产出",ordinary.Length>0 && ordinary.All(d=>d.Chance==1 && d.MeanCount>0));
+                Check("普通材料池产出",ordinary.Length>0 && ordinary.All(d=>d.Chance==1 && d.Min>0 && d.Max>=d.Min && d.Weight>0)
+                    && Math.Abs(EnemyDrops.GroupWeightTotal(ordinary)-1f)<.00001f);
                 foreach(var boss in ProgressionBalance.BossRewards.Where(p=>ProgressionBalance.FormalBoss(p.Key)))
                 {
                     var first=EnemyDrops.At(boss.Key,boss.Value.Stage,true,true,true);

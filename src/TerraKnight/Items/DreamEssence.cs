@@ -105,7 +105,7 @@ namespace TerraKnight.Items
         /// <summary>The save's essence already lives in the bag as the item (from the mod's save).</summary>
         public static bool Migrated;
 
-        public static int DevGiven, DevTaken;
+        public static int DevGiven, DevTaken, DevRefused;
 
         public static void Reset(bool migrated)
         {
@@ -138,7 +138,13 @@ namespace TerraKnight.Items
                 return;
             }
             int d = pd.dreamOrbs - lastPd;
-            if (d > 0)
+            // A boss fought again (a seal, the Creative book): its essence was given the first time, so none comes now.
+            if (d > 0 && BossArena.Rematching)
+            {
+                DevRefused += d;
+                Plugin.Log.LogInfo($"[梦境精华] 重打 {BossArena.VisitKey}：原版又给的 {d} 精华不算（只在第一次打赢时给）");
+            }
+            else if (d > 0)
             {
                 Currencies.Give(mod, ItemType.DreamEssence, d);
                 DevGiven += d;

@@ -159,6 +159,16 @@ namespace TerraKnight.Items
             },
             new Beat
             {
+                Id = "shimmer", Now = true,
+                // The room the Knight is in (the seamless world walks into it without the game's own scene changing).
+                When = (mod, pd) => World.TerraWorld.Live?.SceneName == Shimmer.Scene,
+                Zh = new[] { "这口温泉……不对。水面泛着淡紫的光，四周的岩壁不见了，只剩一片望不到底的星空。", "我把手探进去，指尖像被什么轻轻拆开，又一点一点拼了回来。" },
+                En = new[] { "This hot spring... isn't right. The water glows a soft lavender, and the rock around it is gone, leaving only stars with no bottom to them.", "I dip a hand in. My fingertips feel gently taken apart, then pieced back together bit by bit." },
+                TipZh = pd => "这是微光。把物品丢进水里泡一会儿，它会变成另一样东西，或者拆回做它的材料；人泡进去不会有事，温泉照样回血。",
+                TipEn = pd => "This is the Shimmer. Leave an item in the water for a moment and it turns into something else, or comes apart into what it was made of. Bathing in it is safe, and it still heals you like a hot spring.",
+            },
+            new Beat
+            {
                 Id = "dreamers",
                 When = (mod, pd) => rose.Contains("dreamers"),
                 Zh = new[] { "远处传来一声闷响，像一把锁终于松开了。", "……那座黑色的神殿，该为我开门了。" },

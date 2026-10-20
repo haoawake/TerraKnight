@@ -15,7 +15,7 @@ namespace TerraKnight.Items
     /// made (Projectile.FishingCheck): the pond's size (fewer than 75 tiles: none; fewer than it needs: less power, and
     /// junk), the luck, the rarity rolls (common 1/max(2,150/FL) .. legendary 1/max(6,4500/FL)), the crate roll (10%, 25%
     /// with the Crate potion), the gate (Next(100) &lt;= (FL+75)/2), and Terraria's catch rules in their order (FishingData.cs)
-    /// under the area's conditions: the zones it stands for, its height level, hardmode from the Monarch Wings on, today's
+    /// under the area's conditions: the zones it stands for, its height level, hardmode from stage 3 on, today's
     /// quest fish. A catch bobs the bobber for (90..240 + FL) / 2.5 ticks; using the pole then reels it in (the line
     /// breaking 1 time in 7 without the High Test Fishing Line, the bait used up 1 time in 1 + bait/6, one more with the
     /// Tackle Box). An item above the stage reached isn't caught: the next rules decide.
@@ -396,8 +396,12 @@ namespace TerraKnight.Items
         {
             var z = area.Zones;
             ulong f = DidNotUseCombatBook;
-            f |= Shop.UnlockedStage() >= 4 ? HardMode : EarlyMode;
+            f |= Shop.UnlockedStage() >= 3 ? HardMode : EarlyMode;
             if (pond.Acid) f |= InLava;
+            // Hive water represents Terraria's honey fishing. The catch rules
+            // already contain Honeyfin and its stopper, but were never given
+            // InHoney. DevSimulate supplies an area key, live ponds a scene name.
+            if(!pond.Acid && (pond.Scene=="蜂巢" || Areas.AreaName(pond.Scene)=="蜂巢"))f|=InHoney;
             if (CanFishInAcid(rod, inv)) f |= CanFishInLava;
             if (junk) f |= Junk;
             if (crate) f |= CrateRoll;
@@ -553,6 +557,36 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A point inside one of Hollow Knight's own pools (not the poured liquid): an Empty Bucket fills there.</summary>
+        /// <summary>
+        /// The surface of the water a point is in (its height), Hallownest's own or poured; null for none. Poured liquid: the
+        /// top of the column of it over the point. The game's pools (a swim region, the hot springs' Spa Region, an acid box):
+        /// the top of the box, for a point within its width under that top with no ground between it and the box (the water
+        /// goes on down to the pool's floor under it).
+        /// </summary>
+        internal static float? SurfaceAt(Vector2 p)
+        {
+            var cell = CellGrid.WorldToCell(p);
+            if (TerraWorld.LiquidAt(cell.x, cell.y) > 0)
+            {
+                int y = cell.y;
+                while (TerraWorld.LiquidAt(cell.x, y + 1) > 0) y++;
+                return (y + TerraWorld.LiquidAt(cell.x, y) / 255f) * CellGrid.CellSize;
+            }
+            Scan();
+            foreach (var q in ponds)
+            {
+                var b = q.Area;
+                if (p.x < b.min.x || p.x > b.max.x || p.y > b.max.y) continue;
+                if (p.y >= b.min.y) return b.max.y;
+                var top = CellGrid.WorldToCell(new Vector2(p.x, b.min.y));
+                bool open = true;
+                for (int y = cell.y + 1; y <= top.y && open; y++)
+                    if (TerraWorld.IsSolid(cell.x, y)) open = false;
+                if (open) return b.max.y;
+            }
+            return null;
+        }
+
         internal static bool NativeLiquidAt(Vector2 p, out bool acid)
         {
             acid = false;

@@ -36,7 +36,7 @@ namespace TerraKnight.Items
             if (!cache.TryGetValue(id, out var result))
             {
                 result=Build(key,e,stage,first,entry,final,boss);
-                if(!boss && !NamedElites.Contains(key)) result=RetainEarlierDrops(key,e,stage,entry,final,result);
+                if(!boss) result=RetainEarlierDrops(key,e,stage,entry,final,result);
                 var mounted = new List<EnemyDrops.Drop>(result);
                 Player.Mounts.AddDrops(mounted,key,stage,entry,final);
                 result=mounted.ToArray();
@@ -65,7 +65,12 @@ namespace TerraKnight.Items
             var present=new HashSet<ItemType>();
             foreach(var row in current) present.Add(row.Type);
             var older=new List<EnemyDrops.Drop>();
-            for(int s=Math.Max(0,NativeTier(key));s<stage;s++)
+            // Roster tiers are not the first stage an actual scene is reachable.
+            // Greenpath enemies, for example, have NativeTier 1 but can supply
+            // stage-0 ingredients. Starting at 1 silently erased those supplies.
+            int firstStage=string.IsNullOrEmpty(e.Scene) ? NativeTier(key)
+                : Math.Min(NativeTier(key),World.Areas.LevelOf(e.Scene));
+            for(int s=Math.Max(0,firstStage);s<stage;s++)
                 foreach(var row in Build(key,e,s,false,entry,final,false))
                     if(present.Add(row.Type)) older.Add(row);
             if(older.Count==0)return current;
@@ -128,7 +133,7 @@ namespace TerraKnight.Items
                 // Preserve their original roll instead of pooling their expectation into a
                 // large material stack (which can otherwise produce dozens of hooks).
                 bool single=def.MaxStack==1 && !def.IsWeapon && !def.IsArmor && !def.IsAccessory;
-                if (d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility && def.Stage >= NativeTier(key) || single && !utility)
+                if (d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility || single && !utility)
                 {
                     var copy=d;
                     copy.LockStage=0;
@@ -236,6 +241,9 @@ namespace TerraKnight.Items
             }
             AddRegionalMaterials(e.Scene,stage,entry,final,boss,ores,mats);
             if(!boss)AddRegionalProfile(area,stage,entry,final,ores,mats);
+            if(!boss && key.StartsWith("FlyingSentry",StringComparison.Ordinal))
+                foreach(var t in new[]{ItemType.GiantHarpyFeather,ItemType.BrokenBatWing})
+                    if(ProgressionBalance.Unlocked(t,stage,entry,final))mats[t]=Math.Max(Value(mats,t),1.5f);
             if(!boss && stocked)WeightRegionalOres(area,stage,ores);
             // Smelting inputs stay frequent in their actual biomes, in small stacks.
             // Do not turn a rarity cap into hundreds of extra kills for the first Imp Staff.
@@ -269,6 +277,8 @@ namespace TerraKnight.Items
             {
                 bool flight=false;
                 foreach (var d in e.Drops ?? Array.Empty<EnemyDrops.Drop>()) if (d.Type==ItemType.SoulofFlight) {flight=true;break;}
+                // Flying city sentries remain reachable before the stage-4 border insects.
+                if(!boss && key.StartsWith("FlyingSentry",StringComparison.Ordinal)) flight=true;
                 void Soul(ItemType t)
                 {
                     if (boss) rows.Add(Row(t,0,1,5,8));
@@ -301,7 +311,7 @@ namespace TerraKnight.Items
             if (!boss && key.StartsWith("Zombie"))
             {
                 mats[ItemType.Deathweed] = Math.Max(Value(mats, ItemType.Deathweed), .3f);
-                if (stage >= 1) mats[ItemType.Blinkroot] = Math.Max(Value(mats, ItemType.Blinkroot), .3f);
+                mats[ItemType.Blinkroot] = Math.Max(Value(mats, ItemType.Blinkroot), .3f);
             }
             if(boss && World.Areas.AreaName(e.Scene)=="蜂巢")
             {
@@ -679,7 +689,8 @@ namespace TerraKnight.Items
             {
                 Add(mat,ItemType.JungleSpores,.8f); Add(mat,ItemType.Vine,.6f);
                 Add(mat,ItemType.MudBlock,.6f);
-                if(stage>=1) Add(mat,ItemType.Stinger,.6f);
+                Add(mat,ItemType.Stinger,.6f);
+                if(area=="苍绿之径") {Add(mat,ItemType.FlinxFur,.6f);Add(mat,ItemType.SturdyFossil,.6f);}
                 if(stage>=4) Add(ore,ItemType.ChlorophyteOre,.5625f);
             }
             if(ore.Count==0 && (area=="国王山道" || area=="遗忘十字路" || area=="呼啸悬崖"))
@@ -702,7 +713,10 @@ namespace TerraKnight.Items
             }
             if(area=="水晶山峰") { Add(ore,ItemType.Meteorite,1.5f);Add(mat,ItemType.Amethyst,.8f);Add(mat,ItemType.Ruby,.6f);Add(mat,ItemType.Diamond,.5f);Add(mat,ItemType.CrystalShard,.8f); }
             if(area=="水晶山峰") Add(ore,ItemType.Hellstone,2f);
-            if(area=="水晶山峰" || area=="泪水之城") {Add(ore,ItemType.CobaltOre,1.2f);Add(ore,ItemType.PalladiumOre,1.2f);Add(ore,ItemType.MythrilOre,1.2f);Add(ore,ItemType.OrichalcumOre,1.2f);}
+            if(area=="水晶山峰" || area=="泪水之城") {
+                Add(ore,ItemType.CobaltOre,1.2f);Add(ore,ItemType.PalladiumOre,1.2f);Add(ore,ItemType.MythrilOre,1.2f);Add(ore,ItemType.OrichalcumOre,1.2f);
+                Add(ore,ItemType.AdamantiteOre,.8f);Add(ore,ItemType.TitaniumOre,.8f);
+            }
             if(area=="皇家水道" && stage>=4) Add(mat,ItemType.Ectoplasm,.8f);
             if(area=="皇家水道" || area=="水晶山峰") Add(mat,ItemType.Obsidian,.6f);
             if(area=="深渊" || area=="远古盆地") { Add(ore,ItemType.Hellstone,2);Add(mat,ItemType.Obsidian,1);Add(mat,ItemType.SoulofNight,.4f); }

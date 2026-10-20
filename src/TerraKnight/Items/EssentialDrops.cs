@@ -27,10 +27,10 @@ namespace TerraKnight.Items
             // Bait critters (the Grub Soup's, the Escargot's) and the gold ones (the Golden Delight's).
             ["Crawler"] = new[] { (ItemType.Grubby, .005f, 0) },
             ["Climber"] = new[] { (ItemType.Snail, .005f, 0) },
-            ["MossWalker"] = new[] { (ItemType.Sluggy, .005f, 1), (ItemType.GoldWorm, .001f, 1) },
+            ["MossWalker"] = new[] { (ItemType.Sluggy, .005f, 1), (ItemType.GoldWorm, .001f, 3) },
             ["MiniSpider"] = new[] { (ItemType.Buggy, .005f, 3) },
             ["GrassHopper"] = new[] { (ItemType.GoldGrasshopper, .002f, 1) },
-            ["MossFlyer"] = new[] { (ItemType.GoldButterfly, .002f, 1) },
+            ["MossFlyer"] = new[] { (ItemType.GoldButterfly, .002f, 3) },
             ["Mosquito"] = new[] { (ItemType.GoldDragonfly, .002f, 1) },
             ["MossmanRunner"] = new[] { (ItemType.GoldLadyBug, .002f, 1) },
             ["AcidWalker"] = new[] { (ItemType.GoldWaterStrider, .002f, 1) },
@@ -49,7 +49,7 @@ namespace TerraKnight.Items
         public static IReadOnlyList<EnemyDrops.Drop> With(string record, int stage, IReadOnlyList<EnemyDrops.Drop> drops)
         {
             var result = WithEssentials(record, stage, drops);
-            if (!EnemyDrops.IsBoss(record)) return result;
+            if (!EnemyDrops.IsBoss(record)) return CraftOnlyLoot.Filter(result);
             var list = new List<EnemyDrops.Drop>(result);
             list.RemoveAll(d => d.Type == ItemType.LifeCrystal);
             if (Net.BossLifeRewards.Eligible(record))
