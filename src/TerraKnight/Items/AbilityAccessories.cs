@@ -624,8 +624,8 @@ namespace TerraKnight.Items
             bool Has(ItemType t)
             {
                 bool In(ItemStack[] xs) { foreach (var s in xs) if (!s.IsEmpty && (s.Type == t || s.Type == ItemType.HallownestShield)) return true; return false; }
-                if (In(inv.Slots) || In(inv.Accessories) || In(inv.HkBag) || !inv.Mouse.IsEmpty && inv.Mouse.Type == t) return true;
-                foreach (var l in inv.Loadouts) if (In(l.Accessories) || In(l.Bag)) return true;
+                if (In(inv.Slots) || In(inv.Accessories) || In(inv.VanityAccessories) || In(inv.HkBag) || !inv.Mouse.IsEmpty && inv.Mouse.Type == t) return true;
+                foreach (var l in inv.Loadouts) if (In(l.Accessories) || In(l.VanityAccessories) || In(l.Bag)) return true;
                 return false;
             }
             foreach (var t in new[] { ItemType.ShadeCloak, ItemType.CrystalHeart })

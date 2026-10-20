@@ -1070,7 +1070,24 @@ namespace TerraKnight.Player
                 passedPlatforms.RemoveAt(i);
                 passedSet.Remove(p);
             }
+            // A platform the body is well inside of (not stood on: that touch is a hair deep at most) lets it by too, until
+            // it is out: one put down beside the player, one switched on or rebuilt round him after a drop. A one-way
+            // platform with a body in it pushes it up on to itself (Terraria's platforms only ever catch feet coming down).
+            foreach (var p in World.ChunkColliders.AllPlatforms)
+            {
+                if (p == null || !p.isActiveAndEnabled || passedSet.Contains(p) || !p.bounds.Intersects(hero.bounds)) continue;
+                var d = hero.Distance(p);
+                if (!d.isOverlapped || d.distance > -InsidePlatform) continue;
+                Physics2D.IgnoreCollision(hero, p, true);
+                passedSet.Add(p);
+                passedPlatforms.Add(p);
+                DevPlatformsLetBy++;
+            }
         }
+
+        /// <summary>How deep in a platform the body is before it is let through (standing on one touches it far less).</summary>
+        const float InsidePlatform = 0.04f;
+        public static int DevPlatformsLetBy;
 
         /// <summary>
         /// Standing on platforms and holding down drops through them (Terraria lets the player
@@ -1487,6 +1504,25 @@ namespace TerraKnight.Player
         }
 
         static bool AnyJumpLeft => canSandstorm || canBlizzard || canFart || canSail || canCloud;
+
+        /// <summary>
+        /// A pogo off an enemy, spikes or a shroom: the game gives its double jump and air dash back (HeroController.Bounce,
+        /// BounceHigh, ShroomBounce); the extra jumps standing in for its double jump (the Cloud in a Bottle and the rest)
+        /// come back with them, so a bounce can be jumped on from.
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.Bounce))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.BounceHigh))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.ShroomBounce))]
+        static void PogoRefresh(HeroController __instance)
+        {
+            if (!Active || __instance == null || __instance.cState.dead) return;
+            if (!__instance.cState.bouncing && !__instance.cState.shroomBouncing) return;
+            RefreshJumps();
+            DevPogoRefreshes++;
+        }
+
+        public static int DevPogoRefreshes;
 
         /// <summary>Dev: the extra jump lifting now, and the wings' time left (ticks).</summary>
         public static string DevJumpName => activeJump.ToString();

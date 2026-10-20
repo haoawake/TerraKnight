@@ -364,6 +364,28 @@ namespace TerraKnight.World
         }
 
         /// <summary>The name of the chest under a world point (Main.DrawInterface_ChestNameHover's), null for none or an unnamed one.</summary>
+        /// <summary>
+        /// Player.TileInteractionsMouseOver_Containers: the chest under the cursor and in reach (the smart cursor's
+        /// pick while it has one) shows its name beside the cursor, or, with none given, its item's icon
+        /// (WorldGen.GetChestIcon: a chest named as its kind is shown the same way).
+        /// </summary>
+        public static bool Hover(Vector2 mouse, out string name, out Items.ItemType icon)
+        {
+            name = null;
+            icon = Items.ItemType.None;
+            var hero = HeroController.SilentInstance;
+            if (hero == null) return false;
+            var hit = smart != null && smart.Region != null ? smart : null;
+            if (hit == null)
+                foreach (var c in chests)
+                    if (c.Region != null && !c.Bank && c.Box.Contains(mouse)) { hit = c; break; }
+            if (hit == null || !InReach(hero, hit.Box)) return false;
+            icon = RegionalChests.ItemOf(hit.Style);
+            var def = Items.ItemDb.Get(icon);
+            if (!string.IsNullOrEmpty(hit.Name) && (def == null || hit.Name != def.Name)) { name = hit.Name; icon = Items.ItemType.None; }
+            return true;
+        }
+
         public static string NameAt(Vector2 world)
         {
             foreach (var c in chests)

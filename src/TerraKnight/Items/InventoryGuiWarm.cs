@@ -78,6 +78,8 @@ namespace TerraKnight.Items
             IconStacks(inv.Slots);
             IconStacks(inv.Armor);
             IconStacks(inv.Accessories);
+            IconStacks(inv.VanityArmor);
+            IconStacks(inv.VanityAccessories);
             IconStacks(inv.Misc);
             int n = 0;
             foreach (var r in Recipes.All)
@@ -107,6 +109,8 @@ namespace TerraKnight.Items
             TextStacks(inv.Slots);
             TextStacks(inv.Armor);
             TextStacks(inv.Accessories);
+            TextStacks(inv.VanityArmor);
+            TextStacks(inv.VanityAccessories);
             TextStacks(inv.Misc);
             int n = 0;
             foreach (var r in Recipes.All)

@@ -127,7 +127,10 @@ namespace TerraKnight.Player
         }
 
         static bool Playing(HeroController hero) =>
-            hero != null && !hero.cState.dead && TerrainSystem.Current != null && GameHooks.PlayerHasControl();
+            hero != null && !hero.cState.dead && TerrainSystem.Current != null && (GameHooks.PlayerHasControl() || HeldForMap(hero));
+
+        /// <summary>The map open (FullMap, WorldMap: they take the Knight's control while up): a hook keeps holding, as Terraria's does.</summary>
+        static bool HeldForMap(HeroController hero) => UI.FullMap.Open && hero.controlReqlinquished && !hero.cState.transitioning;
 
         /// <summary>Player.QuickGrapple_GetItemToUse: the first hook in the inventory (there is no hook slot here).</summary>
         public static ItemType HookItem(Inventory inv)
@@ -221,7 +224,7 @@ namespace TerraKnight.Player
         /// <summary>
         /// Terraria removes a player's hooks when he dies or is teleported. Here: death, the
         /// game putting him back after spikes, any scene change it makes, and cutscenes or benches
-        /// taking control away.
+        /// taking control away (not the map, which holds the Knight while it is up).
         /// </summary>
         static bool Gone(HeroController hero)
         {
@@ -229,7 +232,7 @@ namespace TerraKnight.Player
             var cs = hero.cState;
             if (cs.dead || cs.hazardDeath || cs.hazardRespawning || cs.transitioning) return true;
             var gm = GameManager.UnsafeInstance;
-            return gm == null || gm.IsInSceneTransition || hero.controlReqlinquished;
+            return gm == null || gm.IsInSceneTransition || hero.controlReqlinquished && !HeldForMap(hero);
         }
 
         /// <summary>AI_007_GrapplingHooks, one update of one hook.</summary>

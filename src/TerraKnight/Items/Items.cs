@@ -2248,6 +2248,11 @@ namespace TerraKnight.Items
         public readonly ItemStack[] Accessories = new ItemStack[AccessorySlots];
         /// <summary>Head, body, legs.</summary>
         public readonly ItemStack[] Armor = new ItemStack[ArmorSlots];
+        /// <summary>
+        /// Player.armor 10-19: the social column beside the worn set, its armor and its accessories (as many open as the
+        /// worn ones). Worn for looks only: nothing in it counts for stats, abilities or set bonuses.
+        /// </summary>
+        public readonly ItemStack[] VanityArmor = new ItemStack[ArmorSlots], VanityAccessories = new ItemStack[AccessorySlots];
 
         /// <summary>Player.miscEquips: pet, light pet, minecart, mount, hook (the equipment's second page). Shared by every loadout.</summary>
         public const int MiscSlots = 5, HookSlot = 4;
@@ -2284,6 +2289,8 @@ namespace TerraKnight.Items
         {
             public readonly ItemStack[] Armor = new ItemStack[ArmorSlots];
             public readonly ItemStack[] Accessories = new ItemStack[AccessorySlots];
+            /// <summary>The social column goes with the loadout too (EquipmentLoadout.Armor holds all twenty).</summary>
+            public readonly ItemStack[] VanityArmor = new ItemStack[ArmorSlots], VanityAccessories = new ItemStack[AccessorySlots];
             /// <summary>Creative (BagPerLoadout): the loadout's own bag and hotbar pick, kept here while another is worn.</summary>
             public readonly ItemStack[] Bag = new ItemStack[Total];
             public int Selected;
@@ -2326,6 +2333,8 @@ namespace TerraKnight.Items
         {
             for (int i = 0; i < ArmorSlots; i++) (Armor[i], l.Armor[i]) = (l.Armor[i], Armor[i]);
             for (int i = 0; i < AccessorySlots; i++) (Accessories[i], l.Accessories[i]) = (l.Accessories[i], Accessories[i]);
+            for (int i = 0; i < ArmorSlots; i++) (VanityArmor[i], l.VanityArmor[i]) = (l.VanityArmor[i], VanityArmor[i]);
+            for (int i = 0; i < AccessorySlots; i++) (VanityAccessories[i], l.VanityAccessories[i]) = (l.VanityAccessories[i], VanityAccessories[i]);
             if (!BagPerLoadout) return;
             // The money stays the player's whatever the loadout.
             for (int i = 0; i < Total; i++) if (!IsCoinSlot(i)) (Slots[i], l.Bag[i]) = (l.Bag[i], Slots[i]);
@@ -2406,15 +2415,16 @@ namespace TerraKnight.Items
         {
             for (int i = 0; i < Total; i++) Slots[i] = default;
             for (int i = 0; i < AccessorySlots; i++) Accessories[i] = default;
-            for (int i = 0; i < ArmorSlots; i++) Armor[i] = default;
+            for (int i = 0; i < ArmorSlots; i++) Armor[i] = VanityArmor[i] = default;
+            for (int i = 0; i < AccessorySlots; i++) VanityAccessories[i] = default;
             for (int i = 0; i < MiscSlots; i++) Misc[i] = default;
             for (int i = 0; i < BankSlots; i++) Bank[i] = Safe[i] = Forge[i] = Void[i] = default;
             for (int i = 0; i < HkBag.Length; i++) HkBag[i] = default;
             ClearContainers();
             foreach (var l in Loadouts)
             {
-                for (int i = 0; i < ArmorSlots; i++) l.Armor[i] = default;
-                for (int i = 0; i < AccessorySlots; i++) l.Accessories[i] = default;
+                for (int i = 0; i < ArmorSlots; i++) l.Armor[i] = l.VanityArmor[i] = default;
+                for (int i = 0; i < AccessorySlots; i++) l.Accessories[i] = l.VanityAccessories[i] = default;
                 for (int i = 0; i < Total; i++) l.Bag[i] = default;
                 l.Selected = 0;
             }
@@ -2681,12 +2691,16 @@ namespace TerraKnight.Items
             foreach (var s in Slots) if (s.Type == type && !s.IsEmpty) return true;
             foreach (var a in Accessories) if (a.Type == type && !a.IsEmpty) return true;
             foreach (var a in Armor) if (a.Type == type && !a.IsEmpty) return true;
+            foreach (var a in VanityAccessories) if (a.Type == type && !a.IsEmpty) return true;
+            foreach (var a in VanityArmor) if (a.Type == type && !a.IsEmpty) return true;
             foreach (var a in Misc) if (a.Type == type && !a.IsEmpty) return true;
             foreach (var l in Loadouts)
             {
                 foreach (var s in l.Bag) if (s.Type == type && !s.IsEmpty) return true;
                 foreach (var a in l.Accessories) if (a.Type == type && !a.IsEmpty) return true;
                 foreach (var a in l.Armor) if (a.Type == type && !a.IsEmpty) return true;
+                foreach (var a in l.VanityAccessories) if (a.Type == type && !a.IsEmpty) return true;
+                foreach (var a in l.VanityArmor) if (a.Type == type && !a.IsEmpty) return true;
             }
             return false;
         }

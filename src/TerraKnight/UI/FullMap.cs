@@ -532,7 +532,7 @@ namespace TerraKnight.UI
         internal static void DrawHead(Vector2 at, float ui)
         {
             var inv = TerraMod.Instance?.Inventory;
-            var head = inv != null ? inv.EffectiveArmor[0] : default;
+            var head = inv == null ? default : inv.VanityArmor[0].IsEmpty ? inv.EffectiveArmor[0] : inv.VanityArmor[0];
             int headArmor = !head.IsEmpty ? head.Def.ArmorSheet : 0;
             bool hairShows = headArmor == 0 || head.Type == Items.ItemType.MiningHelmet || head.Type == Items.ItemType.JungleHat;
             // In a LAN game the player's chosen look, as the others see them.

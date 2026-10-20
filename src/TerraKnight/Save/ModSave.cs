@@ -25,6 +25,8 @@ namespace TerraKnight.Save
             /// <summary>The worn set (the current loadout's).</summary>
             public List<SlotItem> Accessories = new List<SlotItem>();
             public List<SlotItem> Armor = new List<SlotItem>();
+            /// <summary>The social column (the current loadout's); none in a save from before it.</summary>
+            public List<SlotItem> VanityArmor, VanityAccessories;
             /// <summary>The misc equipment: pet, light pet, minecart, mount, hook.</summary>
             public List<SlotItem> Misc;
             /// <summary>The Piggy Bank's slots; GeoItems: the save's geo is the Geo item already (Items.GeoWallet).</summary>
@@ -166,6 +168,7 @@ namespace TerraKnight.Save
         {
             public List<SlotItem> Armor = new List<SlotItem>();
             public List<SlotItem> Accessories = new List<SlotItem>();
+            public List<SlotItem> VanityArmor, VanityAccessories;
             /// <summary>Version 6, creative: the loadout's own bag and hotbar pick (the worn one's is empty; its bag is Inventory).</summary>
             public List<SlotItem> Bag;
             public int Selected;
@@ -272,6 +275,8 @@ namespace TerraKnight.Save
             foreach (var s in inv.Slots) file.Inventory.Add(Pack(s));
             foreach (var s in inv.Accessories) file.Accessories.Add(Pack(s));
             foreach (var s in inv.Armor) file.Armor.Add(Pack(s));
+            file.VanityArmor = PackAll(inv.VanityArmor);
+            file.VanityAccessories = PackAll(inv.VanityAccessories);
             file.Misc = new List<SlotItem>();
             foreach (var s in inv.Misc) file.Misc.Add(Pack(s));
             file.Bank = new List<SlotItem>();
@@ -300,6 +305,8 @@ namespace TerraKnight.Save
                 var ls = new LoadoutSave();
                 foreach (var s in l.Armor) ls.Armor.Add(Pack(s));
                 foreach (var s in l.Accessories) ls.Accessories.Add(Pack(s));
+                ls.VanityArmor = PackAll(l.VanityArmor);
+                ls.VanityAccessories = PackAll(l.VanityAccessories);
                 if (inv.BagPerLoadout)
                 {
                     ls.Bag = new List<SlotItem>();
@@ -482,6 +489,8 @@ namespace TerraKnight.Save
                 Load(file.Inventory.Count > 0 ? file.Inventory : file.Hotbar, inv.Slots);
                 Load(file.Accessories, inv.Accessories);
                 Load(file.Armor, inv.Armor);
+                Load(file.VanityArmor, inv.VanityArmor);
+                Load(file.VanityAccessories, inv.VanityAccessories);
                 Load(file.Misc, inv.Misc);
                 Load(file.Bank, inv.Bank);
                 if (file.HkBag != null) Load(file.HkBag, inv.HkBag);
@@ -501,6 +510,8 @@ namespace TerraKnight.Save
                     {
                         Load(file.Loadouts[l].Armor, inv.Loadouts[l].Armor);
                         Load(file.Loadouts[l].Accessories, inv.Loadouts[l].Accessories);
+                        Load(file.Loadouts[l].VanityArmor, inv.Loadouts[l].VanityArmor);
+                        Load(file.Loadouts[l].VanityAccessories, inv.Loadouts[l].VanityAccessories);
                         if (inv.BagPerLoadout && file.Loadouts[l].Bag != null)
                         {
                             Load(file.Loadouts[l].Bag, inv.Loadouts[l].Bag);
@@ -528,6 +539,8 @@ namespace TerraKnight.Save
                     var own = inv.Loadouts[inv.CurrentLoadout];
                     for (int i = 0; i < own.Armor.Length; i++) { if (!own.Armor[i].IsEmpty) inv.Pickup(own.Armor[i]); own.Armor[i] = default; }
                     for (int i = 0; i < own.Accessories.Length; i++) { if (!own.Accessories[i].IsEmpty) inv.Pickup(own.Accessories[i]); own.Accessories[i] = default; }
+                    for (int i = 0; i < own.VanityArmor.Length; i++) { if (!own.VanityArmor[i].IsEmpty) inv.Pickup(own.VanityArmor[i]); own.VanityArmor[i] = default; }
+                    for (int i = 0; i < own.VanityAccessories.Length; i++) { if (!own.VanityAccessories[i].IsEmpty) inv.Pickup(own.VanityAccessories[i]); own.VanityAccessories[i] = default; }
                     InventoryGui.ShareHintSeen = file.ShareHintSeen;
                 }
                 else
@@ -665,6 +678,13 @@ namespace TerraKnight.Save
                 if (shown >= 4) break;
             }
             return sb.ToString();
+        }
+
+        static List<SlotItem> PackAll(ItemStack[] from)
+        {
+            var list = new List<SlotItem>();
+            foreach (var s in from) list.Add(Pack(s));
+            return list;
         }
 
         static void Load(List<SlotItem> from, ItemStack[] to)

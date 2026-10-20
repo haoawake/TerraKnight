@@ -8458,5 +8458,7 @@
  "白色碎片无法装备": { "en-US": "The White Fragment can't be worn", "zh-Hant": "白色碎片無法裝備" },
  "虚空之心无法卸下": { "en-US": "The Void Heart can't be taken off", "zh-Hant": "虛空之心無法卸下" },
  "在浏览器中打开空洞泰拉 Wiki": { "en-US": "Open the TerraKnight wiki in your browser", "zh-Hant": "在瀏覽器中打開空洞泰拉 Wiki" },
- "已在浏览器中打开 Wiki": { "en-US": "Wiki opened in your browser", "zh-Hant": "已在瀏覽器中打開 Wiki" }
+ "已在浏览器中打开 Wiki": { "en-US": "Wiki opened in your browser", "zh-Hant": "已在瀏覽器中打開 Wiki" },
+ "时装": { "en-US": "Social", "zh-Hant": "時裝" },
+ "在时装栏中不起作用": { "en-US": "Not functional in social slot", "zh-Hant": "在時裝欄中不起作用" }
 }

@@ -210,7 +210,7 @@ namespace TerraKnight.Town
         {
             var set = new HashSet<ItemType>();
             void Add(ItemStack[] xs) { foreach (var s in xs) if (!s.IsEmpty) set.Add(s.Type); }
-            Add(inv.Slots); Add(inv.Accessories); Add(inv.Armor); Add(inv.Bank);
+            Add(inv.Slots); Add(inv.Accessories); Add(inv.Armor); Add(inv.VanityAccessories); Add(inv.VanityArmor); Add(inv.Bank);
             return set;
         }
 

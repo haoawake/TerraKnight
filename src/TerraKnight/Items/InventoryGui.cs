@@ -59,7 +59,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory }
 
         struct Hit
         {
@@ -260,6 +260,12 @@ namespace TerraKnight.Items
                             RefreshStackSplitCooldown();
                         }
                     }
+                    return;
+                case Kind.VanityArmor:
+                case Kind.VanityAccessory:
+                    if (leftPress) LeftClickEquip(hit.Kind == Kind.VanityArmor, hit.Index, true);
+                    // ItemSlot.RightClick, contexts 9 and 11: a right click trades places with the worn slot beside it.
+                    else if (rightPress) SwapVanity(hit.Kind == Kind.VanityArmor, hit.Index);
                     return;
                 case Kind.Trash:
                     if (leftPress) ClickTrash();
@@ -561,6 +567,7 @@ namespace TerraKnight.Items
         static void SwapEquip(int i)
         {
             ref var slot = ref inv.Slots[i];
+            if (Wears(slot.Def.IsArmor ? inv.VanityArmor : inv.VanityAccessories, slot.Type, -1)) return;
             if (slot.Def.IsArmor)
             {
                 int a = (int)slot.Def.Armor - 1;
@@ -589,13 +596,37 @@ namespace TerraKnight.Items
             Sound("Grab");
         }
 
-        /// <summary>Equipment slots (PickItemMovementAction 1): no merging, and one item at a time from a stack.</summary>
-        static void LeftClickEquip(bool armor, int index)
+        /// <summary>A worn slot or a social one (Player.armor 0-9, 10-19).</summary>
+        static ref ItemStack EquipSlot(bool armor, int index, bool vanity)
         {
-            ref var slot = ref armor ? ref inv.Armor[index] : ref inv.Accessories[index];
+            var column = armor ? vanity ? inv.VanityArmor : inv.Armor : vanity ? inv.VanityAccessories : inv.Accessories;
+            return ref column[index];
+        }
+
+        /// <summary>
+        /// ItemSlot.SwapVanityEquip: the social slot and the worn slot beside it trade places (either may be
+        /// empty) when each can go where the other was; not with a shop open.
+        /// </summary>
+        static void SwapVanity(bool armor, int index)
+        {
+            if (Town.TownNpcs.ShopOpen) return;
+            ref var social = ref EquipSlot(armor, index, true);
+            ref var worn = ref EquipSlot(armor, index, false);
+            if (social.IsEmpty && worn.IsEmpty) return;
+            if (!social.IsEmpty && !Fits(social, armor, index, false, true) || !worn.IsEmpty && !Fits(worn, armor, index, true, true)) return;
+            (social, worn) = (worn, social);
+            social.Favorite = false;
+            worn.Favorite = false;
+            Sound("Grab");
+        }
+
+        /// <summary>Equipment slots (PickItemMovementAction 1): no merging, and one item at a time from a stack.</summary>
+        static void LeftClickEquip(bool armor, int index, bool vanity = false)
+        {
+            ref var slot = ref EquipSlot(armor, index, vanity);
             // ItemSlot.ToggleLoadoutShare: Alt+click shares a worn item with the other loadouts (only
-            // one loadout can share a given slot).
-            if (Alt && !slot.IsEmpty)
+            // one loadout can share a given slot). The social column isn't shared.
+            if (Alt && !slot.IsEmpty && !vanity)
             {
                 slot.Favorite = !slot.Favorite;
                 if (slot.Favorite)
@@ -617,7 +648,7 @@ namespace TerraKnight.Items
                 Sound("Menu_Tick");
                 return;
             }
-            if (!inv.Mouse.IsEmpty && !Fits(inv.Mouse, armor, index)) return;
+            if (!inv.Mouse.IsEmpty && !Fits(inv.Mouse, armor, index, vanity)) return;
             if (inv.Mouse.IsEmpty)
             {
                 if (slot.IsEmpty) return;
@@ -682,19 +713,34 @@ namespace TerraKnight.Items
         /// <summary>Dev: whether an item could go in an accessory slot.</summary>
         public static bool DevFits(ItemStack item, int index) => Fits(item, false, index);
 
-        /// <summary>CanEquipInArmorSlot: the right armor slot, or an accessory not worn in another slot already.</summary>
-        static bool Fits(ItemStack item, bool armor, int index)
+        /// <summary>
+        /// CanEquipInArmorSlot: the right armor slot, or an accessory not worn in another slot of its column
+        /// already; and in either column, nothing the other column has (HasSameItemInSlot: an item is worn or
+        /// social, not both). A swap between the columns leaves out the other column's slot it trades with.
+        /// </summary>
+        static bool Fits(ItemStack item, bool armor, int index, bool vanity = false, bool swap = false)
         {
+            var other = armor ? vanity ? inv.Armor : inv.VanityArmor : vanity ? inv.Accessories : inv.VanityAccessories;
+            if (Wears(other, item.Type, swap ? index : -1)) return false;
             if (armor) return item.Def.IsArmor && (int)item.Def.Armor - 1 == index;
             if (!item.Def.IsAccessory) return false;
+            var own = vanity ? inv.VanityAccessories : inv.Accessories;
             for (int k = 0; k < Inventory.AccessorySlots; k++)
             {
-                if (k == index || inv.Accessories[k].IsEmpty) continue;
-                if (inv.Accessories[k].Type == item.Type) return false;
+                if (k == index || own[k].IsEmpty) continue;
+                if (own[k].Type == item.Type) return false;
                 // CanEquipBothAccessories: never two pairs of wings.
-                if (item.Def.Wing > 0 && inv.Accessories[k].Def.Wing > 0) return false;
+                if (item.Def.Wing > 0 && own[k].Def.Wing > 0) return false;
             }
             return true;
+        }
+
+        /// <summary>A column has this item in a slot other than <paramref name="skip"/>.</summary>
+        static bool Wears(ItemStack[] column, ItemType type, int skip)
+        {
+            for (int k = 0; k < column.Length; k++)
+                if (k != skip && !column[k].IsEmpty && column[k].Type == type) return true;
+            return false;
         }
 
         static void ClickTrash()
@@ -1065,7 +1111,7 @@ namespace TerraKnight.Items
                 else
                 {
                 if (equipPage == 2) DrawMiscEquips(ax, ay, slot, step, ui, mouse, ref hovered, ref hoveredKind);
-                else if (equipPage == CharmPage) DrawCharmPage(ax, ay, slot, step, ui, mouse);
+                else if (equipPage == CharmPage && Charms.Enabled) DrawCharmPage(ax, ay, slot, step, ui, mouse);
                 else {
                 Outlined(new Rect(ax - 40f * ui, ay - 24f * ui, slot + 80f * ui, 20f * ui), Lang.T("装备"), labelStyle, Color.white);
                 for (int i = 0; i < Inventory.ArmorSlots; i++)
@@ -1075,9 +1121,6 @@ namespace TerraKnight.Items
                     DrawEquipSlot(rect, inv.Armor[i], i == 0 ? 0 : i == 1 ? 6 : 12, !inv.Mouse.IsEmpty && Fits(inv.Mouse, true, i), inv.EffectiveArmor[i], inv.ArmorSharedFrom[i]);
                     if (rect.Contains(mouse)) HoverEquip(inv.Armor[i], inv.EffectiveArmor[i], inv.ArmorSharedFrom[i], Kind.Armor, ref hovered, ref hoveredExtra, ref hoveredKind);
                 }
-                DrawDefense(new Vector2(ax - 40f * ui, ay + step), inv, ui, e);
-                // A LAN game: PvP and the teams, left of the equipment (Main.DrawPVPIcons).
-                DrawPvpIcons(ax, ay, step, ui, mouse);
                 float accY = ay + Inventory.ArmorSlots * step + 4f * ui;
                 for (int i = 0; i < Inventory.OpenAccessories; i++)
                 {
@@ -1086,6 +1129,27 @@ namespace TerraKnight.Items
                     DrawEquipSlot(rect, inv.Accessories[i], 11, !inv.Mouse.IsEmpty && Fits(inv.Mouse, false, i), inv.EffectiveAccessories[i], inv.AccessorySharedFrom[i]);
                     if (rect.Contains(mouse)) HoverEquip(inv.Accessories[i], inv.EffectiveAccessories[i], inv.AccessorySharedFrom[i], Kind.Accessory, ref hovered, ref hoveredExtra, ref hoveredKind);
                 }
+                // The social column, 47 px left of the worn one (Main.DrawInventory): armor and as many accessories,
+                // each slot's silhouette the social one (Extra_54 frames 3, 9, 15 and 2).
+                float vx = ax - VanityGap * ui;
+                Outlined(new Rect(vx - 40f * ui, ay - 24f * ui, slot + 80f * ui, 20f * ui), Lang.T("时装"), labelStyle, Color.white);
+                for (int i = 0; i < Inventory.ArmorSlots; i++)
+                {
+                    var rect = new Rect(vx, ay + i * step, slot, slot);
+                    Add(rect, Kind.VanityArmor, i);
+                    DrawEquipSlot(rect, inv.VanityArmor[i], 3 + 6 * i, !inv.Mouse.IsEmpty && Fits(inv.Mouse, true, i, true), default, -1, true);
+                    if (rect.Contains(mouse)) HoverSocial(inv.VanityArmor[i], Kind.VanityArmor, ref hovered, ref hoveredExtra, ref hoveredKind);
+                }
+                for (int i = 0; i < Inventory.OpenAccessories; i++)
+                {
+                    var rect = new Rect(vx, accY + i * step, slot, slot);
+                    Add(rect, Kind.VanityAccessory, i);
+                    DrawEquipSlot(rect, inv.VanityAccessories[i], 2, !inv.Mouse.IsEmpty && Fits(inv.Mouse, false, i, true), default, -1, true);
+                    if (rect.Contains(mouse)) HoverSocial(inv.VanityAccessories[i], Kind.VanityAccessory, ref hovered, ref hoveredExtra, ref hoveredKind);
+                }
+                DrawDefense(new Vector2(vx - 40f * ui, ay + step), inv, ui, e);
+                // A LAN game: PvP and the teams, left of the equipment (Main.DrawPVPIcons).
+                DrawPvpIcons(vx, ay, step, ui, mouse);
 
                 // The loadout buttons beside the armor column (Main.DrawLoadoutButtons): 32 px, 36 apart.
                 int overLoadout = -1;
@@ -1157,11 +1221,12 @@ namespace TerraKnight.Items
             foreach (var p in panels)
                 if (p.Contains(mouse)) MouseOverUi = true;
 
-            // Main.DrawInterface_ChestNameHover's: a named chest's name under the cursor in the world.
-            if (!MouseOverUi && TerraMod.Instance != null)
+            // The cursor's item icon over a chest in reach (Main.DrawInterface_40_InteractItemIcon): its name,
+            // or its item when it has none.
+            if (!MouseOverUi && inv.Mouse.IsEmpty && TerraMod.MouseWorld(out var aim) && World.Chests.Hover(aim, out var chestName, out var chestIcon))
             {
-                string chestName = World.Chests.NameAt(TerraMod.Instance.AimPoint);
                 if (chestName != null) DrawLines(mouse, new List<string> { chestName }, Color.white);
+                else if (ItemDb.Get(chestIcon) != null) DrawIconOnly(new Rect(mouse.x + 6f * ui, mouse.y + 6f * ui, slot, slot), ItemStack.Of(chestIcon));
             }
             if (notice != null && Time.unscaledTime < noticeUntil)
                 Outlined(new Rect(mouse.x + 20f * ui, mouse.y - 26f * ui, 300f * ui, 22f * ui), notice, labelStyle, new Color(1f, 0.5f, 0.45f));
@@ -1279,7 +1344,7 @@ namespace TerraKnight.Items
             else if (kind == Kind.Slot && Shift && Town.TownNpcs.ShopOpen) icon = "UI/Cursor_10";
             else if (kind == Kind.Slot && sellMode && inv.Mouse.IsEmpty && Sellable(hovered, out _)) icon = "UI/Cursor_10";
             else if ((kind == Kind.Armor || kind == Kind.Accessory) && Alt) icon = "UI/Cursor_3";
-            else if ((kind == Kind.Armor || kind == Kind.Accessory || kind == Kind.Trash) && Shift) icon = "UI/Cursor_7";
+            else if ((kind == Kind.Armor || kind == Kind.Accessory || kind == Kind.VanityArmor || kind == Kind.VanityAccessory || kind == Kind.Trash) && Shift) icon = "UI/Cursor_7";
             if (icon == null) return;
             var tex = TerrariaAssets.Texture(icon);
             GUI.DrawTexture(new Rect(mouse.x, mouse.y, tex.width * ui * 1.1f, tex.height * ui * 1.1f), tex);
@@ -1478,10 +1543,10 @@ namespace TerraKnight.Items
         /// shares into shows that item faded with the sharing loadout's corner flag; a worn item
         /// being shared out has the worn loadout's flag.
         /// </summary>
-        static void DrawEquipSlot(Rect rect, ItemStack stack, int silhouette, bool accepts, ItemStack effective, int sharedFrom)
+        static void DrawEquipSlot(Rect rect, ItemStack stack, int silhouette, bool accepts, ItemStack effective, int sharedFrom, bool vanity = false)
         {
             var prev = GUI.color;
-            var c = LoadoutSlotColors[inv.CurrentLoadout];
+            var c = (vanity ? VanitySlotColors : LoadoutSlotColors)[inv.CurrentLoadout];
             const float k = 0.86f * 1.6f;
             var back = new Color(c.r / 255f * k, c.g / 255f * k, c.b / 255f * k, 0.86f);
             // ItemSlot.GetColorByLoadout: 12.5% whiter right after a switch, easing back over 30 ticks.
@@ -1522,6 +1587,10 @@ namespace TerraKnight.Items
 
         /// <summary>ItemSlot.LoadoutSlotColors (functional column) for loadouts 1-3, and an amber fourth for the summoner's.</summary>
         static readonly Color32[] LoadoutSlotColors = { new Color32(50, 106, 64, 255), new Color32(35, 106, 126, 255), new Color32(122, 63, 83, 255), new Color32(126, 92, 38, 255) };
+        /// <summary>The same table's social column, and the fourth loadout's amber a shade over.</summary>
+        static readonly Color32[] VanitySlotColors = { new Color32(46, 106, 98, 255), new Color32(50, 89, 140, 255), new Color32(104, 46, 85, 255), new Color32(116, 76, 40, 255) };
+        /// <summary>The social column's distance left of the worn one (Main.DrawInventory's 47 px, unscaled like the slots' places).</summary>
+        const float VanityGap = 47f;
         static readonly string[] loadoutClass = { "近战", "远程", "魔法", "召唤" };
         static float lastLoadoutSwitch = -10f;
         static int loadoutHover = -1;
@@ -1533,6 +1602,14 @@ namespace TerraKnight.Items
 
         /// <summary>ItemSlot.RecordLoadoutChange: the equipment slots flash from now.</summary>
         public static void RecordLoadoutChange() => lastLoadoutSwitch = Time.unscaledTime;
+
+        /// <summary>A social slot's item with Lang.tip[61] under it (Main.MouseText_DrawItemTooltip, item.social).</summary>
+        static void HoverSocial(ItemStack worn, Kind kind, ref ItemStack hovered, ref string extra, ref Kind hoveredKind)
+        {
+            hoveredKind = kind;
+            hovered = worn;
+            if (!worn.IsEmpty) extra = Lang.T("在时装栏中不起作用");
+        }
 
         /// <summary>What hovering an equipment slot shows: the worn item or the one shared in, with the share lines.</summary>
         static void HoverEquip(ItemStack worn, ItemStack effective, int sharedFrom, Kind kind, ref ItemStack hovered, ref string extra, ref Kind hoveredKind)

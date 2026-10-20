@@ -115,7 +115,7 @@ namespace TerraKnight.Player
         /// </summary>
         public int TakeDirect(int raw)
         {
-            if (PlayerData.instance != null && PlayerData.instance.overcharmed) raw *= 2;
+            if (Items.Charms.Enabled && PlayerData.instance != null && PlayerData.instance.overcharmed) raw *= 2;
             int damage = Mitigate(raw);
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;

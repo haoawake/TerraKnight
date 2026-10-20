@@ -193,7 +193,7 @@ namespace TerraKnight.World
                 bool gridReady = TerraWorld.RegionAt(at.x, at.y) != null;
                 // The Water Candle in the hotbar (Items.CarriedFurniture) sets how many times over. The White Palace's
                 // come back one for one: more only with the candle.
-                int copies = (Single(name) ? 1 : Multiplier) * Items.CarriedFurniture.CandleFactor;
+                int copies = (Single(name) || singleKinds.Contains(UI.EnemyHover.RecordOf(hm) ?? "") ? 1 : Multiplier) * Items.CarriedFurniture.CandleFactor;
                 for (int k = 1; k < copies && count < MaxSlotsPerScene; k++)
                 {
                     var shift = Vector3.zero;
@@ -412,6 +412,9 @@ namespace TerraKnight.World
 
         /// <summary>A scene whose enemies come back but don't come in twos: the White Palace (the King's dream).</summary>
         static bool Single(string scene) => scene.StartsWith("White_Palace");
+
+        /// <summary>Kinds that come back but one for one, whatever the room: the Flukefey (the Waterways' rooms swarm with them already).</summary>
+        static readonly HashSet<string> singleKinds = new HashSet<string> { "Flukefly" };
 
         static bool SceneAllowed(string s)
         {

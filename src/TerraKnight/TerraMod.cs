@@ -2231,8 +2231,10 @@ namespace TerraKnight
             bool standing = TerraMovement.WingStanding(hero);
             if (standing) bodyOverride = 0;
             DrawCarpet(col, facing);
-            // What is in effect, shared items included (GetEffectiveArmor), is what's drawn.
-            var armor = Inventory.EffectiveArmor;
+            // What is in effect, shared items included (GetEffectiveArmor), is what's drawn, with a social slot's
+            // piece over its worn one (Player.armor[10-12] take the head, body and legs looks first).
+            var armor = lookArmor;
+            for (int i = 0; i < armor.Length; i++) armor[i] = Inventory.VanityArmor[i].IsEmpty ? Inventory.EffectiveArmor[i] : Inventory.VanityArmor[i];
             var equips = new TerraPlayerSprite.Equips
             {
                 Head = armor[0].IsEmpty ? 0 : armor[0].Def.ArmorSheet,
@@ -2257,9 +2259,12 @@ namespace TerraKnight
                 equips.HairUnderHead = false;
                 equips.HideCapes = true;
             }
-            // Player.UpdateVisibleAccessories: each worn accessory's sheets, a later slot over an earlier one.
-            foreach (var a in Inventory.EffectiveAccessories)
+            // Player.UpdateVisibleAccessories: each worn accessory's sheets, a later slot over an earlier one, then
+            // the social column's over them.
+            int wornAcc = Inventory.EffectiveAccessories.Length, lookAcc = wornAcc + Items.Inventory.OpenAccessories;
+            for (int k = 0; k < lookAcc; k++)
             {
+                var a = k < wornAcc ? Inventory.EffectiveAccessories[k] : Inventory.VanityAccessories[k - wornAcc];
                 if (a.IsEmpty) continue;
                 var d = a.Def;
                 if (d.Shoe > 0) equips.Shoe = d.Shoe;
@@ -2368,6 +2373,9 @@ namespace TerraKnight
         /// copies, Holy Protection, the Spectre ghost, the stealth, and the lunar glowmasks by the
         /// worn sheets.
         /// </summary>
+        /// <summary>The head, body and legs drawn (a social piece, else the one in effect).</summary>
+        static readonly ItemStack[] lookArmor = new ItemStack[Items.Inventory.ArmorSlots];
+
         static void ArmorLook(ref TerraPlayerSprite.Equips e)
         {
             var set = Equipment.FamilyOf(Equipment.FullSet);

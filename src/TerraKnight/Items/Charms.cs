@@ -38,6 +38,18 @@ namespace TerraKnight.Items
 
         static PlayerData Pd => PlayerData.instance;
 
+        static BepInEx.Configuration.ConfigEntry<bool> pageSetting;
+
+        public static void Bind(BepInEx.Configuration.ConfigFile cfg) =>
+            pageSetting = cfg.Bind("Dev", "CharmPage", false,
+                "护符页（还在制作中，默认关闭）：开启后装备栏上方出现护符页，国王之魂、虚空之心、格林之子改在护符页里装。\nThe charm page (still being made, off by default): on, the Charms page shows above the equipment column and the Kingsoul, the Void Heart and the Grimmchild are worn there.");
+
+        /// <summary>
+        /// The charm page is on (the CharmPage setting; still being made). Off, nothing of it shows or works: the Kingsoul,
+        /// the Void Heart and the Grimmchild keep their items' ways (HkItems), and a save that had the page is put back (RollBack).
+        /// </summary>
+        public static bool Enabled => pageSetting != null && pageSetting.Value;
+
         public static bool Got(int id) => Pd != null && got[id] != null && (bool)got[id].GetValue(Pd);
         public static bool Worn(int id) => Pd != null && worn[id] != null && (bool)worn[id].GetValue(Pd);
         /// <summary>The notches it takes (the Void Heart none, whatever its record says).</summary>
@@ -144,10 +156,33 @@ namespace TerraKnight.Items
         {
             var pd = Pd;
             if (mod == null || pd == null) return;
+            if (!Enabled)
+            {
+                if (mod.GrantedAbilities.Contains(MigratedKey)) RollBack(mod, pd);
+                if (Player.PlayerBuffs.Has(OverchargeBuff)) Player.PlayerBuffs.Remove(OverchargeBuff);
+                return;
+            }
             if (!mod.GrantedAbilities.Contains(MigratedKey)) Migrate(mod, pd);
             Player.PlayerBuffs.Define(OverchargeBuff, "护符过载", "受到的伤害翻倍", debuff: true, noTime: true);
             if (pd.overcharmed) { if (!Player.PlayerBuffs.Has(OverchargeBuff)) Player.PlayerBuffs.Add(OverchargeBuff, 18000); }
             else if (Player.PlayerBuffs.Has(OverchargeBuff)) Player.PlayerBuffs.Remove(OverchargeBuff);
+        }
+
+        /// <summary>
+        /// A save that had the charm page, the page off: what it put on taken off (the Void Heart aside, which the game never
+        /// takes off), the notches emptied and overcharm gone, so nothing works unseen; the Kingsoul and the Grimmchild come
+        /// back as their items (HkItems). The page on again moves the save onto it afresh.
+        /// </summary>
+        static void RollBack(TerraMod mod, PlayerData pd)
+        {
+            mod.GrantedAbilities.Remove(MigratedKey);
+            string was = string.Join(",", pd.equippedCharms);
+            bool voidHeart = pd.royalCharmState >= 4;
+            for (int id = 1; id <= Count; id++)
+                if (Worn(id) && !(id == Royal && voidHeart)) worn[id].SetValue(pd, false);
+            pd.equippedCharms.RemoveAll(id => !(id == Royal && voidHeart));
+            Apply();
+            Plugin.Log.LogInfo($"[护符] 护符页关闭：卸下 {was}，凹槽 {pd.charmSlotsFilled}/{pd.charmSlots}");
         }
 
         static void Migrate(TerraMod mod, PlayerData pd)

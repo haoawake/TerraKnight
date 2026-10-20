@@ -103,6 +103,7 @@ namespace TerraKnight
             Player.TerraCamera.Bind(Config);
             UI.TerraCursor.Bind(Config);
             UI.GameView.Bind(Config);
+            Items.Charms.Bind(Config);
             UI.DialogueBroadcast.Bind(Config);
             Items.NailAim.Bind(Config);
             World.HoleShapes.Bind(Config);
@@ -144,7 +145,12 @@ namespace TerraKnight
             World.EnemyBlockers.Init();
             UI.TerraCursor.Install(host, harmony);
             if (mod.AutoTest != null && testSuite.Value == "profile") DevLoadProfiler.Install(harmony);
-            if (mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag")) DevFrameProfiler.Install(harmony);
+            bool lagSuite = mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag");
+            // A player's slow room looked into: every script's per-frame time, written out with each slow stretch (PerfProbe).
+            var frameProfiler = Config.Bind("Debug", "FrameProfiler", false,
+                "开启后，进游戏时给每个脚本的每帧方法加计时（启动会慢几秒、运行稍慢）；每 5 秒里出现掉帧，就把最耗时的方法、敌人和刚体数量写进 BepInEx/LogOutput.log。排查卡顿用，平时关着。\nWhen on, every script's per-frame methods are timed (a few seconds more to start, a little slower to run); each 5 s with slow frames writes the costliest methods and the counts of enemies and bodies to BepInEx/LogOutput.log. For finding a slow room; keep it off otherwise.");
+            if (lagSuite || frameProfiler.Value) DevFrameProfiler.Install(harmony);
+            PerfProbe.Detailed = frameProfiler.Value && !lagSuite;
             Log.LogInfo($"{ModName} {Version} 已加载，泰拉瑞亚素材：{TerrariaAssets.ImagesDir}");
         }
     }

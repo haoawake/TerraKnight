@@ -98,13 +98,13 @@ namespace TerraKnight.Items
                 When = (mod, pd) => pd.atBench,
                 Zh = new[] { "一张长椅。坐下来，伤口不疼了，连脑子都清醒了几分。", "……要是哪天倒在外面，大概会在这儿醒过来吧。" },
                 En = new[] { "A bench. Sitting down, the wounds stop aching and my head clears a little.", "...If I ever fall out there, I suppose this is where I'll wake." },
-                TipZh = pd => "坐在长椅上会回满生命，这里也会成为你的复活点；护符只能坐在长椅上更换。坐过的长椅旁会立起一座晶塔，打开地图就能传送回来。",
-                TipEn = pd => "Resting on a bench fills your life and makes it your respawn point, and charms can only be changed while resting on one. A pylon stands beside every bench you've rested at: open the map to teleport back.",
+                TipZh = pd => "坐在长椅上会回满生命，这里也会成为你的复活点" + (Charms.Enabled ? "；护符只能坐在长椅上更换" : "") + "。坐过的长椅旁会立起一座晶塔，打开地图就能传送回来。",
+                TipEn = pd => "Resting on a bench fills your life and makes it your respawn point" + (Charms.Enabled ? ", and charms can only be changed while resting on one" : "") + ". A pylon stands beside every bench you've rested at: open the map to teleport back.",
             },
             new Beat
             {
                 Id = "charm",
-                When = (mod, pd) => Charms.Owned > 0,
+                When = (mod, pd) => Charms.Enabled && Charms.Owned > 0,
                 Zh = new[] { "一枚刻着纹路的小护符，握在掌心微微发烫，像在催我把它戴上。", "虫子们的手艺……戴上它，兴许能沾上这片土地的一点运气。" },
                 En = new[] { "A little carved charm. It's warm in my palm, as if it wants to be worn.", "Bug craftsmanship... Wear it, and maybe a little of this land's luck rubs off on me." },
                 TipZh = pd => "护符在背包装备栏上方的“护符”页里。每枚护符要占几个凹槽，只有坐在长椅上才能装上或卸下。",
@@ -152,8 +152,10 @@ namespace TerraKnight.Items
                 When = (mod, pd) => rose.Contains("grimmchild") && pd.grimmChildLevel < 4,
                 Zh = new[] { "团长塞给我一枚护符，里面像封着一团还在跳动的火。", "“去收集火焰”……他说得倒是轻巧。" },
                 En = new[] { "The master pressed a charm into my hand. Something like a living flame is sealed inside.", "\"Gather the flames\"... He makes it sound easy." },
-                TipZh = pd => "在护符页装上格林之子（2 个凹槽），它就会跟着你；戴着它时，地图上会标出要收集的梦魇之焰。",
-                TipEn = pd => "Put the Grimmchild on in the Charms page (2 notches) and it follows you; while you wear it, the map marks the Nightmare flames to gather.",
+                TipZh = pd => Charms.Enabled ? "在护符页装上格林之子（2 个凹槽），它就会跟着你；戴着它时，地图上会标出要收集的梦魇之焰。"
+                    : "把圣巢背包里的格林之子放进宠物栏，它就会跟着你；它跟着你时，地图上会标出要收集的梦魇之焰。",
+                TipEn = pd => Charms.Enabled ? "Put the Grimmchild on in the Charms page (2 notches) and it follows you; while you wear it, the map marks the Nightmare flames to gather."
+                    : "Put the Grimmchild from the Hallownest Bag in the pet slot and it follows you; while it does, the map marks the Nightmare flames to gather.",
             },
             new Beat
             {
