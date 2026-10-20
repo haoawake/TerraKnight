@@ -188,6 +188,7 @@ namespace TerraKnight.Items
         public static void Consume(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
             if (inv.Infinite) return;
+            List<(ItemStack[] Slots, ItemType Type, int Count)> fromChests = null;
             foreach (var (t, need) in r.Ingredients)
             {
                 int left = Take(inv.Slots, t, need);
@@ -195,9 +196,13 @@ namespace TerraKnight.Items
                     foreach (var slots in chests)
                     {
                         if (left <= 0) break;
+                        int before = left;
                         left = Take(slots, t, left);
+                        if (left < before) (fromChests ?? (fromChests = new List<(ItemStack[], ItemType, int)>())).Add((slots, t, before - left));
                     }
             }
+            // A LAN game: the host's chests give what was taken from the copies here.
+            if (fromChests != null) World.Chests.NetCraftTook(fromChests, ItemStack.Of(r.Result, r.Count));
         }
 
         /// <summary>Up to that many of an item taken out of the slots, last first; how many are still wanted.</summary>

@@ -39,16 +39,19 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A seen enemy's numbers worked out again from what they are made from: the difficulty now, the rules now.</summary>
-        static Seen Fresh(string key, Seen s)
+        static Seen Fresh(string key, Seen s, int stage)
         {
             int at = key.IndexOf('@');
             string rec = at > 0 ? key.Substring(0, at) : key;
             var info = new EnemyStats.Info { Record = rec, Scene = s.Scene, MaxHp = Mathf.Max(1, s.RawHp), Boss = s.Boss, Elite = s.Elite, Level = s.Level, GodhomeTier = s.GodhomeTier };
             if (s.Boss) info.Ref = BossStats.Of(rec, EnemyDrops.VariantLevel(s.Scene));
+            int level = s.Boss ? s.Level : World.Areas.StatLevel(s.Level, stage);
+            float catchUp = s.Boss ? 1f : World.Areas.CatchUp(s.Level, stage);
             return new Seen
             {
-                Life = EnemyStats.LifeWhole(info), Defense = info.Defense, Level = s.Level,
-                Damage = s.Masks > 0 ? s.Masks * Mathf.RoundToInt(World.Areas.DamagePerMask(s.Level) * EnemyStats.DamageFactor(info)) : 0,
+                Life = s.Boss ? EnemyStats.LifeWhole(info) : Mathf.CeilToInt(info.MaxHp * World.Areas.LifeScale(s.Level, stage)),
+                Defense = s.Boss ? info.Defense : Mathf.RoundToInt(World.Areas.Defense(level) * catchUp), Level = s.Level,
+                Damage = s.Masks > 0 ? s.Masks * Mathf.RoundToInt(World.Areas.DamagePerMask(level) * catchUp * EnemyStats.DamageFactor(info)) : 0,
                 Knockback = s.Knockback, Boss = s.Boss, Elite = s.Elite, Scene = s.Scene, Masks = s.Masks, RawHp = s.RawHp, GodhomeTier = s.GodhomeTier,
             };
         }
@@ -93,28 +96,52 @@ namespace TerraKnight.Items
             return !string.IsNullOrEmpty(zh) ? zh : EnemyDrops.EnglishName(record);
         }
 
+        /// <summary>
+        /// A boss as the book shows it: met in its own room in the world, whatever room it was last seen in (a Godhome
+        /// rematch shares the world fight's entry: its numbers, its stage's damage and defense, aren't the entry's), and as
+        /// harmful as it is (a sighting while it still waited, its intro with no damage on its body yet, saw no masks).
+        /// Godhome's own bosses keep their Godhome room.
+        /// </summary>
+        static Seen AsMetInWorld(string record, Seen s)
+        {
+            string scene = s.Scene;
+            string kind = EnemyDrops.KindOf(record);
+            if (BossStats.InGodhome(scene) && kind != "godhome_boss")
+                scene = BossArena.WorldSceneOf(record) ?? EnemyDrops.SceneOf(record) ?? scene;
+            int masks = s.Masks > 0 || kind == "passive" ? s.Masks : 1;
+            if (scene == s.Scene && masks == s.Masks) return s;
+            bool moved = scene != s.Scene;
+            return new Seen
+            {
+                RawHp = s.RawHp, Masks = masks, Level = moved ? World.Areas.LevelOf(scene) : s.Level, Knockback = s.Knockback,
+                Boss = s.Boss, Elite = s.Elite, Scene = scene, GodhomeTier = moved ? 1f : s.GodhomeTier,
+            };
+        }
+
         /// <summary>What the book shows of a record: what was seen, else what the roster says (an entry from before seeing was kept).</summary>
-        public static Seen StatsOf(string record)
+        public static Seen StatsOf(string record, int stage = -1)
         {
             if (record == null) return null;
-            if (Stats.TryGetValue(record, out var s)) return s.Masks >= 0 ? Fresh(record, s) : s;
-            int level = EnemyDrops.StageOf(record);
+            if (stage < 0) stage = Shop.UnlockedStage();
+            if (Stats.TryGetValue(record, out var s) && s.Masks >= 0) return Fresh(record, s.Boss ? AsMetInWorld(record, s) : s, stage);
+            string scene = EnemyDrops.SceneOf(record);
+            int level = World.Areas.LevelOf(scene);
             int hp = Mathf.Max(1, EnemyDrops.HpOf(record));
             string kind = EnemyDrops.KindOf(record);
             bool boss = EnemyStats.IsBossKind(record, hp);
             bool elite = !boss && EnemyStats.EliteKind(record, hp);
-            float factor = boss ? World.Areas.BossDamage : elite ? World.Areas.EliteDamage : 1f;
-            // A boss as its Terraria stand-in has it, where it is first fought (not a Godhome rematch), with its own measure.
-            var stand = boss ? BossStats.Of(record, level) : null;
-            var tune = stand != null ? BossBalance.Of(record, level) : null;
-            if (tune != null) factor *= tune.Damage;
-            return new Seen
+            if (boss)
             {
-                Life = stand != null ? Mathf.CeilToInt(BossStats.LifeOf(stand, null, World.GameDifficulty.Current) * tune.Life * BossPhases.WholeFactor(record, null)) : Mathf.CeilToInt(hp * World.Areas.HealthScale * World.Areas.LevelHealth(level, boss)),
-                Defense = stand != null ? EnemyStats.BossDefense(stand, tune) : World.Areas.Defense(level), Level = level,
-                Damage = kind == "passive" ? 0 : Mathf.RoundToInt(World.Areas.DamagePerMask(level) * factor),
-                Knockback = boss || elite ? 0f : World.Areas.KnockbackTaken(level), Boss = boss, Elite = elite, Scene = EnemyDrops.SceneOf(record),
-            };
+                scene = BossArena.SceneOf(record) ?? scene;
+                level = World.Areas.LevelOf(scene);
+            }
+            if (boss && scene != null && scene.StartsWith("GG_") && kind != "godhome_boss") scene = "ordinary-world";
+            // Legacy saves lack raw inputs: rebuild from the roster instead of freezing old defense/life.
+            return Fresh(record, new Seen
+            {
+                RawHp = hp, Masks = kind == "passive" ? 0 : 1, Level = level,
+                Knockback = boss || elite ? 0f : World.Areas.KnockbackTaken(level), Boss = boss, Elite = elite, Scene = scene,
+            }, stage);
         }
 
         /// <summary>The book's key for a live enemy (its record, or the stage's own table), or null for what isn't in the book.</summary>
@@ -178,8 +205,15 @@ namespace TerraKnight.Items
                 if (looked.Count > 4096) looked.Clear();
                 string key = KeyOf(hm);
                 if (key == null) continue;
-                // One in the book already: its numbers as they are now (the difficulty, a newer version's).
-                if (Stats.ContainsKey(key)) { Stats[key] = Snapshot(hm); continue; }
+                // One in the book already: its numbers as they are now (the difficulty, a newer version's), its touch the
+                // strongest seen (a sighting in a quiet moment, its damage off, takes nothing away).
+                if (Stats.TryGetValue(key, out var was))
+                {
+                    var now = Snapshot(hm);
+                    if (was.Masks > now.Masks) now.Masks = was.Masks;
+                    Stats[key] = now;
+                    continue;
+                }
                 Discover(key, hm);
             }
         }

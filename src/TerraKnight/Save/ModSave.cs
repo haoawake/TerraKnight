@@ -117,6 +117,9 @@ namespace TerraKnight.Save
             public string Scene, Bench;
             public float X, Y, W, H;
             public int Style;
+            /// <summary>Set down by the player (World.PylonsMove), and its way in.</summary>
+            public bool Placed;
+            public string ArriveBench, Entry;
         }
 
         sealed class DroppedSave
@@ -328,7 +331,8 @@ namespace TerraKnight.Save
             file.Granted.AddRange(mod.GrantedAbilities);
             // Creative's pylons not yet placed by their bench are made again when the save is read.
             foreach (var p in World.Pylons.Unlocked)
-                if (!p.Provisional) file.Pylons.Add(new PylonSave { Scene = p.Scene, Bench = p.Bench, X = p.Local.x, Y = p.Local.y, W = p.SceneSize.x, H = p.SceneSize.y, Style = p.Style });
+                if (!p.Provisional) file.Pylons.Add(new PylonSave { Scene = p.Scene, Bench = p.Bench, X = p.Local.x, Y = p.Local.y, W = p.SceneSize.x, H = p.SceneSize.y, Style = p.Style,
+                    Placed = p.Placed, ArriveBench = p.ArriveBench, Entry = p.Entry });
             file.LifeFruits = mod.Stats.LifeFruits;
             file.Boosts = new List<string>();
             foreach (var b in mod.Stats.Boosts) file.Boosts.Add(b.ToString());
@@ -568,7 +572,8 @@ namespace TerraKnight.Save
                 Net.BossLifeRewards.InitializeClaims(mod);
                 if (file.Pylons != null)
                     foreach (var p in file.Pylons)
-                        World.Pylons.Unlocked.Add(new World.Pylons.Pylon { Scene = p.Scene, Bench = p.Bench, Local = new Vector2(p.X, p.Y), SceneSize = new Vector2(p.W, p.H), Style = p.Style });
+                        World.Pylons.Unlocked.Add(new World.Pylons.Pylon { Scene = p.Scene, Bench = p.Bench, Local = new Vector2(p.X, p.Y), SceneSize = new Vector2(p.W, p.H), Style = p.Style,
+                            Placed = p.Placed, ArriveBench = p.ArriveBench, Entry = p.Entry });
                 // Items a save from before 2.1.1 kept lying in the world are let go (see Write).
                 if (file.Dropped != null && file.Dropped.Count > 0) Plugin.Log.LogInfo($"[存档] 地上的 {file.Dropped.Count} 堆掉落物不再读回（退出游戏就清掉）");
                 if (file.Stations != null)

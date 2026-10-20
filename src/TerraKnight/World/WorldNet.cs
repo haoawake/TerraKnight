@@ -86,7 +86,8 @@ namespace TerraKnight.World
         internal static IEnumerable<WorldSync.Record> NetRecords()
         {
             foreach (var c in chests)
-                yield return new WorldSync.Record { Key = WorldSync.Key("c", c.Scene, c.Local), Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Kind = c.Style, Slots = NetSlots(c) };
+                yield return new WorldSync.Record { Key = WorldSync.Key("c", c.Scene, c.Local), Scene = c.Scene, X = c.Local.x, Y = c.Local.y, Kind = c.Style, Slots = NetSlots(c),
+                    Busy = WorldSync.ChestBusy(c.Scene, c.Local) };
         }
 
         internal static void NetApply(WorldSync.Record r, bool keepContents)
@@ -98,7 +99,78 @@ namespace TerraKnight.World
                 chests.Add(c);
             }
             c.Style = r.Kind;
+            c.NetBusy = r.Busy;
             if (!keepContents) NetSet(c, r.Slots);
+        }
+
+        /// <summary>
+        /// Crafting took from the chests near the player (Recipes.Consume): in a LAN game the host's chests are the ones
+        /// that count. The host's own crafting took from them already (the others see it at the next sync); a guest's took
+        /// from its copies, so the host is told and takes the same from its chests, all or nothing, and a refusal (a chest
+        /// another player opened meanwhile, its items gone) takes the crafted item back. The chest the player has open goes
+        /// with its contents as always.
+        /// </summary>
+        internal static void NetCraftTook(List<(ItemStack[] Slots, ItemType Type, int Count)> took, ItemStack made)
+        {
+            if (!NetSession.Active || took == null || took.Count == 0) return;
+            var keys = new List<string>();
+            var stacks = new List<WorldSync.Stack>();
+            var targets = new List<int>();
+            foreach (var (slots, type, count) in took)
+            {
+                var c = chests.Find(ch => ch.Items == slots);
+                if (c == null || WorldSync.OwnsChest(c.Scene, c.Local)) continue;
+                string key = WorldSync.Key("c", c.Scene, c.Local);
+                int k = keys.IndexOf(key);
+                if (k < 0) { keys.Add(key); k = keys.Count - 1; }
+                stacks.Add(WorldSync.Stack.From(ItemStack.Of(type, count)));
+                targets.Add(k);
+            }
+            if (stacks.Count > 0) WorldSync.CraftTook(keys.ToArray(), stacks.ToArray(), targets.ToArray(), made);
+        }
+
+        /// <summary>The host takes a guest's crafting's ingredients out of its chests: every one there, none in other hands, or nothing.</summary>
+        internal static bool NetCraftTake(WorldSync.Action a, int slot, System.Func<string, bool> busy)
+        {
+            if (a.Keys == null || a.Slots == null || a.Targets == null || a.Keys.Length > 64 || a.Slots.Length > 256 || a.Targets.Length != a.Slots.Length) return false;
+            var player = NetSession.Player(slot);
+            var near = new Chest[a.Keys.Length];
+            for (int k = 0; k < a.Keys.Length; k++)
+            {
+                var c = chests.Find(ch => WorldSync.Key("c", ch.Scene, ch.Local) == a.Keys[k]);
+                if (c == null || busy(a.Keys[k])) return false;
+                if (player == null || !player.HasState || (c.Scene != player.Latest.Scene && !player.Loaded.Contains(c.Scene) && !player.In.Contains(c.Scene))) return false;
+                near[k] = c;
+            }
+            var need = new Dictionary<(int, ItemType), int>();
+            for (int i = 0; i < a.Slots.Length; i++)
+            {
+                var s = a.Slots[i]?.Item() ?? default;
+                int k = a.Targets[i];
+                if (s.IsEmpty || k < 0 || k >= near.Length) return false;
+                need.TryGetValue((k, s.Type), out int n);
+                need[(k, s.Type)] = n + s.Count;
+            }
+            foreach (var kv in need)
+            {
+                int have = 0;
+                foreach (var it in near[kv.Key.Item1].Items) if (!it.IsEmpty && it.Type == kv.Key.Item2) have += it.Count;
+                if (have < kv.Value) return false;
+            }
+            foreach (var kv in need)
+            {
+                var items = near[kv.Key.Item1].Items;
+                int left = kv.Value;
+                for (int i = items.Length - 1; i >= 0 && left > 0; i--)
+                {
+                    if (items[i].IsEmpty || items[i].Type != kv.Key.Item2) continue;
+                    int take = Mathf.Min(left, items[i].Count);
+                    items[i].Count -= take;
+                    left -= take;
+                    if (items[i].Count <= 0) items[i] = default;
+                }
+            }
+            return true;
         }
 
         static void NetSet(Chest c, WorldSync.Stack[] slots)

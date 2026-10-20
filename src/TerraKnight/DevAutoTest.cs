@@ -554,6 +554,11 @@ namespace TerraKnight
                 yield return BossLandingSurvey(suite == "bosslandingsurvey" ? null : suite.Substring("bosslandingsurvey_".Length));
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "bestiarysync")
+            {
+                yield return BestiarySyncTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "bestiarydrops")
             {
                 yield return BestiaryDropStageTest();
@@ -623,6 +628,11 @@ namespace TerraKnight
             if (suite == "bosscurve" || suite == "bosscurvebefore")
             {
                 yield return BossCurveTest(suite == "bosscurvebefore");
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "mountvisibility")
+            {
+                yield return MountVisibilityTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
             if (suite == "mounts")

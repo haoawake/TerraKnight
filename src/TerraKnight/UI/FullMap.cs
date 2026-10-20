@@ -219,7 +219,7 @@ namespace TerraKnight.UI
         {
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
-            if (gm == null || hero == null || gm.gameMap == null) return;
+            if (gm == null || hero == null || gm.gameMap == null || GameHooks.HeldByTheGame()) return;
             if (root == null && !Build(gm.gameMap)) return;
             Open = true;
             Refresh();

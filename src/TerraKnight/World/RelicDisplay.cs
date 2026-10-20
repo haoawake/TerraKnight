@@ -28,12 +28,14 @@ namespace TerraKnight.World
         public void Init(string texture, SpriteRenderer baseRenderer)
         {
             pedestal = baseRenderer;
-            var pic = Relics.Texture(texture);
+            bool native = Relics.NativeArt(texture);
+            var pic = native ? Relics.SculptureTexture(texture) : Relics.Texture(texture);
             if (!sculptures.TryGetValue(texture, out var sprite) || sprite == null)
             {
-                // Artwork packs the common pedestal into the bottom sixteen source pixels.
-                sprite = Sprite.Create(pic, new Rect(0, 16, pic.width, pic.height - 16),
-                    new Vector2(0.5f, 0f), 2f / Px, 0, SpriteMeshType.FullRect);
+                // Native artwork is already a standalone frame; legacy artwork includes a pedestal.
+                var rect = native ? new Rect(0, 0, pic.width, pic.height) : new Rect(0, 16, pic.width, pic.height - 16);
+                sprite = Sprite.Create(pic, rect,
+                    new Vector2(0.5f, 0f), (native ? 1f : 2f) / Px, 0, SpriteMeshType.FullRect);
                 sculptures[texture] = sprite;
             }
             var go = new GameObject("Floating relic display");
@@ -42,7 +44,7 @@ namespace TerraKnight.World
             EnsureEffects();
             halo = Make("Golden halo", haloSprite, -2, true);
             sculpture = Make("Relic sculpture", sprite, 1, false);
-            sculpture.transform.localScale = Vector3.one * 1.1f;
+            sculpture.transform.localScale = Vector3.one * (native ? 1f : 1.1f);
             for (int i = 0; i < echoes.Length; i++)
             {
                 echoes[i] = Make("Golden echo " + i, sprite, -1, true);

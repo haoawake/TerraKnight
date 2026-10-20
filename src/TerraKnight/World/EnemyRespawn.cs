@@ -14,11 +14,13 @@ namespace TerraKnight.World
     /// one is made from the template when its time is up, where the original stood. The time goes
     /// by how tough the enemy is (its own health in the game, elites longest), and for its last
     /// seconds a faint ghost of the enemy shows on the spot, so the player sees it coming; none
-    /// comes back with the player standing right there.
+    /// comes back with the player standing right there, and no ghost shows over him meanwhile
+    /// (it shows again once he has stepped away, a second before the enemy comes).
     /// Bosses, arena and gauntlet waves, scripted and one-time enemies, the Path of Pain's and
     /// other pogo platforms, pooled spawner children, the Dirtcarvers (they dig away and come
     /// up again whole by themselves, the game sending more out of its pool) and everything in
-    /// Godhome, dreams, the Colosseum and the White Palace are left alone.
+    /// Godhome, dreams, the Colosseum and the Path of Pain are left alone. The White Palace's come
+    /// back but one for one (more only with the Water Candle).
     /// </summary>
     internal sealed class EnemyRespawn : MonoBehaviour
     {
@@ -63,6 +65,8 @@ namespace TerraKnight.World
             public float Delay;
             public GameObject Ghost;
             public Renderer GhostRenderer;
+            /// <summary>When the ghost last came up (it shows a second at least before the enemy).</summary>
+            public float GhostSince;
             /// <summary>This time's way from its spot to where it comes back (blocks or platforms the player put on the spot: the nearest clear place).</summary>
             public Vector2 Shift;
             /// <summary>Since when its live enemy has been out of the world (Time.time; negative: it isn't).</summary>
@@ -187,8 +191,9 @@ namespace TerraKnight.World
                 // once it does.
                 var at = CellGrid.WorldToCell(tr.position);
                 bool gridReady = TerraWorld.RegionAt(at.x, at.y) != null;
-                // The Water Candle in the hotbar (Items.CarriedFurniture) sets how many times over.
-                int copies = Multiplier * Items.CarriedFurniture.CandleFactor;
+                // The Water Candle in the hotbar (Items.CarriedFurniture) sets how many times over. The White Palace's
+                // come back one for one: more only with the candle.
+                int copies = (Single(name) ? 1 : Multiplier) * Items.CarriedFurniture.CandleFactor;
                 for (int k = 1; k < copies && count < MaxSlotsPerScene; k++)
                 {
                     var shift = Vector3.zero;
@@ -387,19 +392,26 @@ namespace TerraKnight.World
 
         // ------------------------------------------------------------------ the rules (spec-hkenemies 2.2)
 
-        static readonly string[] scenePrefixes = { "GG_", "Dream_", "Grimm_", "Room_Colosseum", "White_Palace", "Room_Final_Boss", "Cutscene_" };
+        static readonly string[] scenePrefixes = { "GG_", "Dream_", "Grimm_", "Room_Colosseum", "Room_Final_Boss", "Cutscene_" };
         static readonly string[] sceneAllowedGG = { "GG_Pipeway", "GG_Waterways" };
         static readonly HashSet<string> sceneExact = new HashSet<string>
         {
             "Abyss_09", "Abyss_15", "Room_Fungus_Shaman",
+            // The Path of Pain.
+            "White_Palace_17", "White_Palace_18", "White_Palace_19", "White_Palace_20",
             // World battle scenes (a "Battle Control" FSM; some enlist enemies outside it).
             "Crossroads_04", "Crossroads_08", "Crossroads_09", "Crossroads_22", "Ruins1_05", "Ruins1_09", "Ruins1_23", "Ruins1_31b", "Ruins2_01", "Ruins2_01_b",
-            "Ruins2_03", "Ruins2_03b", "Ruins2_09", "Fungus1_21", "Fungus1_32", "Fungus2_05", "Fungus3_05", "Fungus3_10", "Fungus3_39", "Deepnest_33",
+            // (Fungus3_39 isn't one: its battle counts only the two Mantis Warriors under its Battle Scene, which
+            // Eligible leaves alone; its Mossy Vagabonds and Mossflies stand outside it, ordinary enemies.)
+            "Ruins2_03", "Ruins2_03b", "Ruins2_09", "Fungus1_21", "Fungus1_32", "Fungus2_05", "Fungus3_05", "Fungus3_10", "Deepnest_33",
             "Abyss_17", "Waterways_09", "Waterways_13",
             // Boss rooms that are ordinary scenes.
             "Fungus1_20_v02", "Fungus1_29", "Deepnest_32", "Hive_05", "Abyss_19", "Mines_32", "Ruins_House_02", "Deepnest_40", "Fungus1_35", "Fungus2_32",
             "Deepnest_East_10", "Deepnest_East_16", "Crossroads_11_alt", "Crossroads_ShamanTemple", "Fungus1_28", "Crossroads_45",
         };
+
+        /// <summary>A scene whose enemies come back but don't come in twos: the White Palace (the King's dream).</summary>
+        static bool Single(string scene) => scene.StartsWith("White_Palace");
 
         static bool SceneAllowed(string s)
         {
@@ -417,7 +429,7 @@ namespace TerraKnight.World
             "GhostNoEyes", "GhostXero", "GodseekerMask", "GorgeousHusk", "GreyPrince", "Grimm", "GrubMimic", "Hatchling", "HealthScuttler", "HiveKnight", "HollowKnight",
             "HollowKnightPrime", "Hornet", "HunterMark", "InfectedKnight", "JarCollector", "LazyFlyer", "LobsterLancer", "MageKnight", "MageLord", "MantisLord", "Mawlek",
             "MegaBeamMiner", "MegaJellyfish", "MegaMossCharger", "MenderBug", "MimicSpider", "NailBros", "Nailsage", "NightmareGrimm", "Oblobble", "OrangeScuttler",
-            "Paintmaster", "PalaceFly", "PaleLurker", "Pigeon", "PrayerSlug", "RoyalGuard", "Sibling", "TraitorLord", "VoidIdol_1", "VoidIdol_2", "VoidIdol_3",
+            "Paintmaster", "PaleLurker", "Pigeon", "PrayerSlug", "Sibling", "TraitorLord", "VoidIdol_1", "VoidIdol_2", "VoidIdol_3",
             "WhiteDefender", "WhiteRoyal", "Worm", "ZapBug", "Zote", "ZotelingBalloon", "ZotelingBuzzer", "ZotelingHopper", "Dummy",
         };
 
@@ -467,7 +479,10 @@ namespace TerraKnight.World
             {
                 if (p.GetComponent<HealthManager>() != null) return "敌人的一部分";
                 foreach (var f in p.GetComponents<PlayMakerFSM>())
+                {
                     if (f.FsmName == "Battle Control") return "竞技场";
+                    if (GroupSwitchedOff(f)) return "原版关掉的一组";
+                }
                 string pn = BaseName(p.name);
                 if (parentsNever.Contains(pn) || pn.StartsWith("Wave ") || pn.Contains("Summon") || pn.StartsWith("Mushroom Brawler") || pn.StartsWith("Grub Mimic Top")) return "剧本父物体";
             }
@@ -477,6 +492,28 @@ namespace TerraKnight.World
                 if (go.name.StartsWith(n)) return "名单排除";
             if (go.name.EndsWith(" Col") || go.name.EndsWith(" R")) return "名单排除";
             return null;
+        }
+
+        /// <summary>
+        /// A group the game shows or hides by a PlayerData record (the Forgotten Crossroads' "Activate Infected", and its
+        /// kind in Dirtmouth, the Black Egg Temple, Crystal Peak: "PD Bool Name", "Active If Bool True"), switching all its
+        /// children on or off a frame after the scene starts: true for the group this save doesn't show (the uninfected
+        /// husks once the Crossroads is infected, the infected ones before). Its enemies are never copied: a copy set down
+        /// after the switch (the extra ones wait for the scene's grid) would be left on, and come back each time it died.
+        /// </summary>
+        static bool GroupSwitchedOff(PlayMakerFSM f)
+        {
+            var vars = f.FsmVariables;
+            if (vars == null) return false;
+            string record = null;
+            bool? whenTrue = null;
+            foreach (var s in vars.StringVariables)
+                if (s.Name == "PD Bool Name") record = s.Value;
+            foreach (var b in vars.BoolVariables)
+                if (b.Name == "Active If Bool True") whenTrue = b.Value;
+            var pd = PlayerData.instance;
+            if (string.IsNullOrEmpty(record) || whenTrue == null || pd == null) return false;
+            return pd.GetBool(record) != whenTrue.Value;
         }
 
         static bool BossScaled(HealthManager hm)
@@ -584,15 +621,23 @@ namespace TerraKnight.World
             // Blocks or platforms the player has put on its spot: the nearest clear place round it, found
             // afresh whenever the place the ghost shows on is built over.
             var home = SpawnPoint(s);
+            // The player on the spot: neither the enemy nor its see-through ghost over him; both wait for him to step away.
+            if (Vector2.Distance(home + s.Shift + s.Offset, heroPos) < KeepClear)
+            {
+                HideGhost(s);
+                s.Why = "主角站在出生点旁";
+                return;
+            }
             if (s.Ghost == null || Built(s, home + s.Shift, s.Shift == Vector2.zero))
             {
                 HideGhost(s);
                 if (!FindClear(s, home, out s.Shift)) { s.Why = "出生点被方块堵住，附近也没空位"; return; }
             }
             var spot = home + s.Shift;
-            ShowGhost(s, spot);
-            if (left > 0f) { s.Why = "快刷出来了"; return; }
             if (Vector2.Distance(spot + s.Offset, heroPos) < KeepClear) { s.Why = "主角站在出生点旁"; return; }
+            if (s.Ghost == null) s.GhostSince = Time.time;
+            ShowGhost(s, spot);
+            if (left > 0f || Time.time - s.GhostSince < 1f) { s.Why = "快刷出来了"; return; }
             HideGhost(s);
             if (s.Shift != Vector2.zero) DevMoved++;
             Spawn(s, s.Shift == Vector2.zero ? (Vector2?)null : spot);

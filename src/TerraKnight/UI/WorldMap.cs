@@ -635,7 +635,7 @@ namespace TerraKnight.UI
         {
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
-            if (gm == null || hero == null) return;
+            if (gm == null || hero == null || GameHooks.HeldByTheGame()) return;
             Open = true;
             dragging = false;
             // Terraria opens the map centred on the player, on the player's layer.

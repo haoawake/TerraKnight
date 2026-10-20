@@ -19,6 +19,16 @@ namespace TerraKnight.Items
         /// <summary>The prefix of a relic's texture name (TerrariaAssets.Texture loads it from the mod's resources).</summary>
         public const string TexturePrefix = "TKRelic:";
 
+        // These revised resources have a separate native 50x50 sculpture and tile-617 pedestal.
+        public static bool NativeArt(string name)
+        {
+            string file = name.StartsWith(TexturePrefix) ? name.Substring(TexturePrefix.Length) : name;
+            return file == "relic_mantislord" || file == "relic_sistersofbattle" || file == "relic_ghostgalien";
+        }
+
+        public static Texture2D SculptureTexture(string name) => Texture(name + "_statue");
+        public static Texture2D NativePedestal => Texture("relic_native_pedestal");
+
         static readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
 
         /// <summary>A relic's picture, from the mod's embedded resources (Resources/relic_*.png).</summary>

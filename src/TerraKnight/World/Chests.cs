@@ -33,6 +33,8 @@ namespace TerraKnight.World
             public readonly ItemStack[] Items;
             /// <summary>The Piggy Bank's (the player's bank, opened at one), not a chest of the world.</summary>
             public bool Bank;
+            /// <summary>A LAN guest's: another player has it open (the host says so with its record).</summary>
+            public bool NetBusy;
             /// <summary>Which of the player's storages (Inventory.BankOf): 0 the Piggy Bank's, 1 the Safe's, 2 the Defender's Forge's, 3 the Void Vault's.</summary>
             public int BankKind;
             /// <summary>Opened by an item where the player is (the Money Trough, the Void Bag): it goes with him, no reach.</summary>
@@ -511,7 +513,9 @@ namespace TerraKnight.World
 
         /// <summary>
         /// The slots of the chests standing within <see cref="CraftTiles"/> tiles of the player's hitbox
-        /// in a loaded scene: crafting counts and uses their items after the inventory's.
+        /// in a loaded scene: crafting counts and uses their items after the inventory's. In a LAN game
+        /// every such chest but one another player has open (the host's knowledge of who holds which, passed
+        /// on with the chests); what is taken from them goes to the host (<see cref="NetCraftTook"/>).
         /// </summary>
         public static List<ItemStack[]> ForCrafting(HeroController hero)
         {
@@ -523,9 +527,12 @@ namespace TerraKnight.World
             float reach = CraftTiles * CellGrid.CellSize;
             var around = Rect.MinMaxRect(b.min.x - reach, b.min.y - reach, b.max.x + reach, b.max.y + reach);
             foreach (var c in chests)
-                if (c.Region != null && !c.Bank && Net.WorldSync.OwnsChest(c.Scene, c.Local) && around.Overlaps(c.Box)) list.Add(c.Items);
+                if (c.Region != null && !c.Bank && CraftsFrom(c) && around.Overlaps(c.Box)) list.Add(c.Items);
             return list;
         }
+
+        static bool CraftsFrom(Chest c) => !Net.NetSession.Active || Net.WorldSync.OwnsChest(c.Scene, c.Local)
+            || (Net.NetSession.Hosting ? !Net.WorldSync.ChestBusy(c.Scene, c.Local) : !c.NetBusy);
 
         /// <summary>
         /// Quick Stack to Nearby Chests (QuickStacking.QuickStackToNearbyChests): the bag below the

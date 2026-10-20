@@ -163,9 +163,10 @@ namespace TerraKnight
             Inventory.Clear();
             Inventory.Slots[0] = ItemStack.Of(ItemType.CopperShortsword);
             Inventory.Slots[1] = ItemStack.Of(ItemType.CopperPickaxe);
-            // A bow with a hundred arrows (in the first ammo slot) and ten torches to light the way.
+            // A bow with a hundred arrows (in the first ammo slot), the Knight's nail in the fourth slot and ten torches to light the way.
             Inventory.Slots[2] = ItemStack.Of(ItemType.WoodenBow);
-            Inventory.Slots[3] = ItemStack.Of(ItemType.Torch, 10);
+            Inventory.Slots[3] = ItemStack.Of(ItemType.KnightNail);
+            Inventory.Slots[4] = ItemStack.Of(ItemType.Torch, 10);
             Inventory.Slots[Inventory.Size] = ItemStack.Of(ItemType.WoodenArrow, 100);
             // A start to get about with: the grappling hook (E) in its slot of the misc equipment, the Climbing Claws
             // and the Cloud in a Bottle worn. They are marked shared (favourite), so every loadout keeps them; the Mantis
@@ -227,6 +228,13 @@ namespace TerraKnight
 
         void Update()
         {
+            long began = PerfProbe.Begin();
+            try { UpdateBody(); }
+            finally { PerfProbe.End(PerfProbe.Part.Update, began); }
+        }
+
+        void UpdateBody()
+        {
             Lang.Tick();
             TerraKeys.Tick();
             Net.NetSession.Tick();
@@ -267,6 +275,8 @@ namespace TerraKnight
             UI.DialogueBroadcast.Tick();
             HudDialogue.Tick();
             BossGuide.Tick(gameplay && gm != null && !gm.isPaused);
+            StoryBeats.Tick(gameplay && gm != null && !gm.isPaused);
+            ShardRepair.Tick(gameplay && gm != null && !gm.isPaused);
             if (gameplay) AcidLiquid.Tick();
             if (gm == null || !gm.isPaused) Fishing.Tick(gameplay ? hero : null);
             if (gameplay) BossPhases.Tick();
@@ -301,6 +311,8 @@ namespace TerraKnight
                 InfoAccessories.Tick(Inventory, hero);
                 Town.TownNpcs.Tick(hero);
                 Town.Angler.Tick();
+                // Before the Hallownest items: an older save's Grimmchild and Kingsoul items are looked at as they move onto the charm page.
+                Charms.Tick(this);
                 Items.HkItems.Tick(this);
                 Items.Tombstones.Start();
                 AbilityAccessories.Tick(hero);
@@ -475,10 +487,15 @@ namespace TerraKnight
 
         void LateUpdate()
         {
-            if (TerrainSystem.Current != null) ResourceHud.HideGameHud();
-            PosePlayer();
-            // The other players of a LAN game, drawn after this one (the player sprite's per-frame statics are this one's first).
-            Net.NetSession.PosePlayers();
+            long began = PerfProbe.Begin();
+            try
+            {
+                if (TerrainSystem.Current != null) ResourceHud.HideGameHud();
+                PosePlayer();
+                // The other players of a LAN game, drawn after this one (the player sprite's per-frame statics are this one's first).
+                Net.NetSession.PosePlayers();
+            }
+            finally { PerfProbe.End(PerfProbe.Part.LateUpdate, began); }
         }
 
         /// <summary>How the player was drawn this frame, for the other players of a LAN game.</summary>
@@ -996,6 +1013,12 @@ namespace TerraKnight
                 if (Fishing.Use(hero, DevAim ?? mouse, def)) StartSwing(def);
                 return;
             }
+            if (def.IsPylon)
+            {
+                if (Pylons.TryPlace(def, hero, DevAim ?? mouse)) Inventory.ConsumeSelected();
+                useCooldown = .25f;
+                return;
+            }
             if (def.PlacesChest)
             {
                 if (Chests.TryPlace(hero, DevAim ?? mouse, def.ChestStyle)) Inventory.ConsumeSelected();
@@ -1033,7 +1056,7 @@ namespace TerraKnight
                 melee.Strike(rock, def, UseDirection);
                 PlaySound("Tink_" + Random.Range(0, 3));
             }
-            else if (def.PickPower > 0 && (Chests.TryMine(def, DevAim ?? mouse, hero) || Stations.TryMine(def, DevAim ?? mouse, hero) || LifeCrystals.TryMine(def, DevAim ?? mouse, hero) || DiveFloors.TryMine(def, DevAim ?? mouse, hero)))
+            else if (def.PickPower > 0 && (Chests.TryMine(def, DevAim ?? mouse, hero) || Stations.TryMine(def, DevAim ?? mouse, hero) || LifeCrystals.TryMine(def, DevAim ?? mouse, hero) || DiveFloors.TryMine(def, DevAim ?? mouse, hero) || Pylons.TryMine(def, DevAim ?? mouse, hero)))
                 useCooldown *= Equipment.PickTime;
             else if (def.PickPower > 0 && usable)
             {
@@ -2173,7 +2196,8 @@ namespace TerraKnight
             if (knight != null && !knight.forceRenderingOff) knight.forceRenderingOff = true;
             bool show = hero != null && !hero.cState.dead && TerrainSystem.Current != null && GameHooks.IsGameplay(GameManager.UnsafeInstance)
                         && (knight == null || knight.enabled) && !OpeningPortal.HideHero;
-            if (playerSprite.gameObject.activeSelf != show) playerSprite.gameObject.SetActive(show);
+            bool showRider = show && !Mounts.HidePlayer;
+            if (playerSprite.gameObject.activeSelf != showRider) playerSprite.gameObject.SetActive(showRider);
             if (!show)
             {
                 NetPose.Shown = false;
@@ -2304,8 +2328,11 @@ namespace TerraKnight
             bool poseSeated = PlayerData.instance != null && PlayerData.instance.atBench;
             var mountFeet=feet;
             if(Mounts.Riding) { feet.y+=Mounts.Lift; poseLeg=0; bodyOverride=0; }
-            playerSprite.Pose(feet, poseVel, grounded, facing, poseSwing, shown, poseScale, opacity, bodyOverride, equips, TerraMovement.ShadowCount, hold, poseLeg, poseSeated);
-            playerSprite.gameObject.SetActive(!Mounts.HidePlayer);
+            if (showRider)
+            {
+                playerSprite.Pose(feet, poseVel, grounded, facing, poseSwing, shown, poseScale, opacity, bodyOverride, equips, TerraMovement.ShadowCount, hold, poseLeg, poseSeated);
+                playerSprite.MountAppearance(Mounts.Current, facing, poseVel, grounded, equips);
+            }
             if(Mounts.Riding) Mounts.Draw(Mounts.Current.Native,mountFeet,poseVel,grounded,facing,opacity);
             NetPose = new Net.PoseRecord
             {
@@ -2328,7 +2355,7 @@ namespace TerraKnight
                     facing < 0f ? -1 : 1, opacity, !grounded && !GrapplingHook.IsLatched);
                 Effects.FxBatch.Instance.MirrorAboutY = null;
             }
-            if (playerSprite.gameObject.activeInHierarchy)
+            if (playerSprite.gameObject.activeInHierarchy && !(Mounts.Current?.Transform ?? false))
             {
                 AccessoryLayers.Draw(Effects.FxBatch.Instance, equips, Equipment.Current, Effects.TerraParticles.ToPx(playerSprite.transform.position),
                     Effects.TerraParticles.ToPx(realFeet), facing < 0f ? -1 : 1, opacity, TerraPlayerSprite.BodyFrameNow, TerraPlayerSprite.BobPx);
@@ -2600,12 +2627,17 @@ namespace TerraKnight
         void OnGUI()
         {
             if (DevNoInterface) return;
-            // Ahead of the first inventory open: the item sprites and the text it will need are built
-            // while the menus are up (the same work the first open used to do in one long frame).
-            InventoryGui.WarmIcons();
-            try { DrawInterface(); }
-            // Terraria's cursor over all of it.
-            finally { UI.TerraCursor.Draw(); }
+            long began = PerfProbe.Begin();
+            try
+            {
+                // Ahead of the first inventory open: the item sprites and the text it will need are built
+                // while the menus are up (the same work the first open used to do in one long frame).
+                InventoryGui.WarmIcons();
+                try { DrawInterface(); }
+                // Terraria's cursor over all of it.
+                finally { UI.TerraCursor.Draw(); }
+            }
+            finally { PerfProbe.End(PerfProbe.Part.OnGui, began); }
         }
 
         void DrawInterface()
@@ -2652,6 +2684,7 @@ namespace TerraKnight
             BestiaryToast.Draw();
             CenterNotice.Draw();
             BossGuide.Draw();
+            StoryBeats.Draw();
             Net.NetChat.Draw();
             UI.IngameOptions.Draw();
         }

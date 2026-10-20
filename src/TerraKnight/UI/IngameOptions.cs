@@ -192,19 +192,32 @@ namespace TerraKnight.UI
             float rx = lx + lw + 30f * ui, rw = p.xMax - 30f * ui - rx, ry = p.y + 70f * ui;
             CreativeMenu.Fill(new Rect(rx - 15f * ui, ry, 2f * ui, p.yMax - 100f * ui - ry), new Color(0.05f, 0.05f, 0.12f, 0.7f));
             // UI.Keybindings: "Keybindings"
-            if (Tab(new Rect(rx, ry, 220f * ui, 34f * ui), TT("UI.Keybindings", "按键绑定"), rightPage == 0, ui)) rightPage = 0;
-            if (Tab(new Rect(rx + 240f * ui, ry, 160f * ui, 34f * ui), Lang.T("光标"), rightPage == 1, ui))
+            if (Tab(new Rect(rx, ry, 190f * ui, 34f * ui), TT("UI.Keybindings", "按键绑定"), rightPage == 0, ui)) rightPage = 0;
+            if (Tab(new Rect(rx + 200f * ui, ry, 110f * ui, 34f * ui), Lang.T("光标"), rightPage == 1, ui))
             {
                 rightPage = 1;
                 if (TerraKeys.Listening.HasValue) TerraKeys.StopListening();
             }
             // The Voice Beyond the Door's guidance, this save's (Items.BossGuide).
-            if (Tab(new Rect(rx + 420f * ui, ry, 200f * ui, 34f * ui), Items.BossGuide.Title, rightPage == 2, ui))
+            if (Tab(new Rect(rx + 320f * ui, ry, 170f * ui, 34f * ui), Items.BossGuide.Title, rightPage == 2, ui))
             {
                 rightPage = 2;
                 if (TerraKeys.Listening.HasValue) TerraKeys.StopListening();
             }
+            // The interface's size (Terraria's Interface options: UI Scale).
+            if (Tab(new Rect(rx + 500f * ui, ry, 120f * ui, 34f * ui), Lang.T("界面"), rightPage == 3, ui))
+            {
+                rightPage = 3;
+                if (TerraKeys.Listening.HasValue) TerraKeys.StopListening();
+            }
             ry += 44f * ui;
+            if (rightPage == 3)
+            {
+                DrawInterfacePage(new Rect(rx, ry + 10f * ui, rw, p.yMax - 110f * ui - ry), ui);
+                // LegacyMenu.5: "Back"
+                if (CreativeMenu.Button(new Rect(p.center.x - 130f * ui, p.yMax - 76f * ui, 260f * ui, 50f * ui), TT("LegacyMenu.5", "返回"), ui)) Hide();
+                return;
+            }
             if (rightPage == 2)
             {
                 Items.BossGuide.DrawSettings(new Rect(rx, ry + 10f * ui, rw, p.yMax - 110f * ui - ry), ui);
@@ -454,6 +467,40 @@ namespace TerraKnight.UI
         }
 
         /// <summary>A bar to drag along (a gradient, or a fill to the value), its knob gold while held or under the mouse.</summary>
+        /// <summary>The interface scale shown while its bar is dragged; applied on letting go, as Terraria's (temporaryGUIScaleSlider).</summary>
+        static float draggedScale = -1f;
+        const int ScaleSlider = 10;
+
+        /// <summary>
+        /// Terraria's UI Scale (IngameOptions: 50% to 200%, the bar's value taken on release, Main.UIScaleMax capping what is
+        /// used): the whole of the mod's interface larger or smaller, the scale used beside the one asked for when the screen
+        /// can't hold it.
+        /// </summary>
+        static void DrawInterfacePage(Rect a, float ui)
+        {
+            var e = Event.current;
+            if (dragging == ScaleSlider && (e.type == EventType.MouseUp || !TerraCursor.LeftHeld(UnityEngine.InputSystem.Mouse.current)))
+            {
+                dragging = -1;
+                if (draggedScale > 0f) GameView.SetUiScale(draggedScale);
+                draggedScale = -1f;
+                return;
+            }
+            var note = new Color(0.85f, 0.85f, 0.95f, 0.85f);
+            float labelW = 260f * ui, barX = a.x + labelW, barW = a.width - labelW - 20f * ui, barH = 16f * ui, y = a.y;
+            float shown = draggedScale > 0f ? draggedScale : GameView.WantedScale;
+            int wanted = Mathf.RoundToInt(shown * 100f), used = Mathf.RoundToInt(Mathf.Min(shown, GameView.MaxScale) * 100f);
+            string label = used != wanted ? Lang.F("界面缩放：{0}%（实际 {1}%）", wanted, used) : Lang.F("界面缩放：{0}%", wanted);
+            CreativeMenu.Shadowed(new Rect(a.x, y, labelW, 30f * ui), label, keyStyle, Color.white);
+            float v = Slider(ScaleSlider, new Rect(barX, y + 7f * ui, barW, barH), Mathf.InverseLerp(GameView.MinUiScale, GameView.MaxUiScale, shown), null, ui);
+            if (dragging == ScaleSlider) draggedScale = Mathf.Round(Mathf.Lerp(GameView.MinUiScale, GameView.MaxUiScale, v) * 100f) / 100f;
+            y += 46f * ui;
+            CreativeMenu.Shadowed(new Rect(a.x, y, a.width, 70f * ui), Lang.T("放大或缩小 mod 的全部界面：背包、生命和魔力、地图、聊天、提示和这个设置面板。和泰拉瑞亚的“界面缩放”一样，范围 50%～200%，松开鼠标后生效；屏幕放不下时按屏幕能容纳的最大值显示。"), CreativeMenu.text, note);
+            y += 80f * ui;
+            if (CreativeMenu.Button(new Rect(a.x, y, 220f * ui, 44f * ui), Lang.T("恢复 100%"), ui) && GameView.WantedScale != 1f)
+                GameView.SetUiScale(1f);
+        }
+
         static float Slider(int id, Rect bar, float v, Texture2D gradient, float ui)
         {
             var e = Event.current;

@@ -664,7 +664,7 @@ namespace TerraKnight.Items
         static void DrawBookEntry(Rect d, string rec, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind, ref string hoveredExtra)
         {
             bool seen = Bestiary.IsSeen(rec), beaten = Bestiary.IsDefeated(rec);
-            var st = Bestiary.StatsOf(rec);
+            var st = Bestiary.StatsOf(rec, BookDropStage);
             int cat = CategoryOf(rec);
             string area = BestiaryRoute.AreaOf(rec);
 
@@ -789,7 +789,7 @@ namespace TerraKnight.Items
             BookOutlined(new Rect(d.x, y, d.width, 22f * ui), beaten ? Lang.F("阶段 {0} 掉落物（{1} 种）", BookDropStage, view.Count) : Lang.T("掉落物"), bookSmall, Gold);
             if (!beaten) BookOutlined(new Rect(d.x + 90f * ui, y, 400f * ui, 22f * ui), Lang.T("击败后解锁掉落信息"), bookSmall, new Color(0.75f, 0.75f, 0.85f));
             y += 26f * ui;
-            BookOutlined(new Rect(d.x, y, 66f * ui, 24f * ui), Lang.T("掉落阶段"), bookSmall, Gold);
+            BookOutlined(new Rect(d.x, y, 66f * ui, 24f * ui), Lang.T("预览阶段"), bookSmall, Gold);
             float filterX = d.x + 70f * ui, filterW = (d.width - 70f * ui) / 7f;
             for (int s = -1; s <= World.Areas.MaxLevel; s++)
             {

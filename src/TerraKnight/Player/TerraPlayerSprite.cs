@@ -221,6 +221,7 @@ namespace TerraKnight.Player
 
         /// <summary>The player's opacity this frame: the outline blinks with him while he is immune.</summary>
         float shownOpacity = 1f;
+        bool mountMasked;
 
         /// <summary>Target strength of the outline, 0 (hidden) to 1: set while scenery hides the player.</summary>
         public float OutlineStrength { get; set; }
@@ -232,6 +233,27 @@ namespace TerraKnight.Player
         public static float BobPx;
         /// <summary>The body frame drawn this frame (for the layers the effect batch draws).</summary>
         public static int BodyFrameNow;
+
+        /// <summary>PlayerDrawSet's raptor keeps helmets/face accessories, not a second humanoid body.</summary>
+        internal void MountAppearance(MountDef mount, float facing, Vector2 velocity, bool grounded, Equips equips)
+        {
+            if (mount == null || !mount.HeadAccessoriesOnly) return;
+            var headOffset = Mounts.RaptorHeadOffset(Mounts.VisualFrame(mount, velocity, grounded));
+            transform.position += new Vector3(headOffset.x * facing, headOffset.y, 0f) / Ppu;
+            bool helmet = Mounts.RaptorHelmet(equips.Head), face = Mounts.RaptorFace(equips.Face);
+            mountMasked = true;
+            foreach (var sr in liveRenderers)
+                sr.enabled = (helmet && (sr == armorHead.Renderer || sr == headGlow.Renderer))
+                    || (face && (sr == faceUnder.Renderer || sr == faceOver.Renderer))
+                    || sr == heldItem || sr == heldGlow;
+            var addon = Mounts.RaptorHelmetOffset(equips.Head);
+            var localOffset = new Vector3(addon.x, -addon.y, 0f) / Ppu;
+            armorHead.Renderer.transform.localPosition += localOffset;
+            headGlow.Renderer.transform.localPosition += localOffset;
+            // Copies live beside the main object, so the body mask must also suppress them.
+            foreach (var t in outlines) if (t != null) t.gameObject.SetActive(false);
+            foreach (var t in ghosts) if (t != null) t.gameObject.SetActive(false);
+        }
 
         public static TerraPlayerSprite Create(Transform parent)
         {
@@ -414,6 +436,12 @@ namespace TerraKnight.Player
         public void Pose(Vector2 feet, Vector2 velocity, bool grounded, float direction, float swingProgress, Sprite item, float itemScale, float opacity,
             int bodyOverride, Equips equips, int shadows, Hold hold = default, int legOverride = -1, bool seated = false)
         {
+            // Restore any partial transformation mask before posing the normal character again.
+            if (mountMasked)
+            {
+                foreach (var sr in liveRenderers) sr.enabled = true;
+                mountMasked = false;
+            }
             UpdateArmor(equips);
             // Terraria's frame sits 4 px below the hitbox bottom: centre 24 px above the feet.
             // Seated on a chair the whole player is drawn 4 px higher (PlayerSittingHelper's

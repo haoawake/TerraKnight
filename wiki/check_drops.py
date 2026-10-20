@@ -19,12 +19,13 @@ def main():
     checked = 0
     for key in runtime['drops']:
         merged = {}
-        for stage, records in runtime['drop_stages'].items():
-            for drop in records[key]:
-                signature = tuple(drop[k] for k in ('Type', 'Num', 'Den', 'Min', 'Max', 'Group', 'LockStage', 'Master')) + (round(drop['Probability'], 8),)
-                if signature not in merged:
-                    merged[signature] = dict(drop, Stages=[])
-                merged[signature]['Stages'].append(int(stage))
+        for stage, records in runtime['drop_regions'].items():
+            for home in records[key]:
+                for drop in home['Drops']:
+                    signature = (home['Area'],) + tuple(drop[k] for k in ('Type', 'Num', 'Den', 'Min', 'Max', 'Group', 'LockStage', 'Master')) + (round(drop['Probability'], 8),)
+                    if signature not in merged:
+                        merged[signature] = dict(drop, Area=home['Area'], Stages=[])
+                    merged[signature]['Stages'].append(int(stage))
         drops = list(merged.values())
         enemy_file = 'enemy-'+key.lower().replace('@', '-')+'.html'
         page = (OUT/enemy_file).read_text(encoding='utf-8')
@@ -48,7 +49,7 @@ def main():
             else:
                 stages = sorted(drop['Stages'])
                 label = f'{stages[0]}–{stages[-1]}' if len(stages)>1 and stages==list(range(stages[0],stages[-1]+1)) else '/'.join(map(str,stages))
-                expected = f"阶段{label}：{100*drop['Probability']:.4g}%" + (f"（组{drop['Group']}互斥）" if drop['Group'] else '')
+                expected = f"{drop['Area']}；阶段{label}：{100*drop['Probability']:.4g}%" + (f"（组{drop['Group']}互斥）" if drop['Group'] else '')
                 assert chance == expected, (key, drop, chance, expected)
             item_page = (OUT/('item-'+drop['Type'].lower()+'.html')).read_text(encoding='utf-8')
             assert f'href="/terraknight-wiki/{enemy_file}"' in item_page, (key, drop['Type'])

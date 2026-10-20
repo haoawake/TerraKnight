@@ -53,9 +53,30 @@ namespace TerraKnight
                                 Check($"概率合计/{record}/{stage}/{group.Key}", Math.Abs(group.Sum(d => EnemyDrops.MarginalChance(rows, d, stage)) - EnemyDrops.EffectiveChance(group.First())) < .0001f);
                         }
                         Check("不改变玩家进度", Shop.DevStage == actual);
+                        var crawler = Bestiary.StatsOf("Crawler", stage);
+                        Check("属性防御跟随预览阶段", crawler.Defense == UnityEngine.Mathf.RoundToInt(Areas.Defense(Areas.StatLevel(crawler.Level, stage)) * Areas.CatchUp(crawler.Level, stage)));
+                        Check("属性预览不改变玩家进度", Shop.DevStage == actual);
                     }
                 }
                 Shop.DevStage = 5;
+                var early = Bestiary.StatsOf("Crawler", 0);
+                var late = Bestiary.StatsOf("Crawler", 5);
+                Check("早期敌人属性随进度成长", late.Life > early.Life && late.Damage > early.Damage && late.Defense > early.Defense);
+                var bossEarly = Bestiary.StatsOf("FalseKnight", 0);
+                var bossLate = Bestiary.StatsOf("FalseKnight", 5);
+                Check("首领不套普通怪追赶倍率", bossEarly.Life == bossLate.Life && bossEarly.Defense == bossLate.Defense);
+                bool hadLegacy = Bestiary.Stats.TryGetValue("FalseKnight", out var savedLegacy);
+                try
+                {
+                    Bestiary.Stats["FalseKnight"] = new Bestiary.Seen { Life = 999999, Defense = 999999, Masks = -1 };
+                    var refreshed = Bestiary.StatsOf("FalseKnight", 0);
+                    Check("旧存档首领属性重新计算", refreshed.Defense == bossEarly.Defense && refreshed.Life == bossEarly.Life);
+                }
+                finally
+                {
+                    if (hadLegacy) Bestiary.Stats["FalseKnight"] = savedLegacy;
+                    else Bestiary.Stats.Remove("FalseKnight");
+                }
                 InventoryGui.DevBestiarySelect(-13); // Stage 2 in a full-progress creative save.
                 Check("阶段2格林大师无泰拉刃", !InventoryGui.DevBestiaryDrops("FlameBearerMed").Any(d => d.Type == ItemType.TerraBlade));
                 InventoryGui.DevBookSearch = ItemDb.Get(ItemType.TerraBlade).Name;

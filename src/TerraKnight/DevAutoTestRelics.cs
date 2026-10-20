@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TerraKnight.Effects;
 using TerraKnight.Items;
 using TerraKnight.World;
 using UnityEngine;
@@ -56,13 +57,25 @@ namespace TerraKnight
             var wrongTexture = new List<string>();
             var wrongBase = new List<string>();
             Color32[] commonBase = null;
+            int nativeCount = 0;
             foreach (var kv in Relics.Looks)
             {
                 if (kv.Value.W != 3 || kv.Value.H != 4) wrongSize.Add(kv.Key.ToString());
                 var tex = Relics.Texture(kv.Value.Texture);
-                if (tex.width != 64 || tex.height != 96 || tex.filterMode != FilterMode.Point)
+                bool native = Relics.NativeArt(kv.Value.Texture);
+                if (tex.width != (native ? 50 : 64) || tex.height != (native ? 68 : 96) || tex.filterMode != FilterMode.Point)
                 {
                     wrongTexture.Add($"{kv.Key}:{tex.width}x{tex.height}/{tex.filterMode}");
+                    continue;
+                }
+                if (native)
+                {
+                    var art = Relics.SculptureTexture(kv.Value.Texture);
+                    var pedestal = Relics.NativePedestal;
+                    if (art.width != 50 || art.height != 50 || art.filterMode != FilterMode.Point
+                        || pedestal.width != 48 || pedestal.height != 64 || pedestal.filterMode != FilterMode.Point)
+                        wrongTexture.Add(kv.Key + ": native components");
+                    nativeCount++;
                     continue;
                 }
                 var pixels = tex.GetPixels32();
@@ -77,16 +90,16 @@ namespace TerraKnight
                 if (!sameBase) wrongBase.Add(kv.Key.ToString());
             }
             Check("48款统一三格宽四格高", Relics.Looks.Count == 48 && wrongSize.Count == 0, string.Join("、", wrongSize));
-            Check("48款贴图64乘96且像素采样", Relics.Looks.Count == 48 && wrongTexture.Count == 0, string.Join("、", wrongTexture));
-            Check("48款共用同一正视底座", commonBase != null && wrongTexture.Count == 0 && wrongBase.Count == 0, string.Join("、", wrongBase));
+            Check("48款贴图规格及像素采样", Relics.Looks.Count == 48 && wrongTexture.Count == 0, string.Join("、", wrongTexture));
+            Check("旧款共用底座及三件原版分层素材", commonBase != null && nativeCount == 3 && wrongTexture.Count == 0 && wrongBase.Count == 0, string.Join("、", wrongBase));
 
-            // Three set down side by side, out on the street.
+            // Three revised relics set down side by side, out on the street.
             hero.transform.position = new Vector2(110f, 12f);
             yield return new WaitForSeconds(1f);
             var feet = hero.GetComponent<BoxCollider2D>().bounds;
             int placed = 0;
             float x = feet.center.x + 2f;
-            foreach (var kind in new[] { StationKind.RelicFalseKnight, StationKind.RelicMantisLord, StationKind.RelicHollowKnight })
+            foreach (var kind in new[] { StationKind.RelicSistersOfBattle, StationKind.RelicMantisLord, StationKind.RelicGhostGalien })
             {
                 // Within reach of each: the player stands beside where it goes.
                 hero.transform.position = new Vector3(x - 1.5f, hero.transform.position.y, hero.transform.position.z);
@@ -100,8 +113,8 @@ namespace TerraKnight
                 x += Relics.Looks[kind].W * 0.5f + 0.5f;
             }
             yield return new WaitForSeconds(0.5f);
-            Check("放下三个", placed == 3 && Stations.DevBoxOf(StationKind.RelicFalseKnight) != null && Stations.DevBoxOf(StationKind.RelicMantisLord) != null && Stations.DevBoxOf(StationKind.RelicHollowKnight) != null, Stations.DevDescribe());
-            foreach (var kind in new[] { StationKind.RelicFalseKnight, StationKind.RelicMantisLord, StationKind.RelicHollowKnight })
+            Check("放下三个", placed == 3 && Stations.DevBoxOf(StationKind.RelicSistersOfBattle) != null && Stations.DevBoxOf(StationKind.RelicMantisLord) != null && Stations.DevBoxOf(StationKind.RelicGhostGalien) != null, Stations.DevDescribe());
+            foreach (var kind in new[] { StationKind.RelicSistersOfBattle, StationKind.RelicMantisLord, StationKind.RelicGhostGalien })
             {
                 var box = Stations.DevBoxOf(kind);
                 var go = GameObject.Find("Terra Station " + kind);
@@ -110,13 +123,19 @@ namespace TerraKnight
                 bool geometry = box.HasValue && Mathf.Abs(box.Value.width - 3 * CellGrid.CellSize) < 0.001f
                     && Mathf.Abs(box.Value.height - 4 * CellGrid.CellSize) < 0.001f;
                 bool picture = Mathf.Abs(size.x - 3 * CellGrid.CellSize) < 0.001f
-                    && Mathf.Abs(size.y - 0.75f * CellGrid.CellSize) < 0.001f;
+                    && Mathf.Abs(size.y - CellGrid.CellSize) < 0.001f;
                 Check(kind + "放置及显示占格", geometry && picture, $"占格 {box}，显示 {size}");
                 var sculpture = go != null ? go.transform.Find("Floating relic display/Relic sculpture") : null;
                 var sr = sculpture != null ? sculpture.GetComponent<SpriteRenderer>() : null;
-                bool aspect = sr != null && Mathf.Abs(sr.bounds.size.x / sr.bounds.size.y - 64f / 80f) < 0.001f;
-                bool contained = box.HasValue && sr != null && box.Value.Contains((Vector2)sr.bounds.min + Vector2.one * 0.001f)
-                    && box.Value.Contains((Vector2)sr.bounds.max - Vector2.one * 0.001f);
+                bool aspect = sr != null && Mathf.Abs(sr.bounds.size.x / sr.bounds.size.y - 1f) < 0.001f;
+                // Vanilla's 50px sculpture can extend one pixel sideways beyond the 48px footprint.
+                var visualBox = box ?? new Rect();
+                visualBox.xMin -= TerraParticles.Px;
+                visualBox.xMax += TerraParticles.Px;
+                visualBox.yMax += 8f * TerraParticles.Px;
+                bool contained = box.HasValue && sr != null && visualBox.Contains((Vector2)sr.bounds.min + Vector2.one * 0.001f)
+                    && visualBox.Contains((Vector2)sr.bounds.max - Vector2.one * 0.001f)
+                    && Mathf.Abs(sr.bounds.size.x - 50f * TerraParticles.Px) < 0.001f;
                 Check(kind + "雕像比例及高度", aspect && contained, $"雕像 {sr?.bounds}");
             }
             Shot("Town", "relics_placed");
@@ -147,9 +166,9 @@ namespace TerraKnight
             var saved = Stations.Save();
             Stations.Load(saved);
             yield return new WaitForSeconds(0.3f);
-            Check("重载无光效残留", Object.FindObjectsOfType<RelicDisplay>().Length == 3 && Stations.DevBoxOf(StationKind.RelicFalseKnight).HasValue,
+            Check("重载无光效残留", Object.FindObjectsOfType<RelicDisplay>().Length == 3 && Stations.DevBoxOf(StationKind.RelicSistersOfBattle).HasValue,
                 $"重载后 {Object.FindObjectsOfType<RelicDisplay>().Length} 个圣物显示对象");
-            var mineBox = Stations.DevBoxOf(StationKind.RelicHollowKnight);
+            var mineBox = Stations.DevBoxOf(StationKind.RelicGhostGalien);
             bool mined = false;
             if (mineBox.HasValue)
             {
@@ -157,7 +176,7 @@ namespace TerraKnight
                 mined = Stations.TryMine(new ItemDef { PickPower = 100 }, mineBox.Value.center, hero);
             }
             yield return null;
-            Check("挖除时清除全部光效", mined && !Stations.DevBoxOf(StationKind.RelicHollowKnight).HasValue && Object.FindObjectsOfType<RelicDisplay>().Length == 2,
+            Check("挖除时清除全部光效", mined && !Stations.DevBoxOf(StationKind.RelicGhostGalien).HasValue && Object.FindObjectsOfType<RelicDisplay>().Length == 2,
                 $"挖除={mined}，余下 {Object.FindObjectsOfType<RelicDisplay>().Length} 个圣物显示对象");
             Plugin.Log.LogInfo($"[AutoTest] 圣物 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
@@ -165,8 +184,8 @@ namespace TerraKnight
         long relicCaptureBrightness;
         bool CaptureRelicsCamera(string suffix = null)
         {
-            var firstBox = Stations.DevBoxOf(StationKind.RelicFalseKnight);
-            var lastBox = Stations.DevBoxOf(StationKind.RelicHollowKnight);
+            var firstBox = Stations.DevBoxOf(StationKind.RelicSistersOfBattle);
+            var lastBox = Stations.DevBoxOf(StationKind.RelicGhostGalien);
             if (!firstBox.HasValue || !lastBox.HasValue) return false;
             var centre = (firstBox.Value.center + lastBox.Value.center) * 0.5f;
             var cameraObject = new GameObject("Relic validation camera");

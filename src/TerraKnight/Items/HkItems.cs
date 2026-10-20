@@ -6,13 +6,13 @@ namespace TerraKnight.Items
 {
     /// <summary>
     /// Hallownest's key items as Terraria items: the Lumafly Lantern, the City Crest, the keys, the Tram Pass, the King's
-    /// Brand, the Delicate Flower, the Rancid Eggs, the Pale Ore, the four relics, the Kingsoul and the Void Heart. Each
-    /// stands for its PlayerData record (what the game gives, it gives; what the game takes, it takes: a key used, relics
-    /// sold to Lemm), drawn with the game's own inventory picture and named as the game names it. They live only in the
-    /// hotbar and in their own bag (the Hallownest bag, beside the monster book), and work wherever they are carried (the
-    /// Hallownest bag, the bag, the hotbar, a pet slot), as the game's own inventory has them: the City Gate opens to the
-    /// crest, the dark rooms are lit by the lantern, the tram runs for the pass, the Abyss's door to the Birthplace opens to
-    /// the Kingsoul, the Siblings and the Radiance know the Void Heart. The Grimmchild is worn while its summon is out.
+    /// Brand, the Delicate Flower, the Rancid Eggs, the Pale Ore, the four relics. Each stands for its PlayerData record
+    /// (what the game gives, it gives; what the game takes, it takes: a key used, relics sold to Lemm), drawn with the
+    /// game's own inventory picture and named as the game names it. They live only in the hotbar and in their own bag (the
+    /// Hallownest bag, beside the monster book), and work wherever they are carried (the Hallownest bag, the bag, the
+    /// hotbar, a pet slot), as the game's own inventory has them: the City Gate opens to the crest, the dark rooms are lit
+    /// by the lantern, the tram runs for the pass. The Kingsoul, the Void Heart and the Grimmchild are charms, worn on the
+    /// charm page (Charms); their items from older saves are taken back.
     /// </summary>
     [HarmonyPatch]
     internal static class HkItems
@@ -311,10 +311,10 @@ namespace TerraKnight.Items
         {
             switch (d.Kind)
             {
+                // Charms on the charm page now (Charms): the old items go.
                 case Kind.Royal:
-                    return Field(pd, "gotCharm_36") is bool got && got && pd.royalCharmState == d.Royal ? 1 : 0;
                 case Kind.Charm:
-                    return Field(pd, d.Flag) is bool has && has ? 1 : 0;
+                    return 0;
                 case Kind.Int:
                     return Field(pd, d.Flag) is int n ? Mathf.Max(0, n) : 0;
                 default:
@@ -454,27 +454,11 @@ namespace TerraKnight.Items
         static int rawDepth;
         static bool Gating => rawDepth == 0 && TerraMod.Instance != null && !BossArena.Visiting;
 
-        /// <summary>PlayerData.GetBool: a key item's record counts while the item is carried (and the charm 36 worn while either royal one is).</summary>
+        /// <summary>PlayerData.GetBool: a key item's record counts while the item is carried (the charms are worn as their records say).</summary>
         internal static void GateBool(string name, ref bool result)
         {
             if (!Gating || PickupAsking()) return;
             var inv = TerraMod.Instance.Inventory;
-            if (name == "equippedCharm_36")
-            {
-                var pd = PlayerData.instance;
-                bool got = pd != null && Field(pd, "gotCharm_36") is bool g && g && pd.royalCharmState >= 3;
-                result = got && (Carried(inv, ItemType.HkKingsoul) || Carried(inv, ItemType.HkVoidHeart));
-                if (got && !result) Refused(pd.royalCharmState >= 4 ? ItemType.HkVoidHeart : ItemType.HkKingsoul);
-                return;
-            }
-            // The Grimmchild worn: its summon out (Pets), whatever the charm menu says.
-            if (name == "equippedCharm_40")
-            {
-                var pd = PlayerData.instance;
-                bool got = pd != null && Field(pd, "gotCharm_40") is bool g40 && g40;
-                result = got && Pets.GrimmOut;
-                return;
-            }
             if (byFlag.TryGetValue(name, out var d) && d.Kind == Kind.Bool && result)
             {
                 result = Working(inv, d.Type);
@@ -542,13 +526,14 @@ namespace TerraKnight.Items
         public static int DevGrimmCalls;
 
         /// <summary>
-        /// The Grimmchild's summon out or gone: the Knight's "Spawn Grimmchild" machine (Charm Effects) and a Grimmchild's own
-        /// "Charm Unequip" told CHARM EQUIP CHECK, as the charm menu tells them, so the game's own Grimmchild comes or goes;
-        /// once a second while it is out and none flies, called again (a new scene).
+        /// The Grimmchild put on or taken off (the charm page): the Knight's "Spawn Grimmchild" machine (Charm Effects) and a
+        /// Grimmchild's own "Charm Unequip" told CHARM EQUIP CHECK, as the charm menu tells them, so the game's own Grimmchild
+        /// comes or goes; once a second while it is worn and none flies, called again (a new scene).
         /// </summary>
         static void GrimmCheck()
         {
-            bool now = Pets.GrimmOut;
+            // Carefree Melody (level 5) has no Grimmchild to call.
+            bool now = Charms.Worn(Charms.Grimmchild) && PlayerData.instance != null && PlayerData.instance.grimmChildLevel < 5;
             bool changed = now != grimmBefore;
             grimmBefore = now;
             if (!changed && (!now || Time.unscaledTime < grimmLook)) return;

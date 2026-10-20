@@ -755,7 +755,8 @@ namespace TerraKnight.World
             if (cache.TryGetValue(kind, out var sp) && sp != null) return sp;
             if (spec.Custom != null)
             {
-                var pic = Items.Relics.Texture(spec.Custom);
+                bool native = Items.Relics.NativeArt(spec.Custom);
+                var pic = native ? Items.Relics.NativePedestal : Items.Relics.Texture(spec.Custom);
                 // Only the pedestal stays fixed. RelicDisplay draws and animates the sculpture above it.
                 sp = Sprite.Create(pic, new Rect(0, 0, pic.width, 16), new Vector2(0.5f, 0f), pic.width / (spec.W * 16f * Px), 0, SpriteMeshType.FullRect);
                 sprites[kind] = sp;

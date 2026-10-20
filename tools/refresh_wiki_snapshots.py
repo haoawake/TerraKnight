@@ -35,7 +35,8 @@ def main():
         audit = read(args.progression_run/'saves/progression-audit.json')
         runtime['data']['shop_stages'] = {str(s['Stage']):s['Shops'] for s in audit['stages']}
         assert set(runtime['data']['shop_stages']) == set(map(str, range(6)))
-    health['source_hashes'] = {rel:hashes[rel] for rel in health['source_hashes']}
+    health_deps = set(health['source_hashes']) | {'Items/Bestiary.cs', 'Items/BossArena.cs', 'Items/BossHealthBudgets.cs', 'Items/BossPhases.cs', 'Items/GodhomeBalance.cs', 'DevAutoTestHealthBook.cs'}
+    health['source_hashes'] = {rel:hashes[rel] for rel in sorted(health_deps)}
     health['records'] = read(args.health_run/'saves/encyclopedia-enemy-health.json')
     for name,data in [('encyclopedia_runtime.json',runtime),('encyclopedia_enemy_health.json',health)]:
         (ROOT/'tools'/name).write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')

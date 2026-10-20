@@ -35,8 +35,14 @@ namespace TerraKnight.Net
             var hero = HeroController.SilentInstance;
             if (hero == null || source == hero.gameObject || source.transform.IsChildOf(hero.transform)) return true;
             string scene = source.scene.name;
-            bool bossScene = BossRooms.IsRoom(scene) || scene.StartsWith("GG_") || scene.StartsWith("Dream_");
-            if (!bossScene && !Enemies.RemoteOwned(scene)) return true;
+            bool remote = Enemies.RemoteOwned(scene);
+            // A dream or a Godhome room is a fight when it is a boss's room, or another player's: the Seer's dream
+            // (Dream_Nailcollection), the warriors' graves, the shrines are the player's own scenes.
+            bool bossScene = BossRooms.IsRoom(scene) || (remote && (scene.StartsWith("GG_") || scene.StartsWith("Dream_")));
+            if (!bossScene && !remote) return true;
+            // The scene the player is in and runs himself: its scripts are his own, also while it loads (the grid still
+            // names the room left until the new one is in place, and its fade and transition must go through).
+            if (!remote && (source.scene == UnityEngine.SceneManagement.SceneManager.GetActiveScene() || (GameManager.UnsafeInstance?.IsInSceneTransition ?? false))) return true;
             var cell = CellGrid.WorldToCell(hero.transform.position);
             string room = Room(scene);
             var region = TerraWorld.RegionAt(cell.x, cell.y);

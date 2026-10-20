@@ -204,7 +204,6 @@ namespace TerraKnight.Items
                 r.SteadyUntil = now + SteadyFor;
                 r.Count = 0;
                 DevSteadied++;
-                SteadyFade.Show(hm, r.SteadyUntil);
             }
             return true;
         }

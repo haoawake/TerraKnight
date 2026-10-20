@@ -462,6 +462,8 @@ namespace TerraKnight.Items
         MountPalworldPetChilletIgnis,
         MountPalworldMountTrustyChillet,
         MountPalworldMountTrustyChilletIgnis,
+        // Terraria's pylon items (World.PylonsMove): a pylon knocked out with a pickaxe, set down anywhere with room.
+        PylonForest, PylonJungle, PylonHallow, PylonCavern, PylonOcean, PylonDesert, PylonSnow, PylonMushroom, PylonUniversal,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -1306,6 +1308,9 @@ namespace TerraKnight.Items
 
         public int MountId = -1;
         public bool IsMount => MountId >= 0;
+        /// <summary>A pylon item's style (World.Pylons.StyleNames), -1 for anything else.</summary>
+        public int PylonStyle = -1;
+        public bool IsPylon => PylonStyle >= 0;
 
         public bool IsWeapon => Damage > 0 && Ammo == AmmoKind.None;
         public bool IsAccessory => Accessory != AccessoryEffect.None;
@@ -1313,7 +1318,7 @@ namespace TerraKnight.Items
         public bool IsAmmo => Ammo != AmmoKind.None;
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
-        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsMount || IsWeapon || FishingPower > 0 || Bucket != BucketUse.None || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
+        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsMount || IsPylon || IsWeapon || FishingPower > 0 || Bucket != BucketUse.None || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
             || BuffType > 0 || PetBuff > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type) || Type == ItemType.WaterCandle || Type == ItemType.MoneyTrough || Type == ItemType.VoidBag || Type == ItemType.PotionOfReturn || Containers.IsContainer(Type));
 
         /// <summary>
@@ -1758,6 +1763,7 @@ namespace TerraKnight.Items
             BossSummons.AddItems(list);
             AddBuckets(list);
             Player.Mounts.AddItems(list);
+            World.Pylons.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
             // Held-out items not given one by hand: Terraria's own hold (Main.DrawPlayerItemPos).

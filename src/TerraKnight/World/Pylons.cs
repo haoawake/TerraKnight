@@ -27,6 +27,10 @@ namespace TerraKnight.World
             public int Style;
             /// <summary>Creative's: put by the bench's survey position, its spot not yet chosen (that waits for its scene).</summary>
             public bool Provisional;
+            /// <summary>Set down by the player from its item (PylonsMove): no bench of its own (Bench ""), reached by ArriveBench or Entry.</summary>
+            public bool Placed;
+            /// <summary>A placed pylon's way in: the scene's bench nearest it (a respawn marker), else a gate's name.</summary>
+            public string ArriveBench, Entry;
             public string Name => StyleNames[Style];
         }
 
@@ -127,7 +131,7 @@ namespace TerraKnight.World
         {
             string scene = gm.sceneName;
             if (pd.respawnScene != scene || string.IsNullOrEmpty(pd.respawnMarkerName)) return false;
-            if (Find(scene, pd.respawnMarkerName) != null) return true;
+            if (Find(scene, pd.respawnMarkerName) != null || Taken(scene, pd.respawnMarkerName)) return true;
             var live = TerraWorld.Live;
             var bench = BenchTransform(scene, pd.respawnMarkerName);
             if (live == null || bench == null) return false;
@@ -301,9 +305,9 @@ namespace TerraKnight.World
             var pd = PlayerData.instance;
             var hero = HeroController.SilentInstance;
             if (gm == null || pd == null || hero == null || gm.IsInSceneTransition || hero.cState.dead || hero.cState.transitioning) return;
-            Plugin.Log.LogInfo($"[晶塔] 传送到 {p.Scene} 的 {p.Name}（{p.Bench}）");
+            Plugin.Log.LogInfo($"[晶塔] 传送到 {p.Scene} 的 {p.Name}（{(p.Placed ? (string.IsNullOrEmpty(p.ArriveBench) ? "入口 " + p.Entry : "长椅 " + p.ArriveBench) : p.Bench)}）");
             PylonObject.TeleportEffect(hero, p.Style);
-            gm.StartCoroutine(Travel(gm, pd, hero, p));
+            gm.StartCoroutine(p.Placed && string.IsNullOrEmpty(p.ArriveBench) ? TravelByGate(gm, pd, hero, p) : Travel(gm, pd, hero, p));
         }
 
         /// <summary>
@@ -326,7 +330,7 @@ namespace TerraKnight.World
             prevRespawnMarker = pd.respawnMarkerName;
             prevRespawnType = pd.respawnType;
             pd.respawnScene = p.Scene;
-            pd.respawnMarkerName = p.Bench;
+            pd.respawnMarkerName = p.Placed ? p.ArriveBench : p.Bench;
             // Taken from a bench while sitting: its FSM never stands the player up, and atBench would
             // stay set (drawn seated out of the portal).
             pd.atBench = false;
@@ -341,6 +345,31 @@ namespace TerraKnight.World
             gm.BeginSceneTransition(new GameManager.SceneLoadInfo
             {
                 PreventCameraFadeOut = true, WaitForSceneTransitionCameraFade = false, EntryGateName = "", SceneName = p.Scene,
+                Visualization = GameManager.SceneLoadVisualizations.Default, AlwaysUnloadUnusedAssets = false,
+            });
+        }
+
+        /// <summary>
+        /// To a placed pylon in a scene without a bench: in by one of its gates, as walking in would, the respawn point
+        /// left as it was; on arrival the player is taken beside the pylon (Arrive).
+        /// </summary>
+        static System.Collections.IEnumerator TravelByGate(GameManager gm, PlayerData pd, HeroController hero, Pylon p)
+        {
+            UI.HudDialogue.Close();
+            hero.RelinquishControl();
+            hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+            gm.cameraCtrl.FadeOut(GlobalEnums.CameraFadeType.LEVEL_TRANSITION);
+            DevTravelStart = Time.realtimeSinceStartup;
+            yield return new WaitForSeconds(0.15f);
+            prevRespawnScene = pd.respawnScene;
+            prevRespawnMarker = pd.respawnMarkerName;
+            prevRespawnType = pd.respawnType;
+            pd.atBench = false;
+            arrivingAt = p;
+            Application.backgroundLoadingPriority = ThreadPriority.High;
+            gm.BeginSceneTransition(new GameManager.SceneLoadInfo
+            {
+                SceneName = p.Scene, EntryGateName = p.Entry, PreventCameraFadeOut = true, WaitForSceneTransitionCameraFade = false,
                 Visualization = GameManager.SceneLoadVisualizations.Default, AlwaysUnloadUnusedAssets = false,
             });
         }
@@ -385,8 +414,11 @@ namespace TerraKnight.World
             if (pd != null) pd.atBench = false;
             // The bench is the respawn point now, as resting on it makes it; one not there to rest on
             // (inactive as Hive_01's) gives the old one back, or dying would bring the player to nothing.
-            if (pd != null && BenchUsable(p.Bench)) pd.respawnType = 1;
-            else if (pd != null)
+            string bench = p.Placed ? p.ArriveBench : p.Bench;
+            // In by a gate (a placed pylon with no bench by it): the respawn point never changed.
+            bool byGate = p.Placed && string.IsNullOrEmpty(bench);
+            if (pd != null && !byGate && BenchUsable(bench)) pd.respawnType = 1;
+            else if (pd != null && !byGate)
             {
                 pd.respawnScene = prevRespawnScene;
                 pd.respawnMarkerName = prevRespawnMarker;

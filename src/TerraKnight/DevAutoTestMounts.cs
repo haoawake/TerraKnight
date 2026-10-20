@@ -13,7 +13,7 @@ namespace TerraKnight
 {
     internal sealed partial class DevAutoTest
     {
-        void RenderMountPhoto(int id)
+        void RenderMountPhoto(int id, string suffix = "")
         {
             // A dedicated preview camera excludes HK's screen fade and scene borders while
             // rendering the actual live mount/player SpriteRenderers and their actual poses.
@@ -30,7 +30,7 @@ namespace TerraKnight
                 foreach(var r in renderers)r.gameObject.layer=31;
                 cam.targetTexture=rt;cam.Render();RenderTexture.active=rt;
                 tex.ReadPixels(new Rect(0,0,640,360),0,0);tex.Apply();
-                File.WriteAllBytes(Path.Combine(outDir,"render_mount_"+id+".png"),tex.EncodeToPNG());
+                File.WriteAllBytes(Path.Combine(outDir,"render_mount_"+id+suffix+".png"),tex.EncodeToPNG());
             } finally {
                 for(int i=0;i<renderers.Count;i++)if(renderers[i]!=null)renderers[i].gameObject.layer=layers[i];
                 cam.targetTexture=null;RenderTexture.active=active;UnityEngine.Object.Destroy(tex);rt.Release();UnityEngine.Object.Destroy(rt);UnityEngine.Object.Destroy(go);

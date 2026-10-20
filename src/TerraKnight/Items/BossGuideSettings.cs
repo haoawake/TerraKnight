@@ -102,6 +102,18 @@ namespace TerraKnight.Items
             foreach (var e in Route) if (won.Contains(e.Relic)) count++;
             UI.CreativeMenu.Shadowed(new Rect(r.x, y, r.width, 30f * ui), Pick($"这个存档已打赢 {count} / {Route.Length} 场首领战。", $"This save has won {count} of {Route.Length} boss fights."),
                 UI.CreativeMenu.text, UI.CreativeMenu.Gold);
+
+            // The player's own small moments (StoryBeats): apart from the voice, a switch of their own.
+            y += 56f * ui;
+            bool story = StoryBeats.On;
+            var storyButton = new Rect(r.x, y, 380f * ui, 44f * ui);
+            if (UI.CreativeMenu.Button(storyButton, story ? Pick("小剧情：开", "Story moments: On") : Pick("小剧情：关", "Story moments: Off"), ui,
+                    story ? PlayerNameColor : (Color?)null)) StoryBeats.SetOn(!story);
+            y = storyButton.yMax + 14f * ui;
+            UI.CreativeMenu.Shadowed(new Rect(r.x, y, r.width, 90f * ui), Pick(
+                "开：第一次遇到一些事情时（第一次倒下、第一次坐上长椅、拿到护符、走进漆黑的房间、十字路被感染……），主角会自言自语一两句，再给一条该怎么做的提示，每件事每个存档只说一次。不属于神的指引，单独开关；创造模式存档默认关闭。",
+                "On: the first time certain things happen (your first fall, your first bench, a charm, a pitch-dark room, the Crossroads infected...), your character says a line or two and a tip tells you what to do about it, once per save. Not part of the guidance, switched on its own; Creative saves start with it off."),
+                UI.CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.9f));
         }
     }
 }

@@ -105,37 +105,42 @@ namespace TerraKnight
         }
 
         /// <summary>
-        /// The Grimmchild got (gotCharm_40, level 2), the charm not worn in the game's menu: its item into the pet slot, and
-        /// the game sees the charm worn and its own Grimmchild flies; out of the slot, neither.
+        /// The Grimmchild got (gotCharm_40, level 2), not worn: refused off a bench; put on from the charm page on one, the game
+        /// sees the charm worn and its own Grimmchild flies; taken off, neither. The notches and the bench put back after.
         /// </summary>
         IEnumerator Grimm17()
         {
             var pd = PlayerData.instance;
             QuietAround(HeroController.instance.transform.position);
-            var inv = mod.Inventory;
             pd.SetBool("gotCharm_40", true);
             pd.SetInt("grimmChildLevel", 2);
-            pd.equippedCharm_40 = false;
-            HkItems.Tick(mod);
-            int bag = -1;
-            for (int i = 0; i < inv.HkBag.Length; i++) if (!inv.HkBag[i].IsEmpty && inv.HkBag[i].Type == ItemType.HkGrimmchild) bag = i;
-            FxCheck("有格林之子护符时圣巢背包里出现格林之子", bag >= 0, $"背包格 {bag}");
-            if (bag < 0) yield break;
+            bool bench = pd.atBench;
+            int slots = pd.charmSlots;
+            if (Charms.Worn(Charms.Grimmchild)) { pd.atBench = true; Charms.Click(Charms.Grimmchild); pd.atBench = bench; }
+            yield return new WaitForSeconds(1f);
             bool before = pd.GetBool("equippedCharm_40");
-            inv.Misc[Pets.PetSlot] = inv.HkBag[bag];
-            inv.HkBag[bag] = default;
+            pd.charmSlots = Mathf.Max(slots, pd.charmSlotsFilled + Charms.Cost(Charms.Grimmchild));
+            pd.atBench = false;
+            var refused = Charms.Click(Charms.Grimmchild);
+            pd.atBench = true;
+            var answer = Charms.Click(Charms.Grimmchild);
+            pd.atBench = bench;
             yield return new WaitForSeconds(2f);
             var child = GameObject.FindWithTag("Grimmchild");
             bool worn = pd.GetBool("equippedCharm_40");
             Shot(GameManager.instance.sceneName, "fx17_grimm");
             yield return null;
-            FxCheck("格林之子放进宠物栏：算作佩戴护符，原版的格林之子出来跟着", !before && worn && Pets.GrimmOut && child != null && child.activeInHierarchy,
-                $"之前算佩戴 {before}，之后 {worn}，召唤出来 {Pets.GrimmOut}，格林之子 {(child != null ? child.name + " " + (Vector2)child.transform.position : "没有")}");
-            inv.HkBag[bag] = inv.Misc[Pets.PetSlot];
-            inv.Misc[Pets.PetSlot] = default;
+            FxCheck("不在长椅上不能换护符", refused == Charms.Answer.NotAtBench, $"{refused}");
+            FxCheck("长椅上从护符页装上格林之子：算作佩戴，原版的格林之子出来跟着", !before && worn && answer == Charms.Answer.On && child != null && child.activeInHierarchy,
+                $"之前算佩戴 {before}，之后 {worn}，{answer}，格林之子 {(child != null ? child.name + " " + (Vector2)child.transform.position : "没有")}");
+            pd.atBench = true;
+            Charms.Click(Charms.Grimmchild);
+            pd.atBench = bench;
+            pd.charmSlots = slots;
+            Charms.Apply();
             yield return new WaitForSeconds(2.5f);
             child = GameObject.FindWithTag("Grimmchild");
-            FxCheck("拿出宠物栏：不再算佩戴，格林之子回去", !pd.GetBool("equippedCharm_40") && !Pets.GrimmOut && (child == null || !child.activeInHierarchy),
+            FxCheck("卸下：不再算佩戴，格林之子回去", !pd.GetBool("equippedCharm_40") && (child == null || !child.activeInHierarchy),
                 $"算佩戴 {pd.GetBool("equippedCharm_40")}，格林之子 {(child != null && child.activeInHierarchy ? "还在" : "走了")}");
         }
 

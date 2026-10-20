@@ -133,7 +133,9 @@ namespace TerraKnight.Items
             float W = (11f * SlotStep + 26f) * ui;
             float top = view.y + (Margin + 18f + Inventory.Rows * SlotStep + 56f) * ui;
             float H = Mathf.Max(cell + 40f * ui, view.yMax - 24f * ui - top);
-            var panel = new Rect(view.x + 14f * ui, top, W, H);
+            // Right of the column's hammer (DrawCrafting: centred at x 94), so the window opening never lies under the click that opened it.
+            float left = 94f + TerrariaAssets.Texture("UI/Craft_Toggle_2").width / 2f + 10f;
+            var panel = new Rect(view.x + left * ui, top, W, H);
             var prevFill = GUI.color;
             GUI.color = new Color(0.22f, 0.33f, 0.56f, 0.72f);
             GUI.DrawTexture(panel, Texture2D.whiteTexture);

@@ -43,6 +43,8 @@ namespace TerraKnight.Net
             /// <summary>A dropped item's reforge and forge level.</summary>
             public byte Prefix, Forge;
             public bool Placed, Taken, Sky;
+            /// <summary>A chest another player has open (the host's leases): not for others' crafting.</summary>
+            public bool Busy;
             public Stack[] Slots;
             public long[] Cells;
             public long[] Walls;
@@ -65,6 +67,8 @@ namespace TerraKnight.Net
             public int[] Targets;
             /// <summary>The sender's own: the bag slots a quick stack's stacks came out of, for what comes back.</summary>
             [JsonIgnore] public int[] FromSlots;
+            /// <summary>The sender's own: what a crafting from nearby chests made, taken back when the host refuses.</summary>
+            [JsonIgnore] public ItemStack Made;
         }
 
         sealed class Result
@@ -496,6 +500,10 @@ namespace TerraKnight.Net
                     result.Slots = Chests.NetQuickStack(a, slot, key => leases.ContainsKey(key), out result.Count);
                     result.Ok = result.Slots != null;
                     break;
+                case "craftTake":
+                    // The host's own crafting took from its chests already.
+                    result.Ok = slot == NetSession.MySlot || Chests.NetCraftTake(a, slot, key => leases.TryGetValue(key, out int holder) && holder != slot);
+                    break;
                 case "lease":
                     if (!leases.ContainsKey(a.Key) || leases[a.Key] == slot)
                     {
@@ -568,12 +576,50 @@ namespace TerraKnight.Net
                 }
             }
             else if (result.Op == "stack") Restack(action, result);
+            else if (result.Op == "craftTake" && !result.Ok) Uncraft(action);
             else if (!result.Ok && action.Count > 0 && (result.Op == "station" || result.Op == "chest"))
             {
                 // The caller consumed one item on submitting placement; rejection refunds it.
                 Give(result.Op == "chest" ? RegionalChests.ItemOf(action.Kind) : Stations.ItemOf((StationKind)action.Kind), 1);
                 Notice("放置位置已被占用，物品已退回");
             }
+        }
+
+        public static int DevCraftTakes, DevUncrafted;
+
+        /// <summary>A crafting from nearby chests: the host to take the same ingredients from its chests (Chests.NetCraftTook).</summary>
+        public static void CraftTook(string[] keys, Stack[] slots, int[] targets, ItemStack made)
+        {
+            if (!CanInteract) return;
+            DevCraftTakes++;
+            Submit(new Action { Op = "craftTake", Keys = keys, Slots = slots, Targets = targets, Made = made });
+        }
+
+        /// <summary>The host couldn't take the ingredients: what was made goes back (off the cursor, else out of the bag).</summary>
+        static void Uncraft(Action action)
+        {
+            var mod = TerraMod.Instance;
+            var made = action.Made;
+            if (mod == null || made.IsEmpty) return;
+            var inv = mod.Inventory;
+            int left = made.Count;
+            if (!inv.Mouse.IsEmpty && inv.Mouse.Type == made.Type)
+            {
+                int take = Mathf.Min(left, inv.Mouse.Count);
+                inv.Mouse.Count -= take;
+                left -= take;
+                if (inv.Mouse.Count <= 0) inv.Mouse = default;
+            }
+            for (int i = inv.Slots.Length - 1; i >= 0 && left > 0; i--)
+            {
+                if (inv.Slots[i].IsEmpty || inv.Slots[i].Type != made.Type) continue;
+                int take = Mathf.Min(left, inv.Slots[i].Count);
+                inv.Slots[i].Count -= take;
+                left -= take;
+                if (inv.Slots[i].Count <= 0) inv.Slots[i] = default;
+            }
+            DevUncrafted++;
+            Notice("附近箱子里的材料已被其他玩家取走或正在使用，这次制作撤回了");
         }
 
         public static int DevStacked, DevStackReturned;

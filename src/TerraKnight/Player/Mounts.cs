@@ -25,7 +25,10 @@ namespace TerraKnight.Player
         internal float Run, Dash, Accel, Jump, Fall;
         internal bool Hover, Infinite;
         internal bool Skates => Native>=57 && Native<=60;
-        internal bool Transform => Native==52 || Native==56 || Native==61;
+        // PlayerDrawSet: wolf, rat, bat and pixie hide the whole rider; raptor keeps head accessories.
+        internal bool Transform => Native==52 || Native==54 || Native==55 || Native==56 || Native==61;
+        internal bool HeadAccessoriesOnly => Native==54;
+        internal bool HideRider => Transform && !HeadAccessoriesOnly;
         internal bool Swim => Native==4 || Native==37 || Native==49 || Native==12;
     }
     // Mounted physics is driven in the same FixedUpdate patch as the normal Terraria movement,
@@ -40,7 +43,7 @@ namespace TerraKnight.Player
         internal static float FallScale => Riding ? Current.Fall : 1f;
         internal static float Fuel {get; private set;}
         internal static float Lift => Current!=null ? Mathf.Max(0,Current.Lift)/32f : 0f;
-        internal static bool HidePlayer => Riding && Current.Transform;
+        internal static bool HidePlayer => Riding && Current.HideRider;
         static HeroController owner;
         static BoxCollider2D collider;
         static Vector2 originalSize, originalOffset;
@@ -258,9 +261,7 @@ namespace TerraKnight.Player
         internal static void Draw(int id,Vector2 feet,Vector2 velocity,bool grounded,float facing,float opacity=1f)
         {
             var m=Get(id);if(m==null || FxBatch.Instance==null)return;
-            int frame=m.Stand;
-            if(!grounded)frame=m.FlyCount>0 ? m.FlyStart+(int)(Time.time*60/Mathf.Max(1,m.FlyDelay))%m.FlyCount : m.Air;
-            else if(Mathf.Abs(velocity.x)>.2f && m.WalkCount>0)frame=m.WalkStart+(int)(Time.time*60/Mathf.Max(1,m.WalkDelay))%m.WalkCount;
+            int frame=VisualFrame(m,velocity,grounded);
             foreach(var layer in m.Layers) {
                 var tex=TerrariaAssets.Texture(layer.Texture);int h=tex.height/Mathf.Max(1,m.Frames);
                 int fr=Mathf.Clamp(frame,0,m.Frames-1);string key=layer.Texture+":"+fr+":"+h;

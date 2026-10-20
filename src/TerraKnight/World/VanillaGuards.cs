@@ -107,6 +107,54 @@ namespace TerraKnight.World
     }
 
     /// <summary>
+    /// The fourth mask shard's mask (and the third vessel fragment's vessel) is given at the end of its pick-up's message;
+    /// taken away before that (an old save's teleport mid-message), the shards stay counted at four and no mask comes. With
+    /// the Knight his own for a few seconds and no such message going on, four shards make the mask they should have made
+    /// (three fragments the vessel).
+    /// </summary>
+    internal static class ShardRepair
+    {
+        static float freeSince = -1f;
+        public static int DevMasks, DevVessels;
+
+        public static void Tick(bool playing)
+        {
+            var pd = PlayerData.instance;
+            var hero = HeroController.SilentInstance;
+            if (!playing || pd == null || hero == null || !GameHooks.PlayerHasControl() || pd.atBench)
+            {
+                freeSince = -1f;
+                return;
+            }
+            bool mask = pd.heartPieces >= 4 && pd.maxHealthBase < pd.maxHealthCap;
+            bool vessel = pd.vesselFragments >= 3 && pd.MPReserveMax < pd.MPReserveCap;
+            if (!mask && !vessel)
+            {
+                freeSince = -1f;
+                return;
+            }
+            if (freeSince < 0f) freeSince = Time.unscaledTime;
+            if (Time.unscaledTime - freeSince < 3f) return;
+            freeSince = -1f;
+            if (mask)
+            {
+                pd.heartPieces -= 4;
+                hero.AddToMaxHealth(1);
+                DevMasks++;
+                Plugin.Log.LogInfo($"[面具] 四片面具碎片还没换成面具（拾取的演出被打断）：补上一个面具，最大面具 {pd.maxHealthBase}");
+            }
+            if (vessel)
+            {
+                pd.vesselFragments -= 3;
+                hero.AddToMaxMPReserve(33);
+                DevVessels++;
+                Plugin.Log.LogInfo($"[灵魂容器] 三片容器碎片还没换成容器（拾取的演出被打断）：补上一个容器，备用灵魂 {pd.MPReserveMax}");
+            }
+            UI.CombatText.Show(hero.transform.position + Vector3.up * 1.2f, Lang.T(mask ? "面具已补上" : "灵魂容器已补上"), UI.CombatText.Pickup, true);
+        }
+    }
+
+    /// <summary>
     /// A bench's "Resting" state gets the Knight up on jump, up, down, left or right through its
     /// ListenFor actions, which read the input handler they found on entering the state and only
     /// while the game isn't paused. Now and then (after a save loaded from the menu) a sitting Knight

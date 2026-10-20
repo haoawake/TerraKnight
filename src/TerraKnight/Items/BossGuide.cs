@@ -184,7 +184,7 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Nothing else going on: no boss's loot waiting, no talk of the game's, the player in control.</summary>
-        static bool Quiet()
+        internal static bool Quiet()
         {
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
@@ -230,6 +230,8 @@ namespace TerraKnight.Items
                     return;
                 }
                 if (quietFor < QuietBefore || Time.unscaledTime - queuedAt < AfterWin) return;
+                // The player's own words (StoryBeats) said first.
+                if (StoryBeats.Talking) return;
                 saying = waiting.Dequeue();
                 talk = saying.Lines ?? Compose(mod, saying);
                 page = -1;
@@ -277,15 +279,20 @@ namespace TerraKnight.Items
             DevLast = p.Text;
         }
 
-        static string Speaker(Page p)
+        static string Speaker(Page p) => p.Voice ? Pick("门外之声", "Voice Beyond the Door") : PlayerSpeaker;
+
+        /// <summary>The player's name over their own lines (the multiplayer name: the one set, else Steam's).</summary>
+        internal static string PlayerSpeaker
         {
-            if (p.Voice) return Pick("门外之声", "Voice Beyond the Door");
-            string name = Net.NetSettings.PlayerName;
-            return string.IsNullOrEmpty(name) ? Pick("你", "You") : name;
+            get
+            {
+                string name = Net.NetSettings.PlayerName;
+                return string.IsNullOrEmpty(name) ? Pick("你", "You") : name;
+            }
         }
 
         /// <summary>A long line cut in two for the chat (it doesn't wrap): at the semicolon or comma nearest its middle.</summary>
-        static IEnumerable<string> ChatParts(string text)
+        internal static IEnumerable<string> ChatParts(string text)
         {
             int limit = Chinese ? 34 : 90;
             if (text.Length <= limit)
@@ -326,6 +333,12 @@ namespace TerraKnight.Items
             var p = talk[page];
             float a = Mathf.Clamp01(pageTime / 0.3f) * Mathf.Clamp01((pageLength - pageTime) / 0.45f);
             if (a <= 0f) return;
+            DrawSubtitle(Speaker(p), p.Text, p.Voice ? NameColor : PlayerNameColor, p.Voice ? VoiceColor : Color.white, a);
+        }
+
+        /// <summary>A subtitle in the upper middle of the screen: the speaker's name over the line (the Voice's, the player's).</summary>
+        internal static void DrawSubtitle(string who, string text, Color nameColor, Color textColor, float a)
+        {
             float ui = UI.GameView.Scale;
             var view = UI.GameView.Rect;
             if (nameStyle == null)
@@ -338,8 +351,8 @@ namespace TerraKnight.Items
             float w = Mathf.Min(860f * ui, view.width - 80f * ui);
             var name = new Rect(view.center.x - w / 2f, view.y + view.height * 0.13f, w, 26f * ui);
             var body = new Rect(name.x, name.yMax + 4f * ui, w, 100f * ui);
-            Outlined(name, Speaker(p), nameStyle, p.Voice ? NameColor : PlayerNameColor, a, ui);
-            Outlined(body, p.Text, textStyle, p.Voice ? VoiceColor : Color.white, a, ui);
+            Outlined(name, who, nameStyle, nameColor, a, ui);
+            Outlined(body, text, textStyle, textColor, a, ui);
         }
 
         static void Outlined(Rect r, string text, GUIStyle style, Color color, float a, float ui)

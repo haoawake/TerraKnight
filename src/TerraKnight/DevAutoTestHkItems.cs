@@ -41,25 +41,26 @@ namespace TerraKnight
             yield return null;
             int Bag(ItemType t) => inv.HkBag.Where(s => !s.IsEmpty && s.Type == t).Sum(s => s.Count);
             int Bar(ItemType t) => inv.Slots.Take(Inventory.HotbarSize).Where(s => !s.IsEmpty && s.Type == t).Sum(s => s.Count);
-            Check("按存档给进圣巢背包", Bag(ItemType.HkCityCrest) == 1 && Bag(ItemType.HkSimpleKey) == 2 && Bag(ItemType.HkLumaflyLantern) == 1 && Bag(ItemType.HkKingsoul) == 1,
-                  $"纹章 {Bag(ItemType.HkCityCrest)}，钥匙 {Bag(ItemType.HkSimpleKey)}，灯笼 {Bag(ItemType.HkLumaflyLantern)}，国王之魂 {Bag(ItemType.HkKingsoul)}");
+            // The Kingsoul is a charm on the charm page: no item for it.
+            Check("按存档给进圣巢背包", Bag(ItemType.HkCityCrest) == 1 && Bag(ItemType.HkSimpleKey) == 2 && Bag(ItemType.HkLumaflyLantern) == 1 && Bag(ItemType.HkKingsoul) == 0,
+                  $"纹章 {Bag(ItemType.HkCityCrest)}，钥匙 {Bag(ItemType.HkSimpleKey)}，灯笼 {Bag(ItemType.HkLumaflyLantern)}，国王之魂物品 {Bag(ItemType.HkKingsoul)}（应为 0）");
             inv.Override = -1;
             inv.Selected = 0;
-            Check("在圣巢背包里就生效", pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 2 && pd.GetBool("equippedCharm_36") && pd.GetBool("hasLantern"),
-                  $"手里 {inv.Current.Def?.Name ?? "空"}，hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}，equippedCharm_36 {pd.GetBool("equippedCharm_36")}，hasLantern {pd.GetBool("hasLantern")}");
+            Check("在圣巢背包里就生效", pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 2 && pd.GetBool("hasLantern"),
+                  $"手里 {inv.Current.Def?.Name ?? "空"}，hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}，hasLantern {pd.GetBool("hasLantern")}");
             InventoryGui.Open = true;
             for (int i = 0; i < inv.HkBag.Length; i++)
                 if (!inv.HkBag[i].IsEmpty && inv.HkBag[i].Type != ItemType.HkLumaflyLantern) InventoryGui.DevClickHkBag(i, shift: true);
             InventoryGui.Open = false;
             int Slot(ItemType t) => System.Array.FindIndex(inv.Slots, s => !s.IsEmpty && s.Type == t);
             inv.Selected = Slot(ItemType.HkSimpleKey);
-            Check("在快捷栏里没拿在手上也生效", Bar(ItemType.HkCityCrest) == 1 && pd.GetBool("hasCityKey") && pd.GetBool("equippedCharm_36"),
-                  $"手里 {inv.Current.Def?.Name}，hasCityKey {pd.GetBool("hasCityKey")}，equippedCharm_36 {pd.GetBool("equippedCharm_36")}");
+            Check("在快捷栏里没拿在手上也生效", Bar(ItemType.HkCityCrest) == 1 && pd.GetBool("hasCityKey"),
+                  $"手里 {inv.Current.Def?.Name}，hasCityKey {pd.GetBool("hasCityKey")}");
             Check("拿着钥匙生效", pd.GetInt("simpleKeys") == 2, $"simpleKeys {pd.GetInt("simpleKeys")}");
             inv.Selected = Slot(ItemType.HkCityCrest);
             Check("拿着城市纹章生效，钥匙照样算", pd.GetBool("hasCityKey") && pd.GetInt("simpleKeys") == 2, $"hasCityKey {pd.GetBool("hasCityKey")}，simpleKeys {pd.GetInt("simpleKeys")}");
-            inv.Selected = Slot(ItemType.HkKingsoul);
-            Check("拿着国王之魂生效", pd.GetBool("equippedCharm_36"), $"equippedCharm_36 {pd.GetBool("equippedCharm_36")}");
+            // Worn as its record says (the charm page), not as an item is carried.
+            Check("国王之魂按护符记录算佩戴", pd.GetBool("equippedCharm_36") == pd.equippedCharm_36, $"equippedCharm_36 {pd.GetBool("equippedCharm_36")}，记录 {pd.equippedCharm_36}");
 
             // Both bags full as the Tram Pass is got: not carried, not counted; a hotbar slot freed, it comes in and counts.
             bool tramWas = pd.hasTramPass;
@@ -83,11 +84,11 @@ namespace TerraKnight
             InventoryGui.Open = true;
             Check("灯笼放在圣巢背包里就照明", pd.GetBool("hasLantern") && Bag(ItemType.HkLumaflyLantern) == 1, $"hasLantern {pd.GetBool("hasLantern")}，灯笼在圣巢背包 {Bag(ItemType.HkLumaflyLantern)}");
 
-            // The Kingsoul turned Void Heart: the item follows.
+            // The Kingsoul turned Void Heart: still a charm, still no item.
             pd.royalCharmState = 4;
             yield return null;
-            Check("国王之魂变虚空之心", Bar(ItemType.HkKingsoul) + Bag(ItemType.HkKingsoul) == 0 && Bag(ItemType.HkVoidHeart) == 1,
-                  $"国王之魂 {Bar(ItemType.HkKingsoul) + Bag(ItemType.HkKingsoul)}，虚空之心 {Bag(ItemType.HkVoidHeart)}");
+            Check("国王之魂变虚空之心也不给物品", Bar(ItemType.HkKingsoul) + Bag(ItemType.HkKingsoul) + Bar(ItemType.HkVoidHeart) + Bag(ItemType.HkVoidHeart) == 0 && Charms.Cost(Charms.Royal) == 0,
+                  $"国王之魂 {Bar(ItemType.HkKingsoul) + Bag(ItemType.HkKingsoul)}，虚空之心 {Bar(ItemType.HkVoidHeart) + Bag(ItemType.HkVoidHeart)}，凹槽 {Charms.Cost(Charms.Royal)}");
             // A key used: the game takes one.
             pd.simpleKeys = 1;
             yield return null;

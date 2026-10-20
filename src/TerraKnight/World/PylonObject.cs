@@ -140,7 +140,7 @@ namespace TerraKnight.World
         }
 
         /// <summary>TeleportPylonsSystem.SpawnInWorldDust: dust 43 in the pylon's colour, slowed, drifting up.</summary>
-        static void Burst(Vector3 world, int count, int style)
+        internal static void Burst(Vector3 world, int count, int style)
         {
             var p = TerraParticles.Instance;
             if (p == null) return;

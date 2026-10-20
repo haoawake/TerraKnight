@@ -50,6 +50,7 @@ namespace TerraKnight.Items
                     hkOpen = false;
                     blacklistOpen = false;
                     statsOpen = false;
+                    Charms.ForgetTries();
                 }
                 open = value;
             }
@@ -58,7 +59,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn }
 
         struct Hit
         {
@@ -273,13 +274,16 @@ namespace TerraKnight.Items
                     if (leftPress)
                     {
                         grid = !grid;
+                        // The press that switched it makes nothing, held on into whatever recipe comes under it.
+                        preventCraft = true;
                         Sound("Menu_Tick");
                     }
                     return;
                 case Kind.Settings:
                     if (!leftPress) return;
                     if (hit.Index == 0) TerraMod.Instance?.OpenGameMenu();
-                    else TerraMod.Instance?.OpenSettings();
+                    else if (hit.Index == 1) TerraMod.Instance?.OpenSettings();
+                    else OpenWiki();
                     return;
                 case Kind.Loadout:
                     // Main.DrawLoadoutButtons: a fresh click switches (the cursor's item doesn't matter).
@@ -382,10 +386,19 @@ namespace TerraKnight.Items
                         {
                             bool fromHousing = Town.TownNpcs.PanelOpen;
                             if (fromHousing) ToggleNpcPanel();
-                            equipPage = equipPage == 2 && !fromHousing ? 0 : 2;
+                            // 0 the misc page's button, 2 the charm page's.
+                            int page = hit.Index == 2 ? CharmPage : 2;
+                            equipPage = equipPage == page && !fromHousing ? 0 : page;
+                            Charms.ForgetTries();
                         }
                         Sound("Menu_Open");
                     }
+                    return;
+                case Kind.CharmSlot:
+                    if (leftPress) ClickCharm(hit.Index, hit.Rect);
+                    return;
+                case Kind.CharmWorn:
+                    if (leftPress && Charms.WornList != null && hit.Index < Charms.WornList.Count) ClickCharm(Charms.WornList[hit.Index], hit.Rect);
                     return;
                 case Kind.Misc:
                     if (leftPress) LeftClickMisc(hit.Index);
@@ -1052,6 +1065,7 @@ namespace TerraKnight.Items
                 else
                 {
                 if (equipPage == 2) DrawMiscEquips(ax, ay, slot, step, ui, mouse, ref hovered, ref hoveredKind);
+                else if (equipPage == CharmPage) DrawCharmPage(ax, ay, slot, step, ui, mouse);
                 else {
                 Outlined(new Rect(ax - 40f * ui, ay - 24f * ui, slot + 80f * ui, 20f * ui), Lang.T("装备"), labelStyle, Color.white);
                 for (int i = 0; i < Inventory.ArmorSlots; i++)
@@ -1110,17 +1124,19 @@ namespace TerraKnight.Items
                     DrawUtilityButtons(view, ui, mouse);
 
                 // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
-                // Terraria's (the autoswing switch, the key bindings). Drawn in plain white whatever tint is left on the GUI.
+                // Terraria's (the autoswing switch, the key bindings), "Wiki" over that the mod's wiki in the browser. Drawn in
+                // plain white whatever tint is left on the GUI.
                 var settingsTint = GUI.color;
-                for (int k = 0; k < 2; k++)
+                for (int k = 0; k < 3; k++)
                 {
-                    var settings = new Rect(view.xMax - 330f * ui, view.yMax - (k == 0 ? 50f : 92f) * ui, 310f * ui, 36f * ui);
+                    var settings = new Rect(view.xMax - 330f * ui, view.yMax - (50f + 42f * k) * ui, 310f * ui, 36f * ui);
                     Add(settings, Kind.Settings, k);
                     bool hover = settings.Contains(mouse);
                     buttonStyle.fontSize = Mathf.RoundToInt((hover ? 30 : 26) * ui);
                     if (k == 0) CheckSettingsLook(settings, settingsTint);
                     GUI.color = Color.white;
-                    Outlined(settings, Lang.T(k == 0 ? "设置" : "泰拉瑞亚设置"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
+                    Outlined(settings, k == 2 ? "Wiki" : Lang.T(k == 0 ? "设置" : "泰拉瑞亚设置"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
+                    if (k == 2 && hover) DrawLines(mouse, new List<string> { Lang.T("在浏览器中打开空洞泰拉 Wiki"), WikiUrl }, Color.white);
                 }
                 GUI.color = settingsTint;
             }
@@ -1773,6 +1789,27 @@ namespace TerraKnight.Items
         }
 
         static void Sound(string name) => TerraMod.Instance?.PlaySound(name, 0.7f);
+
+        /// <summary>The mod's wiki (haoawake.xyz).</summary>
+        public const string WikiUrl = "https://haoawake.xyz/terraknight-wiki/";
+
+        /// <summary>The wiki in the system's browser (it may open behind a full-screen game: the note says so).</summary>
+        static void OpenWiki()
+        {
+            try
+            {
+                Application.OpenURL(WikiUrl);
+                notice = Lang.T("已在浏览器中打开 Wiki");
+                Plugin.Log.LogInfo("[Wiki] 打开 " + WikiUrl);
+            }
+            catch (System.Exception ex)
+            {
+                notice = WikiUrl;
+                Plugin.Log.LogWarning("[Wiki] 打不开浏览器：" + ex.Message);
+            }
+            noticeUntil = Time.unscaledTime + 3f;
+            Sound("Menu_Open");
+        }
 
         static void EnsureStyles(float ui)
         {

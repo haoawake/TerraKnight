@@ -45,6 +45,7 @@ namespace TerraKnight.Terraria
             if (name != null && name.StartsWith(Items.HkItems.TexturePrefix)) return Items.HkItems.Texture(name);
             if (name == "Buff_" + Items.Pets.LanternBuff) return Items.HkItems.Texture(Items.HkItems.TexturePrefix + nameof(Items.ItemType.HkLumaflyLantern));
             if (name == "Buff_" + Items.Pets.GrimmBuff) return Items.HkItems.Texture(Items.HkItems.TexturePrefix + nameof(Items.ItemType.HkGrimmchild));
+            if (name == "Buff_" + Items.Charms.OverchargeBuff) return Items.Charms.OverchargeIcon;
             if (textures.TryGetValue(name, out var tex)) return tex;
             // The mod's own picture for a Terraria one (Resources/hk_<name>.png), drawn in its place.
             tex = Override(name);

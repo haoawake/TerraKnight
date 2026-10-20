@@ -148,6 +148,20 @@ namespace TerraKnight
             && HeroController.SilentInstance != null;
 
         /// <summary>True while the player is in control: not paused, in a menu, transition or cutscene.</summary>
+        /// <summary>
+        /// A sequence of the game's holds the Knight (an item got and its message, a cutscene, a boss's roar): the map, a
+        /// pylon or a teammate's seal mustn't take him away mid-way (a mask shard's award comes at its message's end).
+        /// Sitting on a bench isn't one.
+        /// </summary>
+        public static bool HeldByTheGame()
+        {
+            var hero = HeroController.SilentInstance;
+            var pd = PlayerData.instance;
+            if (hero == null) return false;
+            if (pd != null && pd.atBench) return false;
+            return hero.controlReqlinquished || !hero.acceptingInput || hero.cState.transitioning;
+        }
+
         public static bool PlayerHasControl()
         {
             var gm = GameManager.UnsafeInstance;

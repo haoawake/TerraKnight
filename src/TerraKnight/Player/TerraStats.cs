@@ -109,9 +109,13 @@ namespace TerraKnight.Player
             return damage;
         }
 
-        /// <summary>Damage that isn't measured in masks (falls, explosions); defense applies as usual.</summary>
+        /// <summary>
+        /// Damage that isn't measured in masks (falls, explosions); defense applies as usual. Overcharmed, twice as much, as
+        /// the game doubles the masks of a hit (HeroController.TakeDamage).
+        /// </summary>
         public int TakeDirect(int raw)
         {
+            if (PlayerData.instance != null && PlayerData.instance.overcharmed) raw *= 2;
             int damage = Mitigate(raw);
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;

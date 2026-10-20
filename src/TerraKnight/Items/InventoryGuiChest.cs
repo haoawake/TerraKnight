@@ -135,6 +135,7 @@ namespace TerraKnight.Items
                 !housing && equipPage == 2 ? "装备" : "其他装备");
             PageIcon(new Vector2(at.x - 48f * ui, at.y), ui, mouse, 1, housing ? "UI/DisplaySlots_5" : "UI/DisplaySlots_4", "UI/DisplaySlots_7",
                 housing ? "装备" : "房屋");
+            CharmPageIcon(new Vector2(at.x - 96f * ui, at.y), ui, mouse, !housing && equipPage == CharmPage);
         }
 
         static void PageIcon(Vector2 at, float ui, Vector2 mouse, int page, string texture, string glowTexture, string tip)

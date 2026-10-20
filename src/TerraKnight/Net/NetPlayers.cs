@@ -354,7 +354,9 @@ namespace TerraKnight.Net
                 root.transform.SetParent(TerraMod.Instance.transform, false);
                 sprite = TerraPlayerSprite.Create(root.transform);
             }
-            if (!sprite.gameObject.activeSelf) sprite.gameObject.SetActive(true);
+            var mount=Mounts.Get(s.Mount);
+            bool showRider=mount==null || !mount.HideRider;
+            if (sprite.gameObject.activeSelf != showRider) sprite.gameObject.SetActive(showRider);
             if (spriteLook != Look)
             {
                 spriteLook = Look;
@@ -371,13 +373,15 @@ namespace TerraKnight.Net
                 sprite.OutlineStrength = cam != null && World.TerraWorld.CoveredByScenery(Center, cam.transform.position) ? 1f : 0f;
             }
             float facing = s.FacingRight ? 1f : -1f;
-            sprite.Pose(Feet, s.Vel, s.Grounded, facing, s.Swing, item, s.ItemScale, s.Opacity, s.Body, s.Eq, s.Shadows, s.Hold(), s.Leg, s.Seated);
-            var mount=Mounts.Get(s.Mount);
-            sprite.gameObject.SetActive(mount==null || !mount.Transform);
+            if (showRider)
+            {
+                sprite.Pose(Feet, s.Vel, s.Grounded, facing, s.Swing, item, s.ItemScale, s.Opacity, s.Body, s.Eq, s.Shadows, s.Hold(), s.Leg, s.Seated);
+                sprite.MountAppearance(mount, facing, s.Vel, s.Grounded, s.Eq);
+            }
             if(mount!=null)Mounts.Draw(s.Mount,Feet-Vector2.up*Mathf.Max(0,mount.Lift)/32f,s.Vel,s.Grounded,facing,s.Opacity);
             // DrawPlayer_09_Wings, on their wings' frame.
             var wing = TerraWings.Get(s.Wing);
-            if (wing != null && Effects.FxBatch.Instance != null)
+            if ((mount==null || mount.Skates) && wing != null && Effects.FxBatch.Instance != null)
             {
                 int keep = TerraWings.Frame;
                 TerraWings.Frame = s.WingFrame;

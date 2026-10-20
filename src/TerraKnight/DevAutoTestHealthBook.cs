@@ -26,6 +26,11 @@ namespace TerraKnight
                 string kind = EnemyDrops.KindOf(key);
                 int raw = EnemyDrops.HpOf(key);
                 bool boss = kind != "miniboss" && (EnemyDrops.IsBoss(key) || raw >= 300);
+                if (boss)
+                {
+                    sceneName = BossArena.SceneOf(key) ?? sceneName;
+                    variant = at >= 0 ? int.Parse(key.Substring(at + 1)) : EnemyDrops.VariantLevel(sceneName);
+                }
                 var reference = boss ? BossStats.Of(record, variant) : null;
                 string ordinary = sceneName.StartsWith("GG_") && kind != "godhome_boss" ? "ordinary-world" : sceneName;
                 var info = new EnemyStats.Info { Record = record, Scene = ordinary, MaxHp = raw, Boss = boss, Ref = reference, Level = Areas.LevelOf(sceneName) };
@@ -37,13 +42,20 @@ namespace TerraKnight
                     {
                         GameDifficulty.Current = d;
                         var tune = BossBalance.Of(record, variant);
+                        var stages = new List<object>();
+                        for (int stage = 0; stage <= Areas.MaxLevel; stage++)
+                        {
+                            var preview = Bestiary.StatsOf(key, stage);
+                            stages.Add(new { stage, life = preview.Life, damage = preview.Damage, defense = preview.Defense });
+                        }
                         levels.Add(new { difficulty = d.ToString(), life = EnemyStats.LifeWhole(info), pool_life = EnemyStats.LifeMax(info), scale = info.Scale,
+                            defense = info.Defense, stage_stats = stages,
                             raw_budget = reference != null ? BossStats.LifeOf(reference, ordinary, d) * tune.Life : EnemyStats.LifeWhole(info),
                             godhome = reference != null ? Mathf.CeilToInt(BossStats.LifeOf(reference, "GG_", d) * tune.Life) : 0 });
                     }
                 }
                 finally { GameDifficulty.Current = saved; }
-                math[key] = new { stage = reference?.Stage ?? Areas.LevelOf(sceneName), boss_reference = reference?.Boss.Name, difficulties = levels };
+                math[key] = new { scene = ordinary, stage = reference?.Stage ?? Areas.LevelOf(sceneName), boss_reference = reference?.Boss.Name, difficulties = levels };
             }
             File.WriteAllText(Path.Combine(DevCopy.SaveDir, "encyclopedia-enemy-health.json"), JsonConvert.SerializeObject(math, Formatting.Indented));
             Plugin.Log.LogInfo($"[AutoTest] 百科血量 游戏内公式导出 {math.Count} 条、四难度");

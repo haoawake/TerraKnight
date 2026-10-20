@@ -233,21 +233,24 @@ namespace TerraKnight.World
         /// The level an area's enemies (not its bosses) are met at: the progress reached once it is past the area's own, so the
         /// earlier areas keep up with the stage unlocked (the user's, 2026-10-16), a little weaker (<see cref="CatchUp"/>).
         /// </summary>
-        public static int StatLevel(int level) => Mathf.Max(level, Mathf.Clamp(Items.Shop.UnlockedStage(), 0, MaxLevel));
+        public static int StatLevel(int level) => StatLevel(level, Items.Shop.UnlockedStage());
+        public static int StatLevel(int level, int stage) => Mathf.Max(level, Mathf.Clamp(stage, 0, MaxLevel));
 
         /// <summary>How much of the stage's strength an area brought up to it has: nine tenths (1 at its own level).</summary>
-        public static float CatchUp(int level) => StatLevel(level) > level ? 0.9f : 1f;
+        public static float CatchUp(int level) => CatchUp(level, Items.Shop.UnlockedStage());
+        public static float CatchUp(int level, int stage) => StatLevel(level, stage) > level ? 0.9f : 1f;
 
         /// <summary>
         /// An enemy's life per point of its own health at the level it is met at: its area's toughness, brought up to the
         /// stage's (the stage's common enemies' usual health over its area's, times the stage's toughness) and weakened a little.
         /// </summary>
-        public static float LifeScale(int level)
+        public static float LifeScale(int level) => LifeScale(level, Items.Shop.UnlockedStage());
+        public static float LifeScale(int level, int stage)
         {
-            int at = StatLevel(level);
+            int at = StatLevel(level, stage);
             if (at == level) return HealthScale * LevelHealth(level, false);
             float lift = Items.EnemyDrops.TypicalHp(at) / Mathf.Max(1f, Items.EnemyDrops.TypicalHp(level));
-            return HealthScale * LevelHealth(at, false) * Mathf.Max(1f, lift) * CatchUp(level);
+            return HealthScale * LevelHealth(at, false) * Mathf.Max(1f, lift) * CatchUp(level, stage);
         }
 
         /// <summary>

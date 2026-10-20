@@ -115,7 +115,7 @@ namespace TerraKnight.Items
             {
                 var gm = GameManager.UnsafeInstance;
                 var hero = HeroController.SilentInstance;
-                if (gm != null && hero != null && !gm.IsInSceneTransition && !hero.cState.dead && GameHooks.IsGameplay(gm))
+                if (gm != null && hero != null && !gm.IsInSceneTransition && !hero.cState.dead && GameHooks.IsGameplay(gm) && !GameHooks.HeldByTheGame())
                 {
                     if (gm.sceneName.StartsWith("GG_") || gm.sceneName.StartsWith("Dream_"))
                     {

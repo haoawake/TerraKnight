@@ -152,11 +152,29 @@ namespace TerraKnight.UI
         /// <summary>The pager under the title while the save profiles screen is up and no panel covers it.</summary>
         public static void Draw(bool covered)
         {
-            if (!CreativeMenu.ProfilesShown() || covered) return;
+            if (!CreativeMenu.ProfilesShown() || covered)
+            {
+                // A panel over the profiles blocks the menu itself; off the screen, nothing to keep.
+                if (pagerHeld && !covered) CreativeMenu.Block(false);
+                pagerHeld = false;
+                return;
+            }
             float ui = Screen.height / 1080f;
             float w = 520f * ui, h = 44f * ui;
-            DrawPager(new Rect((Screen.width - w) / 2f, 236f * ui, w, h),ui,Page,p=>SetPage(p));
+            var r = new Rect((Screen.width - w) / 2f, 236f * ui, w, h);
+            // The first save slot reaches under the pager's arrows: while the mouse is on the pager the game's menu takes
+            // no clicks (the arrow turns the page on the press; the slot would take the release and start that save), and
+            // it takes them again once the button is up (CreativeMenu.Block).
+            bool over = r.Contains(TerraCursor.GuiMouse());
+            if (over != pagerHeld)
+            {
+                pagerHeld = over;
+                CreativeMenu.Block(over);
+            }
+            DrawPager(r,ui,Page,p=>SetPage(p));
         }
+
+        static bool pagerHeld;
 
         /// <summary>The same pager in the profiles screen and a modal slot picker. The owner keeps its page.</summary>
         internal static void DrawPager(Rect r,float ui,int page,System.Action<int> select)

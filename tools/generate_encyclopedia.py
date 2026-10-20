@@ -474,14 +474,15 @@ def build(assets_only=False):
         assert all('Weight' in d and 'MeanCount' in d for d in actual['drops'][e['key']]), 'Refresh wikiassets with weighted drop metadata'
         expected = [dict(type=d['Type'], num=d['Num'], den=d['Den'], lo=d['Min'], hi=d['Max'], group=d['Group'], lock=d['LockStage'], master=d['Master'], weight=d['Weight'] if d['Weight']>0 else 1) for d in actual['drops'][e['key']]]
         e['drops'] = expected
-        assert 'drop_stages' in actual, 'Refresh wikiassets with all six progression stages'
+        assert 'drop_regions' in actual, 'Refresh wikiassets with six-stage regional death-scene drops'
         merged = {}
-        for stage, records in actual['drop_stages'].items():
-            for d in records[e['key']]:
-                key = (d['Type'], d['Num'], d['Den'], d['Min'], d['Max'], d['Group'], d['LockStage'], d['Master'], round(d['Probability'], 8))
-                if key not in merged:
-                    merged[key] = dict(type=d['Type'], num=d['Num'], den=d['Den'], lo=d['Min'], hi=d['Max'], group=d['Group'], lock=d['LockStage'], master=d['Master'], probability=d['Probability'], stages=[])
-                merged[key]['stages'].append(int(stage))
+        for stage, records in actual['drop_regions'].items():
+            for home in records[e['key']]:
+                for d in home['Drops']:
+                    key = (home['Area'], d['Type'], d['Num'], d['Den'], d['Min'], d['Max'], d['Group'], d['LockStage'], d['Master'], round(d['Probability'], 8))
+                    if key not in merged:
+                        merged[key] = dict(area=home['Area'], type=d['Type'], num=d['Num'], den=d['Den'], lo=d['Min'], hi=d['Max'], group=d['Group'], lock=d['LockStage'], master=d['Master'], probability=d['Probability'], stages=[])
+                    merged[key]['stages'].append(int(stage))
         e['drops'] = list(merged.values())
     drops = collections.defaultdict(list)
     for e in enemies:
@@ -516,6 +517,9 @@ def build(assets_only=False):
         assert hashlib.sha256((SRC/rel).read_bytes()).hexdigest() == digest, f'Run isolated healthmath test to refresh changed health source: {rel}'
     health = health_snapshot['records']
     assert set(health) == {e['key'] for e in enemies}
+    for e in enemies:
+        if e['boss']:
+            e['scene'] = health[e['key']].get('scene', e['scene'])
     observed = json.loads((ROOT/'tools/encyclopedia_health_observations.json').read_text(encoding='utf-8'))
     for rel, digest in observed['source_hashes'].items():
         assert hashlib.sha256((SRC/rel).read_bytes()).hexdigest() == digest, f'Health observations need refreshing after source change: {rel}'
@@ -661,9 +665,9 @@ def build(assets_only=False):
     assert items['CobaltHat']['kind']=='盔甲' and items['CobaltHat']['stats']['防御']==str(actual['items']['CobaltHat']['Defense'])
     assert items['LastPrism']['stats']['伤害']==str(actual['items']['LastPrism']['Damage'])
     for e in enemies:
-        for stage, records in actual['drop_stages'].items():
-            expected = {(d['Type'],d['Num'],d['Den'],d['Min'],d['Max'],d['Group'],d['LockStage'],d['Master'],round(d['Probability'],8)) for d in records[e['key']]}
-            observed_rows = {(d['type'],d['num'],d['den'],d['lo'],d['hi'],d['group'],d['lock'],d['master'],round(d['probability'],8)) for d in e['drops'] if int(stage) in d['stages']}
+        for stage, records in actual['drop_regions'].items():
+            expected = {(home['Area'],d['Type'],d['Num'],d['Den'],d['Min'],d['Max'],d['Group'],d['LockStage'],d['Master'],round(d['Probability'],8)) for home in records[e['key']] for d in home['Drops']}
+            observed_rows = {(d['area'],d['type'],d['num'],d['den'],d['lo'],d['hi'],d['group'],d['lock'],d['master'],round(d['probability'],8)) for d in e['drops'] if int(stage) in d['stages']}
             assert observed_rows == expected, ('Stage drop coverage mismatch', e['key'], stage)
     assert len(enemies) == len(re.findall(r'new Entry\s*\{', clean(read('Items/EnemyDropData.cs'))))
     assert len(recipes) == len(actual['recipes'])
@@ -701,11 +705,11 @@ def build(assets_only=False):
         extra_sources[t].append('额外怪物掉落：任意地区已登记非首领怪物，1/150 触发黄金鱼饵抽选，×1；从已解锁的黄金鱼饵中等概率选择一种。')
     def chance(e, d):
         if d.get('master'):
-            return '仅大师模式必掉（100%）；其他难度不掉落'
+            return f"{d['area']}；仅大师模式必掉（100%）；其他难度不掉落"
         if 'stages' in d:
             stages = sorted(d['stages'])
             label = f'{stages[0]}–{stages[-1]}' if len(stages)>1 and stages==list(range(stages[0],stages[-1]+1)) else '/'.join(map(str,stages))
-            return f"阶段{label}：{100*d['probability']:.4g}%" + (f"（组{d['group']}互斥）" if d['group'] else '')
+            return f"{d['area']}；阶段{label}：{100*d['probability']:.4g}%" + (f"（组{d['group']}互斥）" if d['group'] else '')
         base = min(1, d['num']/d['den'])
         if not d['group']:
             return ('必掉（100%）' if base==1 else f"{100*base:.4g}%（{d['num']}/{d['den']}）")
@@ -948,6 +952,16 @@ def build(assets_only=False):
             rows, hp_notes = health_rows(e)
             print_health(rows)
             add()
+            stats = health[e['key']]['difficulties']
+            assert all('defense' in d and 'stage_stats' in d for d in stats), 'Refresh healthbook with defense and progression stats'
+            if e['boss']:
+                add(f'- 代表场景实际首领防御：{stats[0]["defense"]}；神居挑战另叠加对应挑战的防御倍率与固定防御。')
+            add('- 阶段预览（大师／空洞）：普通敌人沿用游戏的进度追赶规则；首领沿用自身战斗预算。攻击为接触伤害，未实测接触面具数的记录按 1 面具估算。')
+            add('| 玩家阶段 | 生命 | 攻击 | 防御 |'); add('|---:|---:|---:|---:|')
+            master = next(d for d in stats if d['difficulty'] == 'Master')
+            for preview in master['stage_stats']:
+                add(f'| {preview["stage"]} | {preview["life"]} | {preview["damage"]} | {preview["defense"]} |')
+            add()
             for note in hp_notes:
                 add('- '+note)
             if e['key'] in bossrefs:
@@ -957,12 +971,13 @@ def build(assets_only=False):
                 add(f'- 配置的数值参照：{bn}'+(f'（{share[1]}）' if share else '')+'；实际命中首领映射的部位已应用倍率，未命中的部位按上方实测说明计算。泰拉参照首领的身体部件不是本场战斗的额外部位，不额外累计。')
             if e['key'] in tunes:
                 life,df,dm,stun,note=tunes[e['key']]
-                add(f'- 首领映射命中时的配置：生命 ×{life}，防御 ×{df}，伤害 ×{dm}；'+('原版可硬直，按伤害累计打出硬直。' if stun else '全程霸体。')+' '+note+'。')
+                add(f'- 首领映射命中时的配置：生命 ×{life}，防御为泰拉参照值 × min(1, {df}) × 0.5 后取整，伤害 ×{dm}；'+('原版可硬直，按伤害累计打出硬直。' if stun else '全程霸体。')+' '+note+'。')
             if e['kind'] in ('invulnerable','non_enemy','pogo','passive'):
                 add('- 获取提示：这是特殊/环境记录；表内数据不代表正常流程一定可击杀或可刷。优先查物品的其他来源。')
             add()
             if not e['drops']:
                 add('无配置物品掉落。'); add(); continue
+            add('下表按普通难度、该记录首次击杀导出；地区和玩家阶段同时满足才进入对应掉落池。概率不是保底次数。重复击杀首领的奖励概率或数量可能降低，游戏内图鉴按实际击杀记录显示。'); add()
             add('| 掉落物 | 掉落条件 / 概率 / 互斥组 | 数量 | 玩家解锁阶段 |'); add('|---|---|---:|---:|')
             for d in e['drops']:
                 add(f'| {itemlink(d["type"])} | {chance(e,d)} | {amount(d["lo"],d["hi"])} | {d["lock"]} |')

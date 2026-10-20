@@ -31,7 +31,8 @@ namespace TerraKnight.Items
                 list.Add(new Home { Area = area, Scene = scene });
             }
             if (!record.Contains("@") && !EnemyDrops.IsBoss(record) && Scenes().TryGetValue(record, out var found))
-                foreach (var s in found) Add(s);
+                foreach (var s in found)
+                    if (EnemyDrops.KeyFor(record, EnemyDrops.VariantLevel(s)) == record) Add(s);
             if (list.Count == 0) Add(EnemyDrops.SceneOf(record));
             var route = BestiaryRoute.Areas;
             int Order(Home h)

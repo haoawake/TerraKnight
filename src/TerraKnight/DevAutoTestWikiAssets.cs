@@ -106,12 +106,14 @@ namespace TerraKnight
             }
             Shop.DevStage = originalStage;
             var stageDrops = new Dictionary<int, Dictionary<string, object>>();
+            var regionDrops = new Dictionary<int, Dictionary<string, object>>();
             var originalDifficulty = World.GameDifficulty.Current;
             World.GameDifficulty.Current = World.DifficultyLevel.Normal;
             for (int stage = 0; stage < 6; stage++)
             {
                 Shop.DevStage = stage;
                 var records = new Dictionary<string, object>();
+                var regions = new Dictionary<string, object>();
                 foreach (var record in EnemyDrops.DevRecords)
                 {
                     var drops = EnemyDrops.At(record, stage, true, stage >= 4, stage >= 5);
@@ -120,8 +122,20 @@ namespace TerraKnight
                         rows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage, d.Master,
                             d.Weight, d.MeanCount, Probability = EnemyDrops.MarginalChance(drops, d) });
                     records[record] = rows;
+                    var homes = new List<object>();
+                    foreach (var home in BestiaryHabitats.Of(record))
+                    {
+                        var local = EnemyDrops.At(record, stage, true, stage >= 4, stage >= 5, home.Scene);
+                        var localRows = new List<object>();
+                        foreach (var d in local)
+                            localRows.Add(new { Type = d.Type.ToString(), d.Num, d.Den, d.Min, d.Max, d.Group, d.LockStage, d.Master,
+                                d.Weight, d.MeanCount, Probability = EnemyDrops.MarginalChance(local, d) });
+                        homes.Add(new { home.Area, home.Scene, Drops = localRows });
+                    }
+                    regions[record] = homes;
                 }
                 stageDrops[stage] = records;
+                regionDrops[stage] = regions;
             }
             // Each crate at each stage, opened CrateOpens times (Fishing.DevContents, as a right click opens it): how often
             // each thing comes out of one, how many when it does. The shops at each stage, as the townsfolk sell then.
@@ -196,7 +210,7 @@ namespace TerraKnight
             mod.Inventory.Infinite = wasInfinite;
             Shop.DevStage = originalStage;
             World.GameDifficulty.Current = originalDifficulty;
-            File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData, drop_stages = stageDrops,
+            File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData, drop_stages = stageDrops, drop_regions = regionDrops,
                 crate_stages = crateStages, crate_opens = CrateOpens, shop_stages = shopStages,
                 fishing_stages = fishingStages, fishing_casts = Casts, fishing_power = FishingPower, chest_stages = chestStages, chest_opens = ChestOpens }, Formatting.Indented));
             Plugin.Log.LogInfo($"[AutoTest] Wiki 资源导出 {count} 张，缺失 {failures} 张{(failures > 0 ? "，不通过" : "")}");
