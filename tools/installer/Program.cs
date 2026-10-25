@@ -334,6 +334,15 @@ namespace TerraKnightSetup
                     // An older install's launcher script beside the game: its new place is BepInEx\TerraKnight.
                     var old = Path.Combine(hk, "terraknight-launch.ps1");
                     if (File.Exists(old) && File.Exists(Path.Combine(hk, "BepInEx", "TerraKnight", "terraknight-launch.ps1"))) File.Delete(old);
+                    // The launcher's name before 3.2.0 (泰拉圣巢.bat, a desktop shortcut may still point at it): the current
+                    // launcher in its place, so it starts this version instead of the script just removed.
+                    var current = Path.Combine(hk, "空洞泰拉.bat");
+                    var legacy = Path.Combine(hk, "泰拉圣巢.bat");
+                    if (File.Exists(legacy) && File.Exists(current))
+                    {
+                        File.Copy(current, legacy, true);
+                        Say("旧的启动器 泰拉圣巢.bat 已换成新版，它和 空洞泰拉.bat 一样可以启动。");
+                    }
                 }
             }
         }
