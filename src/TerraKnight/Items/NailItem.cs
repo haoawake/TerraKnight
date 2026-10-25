@@ -32,10 +32,12 @@ namespace TerraKnight.Items
             var pd = PlayerData.instance;
             int upgrades = pd != null ? Mathf.Clamp(pd.nailSmithUpgrades, 0, 4) : 0;
             int stage = Mathf.Clamp(Shop.UnlockedStage(), 0, DamageByStage.Length - 1);
-            return Mathf.RoundToInt(DamageByStage[stage] * (1f + PerUpgrade * upgrades));
+            return Mathf.RoundToInt(DamageByStage[stage] * ProgressionBalance.WeaponBoost(stage) * (1f + PerUpgrade * upgrades));
         }
 
         public static int DevHits, DevRecoilStops, DevIntercepted;
+        /// <summary>Dev: hears every hit reaching an enemy's HealthManager.Hit, before anything is decided.</summary>
+        public static System.Action<string> DevProbe;
         public static string DevLastRefused = "";
 
         public static ItemDef Def() => new ItemDef
@@ -57,12 +59,18 @@ namespace TerraKnight.Items
         /// <summary>Dev: the button held for a test (null: the real mouse).</summary>
         public static bool? DevHold;
         public static int DevSwings;
+        /// <summary>Dev: how long the last swing held the Knight (HeroController's attackDuration).</summary>
+        public static float DevLastDuration;
 
         static readonly System.Reflection.MethodInfo doAttack = AccessTools.Method(typeof(HeroController), "DoAttack");
         static readonly System.Reflection.MethodInfo canAttack = AccessTools.Method(typeof(HeroController), "CanAttack");
         static readonly System.Reflection.FieldInfo attackCooldown = AccessTools.Field(typeof(HeroController), "attack_cooldown");
+        static readonly AccessTools.FieldRef<HeroController, float> attackDuration = AccessTools.FieldRefAccess<HeroController, float>("attackDuration");
         static float nextCheck;
         static bool suppressed;
+        /// <summary>When the press being held began (-1: none): a click is let go within TapTime, a hold charges.</summary>
+        static float tapAt = -1f;
+        const float TapTime = 0.2f;
 
         /// <summary>Each frame in play: the swing while the button is held, and the nail given back if it went missing, kept to one (<see cref="UniqueItems"/>).</summary>
         public static void Tick(TerraMod mod, HeroController hero)
@@ -79,21 +87,54 @@ namespace TerraKnight.Items
             // housing query on the cursor puts it down (TownNpcs.PlaceClick), it doesn't swing.
             if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem) && Player.TerraKeys.IsMouse(Player.TerraKeys.Get(Player.TerraKeys.Action.UseItem))
                 && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver || Town.TownNpcs.Querying || Town.TownNpcs.Placing)) suppressed = true;
-            // The inventory open, it swings as Terraria's held item does; an item on the cursor is the one used instead.
-            if (raw && !suppressed && Holding() && GameHooks.PlayerHasControl() && !(InventoryGui.Open && !mod.Inventory.Mouse.IsEmpty) && (bool)canAttack.Invoke(hero, null))
+            // The inventory open, it swings as Terraria's held item does; an item on the cursor is the one used instead. With a
+            // nail art learned (NailArts), a click swings, as it is let go within TapTime, and a press held on only charges,
+            // no swing first (the user's).
+            bool arts = NailArts.Ready;
+            bool fire;
+            if (!arts)
+            {
+                fire = raw;
+                tapAt = -1f;
+            }
+            else
+            {
+                if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem)) tapAt = Time.unscaledTime;
+                fire = !raw && tapAt >= 0f && Time.unscaledTime - tapAt <= TapTime;
+                if (!raw) tapAt = -1f;
+            }
+            NailArts.Manual = true;
+            bool can;
+            try { can = fire && (arts || !suppressed) && Holding() && GameHooks.PlayerHasControl() && !(InventoryGui.Open && !mod.Inventory.Mouse.IsEmpty) && (bool)canAttack.Invoke(hero, null); }
+            finally { NailArts.Manual = false; }
+            if (can)
             {
                 // The Terraria settings' aim at the mouse: facing it, the game's way nearest it (NailAim).
                 NailAim.BeforeAttack(hero);
-                doAttack.Invoke(hero, null);
+                NailArts.Manual = true;
+                try { doAttack.Invoke(hero, null); }
+                finally { NailArts.Manual = false; }
                 // A reforged nail's speed (its use time against the plain one's) scales the wait before the next slash.
                 var held = mod.Inventory.Current.Def;
                 if (held?.Unprefixed != null && held.Unprefixed.UseAnimation > 0f && attackCooldown != null)
                     attackCooldown.SetValue(hero, (float)attackCooldown.GetValue(hero) * held.UseAnimation / held.Unprefixed.UseAnimation);
+                // Nailmaster's Glory: three tenths shorter.
+                if (attackCooldown != null && CharmEffects.NailCooldownScale != 1f)
+                {
+                    attackCooldown.SetValue(hero, (float)attackCooldown.GetValue(hero) * CharmEffects.NailCooldownScale);
+                    // The slash's own length holds the next one off too (CanAttack waits for it): as much shorter.
+                    attackDuration(hero) *= CharmEffects.NailCooldownScale;
+                }
+                // Quick Slash: no recovery, the swing over as its slash is out.
+                attackDuration(hero) = CharmEffects.NailRecovery(attackDuration(hero));
+                DevLastDuration = attackDuration(hero);
+                CharmEffects.OnNailSwing(hero, held);
                 DevSwings++;
             }
+            NailArts.Tick(hero);
             if (Time.unscaledTime < nextCheck) return;
             nextCheck = Time.unscaledTime + 1f;
-            if (UniqueItems.Keep(mod.Inventory, ItemType.KnightNail)) return;
+            if (HallownestRecovery.SoldTool(mod.Inventory, ItemType.KnightNail) || UniqueItems.Keep(mod.Inventory, ItemType.KnightNail)) return;
             int left = mod.Inventory.Pickup(ItemType.KnightNail, 1);
             var at = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
             if (left > 0) WorldItems.Drop(ItemStack.Of(ItemType.KnightNail), at);
@@ -111,6 +152,7 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Hit))]
         static bool NailHit(HealthManager __instance, HitInstance hitInstance)
         {
+            DevProbe?.Invoke($"{(hitInstance.Source != null ? hitInstance.Source.name : "?")}/{(hitInstance.Source != null && hitInstance.Source.transform.parent != null ? hitInstance.Source.transform.parent.name : "-")} {hitInstance.AttackType} {hitInstance.DamageDealt}×{hitInstance.Multiplier} → {(__instance != null ? __instance.name : "?")} 换算 {Converts(__instance, hitInstance)}");
             if (!Converts(__instance, hitInstance)) return true;
             var mod = TerraMod.Instance;
             var hero = HeroController.SilentInstance;
@@ -119,17 +161,30 @@ namespace TerraKnight.Items
             // The slash strikes again every physics step it stays on the enemy (DamageEnemies.FixedUpdate), the game's own
             // evasion after a hit keeping that to one; the hit being the mod's, one a slash is kept here.
             DevLog?.Invoke($"{hitInstance.Source.name} → {__instance.name} 第 {Time.frameCount} 帧 物理 {Time.fixedTime:F2}");
-            if (!FirstStrike(hitInstance.Source, __instance)) return false;
+            // A nail art's hit (NailArts): its multiple; the Great and Dash Slashes once an art on each enemy.
+            string art = NailArts.ArtOf(hitInstance.Source);
+            if (art != null ? !NailArts.FirstOfArt(art, __instance) || !FirstStrike(hitInstance.Source, __instance) : !FirstStrike(hitInstance.Source, __instance)) return false;
             ItemDb.Get(ItemType.KnightNail).Damage = DamageNow();
             // The nail in hand: a reforged one hits with its prefix.
             var def = mod.Inventory.Current.Def;
             Vector2 from = hero.GetComponent<BoxCollider2D>().bounds.center;
             float facing = col.bounds.center.x >= from.x ? 1f : -1f;
+            // Behind a wall, out of the player's sight: not reached (Terraria's melee; Longnail reaches through).
+            if (!CharmEffects.MeleeReaches(col)) return false;
             // The slash hears that it struck (its "DEALT DAMAGE"), as from the game's own hit.
             FSMUtility.SendEventToGameObject(hitInstance.Source, "DEALT DAMAGE");
             DevIntercepted++;
-            if (mod.Melee.HitWith(col, Equipment.Damage(def), def.Knockback, Equipment.Crit(def), facing, from))
+            int damage = Mathf.Max(1, Mathf.RoundToInt(Equipment.Damage(def) * NailArts.Multiplier(art) * CharmEffects.ArtDamage(art)));
+            ArmorEffects.Context = new ArmorEffects.Hit { Class = DamageClass.Melee, TrueMelee = true };
+            // A shield judged by the slash's own way, as the game judges the nail (a down slash on a wall crawler's top).
+            MeleeHits.HitDirection = hitInstance.GetActualDirection(__instance.transform);
+            bool landed;
+            Achievements.AchievementTracker.NailSwing = art ?? "";
+            try { landed = mod.Melee.HitWith(col, damage, def.Knockback * CharmEffects.ArtKnockback(art), Equipment.Crit(def), facing, from); }
+            finally { MeleeHits.HitDirection = float.NaN; Achievements.AchievementTracker.NailSwing = null; }
+            if (landed)
             {
+                CharmEffects.AfterNailHit(__instance, col, damage, facing, from, hitInstance.GetActualDirection(__instance.transform));
                 // The upward slash knocks the enemy up (Terraria's push is sideways only).
                 if (Mathf.Abs(Mathf.DeltaAngle(hitInstance.Direction, 90f)) < 30f) TerraKnockback.PushUp(__instance, Equipment.Knockback(def));
                 hero.SoulGain();
@@ -201,15 +256,17 @@ namespace TerraKnight.Items
             var mod = TerraMod.Instance;
             if (hero == null || mod == null || !Holding() || !__instance.transform.IsChildOf(hero.transform)) return;
             var held = mod.Inventory.Current.Def;
-            if (held?.Unprefixed == null || held.Unprefixed.Scale <= 0f) return;
-            float k = held.Scale / held.Unprefixed.Scale;
-            var s = __instance.transform.localScale;
+            float k = held?.Unprefixed != null && held.Unprefixed.Scale > 0f ? held.Scale / held.Unprefixed.Scale : 1f;
+            if (k == 1f && !Charms.Enabled) return;
+            // The charm bag on: the charms' own length (Mark of Pride, Longnail) on the slash's plain size, not the game's.
+            var s = Charms.Enabled ? __instance.scale * CharmEffects.MeleeReach : __instance.transform.localScale;
             __instance.transform.localScale = new Vector3(s.x * k, s.y * k, s.z);
             DevSlashScale = k;
+            DevSlashLength = __instance.scale.y != 0f ? Mathf.Abs(__instance.transform.localScale.y / __instance.scale.y) : 1f;
         }
 
         /// <summary>Dev: the last slash's prefix size.</summary>
-        public static float DevSlashScale = 1f;
+        public static float DevSlashScale = 1f, DevSlashLength = 1f;
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "CancelRecoilHorizontal")]
@@ -220,8 +277,32 @@ namespace TerraKnight.Items
             DevRecoilStops++;
         }
 
+        /// <summary>
+        /// A creative save's nail, fully kitted (the user's): the Pure Nail (the Nailsmith's four upgrades), all three nail
+        /// arts, and the Nail item forged to its cap now.
+        /// </summary>
+        public static void GiveAllForCreative(PlayerData pd, Inventory inv)
+        {
+            if (pd == null) return;
+            var raised = new List<string>();
+            if (pd.GetInt("nailSmithUpgrades") < 4) { pd.SetInt("nailSmithUpgrades", 4); pd.SetInt("nailDamage", 21); pd.SetBool("honedNail", true); raised.Add("纯粹骨钉"); }
+            foreach (var flag in new[] { "hasNailArt", "hasCyclone", "hasDashSlash", "hasUpwardSlash", "hasAllNailArts" })
+                if (!pd.GetBool(flag)) { pd.SetBool(flag, true); raised.Add(flag); }
+            PlayMakerFSM.BroadcastEvent("UPDATE NAIL DAMAGE");
+            int cap = Forging.MaxLevelOf(ItemType.KnightNail);
+            if (inv != null)
+                foreach (var xs in new[] { inv.Slots, inv.HkBag })
+                    for (int i = 0; i < xs.Length; i++)
+                        if (!xs[i].IsEmpty && xs[i].Type == ItemType.KnightNail && xs[i].Forge < cap) { xs[i].Forge = (byte)cap; raised.Add("锻造 +" + cap); }
+            if (raised.Count > 0)
+            {
+                Plugin.Log.LogInfo($"[骨钉] 创造模式：骨钉满配（{string.Join("、", raised)}）");
+                Net.NetChat.Add(Lang.F("创造模式：骨钉已满配，三种骨钉技艺都已学会。拿着骨钉按住 {0} 蓄力，闪光后松开", Player.TerraKeys.KeyName(Player.TerraKeys.Get(Player.TerraKeys.Action.UseItem))), new Color(1f, 0.94f, 0.08f));
+            }
+        }
+
         /// <summary>The game's own nail checks (CanAttack) run while it is in hand; the Terraria hands keep them off otherwise.</summary>
-        public static bool LetsAttack => TerraMod.Instance != null && Holding();
+        public static bool LetsAttack => TerraMod.Instance != null && Holding() && !CharmEffects.WeaponLocked(ItemDb.Get(ItemType.KnightNail));
 
         // ------------------------------------------------------------------ its picture
 

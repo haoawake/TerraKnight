@@ -37,6 +37,8 @@ namespace TerraKnight.Items
                 style.fontSize = Mathf.RoundToInt(15 * ui);
                 Outlined(new Rect(view.x + 506f * ui, y0 + 30f * ui, 300f * ui, 22f * ui), Lang.T("放进物品：加入名单并卖掉"), style, new Color(0.85f, 0.85f, 0.85f));
                 Outlined(new Rect(view.x + 506f * ui, y0 + 52f * ui, 300f * ui, 22f * ui), Lang.T("点名单里的物品：移出名单"), style, new Color(0.85f, 0.85f, 0.85f));
+                Outlined(new Rect(view.x + 506f * ui, y0 + 74f * ui, 300f * ui, 22f * ui), Lang.T("Shift+左键加入并出售"), style, new Color(0.85f, 0.85f, 0.85f));
+                Outlined(new Rect(view.x + 506f * ui, y0 + 96f * ui, 300f * ui, 22f * ui), Lang.T("Ctrl+左键仅出售，可在快捷商店买回"), style, new Color(0.85f, 0.85f, 0.85f));
             }
             style.fontSize = size;
         }

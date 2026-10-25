@@ -448,7 +448,11 @@ namespace TerraKnight.Net
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
         static void AfterDie(HealthManager __instance, float? attackDirection, AttackTypes attackType)
         {
-            if (__instance == null || !__instance.isDead || !NetSession.Active || !Enabled) return;
+            if (__instance == null || !NetSession.Active || !Enabled) return;
+            // A special death (Nosk, Grimm, the Radiance) leaves isDead unset at no health; the book counts it (Bestiary
+            // .AfterDie), so the others' must hear of it. The False Knight's armour at each break is no death (SpecialDeaths).
+            bool special = !__instance.isDead && __instance.hp <= 0 && PlayMakerFSM.FindFsmOnGameObject(__instance.gameObject, "FalseyControl") == null;
+            if (!__instance.isDead && !special) return;
             string scene = __instance.gameObject.scene.name;
             if (!Owned(scene) || puppetOf.ContainsKey(__instance)) return;
             var t = Track(__instance, scene);
@@ -665,6 +669,8 @@ namespace TerraKnight.Net
             foreach (var f in p.Fsms) Thaw(f);
             if (p.Hm == null) return;
             EnemyStats.Of(p.Hm).Net = false;
+            // This game's own again: on as it was when it became a puppet, if the owner's copy (a beaten save's, put away) put it away.
+            if (p.Active && !p.Hm.gameObject.activeSelf) p.Hm.gameObject.SetActive(true);
             for (int i = 0; i < p.Parts.Length; i++)
                 if (p.Parts[i] != null) p.Parts[i].enabled = p.PartOn[i];
             if (p.Body != null) p.Body.bodyType = p.BodyType;

@@ -65,6 +65,18 @@ namespace TerraKnight.Items
         static void ClickHkBag(int i)
         {
             ref var slot = ref inv.HkBag[i];
+            if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.CannotSell)
+            {
+                Town.TownNpcs.Sell(ref slot);
+                Sound("Grab");
+                return;
+            }
+            if (Shift && World.Chests.IsOpen && !slot.IsEmpty && !slot.Favorite)
+            {
+                World.Chests.Put(ref slot);
+                Sound("Grab");
+                return;
+            }
             if (Shift && !slot.IsEmpty)
             {
                 for (int k = 0; k < Inventory.HotbarSize && !slot.IsEmpty; k++)

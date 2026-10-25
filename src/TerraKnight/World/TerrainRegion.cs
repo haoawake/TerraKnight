@@ -50,30 +50,52 @@ namespace TerraKnight.World
         bool[] ownCollide, ownLock;
 
         /// <summary>
-        /// Leaves a boss's arena to the game's own colliders: the grid stops colliding in the cells wholly inside it, and
-        /// those within it or under the hand-placed ground kept for it (kept whole, so not to be dug) stay as they are.
+        /// Leaves a boss's arena (<paramref name="zone"/>, and with the ground under it <paramref name="ground"/>) to the game's
+        /// own colliders: the grid stops colliding in the cells wholly inside the ground and in those the hand-placed ground
+        /// kept for it covers (that collider, solid, stands there: the grid's outline over the
+        /// same ground is hollow, and a boss pressed into a wall (a pose's collider reaching back) would be drawn into it
+        /// and fall through the floor); those within it or under that ground (kept whole, so not to be dug) stay as they are.
         /// </summary>
-        public void SetOwnZone(Rect zone, List<Bounds> kept)
+        public void SetOwnZone(Rect zone, Rect ground, List<Collider2D> kept)
         {
             OwnZone = zone;
             ownCollide = new bool[Grid.Width * Grid.Height];
             ownLock = new bool[Grid.Width * Grid.Height];
             const float c = CellGrid.CellSize;
             Vector2 origin = Root.position;
+            var keptBounds = new List<Bounds>(kept.Count);
+            foreach (var k in kept) keptBounds.Add(k.bounds);
             for (int y = 0; y < Grid.Height; y++)
             for (int x = 0; x < Grid.Width; x++)
             {
                 var cell = new Rect(origin.x + x * c, origin.y + y * c, c, c);
                 int i = y * Grid.Width + x;
-                ownCollide[i] = zone.Contains(cell.min) && zone.Contains(cell.max);
-                bool locked = zone.Contains(cell.center);
-                if (!locked)
-                    foreach (var b in kept)
-                        if (b.min.x <= cell.center.x && cell.center.x <= b.max.x && b.min.y <= cell.center.y && cell.center.y <= b.max.y) { locked = true; break; }
-                ownLock[i] = locked;
+                bool covered = false, underKept = false;
+                for (int k = 0; k < kept.Count; k++)
+                {
+                    var b = keptBounds[k];
+                    if (b.min.x > cell.center.x || cell.center.x > b.max.x || b.min.y > cell.center.y || cell.center.y > b.max.y) continue;
+                    underKept = true;
+                    if (kept[k].OverlapPoint(cell.center)) { covered = true; break; }
+                }
+                ownCollide[i] = ground.Contains(cell.min) && ground.Contains(cell.max) || covered;
+                ownLock[i] = ground.Contains(cell.center) || underKept;
             }
-            colliders.Skip = (x, y) => ownCollide[y * Grid.Width + x];
+            colliders.Skip = (x, y) => ownCollide[y * Grid.Width + x] && Grid.Get(x, y) == CellKind.Original;
+            colliders.Built = BuiltCell;
             if (!pendingBuild) colliders.BuildAll();
+        }
+
+        /// <summary>A boss room's cell the player made (not the room's own ground): its own colliders (ChunkColliders.Built).</summary>
+        bool BuiltCell(int x, int y) => Grid.Get(x, y) != CellKind.Original;
+
+        /// <summary>Keep the native room, while the active grid draws and collides with player construction.</summary>
+        public void KeepWholeRoomGround()
+        {
+            colliders.Skip = (x, y) => Grid.Get(x, y) == CellKind.Original;
+            colliders.Built = BuiltCell;
+            fill.Skip = (x, y) => true; // Native render meshes already provide the original ground's fill.
+            if (!pendingBuild) { colliders.BuildAll(); fill.BuildAll(); }
         }
 
         /// <summary>Whether a cell (local) is the game's own ground, unchanged: all of a boss room without a zone, its zone's cells with one.</summary>

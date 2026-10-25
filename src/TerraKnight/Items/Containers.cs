@@ -220,6 +220,7 @@ namespace TerraKnight.Items
         {
             if (!Sells(inv, s.Type) || !Listable(s, out _, requireValue: !inv.DropBlacklist.Contains(s.Type))) return false;
             long money = Shop.SellValue(s);
+            inv.RecordCollection(s.Type);
             Pay(money, at);
             DevAutoSold += s.Count;
             DevAutoSoldCopper += money;
@@ -387,25 +388,6 @@ namespace TerraKnight.Items
             return true;
         }
 
-        /// <summary>Quick Buff's Potion Box: after the bag, each buff potion and food whose buff isn't on, drunk and used up. How many.</summary>
-        public static int QuickBuff(Inventory inv, HashSet<int> on, System.Func<ItemDef, bool> drink)
-        {
-            if (!Carried(inv, ItemType.PotionBox)) return 0;
-            int n = 0;
-            foreach (var page in inv.PotionBox)
-                for (int i = 0; i < page.Length; i++)
-                {
-                    if (page[i].IsEmpty) continue;
-                    var d = page[i].Def;
-                    if (d.BuffType <= 0 || d.HealLife > 0 || d.HealMana > 0 || Player.PlayerBuffs.Has(d.BuffType) || on.Contains(d.BuffType)) continue;
-                    if (!drink(d)) continue;
-                    on.Add(d.BuffType);
-                    Consume(inv, ref page[i]);
-                    n++;
-                }
-            return n;
-        }
-
         static void Consume(Inventory inv, ref ItemStack s)
         {
             if (inv.Infinite) return;
@@ -436,6 +418,7 @@ namespace TerraKnight.Items
             "把物品放进袋里：加入自动出售名单，放进去的这组当场按商店价卖掉",
             "带在身上时，捡到名单上的物品会自动卖掉，吉欧直接进钱包",
             "点名单里的物品把它移出名单",
+            "打开时：Shift+左键加入名单并出售，Ctrl+左键仅出售，可在快捷商店买回",
             "使用或在背包里右键点击打开",
         };
 
@@ -482,9 +465,9 @@ namespace TerraKnight.Items
             };
             list.Add(Box(ItemType.BannerCase, "旗帜盒", "banner_case"));
             list.Add(Box(ItemType.PotionBox, "药水箱", "potion_box"));
-            // The Auto-Sell Bag: no picture of its own, the Herb Bag's (Item 3093, ItemID.HerbBag).
+            // An original sale-pouch sprite; leave Terraria's Herb Bag artwork intact.
             var sell = Box(ItemType.AutoSellBag, "自动出售袋", null);
-            sell.Texture = "Item_3093";
+            sell.Texture = Relics.TexturePrefix + "auto_sell_bag";
             list.Add(sell);
             Banners.AddItems(list);
         }

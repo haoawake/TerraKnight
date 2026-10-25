@@ -8,7 +8,7 @@ namespace TerraKnight.Items
     /// <summary>
     /// The Goblin Tinkerer's forging (Forging): his "Forge" button opens the inventory with his slot under it, as his
     /// reforging does, for a weapon or a piece of armor. Beside it: its level and its cap (a weapon's own stage's, armor's
-    /// three levels per stage: Forging.MaxLevelOf), its damage (armor: its defense) now and after, or at the cap "武器已满级，无法再锻造"
+    /// same stage caps: Forging.MaxLevelOf), its damage (armor: its defense) now and after, or at the cap "武器已满级，无法再锻造"
     /// ("盔甲已满级…") and no hammer; the odds,
     /// the price; the hammer under it forges (Item_37 when it takes, a dull clank when it fails). As a reforge's best
     /// prefix: a forging that takes pops the item's new name up over the player (in cycling colours, with the best_reforge
@@ -22,7 +22,8 @@ namespace TerraKnight.Items
         static void DrawForge(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind)
         {
             float s = 52f * 0.85f * ui;
-            var rect = new Rect(view.x + 50f * ui, view.y + 270f * ui, s, s);
+            // Under the bag's trash slot with room for the lines over it (Terraria's 270 lay on the bag's last row here).
+            var rect = new Rect(view.x + 50f * ui, view.y + UnderBag(ui) + 36f * ui, s, s);
             GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back4"));
             Add(rect, Kind.ReforgeSlot, 0);
             var item = TownNpcs.ReforgeItem;
@@ -38,8 +39,8 @@ namespace TerraKnight.Items
             if (item.IsEmpty)
             {
                 Outlined(text, Lang.T("将武器或盔甲放到此处锻造"), labelStyle, color);
-                Outlined(new Rect(text.x, text.y + 24f * ui, text.width, text.height), Lang.T("锻造上限看武器的阶段：阶段 0 的武器 +5，每高一个阶段多 5 级"), labelStyle, color);
-                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲阶段 0 最多 +3，每高一阶段多 3 级，每级 +1 防御（战士的头盔、胸甲和腿甲 +2）"), labelStyle, color);
+                Outlined(new Rect(text.x, text.y + 24f * ui, text.width, text.height), Lang.T("锻造上限看武器的阶段：阶段 0 到 5 依次 +2、+3、+4、+5、+6、+6"), labelStyle, color);
+                Outlined(new Rect(text.x, text.y + 48f * ui, text.width, text.height), Lang.T("盔甲上限与武器相同，每级 +1 防御（战士的头盔、胸甲和腿甲 +2）"), labelStyle, color);
                 forgeHover = false;
                 return;
             }
@@ -56,6 +57,12 @@ namespace TerraKnight.Items
                 Lang.F("锻造 +{0} / +{1}", item.Forge, max),
                 atMax ? Lang.T(armor ? "盔甲已满级，无法再锻造" : "武器已满级，无法再锻造") : Lang.F(armor ? "防御 {0} → {1}" : "伤害 {0} → {1}", now, after),
             };
+            // A ranged weapon's: armor penetration, crit chance and crit damage by its level, and the next level's.
+            if (!armor && def.Class == DamageClass.Ranged)
+            {
+                lines.Add(RangedForgeLine(item.Forge));
+                if (!atMax) lines.Add(Lang.T("下一级：") + RangedForgeLine(next.Forge));
+            }
             if (!atMax)
             {
                 lines.Add(Lang.F("成功率 {0}%", Mathf.RoundToInt(Forging.Chance(item) * 100f)));
@@ -103,6 +110,7 @@ namespace TerraKnight.Items
                     return false;
                 default:
                     bool top = Forging.AtMax(item);
+                    Achievements.AchievementTracker.Forged(item, top);
                     HammerResult(item, top);
                     if (!top) Sound("Item_37");
                     return true;
@@ -111,5 +119,9 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: a forging, as the hammer's click.</summary>
         public static bool DevForge() => Forge();
+
+        /// <summary>A ranged weapon's forging at a level: "盔甲穿透 +5，暴击率 +2.5%，暴击伤害 +5%".</summary>
+        static string RangedForgeLine(int level) => Lang.F("盔甲穿透 +{0}，暴击率 +{1}%，暴击伤害 +{2}%",
+            Forging.RangedPen(level), Forging.RangedCrit(level).ToString("0.#"), Mathf.RoundToInt(Forging.RangedCritDamage(level) * 100f));
     }
 }

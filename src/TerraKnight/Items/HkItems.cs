@@ -8,8 +8,8 @@ namespace TerraKnight.Items
     /// Hallownest's key items as Terraria items: the Lumafly Lantern, the City Crest, the keys, the Tram Pass, the King's
     /// Brand, the Delicate Flower, the Rancid Eggs, the Pale Ore, the four relics, the Kingsoul and the Void Heart. Each
     /// stands for its PlayerData record (what the game gives, it gives; what the game takes, it takes: a key used, relics
-    /// sold to Lemm), drawn with the game's own inventory picture and named as the game names it. They live only in the
-    /// hotbar and in their own bag (the Hallownest bag, beside the monster book), and work wherever they are carried (the
+    /// sold to Lemm), drawn with the game's own inventory picture and named as the game names it. They can be kept in
+    /// chests and personal storages as well as their own bag, and work while carried (the
     /// Hallownest bag, the bag, the hotbar, a pet slot), as the game's own inventory has them: the City Gate opens to the
     /// crest, the dark rooms are lit by the lantern, the tram runs for the pass, the Abyss's door to the Birthplace opens to
     /// the Kingsoul, the Siblings and the Radiance know the Void Heart. The Grimmchild is worn while its summon is out.
@@ -28,7 +28,8 @@ namespace TerraKnight.Items
         // Append only: old dream/ability slots retain their saved indices.
         public const int KnightNailSlot = AbilityBagStart + AbilityBagSlots;
         public const int HallownestShieldSlot = KnightNailSlot + 1;
-        public const int BagSlots = HallownestShieldSlot + 1;
+        public const int DarkRuneSlot = HallownestShieldSlot + 1;
+        public const int BagSlots = DarkRuneSlot + 1;
 
         enum Kind { Bool, Int, Royal, Charm }
 
@@ -89,25 +90,26 @@ namespace TerraKnight.Items
 
         public static int AbilityBagSlot(ItemType type)
         {
+            if (type == ItemType.DescendingDarkRune) return DarkRuneSlot;
             for (int i = 0; i < Player.PlayerHooks.AbilityItems.Length && i < AbilityBagSlots; i++)
                 if (Player.PlayerHooks.AbilityItems[i].item == type) return AbilityBagStart + i;
             return -1;
         }
 
         public static int EquipmentBagSlot(ItemType type) => type == ItemType.KnightNail ? KnightNailSlot
-            : type == ItemType.HallownestShield ? HallownestShieldSlot : -1;
+            : AbilityShields.Is(type) ? HallownestShieldSlot : -1;
 
         public static bool TryStoreEquipment(Inventory inv, ItemStack stack)
         {
             int slot = EquipmentBagSlot(stack.Type);
             if (stack.IsEmpty || slot < 0 || !inv.HkBag[slot].IsEmpty) return false;
-            inv.HkBag[slot] = stack;
+            inv.HkBag[slot] = stack; HallownestRecovery.Record(inv, stack.Type);
             return true;
         }
 
         public static bool CanStoreInBag(ItemStack s) => Is(s) || (!s.IsEmpty && (s.Type == ItemType.DreamNail || AbilityBagSlot(s.Type) >= 0 || EquipmentBagSlot(s.Type) >= 0));
         public static bool BagAccepts(int slot, ItemStack s) => s.IsEmpty ||
-            (slot == KnightNailSlot || slot == HallownestShieldSlot ? EquipmentBagSlot(s.Type) == slot
+            (slot == DarkRuneSlot ? s.Type == ItemType.DescendingDarkRune : slot == KnightNailSlot || slot == HallownestShieldSlot ? EquipmentBagSlot(s.Type) == slot
                 : slot == DreamNailSlot ? s.Type == ItemType.DreamNail : slot >= AbilityBagStart
                 ? AbilityBagSlot(s.Type) == slot : Is(s) || s.Type == ItemType.DreamNail);
 
@@ -115,7 +117,7 @@ namespace TerraKnight.Items
         {
             int slot = AbilityBagSlot(stack.Type);
             if (stack.IsEmpty || slot < 0 || !inv.HkBag[slot].IsEmpty) return false;
-            inv.HkBag[slot] = stack; // Keep prefix, forge and favorite; never displace an existing stack.
+            inv.HkBag[slot] = stack; HallownestRecovery.Record(inv, stack.Type); // Keep prefix, forge and favorite; never displace an existing stack.
             return true;
         }
 
@@ -126,14 +128,15 @@ namespace TerraKnight.Items
             bool Has(ItemType item)
             {
                 if (inv.Owns(item)) return true;
+                foreach (var shield in AbilityShields.All) if (AbilityShields.Includes(shield.Type, item) && inv.Owns(shield.Type)) return true;
                 foreach (var xs in new[] { inv.Bank, inv.Safe, inv.Forge, inv.Void })
-                    foreach (var stack in xs) if (!stack.IsEmpty && stack.Type == item) return true;
+                    foreach (var stack in xs) if (!stack.IsEmpty && (stack.Type == item || AbilityShields.Includes(stack.Type, item))) return true;
                 return false;
             }
-            return Has(type) || (type == ItemType.CrystalHeart || type == ItemType.ShadeCloak) && Has(ItemType.HallownestShield);
+            return Has(type);
         }
 
-        public static string BagSlotHint(int slot) => slot == KnightNailSlot ? Lang.T("骨钉专用格")
+        public static string BagSlotHint(int slot) => slot == DarkRuneSlot ? Lang.T("暗渊符文专用格") : slot == KnightNailSlot ? Lang.T("骨钉专用格")
             : slot == HallownestShieldSlot ? Lang.T("圣巢之盾专用格") : slot == DreamNailSlot ? Lang.T("梦之钉专用格")
             : slot >= AbilityBagStart && slot < AbilityBagStart + AbilityBagSlots
                 ? Lang.F("{0}专用格", ItemDb.Get(Player.PlayerHooks.AbilityItems[slot - AbilityBagStart].item).Name)
@@ -255,10 +258,37 @@ namespace TerraKnight.Items
 
         static readonly Dictionary<string, System.Reflection.FieldInfo> fields = new Dictionary<string, System.Reflection.FieldInfo>();
 
-        static object Field(PlayerData pd, string name)
+        static readonly Dictionary<string, AccessTools.FieldRef<PlayerData, bool>> bools = new Dictionary<string, AccessTools.FieldRef<PlayerData, bool>>();
+        static readonly Dictionary<string, AccessTools.FieldRef<PlayerData, int>> ints = new Dictionary<string, AccessTools.FieldRef<PlayerData, int>>();
+
+        static System.Reflection.FieldInfo FieldOf(string name)
         {
             if (!fields.TryGetValue(name, out var f)) fields[name] = f = AccessTools.Field(typeof(PlayerData), name);
-            return f?.GetValue(pd);
+            return f;
+        }
+
+        /// <summary>A bool record of the game's (false when there is none by the name), read without boxing it.</summary>
+        static bool TryBool(PlayerData pd, string name, out bool value)
+        {
+            if (!bools.TryGetValue(name, out var r))
+            {
+                var f = FieldOf(name);
+                bools[name] = r = f != null && f.FieldType == typeof(bool) ? AccessTools.FieldRefAccess<PlayerData, bool>(f) : null;
+            }
+            value = r != null && r(pd);
+            return r != null;
+        }
+
+        /// <summary>An int record of the game's (false when there is none by the name), read without boxing it.</summary>
+        static bool TryInt(PlayerData pd, string name, out int value)
+        {
+            if (!ints.TryGetValue(name, out var r))
+            {
+                var f = FieldOf(name);
+                ints[name] = r = f != null && f.FieldType == typeof(int) ? AccessTools.FieldRefAccess<PlayerData, int>(f) : null;
+            }
+            value = r != null ? r(pd) : 0;
+            return r != null;
         }
 
         /// <summary>The counted ones as many as the whole world holds: 4 simple keys, 21 rancid eggs, 6 pale ore, the four relics' 14, 17, 8 and 4.</summary>
@@ -283,20 +313,20 @@ namespace TerraKnight.Items
                 switch (d.Kind)
                 {
                     case Kind.Bool:
-                        if (!(Field(pd, d.Flag) is bool b && b)) { pd.SetBool(d.Flag, true); raised++; }
+                        if (!(TryBool(pd, d.Flag, out bool b) && b)) { pd.SetBool(d.Flag, true); raised++; }
                         if (d.Type == ItemType.HkDelicateFlower) pd.SetBool("xunFlowerBroken", false);
                         break;
                     case Kind.Int:
                         int want = worldTotals.TryGetValue(d.Flag, out int total) ? total : 1;
-                        if (Field(pd, d.Flag) is int n && n < want) { pd.SetInt(d.Flag, want); raised++; }
+                        if (TryInt(pd, d.Flag, out int n) && n < want) { pd.SetInt(d.Flag, want); raised++; }
                         break;
                     case Kind.Charm:
-                        if (!(Field(pd, d.Flag) is bool c && c)) { pd.SetBool(d.Flag, true); raised++; }
+                        if (!(TryBool(pd, d.Flag, out bool c) && c)) { pd.SetBool(d.Flag, true); raised++; }
                         if (d.Royal == 40 && pd.GetInt("grimmChildLevel") < 1) pd.SetInt("grimmChildLevel", 1);
                         break;
                     case Kind.Royal:
                         if (d.Royal != 4) break;
-                        if (!(Field(pd, "gotCharm_36") is bool r && r) || pd.royalCharmState < 4) raised++;
+                        if (!(TryBool(pd, "gotCharm_36", out bool r) && r) || pd.royalCharmState < 4) raised++;
                         pd.SetBool("gotCharm_36", true);
                         pd.royalCharmState = Mathf.Max(pd.royalCharmState, 4);
                         pd.SetBool("gotShadeCharm", true);
@@ -316,15 +346,15 @@ namespace TerraKnight.Items
                 // With the charm page on they are charms worn there: their items go.
                 case Kind.Royal:
                     if (Charms.Enabled) return 0;
-                    return Field(pd, "gotCharm_36") is bool got && got && pd.royalCharmState == d.Royal ? 1 : 0;
+                    return TryBool(pd, "gotCharm_36", out bool got) && got && pd.royalCharmState == d.Royal ? 1 : 0;
                 case Kind.Charm:
                     if (Charms.Enabled) return 0;
-                    return Field(pd, d.Flag) is bool has && has ? 1 : 0;
+                    return TryBool(pd, d.Flag, out bool has) && has ? 1 : 0;
                 case Kind.Int:
-                    return Field(pd, d.Flag) is int n ? Mathf.Max(0, n) : 0;
+                    return TryInt(pd, d.Flag, out int n) ? Mathf.Max(0, n) : 0;
                 default:
-                    if (!(Field(pd, d.Flag) is bool b) || !b) return 0;
-                    if (d.Type == ItemType.HkDelicateFlower && Field(pd, "xunFlowerBroken") is bool broken && broken) return 0;
+                    if (!(TryBool(pd, d.Flag, out bool b)) || !b) return 0;
+                    if (d.Type == ItemType.HkDelicateFlower && TryBool(pd, "xunFlowerBroken", out bool broken) && broken) return 0;
                     return 1;
             }
         }
@@ -354,7 +384,7 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// Every frame in play: the items as the game's records have them (given into the bag, taken from the bag first);
-        /// any that has wandered into the bag's main rows, the ammo slots or an open chest goes back to the Hallownest bag.
+        /// items in the bag's main rows or ammo slots move to the Hallownest bag; chest storage stays in place.
         /// </summary>
         public static void Tick(TerraMod mod)
         {
@@ -362,15 +392,22 @@ namespace TerraKnight.Items
             if (mod == null || pd == null) return;
             // The Hollow Knight's Phase Control tests gotShadeCharm, not royalCharmState.
             // Older creative saves raised the royal charm but missed that native ending flag.
-            if (pd.royalCharmState >= 4 && Field(pd, "gotCharm_36") is bool royal && royal && !pd.gotShadeCharm)
+            if (pd.royalCharmState >= 4 && TryBool(pd, "gotCharm_36", out bool royal) && royal && !pd.gotShadeCharm)
             {
                 pd.SetBool("gotShadeCharm", true);
                 Plugin.Log.LogInfo("[虚空之心] 补齐原版 gotShadeCharm 结局标记");
             }
             var inv = mod.Inventory;
+            HallownestRecovery.Observe(inv);
             foreach (var d in all)
             {
                 int want = Wanted(d, pd);
+                // A fresh native acquisition (e.g. another Delicate Flower) is not an automatic replacement for a sold item.
+                if (inv.HallownestNativeCounts.TryGetValue(d.Type, out int previous) && want > previous
+                    && inv.HallownestTradeOffsets.TryGetValue(d.Type, out int soldOffset) && soldOffset < 0)
+                    inv.HallownestTradeOffsets.Remove(d.Type);
+                inv.HallownestNativeCounts[d.Type] = want;
+                if (d.Kind != Kind.Int && inv.HallownestTradeOffsets.TryGetValue(d.Type, out int offset)) want = Mathf.Max(0, want + offset);
                 int have = Count(inv.Slots, d.Type) + Count(inv.HkBag, d.Type) + Count(inv.Misc, d.Type) + (!inv.Mouse.IsEmpty && inv.Mouse.Type == d.Type ? inv.Mouse.Count : 0);
                 if (have < want)
                 {
@@ -382,6 +419,7 @@ namespace TerraKnight.Items
                         var hero = HeroController.SilentInstance;
                         if (hero != null) UI.PopupText.Show(ItemDb.Get(d.Type), add - left, hero.transform.position);
                         DevGiven += add - left;
+                        HallownestRecovery.Record(inv, d.Type);
                     }
                 }
                 else if (have > want)
@@ -402,10 +440,6 @@ namespace TerraKnight.Items
             // Only the hotbar and the bag: anything else goes back.
             for (int i = Inventory.HotbarSize; i < inv.Slots.Length; i++)
                 if (Is(inv.Slots[i])) Return(inv, ref inv.Slots[i]);
-            var chest = World.Chests.OpenItems;
-            if (chest != null)
-                for (int i = 0; i < chest.Length; i++)
-                    if (Is(chest[i])) Return(inv, ref chest[i]);
             HandChanged(inv);
         }
 
@@ -453,6 +487,47 @@ namespace TerraKnight.Items
             return n;
         }
 
+        internal static void Trade(Inventory inv, ItemType type, int delta, bool alreadyMoved = false)
+        {
+            if (inv == null) return;
+            if (type == ItemType.KnightNail || type == ItemType.DreamNail)
+            {
+                if (delta < 0) inv.HallownestTradeOffsets[type] = -1;
+                else
+                {
+                    inv.HallownestTradeOffsets.Remove(type);
+                    if (type == ItemType.DreamNail && PlayerData.instance != null) PlayerData.instance.hasDreamNail = true;
+                }
+                return;
+            }
+            if (!byType.TryGetValue(type, out var d) || PlayerData.instance == null) return;
+            var pd = PlayerData.instance;
+            if (d.Kind == Kind.Int)
+            {
+                TryInt(pd, d.Flag, out int n);
+                pd.SetInt(d.Flag, Mathf.Max(0, n + delta));
+                return;
+            }
+            int carried = Count(inv.Slots, type) + Count(inv.HkBag, type) + Count(inv.Misc, type)
+                + (!inv.Mouse.IsEmpty && inv.Mouse.Type == type ? inv.Mouse.Count : 0);
+            // Buy and storage moves run after placement; sell runs before clearing its source.
+            int desired = Mathf.Max(0, carried + (delta < 0 && !alreadyMoved ? delta : 0));
+            if (delta > 0 && d.Kind == Kind.Bool && Wanted(d, pd) == 0) pd.SetBool(d.Flag, true);
+            if (delta > 0 && d.Kind == Kind.Charm)
+            {
+                pd.SetBool(d.Flag, true);
+                if (d.Royal == 40) pd.grimmChildLevel = Mathf.Max(1, pd.grimmChildLevel);
+            }
+            if (delta > 0 && d.Kind == Kind.Royal)
+            {
+                pd.SetBool("gotCharm_36", true);
+                pd.royalCharmState = Mathf.Max(pd.royalCharmState, d.Royal);
+                if (d.Royal >= 4) pd.gotShadeCharm = true;
+            }
+            inv.HallownestTradeOffsets[type] = desired - Wanted(d, pd);
+            inv.HallownestNativeCounts[type] = Wanted(d, pd);
+        }
+
         // ------------------------------------------------------------------ the game asking
 
         /// <summary>The records read as they are (building a shop's stock, a boss visit setting what its fight needs).</summary>
@@ -467,7 +542,7 @@ namespace TerraKnight.Items
             if (name == "equippedCharm_36" && !Charms.Enabled)
             {
                 var pd = PlayerData.instance;
-                bool got = pd != null && Field(pd, "gotCharm_36") is bool g && g && pd.royalCharmState >= 3;
+                bool got = pd != null && TryBool(pd, "gotCharm_36", out bool g) && g && pd.royalCharmState >= 3;
                 result = got && (Carried(inv, ItemType.HkKingsoul) || Carried(inv, ItemType.HkVoidHeart));
                 if (got && !result) Refused(pd.royalCharmState >= 4 ? ItemType.HkVoidHeart : ItemType.HkKingsoul);
                 return;
@@ -476,7 +551,7 @@ namespace TerraKnight.Items
             if (name == "equippedCharm_40" && !Charms.Enabled)
             {
                 var pd = PlayerData.instance;
-                bool got = pd != null && Field(pd, "gotCharm_40") is bool g40 && g40;
+                bool got = pd != null && TryBool(pd, "gotCharm_40", out bool g40) && g40;
                 result = got && Pets.GrimmOut;
                 return;
             }

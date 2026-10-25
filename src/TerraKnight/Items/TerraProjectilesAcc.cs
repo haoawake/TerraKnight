@@ -322,6 +322,9 @@ namespace TerraKnight.Items
             }
         }
 
+        /// <summary>A shot that isn't the player's own blow: a minion's or a sentry's, the Spore Sac's (it works no lift: PropHits.LiftControl).</summary>
+        static bool OnItsOwn(Proj p) => p.MinionShot || p.Kind == ProjKind.Spore || p.Kind == ProjKind.SporeCloud;
+
         // ------------------------------------------------------------------ 567/568, 569-571: the Spore Sac
 
         /// <summary>

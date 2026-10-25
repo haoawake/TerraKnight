@@ -45,10 +45,11 @@ namespace TerraKnight
                         {
                             bool futureBoss = ProgressionBalance.FormalBoss(record)
                                 && ProgressionBalance.BossRewards.TryGetValue(record, out var boss) && boss.Stage > stage;
+                            // The table of the area the book shows it for, then a kill's bait and moss there (Fishing.KillRows).
                             var expected = futureBoss ? Array.Empty<EnemyDrops.Drop>()
-                                : EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5);
+                                : EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5, InventoryGui.DevBookHome(record));
                             var rows = InventoryGui.DevBestiaryDrops(record);
-                            Check($"实际进度{actual}/预览{stage}/{record}", rows.SequenceEqual(expected));
+                            Check($"实际进度{actual}/预览{stage}/{record}", rows.Take(expected.Count).SequenceEqual(expected) && rows.Skip(expected.Count).All(d => d.Group == 0));
                             foreach (var group in rows.Where(d => d.Group > 0 && !EnemyDrops.Locked(d, stage)).GroupBy(d => d.Group))
                                 Check($"概率合计/{record}/{stage}/{group.Key}", Math.Abs(group.Sum(d => EnemyDrops.MarginalChance(rows, d, stage)) - EnemyDrops.EffectiveChance(group.First())) < .0001f);
                         }
@@ -116,7 +117,8 @@ namespace TerraKnight
                 Check("阶段5搜索刷新", InventoryGui.DevBestiarySearchMatches("FlameBearerMed"));
                 InventoryGui.DevBookSearch = "";
                 InventoryGui.DevBestiarySelect(-10);
-                Check("当前模式恢复实际掉落", InventoryGui.DevBestiaryDrops("FlameBearerMed").SequenceEqual(EnemyDrops.Of("FlameBearerMed")));
+                var table = EnemyDrops.In("FlameBearerMed", InventoryGui.DevBookHome("FlameBearerMed"));
+                Check("当前模式恢复实际掉落", InventoryGui.DevBestiaryDrops("FlameBearerMed").Take(table.Count).SequenceEqual(table));
                 var locked = new EnemyDrops.Drop { Type = ItemType.TerraBlade, Group = 100, Num = 1, Den = 1, Weight = 1, LockStage = 5 };
                 var open = locked; open.LockStage = 0;
                 var synthetic = new[] { locked, open };

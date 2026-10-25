@@ -14,7 +14,7 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=r'C:\Program Files\Google\Chrome\Application\chrome.exe', headless=True)
         page = browser.new_page(viewport={'width': 1440, 'height': 900})
-        page.on('request', lambda r: requests.append(r.url.split('?')[0]))
+        page.context.on('request', lambda r: requests.append(r.url.split('?')[0]))
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.goto(base + 'recipes.html', wait_until='networkidle')
         page.wait_for_function("document.querySelector('#recipe-count').textContent.includes('找到')")
@@ -46,8 +46,9 @@ def main():
         assert page.locator('.entry-card').count() == 24
         assert not any(u.endswith('search-index.json') or u.endswith('items-index.json') for u in requests)
         page.locator('#browse-query').fill('Zenith')
-        page.wait_for_function("performance.getEntriesByType('resource').some(r => r.name.includes('items-index.json')) && document.querySelector('#result-count').textContent.includes('已显示')")
+        page.wait_for_function("document.querySelectorAll('.entry-card').length===1 && document.querySelector('#result-count').textContent.includes('已显示')")
         page.wait_for_selector('.entry-card[href$="item-zenith.html"]')
+        assert any(u.endswith('items-index.json') for u in requests), 'Full text must be fetched only after a query (inside the worker)'
         assert any(u.endswith('items-index.json') for u in requests)
         page.set_viewport_size({'width': 1440, 'height': 900})
         page.goto(base + 'recipes.html', wait_until='networkidle')

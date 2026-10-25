@@ -105,15 +105,16 @@
 | :--- | :--- |
 | **空洞骑士** | Steam 正式版 **1.5.12620** |
 | **泰拉瑞亚** | Steam **1.4.x** |
-| **Mod 加载器** | **BepInEx 5.4.23.x**，Windows x64 |
+| **Mod 加载器** | **BepInEx 5.4.23.x**，Windows x64（安装器自带） |
 | **操作系统** | **Windows 64 位** |
 
 ### 快速安装
 
-1. 从 [BepInEx Releases](https://github.com/BepInEx/BepInEx/releases) 下载对应的 **5.4.23.x win_x64** 版本，解压至空洞骑士游戏目录。
-2. 启动一次空洞骑士，进入主菜单后退出，以初始化 BepInEx。
-3. 从 [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases) 下载最新版压缩包，解压覆盖至同一个游戏目录。
-4. 双击游戏目录中的 **`空洞泰拉.bat`** 启动 Mod。
+1. 从 [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases) 下载最新的 **`TerraKnight-vX.Y.Z-Setup.exe`**。
+2. 关闭空洞骑士，运行安装器，点“安装”。安装器自带 BepInEx 5 框架，会在各个盘的 Steam 库里找到空洞骑士和泰拉瑞亚（两款游戏可以不在同一个盘）。
+3. 双击游戏目录中的 **`空洞泰拉.bat`**（或桌面上的“空洞泰拉”）启动 Mod。
+
+同一个发布页里的 `TerraKnight-vX.Y.Z.zip` 是手动安装用的压缩包，解压到空洞骑士游戏目录即可。
 
 > [!IMPORTANT]
 > **建议使用新存档，并提前备份原版存档。**

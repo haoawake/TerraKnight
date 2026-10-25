@@ -19,8 +19,9 @@ namespace TerraKnight.Items
     /// ItemCheck_MeleeHitNPCs Pl:44656-44659, Projectile.Damage P:13388-13391: before the variation) and damage taken
     /// ×DamageReceived (the touch Pl:31624-31627, a hostile shot P:14906-14909: before the defense), both sampled at the
     /// save's difficulty (Main.Difficulty). The Monster Banner buff (147) shows while any is carried (Pl:25747-25750),
-    /// its tooltip listing the monsters (Main.cs:21613-21616). A shot an enemy's FSM spawns carries its banner
-    /// (Projectile.bannerIdToRespondTo): the pool's spawns and created objects are marked with the enemy that made them.
+    /// its tooltip listing every monster in columns (Main.MouseText_DrawBuffTooltip, Main.cs:21592-21737). A shot an
+    /// enemy's FSM spawns carries its banner (Projectile.bannerIdToRespondTo): the pool's spawns and created objects are
+    /// marked with the enemy that made them.
     /// </summary>
     [HarmonyPatch]
     internal static partial class Banners
@@ -176,7 +177,6 @@ namespace TerraKnight.Items
         public static float TakenFactor(World.DifficultyLevel d) => Sample(takenCurve, DifficultyLevel(d));
 
         static readonly HashSet<ItemType> active = new HashSet<ItemType>();
-        static readonly List<ItemType> activeOrder = new List<ItemType>();
         static int activeFrame = -1;
 
         /// <summary>
@@ -188,17 +188,16 @@ namespace TerraKnight.Items
             if (!force && activeFrame == Time.frameCount) return;
             activeFrame = Time.frameCount;
             active.Clear();
-            activeOrder.Clear();
             var inv = TerraMod.Instance?.Inventory;
             if (inv == null) return;
             foreach (var s in inv.Slots)
-                if (!s.IsEmpty && Is(s.Type) && active.Add(s.Type)) activeOrder.Add(s.Type);
+                if (!s.IsEmpty && Is(s.Type)) active.Add(s.Type);
             foreach (var s in inv.Bank)
-                if (!s.IsEmpty && Is(s.Type) && active.Add(s.Type)) activeOrder.Add(s.Type);
+                if (!s.IsEmpty && Is(s.Type)) active.Add(s.Type);
             if (!Containers.InEffect(inv, ItemType.BannerCase)) return;
             foreach (var page in inv.BannerCase)
                 foreach (var s in page)
-                    if (!s.IsEmpty && Is(s.Type) && active.Add(s.Type)) activeOrder.Add(s.Type);
+                    if (!s.IsEmpty && Is(s.Type)) active.Add(s.Type);
         }
 
         /// <summary>Player.HasNPCBannerBuff: this banner is carried.</summary>
@@ -384,14 +383,50 @@ namespace TerraKnight.Items
                 foreach (var e in all) Localize(ItemDb.Get(e.Type));
         }
 
-        /// <summary>The banner buff's tooltip: the monsters it is for under it (Main.cs:21613-21616, bannerMouseOver).</summary>
+        /// <summary>The banners named for the buff's tooltip, in the banners' order, and their names in the language then.</summary>
+        static readonly List<ItemType> named = new List<ItemType>();
+        static readonly List<string> names = new List<string>();
+        static string namedIn;
+        static bool namedLive;
+
+        /// <summary>
+        /// The banner buff's tooltip: the monster of every banner in effect, in the banners' own order as Terraria goes
+        /// through its banner ids (Main.cs:21611-21616, bannerMouseOver); InventoryGui lays them out in columns under
+        /// the buff's text. The names are made again only when the banners in effect or the language change.
+        /// </summary>
         public static void BuffLines(int type, List<string> lines)
         {
             if (type != MonsterBannerBuff) return;
             Refresh();
-            const int Shown = 20;
-            for (int i = 0; i < activeOrder.Count && i < Shown; i++) lines.Add(MonsterName(activeOrder[i]));
-            if (activeOrder.Count > Shown) lines.Add(TerrariaText.Get(Lang.Culture, "UI.Ellipsis") ?? "...");
+            bool live = Lang.IsSource || JournalReady;
+            if (!NamesCurrent(live))
+            {
+                named.Clear();
+                names.Clear();
+                foreach (var e in all)
+                {
+                    if (!active.Contains(e.Type)) continue;
+                    named.Add(e.Type);
+                    names.Add(MonsterName(e.Type));
+                }
+                namedIn = Lang.Culture;
+                namedLive = live;
+            }
+            for (int i = 0; i < names.Count; i++) lines.Add(names[i]);
+        }
+
+        /// <summary>The names made last still fit: the same banners in effect, the same language.</summary>
+        static bool NamesCurrent(bool live)
+        {
+            if (namedIn != Lang.Culture || namedLive != live) return false;
+            int n = 0;
+            foreach (var e in all)
+            {
+                if (!active.Contains(e.Type)) continue;
+                if (n >= named.Count || named[n] != e.Type) return false;
+                n++;
+            }
+            return n == named.Count;
         }
 
         public static void Clear()

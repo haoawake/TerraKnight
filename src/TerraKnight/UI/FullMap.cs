@@ -226,7 +226,7 @@ namespace TerraKnight.UI
             // Terraria opens the map centred on the player.
             var head = HeadPosition(out bool found);
             pan = found || haveHead ? head : extent.center;
-            hero.RelinquishControl();
+            MapHold.Take(hero);
             TerraMod.Instance?.PlaySound("Menu_Open", 0.7f);
         }
 
@@ -236,8 +236,7 @@ namespace TerraKnight.UI
             if (!Open) return;
             Open = false;
             dragging = false;
-            var hero = HeroController.SilentInstance;
-            if (hero != null) hero.RegainControl();
+            MapHold.Give(HeroController.SilentInstance);
             TerraMod.Instance?.PlaySound("Menu_Close", 0.7f);
         }
 
@@ -535,10 +534,15 @@ namespace TerraKnight.UI
             var head = inv == null ? default : inv.VanityArmor[0].IsEmpty ? inv.EffectiveArmor[0] : inv.VanityArmor[0];
             int headArmor = !head.IsEmpty ? head.Def.ArmorSheet : 0;
             bool hairShows = headArmor == 0 || head.Type == Items.ItemType.MiningHelmet || head.Type == Items.ItemType.JungleHat;
-            // In a LAN game the player's chosen look, as the others see them.
-            var look = Net.NetSession.State != Net.NetSession.Phase.Off ? Player.TerraPlayerSprite.Looks[Mathf.Clamp(Net.NetSettings.Look.Value, 0, Player.TerraPlayerSprite.Looks.Length - 1)] : default;
-            bool own = Net.NetSession.State != Net.NetSession.Phase.Off;
-            DrawHead(at, ui, headArmor, hairShows, own ? look.Skin : Skin, own ? look.Hair : Hair, own ? look.Eye : Eye, Color.black);
+            // The save's character (Player.Appearance): its clothing style's head, its hair style and colours.
+            DrawHead(at, ui, headArmor, hairShows, Player.Appearance.Current, Color.black);
+        }
+
+        /// <summary>A player's head on the map in their own look (Main.DrawPlayerHead): its rim, skin, eyes, hair style, helmet.</summary>
+        internal static void DrawHead(Vector2 at, float ui, int headArmor, bool hairShows, Player.Appearance look, Color rim)
+        {
+            float s = 1.6f * ui;
+            CharacterPortrait.DrawHead(new Rect(at.x - 20f * s, at.y - 14f * s, 40f * s, 28f * s), look, rim, hairShows, headArmor);
         }
 
         /// <summary>A player's head on the map (Main.DrawPlayerHead): its rim (a team's colour for another player), skin, eyes, hair, helmet.</summary>
@@ -574,12 +578,7 @@ namespace TerraKnight.UI
             float ui = GameView.Scale;
             if (style == null) style = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperLeft };
             style.fontSize = Mathf.RoundToInt(18 * ui);
-            style.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
-            for (int ox = -1; ox <= 1; ox++)
-            for (int oy = -1; oy <= 1; oy++)
-                if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 1.5f * ui, r.y + oy * 1.5f * ui, r.width, r.height), text, style);
-            style.normal.textColor = color;
-            GUI.Label(r, text, style);
+            BorderText.Draw(r, text, style, new Color(0f, 0f, 0f, 0.85f), color, 1.5f * ui);
         }
 
         /// <summary>Dev: multiply the zoom.</summary>

@@ -269,6 +269,8 @@ namespace TerraKnight.Net
         public int Slot;
         public string Name = "?";
         public int Look;
+        /// <summary>Their character's look as their game sent it (null from a game that sends none: <see cref="Look"/>'s colouring then).</summary>
+        public Player.Appearance Appearance;
         public bool Pvp;
         public byte Team;
         public readonly List<string> In = new List<string>(), Loaded = new List<string>();
@@ -287,6 +289,7 @@ namespace TerraKnight.Net
         GameObject root;
         TerraPlayerSprite sprite;
         int spriteLook = -1;
+        Player.Appearance spriteAppearance;
         bool wasDead;
         int coverFrames;
 
@@ -357,7 +360,15 @@ namespace TerraKnight.Net
             var mount=Mounts.Get(s.Mount);
             bool showRider=mount==null || !mount.HideRider;
             if (sprite.gameObject.activeSelf != showRider) sprite.gameObject.SetActive(showRider);
-            if (spriteLook != Look)
+            if (Appearance != null)
+            {
+                if (spriteAppearance != Appearance)
+                {
+                    spriteAppearance = Appearance;
+                    sprite.SetAppearance(Appearance);
+                }
+            }
+            else if (spriteLook != Look)
             {
                 spriteLook = Look;
                 sprite.SetPalette(TerraPlayerSprite.Looks[Mathf.Clamp(Look, 0, TerraPlayerSprite.Looks.Length - 1)]);
@@ -376,12 +387,12 @@ namespace TerraKnight.Net
             if (showRider)
             {
                 sprite.Pose(Feet, s.Vel, s.Grounded, facing, s.Swing, item, s.ItemScale, s.Opacity, s.Body, s.Eq, s.Shadows, s.Hold(), s.Leg, s.Seated);
-                sprite.MountAppearance(mount, facing, s.Vel, s.Grounded, s.Eq);
+                if (!sprite.SpecialPoseActive) sprite.MountAppearance(mount, facing, s.Vel, s.Grounded, s.Eq);
             }
-            if(mount!=null)Mounts.Draw(s.Mount,Feet-Vector2.up*Mathf.Max(0,mount.Lift)/32f,s.Vel,s.Grounded,facing,s.Opacity);
+            if(mount!=null)Mounts.Draw(s.Mount,Feet-Vector2.up*Mounts.RiderRise(mount,s.Vel,s.Grounded),s.Vel,s.Grounded,facing,s.Opacity);
             // DrawPlayer_09_Wings, on their wings' frame.
             var wing = TerraWings.Get(s.Wing);
-            if ((mount==null || mount.Skates) && wing != null && Effects.FxBatch.Instance != null)
+            if (!sprite.SpecialPoseActive && (mount==null || mount.Skates) && wing != null && Effects.FxBatch.Instance != null)
             {
                 int keep = TerraWings.Frame;
                 TerraWings.Frame = s.WingFrame;
@@ -438,13 +449,7 @@ namespace TerraKnight.Net
 
         internal static void Outlined(Rect r, string text, GUIStyle st, Color c)
         {
-            float ui = UI.GameView.Scale;
-            st.normal.textColor = new Color(0f, 0f, 0f, 0.85f * c.a);
-            for (int ox = -1; ox <= 1; ox++)
-                for (int oy = -1; oy <= 1; oy++)
-                    if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 1.5f * ui, r.y + oy * 1.5f * ui, r.width, r.height), text, st);
-            st.normal.textColor = c;
-            GUI.Label(r, text, st);
+            UI.BorderText.Draw(r, text, st, new Color(0f, 0f, 0f, 0.85f * c.a), c, 1.5f * UI.GameView.Scale);
         }
     }
 }

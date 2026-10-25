@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using TerraKnight.Effects;
 using TerraKnight.Items;
 using TerraKnight.Terraria;
@@ -25,6 +24,8 @@ namespace TerraKnight.Town
         public static int QuestDay = -1;
         public static bool QuestDone;
         public static int QuestsDone;
+        // Includes the active quest. One new credit per game day, at most three.
+        public static int Pending;
         public static int DevRewards;
 
         public static void Clear()
@@ -34,23 +35,40 @@ namespace TerraKnight.Town
             QuestDay = -1;
             QuestDone = false;
             QuestsDone = 0;
+            Pending = 0;
             HideSleeper();
         }
 
-        static int Today => PlayerData.instance == null ? 0 : World.TerraTime.Day;
+        // Quest credits belong to this character, not a host's differently aged world.
+        // Joining/leaving hosts must neither mint credits nor lock the queue for days.
+        static int Today => PlayerData.instance == null ? 0 : Mathf.FloorToInt(World.TerraTime.PlayTime / World.TerraTime.FullDaySeconds);
 
         /// <summary>Main.AnglerQuestSwap at dawn: a new fish, today's quest open again.</summary>
         static void Refresh()
         {
+            RefreshAt(Today);
+        }
+
+        internal static void RefreshAt(int day)
+        {
             if (!Saved) return;
-            int day = Today;
-            if (day == QuestDay && Quest != ItemType.None) return;
-            QuestDay = day;
-            QuestDone = false;
+            if (QuestDay < 0) { Pending = Mathf.Max(1, Pending); QuestDay = day; }
+            else if (day < QuestDay) { QuestDay = day; } // Migrate an old host-clock day without awarding credit.
+            else if (day > QuestDay) { Pending = Mathf.Clamp(Pending + Mathf.Min(3, day - QuestDay), 0, 3); QuestDay = day; }
+            QuestDone = Pending == 0;
+            if (QuestDone) { Quest = ItemType.None; return; }
+            // An older save may hold a Terraria fish. Re-pick without changing its quest credits.
+            if (Quest != ItemType.None && QuestFishCatalog.Find(Quest) != null) return;
+            PickQuest();
+        }
+
+        static void PickQuest(ItemType previous = ItemType.None)
+        {
             var pick = new List<ItemType>();
             foreach (var q in Fishing.QuestList(Shop.UnlockedStage())) pick.Add(q);
+            if (pick.Count > 1) pick.Remove(previous);
             Quest = pick.Count > 0 ? pick[Random.Range(0, pick.Count)] : ItemType.None;
-            Plugin.Log.LogInfo($"[渔夫] 第 {day} 天的任务：{(Quest == ItemType.None ? "无" : ItemDb.Get(Quest).Name)}");
+            Plugin.Log.LogInfo($"[渔夫] 待办 {Pending}/3：{(Quest == ItemType.None ? "无" : ItemDb.Get(Quest).Name)}");
         }
 
         /// <summary>Projectile.FishingCheck_ProbeForQuestFish: the fish that can be caught now (none if handed in, or carried).</summary>
@@ -69,51 +87,53 @@ namespace TerraKnight.Town
 
         // ------------------------------------------------------------------ talking
 
-        static string T(string key) => TerrariaText.Get(Lang.IsSource ? Lang.Source : Lang.Culture, key) ?? TerrariaText.Get("en-US", key);
+        static string Dialogue(string zh, string en) => Lang.Culture.StartsWith("zh") ? zh : (Lang.Lookup(zh, Lang.Culture) ?? en);
 
-        static string Fill(string s, string name)
-        {
-            if (s == null) return "";
-            return s.Replace("{Angler}", name ?? Lang.T("渔夫")).Replace("{WorldName}", Lang.T("圣巢")).Replace("{AnglerCompletedQuestsCount}", QuestsDone.ToString())
-                .Replace("{PlayerName}", Lang.T("小骑士")).Replace("{Bartender}", TerrariaText.NpcName(Lang.IsSource ? Lang.Source : Lang.Culture, 550) ?? "Bartender")
-                .Replace("{Dryad}", TerrariaText.NpcName(Lang.IsSource ? Lang.Source : Lang.Culture, 20) ?? "Dryad");
-        }
+        static string NoQuestText() => Dialogue("这几单都交齐了！我先把鱼安顿好。明天再来找我，新的委托每天增加一单，最多能攒三单。",
+            "That is every order done! Let me settle these fish in. Come back tomorrow: one new order arrives each day, and you can save up to three.") + PendingText();
 
-        /// <summary>NPC.GetChat for the Angler: his quest chatter now and then, a nudge while the quest is open, else his chatter.</summary>
+        /// <summary>Opening the conversation immediately shows the current Hallownest order.</summary>
         public static string Chat(string name)
         {
             Refresh();
-            if (QuestsDone > 1 && Random.Range(0, 5) == 0) return Fill(T("AnglerQuestChatter.Chatter_" + Random.Range(1, 3)), name);
-            if (!QuestDone && Quest != ItemType.None) return Fill(T("LegacyDialog." + Random.Range(334, 338)), name);
-            return Fill(T("AnglerChatter.Chatter_" + Random.Range(1, 11)), name);
+            if (!QuestDone && Quest != ItemType.None) return QuestText(Quest, name);
+            return NoQuestText();
         }
 
         /// <summary>The "Quest" button (Main.NPCChatText_DoAnglerQuest): today's fish, handed in for the reward, or nothing more today.</summary>
         public static string QuestButton(Inventory inv, string name)
         {
             Refresh();
-            if (QuestDone || Quest == ItemType.None) return Fill(T("AnglerQuestText.NoQuest_" + Random.Range(1, 6)), name);
+            if (QuestDone || Quest == ItemType.None) return NoQuestText();
             int slot = -1;
             for (int i = 0; i < inv.Slots.Length && slot < 0; i++) if (!inv.Slots[i].IsEmpty && inv.Slots[i].Type == Quest) slot = i;
             if (slot >= 0)
             {
                 inv.ConsumeAt(slot);
                 QuestsDone++;
-                QuestDone = true;
+                Achievements.AchievementTracker.AnglerQuest(QuestsDone);
+                Pending = Mathf.Max(0, Pending - 1);
+                QuestDone = Pending == 0;
+                var previous = Quest;
+                Quest = ItemType.None;
                 Reward(inv);
+                if (!QuestDone) PickQuest(previous);
                 TerraMod.Instance?.PlaySound("Item_1");
-                return Fill(T("AnglerQuestText.TurnIn_" + Random.Range(1, 6)), name);
+                string thanks = Dialogue("就是这条！鱼归我，报酬归你。小心点，别让它把我的新家拆了！", "That is the one! I get the fish, you get the reward. Careful, do not let it wreck my new home!");
+                return thanks + "\n\n" + (QuestDone ? NoQuestText() : QuestText(Quest, name));
             }
             return QuestText(Quest, name);
         }
 
-        /// <summary>The quest's words, Terraria's, its "(Caught in ...)" told by Hallownest's areas.</summary>
+        /// <summary>Hallownest quest description, fish name, catch location and remaining orders.</summary>
         static string QuestText(ItemType fish, string name)
         {
-            string text = Fill(T("AnglerQuestText.Quest_" + fish), name);
-            text = Regex.Replace(text, @"\s*[\(（][^\(（]*[\)）]\s*$", "");
-            return text + "\n\n" + Lang.F("（抓捕位置：{0}）", Fishing.WhereText(fish));
+            string text = Dialogue("这次我要：", "This time I want: ") + ItemDb.Get(fish).Name + "\n"
+                + (QuestFishCatalog.Dialogue(fish) ?? Dialogue("去圣巢的水边找找，带回这条鱼就有报酬！", "Search Hallownest's waters. Bring me this fish for a reward!"));
+            return text + "\n\n" + Lang.F("（抓捕位置：{0}）", Fishing.WhereText(fish)) + PendingText();
         }
+
+        static string PendingText() => Dialogue($"\n待办任务：{Pending}/3（每天增加一单）", $"\nPending quests: {Pending}/3 (one added each day)");
 
         // ------------------------------------------------------------------ the reward
 
@@ -153,7 +173,7 @@ namespace TerraKnight.Town
             Try(q == 30, ItemType.GoldenFishingRod);
             Try(q > 75 && Roll(250), ItemType.GoldenFishingRod);
             Try(hard && q > 25 && Roll(100), ItemType.HotlineFishingHook);
-            Try(hard && q > 10 && Roll(70), ItemType.FinWings);
+            Try(Shop.UnlockedStage() >= 4 && q > 10 && Roll(70), ItemType.FinWings);
             Try(q > 10 && Roll(70), ItemType.BottomlessWaterBucket);
             Try(q > 10 && Roll(70), ItemType.SuperAbsorbantSponge);
             Try(Roll(60), ItemType.FishHook);
@@ -208,7 +228,8 @@ namespace TerraKnight.Town
 
         static HashSet<ItemType> Owned(Inventory inv)
         {
-            var set = new HashSet<ItemType>();
+            inv.ObserveCollections();
+            var set = new HashSet<ItemType>(inv.CollectedItems);
             void Add(ItemStack[] xs) { foreach (var s in xs) if (!s.IsEmpty) set.Add(s.Type); }
             Add(inv.Slots); Add(inv.Accessories); Add(inv.Armor); Add(inv.VanityAccessories); Add(inv.VanityArmor); Add(inv.Bank);
             return set;
@@ -296,9 +317,9 @@ namespace TerraKnight.Town
         {
             Saved = true;
             HideSleeper();
-            string line = TerrariaText.Get(Lang.IsSource ? Lang.Source : Lang.Culture, "LegacyDialog." + Random.Range(353, 356)) ?? "";
+            string line = Dialogue("唔……蓝湖边睡觉也不让人清静！你会钓鱼？那就来德特茅斯找我，我有一整本圣巢怪鱼的委托等着你！", "Mmm... Cannot even nap beside the Blue Lake! You can fish? Find me in Dirtmouth. I have a whole book of strange Hallownest fish for you to catch!");
             var hero = HeroController.SilentInstance;
-            if (hero != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 1.5f, Fill(line, null), Color.white);
+            if (hero != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 1.5f, line, Color.white);
             Net.NetChat.Add(Lang.T("渔夫醒了，他会搬进德特茅斯。"), new Color(50 / 255f, 125 / 255f, 255 / 255f));
             TerraMod.Instance?.PlaySound("Chat", 0.8f);
             Plugin.Log.LogInfo("[渔夫] 在蓝湖叫醒了渔夫");

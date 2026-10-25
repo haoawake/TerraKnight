@@ -33,8 +33,8 @@
 | `Multiplayer.SyncEnemies` | 多人模式里同一场景共用一批敌人（默认开）；关掉则各打各的 |
 | `Keys.*` | 泰拉瑞亚按键（Unity Input System 的键名，如 `W`、`Space`、`LeftShift`、`Digit1`、`F1`），游戏里在“泰拉瑞亚设置”里改更方便 |
 | `Gameplay.EnemyMultiplier` | 普通敌人的数量倍数，默认 2（翻倍），1 为原版数量 |
-| `Gameplay.BossDamage` | 首领的伤害是同区域普通敌人的几倍，默认 2 |
-| `Gameplay.EliteDamage` | 精英的伤害是同区域普通敌人的几倍，默认 1.5 |
+| `Gameplay.BossDamage` | 首领的伤害是同区域普通敌人的几倍，默认 1.4 |
+| `Gameplay.EliteDamage` | 精英的伤害是同区域普通敌人的几倍，默认 1.25 |
 | `Gameplay.SkipOpeningCutscenes` | 新游戏跳过开场的序章诗和开场动画，加载好直接在国王山道从传送门里走出来，默认开 |
 | `Gameplay.EnemyRespawnScale` | 普通敌人重新刷出的等待时间倍数：按强弱分档（30 / 45 / 70 / 100 秒，精英 4 分钟）乘以它，默认 1，0 为不刷新（旧设置 `EnemyRespawnSeconds` 填 0 也是不刷新） |
 | `Video.TargetFrameRate` | 游玩时锁定的帧率，默认 144（会关掉垂直同步），0 用游戏自己的设置 |

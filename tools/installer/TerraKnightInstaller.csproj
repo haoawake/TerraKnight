@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The one-file installer: a Windows program (.NET Framework 4.7.2, in every Windows 10/11) carrying the release's files
+    (BepInEx, the mod, the launcher) as one embedded zip. Built by tools/make_release.py, which passes the zip:
+      dotnet build tools/installer -c Release -p:PayloadZip=<zip> -p:InstallerVersion=<x.y.z> -o <dir>
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>TerraKnightSetup</AssemblyName>
+    <RootNamespace>TerraKnightSetup</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Product>空洞泰拉 TerraKnight</Product>
+    <AssemblyTitle>空洞泰拉 TerraKnight 安装器</AssemblyTitle>
+    <Version>$(InstallerVersion)</Version>
+    <Version Condition="'$(InstallerVersion)' == ''">0.0.0</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PayloadZip)' != ''">
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="payload.zip" />
+  </ItemGroup>
+</Project>

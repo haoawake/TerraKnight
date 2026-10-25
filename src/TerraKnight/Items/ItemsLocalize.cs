@@ -32,6 +32,7 @@ namespace TerraKnight.Items
                 // A quest fish's "Caught in ...": Hallownest's areas where it is.
                 if (d.QuestFish)
                 {
+                    if (QuestFishCatalog.Localize(d)) { done++; continue; }
                     int qid = TerrariaId(d);
                     d.Name = Lang.IsSource ? d.ZhName : Lang.Pick(d.ZhName, TerrariaText.ItemName(Lang.Source, qid), TerrariaText.ItemName(c, qid));
                     d.Tooltip = Fishing.QuestTooltip(d.Type);

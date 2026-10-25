@@ -4,7 +4,8 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// Terraria's shimmer in Hallownest: the Forgotten Crossroads' hot spring (Crossroads_30) shimmers. Items lying in it
+    /// Terraria's shimmer in Hallownest: the Forgotten Crossroads' hot spring (Crossroads_30) shimmers, and so does what
+    /// the Bottomless Shimmer Bucket pours (World.LiquidKind.Shimmer: it changes items alone, as the spring). Items lying in it
     /// come out changed as WorldItem.GetShimmered has them (WorldItemsShimmer): ItemID.Sets.ShimmerTransformToItem
     /// (ShimmerData), else taken apart by their recipe here, so what goes in comes back out. The player, and the spring's
     /// own healing, are the game's; the spring takes the shimmer's colours (Tick). Hallownest has no coins, slime crowns or
@@ -61,7 +62,8 @@ namespace TerraKnight.Items
         /// <summary>
         /// ShimmerTransforms.GetDecraftingRecipeIndex and IsRecipeIndexDecraftLocked: the recipe it comes apart by, or null.
         /// Of several, Terraria's own (the last that may be taken apart; ShimmerData.decraftBy names its ingredients), else
-        /// the last here; never one Terraria marks notDecraftable, nor a basic item bought for geo.
+        /// the last canonical one here (expanded ingredient alternatives do not override it); never one Terraria marks
+        /// notDecraftable, nor a basic item bought for geo.
         /// </summary>
         public static Recipe DecraftRecipe(ItemType type, int stage)
         {
@@ -80,7 +82,7 @@ namespace TerraKnight.Items
                             pick = r;
                             break;
                         }
-                        pick = r;
+                        if (!r.IngredientAlternative) pick = r;
                     }
                 }
                 recipeOf[type] = pick;
@@ -148,18 +150,59 @@ namespace TerraKnight.Items
             return null;
         }
 
-        /// <summary>A point in the shimmer: the spring's box, and the unit under it down to its floor.</summary>
+        /// <summary>A point in the shimmer: the spring's box and the unit under it down to its floor, or poured shimmer under its level.</summary>
         public static bool In(Vector2 p)
         {
             var r = Pool;
-            return r != null && p.x >= r.Value.xMin && p.x <= r.Value.xMax && p.y >= r.Value.yMin - 1f && p.y <= r.Value.yMax;
+            if (r != null && p.x >= r.Value.xMin && p.x <= r.Value.xMax && p.y >= r.Value.yMin - 1f && p.y <= r.Value.yMax) return true;
+            return PouredSurface(p, 0, out float top) && p.y <= top;
         }
 
         /// <summary>Just over the shimmer (within two tiles of its top): a shimmered item still rises there (UpdateShimmer).</summary>
         public static bool JustAbove(Vector2 p)
         {
             var r = Pool;
-            return r != null && p.x >= r.Value.xMin && p.x <= r.Value.xMax && p.y > r.Value.yMax && p.y - r.Value.yMax < 2f * World.CellGrid.CellSize;
+            const float reach = 2f * World.CellGrid.CellSize;
+            if (r != null && p.x >= r.Value.xMin && p.x <= r.Value.xMax && p.y > r.Value.yMax && p.y - r.Value.yMax < reach) return true;
+            return PouredSurface(p, 2, out float top) && p.y > top && p.y - top < reach;
+        }
+
+        /// <summary>
+        /// Poured shimmer at the point's cell or in the open cells under it (down to <paramref name="below"/> of them): the
+        /// top of the liquid in the first such cell (world units).
+        /// </summary>
+        static bool PouredSurface(Vector2 p, int below, out float top)
+        {
+            top = 0f;
+            var c = World.CellGrid.WorldToCell(p);
+            for (int k = 0; k <= below; k++)
+            {
+                int y = c.y - k;
+                int a = World.TerraWorld.LiquidAt(c.x, y);
+                if (a > 0)
+                {
+                    if (World.TerraWorld.LiquidKindAt(c.x, y) != World.LiquidKind.Shimmer) return false;
+                    top = (y + a / 255f) * World.CellGrid.CellSize;
+                    return true;
+                }
+                if (World.TerraWorld.IsSolid(c.x, y)) return false;
+            }
+            return false;
+        }
+
+        /// <summary>The shimmer within reach of the hero (the spring, or poured shimmer, 10 tiles across and 8 up and down), for its crafting.</summary>
+        public static bool Near(HeroController hero)
+        {
+            if (hero == null) return false;
+            Vector2 at = hero.transform.position;
+            var r = Pool;
+            const float cs = World.CellGrid.CellSize;
+            if (r != null && at.x >= r.Value.xMin - 10f * cs && at.x <= r.Value.xMax + 10f * cs && at.y >= r.Value.yMin - 8f * cs && at.y <= r.Value.yMax + 8f * cs) return true;
+            var c0 = World.CellGrid.WorldToCell(at);
+            for (int dy = -8; dy <= 8; dy++)
+                for (int dx = -10; dx <= 10; dx++)
+                    if (World.TerraWorld.LiquidAt(c0.x + dx, c0.y + dy) > 0 && World.TerraWorld.LiquidKindAt(c0.x + dx, c0.y + dy) == World.LiquidKind.Shimmer) return true;
+            return false;
         }
 
         /// <summary>The shimmer's room keeps its own ground: a cell of it (not one the player put there) is never dug or blown away.</summary>

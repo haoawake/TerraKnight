@@ -6,13 +6,14 @@ namespace TerraKnight.Items
     /// <summary>
     /// Small moments of story that point the way, apart from the Voice's guidance (<see cref="BossGuide"/>): the first time
     /// something happens in a save (the first fall and the shade it leaves, the first bench, a charm, a pitch-dark room,
-    /// life running low, a mask shard, Pale Ore, the Crossroads infected, the Grimm Troupe in town and its Grimmchild, the
-    /// three Dreamers fallen) the player says a line or two of their own, and a tip says what to do about it. Each is said
+    /// life running low, a mask shard, Pale Ore, each Nailmaster's art learned, each of the four spells with class weapons
+    /// absorbed, the Crossroads infected, the Grimm Troupe in town and its Grimmchild, the shimmer, the three Dreamers
+    /// fallen) the player says a line or two of their own, and a tip says what to do about it. Each is said
     /// once a save (its flag kept in the save), in the Voice's subtitle place and in the chat, never over the Voice or the
     /// game's own talk, and held while the inventory is open. The Terraria settings' guidance tab turns them off for the
     /// save; a Creative save starts with them off.
     /// </summary>
-    internal static class StoryBeats
+    internal static partial class StoryBeats
     {
         const string Prefix = "story.beat.v1.", OffFlag = "story.beats.off.v1", OnFlag = "story.beats.on.v1";
         const float QuietBefore = 2f, QuietAgain = 1f;
@@ -31,6 +32,8 @@ namespace TerraKnight.Items
             public bool Seated;
             public string[] Zh, En;
             public System.Func<PlayerData, string> TipZh, TipEn;
+            /// <summary>Done as it starts, before its lines (the first charm's: the inventory opened on the charm page).</summary>
+            public System.Action Act;
         }
 
         struct Line
@@ -61,7 +64,7 @@ namespace TerraKnight.Items
             return !HkItems.LanternLit(mod.Inventory) && !eq.Light && !eq.NightVision;
         }
 
-        static readonly Beat[] beats =
+        static readonly Beat[] coreBeats =
         {
             new Beat
             {
@@ -103,12 +106,13 @@ namespace TerraKnight.Items
             },
             new Beat
             {
+                // The first charm got: the inventory opened on the charm page, its button pointed out (InventoryGui.ShowCharmIntro);
+                // the charm's own beat follows once the inventory shuts.
                 Id = "charm",
-                When = (mod, pd) => Charms.Enabled && Charms.Owned > 0,
-                Zh = new[] { "一枚刻着纹路的小护符，握在掌心微微发烫，像在催我把它戴上。", "虫子们的手艺……戴上它，兴许能沾上这片土地的一点运气。" },
-                En = new[] { "A little carved charm. It's warm in my palm, as if it wants to be worn.", "Bug craftsmanship... Wear it, and maybe a little of this land's luck rubs off on me." },
-                TipZh = pd => "护符在背包装备栏上方的“护符”页里。每枚护符要占几个凹槽，只有坐在长椅上才能装上或卸下。",
-                TipEn = pd => "Charms are on the Charms page above the equipment column. Each takes a few notches, and they go on or come off only while resting on a bench.",
+                When = (mod, pd) => Charms.Enabled && rose.Contains("charm"),
+                Act = () => InventoryGui.ShowCharmIntro(),
+                Zh = new string[0],
+                En = new string[0],
             },
             new Beat
             {
@@ -152,9 +156,9 @@ namespace TerraKnight.Items
                 When = (mod, pd) => rose.Contains("grimmchild") && pd.grimmChildLevel < 4,
                 Zh = new[] { "团长塞给我一枚护符，里面像封着一团还在跳动的火。", "“去收集火焰”……他说得倒是轻巧。" },
                 En = new[] { "The master pressed a charm into my hand. Something like a living flame is sealed inside.", "\"Gather the flames\"... He makes it sound easy." },
-                TipZh = pd => Charms.Enabled ? "在护符页装上格林之子（2 个凹槽），它就会跟着你；戴着它时，地图上会标出要收集的梦魇之焰。"
+                TipZh = pd => Charms.Enabled ? "在护符背包里装上格林之子（2 个凹槽），它就会跟着你；戴着它时，地图上会标出要收集的梦魇之焰。"
                     : "把圣巢背包里的格林之子放进宠物栏，它就会跟着你；它跟着你时，地图上会标出要收集的梦魇之焰。",
-                TipEn = pd => Charms.Enabled ? "Put the Grimmchild on in the Charms page (2 notches) and it follows you; while you wear it, the map marks the Nightmare flames to gather."
+                TipEn = pd => Charms.Enabled ? "Put the Grimmchild on in the Charm Bag (2 notches) and it follows you; while you wear it, the map marks the Nightmare flames to gather."
                     : "Put the Grimmchild from the Hallownest Bag in the pet slot and it follows you; while it does, the map marks the Nightmare flames to gather.",
             },
             new Beat
@@ -268,6 +272,7 @@ namespace TerraKnight.Items
                 lastOre = pd.ore;
                 lastGrimm = Charms.Got(Charms.Grimmchild);
                 lastDreamers = Dreamers(pd);
+                PrimeWatches(pd);
             }
             Detect(pd);
             if (!On)
@@ -310,7 +315,7 @@ namespace TerraKnight.Items
             if (Time.unscaledTime < checkAt) return;
             checkAt = Time.unscaledTime + 0.5f;
             if (BossGuide.DevTalking) return;
-            foreach (var b in beats)
+            foreach (var b in Beats)
             {
                 if (mod.GrantedAbilities.Contains(Prefix + b.Id)) continue;
                 bool ready = b.Seated ? Quiet(pd, true) : b.Now ? calm : quietFor >= QuietBefore;
@@ -342,6 +347,7 @@ namespace TerraKnight.Items
             bool dreamers = Dreamers(pd);
             if (dreamers && !lastDreamers) rose.Add("dreamers");
             lastDreamers = dreamers;
+            DetectWatches(pd);
         }
 
         static void Start(Beat b, PlayerData pd)
@@ -353,6 +359,7 @@ namespace TerraKnight.Items
             if (!string.IsNullOrEmpty(tip)) talk.Add(new Line { Tip = true, Text = tip });
             if (b.Id == "death") died = false;
             rose.Remove(b.Id);
+            b.Act?.Invoke();
             page = -1;
             held = false;
             heldFor = 0f;
@@ -399,7 +406,7 @@ namespace TerraKnight.Items
         {
             var mod = TerraMod.Instance;
             var pd = PlayerData.instance;
-            foreach (var b in beats)
+            foreach (var b in Beats)
                 if (b.Id == id && mod != null && pd != null)
                 {
                     mod.GrantedAbilities.Add(Prefix + b.Id);

@@ -285,6 +285,7 @@ namespace TerraKnight.Items
         {
             if (TerraMod.Instance == null || __instance == null) return;
             Net.BossLifeRewards.InitializeClaims(TerraMod.Instance);
+            VanillaBossProgression.Initialize();
             if (counted.Contains(__instance.GetInstanceID())) return;
             string rec = UI.EnemyHover.RecordOf(__instance);
             if (rec == null || rec == "Dummy" || !EnemyDrops.Known(rec)) return;
@@ -330,6 +331,8 @@ namespace TerraKnight.Items
             }
             Kills[record]++;
             NameOf(record);
+            Achievements.AchievementTracker.OnKill(rec);
+            if (EnemyDrops.IsBoss(rec)) Achievements.AchievementTracker.OnBossDown(__instance, rec, record, __instance.gameObject.scene.name);
             // NPC.DoDeathEvents's spawnMeteor: a boss down, a meteorite at midnight.
             if (EnemyDrops.IsBoss(rec)) World.Meteorites.OnBossDown(firstKill);
             if (firstKill && !AllUnlocked && EnemyDrops.KindOf(rec) != "non_enemy")

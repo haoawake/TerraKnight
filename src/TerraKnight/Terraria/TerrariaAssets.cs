@@ -13,6 +13,40 @@ namespace TerraKnight.Terraria
     {
         static readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
         static readonly Dictionary<string, AudioClip> sounds = new Dictionary<string, AudioClip>();
+        static readonly Queue<string> deferred = new Queue<string>();
+        static readonly HashSet<string> queued = new HashSet<string>();
+        static int deferDepth;
+        static Texture2D pendingTexture;
+        internal readonly struct DeferredScope : System.IDisposable
+        {
+            public void Dispose() { deferDepth--; }
+        }
+        internal static DeferredScope DeferMissing() { deferDepth++; return new DeferredScope(); }
+        /// <summary>A texture wanted soon (a screen about to show it): loaded in the background, a little each frame (TickDeferred).</summary>
+        internal static void Prefetch(string name)
+        {
+            if (string.IsNullOrEmpty(name) || textures.ContainsKey(name) || !queued.Add(name)) return;
+            deferred.Enqueue(name);
+        }
+        static int tickedFrame = -1;
+        /// <summary>TickDeferred at most once a frame (from OnGUI, which runs several times in one).</summary>
+        internal static void TickDeferredOnce()
+        {
+            if (Time.frameCount == tickedFrame) return;
+            tickedFrame = Time.frameCount;
+            TickDeferred();
+        }
+        internal static void TickDeferred()
+        {
+            if(deferred.Count==0)return;
+            var budget=System.Diagnostics.Stopwatch.StartNew();
+            do {
+                string name=deferred.Dequeue();queued.Remove(name);
+                var one=System.Diagnostics.Stopwatch.StartNew();
+                Texture(name);
+                if(one.Elapsed.TotalMilliseconds>25)Plugin.Log.LogInfo($"[贴图加载] {name} {one.Elapsed.TotalMilliseconds:F1} ms");
+            } while(deferred.Count>0&&budget.Elapsed.TotalMilliseconds<2);
+        }
 
         public static string ImagesDir { get; private set; }
         public static string SoundsDir { get; private set; }
@@ -27,6 +61,14 @@ namespace TerraKnight.Terraria
         public static AudioClip Sound(string name)
         {
             if (sounds.TryGetValue(name, out var clip)) return clip;
+            // The mod's own sounds (the Vengeful Spirit's weapons'): mixed from Terraria's own (SoundMix), or the few
+            // embedded as WAVs (Resources/tk_*.wav: the little soul's pounce).
+            if (name.StartsWith("tk_", System.StringComparison.Ordinal))
+            {
+                clip = SoundMix.Has(name) ? SoundMix.Build(name) : ModWav(name);
+                sounds[name] = clip;
+                return clip;
+            }
 
             var audio = XnbSound.Load(Path.Combine(SoundsDir, name + ".xnb"));
             clip = AudioClip.Create("Terraria/" + name, audio.Samples.Length / audio.Channels, audio.Channels, audio.SampleRate, false);
@@ -35,19 +77,90 @@ namespace TerraKnight.Terraria
             return clip;
         }
 
+        /// <summary>An embedded RIFF WAV (PCM, 16 bits, any channels and rate) as a clip; its "fmt " and "data" chunks read.</summary>
+        static AudioClip ModWav(string name)
+        {
+            using (var s = typeof(TerrariaAssets).Assembly.GetManifestResourceStream("TerraKnight." + name + ".wav"))
+            {
+                if (s == null) throw new FileNotFoundException("embedded sound " + name);
+                var r = new BinaryReader(s);
+                if (new string(r.ReadChars(4)) != "RIFF") throw new InvalidDataException(name + ": not RIFF");
+                r.ReadInt32();
+                if (new string(r.ReadChars(4)) != "WAVE") throw new InvalidDataException(name + ": not WAVE");
+                int channels = 1, rate = 44100, bits = 16;
+                float[] data = null;
+                while (s.Position + 8 <= s.Length)
+                {
+                    string id = new string(r.ReadChars(4));
+                    int size = r.ReadInt32();
+                    if (id == "fmt ")
+                    {
+                        r.ReadInt16();
+                        channels = r.ReadInt16();
+                        rate = r.ReadInt32();
+                        r.ReadInt32();
+                        r.ReadInt16();
+                        bits = r.ReadInt16();
+                        if (size > 16) r.ReadBytes(size - 16);
+                    }
+                    else if (id == "data")
+                    {
+                        if (bits != 16) throw new InvalidDataException(name + ": " + bits + " bits");
+                        int n = size / 2;
+                        data = new float[n];
+                        for (int i = 0; i < n; i++) data[i] = r.ReadInt16() / 32768f;
+                    }
+                    else r.ReadBytes(size + (size & 1));
+                }
+                if (data == null) throw new InvalidDataException(name + ": no data");
+                var clip = AudioClip.Create("TerraKnight/" + name, data.Length / channels, channels, rate, false);
+                clip.SetData(data, 0);
+                return clip;
+            }
+        }
+
+        // Asked for by every picture drawn, every frame: the names compared with are made once.
+        const string LanternBuffName = "Buff_9001", GrimmBuffName = "Buff_9002", OverchargeBuffName = "Buff_9003";
+        const string LanternPicture = Items.HkItems.TexturePrefix + nameof(Items.ItemType.HkLumaflyLantern);
+        const string GrimmPicture = Items.HkItems.TexturePrefix + nameof(Items.ItemType.HkGrimmchild);
+
+        /// <summary>The number after a prefix ("Item_123", "Buff_9003"), read without cutting a new string out of the name.</summary>
+        public static bool NumberAfter(string name, string prefix, out int n)
+        {
+            n = 0;
+            if (name == null || name.Length <= prefix.Length || !name.StartsWith(prefix, System.StringComparison.Ordinal)) return false;
+            for (int i = prefix.Length; i < name.Length; i++)
+            {
+                char c = name[i];
+                if (c < '0' || c > '9' || n > 100000000) return false;
+                n = n * 10 + (c - '0');
+            }
+            return true;
+        }
+
         public static Texture2D Texture(string name)
         {
+            if(name!=null&&name.StartsWith("Casino_",System.StringComparison.Ordinal))return Items.CasinoArt.Texture(name);
+            if(name!=null&&name.StartsWith("PrefabHouse_",System.StringComparison.Ordinal))return World.PrefabHouses.Texture(name);
             // Generated from this player's Hollow Knight portraits, used everywhere an item draws.
-            if (name != null && name.StartsWith(Items.BossSummons.IconPrefix)) return Items.BossSummons.Icon(name);
+            if (name != null && name.StartsWith(Items.BossSummons.IconPrefix, System.StringComparison.Ordinal)) return Items.BossSummons.Icon(name);
             // A relic's picture: the mod's own (Resources/relic_*.png).
-            if (name != null && name.StartsWith(Items.Relics.TexturePrefix)) return Items.Relics.Texture(name);
+            if (name != null && name.StartsWith(Items.Relics.TexturePrefix, System.StringComparison.Ordinal)) return Items.Relics.Texture(name);
             // Hallownest's key items: the game's own inventory pictures.
-            if (name != null && name.StartsWith(Items.HkItems.TexturePrefix)) return Items.HkItems.Texture(name);
-            if (name == "Buff_" + Items.Pets.LanternBuff) return Items.HkItems.Texture(Items.HkItems.TexturePrefix + nameof(Items.ItemType.HkLumaflyLantern));
-            if (name == "Buff_" + Items.Pets.GrimmBuff) return Items.HkItems.Texture(Items.HkItems.TexturePrefix + nameof(Items.ItemType.HkGrimmchild));
-            if (name == "Buff_" + Items.Charms.OverchargeBuff) return Items.Charms.OverchargeIcon;
+            if (name != null && name.StartsWith(Items.HkItems.TexturePrefix, System.StringComparison.Ordinal)) return Items.HkItems.Texture(name);
+            if (name == LanternBuffName) return Items.HkItems.Texture(LanternPicture);
+            if (name == GrimmBuffName) return Items.HkItems.Texture(GrimmPicture);
+            if (name == OverchargeBuffName) return Items.Charms.OverchargeIcon;
             if (Items.CharmSkills.IsCooldownBuff(name)) return Items.CharmSkills.CooldownIcon(name) ?? Items.Charms.OverchargeIcon;
             if (textures.TryGetValue(name, out var tex)) return tex;
+            if(deferDepth>0) {
+                if(queued.Add(name))deferred.Enqueue(name);
+                if(pendingTexture==null) {
+                    pendingTexture=new Texture2D(2,2,TextureFormat.RGBA32,false);
+                    pendingTexture.SetPixels(new[]{Color.clear,Color.clear,Color.clear,Color.clear});pendingTexture.Apply();
+                }
+                return pendingTexture;
+            }
             // The mod's own picture for a Terraria one (Resources/hk_<name>.png), drawn in its place.
             tex = Override(name);
             if (tex != null)

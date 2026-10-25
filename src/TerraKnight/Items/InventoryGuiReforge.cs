@@ -46,7 +46,8 @@ namespace TerraKnight.Items
         static void DrawReforge(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref Kind hoveredKind)
         {
             float s = 52f * 0.85f * ui;
-            var rect = new Rect(view.x + 50f * ui, view.y + 270f * ui, s, s);
+            // Where the forge slot is: under the bag's trash slot (Terraria's 270 lay on the bag's last row here).
+            var rect = new Rect(view.x + 50f * ui, view.y + UnderBag(ui) + 36f * ui, s, s);
             GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back4"));
             Add(rect, Kind.ReforgeSlot, 0);
             var item = TownNpcs.ReforgeItem;
@@ -112,6 +113,7 @@ namespace TerraKnight.Items
             if (p <= 0) return false;
             item.Prefix = (byte)p;
             DevReforges++;
+            Achievements.AchievementTracker.Reforged(p);
             DevLastBest = best;
             HammerResult(item, best);
             if (best) hammerHeldUntil = Time.unscaledTime + BestHold;

@@ -19,6 +19,35 @@ namespace TerraKnight.Items
         static Entry E(ItemType relic, int stage, string winZh, string winEn, string lateZh, string lateEn, string hintZh, string hintEn) =>
             new Entry { Relic = relic, Stage = stage, WinZh = winZh, WinEn = winEn, LateZh = lateZh, LateEn = lateEn, HintZh = hintZh, HintEn = hintEn };
 
+        /// <summary>
+        /// A fight's way in as this save's story stands. The Nightmare King's back room (Grimm_Main_Tent's "Backroom Mask", a
+        /// wall whose Remove FSM takes itself away on killedGrimm with flamesCollected at flamesRequired) opens only once the
+        /// Troupe Master is beaten in his tent and the Grimmchild has gathered the flames after it; a win in a rematch (the
+        /// book's challenge, a seal) leaves the save's story where it was (user 10-25: told to go behind the curtain, walled in).
+        /// </summary>
+        static string HintZhOf(Entry e) => HintOf(e).Zh;
+        static string HintEnOf(Entry e) => HintOf(e).En;
+        static Page Hint(Entry e)
+        {
+            var h = HintOf(e);
+            return Voice(h.Zh, h.En);
+        }
+
+        static (string Zh, string En) HintOf(Entry e)
+        {
+            var pd = PlayerData.instance;
+            if (pd != null && e.Relic == ItemType.RelicNightmareGrimm)
+            {
+                if (!pd.GetBool("killedGrimm"))
+                    return ("帐篷里的团长还在等一场真正的演出：在猩红帐幕里赢下他的舞，再让格林之子收齐新的火焰，帐幕后的里间才会打开；在沉睡的团长身上敲响梦之钉。",
+                        "The master in the tent still waits for a real performance: win his dance in the scarlet tent, then let the Grimmchild gather new flames, and the room behind the curtain will open; strike the sleeping master with the dream nail.");
+                if (pd.GetInt("flamesCollected") < pd.GetInt("flamesRequired"))
+                    return ("让格林之子再收齐三团猩红火焰，帐幕后的里间才会打开；在沉睡的团长身上敲响梦之钉，真正支撑梦境的心跳就在那场梦里。",
+                        "Let the Grimmchild gather three more scarlet flames and the room behind the curtain will open; strike the sleeping master with the dream nail, and the heartbeat that holds the dream up is in there.");
+            }
+            return (e.HintZh, e.HintEn);
+        }
+
         /// <summary>The fights in the journey's order: by stage, and within a stage the way the roads lead.</summary>
         static readonly Entry[] Route =
         {
@@ -188,7 +217,7 @@ namespace TerraKnight.Items
             E(ItemType.RelicGreyPrince, 5,
                 "被仰望的影子，往往比它的主人更难打倒。", "The shadow that is looked up to is often harder to beat than its owner.",
                 null, null,
-                "井上的小镇里，有人正把一个渺小的身影梦成无所不能的王；在她床边敲响梦之钉。", "In the town above the well, someone dreams a tiny figure into an almighty king; strike the dream nail by her bed."),
+                "先救下左特与布蕾塔，并在勇士的试炼中击败左特；再进入布蕾塔家的地下室，用梦之钉攻击左特雕像。", "Rescue Zote and Bretta, defeat Zote in the Trial of the Warrior, then enter Bretta's basement and strike Zote's statue with the Dream Nail."),
             E(ItemType.RelicHollowKnight, 5,
                 "你斩开了容器，却未必斩到了里面的光。", "You cut the vessel open, but not necessarily the light inside it.",
                 null, null,

@@ -239,6 +239,9 @@ namespace TerraKnight.Items
         void StepGlacierFang(Proj p)
         {
             var mod = TerraMod.Instance;
+            // Main.DrawProj's charge pulse uses the caster's slow-magic rate.
+            // localAI[0] is unused by this AI and travels with remote snapshots.
+            p.LocalAi0 = mod?.SlowMagicUse == true ? 1f : 0f;
             var def = ItemDb.Get(ItemType.GlacierFang);
             float before = p.Ai0;
             var v = TV(p);
@@ -323,6 +326,7 @@ namespace TerraKnight.Items
         }
 
         /// <summary>M:33741ff, 34446-34451: its frame about its middle, lit, and while charging a white flash swelling out every 20 ticks; a cold light growing with the charge.</summary>
+        internal static Vector4 DevGlacierVisual;
         static void DrawGlacierFang(FxBatch fx, Proj p, Vector2 px)
         {
             var spr = FxBatch.Frame("Projectile_1115", 0, 70 * p.Frame, 22, 70, 11f, 35f);
@@ -330,7 +334,10 @@ namespace TerraKnight.Items
             if (p.Ai1 == 0f)
             {
                 float f = p.Ai0 % 20f;
-                fx.Draw(spr, px, new Color(1f, 1f, 1f, 0f) * Mathf.Lerp(0.33f, 0f, f / 20f), p.TRot, p.Scale * Mathf.Lerp(1f, 1.5f, f / 20f), overPlayer: true);
+                float pulse = Mathf.Clamp01(f / (p.LocalAi0 != 0f ? 8f : 20f));
+                float alpha = Mathf.Lerp(0.33f, 0f, pulse), size = Mathf.Lerp(1f, 1.5f, pulse);
+                DevGlacierVisual = new Vector4(p.Ai0, alpha, size, p.LocalAi0);
+                fx.Draw(spr, px, new Color(1f, 1f, 1f, 0f) * alpha, p.TRot, p.Scale * size, overPlayer: true);
             }
             fx.Light(px, new Color(0.2f, 0.5f, 0.8f) * Mathf.Lerp(0.5f, 1f, p.Ai0 / 60f), 2.5f);
         }

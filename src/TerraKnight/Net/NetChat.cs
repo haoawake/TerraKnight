@@ -41,6 +41,9 @@ namespace TerraKnight.Net
         public static string DevLastLine => lines.Count > 0 ? lines[lines.Count - 1].Text : "";
         public static int DevLines => lines.Count;
 
+        /// <summary>Dev: the lines' texts, oldest first.</summary>
+        public static IEnumerable<string> DevTexts() { foreach (var l in lines) yield return l.Text; }
+
         /// <summary>Dev: whether any line so far has this text in it.</summary>
         public static bool DevHas(string text)
         {
@@ -100,7 +103,7 @@ namespace TerraKnight.Net
                 return;
             }
             if (Typing) return;
-            if (Items.InventoryGui.TypingName) return;
+            if (Items.InventoryGui.TypingName || Items.Casino.IsOpen) return;
             if (!NetSession.Active && !GameHooks.PlayerHasControl() && !Items.InventoryGui.Open) return;
             var kb = Keyboard.current;
             if (kb == null || Time.frameCount - closedFrame <= 1) return;

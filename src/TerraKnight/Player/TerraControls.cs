@@ -37,14 +37,20 @@ namespace TerraKnight.Player
                 Bind(a.up, TerraKeys.Action.Up);
                 Bind(a.down, TerraKeys.Action.Down);
                 Bind(a.jump, TerraKeys.Action.Jump);
+                // The Nail item's charge and arts (Items.NailArts) hear the game's attack on the Use Item key.
+                Bind(a.attack, TerraKeys.Action.UseItem);
                 // M is Terraria's fullscreen map (UI.FullMap); Tab keeps the game's quick map.
             }
 
             // Typing (the LAN chat, a name or an address in the multiplayer menu): no key moves the Knight or the menus.
-            bool typing = DevNoRealKeys || Net.NetChat.Typing || Net.NetMenu.TextFocused || Items.InventoryGui.TypingName;
+            bool typing = Items.Casino.IsOpen || DevNoRealKeys || Net.NetChat.Typing || Net.NetMenu.TextFocused || Items.InventoryGui.TypingName;
             if (a.Enabled == typing) a.Enabled = !typing;
 
-            a.attack.Enabled = false;
+            // On only for the Nail item's nail arts (its charge and the art when let go); its swing stays the item's own.
+            // Not over the interface, nor resting on a bench: a click there is the bag's (a charm put on), and the bench's
+            // Resting state stands the player up on the game's attack (ListenForAttack → GET UP).
+            bool seated = PlayerData.instance != null && PlayerData.instance.atBench;
+            a.attack.Enabled = !typing && Items.NailArts.Ready && !Items.InventoryGui.MouseOverUi && !seated;
             a.cast.Enabled = false;
             a.quickCast.Enabled = false;
             a.superDash.Enabled = false;

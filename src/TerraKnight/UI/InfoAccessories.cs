@@ -20,7 +20,8 @@ namespace TerraKnight.UI
     /// Howling Cliffs, clear elsewhere); the moon is the Skeleton Merchant's; nothing is fished; the
     /// treasure is the nearest Life Crystal or geo rock; a rare creature is a Menderbug or an elite;
     /// the compass and the depth meter measure from Dirtmouth on the world map (a tile is two feet; the
-    /// Abyss is the underworld).
+    /// Abyss is the underworld). With the inventory open they are a row of their icons instead (DrawToggles), a click on
+    /// one hiding its line or showing it again (Player.hideInfo, kept in the save).
     /// </summary>
     [HarmonyPatch]
     internal static class InfoAccessories
@@ -81,7 +82,7 @@ namespace TerraKnight.UI
         {
             var s = new Shows();
             foreach (var x in inv.Slots) if (!x.IsEmpty) Add(ref s, x.Type);
-            foreach (var x in inv.EffectiveAccessories) if (!x.IsEmpty) Add(ref s, x.Type);
+            foreach (var x in inv.FunctionalAccessories) if (!x.IsEmpty) Add(ref s, x.Type);
             return s;
         }
 
@@ -318,11 +319,102 @@ namespace TerraKnight.UI
             return lines;
         }
 
+        // ------------------------------------------------------------------ hidden lines (Player.hideInfo)
+
+        /// <summary>The save's flag for a hidden line (TerraMod.GrantedAbilities), by its icon (hideInfo's index: the calendar's 7 for both its icons).</summary>
+        static string HideFlag(int icon) => "info.hide." + icon;
+
+        public static bool Hidden(int icon)
+        {
+            var mod = TerraMod.Instance;
+            return mod != null && mod.GrantedAbilities.Contains(HideFlag(icon));
+        }
+
+        public static void ToggleHidden(int icon)
+        {
+            var mod = TerraMod.Instance;
+            if (mod == null) return;
+            if (!mod.GrantedAbilities.Remove(HideFlag(icon))) mod.GrantedAbilities.Add(HideFlag(icon));
+        }
+
+        /// <summary>A line's name (Lang.inter 95-106), what its icon says when hovered.</summary>
+        static string Name(int icon)
+        {
+            int key;
+            string zh;
+            switch (icon)
+            {
+                case 0: key = 95; zh = "时间"; break;
+                case 1: key = 96; zh = "天气"; break;
+                case 2: key = 97; zh = "钓鱼"; break;
+                case 3: key = 98; zh = "位置"; break;
+                case 4: key = 99; zh = "深度"; break;
+                case 5: key = 100; zh = "生物数量"; break;
+                case 6: key = 101; zh = "击杀数"; break;
+                case 7: key = 102; zh = "月相"; break;
+                case 9: key = 103; zh = "移动速度"; break;
+                case 10: key = 104; zh = "宝藏"; break;
+                case 11: key = 105; zh = "稀有生物"; break;
+                default: key = 106; zh = "每秒伤害"; break;
+            }
+            return TerrariaText.Get(Lang.Culture, "LegacyInterface." + key) ?? Lang.T(zh);
+        }
+
+        /// <summary>Main.OurFavoriteColor: a hovered icon's highlight.</summary>
+        static readonly Color Favorite = new Color(1f, 231f / 255f, 69f / 255f);
+        static int hoverWas = -1;
+
+        /// <summary>
+        /// The inventory open (Main.DrawInfoAccs; GetInfoAccIconPosition's row): each carried one's icon, 20 px apart from
+        /// the right edge - 290, under the minimap in its frame (Y 94 + 261) or under the hearts (94); a hidden one greyed
+        /// (80, 80, 80, 70); hovered, Terraria's highlight (InfoIcon_13, 2 px out) and the line's name, a tick each time
+        /// the pointer comes onto another. Not while a chest or a townsperson's talk is open (CanShowInfoAccs). Returns
+        /// the icons' places with their indices, and the hovered one's name.
+        /// </summary>
+        public static List<(int icon, Rect rect)> DrawToggles(Inventory inv, Rect view, float ui, Vector2 mouse, out string hover)
+        {
+            hover = null;
+            var rects = new List<(int, Rect)>();
+            if (World.Chests.IsOpen || TerraKnight.Town.TownNpcs.ChatOpen) return rects;
+            var lines = Lines(inv, HeroController.SilentInstance);
+            float x0 = view.xMax - 290f * ui;
+            float y = view.y + ((WorldMap.MinimapVisible ? 94f + 261f : 94f) + ResourceHud.ExtraHeartRows * ResourceHud.RowStep) * ui;
+            int n = 0, over = -1;
+            var prev = GUI.color;
+            foreach (var (icon, _, _) in lines)
+            {
+                var tex = TerrariaAssets.Texture("UI/InfoIcon_" + icon);
+                if (tex == null) continue;
+                var r = new Rect(x0 + 20f * n * ui, y, tex.width * ui, tex.height * ui);
+                n++;
+                GUI.color = Hidden(icon) ? new Color(80f / 255f, 80f / 255f, 80f / 255f, 70f / 255f) : Color.white;
+                GUI.DrawTexture(r, tex);
+                GUI.color = prev;
+                if (r.Contains(mouse))
+                {
+                    over = icon;
+                    hover = Name(icon);
+                    var hl = TerrariaAssets.Texture("UI/InfoIcon_13");
+                    if (hl != null)
+                    {
+                        GUI.color = Favorite;
+                        GUI.DrawTexture(new Rect(r.x - 2f * ui, r.y - 2f * ui, hl.width * ui, hl.height * ui), hl);
+                        GUI.color = prev;
+                    }
+                }
+                rects.Add((icon, r));
+            }
+            if (over >= 0 && over != hoverWas) TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+            hoverWas = over;
+            return rects;
+        }
+
         public static void Draw(Inventory inv, TerraStats stats)
         {
             if (Event.current.type != EventType.Repaint || InventoryGui.Open) return;
             var hero = HeroController.SilentInstance;
             var lines = Lines(inv, hero);
+            lines.RemoveAll(l => Hidden(l.icon));
             DevLines.Clear();
             foreach (var l in lines) DevLines.Add(l.text);
             if (lines.Count == 0) return;

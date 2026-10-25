@@ -19,12 +19,40 @@ namespace TerraKnight.Items
         /// <summary>The worn row's slots: the equipment slot's picture in a slate of their own (charms belong to no loadout).</summary>
         static readonly Color CharmWornBack = new Color(0.45f, 0.47f, 0.72f, 0.86f);
 
-        /// <summary>The page's button: the notch's picture (the one Salubra sells), brighter while the page is open.</summary>
+        static Rect charmIconRect;
+        /// <summary>The first charm's showing (StoryBeats' "charm" beat): its button ringed, a note beside it, until it is clicked or the inventory shuts.</summary>
+        public static bool CharmIntro { get; private set; }
+        public static int DevCharmIntros;
+
+        /// <summary>The first charm got: the inventory opened on the charm page, its button pointed out.</summary>
+        public static void ShowCharmIntro()
+        {
+            if (!Charms.Enabled) return;
+            Open = true;
+            if (Town.TownNpcs.PanelOpen) ToggleNpcPanel();
+            equipPage = CharmPage;
+            CharmIntro = true;
+            DevCharmIntros++;
+            Sound("Menu_Open");
+            Plugin.Log.LogInfo("[小剧情] 第一枚护符：打开背包的护符背包，指出它的按钮");
+        }
+
+        /// <summary>The page's button: the notch's picture (the one Salubra sells), brighter while the page is open; ringed in gold, pulsing, while the first charm is being shown.</summary>
         static void CharmPageIcon(Vector2 at, float ui, Vector2 mouse, bool open)
         {
             var like = TerrariaAssets.Texture("UI/DisplaySlots_4");
             var r = new Rect(at.x, at.y, like.width * 0.9f * ui, like.height * 0.9f * ui);
             Add(r, Kind.EquipPage, 2);
+            charmIconRect = r;
+            if (CharmIntro)
+            {
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
+                float s = r.width * (1.9f + 0.3f * pulse);
+                var halo = GUI.color;
+                GUI.color = new Color(1f, 0.85f, 0.3f, 0.45f + 0.45f * pulse);
+                GUI.DrawTexture(new Rect(r.center.x - s / 2f, r.center.y - s / 2f, s, s), CharmGlowTexture());
+                GUI.color = halo;
+            }
             bool over = r.Contains(mouse);
             var icon = Charms.NotchIcon;
             if (icon != null)
@@ -36,7 +64,46 @@ namespace TerraKnight.Items
                 GUI.DrawTexture(new Rect(r.center.x - w / 2f, r.center.y - h / 2f, w, h), icon);
                 GUI.color = prev;
             }
-            if (over) DrawLines(mouse, new List<string> { Lang.T(open ? "装备" : "护符") }, Color.white);
+            if (over) DrawLines(mouse, new List<string> { Lang.T(open ? "装备" : "护符背包") }, Color.white);
+        }
+
+        /// <summary>
+        /// The first charm's note, left of the charm page's button (ringed in CharmPageIcon): where charms are and how they go
+        /// on, in Terraria's tooltip box, over the panels (drawn after them, under the cursor's item and the tooltips).
+        /// </summary>
+        static void DrawCharmIntro(float ui)
+        {
+            if (!CharmIntro || !Charms.Enabled || charmIconRect.width <= 0f) return;
+            float w = 340f * ui, pad = 10f * ui, lh = 22f * ui;
+            var body = Wrap(Lang.T("这里是护符背包。坐在长椅上时，点下面的护符就能戴上或卸下；每枚护符要占几个凹槽，凹槽用完就戴不下了。再点一下这个按钮，回到装备。"),
+                w - 2f * pad, labelStyle, 8);
+            float h = pad * 2f + lh * (body.Count + 1);
+            // Left of the button and above the page's title, its bottom by the button's middle: the worn row and the
+            // charms under it stay clear to click.
+            var box = new Rect(charmIconRect.x - 16f * ui - w, charmIconRect.center.y + 4f * ui - h, w, h);
+            if (box.x < 4f * ui) box.x = 4f * ui;
+            if (box.y < 4f * ui) box.y = 4f * ui;
+            var prev = GUI.color;
+            GUI.color = new Color(23f / 255f, 25f / 255f, 81f / 255f, 0.92f);
+            GUI.DrawTexture(box, Texture2D.whiteTexture);
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
+            GUI.color = new Color(1f, 0.85f, 0.3f, 0.6f + 0.4f * pulse);
+            float b = Mathf.Max(1f, 2f * ui);
+            GUI.DrawTexture(new Rect(box.x, box.y, box.width, b), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(box.x, box.yMax - b, box.width, b), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(box.x, box.y, b, box.height), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(box.xMax - b, box.y, b, box.height), Texture2D.whiteTexture);
+            // A pointer from the box to the button.
+            float py = charmIconRect.center.y;
+            for (int i = 0; i < 6; i++)
+            {
+                float len = (6 - i) * 2f * ui;
+                GUI.DrawTexture(new Rect(box.xMax + i * 2f * ui, py - len / 2f, 2f * ui, len), Texture2D.whiteTexture);
+            }
+            GUI.color = prev;
+            Outlined(new Rect(box.x + pad, box.y + pad, w - 2f * pad, lh), Lang.T("护符背包在这里"), labelStyle, new Color(1f, 0.85f, 0.3f));
+            for (int i = 0; i < body.Count; i++)
+                Outlined(new Rect(box.x + pad, box.y + pad + lh * (i + 1), w - 2f * pad, lh), body[i], labelStyle, Color.white);
         }
 
         static void DrawCharmPage(float ax, float ay, float slot, float step, float ui, Vector2 mouse)
@@ -44,7 +111,7 @@ namespace TerraKnight.Items
             var pd = PlayerData.instance;
             if (pd == null) return;
             float right = ax + slot, gridW = (CharmColumns - 1) * step + slot, x0 = right - gridW;
-            Outlined(new Rect(x0, ay - 24f * ui, 200f * ui, 20f * ui), Lang.T("护符"), labelStyle, Color.white);
+            Outlined(new Rect(x0, ay - 24f * ui, 200f * ui, 20f * ui), Lang.T("护符背包"), labelStyle, Color.white);
 
             // The charms worn, and an open slot where the next goes while a notch is free.
             var worn = Charms.WornList;
@@ -63,8 +130,10 @@ namespace TerraKnight.Items
             {
                 var rect = new Rect(x0 + (i % CharmColumns) * step, y + (i / CharmColumns) * step, slot, slot);
                 var prev = GUI.color;
-                GUI.color = i < n ? CharmWornBack : new Color(CharmWornBack.r, CharmWornBack.g, CharmWornBack.b, 0.45f);
-                GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back13"));
+                // The favourited one (its skill the key's) in Terraria's favourite slot.
+                bool chosenHere = i < n && shown[i] == CharmSkills.Chosen;
+                GUI.color = chosenHere ? Color.white : i < n ? CharmWornBack : new Color(CharmWornBack.r, CharmWornBack.g, CharmWornBack.b, 0.45f);
+                GUI.DrawTexture(rect, TerrariaAssets.Texture(chosenHere ? "Inventory_Back10" : "Inventory_Back13"));
                 GUI.color = prev;
                 if (i < n)
                 {
@@ -110,16 +179,16 @@ namespace TerraKnight.Items
                 bool got = Charms.Got(id);
                 var prev = GUI.color;
                 if (!got) GUI.color = new Color(prev.r, prev.g, prev.b, 0.55f * prev.a);
-                DrawSlot(rect, default, "Inventory_Back", false);
+                DrawSlot(rect, default, got && id == CharmSkills.Chosen ? "Inventory_Back10" : "Inventory_Back", false);
                 GUI.color = prev;
                 // One on its way back stays dimmed until it lands.
                 bool back = removing != null && removing.Id == id;
                 if (back) takeTo = rect;
                 bool coming = back && Time.unscaledTime - removing.Start < RemoveShake + RemovePop + RemoveFly;
                 if (got) DrawCharm(rect, id, Charms.Worn(id) || coming ? 0.35f : 1f, ui);
-                if (rect.Contains(mouse))
+                if (rect.Contains(mouse) || DevCharmTip == id)
                 {
-                    if (got) DrawCharmTip(mouse, id);
+                    if (got) DrawCharmTip(DevCharmTip == id ? rect.center : mouse, id);
                     else DrawLines(mouse, new List<string> { Lang.T("未获得的护符") }, new Color(0.7f, 0.7f, 0.7f));
                 }
             }
@@ -434,6 +503,15 @@ namespace TerraKnight.Items
                     colors[lines.Count - 1] = new Color(0.6f, 0.85f, 1f);
                 }
             bool worn = Charms.Worn(id);
+            // Its skill chosen or not (only the favourited worn charm's skill is the key's).
+            if (CharmSkills.HasSkill(id))
+            {
+                string fav = Player.TerraKeys.KeyName(Player.TerraKeys.Get(Player.TerraKeys.Action.Favorite));
+                string useKey = Player.TerraKeys.KeyName(Player.TerraKeys.Get(Player.TerraKeys.Action.CharmSkill));
+                if (CharmSkills.Chosen == id) { lines.Add(Lang.F("已收藏为护符技：按 {0} 使用（按住 {1} 点击取消）", useKey, fav)); colors[lines.Count - 1] = new Color(1f, 0.85f, 0.4f); }
+                else if (worn) { lines.Add(Lang.F("按住 {0} 点击收藏，选它为护符技（只能选一个）", fav)); colors[lines.Count - 1] = new Color(0.75f, 0.8f, 1f); }
+                else { lines.Add(Lang.T("装上之后可以收藏为护符技")); colors[lines.Count - 1] = new Color(0.7f, 0.7f, 0.75f); }
+            }
             string state = null;
             var stateColor = new Color(0.55f, 0.95f, 0.55f);
             if (Charms.Broken(id)) { state = Lang.T("已破碎：找食腿者修复"); stateColor = new Color(1f, 0.5f, 0.45f); }
@@ -495,7 +573,10 @@ namespace TerraKnight.Items
             // Taken off from the list: it comes out of its worn slot, not the list's.
             var wornAt = index >= 0 && wornRectOf.TryGetValue(id, out var at) ? at : from;
             int litBefore = NotchesShown(Charms.Filled);
+            bool wasWorn = Charms.Worn(id);
             var answer = Charms.Click(id);
+            var pdNow = PlayerData.instance;
+            Plugin.Log.LogInfo($"[护符] 点 {Charms.Name(id)}（{id}{(index >= 0 ? "，已装备栏第 " + index + " 格" : "")}）：{answer}，原来戴着 {wasWorn}，现在戴着 {Charms.Worn(id)}，坐在长椅上 {pdNow != null && pdNow.atBench}，已装备 [{(pdNow != null ? string.Join(",", pdNow.equippedCharms) : "")}]");
             if (answer == Charms.Answer.On || answer == Charms.Answer.Overcharmed)
             {
                 equipping = new EquipAnim { Id = id, From = from, Start = Time.unscaledTime };
@@ -531,11 +612,32 @@ namespace TerraKnight.Items
                 case Charms.Answer.CantWear:
                     NoticeHk("白色碎片无法装备");
                     break;
+                case Charms.Answer.Broken:
+                    NoticeHk("护符已经破碎，需要先修复");
+                    break;
                 case Charms.Answer.CantRemove:
                     NoticeHk("虚空之心无法卸下");
                     break;
             }
         }
+
+        /// <summary>
+        /// The favourite key held and a charm clicked: a worn charm with a skill favourited, its skill the one the key uses (the
+        /// one favourited before, unfavourited); clicked again, none. No bench needed.
+        /// </summary>
+        static void FavoriteCharm(int id)
+        {
+            if (!Charms.Got(id)) return;
+            if (!Charms.Worn(id)) { NoticeCharm(Lang.T("装上之后才能收藏为护符技"), "Menu_Tick"); return; }
+            if (!CharmSkills.HasSkill(id)) { NoticeCharm(Lang.T("这个护符没有护符技"), "Menu_Tick"); return; }
+            bool was = CharmSkills.Chosen == id;
+            CharmSkills.Choose(was ? 0 : id);
+            NoticeCharm(was ? Lang.T("取消收藏：现在没有护符技") : Lang.F("已收藏：护符技换成{0}", Charms.Name(id)), "Menu_Tick");
+            Plugin.Log.LogInfo($"[护符] 收藏 {Charms.Name(id)}（{id}）：{(was ? "取消" : "选为护符技")}");
+        }
+
+        /// <summary>Dev: the favourite click on a charm.</summary>
+        public static void DevFavoriteCharm(int id) => FavoriteCharm(id);
 
         static void NoticeCharm(string text, string sound)
         {
@@ -550,6 +652,9 @@ namespace TerraKnight.Items
             var answer = Charms.Click(id);
             return answer.ToString();
         }
+
+        /// <summary>Dev: the charm whose tooltip shows as if the cursor were on it (0: none).</summary>
+        public static int DevCharmTip;
 
         /// <summary>Dev: the equipment column's page (0 equipment, 2 misc, 3 charms).</summary>
         public static int DevEquipPage

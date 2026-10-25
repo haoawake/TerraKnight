@@ -33,8 +33,8 @@
 | `Multiplayer.SyncEnemies` | In multiplayer, players in the same scene share one set of enemies (on by default); turn it off and everyone fights their own |
 | `Keys.*` | Terraria key bindings (Unity Input System key names, such as `W`, `Space`, `LeftShift`, `Digit1`, `F1`); easier to change in game in "Terraria Settings" |
 | `Gameplay.EnemyMultiplier` | Multiplier for the number of normal enemies, default 2 (double); 1 is the vanilla count |
-| `Gameplay.BossDamage` | Boss damage as a multiple of the damage of normal enemies in the same area, default 2 |
-| `Gameplay.EliteDamage` | Elite damage as a multiple of the damage of normal enemies in the same area, default 1.5 |
+| `Gameplay.BossDamage` | Boss damage as a multiple of the damage of normal enemies in the same area, default 1.4 |
+| `Gameplay.EliteDamage` | Elite damage as a multiple of the damage of normal enemies in the same area, default 1.25 |
 | `Gameplay.SkipOpeningCutscenes` | A new game skips the opening prologue poem and the intro cutscene; once it has loaded you walk straight out of the portal in King's Pass. On by default |
 | `Gameplay.EnemyRespawnScale` | Multiplier for how long normal enemies wait before respawning: the wait is tiered by strength (30 / 45 / 70 / 100 seconds, 4 minutes for elites) and multiplied by this value; default 1, 0 for no respawns (the older setting `EnemyRespawnSeconds` set to 0 also means no respawns) |
 | `Video.TargetFrameRate` | Frame rate locked during play, default 144 (turns off V-Sync); 0 uses the game's own setting |

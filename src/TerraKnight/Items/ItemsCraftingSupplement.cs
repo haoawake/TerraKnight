@@ -28,7 +28,7 @@ namespace TerraKnight.Items
                 case ItemType.Flymeal: Weapon(15, 5f, 17); d.AutoReuse = false; d.Tooltip = "可驱赶城镇居民"; break;
                 case ItemType.HallowJoustingLance:
                     Weapon(90, 13f, 24); d.Channel = true; d.HoldOut = true; d.NoMelee = true; d.NoUseGraphic = true;
-                    d.Shoot = ProjKind.HallowLance; d.ShootSpeed = 3.5f; d.Tooltip = "按住攻击持续架枪\n朝枪尖冲刺时伤害随移动速度提高"; break;
+                    d.Shoot = ProjKind.HallowLance; d.ShootSpeed = 3.5f; d.AutoReuse = false; d.Tooltip = "提升速度来加强攻击力"; break;
                 case ItemType.ThunderStaff:
                 case ItemType.LightningStrike:
                     bool upgraded = type == ItemType.LightningStrike;
@@ -39,12 +39,12 @@ namespace TerraKnight.Items
                     d.Tooltip = upgraded ? "发射闪电，命中后追击附近敌人" : "发射曲折前进的霹雳"; break;
                 case ItemType.BrickLayer: Accessory(new Bonuses { BlockSpeed = .5f }, "物块放置速度提高 50%"); break;
                 case ItemType.PortableCementMixer: Accessory(new Bonuses { WallSpeed = .5f }, "背景墙放置速度提高 50%"); break;
-                case ItemType.ExtendoGrip: Accessory(new Bonuses { BlockRange = 3 }, "放置距离增加 3 格"); break;
+                case ItemType.ExtendoGrip: Accessory(new Bonuses { TileRangeAcc = true }, "物块放置范围和工具范围扩大3格"); break;
                 case ItemType.PaintSprayer: Accessory(default, "建筑师发明背包的组件\n圣巢尚未接入方块喷漆"); break;
                 case ItemType.ArchitectGizmoPack:
-                    Accessory(new Bonuses { BlockSpeed = .5f, WallSpeed = .5f, BlockRange = 3 }, "提高物块和墙的放置速度与距离\n圣巢尚未接入方块喷漆"); break;
+                    Accessory(new Bonuses { BlockSpeed = .5f, WallSpeed = .5f, TileRangeAcc = true }, "提高物块和墙的放置速度与距离\n圣巢尚未接入方块喷漆"); break;
                 case ItemType.HandOfCreation:
-                    Accessory(new Bonuses { BlockSpeed = .5f, WallSpeed = .5f, BlockRange = 3, PickSpeed = .25f, TreasureMagnet = true, PortableStool = true },
+                    Accessory(new Bonuses { BlockSpeed = .5f, WallSpeed = .5f, TileRangeAcc = true, PickSpeed = .25f, TreasureMagnet = true, PortableStool = true },
                         "提高放置速度与距离、挖掘速度\n增加拾取范围，可使用便携式凳子\n圣巢尚未接入方块喷漆"); break;
                 case ItemType.HighTestFishingLine: Accessory(new Bonuses { FishingLine = true }, "钓鱼线永不折断"); break;
                 case ItemType.AnglerEarring: Accessory(new Bonuses { FishingSkill = 10 }, "钓鱼力增加 10"); break;

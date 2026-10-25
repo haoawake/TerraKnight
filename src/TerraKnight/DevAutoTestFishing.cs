@@ -18,6 +18,7 @@ namespace TerraKnight
     {
         IEnumerator FishingTest()
         {
+            if (suite == "questfish") { yield return QuestFishTest(); yield break; }
             if (suite == "fishingangler") { yield return AnglerVisibilityTest(); yield break; }
             int ok = 0, all = 0;
             void Check(string what, bool pass, string detail = "")
@@ -35,7 +36,7 @@ namespace TerraKnight
 
             // ---- data
             Check("规则与宝匣", Fishing.DevRules > 100 && Fishing.DevCrates == 57, $"规则 {Fishing.DevRules} 条，宝匣 {Fishing.DevCrates} 种");
-            Check("任务鱼", Fishing.QuestList(5).Count() == 41 && Fishing.QuestList(0).Count() >= 8, $"第5阶段 {Fishing.QuestList(5).Count()} 条，第0阶段 {Fishing.QuestList(0).Count()} 条");
+            Check("任务鱼", Fishing.QuestList(5).Count() == 36 && Fishing.QuestList(0).Count() == 6, $"第5阶段 {Fishing.QuestList(5).Count()} 条，第0阶段 {Fishing.QuestList(0).Count()} 条");
             Check("改名", ItemDb.Get(ItemType.LavaFishingHook).Name == Lang.T("酸水钩") && ItemDb.Get(ItemType.HotlineFishingHook).AcidPole && ItemDb.Get(ItemType.HellButterfly).AcidBait,
                   $"{ItemDb.Get(ItemType.LavaFishingHook).Name}、{ItemDb.Get(ItemType.HotlineFishingHook).Name}、{ItemDb.Get(ItemType.LavaCrate).Name}");
             Check("钓竿和鱼饵", ItemDb.Get(ItemType.GoldenFishingRod).FishingPower == 50 && ItemDb.Get(ItemType.MasterBait).BaitPower == 50 && ItemDb.Get(ItemType.WoodFishingPole).Bobber == 360,
@@ -70,12 +71,13 @@ namespace TerraKnight
                 var got = new Dictionary<ItemType, int>();
                 EnemyDrops.DevSink = (t, n) => { got.TryGetValue(t, out int c); got[t] = c + n; };
                 Shop.DevStage = 0;
-                for (int i = 0; i < 600; i++) Fishing.KillDrops("Crawler", Vector2.zero, false, "Crossroads_01");
+                // One in 200 (FishingCrates.KillDrops): about seven or eight in 1500.
+                for (int i = 0; i < 1500; i++) Fishing.KillDrops("Crawler", Vector2.zero, false, "Crossroads_01");
                 EnemyDrops.DevSink = null;
                 int bait = got.Where(kv => ItemDb.Get(kv.Key).BaitPower > 0).Sum(kv => kv.Value);
                 bool home = got.Keys.Where(t => ItemDb.Get(t).BaitPower > 0).All(t => t == ItemType.Worm || t == ItemType.Snail || t == ItemType.Grasshopper || t == ItemType.Firefly
                     || t.ToString().StartsWith("Gold"));
-                Check("爬虫掉鱼饵", bait > 60 && bait < 250 && home, $"600 只掉鱼饵 {bait} 个：{string.Join("，", got.Where(kv => ItemDb.Get(kv.Key).BaitPower > 0).Select(kv => ItemDb.Get(kv.Key).Name + "×" + kv.Value))}");
+                Check("爬虫掉鱼饵", bait >= 1 && bait < 20 && home, $"1500 只掉鱼饵 {bait} 个：{string.Join("，", got.Where(kv => ItemDb.Get(kv.Key).BaitPower > 0).Select(kv => ItemDb.Get(kv.Key).Name + "×" + kv.Value))}");
             }
 
             // ---- crates

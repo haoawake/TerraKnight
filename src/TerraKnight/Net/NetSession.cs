@@ -138,6 +138,7 @@ namespace TerraKnight.Net
             Players.Clear();
             Owners.Clear();
             BossLifeRewards.Reset();
+            Items.CasinoShow.Clear();
             Enemies.Reset();
             Items.TerraProjectiles.Instance?.NetClearGhosts();
             Items.Minions.Instance?.NetClearGhosts();
@@ -170,6 +171,23 @@ namespace TerraKnight.Net
         public static void Send(byte[] packet)
         {
             if (conn != null && !conn.Closed) conn.Send(packet);
+        }
+
+        static int sentLook = -1;
+        static float nextLook;
+
+        /// <summary>
+        /// Msg.PlayerInfo (MessageID 4): the name, the old colouring's number, then the character's whole look
+        /// (TerraKnight.Player.Appearance.Current: hair, clothing style, colours). Sent on joining and again whenever the look changes.
+        /// </summary>
+        static void SendPlayerInfo()
+        {
+            sentLook = TerraKnight.Player.Appearance.Version;
+            var p = Mine(Msg.PlayerInfo);
+            p.W.Write(MyName ?? "Knight");
+            p.W.Write((byte)Mathf.Clamp(NetSettings.Look.Value, 0, 255));
+            TerraKnight.Player.Appearance.Current.Write(p.W);
+            Send(p.Done());
         }
 
         /// <summary>A message that starts with this player's slot (the server makes it theirs anyway).</summary>
@@ -253,6 +271,12 @@ namespace TerraKnight.Net
             }
             if (State != Phase.Ready) return;
             float now = Time.unscaledTime;
+            // The look changed (a save loaded, the Stylist, a dresser): the others are told, at most twice a second.
+            if (sentLook != TerraKnight.Player.Appearance.Version && now >= nextLook)
+            {
+                nextLook = now + 0.5f;
+                SendPlayerInfo();
+            }
             if (now >= nextPing)
             {
                 nextPing = now + 1f;
@@ -306,13 +330,18 @@ namespace TerraKnight.Net
 
         static void SendScenes(bool inGame)
         {
-            if (inGame) NetScenes.Collect(inScenes, loaded);
+            if (inGame)
+            {
+                NetScenes.Collect(inScenes, loaded);
+                NetScenes.CollectFresh(inScenes, loaded, freshScenes);
+            }
             else
             {
                 inScenes.Clear();
                 loaded.Clear();
+                freshScenes.Clear();
             }
-            string key = string.Join("|", inScenes) + "#" + string.Join("|", loaded);
+            string key = string.Join("|", inScenes) + "#" + string.Join("|", loaded) + "#" + string.Join("|", freshScenes);
             if (key == scenesKey && Time.unscaledTime - scenesSentAt < 5f) return;
             scenesKey = key;
             scenesSentAt = Time.unscaledTime;
@@ -321,8 +350,13 @@ namespace TerraKnight.Net
             foreach (var s in inScenes) p.W.Write(s);
             p.W.Write((byte)loaded.Count);
             foreach (var s in loaded) p.W.Write(s);
+            // The boss rooms stood in whose boss this save hasn't beaten (read by the server; the others stop before it).
+            p.W.Write((byte)freshScenes.Count);
+            foreach (var s in freshScenes) p.W.Write(s);
             Send(p.Done());
         }
+
+        static readonly List<string> freshScenes = new List<string>();
 
         /// <summary>Whether this game has a scene loaded (it may run or follow its enemies).</summary>
         public static bool HaveScene(string scene) => inScenes.Contains(scene) || loaded.Contains(scene);
@@ -369,10 +403,7 @@ namespace TerraKnight.Net
                         MySlot = r.ReadByte();
                         State = Phase.Joining;
                         Status = NetText.Key("Net.SendingPlayerData");
-                        var p = Mine(Msg.PlayerInfo);
-                        p.W.Write(MyName ?? "Knight");
-                        p.W.Write((byte)Mathf.Clamp(NetSettings.Look.Value, 0, 255));
-                        Send(p.Done());
+                        SendPlayerInfo();
                         return;
                     }
                     case Msg.FinishedConnecting:
@@ -393,6 +424,8 @@ namespace TerraKnight.Net
                         var rp = GetOrAdd(slot);
                         rp.Name = r.ReadString();
                         rp.Look = r.ReadByte();
+                        // Their character's look (a game from before sends none: its colouring by number stays).
+                        if (r.BaseStream.Position < r.BaseStream.Length) rp.Appearance = TerraKnight.Player.Appearance.Read(r);
                         return;
                     }
                     case Msg.PlayerActive:
@@ -401,6 +434,7 @@ namespace TerraKnight.Net
                             gone.Destroy();
                             Players.Remove(slot);
                             WorldSync.PlayerLeft(slot);
+                            Items.CasinoShow.PlayerLeft(slot);
                             Items.TerraProjectiles.Instance?.NetDropGhosts(slot);
                             Items.Minions.Instance?.NetDropGhosts(slot);
                         }
@@ -453,6 +487,11 @@ namespace TerraKnight.Net
                     case Msg.SceneMirror:
                         SceneMirror.Receive(slot, r);
                         return;
+                    case Msg.EnemyAi:
+                        EnemyAi.NetAi.Receive(slot, r);
+                        return;
+                    case Msg.CasinoRound:
+                        Items.CasinoShow.Receive(slot,r);return;
                     case Msg.NetFx:
                         NetFx.Receive(slot, r);
                         return;
@@ -498,7 +537,7 @@ namespace TerraKnight.Net
                     case Msg.PlayerDeath:
                         return;
                     case Msg.BossSummon:
-                        Items.BossSummons.Follow(r.ReadString(), Players.TryGetValue(slot, out var summoner) ? summoner.Name : null);
+                        Items.BossSummons.Follow(r.ReadString(), Players.TryGetValue(slot, out var summoner) ? summoner.Name : null, slot);
                         return;
                     case Msg.SetTime:
                     {

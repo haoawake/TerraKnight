@@ -43,6 +43,7 @@ namespace TerraKnight.Player
         public static bool Swimming(HeroController hero)
         {
             if (hero == null) return false;
+            if (PouredSwimming.For(hero)) return true;
             if (surfaceHero != hero || surfaceFsm == null)
             {
                 surfaceHero = hero;
@@ -96,12 +97,13 @@ namespace TerraKnight.Player
                 return;
             }
             // Obsidian Skin, or the Ash Wood set with the Lava Rose (Pl:27883), as the flippers.
-            bool swim = Mounts.LavaImmune || pd.hasAcidArmour || gear.Swim || gear.LavaImmune || gear.AshWood && gear.LavaRose;
+            // Defender's Crest too: the acid harms nothing, swum in anywhere (CharmEffects.AcidSwim).
+            bool swim = Mounts.LavaImmune || pd.hasAcidArmour || gear.Swim || gear.LavaImmune || gear.AshWood && gear.LavaRose || Items.CharmEffects.AcidSwim;
             bool spent = false;
             if (!swim && lavaMax > 0f)
             {
                 // The charm's seconds go while the Knight is in the acid and come back out of it (Pl:27889-27931).
-                bool inAcid = Swimming(hero);
+                bool inAcid = PouredSwimming.InAcid || !PouredSwimming.Wet && Swimming(hero);
                 lavaTime = inAcid ? Mathf.Max(0f, lavaTime - Time.deltaTime) : Mathf.Min(lavaMax, lavaTime + Time.deltaTime);
                 if (lavaTime > 0f) swim = true;
                 else spent = inAcid;
@@ -109,7 +111,7 @@ namespace TerraKnight.Player
             else lavaTime = Mathf.Min(lavaMax, lavaTime + Time.deltaTime);
             // Out of the pool before the acid hurts again (the region turned off under a floating Knight drops him in);
             // the charm's time run out in it, the acid hurts at once, as the lava does.
-            if (!swim && !spent && Swimming(hero)) swim = true;
+            if (!swim && !spent && (PouredSwimming.Active ? PouredSwimming.InAcid : Swimming(hero))) swim = true;
             bool walk = gear.WaterWalk > 0 && !TerraMovement.DownHeld;
             DevSwimOn = swim;
             DevWalkOn = walk;
@@ -123,7 +125,8 @@ namespace TerraKnight.Player
                     continue;
                 }
                 if (p.Box != null) p.Box.damageDealt = swim ? 0 : p.Damage;
-                if (p.Region != null && p.Region.enabled != swim) p.Region.enabled = swim;
+                if (p.Region != null && p.Region.GetComponent<PouredLiquidRegion>() != null) p.Region.enabled = false;
+                else if (p.Region != null && p.Region.enabled != swim) p.Region.enabled = swim;
                 if (p.Top != null && p.Top.activeSelf != walk)
                 {
                     // Switched on again: its passes through are made afresh (a collider switched off may forget them).
@@ -132,6 +135,56 @@ namespace TerraKnight.Player
                 }
                 if (walk && p.Top != null) KeepEnemiesOff(p.Top);
             }
+            if (swim) Refloat(hero);
+            else sunkSince = -1f;
+        }
+
+        static float sunkSince = -1f;
+        public static int DevRefloats;
+
+        /// <summary>
+        /// A hit while floating takes the hero's Surface Water FSM out of the water (the game's knockback throws him clear;
+        /// Terraria's hardly moves him), and he sinks to the pool's floor inside the swim region, whose trigger only told
+        /// of his coming in: stuck under the acid. Out of the water in a pool he may swim in for a third of a second, not
+        /// recoiling or dying: lifted into the region if he sank under it, and the region switched off for a frame (the
+        /// pools' tick switches it on again), so that it tells of him coming in again and the game's own swim floats him up.
+        /// </summary>
+        static void Refloat(HeroController hero)
+        {
+            var col = hero.GetComponent<BoxCollider2D>();
+            if (col == null || Swimming(hero) || hero.cState.recoiling || hero.cState.hazardDeath || hero.cState.dead || hero.cState.transitioning
+                || hero.cState.hazardRespawning)
+            {
+                sunkSince = -1f;
+                return;
+            }
+            Vector2 c = col.bounds.center;
+            Pool sunk = null;
+            Bounds region = default, acid = default;
+            foreach (var p in pools)
+            {
+                if (p.Region != null && p.Region.GetComponent<PouredLiquidRegion>() != null) continue;
+                if (p.Region == null || !p.Region.enabled || !p.Region.gameObject.activeInHierarchy) continue;
+                region = p.Region.bounds;
+                acid = p.Box != null ? AreaOf(p.Box.GetComponent<Collider2D>()) : region;
+                bool inRegion = region.min.x < c.x && c.x < region.max.x && region.min.y < c.y && c.y < region.max.y;
+                // Under it, in the acid (the hurting box reaches the floor; the region may stop above it).
+                bool under = acid.size != Vector3.zero && acid.min.x < c.x && c.x < acid.max.x && acid.min.y - 0.5f < c.y && c.y < region.min.y;
+                if (inRegion || under) { sunk = p; break; }
+            }
+            if (sunk == null) { sunkSince = -1f; return; }
+            if (!PouredSwimming.ClearRise(hero, region.max.y)) { sunkSince = -1f; return; }
+            if (sunkSince < 0f) { sunkSince = Time.time; return; }
+            if (Time.time - sunkSince < 0.35f) return;
+            sunkSince = -1f;
+            if (c.y < region.min.y + 0.1f)
+            {
+                var t = hero.transform;
+                t.position += new Vector3(0f, region.min.y + 0.1f + col.bounds.extents.y * 0.5f - c.y, 0f);
+            }
+            sunk.Region.enabled = false;
+            DevRefloats++;
+            Plugin.Log.LogInfo($"[酸液] 骑士漂着时挨打沉到了池底：重新浮起（游泳区 y {region.min.y:F1}~{region.max.y:F1}，酸 y {acid.min.y:F1}~{acid.max.y:F1}）");
         }
 
         /// <summary>Enemy bodies already told to pass through a pool's top (the top's id and the collider's).</summary>

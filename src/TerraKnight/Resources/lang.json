@@ -1,4 +1,298 @@
-﻿{
+{
+ "泰拉人": {"en-US": "Terrarian", "zh-Hant": "泰拉人", "ja-JP": "テラリア人", "ko-KR": "테라리아인", "de-DE": "Terrarianer", "fr-FR": "Terrarien", "es-ES": "Terrariano", "it-IT": "Terrariano", "pt-BR": "Terrariano", "ru-RU": "Террарианец"},
+ "创造模式：制作栏随时随地免费做出任何物品，商店不要钱，怪物图鉴全部解锁，整张地图和全部晶塔都已开放；物品照常消耗。": {"en-US": "Creative mode: the crafting column makes anything anywhere for free, shops cost nothing, the bestiary is fully unlocked and the whole map and every pylon are open; items are still used up."},
+ "经典：材料靠收集，制作要有材料和制作站，买东西要花吉欧。死亡后在原地留下阴影，打败它取回吉欧。": {"en-US": "Classic: gather materials, craft with materials and stations, pay geo in shops. Dying leaves a shade where you fell; defeat it to get your geo back."},
+ "钢铁之魂（空洞骑士原版模式）：只有一条命，死亡后这个存档就此结束。": {"en-US": "Steel Soul (Hollow Knight's own mode): one life only; dying ends this save."},
+ "寻神者（空洞骑士原版模式）：直接来到神居，在万神殿里挑战首领。": {"en-US": "Godseeker (Hollow Knight's own mode): start in Godhome and challenge the bosses in its pantheons."},
+ "当前阶段 {0} / {1}，再取得任意 1 种未获得的移动能力进入下一阶段": {"en-US": "Stage {0}/{1}: obtain any new movement ability to advance"},
+ "再获得 {0} 种不同移动能力后解锁，顺序不限": {"en-US": "Obtain {0} more distinct movement abilities to unlock, in any order"},
+ "取得 {0} 种不同移动能力，顺序不限": {"en-US": "Obtain {0} distinct movement abilities, in any order"},
+ "再取得任意一种尚未获得的移动能力，就能进入阶段 {0}，让更多人搬来、商店上新货、工作站开放更多配方。": {"en-US": "Obtain any new movement ability to reach stage {0}, attract new residents and unlock more stock and recipes."},
+ "计入阶段的能力：蛾翼披风、螳螂爪、水晶之心、帝王之翼、暗影披风。每种只计算一次，顺序不限。": {"en-US": "Abilities counted: Mothwing Cloak, Mantis Claw, Crystal Heart, Monarch Wings and Shade Cloak. Each counts once, in any order."},
+ "当前世界无需水下呼吸，此药水暂无额外作用，使用不会消耗": {"en-US": "Underwater breathing is not needed in this world. This potion has no additional effect and is not consumed."},
+ "当前世界暂无寒冷伤害来源，此药水暂无额外减伤，使用不会消耗": {"en-US": "This world has no cold damage sources. This potion adds no damage reduction and is not consumed."},
+ "当前世界没有腐化、猩红或神圣感染物块，此药水暂无显示目标，使用不会消耗": {"en-US": "This world has no Corruption, Crimson or Hallow infection blocks to reveal. This potion is not consumed."},
+ "搜索中…": {"en-US": "Searching..."},
+ "正在检索掉落来源…": {"en-US": "Indexing drop sources..."},
+ "← 返回材料追踪": {
+  "en-US": "Back to material tracking"
+ },
+ "材料追踪：{0} ×{1}": {
+  "en-US": "Materials: {0} x{1}"
+ },
+ "← 上一级": {
+  "en-US": "Back one level"
+ },
+ "返回目标": {
+  "en-US": "Return to target"
+ },
+ "查图鉴来源": {
+  "en-US": "Find bestiary sources"
+ },
+ "此物品通过商店获取。": {
+  "en-US": "This item is purchased from a shop."
+ },
+ "暂无合成配方或怪物掉落记录，请查看物品说明及商店、采集等获取途径。": {
+  "en-US": "No crafting recipe or enemy drop is recorded. Check the item description and sources such as shops or gathering."
+ },
+ "配方 {0}/{1} · 每次产出 {2}": {
+  "en-US": "Recipe {0}/{1} - produces {2}"
+ },
+ "制作站：{0}": {
+  "en-US": "Station: {0}"
+ },
+ "{0}  已有 {1} / 需要 {2}": {
+  "en-US": "{0}  Owned {1} / Needed {2}"
+ },
+ "看下位": {
+  "en-US": "Ingredients"
+ },
+ "查图鉴": {
+  "en-US": "Bestiary"
+ },
+ "获取说明": {
+  "en-US": "Acquisition"
+ },
+ "点击继续追踪；有图鉴按钮时可直接查掉落来源。": {
+  "en-US": "Click to follow ingredients. The Bestiary button opens drop sources directly."
+ },
+ "已有量包含背包、向导槽和附近箱子。点击材料逐层查看；图鉴只显示已解锁的掉落资料。": {
+  "en-US": "Owned amounts include inventory, the Guide slot and nearby chests. Click materials to follow recipes. Bestiary results follow discovery unlocks."
+ },
+ "{0} · 阶段 {1} 起": {
+  "en-US": "{0} - from stage {1}"
+ },
+ "旅商随机出售 · 阶段 {0} 起": {
+  "en-US": "Random Traveling Merchant stock - from stage {0}"
+ },
+ "武器特效不透明度：{0}%": {
+  "en-US": "Weapon effects opacity: {0}%",
+  "zh-Hant": "武器特效不透明度：{0}%"
+ },
+ "0% 隐藏，100% 正常显示。统一调整挥砍、弹幕、光束、拖尾、爆炸、粒子和召唤物等特效；立即生效并保存，不改变伤害或命中。": {
+  "en-US": "0% hides effects; 100% shows them normally. Applies to slashes, projectiles, beams, trails, explosions, particles and summons. Takes effect immediately and saves automatically; damage and hits are unchanged.",
+  "zh-Hant": "0% 隱藏，100% 正常顯示。統一調整揮砍、彈幕、光束、拖尾、爆炸、粒子和召喚物等特效；立即生效並儲存，不改變傷害或命中。"
+ },
+ "恢复特效 100%": {
+  "en-US": "Reset effects to 100%",
+  "zh-Hant": "恢復特效 100%"
+ },
+ "深渊悠悠球": {
+  "en-US": "Abyss Yoyo",
+  "zh-Hant": "深淵悠悠球"
+ },
+ "悠悠球，射程 18 格，持续 12 秒\n前 6 秒命中时荡开黑色波纹，伤害周围的敌人\n后 6 秒每次命中都撕裂敌人一次": {
+  "en-US": "A yoyo: 18 tiles of string, 12 seconds out\nFor its first 6 seconds its blows send out black ripples that hurt the enemies around\nFor its last 6, every blow rends the enemy it strikes",
+  "zh-Hant": "悠悠球，射程 18 格，持續 12 秒\n前 6 秒命中時盪開黑色波紋，傷害周圍的敵人\n後 6 秒每次命中都撕裂敵人一次"
+ },
+ "虚空狙击枪": {
+  "en-US": "Void Sniper",
+  "zh-Hant": "虛空狙擊槍"
+ },
+ "左键：单发狙击，子弹穿墙\n按住右键瞄准，移动变慢，跳跃或松开右键取消；瞄准时射得更快，但子弹穿不过墙\n瞄准射中的敌人被标记，再射中它会召来一轮黑暗炸弹": {
+  "en-US": "Left click: a single sniper shot that goes through walls\nHold right click to aim: you move slower, and a jump or letting go ends it; aimed shots come quicker but stop at walls\nAn enemy an aimed shot strikes is marked; strike it again to call down a volley of dark bombs",
+  "zh-Hant": "左鍵：單發狙擊，子彈穿牆\n按住右鍵瞄準，移動變慢，跳躍或放開右鍵取消；瞄準時射得更快，但子彈穿不過牆\n瞄準射中的敵人被標記，再射中它會召來一輪黑暗炸彈"
+ },
+ "深渊尖啸法杖": {
+  "en-US": "Abyss Shriek Staff",
+  "zh-Hant": "深淵尖嘯法杖"
+ },
+ "在光标处唤出深渊三魂，最远 22 格，挡在墙前\n三魂连续爆发三次，伤害周围约 4 格的敌人\n随后四散成追踪的黑丝": {
+  "en-US": "Calls up the abyssal three at the cursor, up to 22 tiles off, short of any wall\nThey burst three times, hurting the enemies within about 4 tiles\nthen come apart into homing black threads",
+  "zh-Hant": "在游標處喚出深淵三魂，最遠 22 格，擋在牆前\n三魂連續爆發三次，傷害周圍約 4 格的敵人\n隨後四散成追蹤的黑絲"
+ },
+ "冥歌面具": {
+  "en-US": "Dirge Mask",
+  "zh-Hant": "冥歌面具"
+ },
+ "召唤一只小冥魂为你而战\n它停在敌人约 8 格外，从嘴里射出激光打它，不穿透": {
+  "en-US": "Summons a little dirge soul to fight for you\nIt stops about 8 tiles from an enemy and fires a laser from its mouth that strikes the first in its way",
+  "zh-Hant": "召喚一隻小冥魂為你而戰\n它停在敵人約 8 格外，從嘴裡射出雷射打它，不穿透"
+ },
+ "冥魂": {
+  "en-US": "Dirge Soul",
+  "zh-Hant": "冥魂"
+ },
+ "小冥魂将为你而战": {
+  "en-US": "The little dirge soul will fight for you",
+  "zh-Hant": "小冥魂將為你而戰"
+ },
+ "传送冷却": {
+  "en-US": "Blink cooling down",
+  "zh-Hant": "傳送冷卻"
+ },
+ "暗魂之锋": {
+  "en-US": "Shade Edge",
+  "zh-Hant": "暗魂之鋒"
+ },
+ "按住左键连斩三刀：下劈、横斩、上挑，上挑时掷出一道剑影\n剑影旋转着打中周围的所有敌人，穿过墙壁，打完就消散，不耽误挥剑\n松开左键回到第一刀": {
+  "en-US": "Hold the left button for three cuts: a downward chop, a level sweep and an overhand fling that throws a shadow of the sword\nThe shadow spins, striking every enemy around it through walls, then fades; the swinging goes on\nLet go to start again from the first cut",
+  "zh-Hant": "按住左鍵連斬三刀：下劈、橫斬、上挑，上挑時擲出一道劍影\n劍影旋轉著打中周圍的所有敵人，穿過牆壁，打完就消散，不耽誤揮劍\n放開左鍵回到第一刀"
+ },
+ "暗魂裂光枪": {
+  "en-US": "Shade Rift Rifle",
+  "zh-Hant": "暗魂裂光槍"
+ },
+ "左键：射出一道穿透一切敌人的黑色裂光，给命中的敌人叠一层印记，最多五层\n右键：引爆所有印记，层数越多爆炸越大": {
+  "en-US": "Left click: a black rift ray that goes through every enemy, marking each one it strikes, up to five marks\nRight click: every mark bursts; the more marks, the bigger the blast",
+  "zh-Hant": "左鍵：射出一道穿透一切敵人的黑色裂光，給命中的敵人疊一層印記，最多五層\n右鍵：引爆所有印記，層數越多爆炸越大"
+ },
+ "暗魂幽影": {
+  "en-US": "Shade Wraith",
+  "zh-Hant": "暗魂幽影"
+ },
+ "按住左键放出幽灵，突袭到光标处，黑暗冲击波从四周汇聚过去，持续消耗魔力\n松开后幽灵慢慢飞回，回到手中才能再放\n幽灵在外时按右键，稍等片刻传送到幽灵身边，耗尽所有魔力，冷却 6 秒\n幽灵穿不过墙，冲击波可以": {
+  "en-US": "Hold the left button to send a ghost rushing to the cursor, dark shocks closing on it from all around, using mana as it goes\nLet go and the ghost drifts back; it can be sent again once it is in your hand\nRight click while it is out to teleport to it after a moment, spending all your mana; 6 seconds before the next\nThe ghost can't pass walls; the shocks can",
+  "zh-Hant": "按住左鍵放出幽靈，突襲到游標處，黑暗衝擊波從四周匯聚過去，持續消耗魔力\n放開後幽靈慢慢飛回，回到手中才能再放\n幽靈在外時按右鍵，稍等片刻傳送到幽靈身邊，耗盡所有魔力，冷卻 6 秒\n幽靈穿不過牆，衝擊波可以"
+ },
+ "暗魂唤杖": {
+  "en-US": "Shade Soul Staff",
+  "zh-Hant": "暗魂喚杖"
+ },
+ "召唤一只小暗魂为你而战\n它冲向敌人，近了化作一道冲击波重重打中它，然后飞开，过一会再来\n冲刺路上碰到的其他敌人也会受伤": {
+  "en-US": "Summons a little shade to fight for you\nIt charges at an enemy, turns into a shock wave that strikes it hard up close, then flies off and comes again a little later\nOther enemies in its way are hurt in passing",
+  "zh-Hant": "召喚一隻小暗魂為你而戰\n它衝向敵人，近了化作一道衝擊波重重打中它，然後飛開，過一會再來\n衝刺路上碰到的其他敵人也會受傷"
+ },
+ "暗魂": {
+  "en-US": "Shade",
+  "zh-Hant": "暗魂"
+ },
+ "小暗魂将为你而战": {
+  "en-US": "The little shade will fight for you",
+  "zh-Hant": "小暗魂將為你而戰"
+ },
+ "命中敌人时，从它身上飞出一只怨灵\n怨灵追踪附近的敌人再打一次": {
+  "en-US": "Striking an enemy calls a wraith out of it\nThe wraith hunts the nearest enemy and strikes again",
+  "zh-Hant": "命中敵人時，從它身上飛出一隻怨靈\n怨靈追蹤附近的敵人再打一次"
+ },
+ "左键：从枪口射出一道怨魂光束，击中第一个敌人\n按住右键蓄力 2 秒，自动射出一道大型白波，消耗 5 发子弹，命中时爆炸\n提前松开取消，不耗弹药": {
+  "en-US": "Left click: a revenant beam from the muzzle that strikes the first enemy in its way\nHold right click for 2 seconds to fire a great soul wave, using 5 bullets; it bursts on the enemy it hits\nLet go early to cancel; no ammo is used",
+  "zh-Hant": "左鍵：從槍口射出一道怨魂光束，擊中第一個敵人\n按住右鍵蓄力 2 秒，自動射出一道大型白波，消耗 5 發子彈，命中時爆炸\n提前放開取消，不耗彈藥"
+ },
+ "向前放出一道白波，碰到敌人时爆炸\n爆炸之前按右键，再消耗同样的魔力，白波散成 15 只追踪怨灵": {
+  "en-US": "Casts a soul wave forward that bursts on the enemy it touches\nRight click before it bursts, for the same mana again, to split it into 15 homing wraiths",
+  "zh-Hant": "向前放出一道白波，碰到敵人時爆炸\n爆炸之前按右鍵，再消耗同樣的魔力，白波散成 15 隻追蹤怨靈"
+ },
+ "召唤一只小怨魂为你而战\n它会蓄势，然后扑向你附近的敌人": {
+  "en-US": "Summons a little soul to fight for you\nIt gathers itself, then pounces on enemies near you",
+  "zh-Hant": "召喚一隻小怨魂為你而戰\n它會蓄勢，然後撲向你附近的敵人"
+ },
+ "阶段": {
+  "en-US": "Stage",
+  "zh-Hant": "階段"
+ },
+ "当前阶段：{0}": {
+  "en-US": "Current stage: {0}",
+  "zh-Hant": "目前階段：{0}"
+ },
+ "开局": {
+  "en-US": "the start",
+  "zh-Hant": "開局"
+ },
+ "得到{0}后": {
+  "en-US": "after {0}",
+  "zh-Hant": "得到{0}後"
+ },
+ "创造模式：切换到阶段 {0}（{1}）": {
+  "en-US": "Creative mode: switch to stage {0} ({1})",
+  "zh-Hant": "創造模式：切換到階段 {0}（{1}）"
+ },
+ "商店、配方、居民和神居按这个阶段": {
+  "en-US": "Shops, recipes, townsfolk and Godhome follow this stage",
+  "zh-Hant": "商店、配方、居民和神居按這個階段"
+ },
+ "哀嚎丧钟": {
+  "en-US": "Wailing Deathbell",
+  "zh-Hant": "哀嚎喪鐘"
+ },
+ "按住左键朝光标扔出丧钟，弹跳三次后飞回手中，松开左键立刻飞回\n每次撞到敌人或地形都震出一圈魂啸\n弹跳途中钟回到身上就能马上再扔，最多同时扔出两口": {
+  "en-US": "Hold the left button to throw the bell toward the cursor; it bounces three times, then flies back to your hand, at once when you let go\nEach time it strikes an enemy or the ground, a wail of souls bursts out\nCatch it on the way back to throw again at once; up to two bells can be out together",
+  "zh-Hant": "按住左鍵朝游標扔出喪鐘，彈跳三次後飛回手中，放開左鍵立刻飛回\n每次撞到敵人或地形都震出一圈魂嘯\n彈跳途中鐘回到身上就能馬上再扔，最多同時扔出兩口"
+ },
+ "幽魂风琴": {
+  "en-US": "Ghost Pipe Organ",
+  "zh-Hant": "幽魂風琴"
+ },
+ "朝前方吼叫三次，分别消耗 1、2、3 发子弹\n白色声浪一直向前，撞墙反弹，前两声碰到敌人就散\n短暂蓄力后的第三声穿透一切": {
+  "en-US": "Roars ahead three times, using 1, 2 and 3 bullets\nThe white sound waves fly on however far and turn back off walls; the first two break on the enemies they meet\nThe third, after a short charge, goes through everything",
+  "zh-Hant": "朝前方吼叫三次，分別消耗 1、2、3 發子彈\n白色聲浪一直向前，撞牆反彈，前兩聲碰到敵人就散\n短暫蓄力後的第三聲穿透一切"
+ },
+ "嚎叫幽灵": {
+  "en-US": "Howling Wraiths",
+  "zh-Hant": "嚎叫幽靈"
+ },
+ "在光标处唤出嚎叫的三魂\n它朝四面八方射出白色魂束，追踪敌人，穿过墙壁": {
+  "en-US": "Calls up the howling three at the cursor\nThey loose white soul beams all around that home in on enemies through walls",
+  "zh-Hant": "在游標處喚出嚎叫的三魂\n它朝四面八方射出白色魂束，追蹤敵人，穿過牆壁"
+ },
+ "挽歌面具": {
+  "en-US": "Elegy Mask",
+  "zh-Hant": "輓歌面具"
+ },
+ "召唤一只小唱魂为你而战\n它向附近的敌人持续发出一道穿透的声浪": {
+  "en-US": "Summons a little choir soul to fight for you\nIt keeps up a piercing wave of sound on enemies near you",
+  "zh-Hant": "召喚一隻小唱魂為你而戰\n它向附近的敵人持續發出一道穿透的聲浪"
+ },
+ "唱魂": {
+  "en-US": "Choir Soul",
+  "zh-Hant": "唱魂"
+ },
+ "小唱魂将为你而战": {
+  "en-US": "The little choir soul will fight for you",
+  "zh-Hant": "小唱魂將為你而戰"
+ },
+ "怨魂之锋": {
+  "en-US": "Revenant Edge",
+  "zh-Hant": "怨魂之鋒"
+ },
+ "挥剑放出魂刃\n命中敌人时飞出怨灵，追踪附近的敌人再打一次": {
+  "en-US": "Swings throw a soul blade\nStriking an enemy calls out a wraith that hunts the nearest enemy and strikes again",
+  "zh-Hant": "揮劍放出魂刃\n命中敵人時飛出怨靈，追蹤附近的敵人再打一次"
+ },
+ "怨魂脉冲枪": {
+  "en-US": "Revenant Pulse Rifle",
+  "zh-Hant": "怨魂脈衝槍"
+ },
+ "左键：怨魂激光\n按住右键蓄力 2 秒，自动射出一道大型白波，消耗 5 发子弹\n提前松开取消，不耗弹药": {
+  "en-US": "Left click: a revenant laser\nHold right click for 2 seconds to fire a great soul wave, using 5 bullets\nLet go early to cancel; no ammo is used",
+  "zh-Hant": "左鍵：怨魂雷射\n按住右鍵蓄力 2 秒，自動射出一道大型白波，消耗 5 發子彈\n提前放開取消，不耗彈藥"
+ },
+ "复仇之魂": {
+  "en-US": "Vengeful Spirit",
+  "zh-Hant": "復仇之魂"
+ },
+ "向前放出一道白波，穿过敌人": {
+  "en-US": "Casts a soul wave forward that passes through enemies",
+  "zh-Hant": "向前放出一道白波，穿過敵人"
+ },
+ "游魂唤杖": {
+  "en-US": "Wandering Soul Staff",
+  "zh-Hant": "遊魂喚杖"
+ },
+ "召唤一只小怨魂为你作战\n它会蓄势，然后扑向敌人": {
+  "en-US": "Summons a little wandering soul to fight for you\nIt gathers itself, then pounces on enemies",
+  "zh-Hant": "召喚一隻小怨魂為你作戰\n它會蓄勢，然後撲向敵人"
+ },
+ "游荡之魂": {
+  "en-US": "Wandering Soul",
+  "zh-Hant": "遊蕩之魂"
+ },
+ "小怨魂将为你而战": {
+  "en-US": "The little soul will fight for you",
+  "zh-Hant": "小怨魂將為你而戰"
+ },
+ "弹药不足": {
+  "en-US": "Not enough ammo",
+  "zh-Hant": "彈藥不足"
+ },
+ "另得 {0} 吉欧": {
+  "en-US": "Plus {0} geo",
+  "zh-Hant": "另得 {0} 吉歐"
+ },
+ "神居另按挑战难度有几率多给一件当前阶段首领的武器或饰品": {
+  "en-US": "Godhome also has a chance, by its challenge, of one more weapon or accessory of a current-stage boss",
+  "zh-Hant": "神居另按挑戰難度有機率多給一件當前階段首領的武器或飾品"
+ },
  "预览地区：{0}（跨地区掉落不同）": {
   "en-US": "Loot region: {0} (drops vary elsewhere)",
   "zh-Hant": "預覽地區：{0}（跨地區掉落不同）"
@@ -75,9 +369,9 @@
   "pt-BR": "Inimigos ×{0}",
   "ru-RU": "Враги ×{0}"
  },
- "按暗影冲刺键，或按住冲刺键时双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门": {
-  "en-US": "Press Shadow Dash, or double-tap a direction while holding Dash: a shadow dash\nDashes through enemies and their attacks, and through shade gates",
-  "zh-Hant": "按暗影衝刺鍵，或按住衝刺鍵時雙擊方向鍵：暗影衝刺\n衝刺時穿過敵人和它們的攻擊，並能穿過暗影之門",
+ "按暗影冲刺键，或双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门": {
+  "en-US": "Press Shadow Dash, or double-tap a direction: a shadow dash\nDashes through enemies and their attacks, and through shade gates",
+  "zh-Hant": "按暗影衝刺鍵，或雙擊方向鍵：暗影衝刺\n衝刺時穿過敵人和它們的攻擊，並能穿過暗影之門",
   "ja-JP": "シャドウダッシュキー、またはダッシュを押しながら方向を2回押す：シャドウダッシュ\n敵とその攻撃をすり抜け、影の門も通り抜ける",
   "ko-KR": "그림자 대시 키, 또는 대시를 누른 채 방향키 두 번: 그림자 대시\n적과 공격을 통과하고 그림자 문도 지나간다",
   "de-DE": "Schattenspurt-Taste oder bei gehaltenem Spurt zweimal eine Richtung: ein Schattenspurt\nSpurtet durch Gegner, ihre Angriffe und Schattentore",
@@ -1710,6 +2004,10 @@
   "it-IT": "Ripristina {0} mana",
   "pt-BR": "Restaura {0} de mana",
   "ru-RU": "Восстанавливает {0} маны"
+ },
+ "“货真价实”\n可以放置，在旁边制作要用恶魔祭坛或猩红祭坛的物品\n用锤力 80 以上的锤子（比如神锤）敲下来，可以换个地方放": {
+  "en-US": "'The real deal'\nCan be placed; items made at a Demon Altar or a Crimson Altar are made beside it\nA hammer of 80 power or more (the Pwnhammer) knocks it off to set down elsewhere",
+  "zh-Hant": "「這才是真正的好東西」\n可以放置，在旁邊製作要用惡魔祭壇或血腥祭壇的物品\n用錘力 80 以上的錘子（比如神錘）敲下來，可以換個地方放"
  },
  "恶魔祭坛 / 猩红祭坛": {
   "en-US": "Demon Altar / Crimson Altar",
@@ -3835,6 +4133,9 @@
   "pt-BR": "TerraKnight v{0}",
   "ru-RU": "TerraKnight v{0}"
  },
+ "首领房间的原生地形不能挖掘；放下的方块会变成平台": {
+  "en-US": "The arena's original terrain is protected; blocks placed here become platforms."
+ },
  "首领的战斗范围内不能改动地形": {
   "en-US": "The ground where a boss fights can't be changed",
   "zh-Hant": "首領的戰鬥範圍內不能改動地形",
@@ -3858,6 +4159,58 @@
   "it-IT": "Inventario pieno: ciò che non entra cade ai tuoi piedi",
   "pt-BR": "Inventário cheio: o que não couber cai aos seus pés",
   "ru-RU": "Инвентарь полон: что не поместилось, упадёт под ноги"
+ },
+ "背包已满：放不下的武器掉在了脚下": {
+  "en-US": "Inventory full: the weapons that did not fit are at your feet",
+  "zh-Hant": "背包已滿：放不下的武器掉在了腳下",
+  "ja-JP": "持ち物がいっぱい：入らなかった武器は足元に落ちた",
+  "ko-KR": "가방이 가득 참: 들어가지 않은 무기는 발밑에 떨어졌다",
+  "de-DE": "Inventar voll: Die Waffen, die nicht passten, liegen dir vor den Füßen",
+  "fr-FR": "Inventaire plein : les armes qui ne rentraient pas sont à vos pieds",
+  "es-ES": "Inventario lleno: las armas que no cabían están a tus pies",
+  "it-IT": "Inventario pieno: le armi che non entravano sono ai tuoi piedi",
+  "pt-BR": "Inventário cheio: as armas que não couberam estão aos seus pés",
+  "ru-RU": "Инвентарь полон: оружие, которое не поместилось, лежит под ногами"
+ },
+ "吸收{0}后解锁": {
+  "en-US": "Unlocks once you absorb {0}",
+  "zh-Hant": "吸收{0}後解鎖",
+  "ja-JP": "{0}を吸収すると解放",
+  "ko-KR": "{0}을(를) 흡수하면 해금",
+  "de-DE": "Freigeschaltet, sobald du {0} aufnimmst",
+  "fr-FR": "Se débloque une fois {0} absorbé",
+  "es-ES": "Se desbloquea al absorber {0}",
+  "it-IT": "Si sblocca dopo aver assorbito {0}",
+  "pt-BR": "Desbloqueia ao absorver {0}",
+  "ru-RU": "Откроется, когда вы поглотите: {0}"
+ },
+ "护符背包在这里": {
+  "en-US": "Your Charm Bag is here",
+  "zh-Hant": "護符背包在這裡",
+  "ja-JP": "チャームバッグはここ",
+  "ko-KR": "부적 가방은 여기에 있다",
+  "de-DE": "Hier ist dein Talismanbeutel",
+  "fr-FR": "Votre sac à charmes est ici",
+  "es-ES": "Tu bolsa de amuletos está aquí",
+  "it-IT": "Ecco la tua borsa degli amuleti",
+  "pt-BR": "Sua bolsa de amuletos fica aqui",
+  "ru-RU": "Сумка амулетов здесь"
+ },
+ "这里是护符背包。坐在长椅上时，点下面的护符就能戴上或卸下；每枚护符要占几个凹槽，凹槽用完就戴不下了。再点一下这个按钮，回到装备。": {
+  "en-US": "This is your Charm Bag. While resting on a bench, click a charm below to wear it or take it off; each takes a few notches, and when the notches run out no more fit. Click this button again to go back to your equipment.",
+  "zh-Hant": "這裡是護符背包。坐在長椅上時，點下面的護符就能戴上或卸下；每枚護符要佔幾個凹槽，凹槽用完就戴不下了。再點一下這個按鈕，回到裝備。",
+  "ja-JP": "ここがチャームバッグです。ベンチに座っている間、下のチャームをクリックすると装着・解除できます。チャームはそれぞれいくつかのノッチを使い、ノッチが足りなくなるとそれ以上は付けられません。このボタンをもう一度押すと装備に戻ります。",
+  "ko-KR": "여기가 부적 가방이다. 벤치에 앉아 있을 때 아래 부적을 클릭하면 착용하거나 해제할 수 있다. 부적마다 홈을 몇 개씩 차지하며, 홈이 모자라면 더 착용할 수 없다. 이 버튼을 다시 누르면 장비로 돌아간다.",
+  "de-DE": "Das ist dein Talismanbeutel. Während du auf einer Bank rastest, klick unten einen Talisman an, um ihn anzulegen oder abzunehmen; jeder braucht ein paar Kerben, und sind die Kerben voll, passt keiner mehr. Klick diesen Knopf noch einmal, um zur Ausrüstung zurückzukehren.",
+  "fr-FR": "Voici votre sac à charmes. Assis sur un banc, cliquez sur un charme ci-dessous pour le porter ou le retirer ; chacun occupe quelques encoches, et quand elles sont pleines, plus rien ne rentre. Cliquez de nouveau sur ce bouton pour revenir à l'équipement.",
+  "es-ES": "Esta es tu bolsa de amuletos. Sentado en un banco, haz clic en un amuleto de abajo para ponértelo o quitártelo; cada uno ocupa unas cuantas muescas y, cuando se acaban, no cabe ninguno más. Vuelve a pulsar este botón para volver al equipo.",
+  "it-IT": "Questa è la tua borsa degli amuleti. Seduto su una panchina, fai clic su un amuleto qui sotto per indossarlo o toglierlo; ognuno occupa qualche tacca e, finite le tacche, non ne entrano altri. Premi di nuovo questo pulsante per tornare all'equipaggiamento.",
+  "pt-BR": "Esta é sua bolsa de amuletos. Sentado em um banco, clique em um amuleto abaixo para usá-lo ou tirá-lo; cada um ocupa alguns entalhes e, quando eles acabam, não cabe mais nenhum. Clique neste botão de novo para voltar ao equipamento.",
+  "ru-RU": "Это сумка амулетов. Сидя на скамейке, нажмите на амулет ниже, чтобы надеть или снять его; каждый занимает несколько ячеек, и когда они заканчиваются, больше не помещается. Нажмите эту кнопку ещё раз, чтобы вернуться к снаряжению."
+ },
+ "护符背包": {
+  "en-US": "Charm Bag",
+  "zh-Hant": "護符背包"
  },
  "当前层：{0}": {
   "en-US": "Current: {0}",
@@ -5107,17 +5460,17 @@
     "pt-BR": "Clique com o botão direito para abrir",
     "ru-RU": "Нажмите ПКМ, чтобы открыть"
   },
-  "首次击败：必得首领武器": {
-    "en-US": "First defeat: the boss weapon is certain",
-    "zh-Hant": "首次擊敗：必得首領武器",
-    "ja-JP": "初撃破：ボスの武器が確定",
-    "ko-KR": "첫 처치: 보스 무기 확정",
-    "de-DE": "Erster Sieg: die Bosswaffe ist sicher",
-    "fr-FR": "Première victoire : arme du boss garantie",
-    "es-ES": "Primera victoria: arma del jefe asegurada",
-    "it-IT": "Prima vittoria: arma del boss garantita",
-    "pt-BR": "Primeira vitória: arma do chefe garantida",
-    "ru-RU": "Первая победа: оружие босса гарантировано"
+  "首次击败：含首杀才给的奖励": {
+    "en-US": "First defeat: holds the first-defeat rewards",
+    "zh-Hant": "首次擊敗：含首殺才給的獎勵",
+    "ja-JP": "初撃破：初撃破限定の報酬入り",
+    "ko-KR": "첫 처치: 첫 처치 전용 보상 포함",
+    "de-DE": "Erster Sieg: mit den Belohnungen des ersten Siegs",
+    "fr-FR": "Première victoire : avec les récompenses de la première victoire",
+    "es-ES": "Primera victoria: con las recompensas de la primera victoria",
+    "it-IT": "Prima vittoria: con le ricompense della prima vittoria",
+    "pt-BR": "Primeira vitória: com as recompensas da primeira vitória",
+    "ru-RU": "Первая победа: с наградами за первую победу"
   },
   "星星": {
     "en-US": "Star",
@@ -7807,17 +8160,17 @@
   "pt-BR": "Cofre do pesadelo",
   "ru-RU": "Сундук кошмара"
  },
- "锻造上限看武器的阶段：阶段 0 的武器 +5，每高一个阶段多 5 级": {
-  "en-US": "The forging cap follows the weapon's stage: a stage 0 weapon +5, five more each stage",
-  "zh-Hant": "鍛造上限看武器的階段：階段 0 的武器 +5，每高一個階段多 5 級",
-  "ja-JP": "鍛造の上限は武器の段階で決まる：段階 0 の武器は +5、段階が上がるごとに +5",
-  "ko-KR": "단조 상한은 무기의 단계에 따름: 0단계 무기 +5, 단계마다 5씩 증가",
-  "de-DE": "Die Schmiedegrenze richtet sich nach der Stufe der Waffe: Stufe 0 +5, je Stufe 5 mehr",
-  "fr-FR": "La limite de forge dépend du stade de l'arme : stade 0 +5, 5 de plus par stade",
-  "es-ES": "El límite de forja depende de la etapa del arma: etapa 0 +5, 5 más por etapa",
-  "it-IT": "Il limite di forgiatura dipende dallo stadio dell'arma: stadio 0 +5, 5 in più per stadio",
-  "pt-BR": "O limite de forja depende do estágio da arma: estágio 0 +5, mais 5 por estágio",
-  "ru-RU": "Предел ковки зависит от этапа оружия: этап 0 — +5, каждый этап ещё +5"
+ "锻造上限看武器的阶段：阶段 0 到 5 依次 +2、+3、+4、+5、+6、+6": {
+  "en-US": "The forging cap follows the weapon's stage: stages 0 to 5 allow +2, +3, +4, +5, +6, +6",
+  "zh-Hant": "鍛造上限看武器的階段：階段 0 到 5 依次 +2、+3、+4、+5、+6、+6",
+  "ja-JP": "鍛造の上限は武器の段階で決まる：段階 0〜5 はそれぞれ +2、+3、+4、+5、+6、+6",
+  "ko-KR": "단조 상한은 무기의 단계에 따름: 0~5단계 순서대로 +2, +3, +4, +5, +6, +6",
+  "de-DE": "Die Schmiedegrenze richtet sich nach der Stufe der Waffe: Stufe 0 bis 5 erlauben +2, +3, +4, +5, +6, +6",
+  "fr-FR": "La limite de forge dépend du stade de l'arme : stades 0 à 5 : +2, +3, +4, +5, +6, +6",
+  "es-ES": "El límite de forja depende de la etapa del arma: etapas 0 a 5: +2, +3, +4, +5, +6, +6",
+  "it-IT": "Il limite di forgiatura dipende dallo stadio dell'arma: stadi da 0 a 5: +2, +3, +4, +5, +6, +6",
+  "pt-BR": "O limite de forja depende do estágio da arma: estágios 0 a 5: +2, +3, +4, +5, +6, +6",
+  "ru-RU": "Предел ковки зависит от этапа оружия: этапы 0–5 — +2, +3, +4, +5, +6, +6"
  },
  "武器已满级，无法再锻造": {
   "en-US": "This weapon is at its highest level and can't be forged further",
@@ -8263,17 +8616,17 @@
   "pt-BR": "Restaura 600 de vida",
   "ru-RU": "Восстанавливает 600 здоровья"
  },
- "盔甲阶段 0 最多 +3，每高一阶段多 3 级，每级 +1 防御": {
-  "en-US": "Armor caps at +3 in stage 0, gaining 3 levels per stage; each level adds 1 defense",
-  "zh-Hant": "盔甲階段 0 最多 +3，每高一階段多 3 級，每級 +1 防禦",
-  "ja-JP": "防具は段階0で最大+3、段階ごとに上限+3。各レベルで防御+1",
-  "ko-KR": "방어구는 0단계 최대 +3, 단계마다 상한 +3, 강화마다 방어력 +1",
-  "de-DE": "Rüstung: Stufe 0 bis +3, pro Stufe 3 weitere Level; je Level +1 Verteidigung",
-  "fr-FR": "Armure : limite +3 au palier 0, puis 3 niveaux par palier ; +1 défense par niveau",
-  "es-ES": "Armadura: máximo +3 en etapa 0, 3 niveles más por etapa; +1 defensa por nivel",
-  "it-IT": "Armatura: massimo +3 alla fase 0, 3 livelli in più per fase; +1 difesa per livello",
-  "pt-BR": "Armadura: máximo +3 no estágio 0, mais 3 níveis por estágio; +1 defesa por nível",
-  "ru-RU": "Броня: до +3 на этапе 0, ещё 3 уровня за этап; +1 к защите за уровень"
+ "盔甲上限与武器相同，每级 +1 防御（战士的头盔、胸甲和腿甲 +2）": {
+  "en-US": "Armor shares weapon caps; +1 defense per level (+2 for warrior helmets, chestplates and leggings)",
+  "zh-Hant": "盔甲上限與武器相同，每級 +1 防禦（戰士的頭盔、胸甲和腿甲 +2）",
+  "ja-JP": "防具の上限は武器と共通。各レベルで防御+1（戦士の頭・胴・脚は+2）",
+  "ko-KR": "방어구 상한은 무기와 동일. 레벨당 방어력 +1 (전사 투구·흉갑·각반은 +2)",
+  "de-DE": "Rüstung hat dieselben Grenzen wie Waffen; je Level +1 Verteidigung (+2 für Kriegerhelm, Brust- und Beinpanzer)",
+  "fr-FR": "Même limite que les armes ; +1 défense par niveau (+2 pour les casques, plastrons et jambières de guerrier)",
+  "es-ES": "Mismo límite que las armas; +1 defensa por nivel (+2 para casco, peto y grebas de guerrero)",
+  "it-IT": "Stessi limiti delle armi; +1 difesa per livello (+2 per elmo, corazza e gambali da guerriero)",
+  "pt-BR": "Mesmo limite das armas; +1 defesa por nível (+2 para elmo, peitoral e perneiras de guerreiro)",
+  "ru-RU": "Предел как у оружия; +1 к защите за уровень (+2 для шлема, нагрудника и поножей воина)"
  },
  "空洞": {
   "en-US": "Hollow",
@@ -8379,6 +8732,22 @@
   "en-US": "Bottomless Acid Bucket",
   "zh-Hant": "無底酸水桶"
  },
+ "无底微光桶": {
+  "en-US": "Bottomless Shimmer Bucket",
+  "zh-Hant": "無底微光桶"
+ },
+ "包含无穷无尽的微光": {
+  "en-US": "Contains an endless amount of shimmer",
+  "zh-Hant": "包含無窮無盡的微光"
+ },
+ "环境：附近有微光": {
+  "en-US": "Environment: near the shimmer",
+  "zh-Hant": "環境：附近有微光"
+ },
+ "带着娇嫩的花不能传送，只能一路护着它走过去": {
+  "en-US": "The Delicate Flower can't be teleported: carry it all the way on foot",
+  "zh-Hant": "帶著嬌嫩的花不能傳送，只能一路護著它走過去"
+ },
  "超级吸水棉": {
   "en-US": "Super Absorbant Sponge",
   "zh-Hant": "超級吸水棉"
@@ -8456,6 +8825,7 @@
  "凹槽不够：再点 {0} 次强行装上": { "en-US": "Not enough notches: {0} more tries to force it on", "zh-Hant": "凹槽不夠：再點 {0} 次強行裝上" },
  "没有空余的凹槽": { "en-US": "No notch is free", "zh-Hant": "沒有空餘的凹槽" },
  "白色碎片无法装备": { "en-US": "The White Fragment can't be worn", "zh-Hant": "白色碎片無法裝備" },
+ "护符已经破碎，需要先修复": { "en-US": "This charm is broken. Repair it before equipping it", "zh-Hant": "護符已經破碎，需要先修復" },
  "虚空之心无法卸下": { "en-US": "The Void Heart can't be taken off", "zh-Hant": "虛空之心無法卸下" },
  "在浏览器中打开空洞泰拉 Wiki": { "en-US": "Open the TerraKnight wiki in your browser", "zh-Hant": "在瀏覽器中打開空洞泰拉 Wiki" },
  "已在浏览器中打开 Wiki": { "en-US": "Wiki opened in your browser", "zh-Hant": "已在瀏覽器中打開 Wiki" },
@@ -8467,5 +8837,247 @@
  "冷却": { "en-US": " Cooldown", "zh-Hant": "冷卻" },
  "护符技（{0}）：从身上荡漾出一圈光晕扫过整个房间，捡起碰到的所有掉落物，只在当前房间。冷却 5 秒": { "en-US": "Charm Skill ({0}): a ripple of light spreads from you across the whole room and picks up every dropped item it reaches; this room only. 5 second cooldown", "zh-Hant": "護符技（{0}）：從身上蕩漾出一圈光暈掃過整個房間，撿起碰到的所有掉落物，只在當前房間。冷卻 5 秒" },
  "微光里的岩石挖不动": { "en-US": "The rock in the shimmer can't be dug", "zh-Hant": "微光裡的岩石挖不動" },
- "长按空格跳过": { "en-US": "Hold Space to skip", "zh-Hant": "長按空白鍵跳過" }
+ "长按空格跳过": { "en-US": "Hold Space to skip", "zh-Hant": "長按空白鍵跳過" },
+ "盔甲穿透 +{0}，暴击率 +{1}%，暴击伤害 +{2}%": {"en-US": "Armor penetration +{0}, crit chance +{1}%, crit damage +{2}%", "zh-Hant": "盔甲穿透 +{0}，暴擊率 +{1}%，暴擊傷害 +{2}%"},
+ "下一级：": {"en-US": "Next level: ", "zh-Hant": "下一級："},
+ "护甲穿透（召唤物）": {"en-US": "Armor penetration (minions)", "zh-Hant": "護甲穿透（召喚物）"},
+ "其中召唤物自带": {"en-US": "Of which the minions' own", "zh-Hant": "其中召喚物自帶"},
+ "锻造盔甲穿透": {"en-US": "Forged armor penetration", "zh-Hant": "鍛造盔甲穿透"},
+ "暴击伤害": {"en-US": "Crit damage", "zh-Hant": "暴擊傷害"},
+ "（也可以双击方向键）": {"en-US": "(or tap a direction twice)", "zh-Hant": "（也可以雙擊方向鍵）"},
+ "{0}：按 {1} 冲刺": {"en-US": "{0}: press {1} to dash", "zh-Hant": "{0}：按 {1} 衝刺"},
+ "{0}：冲刺键还没有绑定，在“泰拉瑞亚设置”的按键里绑定冲刺": {"en-US": "{0}: the Dash key isn't bound yet; bind Dash in the keys of \"Terraria Settings\"", "zh-Hant": "{0}：衝刺鍵還沒有綁定，在「泰拉瑞亞設定」的按鍵裡綁定衝刺"},
+ "冲刺（装备克苏鲁护盾后）": {"en-US": "Dash (with the Shield of Cthulhu equipped)", "zh-Hant": "衝刺（裝備克蘇魯護盾後）"},
+ "按 {0} 跳跃，按住跳得更高": {"en-US": "Press {0} to jump, hold it to jump higher", "zh-Hant": "按 {0} 跳躍，按住跳得更高"},
+ "按 {0} 使用手里的武器": {"en-US": "Press {0} to use the weapon in hand", "zh-Hant": "按 {0} 使用手裡的武器"},
+ "按 {0} 快速使用治疗药水": {"en-US": "Press {0} to quick-use a healing potion", "zh-Hant": "按 {0} 快速使用治療藥水"},
+ "走到它面前按 {0} 交互": {"en-US": "Walk up to it and press {0} to interact", "zh-Hant": "走到它面前按 {0} 互動"},
+ "按住 {0} 往下看": {"en-US": "Hold {0} to look down", "zh-Hant": "按住 {0} 往下看"},
+ "装备水晶之心后，长按 {0} 蓄力超级冲刺": {"en-US": "With the Crystal Heart equipped, hold {0} to charge a Super Dash", "zh-Hant": "裝備水晶之心後，長按 {0} 蓄力超級衝刺"},
+ "装备水晶之心后，长按冲刺键蓄力超级冲刺；冲刺键还没有绑定，在“泰拉瑞亚设置”的按键里绑定冲刺": {"en-US": "With the Crystal Heart equipped, hold the Dash key to charge a Super Dash; the Dash key isn't bound yet, bind Dash in the keys of \"Terraria Settings\"", "zh-Hant": "裝備水晶之心後，長按衝刺鍵蓄力超級衝刺；衝刺鍵還沒有綁定，在「泰拉瑞亞設定」的按鍵裡綁定衝刺"},
+ "装备暗影披风后，按 {0} 暗影冲刺，穿过敌人和攻击": {"en-US": "With the Shade Cloak equipped, press {0} to shadow dash through enemies and attacks", "zh-Hant": "裝備暗影披風後，按 {0} 暗影衝刺，穿過敵人和攻擊"},
+ "把梦之钉拿在手上，按住左键或右键蓄力，松开挥出": {"en-US": "Hold the Dream Nail in hand, hold the left or right button to charge it and let go to swing", "zh-Hant": "把夢之釘拿在手上，按住左鍵或右鍵蓄力，鬆開揮出"},
+ "获得了地图：按 {0} 打开完整地图": {"en-US": "Got a map: press {0} to open the full map", "zh-Hant": "獲得了地圖：按 {0} 打開完整地圖"},
+ "获得了猎人日志：打败过的敌人可以在背包里的“怪物图鉴”查看": {"en-US": "Got the Hunter's Journal: the enemies you've beaten are in the Bestiary, in the inventory", "zh-Hant": "獲得了獵人日誌：打敗過的敵人可以在背包裡的「怪物圖鑑」查看"},
+ "获得了护符：它放进了护符背包（打开背包，点装备栏上方的“护符背包”按钮；坐在长椅上时才能装备）": {
+  "en-US": "Got a charm: it's in the Charm Bag (open the inventory and click the \"Charm Bag\" button above the equipment; charms go on only while resting on a bench)",
+  "zh-Hant": "獲得了護符：它放進了護符背包（打開背包，點裝備欄上方的「護符背包」按鈕；坐在長椅上時才能裝備）"
+ },
+ "获得了护符：它放进了护符背包": {
+  "en-US": "Got a charm: it's in the Charm Bag",
+  "zh-Hant": "獲得了護符：它放進了護符背包"
+ },
+ "学会了强力斩：拿着骨钉按住 {0} 蓄力，蓄满后松开（不按上下）": {"en-US": "Learned the Great Slash: with the Nail in hand hold {0} to charge, and let go once charged (holding neither up nor down)", "zh-Hant": "學會了強力斬：拿著骨釘按住 {0} 蓄力，蓄滿後鬆開（不按上下）"},
+ "学会了旋风斩：拿着骨钉按住 {0} 蓄力，蓄满后按住上或下松开，转圈时连按还能转得更久": {"en-US": "Learned the Cyclone Slash: with the Nail in hand hold {0} to charge, and let go once charged holding up or down; press it again while spinning to spin longer", "zh-Hant": "學會了旋風斬：拿著骨釘按住 {0} 蓄力，蓄滿後按住上或下鬆開，轉圈時連按還能轉得更久"},
+ "学会了冲刺斩：拿着骨钉按住 {0} 蓄力，蓄满后冲刺时松开": {"en-US": "Learned the Dash Slash: with the Nail in hand hold {0} to charge, and let go during a dash once charged", "zh-Hant": "學會了衝刺斬：拿著骨釘按住 {0} 蓄力，蓄滿後衝刺時鬆開"},
+ "这里要用梦之钉：梦之钉在安息之地获得": {"en-US": "This needs the Dream Nail: it is found in the Resting Grounds", "zh-Hant": "這裡要用夢之釘：夢之釘在安息之地獲得"},
+ "战士的遗骸：把梦之钉拿在手上对它挥一下，进入战士之梦": {"en-US": "A warrior's remains: hold the Dream Nail and swing it at them to enter the warrior's dream", "zh-Hant": "戰士的遺骸：把夢之釘拿在手上對它揮一下，進入戰士之夢"},
+ "把梦之钉拿在手上对它挥一下，进入梦境": {"en-US": "Hold the Dream Nail and swing it at this to enter the dream", "zh-Hant": "把夢之釘拿在手上對它揮一下，進入夢境"},
+ "低语之根：把梦之钉拿在手上打它，收集飘出的梦境精华": {"en-US": "A Whispering Root: hold the Dream Nail and strike it, then gather the Essence it gives off", "zh-Hant": "低語之根：把夢之釘拿在手上打它，收集飄出的夢境精華"},
+ "弹跳蘑菇：拿着骨钉在空中按住下键下劈，能踩着它弹起来": {"en-US": "A bounce shroom: with the Nail in hand, hold down and slash in the air to bounce off it", "zh-Hant": "彈跳蘑菇：拿著骨釘在空中按住下鍵下劈，能踩著它彈起來"},
+ "复仇者：拿着骨钉在它扑过来时挥砍，把它弹开": {"en-US": "Revek: with the Nail in hand, slash as it lunges to parry it", "zh-Hant": "復仇者：拿著骨釘在它撲過來時揮砍，把它彈開"},
+ "向三位骨钉大师学习骨钉技艺": {"en-US": "Learn the Nail Arts from the three Nailmasters", "zh-Hant": "向三位骨釘大師學習骨釘技藝"},
+ "骨钉技艺：按住 {0} 蓄力，闪光后松开": {"en-US": "Nail Arts: hold {0} to charge and let go after the flash", "zh-Hant": "骨釘技藝：按住 {0} 蓄力，閃光後鬆開"},
+ "  强力斩：不按上下时松开，2.5 倍伤害": {"en-US": "  Great Slash: let go holding neither up nor down, 2.5 times the damage", "zh-Hant": "  強力斬：不按上下時鬆開，2.5 倍傷害"},
+ "  旋风斩：按住上或下时松开，转圈连续命中": {"en-US": "  Cyclone Slash: let go holding up or down, hitting again and again as it spins", "zh-Hant": "  旋風斬：按住上或下時鬆開，轉圈連續命中"},
+ "  冲刺斩：冲刺中松开，2.5 倍伤害": {"en-US": "  Dash Slash: let go during a dash, 2.5 times the damage", "zh-Hant": "  衝刺斬：衝刺中鬆開，2.5 倍傷害"},
+ "创造模式：骨钉已满配，三种骨钉技艺都已学会。拿着骨钉按住 {0} 蓄力，闪光后松开": {"en-US": "Creative mode: the nail is fully kitted and all three Nail Arts are learned. With the Nail in hand, hold {0} to charge and let go after the flash", "zh-Hant": "創造模式：骨釘已滿配，三種骨釘技藝都已學會。拿著骨釘按住 {0} 蓄力，閃光後鬆開"},
+ "每秒伤害：{0}": {"en-US": "{0} damage per second", "zh-Hant": "每秒傷害：{0}"},
+ "暗渊符文": {"en-US": "Abyssal Rune"},
+ "晶心之盾": {"en-US": "Crystal Heart Shield"},
+ "影帷之盾": {"en-US": "Shade Cloak Shield"},
+ "荒芜之盾": {"en-US": "Desolate Shield"},
+ "暗渊之盾": {"en-US": "Descending Dark Shield"},
+ "晶影之盾": {"en-US": "Crystal Shade Shield"},
+ "晶陨之盾": {"en-US": "Crystal Dive Shield"},
+ "影陨之盾": {"en-US": "Shade Dive Shield"},
+ "晶渊之盾": {"en-US": "Crystal Abyss Shield"},
+ "影渊之盾": {"en-US": "Shade Abyss Shield"},
+ "虚空圣巢之盾": {"en-US": "Void Hallownest Shield"},
+ "圣巢补购": {"en-US": "Hallownest Recovery"},
+ "暗渊符文专用格": {"en-US": "Abyssal Rune slot"},
+ "仅出售此角色曾经获得的圣巢物品": {"en-US": "Only Hallownest items this character has obtained"},
+ "不可丢弃；获得过后可在哥布林处补购": {"en-US": "Cannot be discarded; once obtained, repurchase from the Goblin"},
+ "点按冲刺键：盾冲并撞击敌人": {"en-US": "Tap Dash: shield dash into enemies"},
+ "长按冲刺键蓄力，松开超级冲刺（空中也可使用）": {"en-US": "Hold Dash to charge, release to Super Dash (also works in midair)"},
+ "按暗影冲刺键或双击方向键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却中双击是盾冲）": {"en-US": "Press Shadow Dash or double-tap a direction: a shadow dash through enemies, attacks and shade gates (while it cools down, a double tap is the shield's dash)", "zh-Hant": "按暗影衝刺鍵或雙擊方向鍵：暗影衝刺，穿過敵人、攻擊和暗影之門（冷卻中雙擊是盾衝）"},
+ "空中按住下并跳跃：黑砸，双倍猛击伤害，落地短暂无敌": {"en-US": "In midair, hold Down and press Jump: Descending Dark, double slam damage and brief landing immunity"},
+ "空中按住下并跳跃：普通下砸，砸开脆弱地板": {"en-US": "In midair, hold Down and press Jump: Desolate Dive, breaking fragile floors"},
+ "空中按住下并跳跃：黑砸，猛击伤害为普通下砸的两倍": {"en-US": "In midair, hold Down and press Jump: Descending Dark deals double normal slam damage"},
+ "落地短暂无敌，并砸开脆弱地板": {"en-US": "Brief immunity on landing; breaks fragile floors"},
+ "下一个首领：{0}": {"en-US": "Next boss: {0}"},
+ "戴着时：地图上指出最近的下一个首领（本阶段还没打过的），小地图上画出去那里的路线": {"en-US": "While worn: the map points to the nearest next boss (one of this stage not beaten yet), and the minimap draws the way there"},
+ "戴着时：三只光蝶绕着你飞；生命不满时，它们洒下一圈光环，回复 10% 生命。冷却 10 秒": {"en-US": "While worn: three butterflies of light circle you; when your life isn't full they shed a ring of light that restores 10% of your life. 10 s cooldown"},
+ "护符技（{0}）：专心模式，10 秒内整个场景变成灰色，敌人和它们的攻击、弹幕高亮成红色，你自己高亮成蓝色。冷却 15 秒": {"en-US": "Charm Skill ({0}): focus mode: for 10 s the whole scene turns grey, enemies with their attacks and shots are highlighted red and you blue. 15 s cooldown"},
+ "戴着时：移动没有惯性，按下方向立刻跑满速，松开立刻停下，转身立刻转身。护符技（{0}）：3 秒内的每次冲刺都无敌，直接穿过敌人。冷却 10 秒": {"en-US": "While worn: no movement inertia: full speed the moment you press a direction, a stop the moment you let go, an instant turn. Charm Skill ({0}): for 3 s every dash is invincible and passes through enemies. 10 s cooldown"},
+ "戴着时：尖刺、荆棘、酸水、深坑和陨石都伤不到你（照常被送回安全的地方），荆棘也不会让你中毒；附近有敌人时，不时在脚下冒出一团毒雾，让雾里的敌人中毒": {"en-US": "While worn: spikes, thorns, acid, pits and meteorites can't hurt you (you are still put back somewhere safe), and thorns don't poison you; with enemies near, a cloud of poison now and then rises at your feet and poisons the enemies in it"},
+ "护符技（{0}）：获得一层 25% 生命的生命血护盾（不叠加）。护盾在时，敌人的一击最多只能把它打碎，伤害不会穿过它。冷却 60 秒": {"en-US": "Charm Skill ({0}): a lifeblood shield of 25% of your life (doesn't stack). While it holds, a single hit can at most break it; no damage gets through. 60 s cooldown"},
+ "戴着时：5 秒没有掉血，获得一层 10% 生命的护盾，最多 3 层；和生命血之心同戴时护盾叠加": {"en-US": "While worn: 5 s without losing life gives a shield layer of 10% of your life, up to 3 layers; worn with Lifeblood Heart, the shields stack"},
+ "戴着时：药水病时间缩短 15%（和炼金石、神话护身符同戴时缩短 30%）；受伤后自然回血早 1 秒开始（3 秒，不戴是 4 秒）": {"en-US": "While worn: potion sickness 15% shorter (30% with the Philosopher's Stone or Charm of Myths); natural regeneration starts 1 s sooner after a hit (3 s instead of 4)"},
+ "戴着时：生命不高于 35% 时，四个职业的伤害都加 25%。护符技（{0}）：舍去 30% 最大生命（最低留 1 点），身边爆出一圈火焰，之后 2 秒内造成的伤害翻倍。冷却 10 秒": {"en-US": "While worn: at 35% life or below, +25% damage for all four classes. Charm Skill ({0}): give up 30% of your max life (never the last point) in a burst of flame; your damage is doubled for 2 s. 10 s cooldown"},
+ "护符技（{0}，按住）：朝鼠标方向举盾，最多 0.8 秒，正面受到的伤害减少 70%；刚举起的 0.15 秒内（盾发白光）挨的那一下完全挡下，弹幕会被反弹回去打敌人。举盾时移动变慢。冷却 5 秒，精准格挡后只要 3 秒": {"en-US": "Charm Skill ({0}, hold): raise a shell toward the cursor for up to 0.8 s; hits from the front take 70% less. A hit met in its first 0.15 s (the shell glows white) is blocked completely and shots are sent back at enemies. You move slower while it's up. 5 s cooldown, 3 s after a perfect block"},
+ "戴着时：受伤后的无敌时间多 0.2 秒。护符技（{0}）：3 秒内吸收受到的所有伤害，再按一次朝鼠标射出光波，碰到敌人或墙就炸开，伤害等于吸收的总量。冷却 20 秒": {"en-US": "While worn: 0.2 s longer immunity after a hit. Charm Skill ({0}): absorb all damage taken for 3 s; press again to fire a wave of light toward the cursor that bursts on the first enemy or wall for the total absorbed. 20 s cooldown"},
+ "专心": {"en-US": "Focus"},
+ "看清危险": {"en-US": "See the danger clearly"},
+ "造成的伤害翻倍": {"en-US": "Damage dealt doubled"},
+ "吸收 {0}": {"en-US": "Absorbed {0}"},
+ "吸收受到的所有伤害": {"en-US": "Absorbing all damage taken"},
+ "冲刺时无敌，穿过敌人": {"en-US": "Invincible while dashing, through enemies"},
+ "{0}现在要占 {1} 个凹槽，放不下了，已经帮你摘下": {"en-US": "{0} now costs {1} notches and no longer fits; it has been taken off"},
+ "先在护符背包里按住 {0} 点击一个已装备的护符，把它收藏为护符技": {"en-US": "First, in the Charm Bag, hold {0} and click a worn charm to favourite it as your charm skill"},
+ "装上之后才能收藏为护符技": {"en-US": "Put it on first to favourite it as your charm skill"},
+ "这个护符没有护符技": {"en-US": "This charm has no charm skill"},
+ "取消收藏：现在没有护符技": {"en-US": "Unfavourited: no charm skill now"},
+ "已收藏：护符技换成{0}": {"en-US": "Favourited: your charm skill is now {0}"},
+ "已收藏为护符技：按 {0} 使用（按住 {1} 点击取消）": {"en-US": "Favourited as your charm skill: press {0} to use it (hold {1} and click to undo)"},
+ "按住 {0} 点击收藏，选它为护符技（只能选一个）": {"en-US": "Hold {0} and click to favourite it as your charm skill (one at a time)"},
+ "装上之后可以收藏为护符技": {"en-US": "Once worn, it can be favourited as your charm skill"},
+ "戴着时：尖刺、荆棘和酸水都伤不到你，可以直接站在上面、穿过去、在酸水里游，哪里都能去；深坑和陨石也不伤你（掉进深坑照常被送回）。附近有敌人时，不时在脚下冒出一团毒雾，让雾里的敌人中毒": {"en-US": "While worn: spikes, thorns and acid can't hurt you; stand on them, walk through them, swim in the acid, go anywhere. Pits and meteorites don't hurt you either (a pit still puts you back). With enemies near, a cloud of poison now and then rises at your feet and poisons the enemies in it"},
+ "戴着时：近战武器和骨钉的攻击范围变为 1.5 倍": {"en-US": "While worn: melee weapons and the nail reach half as far again"},
+ "戴着时：身边显示一圈范围（和狱火药水一样大）；范围里有敌人时，每 2 秒飞出 3 只吸虫追击敌人，每只命中回复 1% 生命": {"en-US": "While worn: a ring shows its reach round you (an Inferno potion's); with an enemy in it, 3 flukes fly out every 2 seconds and hunt enemies, each hit giving back 1% of your life"},
+ "戴着时：被敌人打中时荆棘向四周爆开，120 像素内的敌人受到骨钉 1.5 倍的伤害": {"en-US": "While worn: when an enemy hits you, thorns burst out all round, dealing one and a half nail blows to every enemy within 120 pixels"},
+ "护符技（{0}）：遁入孢子毒雾 2 秒，看不见、免疫所有伤害，雾里的敌人中毒并持续受到伤害；期间不能攻击。冷却 30 秒": {"en-US": "Charm skill ({0}): sink into a cloud of spores for 2 seconds, unseen and immune to all damage; enemies in the cloud are poisoned and keep taking damage. You can't attack meanwhile. 30 s cooldown"},
+ "戴着时：战斗中每 4 秒消耗 20 魔力孵出一只幼崽（最多 4 只），它们扑向附近的敌人自爆，伤害是手上武器的 1.5 倍": {"en-US": "While worn: in a fight, every 4 seconds 20 mana hatches a hatchling (4 at most); they dart at nearby enemies and burst for one and a half blows of the weapon in your hand"},
+ "戴着时：骑在坐骑上，小怪和精英不会主动攻击你，除非你打了它们（首领照常）。护符技（{0}）：变成一团乌恩的光芒 5 秒，用 W A S D 上下左右飞行，照常会受伤，不能攻击。冷却 15 秒": {"en-US": "While worn: riding a mount, common enemies and elites leave you alone unless you strike them (bosses as ever). Charm skill ({0}): become a ball of Unn's light for 5 seconds, flying up, left, down and right with W A S D; you can still be hurt and can't attack. 15 s cooldown"},
+ "戴着时：受伤后下一次喝的回血药效果翻倍（之后 60 秒内不会再翻倍）；3 秒没受伤就获得蜂蜜的回血效果，直到受伤": {"en-US": "While worn: after you are hurt, the next healing potion heals twice as much (not again for 60 seconds); 3 seconds unhurt gives you honey's regeneration until you are hurt"},
+ "戴着时：近战武器和骨钉的攻击范围变为 1.15 倍，并且能隔着墙打到敌人（不戴时打不到墙后面的敌人）": {"en-US": "While worn: melee weapons and the nail reach 1.15 times as far, and strike enemies through walls (without it, enemies behind a wall can't be hit)"},
+ "戴着时：骨钉技艺蓄满后还能继续蓄力 1.5 秒，分三段，最多伤害 +60%、范围 +35%、击退翻倍": {"en-US": "While worn: a charged nail art can go on charging for 1.5 seconds more, in three steps, up to +60% damage, +35% size and double knockback"},
+ "戴着时：近战伤害提高 10%，骨钉伤害提高 30%（碎了就没有效果）": {"en-US": "While worn: melee damage +10%, the nail +30% (nothing once broken)"},
+ "戴着时：骨钉技艺蓄力快 30%，骨钉挥砍的间隔缩短 30%": {"en-US": "While worn: nail arts charge 30% faster, and the nail swings 30% sooner after each slash"},
+ "戴着时：骨钉每次命中，紧接着再劈一刀，造成这一击 30% 的伤害，必定暴击": {"en-US": "While worn: every nail hit is followed at once by a second cut for 30% of it, always a critical hit"},
+ "戴着时：骨钉每次挥砍都朝挥砍方向射出一道白色剑气，造成一半伤害，能穿过敌人，碰墙消失": {"en-US": "While worn: every nail slash throws a white crescent of light its way for half its damage, through enemies, gone at a wall"},
+ "戴着时：暗影冲刺冲得更快更远，穿过的敌人受到骨钉 1.5 倍的伤害": {"en-US": "While worn: the shadow dash goes faster and farther, and enemies it passes through take one and a half nail blows"},
+ "戴着时：魔法伤害提高 15%，所有魔法弹幕变大 30%": {"en-US": "While worn: magic damage +15%, every magic projectile 30% bigger"},
+ "戴着时：吉欧掉落增加 20%；近战和远程命中时吸取伤害的 3% 回复生命（每秒最多 4 点）": {"en-US": "While worn: 20% more geo; melee and ranged hits steal back 3% of their damage as life (at most 4 a second)"},
+ "戴着时：吉欧掉落增加 30%。护符技（{0}）：在两种模式之间切换。鞭子模式：召唤物伤害降低 40%，鞭子伤害翻倍；召唤物模式：召唤物伤害提高 40%，但不能用任何武器攻击。冷却 3 秒": {"en-US": "While worn: 30% more geo. Charm skill ({0}): switch between two modes. Whip mode: minion damage -40%, whip damage doubled; minion mode: minion damage +40%, but no weapon can be used. 3 s cooldown"},
+ "戴着时：面具带来的青色心翻倍（碎了就没有效果）": {"en-US": "While worn: the cyan hearts your masks give are doubled (nothing once broken)"},
+ "戴着时：敌人掉落的吉欧增加 20%，多出来的会闪光（碎了就没有效果）": {"en-US": "While worn: enemies drop 20% more geo, the extra glinting (nothing once broken)"},
+ "戴着时：移动速度减半，所有职业的伤害提高 35%": {"en-US": "While worn: movement speed halved, damage of every class +35%"},
+ "戴着时：魔力消耗降低 10%，魔法武器的施法速度和间隔快 30%，弹药有 33% 的几率不消耗；远程武器命中时飞出一颗小法球追击敌人": {"en-US": "While worn: mana cost -10%, magic weapons cast 30% faster, a 33% chance not to use ammo; ranged hits throw out a small seeking orb of magic"},
+ "戴着时：魔法武器的魔力消耗减半；能打开通往出生地的门": {"en-US": "While worn: magic weapons cost half the mana; opens the way to the Birthplace"},
+ "戴着时：冲刺键的冲刺（克苏鲁之盾、黑冲白冲都算）冲向鼠标的方向；连按两下 W A S D 分别向上、左、下、右冲刺（盔甲有双击下的能力时，双击下照旧给盔甲）": {"en-US": "While worn: the Dash key's dash (the Shield of Cthulhu's, the Mothwing and Shade Cloaks' too) goes toward the cursor; double-tap W A S D to dash up, left, down or right (double-tapping down stays the armour's when it has an ability on it)"},
+ "戴着时：原版的梦之盾绕着你转，而且是两面，在两侧各一面；挡下弹幕，碰到敌人造成骨钉 80% 的伤害，之后碎开一会儿再长回来": {"en-US": "While worn: the game's Dreamshield circles you, two-sided, one shield on each side; it blocks shots and strikes enemies for 80% of a nail blow, breaking a while before it forms again"},
+ "戴着时：召唤原版的编织者幼体攻击敌人；它们算作召唤物，吃召唤伤害加成和鞭子的标记": {"en-US": "While worn: the game's Weaverlings fight for you; they count as minions, with your minion damage and whip tags on their bites"},
+ "戴着时：格林之子（2 级起）攻击更强（随等级）、更频繁（每 0.9 秒一发）、更准（不散射、火球更快并追踪目标）；算作召唤物": {"en-US": "While worn: the Grimmchild (from level 2) hits harder (by its level), more often (a shot every 0.9 seconds) and surer (no spread, faster fireballs that seek their target); it counts as a minion"},
+ "戴着时：保留无忧旋律的守护之歌，有时挡下敌人的一次伤害；不会召唤格林之子": {"en-US": "While worn: Carefree Melody sometimes blocks an enemy hit; it does not summon the Grimmchild", "zh-Hant": "戴著時：保留無憂旋律的守護之歌，有時擋下敵人的一次傷害；不會召喚格林之子"},
+ "戴着时：穿着跑鞋在地面上奔跑直接就是最高速度，不用加速（没穿跑鞋没有效果）": {"en-US": "While worn: with running boots on, running on the ground is at their top speed at once, no build-up (nothing without boots)"},
+ "戴着时：梦之钉在空中也能蓄力，蓄力和挥出时都不会定住你，可以照常移动；蓄力更快，更容易掉落精华（原版）": {"en-US": "While worn: the Dream Nail charges in the air too, and neither its charge nor its slash holds you still; it charges faster and draws out Essence more easily (the game's own)"},
+ "这个形态下不能攻击": {"en-US": "You can't attack in this form"},
+ "噬魂者：召唤物模式下不能用武器攻击": {"en-US": "Soul Eater: no weapon can be used in minion mode"},
+ "遁入孢子毒雾：免疫所有伤害": {"en-US": "In the spore cloud: immune to all damage"},
+ "乌恩的光芒：W A S D 飞行": {"en-US": "Unn's light: fly with W A S D"},
+ "：蜂蜜": {"en-US": ": Honey"},
+ "生命再生加快，受伤为止": {"en-US": "Faster life regeneration until you are hurt"},
+ "：召唤物模式": {"en-US": ": Minion Mode"},
+ "：鞭子模式": {"en-US": ": Whip Mode"},
+ "召唤物伤害提高 40%，不能用武器攻击": {"en-US": "Minion damage +40%, no weapon can be used"},
+ "召唤物伤害降低 40%，鞭子伤害翻倍": {"en-US": "Minion damage -40%, whip damage doubled"},
+ "一群热衷于搜罗闪光之物的小虫，会替持有者叼回散落的吉欧。\n唤醒它们时，虫群会荡漾过持有者所在的整个房间，把地上的东西统统带回来。": {"en-US": "A swarm of little bugs with a passion for shiny things. They fetch the Geo their bearer leaves lying about.\nCalled on, the swarm sweeps through the whole room the bearer stands in and brings back everything lying on the ground."},
+ "在交错的道路间低语着方向。\n它总是指向下一位等待持有者去挑战的强敌，并把通往那里的路悄悄标在地图上。": {"en-US": "Whispers its direction among the tangled paths.\nIt always points to the next great foe awaiting its bearer, and quietly marks the way there on the map."},
+ "蕴含着获救幼虫们的感激之情。\n三只微光的小蝶绕着持有者飞舞，持有者受伤时，它们便唱起歌来，抚平伤口。": {"en-US": "Contains the gratitude of freed grubs.\nThree glowing moths circle the bearer; when the bearer is hurt, they sing and soothe the wounds."},
+ "由坚定不移的意志铸成。\n受伤后能多护住持有者片刻；张开时，外壳会吞下落在身上的每一次打击，再化作一道光波还给敌人。": {"en-US": "Forged from an unwavering will.\nIt guards its bearer a moment longer after a hit. Raised, the shell swallows every blow that lands, then sends it all back at the enemy as a wave of light."},
+ "巴德尔坚硬的甲壳，熬过了无数漫长的岁月。\n持有者可以朝前方举起这面甲壳挡下攻击；时机恰到好处时，连飞来的弹幕也会被原路弹回。": {"en-US": "The hard shell of a Baldur, which has weathered countless long years.\nThe bearer can raise it ahead to block attacks; timed just right, even incoming projectiles are turned back the way they came."},
+ "体现了陨落勇士们的怒火。\n持有者濒临倒下时力量大增；也可以主动舍弃一部分生命，换来片刻翻倍的力量。": {"en-US": "Embodies the fury of fallen warriors.\nThe bearer grows stronger as death draws near, and can give up some of their own life for a moment of doubled strength."},
+ "一枚蕴含着晶体的护符，能让持有者更快地平复下来。\n喝下药水后的不适消退得更快，受伤后身体也更早开始自愈。": {"en-US": "A charm containing a crystal lens that helps its bearer settle more quickly.\nThe sickness after a potion fades sooner, and the body begins to heal sooner after a hit."},
+ "一颗不断渗出生命血的心脏。\n持有者可以随时唤起一层蓝色的生命血护盾，护盾在时，再重的一击也伤不到身体。": {"en-US": "A heart that seeps precious lifeblood.\nThe bearer can call up a coat of blue lifeblood at will; while it holds, not even the heaviest blow reaches the body."},
+ "内含一颗活着的核心，源源不断地渗出珍贵的生命血。\n只要一段时间没有受伤，生命血就会在持有者身上一层层凝成护盾。": {"en-US": "Contains a living core that seeps precious lifeblood without end.\nWhile the bearer stays unhurt for a while, the lifeblood gathers on them layer by layer as a shield."},
+ "圣巢之王赐给最忠诚的骑士的独特护符，满是刮痕和污渍，却一直被悉心照料。\n持有者不再惧怕尖刺、荆棘和酸水；有敌人靠近时，身上会冒出一团让敌人中毒的英勇气味。": {"en-US": "Unique charm bestowed by the King of Hallownest on his most loyal knight. Scratched and dirty, but still cared for.\nThe bearer no longer fears spikes, thorns or acid; when enemies draw near, a heroic odour rises that poisons them."},
+ "住着一窝被遗弃的吸虫，它们把持有者当成了自己的母亲。\n有敌人进入身边的范围时，吸虫会成群飞出去叮咬，把吸到的生命带回给持有者。": {"en-US": "Home to a nest of abandoned flukes that take their bearer for their mother.\nWhen enemies come within range, the flukes swarm out to bite them and carry the life they drink back to the bearer."},
+ "感知到持有者的痛苦，便以尖刺作为回应。\n每当持有者被敌人打中，带刺的藤蔓就会从身上刺出，伤到身边所有的敌人。": {"en-US": "Senses the pain of its bearer and lashes out with thorns.\nWhenever an enemy strikes the bearer, thorned vines burst out and wound every enemy close by."},
+ "螳螂部族赠予值得尊敬的强者的印记。\n持有者的骨钉和手中的刀剑都能挥得更远。": {"en-US": "Given by the Mantis Tribe to those worthy of their respect.\nThe bearer's nail and blades reach further with every swing."},
+ "让持有者的身体稳如磐石，不再被自己的冲劲带着走。\n想走就走，想停就停，转身也毫不拖泥带水；唤醒它时全身泛起金光，冲刺能径直穿过敌人。": {"en-US": "Keeps its bearer's body steady as stone, never carried off by their own momentum.\nThey go, stop and turn the moment they wish. Awakened, it bathes them in gold, and every dash passes straight through enemies."},
+ "由陨落战士们的骨钉熔铸而成，让骨钉技艺更有分量。\n骨钉技艺蓄满之后还能继续积蓄力量，放出时更重、更大、击退得更远。": {"en-US": "Formed from the nails of fallen warriors, it gives the Nail Arts more weight.\nOnce a Nail Art is charged it can keep gathering strength, and is released heavier, larger and with greater force."},
+ "蕴含着一种被禁止的咒术，能把影子化为致命的武器。\n暗影冲刺冲得更快、更远，穿过的敌人都会被斩开。": {"en-US": "Contains a forbidden spell that transforms shadows into deadly weapons.\nShadow dashes go faster and further, and cut through every enemy they pass."},
+ "由真菌荒地的蘑菇制成，至今仍在呼吸。\n持有者可以遁入一团孢子毒雾，雾中隐去身形、不受伤害，毒雾会慢慢侵蚀身边的敌人。": {"en-US": "Composed of living fungal matter. Still breathing.\nThe bearer can vanish into a cloud of spores, unseen and unharmed within it, while the spores slowly eat away at nearby enemies."},
+ "一枚造型修长的护符，让锋芒延伸得更远。\n骨钉和近战武器挥得更长，连隔着墙的敌人也能打到。": {"en-US": "A long, slender charm that extends the reach of a blade.\nThe nail and melee weapons reach further, and can strike enemies even through walls."},
+ "据说蕴含着古代萨满的学识。\n持有者的魔法威力更强，放出的法术也更加庞大。": {"en-US": "Said to contain the knowledge of past generations of shaman.\nThe bearer's magic hits harder, and every spell it casts grows larger."},
+ "萨满们用来从活物身上收集灵魂的护符。\n持有者能从敌人身上收获更多吉欧，近战和远程命中时还会吸回一缕生命。": {"en-US": "Used by shamans to draw more from the living things around them.\nThe bearer gathers more Geo from enemies, and draws back a wisp of life with each melee or ranged hit."},
+ "萨满们遗留的贪婪护符，会吞噬它触碰到的一切灵魂。\n持有者可以在两种战法之间切换：把力量灌注进鞭子，或者全部交给召唤物，自己则不再出手。": {"en-US": "A greedy relic left by the shamans that devours any soul it touches.\nThe bearer can switch between two ways of fighting: pour its strength into the whip, or give it all to their minions and strike no more themselves."},
+ "汲取持有者的魔力来孕育幼崽。\n战斗时会不断孵出小小的幼崽，扑向敌人炸开，威力随持有者手中的武器而定。": {"en-US": "Drains the mana of its bearer to birth hatchlings.\nIn battle it keeps hatching little ones that hurl themselves at enemies and burst, as strong as the weapon in the bearer's hand."},
+ "让持有者的面具更加坚韧，面具带来的青色生命成倍增长。\n这枚护符很脆弱，持有者倒下时就会碎掉。": {"en-US": "Strengthens the bearer's masks; the cyan life they give grows threefold.\nThis charm is fragile, and will break if its bearer is killed."},
+ "让持有者的面具更加坚韧，面具带来的青色生命成倍增长。\n这枚护符坚不可摧，再也不会碎掉。": {"en-US": "Strengthens the bearer's masks; the cyan life they give grows threefold.\nThis charm is unbreakable."},
+ "引导持有者心中的贪婪，敌人掉落的吉欧更多，多出来的还会闪闪发亮。\n这枚护符很脆弱，持有者倒下时就会碎掉。": {"en-US": "Leads its bearer's greed: enemies drop more Geo, and the extra glitters.\nThis charm is fragile, and will break if its bearer is killed."},
+ "引导持有者心中的贪婪，敌人掉落的吉欧更多，多出来的还会闪闪发亮。\n这枚护符坚不可摧，再也不会碎掉。": {"en-US": "Leads its bearer's greed: enemies drop more Geo, and the extra glitters.\nThis charm is unbreakable."},
+ "增强持有者的力量，近战武器和骨钉都打得更重，骨钉落下时火星四溅。\n这枚护符很脆弱，持有者倒下时就会碎掉。": {"en-US": "Strengthens its bearer: melee weapons and the nail strike harder, and sparks fly where the nail lands.\nThis charm is fragile, and will break if its bearer is killed."},
+ "增强持有者的力量，近战武器和骨钉都打得更重，骨钉落下时火星四溅。\n这枚护符坚不可摧，再也不会碎掉。": {"en-US": "Strengthens its bearer: melee weapons and the nail strike harder, and sparks fly where the nail lands.\nThis charm is unbreakable."},
+ "蕴含着骨钉大师们的热忱、骄傲与意志。\n持有者能更快地蓄好骨钉技艺，骨钉也挥得更勤。": {"en-US": "Contains the passion, pride and will of the Nailmasters.\nThe bearer charges Nail Arts faster and swings the nail more often."},
+ "以“善良的异端”乔尼之名祝福的护符。\n持有者的脚步变得沉重缓慢，但每一次攻击都蕴含着更大的力量。": {"en-US": "Blessed by Joni, the kindly heretic.\nThe bearer's steps grow heavy and slow, but every attack carries far greater force."},
+ "揭示了乌恩的形态。乌恩是苍绿之境的母亲，曾给子民带来宁静。\n骑乘坐骑时，弱小的生物不会主动打扰持有者；持有者也能化作一团乌恩的光芒，在空中自由飞行，照常出手。": {"en-US": "Reveals the form of Unn, the mother of Greenpath, whose children knew peace.\nWhile riding, lesser creatures leave the bearer be; and the bearer can become a glow of Unn's light, flying freely and still able to strike."},
+ "蜂巢的金色血液，承载着蜂群疗愈的力量。\n受伤后，下一瓶回血药水的效果会加倍；只要一段时间没受伤，蜂蜜就会慢慢修复持有者的身体。": {"en-US": "Golden sap of the Hive, carrying the healing power of the swarm.\nAfter a hit, the next healing potion works twice as well; and while the bearer stays unhurt for a while, honey slowly mends the body."},
+ "献给善用梦之钉的人，蕴含着梦境部族的智慧。\n梦之钉蓄力更快，在空中也能蓄力，挥出时不必停下脚步，还更容易从梦中收集到精华。": {"en-US": "Created for those who wield the Dream Nail, holding the wisdom of the dream tribe.\nThe Dream Nail charges faster, can be charged in mid-air and swung without stopping, and gathers Essence more readily."},
+ "冲刺之道的信徒留下的护符，他们一生都在追求更快、更远。\n冲刺会朝持有者瞄准的方向奔去，连按两下方向键也能朝上下左右冲出。": {"en-US": "Left by the devotees of the dash, who spent their lives chasing ever faster, ever further.\nDashes fly the way the bearer aims, and a double tap of a direction dashes up, down, left or right."},
+ "一位被遗忘的骨钉大师留下的护符，那位大师的刀快得让人看不清。\n骨钉挥出后毫不迟滞，每一击落下，紧接着还会补上一记银色的追斩，骨钉技艺也是如此。": {"en-US": "Left by a forgotten Nailmaster whose blade moved too fast to see.\nThe nail recovers at once after each swing, and every blow is followed by a silver second cut; the Nail Arts too."},
+ "体现了灵魂圣所法师们的意志。\n持有者施法更快、更省魔力，箭矢和弹药有时不会消耗，远程命中时还会飞出一颗追击的小法球。": {"en-US": "Reflects the will of the mages of the Soul Sanctum.\nThe bearer casts faster and on less mana, sometimes keeps the ammunition they fire, and their ranged hits loose a small seeking orb."},
+ "在安静的洞穴深处天然形成，历经漫长的岁月慢慢长成。\n唤醒后持有者陷入专注，四周褪去颜色，危险的事物染成红色，持有者自己和自己的攻击染成蓝色；再唤醒一次便回过神来。": {"en-US": "Naturally formed deep in a quiet cave over a long period of time.\nAwakened, it sinks the bearer into focus: the world loses its colour, danger glows red, and the bearer and their own attacks glow blue. Awaken it again to come back."},
+ "承载着幼虫们蜕变后的感激，愿持有者也能获得新生。\n骨钉每次挥砍都会射出一道银色的剑气，骨钉技艺放出的剑气更大、更多。": {"en-US": "Contains the gratitude of grubs who have moved on to the next stage of their lives.\nEvery swing of the nail sends out a silver beam, and the Nail Arts loose bigger and more of them."},
+ "苍白之王护符的一块碎片。\n它本身没有力量，只有与另一半合在一起，才会显露真正的光辉。": {"en-US": "A fragment of the Pale King's charm.\nIt holds no power alone; only joined with its other half will its true radiance show."},
+ "圣巢之王留下的神圣护符，散发着苍白的光芒。\n持有者的魔法只需一半的魔力，它还能打开通往出生之地的门。": {"en-US": "Holy charm left by the Pale King, glowing with a pale light.\nThe bearer's magic costs only half the mana, and it opens the way to the birthplace."},
+ "虚空的本源，再也不受任何意志的束缚。\n持有者的魔法只需一半的魔力，它也能打开通往出生之地的门；它已与持有者合为一体，无法再取下。": {"en-US": "An emptiness that was hidden within, now unconstrained.\nThe bearer's magic costs only half the mana, and it opens the way to the birthplace. It has become one with the bearer and can never be removed."},
+ "带着一位奔跑狂热者的执念。\n穿着跑鞋奔跑时，一迈步就是最快的速度。": {"en-US": "Bears the obsession of one who lived to run.\nIn running boots, the bearer hits top speed from the very first step."},
+ "梦中凝成的盾，在持有者身边守望。\n如今它化成两面，绕着持有者旋转，挡下弹幕、撞开敌人，挥骨钉时也会一同出击。": {"en-US": "A shield formed in a dream, keeping watch beside its bearer.\nNow it has become two, circling the bearer to block projectiles and strike enemies, and lashing out with each swing of the nail."},
+ "编织者一族离开前留下的银色歌谣，能唤醒留在世间的编织者幼体。\n三只编织者幼体会跟随持有者，扑向附近的敌人。": {"en-US": "Silken charm holding a song of farewell, left by the Weavers who departed.\nIt wakes three weaverlings who follow the bearer and pounce on nearby enemies."},
+ "格林剧团仪式的信物，一个渴望猩红火焰的孩子。\n它追随着持有者，长大后会朝附近的敌人喷吐追踪的火球，仪式越接近完成就越强。": {"en-US": "Symbol of a pact with the Grimm Troupe, a child hungry for scarlet flame.\nIt follows the bearer and, once grown, spits seeking fireballs at nearby enemies, stronger as the ritual nears completion."},
+ "纪念一段友谊开始的信物，里面藏着一首守护之歌。\n有时会替持有者挡下一次伤害。": {"en-US": "Token commemorating the start of a friendship.\nContains a song of protection that sometimes shields the bearer from harm."},
+ "护符技还剩 {0} 秒": {"en-US": "Charm skill ready in {0} s"},
+ "看清危险：再按一次护符技关闭": {"en-US": "Danger seen clearly: press the charm skill again to stop"},
+ "回城": {"en-US": "Recall"},
+ "混沌传送": {"en-US": "Rod of Discord teleport"},
+ "背包里没有回城的物品（魔镜、冰雪镜、手机、回忆药水、返回药水）": {"en-US": "No recall item in your inventory (Magic Mirror, Ice Mirror, Cell Phone, Recall Potion, Potion of Return)"},
+ "背包里没有混沌传送杖": {"en-US": "No Rod of Discord in your inventory"},
+ "快捷键：可以在“泰拉瑞亚设置”的按键里绑定“{0}”，按下直接使用背包里的它": {"en-US": "Hotkey: bind \"{0}\" in the Terraria Settings' keys to use it straight from your inventory"},
+ "快捷键：按 {0} 直接使用（在背包里就行）": {"en-US": "Hotkey: press {0} to use it (anywhere in your inventory)"},
+ "戴着时：移动没有惯性，松开立刻停下，转身立刻转身，转身后的速度就是转身前的速度；松开方向键 0.5 秒内再按，按原来的速度出发。护符技（{0}）：3 秒内全身变成金色，每次冲刺都无敌，直接穿过敌人。冷却 10 秒": {"en-US": "While worn: no momentum: stopped the moment you let go, turned at once, the turn keeping the speed you had; press a way again within 0.5 s of letting go and you set off at that speed. Charm skill ({0}): for 3 seconds you turn gold all over, and every dash is invincible and goes straight through enemies. 10 s cooldown"},
+ "戴着时：面具带来的青色心变为 3 倍（碎了就没有效果）": {"en-US": "While worn: the cyan hearts your masks give are tripled (nothing once broken)"},
+ "戴着时：骨钉挥砍没有后摇；骨钉和骨钉技艺每次命中，紧接着再劈一刀银色的，造成这一击 30% 的伤害，必定暴击": {"en-US": "While worn: the nail's swing has no recovery; every hit of the nail and its arts is followed at once by a silver second cut for 30% of it, always a critical hit"},
+ "戴着时：骨钉每次挥砍都朝挥砍方向射出一道银色剑气，造成一半伤害，能穿过敌人，碰墙消失；强力斩和冲刺斩射出一道大剑气，旋风斩转着向两边射出剑气": {"en-US": "While worn: every nail slash throws a silver crescent of light its way for half its damage, through enemies, gone at a wall; the Great Slash and the Dash Slash throw a big one, the Cyclone Slash throws them to both sides as it spins"},
+ "戴着时：骑在坐骑上，小怪和精英不会主动攻击你，除非你打了它们（首领照常）。护符技（{0}）：变成一团乌恩的光芒 5 秒，用 W A S D 上下左右飞行，照常会受伤，也能攻击。冷却 15 秒": {"en-US": "While worn: riding a mount, common enemies and elites leave you alone unless you strike them (bosses as ever). Charm skill ({0}): become a ball of Unn's light for 5 seconds, flying up, left, down and right with W A S D; you can still be hurt, and can attack. 15 s cooldown"},
+ "护符技（{0}）：开启或关闭专心模式。开启后一直生效，直到再按一次关闭：整个场景变成灰色，敌人和它们的攻击、弹幕高亮成红色，你自己和你的弹幕、武器攻击、召唤物高亮成蓝色。没有冷却": {"en-US": "Charm skill ({0}): switch focus mode on or off. On, it lasts until you press again: the whole scene turns grey, enemies and their attacks and shots glow red, and you and your shots, weapon attacks and minions glow blue. No cooldown"},
+ "选择世界": {"en-US": "Select World"},
+ "新建": {"en-US": "New"},
+ "开始游戏": {"en-US": "Play"},
+ "取消收藏": {"en-US": "Unfavorite"},
+ "无法删除（已收藏）": {"en-US": "Cannot delete (favorited)"},
+ "新版AI": {"en-US": "New AI"},
+ "原版AI": {"en-US": "Vanilla AI"},
+ "寻神者": {"en-US": "Godseeker"},
+ "已陨落": {"en-US": "Fallen"},
+ "钢铁之魂": {"en-US": "Steel Soul"},
+ "旅行": {"en-US": "Journey"},
+ "经典": {"en-US": "Classic"},
+ "读不了": {"en-US": "Unreadable"},
+ "存档已满（最多 {0} 个世界）：先删除一个再新建。": {"en-US": "All save slots are full ({0} worlds at most): delete one before making a new one."},
+ "世界 {0}": {"en-US": "World {0}"},
+ "删除失败：存档没能清除。": {"en-US": "Delete failed: the save could not be cleared."},
+ "随机世界名称。": {"en-US": "Randomize world name."},
+ "名字：": {"en-US": "Name:"},
+ "人物：": {"en-US": "Character:"},
+ "这个世界的主角。点这里回到人物创建，修改外观、名字和模式。": {"en-US": "This world's hero. Click to go back to character creation and change the look, name and mode."},
+ "新版敌人AI": {"en-US": "New enemy AI"},
+ "原版敌人AI": {"en-US": "Vanilla enemy AI"},
+ "小怪、精英和首领按泰拉人物的高机动重新设计的攻击与索敌。": {"en-US": "Common enemies, elites and bosses attack and hunt anew, made for a Terraria character's speed."},
+ "空洞骑士原本的攻击和索敌。": {"en-US": "Hollow Knight's own attacks and hunting."},
+ "每场首领战第一次打赢后，门后的声音会评价这场胜利，并用地标暗示下一个对手在哪里。": {"en-US": "After each boss's first defeat, the voice beyond the door speaks of the win and hints by landmarks where the next foe is."},
+ "不听那个声音的指引。": {"en-US": "Don't listen to the voice's guidance. "},
+ "请选择上述选项来构建你的世界。": {"en-US": "Select options above to build your world."},
+ "<空>": {"en-US": "<Empty>"},
+ "敌人血量与伤害为大师的 {0}%。": {"en-US": "Enemy life and damage are {0}% of Master's."},
+ "比经典更难的旅程。敌人血量与伤害为大师的 {0}%。": {"en-US": "A harder journey than Classic. Enemy life and damage are {0}% of Master's."},
+ "大师的全部数值，再加上空洞骑士原本的面具数量增伤：一下扣几格面具，就是几倍伤害。": {"en-US": "All of Master's numbers, plus Hollow Knight's own mask damage: a hit worth several masks deals that many times the damage."},
+ "敌人是模组原本的满额数值。": {"en-US": "Enemies at the mod's full numbers."},
+ "你的冒险之旅即将开始……": {"en-US": "Your adventure begins... "},
+ "为财富和荣誉而战，孩子。": {"en-US": "Fortune and glory, kid. "},
+ "游戏结束了，伙计，游戏结束了！": {"en-US": "Game over, man! Game over! "},
+ "新版": {"en-US": "New"},
+ "原版": {"en-US": "Original"},
+ "外观跟随所选存档的人物（在创建人物时设定，也可以找发型师或用梳妆台修改）。": {"en-US": "Your look is the chosen save's character (set when the character is created; the Stylist and a dresser change it)."},
+ "点背包里的物品添加（拿着物品点格子也行）；空手点格子或右键移除": {"en-US": "Click a bag item to add it (or click a slot holding one); click a slot empty-handed or right-click to remove", "zh-Hant": "點背包裡的物品加入（拿著物品點格子也行）；空手點格子或右鍵移除", "ja-JP": "持ち物をクリックで追加（持って枠をクリックでも可）。素手で枠をクリックか右クリックで削除", "ko-KR": "인벤토리 아이템을 클릭해 추가(들고 칸을 클릭해도 됨), 빈손으로 칸을 클릭하거나 우클릭해 제거", "de-DE": "Inventargegenstand anklicken zum Hinzufügen (oder mit Gegenstand ein Feld anklicken); leer anklicken oder Rechtsklick entfernt", "fr-FR": "Cliquez un objet de l'inventaire pour l'ajouter (ou une case en le tenant) ; case à main vide ou clic droit pour retirer", "es-ES": "Haz clic en un objeto del inventario para añadirlo (o en una casilla sosteniéndolo); casilla con la mano vacía o clic derecho para quitar", "it-IT": "Clicca un oggetto dell'inventario per aggiungerlo (o una casella tenendolo); casella a mani vuote o clic destro per togliere", "pt-BR": "Clique num item do inventário para adicionar (ou num espaço segurando-o); espaço de mão vazia ou clique direito para remover", "ru-RU": "Щёлкните предмет в инвентаре, чтобы добавить (или ячейку, держа его); пустой рукой по ячейке или ПКМ — убрать"},
+ "已在黑名单中": {"en-US": "Already on the blacklist", "zh-Hant": "已在黑名單中", "ja-JP": "すでにブラックリストにある", "ko-KR": "이미 블랙리스트에 있음", "de-DE": "Steht schon auf der schwarzen Liste", "fr-FR": "Déjà sur la liste noire", "es-ES": "Ya está en la lista negra", "it-IT": "Già nella lista nera", "pt-BR": "Já está na lista negra", "ru-RU": "Уже в чёрном списке"},
+ "收藏的物品不会被这样卖掉": {"en-US": "Favourites aren't sold this way", "zh-Hant": "收藏的物品不會被這樣賣掉", "ja-JP": "お気に入りはこの方法では売れない", "ko-KR": "즐겨찾기한 아이템은 이렇게 팔리지 않음", "de-DE": "Favoriten werden so nicht verkauft", "fr-FR": "Les favoris ne se vendent pas ainsi", "es-ES": "Los favoritos no se venden así", "it-IT": "I preferiti non si vendono così", "pt-BR": "Favoritos não são vendidos assim", "ru-RU": "Избранное так не продаётся"},
+ "保留大师数值与原生面具增伤。角色生命上限为85%，治疗药冷却延长20%；敌人掉落材料和吉欧额外增加40%。与生命锁同时开启时取70%，不重复叠罚。环境伤害每次固定为当前生命上限的50%，生命上限本身不变。": {"en-US": "Master rules and native mask damage. Maximum life 85%, healing potion cooldown +20%, enemy material and geo yields +40%. With the life binding, use 70% without stacking penalties. Each environmental hit deals 50% of your effective maximum life; the maximum itself does not change."},
+"快速投掷出吸血飞刀\n命中按伤害的7.5%吸血，单次最多5生命，每秒最多恢复20生命": {"en-US": "Rapidly throws life-stealing knives.\nHeals for 7.5% of hit damage, capped at 5 life per hit and 20 life per second."},
+"娇嫩的花在传送中损毁了": {"en-US": "The Delicate Flower was destroyed during teleportation."},
+"左键或Shift+左键添加；Ctrl+左键出售；点名单移除": {"en-US": "Click or Shift+click to list; Ctrl+click to sell; click a listed item to remove it."},
+"Shift+左键加入并出售": {"en-US": "Shift+click: list and sell"},
+"Ctrl+左键仅出售，可在快捷商店买回": {"en-US": "Ctrl+click: sell once; buy back in the quick shop"},
+"打开时：Shift+左键加入名单并出售，Ctrl+左键仅出售，可在快捷商店买回": {"en-US": "While open: Shift+click to list and sell; Ctrl+click to sell once. Buy back quick sales in the quick shop."}
 }

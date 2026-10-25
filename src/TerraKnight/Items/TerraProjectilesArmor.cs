@@ -335,7 +335,7 @@ namespace TerraKnight.Items
             var to = player - c;
             if (to.magnitude < 50f && Mathf.Abs(to.x) < 13f && Mathf.Abs(to.y) < 24f)
             {
-                int healed = TerraMod.Instance != null ? TerraMod.Instance.Stats.Heal((int)p.Ai1) : 0;
+                int healed = TerraMod.Instance != null ? TerraMod.Instance.Stats.Heal((int)p.Ai1, recovery: true) : 0;
                 UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, ((int)p.Ai1).ToString(), UI.CombatText.Heal);
                 ArmorEffects.DevHeals += healed > 0 ? 1 : 0;
                 p.Dead = true;

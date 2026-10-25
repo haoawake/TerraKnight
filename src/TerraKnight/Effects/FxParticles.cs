@@ -10,7 +10,7 @@ namespace TerraKnight.Effects
     /// ABasicParticle moves them each tick: position by velocity, velocity by acceleration,
     /// scale by its growth. Drawn over the player (ParticleSystem_World_OverPlayers).
     /// </summary>
-    internal static class FxParticles
+    internal static partial class FxParticles
     {
         enum Kind { Frame, Sparkle, Fading, Bloody, Icon }
 

@@ -39,7 +39,9 @@ namespace TerraKnight
                 else TownNpcs.DevPlace(d.Internal);
             }
             Check("只卖东西、有用处的居民自己入住，其余等玩家安置", waited > 0 && early == 0, $"等安置 {waited} 位，自己来了 {early} 位");
-            yield return new WaitForSeconds(1f);
+            // The Princess is evaluated on the next three-second town reconciliation,
+            // after the last manually placed resident (e.g. Golfer/Painter) is present.
+            yield return new WaitForSeconds(3.5f);
             string who = TownNpcs.DevDescribe();
             int count = TownNpcs.Count;
             Check("都住进来了", count >= 37, $"{count} 位：{who}");

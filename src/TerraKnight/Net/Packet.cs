@@ -58,6 +58,9 @@ namespace TerraKnight.Net
         NetFx = 211,
         /// <summary>The mod's: what a scene's owner shows there besides its enemies (what its fight spawned, a boss room's own objects: SceneMirror).</summary>
         SceneMirror = 212,
+        /// <summary>The mod's: the new enemy AI's word to one player (a pull on him: EnemyAi.NetAi).</summary>
+        EnemyAi = 213,
+        CasinoRound = 214,
     }
 
     /// <summary>

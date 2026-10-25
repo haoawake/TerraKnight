@@ -85,6 +85,16 @@ namespace TerraKnight.Terraria
             return s;
         }
 
+        /// <summary>Every line of a category (RandomWorldName_Noun's words) in a culture, in the file's order.</summary>
+        public static List<string> Category(string culture, string category)
+        {
+            var list = new List<string>();
+            string prefix = category + ".";
+            foreach (var kv in Table(culture))
+                if (kv.Key.StartsWith(prefix, StringComparison.Ordinal) && !string.IsNullOrEmpty(kv.Value)) list.Add(kv.Value);
+            return list;
+        }
+
         static Dictionary<string, (string Key, int Line)> zhIndex;
 
         /// <summary>

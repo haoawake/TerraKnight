@@ -12,11 +12,20 @@ namespace TerraKnight.World
             foreach (var s in stations)
                 // Placed: which way it faces (Station.Right).
                 if (!s.Fixed) yield return new WorldSync.Record { Key = WorldSync.Key("s", s.Scene, s.Local), Scene = s.Scene, X = s.Local.x, Y = s.Local.y, Kind = (int)s.Kind, Placed = s.Right };
+            // Dirtmouth's altars knocked off in the host's world: gone in every game.
+            foreach (var kind in new[] { StationKind.DemonAltar, StationKind.CrimsonAltar })
+                if (FixedStations.Taken(kind)) yield return new WorldSync.Record { Key = "s:altar:" + kind, Kind = (int)kind, Taken = true };
         }
 
         internal static void NetApply(WorldSync.Record r)
         {
             if (!specs.ContainsKey((StationKind)r.Kind)) return;
+            if (r.Taken)
+            {
+                FixedStations.NetTaken((StationKind)r.Kind);
+                for (int i = stations.Count - 1; i >= 0; i--) if (stations[i].Fixed && stations[i].Kind == (StationKind)r.Kind) Remove(i);
+                return;
+            }
             var at = new Vector2(r.X, r.Y);
             foreach (var s in stations)
                 if (!s.Fixed && WorldSync.Key("s", s.Scene, s.Local) == r.Key)

@@ -38,7 +38,11 @@ namespace TerraKnight.Net
             bool remote = Enemies.RemoteOwned(scene);
             // A dream or a Godhome room is a fight when it is a boss's room, or another player's: the Seer's dream
             // (Dream_Nailcollection), the warriors' graves, the shrines are the player's own scenes.
-            bool bossScene = BossRooms.IsRoom(scene) || (remote && (scene.StartsWith("GG_") || scene.StartsWith("Dream_")));
+            // A controller can execute before its ownership / BossSceneController
+            // has been registered. Recognise its battle role during that window;
+            // ordinary Seer/shrine dream scripts still remain local interactions.
+            bool bossScene = BossRooms.IsRoom(scene) || ((remote || BattleController(from))
+                && (scene.StartsWith("GG_") || scene.StartsWith("Dream_")));
             if (!bossScene && !remote) return true;
             // The scene the player is in and runs himself: its scripts are his own, also while it loads (the grid still
             // names the room left until the new one is in place, and its fade and transition must go through).

@@ -47,6 +47,30 @@ namespace TerraKnight.Effects
         /// <summary>While set, draws are the weapons' effects (<see cref="OnTopOrder"/>); the player's own layers, the townsfolk and the minions stay among the scenery.</summary>
         public bool OnTop;
 
+        /// <summary>
+        /// Deep Focus's mode (Items.CharmEffectsFocus), 0..1: each weapon draw (<see cref="WeaponEffect"/>) also gets a blue
+        /// half-clear copy on the mode's overlay, which isn't made grey.
+        /// </summary>
+        public static float FocusTint;
+
+        /// <summary>
+        /// While not 1, every draw this much larger round where it is drawn (Shaman Stone on a magic shot drawn its own way,
+        /// TerraProjectiles.DrawOne); with <see cref="GrowThick"/> a drawn-out picture (a scale per axis) only thicker, its
+        /// length kept (a beam's), a round one (one scale) larger all the same.
+        /// </summary>
+        public float Grow = 1f;
+        public bool GrowThick;
+        bool uniformScale;
+        public int DevGrowDraws;
+        /// <summary>While set, draws go on Deep Focus's overlay as they are (its red marks).</summary>
+        public bool FocusDraw;
+        readonly List<SpriteRenderer> focus = new List<SpriteRenderer>();
+        int focusUsed, focusLast;
+        public int DevFocusDraws;
+        public bool WeaponEffect;
+        internal Color DevLastAlpha, DevLastAdditive;
+        internal int DevDrawCount;
+
         /// <summary>Dev: while set, who drew what wasn't on top (the method that called Draw), counted.</summary>
         public static bool DevTraceLow;
         public static readonly Dictionary<string, int> DevLowCallers = new Dictionary<string, int>();
@@ -69,6 +93,29 @@ namespace TerraKnight.Effects
 
         readonly List<SpriteRenderer> alpha = new List<SpriteRenderer>(), additive = new List<SpriteRenderer>(), glows = new List<SpriteRenderer>();
         int alphaUsed, additiveUsed, glowUsed;
+        int alphaLast, additiveLast, glowLast, alphaPeak, additivePeak, glowPeak;
+        float nextTrim;
+        internal int DevPoolCount => alpha.Count+additive.Count+glows.Count;
+        int viewFrame=-1;
+        Rect effectView;
+        bool hasEffectView;
+        bool OutsideView(Sprite sprite,Vector2 world,Vector2 scale)
+        {
+            if(viewFrame!=Time.frameCount) {
+                viewFrame=Time.frameCount;
+                var camera=GameCameras.instance!=null?GameCameras.instance.mainCamera:null;
+                hasEffectView=camera!=null&&Mathf.Abs(camera.transform.forward.z)>.999f;
+                if(hasEffectView) {
+                    float depth=Mathf.Abs(camera.transform.position.z);
+                    Vector2 a=camera.ViewportToWorldPoint(new Vector3(0,0,depth)),b=camera.ViewportToWorldPoint(new Vector3(1,1,depth));
+                    effectView=Rect.MinMaxRect(Mathf.Min(a.x,b.x)-4,Mathf.Min(a.y,b.y)-4,Mathf.Max(a.x,b.x)+4,Mathf.Max(a.y,b.y)+4);
+                }
+            }
+            if(!hasEffectView)return false;
+            var bounds=sprite.bounds;
+            float r=(bounds.extents.magnitude+bounds.center.magnitude)*Mathf.Max(Mathf.Abs(scale.x),Mathf.Abs(scale.y));
+            return world.x+r<effectView.xMin||world.x-r>effectView.xMax||world.y+r<effectView.yMin||world.y-r>effectView.yMax;
+        }
         float behind = BehindZ, over = OverZ, townZ = TownZ;
         Material additiveMaterial;
 
@@ -92,6 +139,14 @@ namespace TerraKnight.Effects
 
         public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, Vector2 scale, bool flipY = false, bool flipX = false, bool overPlayer = false, bool town = false)
         {
+            bool uniform = uniformScale;
+            uniformScale = false;
+            if (Grow != 1f && !town)
+            {
+                scale = GrowThick && !uniform ? new Vector2(scale.x, scale.y * Grow) : scale * Grow;
+                DevGrowDraws++;
+            }
+            if (WeaponEffect && !town) c = WeaponEffects.Premultiplied(c);
             if (sprite == null || (c.a <= 0.001f && c.r <= 0.001f && c.g <= 0.001f && c.b <= 0.001f)) return;
             if (MirrorAboutY.HasValue)
             {
@@ -101,8 +156,20 @@ namespace TerraKnight.Effects
             }
             if (scale.x == 0f || scale.y == 0f) return;
             var world = TerraParticles.ToWorld(pos);
+            // Rendering only: offscreen shots still move, collide and deal damage.
+            if(OutsideView(sprite,world,scale))return;
             float deg = -rotation * Mathf.Rad2Deg;
             float a = c.a;
+            // Deep Focus: the player's weapon effects also blue on its overlay (their shape, half clear, over the grey).
+            if (FocusTint > 0.01f && WeaponEffect && !town && !FocusDraw)
+            {
+                var blue = Items.CharmEffects.FocusSelf;
+                float strength = a > 0.001f ? a : Mathf.Clamp01(Mathf.Max(c.r, Mathf.Max(c.g, c.b)));
+                var sr = Next(focus, ref focusUsed, Items.CharmEffects.FocusSpriteMaterial);
+                if (sr.gameObject.layer != Items.CharmEffects.FocusLayer) sr.gameObject.layer = Items.CharmEffects.FocusLayer;
+                Put(sr, sprite, world, deg, scale, new Color(blue.r, blue.g, blue.b, Mathf.Clamp01(blue.a * 1.3f * strength) * FocusTint), flipX, flipY, overPlayer, 0f, town);
+                DevFocusDraws++;
+            }
             bool needAdd = c.r > a + 0.002f || c.g > a + 0.002f || c.b > a + 0.002f;
             if (a > 0.001f)
             {
@@ -123,12 +190,16 @@ namespace TerraKnight.Effects
             }
         }
 
-        public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, float scale, bool flipY = false, bool flipX = false, bool overPlayer = false, bool town = false) =>
+        public void Draw(Sprite sprite, Vector2 pos, Color c, float rotation, float scale, bool flipY = false, bool flipX = false, bool overPlayer = false, bool town = false)
+        {
+            uniformScale = true;
             Draw(sprite, pos, c, rotation, new Vector2(scale, scale), flipY, flipX, overPlayer, town);
+        }
 
         /// <summary>Lighting.AddLight at a Terraria position: a soft glow of that colour (radius in tiles).</summary>
-        public void Light(Vector2 pos, Color rgb, float radiusTiles = 4f)
+        public void Light(Vector2 pos, Color rgb, float radiusTiles = 4f, bool weaponEffect = false)
         {
+            if (WeaponEffect || weaponEffect) rgb *= WeaponEffects.Opacity;
             if (rgb.r + rgb.g + rgb.b < 0.01f) return;
             // Terraria's lighting on: the light goes into the map, which spreads it tile by tile.
             if (World.LightMap.Active)
@@ -172,6 +243,9 @@ namespace TerraKnight.Effects
 
         void Put(SpriteRenderer sr, Sprite sprite, Vector2 world, float deg, Vector2 scale, Color color, bool flipX, bool flipY, bool overPlayer, float nearer = 0f, bool town = false)
         {
+            DevDrawCount++;
+            if(additiveMaterial!=null && sr.sharedMaterial==additiveMaterial) DevLastAdditive=color;
+            else DevLastAlpha=color;
             if (!sr.enabled) sr.enabled = true;
             sr.sprite = sprite;
             sr.color = color;
@@ -192,6 +266,9 @@ namespace TerraKnight.Effects
                 DevLowCallers[who] = DevLowCallers.TryGetValue(who, out int n) ? n + 1 : 1;
             }
             if (sr.sortingOrder != order) sr.sortingOrder = order;
+            // Deep Focus's marks on its overlay; every other draw on the game's (a pooled one may have been either).
+            int layer = FocusDraw ? Items.CharmEffects.FocusLayer : sr.sharedMaterial == Items.CharmEffects.FocusSpriteMaterial ? Items.CharmEffects.FocusLayer : 0;
+            if (sr.gameObject.layer != layer) sr.gameObject.layer = layer;
             sr.flipX = flipX;
             sr.flipY = flipY;
             float z;
@@ -207,13 +284,29 @@ namespace TerraKnight.Effects
         /// <summary>After everything has drawn this frame: what wasn't used goes dark, and the next frame starts over.</summary>
         void LateUpdate()
         {
-            for (int i = alphaUsed; i < alpha.Count; i++) if (alpha[i].enabled) alpha[i].enabled = false;
-            for (int i = additiveUsed; i < additive.Count; i++) if (additive[i].enabled) additive[i].enabled = false;
-            for (int i = glowUsed; i < glows.Count; i++) if (glows[i].enabled) glows[i].enabled = false;
+            // Only last frame's draws may need hiding; parked pool entries are
+            // already disabled. Do not pay the historical burst's cost forever.
+            for (int i = alphaUsed; i < alphaLast; i++) alpha[i].enabled = false;
+            for (int i = additiveUsed; i < additiveLast; i++) additive[i].enabled = false;
+            for (int i = glowUsed; i < glowLast; i++) glows[i].enabled = false;
+            for (int i = focusUsed; i < focusLast; i++) focus[i].enabled = false;
+            focusLast = focusUsed;
+            focusUsed = 0;
+            alphaLast=alphaUsed;additiveLast=additiveUsed;glowLast=glowUsed;
+            alphaPeak=Mathf.Max(alphaPeak,alphaUsed);additivePeak=Mathf.Max(additivePeak,additiveUsed);glowPeak=Mathf.Max(glowPeak,glowUsed);
+            if(Time.unscaledTime>=nextTrim) {
+                Trim(alpha,Mathf.Max(32,alphaPeak));Trim(additive,Mathf.Max(32,additivePeak));Trim(glows,Mathf.Max(8,glowPeak));
+                alphaPeak=alphaUsed;additivePeak=additiveUsed;glowPeak=glowUsed;nextTrim=Time.unscaledTime+2f;
+            }
             alphaUsed = additiveUsed = glowUsed = 0;
             behind = BehindZ;
             over = OverZ;
             townZ = TownZ;
+        }
+        static void Trim(List<SpriteRenderer> pool,int keep)
+        {
+            int count=Mathf.Min(64,Mathf.Max(0,pool.Count-keep));
+            while(count-->0){int i=pool.Count-1;var sr=pool[i];pool.RemoveAt(i);if(sr!=null)Destroy(sr.gameObject);}
         }
 
         static readonly Dictionary<(string, int, int, int, int, float, float), Sprite> sprites = new Dictionary<(string, int, int, int, int, float, float), Sprite>();

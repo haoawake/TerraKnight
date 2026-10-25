@@ -341,12 +341,14 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// Projectile.vampireHeal (P:12111-12120): 7.5% of the damage dealt, out of the player's
-        /// life-steal budget, carried back by a red orb (305).
+        /// life-steal budget, carried back by a red orb (305); at most 5 per hit and 20 per second.
         /// </summary>
         void VampireHeal(Proj p, HealthManager hm)
         {
-            float heal = MeleeHits.LastStruck * 0.075f;
-            if (!ArmorEffects.TakeLifeSteal(heal)) return;
+            var stats = TerraMod.Instance?.Stats;
+            if (stats == null || stats.IsDead || stats.Life >= stats.LifeMax || hm == null || EnemyStats.Of(hm).Dummy) return;
+            int heal = VampireHealing.Reserve(Mathf.Min(MeleeHits.LastStruck * .075f, stats.LifeMax - stats.Life), Time.time);
+            if (heal <= 0) return;
             var at = EnemyCenterPx(hm);
             var orb = Spawn(ProjKind.VampireHeal, TerraParticles.ToWorld(at), Vector2.zero, 0, 0f, 0f);
             if (orb != null) orb.Ai1 = heal;
@@ -367,8 +369,8 @@ namespace TerraKnight.Items
             var to = player - c;
             if (to.magnitude < 50f && Mathf.Abs(to.x) < 13f && Mathf.Abs(to.y) < 24f)
             {
-                int healed = TerraMod.Instance != null ? TerraMod.Instance.Stats.Heal((int)p.Ai1) : 0;
-                UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, ((int)p.Ai1).ToString(), UI.CombatText.Heal);
+                int healed = VampireHealing.Heal((int)p.Ai1, Time.time);
+                if (healed > 0) UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, healed.ToString(), UI.CombatText.Heal);
                 DevVampireHealed += healed;
                 p.Dead = true;
                 return;

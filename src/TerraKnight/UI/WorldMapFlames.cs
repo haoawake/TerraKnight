@@ -32,9 +32,9 @@ namespace TerraKnight.UI
         };
 
         internal static bool FlameAvailable(GrimmFlame flame, PlayerData pd) => pd != null
-            && pd.GetBool("equippedCharm_40") && pd.grimmChildLevel == flame.Level
-            && pd.flamesCollected < pd.flamesRequired
-            && (flame.Brumm ? !pd.gotBrummsFlame : !pd.scenesFlameCollected.Contains(flame.Scene));
+            && pd.grimmChildLevel == flame.Level && pd.flamesCollected < pd.flamesRequired
+            && (flame.Brumm ? !pd.gotBrummsFlame : !pd.scenesFlameCollected.Contains(flame.Scene))
+            && pd.GetBool("equippedCharm_40");
 
         static Texture2D grimmFlameIcon;
         static Texture2D GrimmFlameIcon()

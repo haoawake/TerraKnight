@@ -84,10 +84,10 @@ namespace TerraKnight.Items
                 Ai = Ai.Custom, Texture = "Projectile_274", W = 42, H = 42, Scale = 1.1f, Time = 180, Penetrate = 5, TypeCooldown = 10, TileCollide = false,
                 Light = new Color(0.35f, 0.05f, 0.5f), Update = (t, p) => StepSickle(p, 0.96f), Draw = (t, fx, p, px) => DrawSickle(fx, p, px), OnKill = (t, p) => { },
             };
-            // P:7296-7306: the sonic boom, 16×16, through five and through blocks; it hits along an 80 px line square to its flight (P:16107-16116).
+            // P:7296-7306: the sonic boom, 16×16, through five and through blocks, 1 s (P:11077); it hits along an 80 px line square to its flight (P:16107-16116).
             specs[ProjKind.SonicBoom] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_684", W = 16, H = 16, Time = 3600, Penetrate = 5, AlphaStart = 1f, TileCollide = false, TrailLength = 10,
+                Ai = Ai.Custom, Texture = "Projectile_684", W = 16, H = 16, Time = 60, Penetrate = 5, AlphaStart = 1f, TileCollide = false, TrailLength = 10,
                 Update = (t, p) => StepSonicBoom(p), Draw = (t, fx, p, px) => DrawSonicBoom(fx, p, px), OnKill = (t, p) => KillSonicBoom(p),
                 Beam = p =>
                 {

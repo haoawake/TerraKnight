@@ -1,5 +1,34 @@
 # 泰拉圣巢wiki
 
+## 当前本地资料快照（2026-10-24 / 4.4.2）
+
+本次以 `artifacts/wiki-current-20261024-r2/source/` 的冻结源码与隔离游戏导出为依据。`wiki-source.json` 记录 DLL 和源码清单哈希；`wiki/build.py` 默认读取该快照，避免同时进行的源码修改使文字、掉落与数值混用版本。只更新本地站点，没有发布到服务器。
+
+新增入口为 `knowledge.html`：4091 条原生有效文本（含 244 条身份改写）、1093 个 Mod 文字键、36 条任务鱼提示、236 条城镇台词、168 个敌人 AI 对照页、110 套普通怪配置、39 个城镇 NPC、原生商店字段、三台赌博机及 15480 行神居阶段/挑战数据。具体覆盖与证据口径见站内数据说明和 `artifacts/wiki-knowledge-check.json`。
+
+老虎机枚举全部 125 个停点组合；转盘使用 65 个扇区的精确概率。弹珠机按物理模拟，给出明确力度、时钟与种子协议下的 6000 个家庭样本。钓鱼公式与规则条件单列；地区渔获和开箱频率保留样本量，不能当成通用精确概率。
+
+目录每页 24 项、配方每页 40 行，大表每页 24 行且按需读取。钓鱼按地区/容器拆页，台词每页最多 32 条（Mod 多语言每页 24 条），原生 FSM 按敌人分块。全文索引仅在输入搜索词后由 Web Worker 加载，图片坐标使用精简索引并按需要加载。
+
+```powershell
+python wiki/build.py
+python -m http.server 8098 --directory artifacts/wiki-preview
+# 浏览 http://127.0.0.1:8098/terraknight-wiki/knowledge.html
+```
+
+验证时需要给数据核查脚本指定同一冻结源码：
+
+```powershell
+$env:TK_WIKI_SOURCE_ROOT=(Resolve-Path (Get-Content wiki-source.json -Raw | ConvertFrom-Json).snapshot).Path
+python wiki/check.py
+python wiki/check_current_catalog.py
+python wiki/check_drops.py
+python wiki/check_performance.py
+python wiki/check_knowledge.py
+```
+
+下方保留的历史部署说明不代表此次已经执行部署。新快照需重新构建并用私人游戏副本运行 `wikiassets_zh`、`healthbook` 和 `wikidetails_zh`；`tools/refresh_wiki_snapshots.py` 导入基础快照。补充数据分别为 `encyclopedia_knowledge.json`、`encyclopedia_details.json`、`encyclopedia_native_shops.json`，不得从另一构建静默混入。原生商店可用 `tools/export_wiki_native_shops.py` 对本机游戏资源重新解码，所有商品字段要求完整消费字节。
+
 ## 全境互动地图
 
 `map.html` 从游戏导出的 `worldatlas.bin` 生成，与游戏世界地图共用 `WorldMapLayout.cs` 坐标、`WorldMapLayers.cs` 图层和逐格配色。先导出地图资源，再运行常规构建：
@@ -11,7 +40,7 @@ python wiki/build.py
 
 资源生成到 `artifacts/wiki-world-map/`，构建时复制到站点的 `assets/world-map/`。无需地图服务、CDN 或在线 API。支持滚轮、拖动、双指缩放、方向键、缩放按钮、全屏，以及主世界／室内与梦境／全部图层；Boss 列表支持中英文名称与场景搜索，分享 `map.html#boss=Hornet` 可直接定位。
 
-图集覆盖当前布局的全部 379 个房间、10,255,600 个格子。48 个 Boss 含宝藏袋／圣物区分的四个变体；常规战斗优先使用 `BossArena.cs` 的真实竞技场，避免代表场景把大黄蜂初战放到王国边缘。38 个标记定位到战斗房间，另 10 个竞技场没有图集地形，明确显示入口标记（神居捷径、黑卵神殿、斗兽场看台），并保留真实竞技场 ID。不推测竞技场地形或 Boss 实时站位。图集为原始地形，不含玩家存档改造。
+图集覆盖当前布局的全部 451 个房间、12,578,920 个格子。48 个 Boss 含宝藏袋／圣物区分的四个变体；常规战斗优先使用 `BossArena.cs` 的真实竞技场，避免代表场景把大黄蜂初战放到王国边缘。46 个标记定位到战斗房间，另 2 个竞技场显示入口标记，并保留真实竞技场 ID。不推测 Boss 实时站位。图集为原始地形，不含玩家存档改造。
 
 `python wiki/check_world_map.py` 独立验证房间尺寸、图集覆盖、48 个 Boss 与召唤物链接、入口位置、完整站点内部链接，并输出验收记录。
 
@@ -89,6 +118,8 @@ python tools/generate_encyclopedia.py
 
 `python wiki/check_drops.py` 逐行核对全部怪物掉落的物品、数量、阶段、概率/任选组及物品页反向链接。源码正在变动时先复制到独立快照目录再构建，通过 `TK_WIKI_SOURCE_ROOT` 为生成器、导入器和检查脚本指定同一目录；页面标明工作区实测快照，避免将未发布数据标作正式版本。
 
+`python wiki/check_current_catalog.py` 另外逐项核对所有具名物品的阶段、说明和基础属性，全部饰品的来源标记、全部 NPC 商品（含旅商候选池）以及每条敌人五难度／六阶段的生命、攻击、防御表。它直接读取生成后的 HTML，能发现“导出有数据但页面没显示成表格”的问题。旅商运行时 `TravelingMerchant` 对应定义 `TravellingMerchant`；生成器必须解析所有运行时商店 ID，遇到未知 ID 会停止生成。
+
 ## 图鉴分类与阶段筛选
 
 怪物图鉴提供小怪、精英、首领快捷分类，沿用 `EnemyDrops.IsBossRecord` / `IsEliteRecord` 的判定：首领优先，其余小首领或原始生命至少 70 的记录为精英。分类写入百科、详情页和搜索索引，可与战斗阶段和关键词组合筛选。
@@ -108,3 +139,11 @@ python tools/generate_encyclopedia.py
 物品、怪物、NPC 与搜索列表每页显示 24 条，长表格超过 24 行时也分页。合成配方仍每页加载 40 条。列表上下均提供页码、上一页、下一页和跳页；只有一页时隐藏分页栏。图鉴和搜索的页码随筛选条件写入 URL，刷新后保留；修改筛选条件回到第一页。
 
 运行 `python wiki/check_pagination.py` 验证翻页、跳页、刷新恢复、边界页码、空结果、全部目录覆盖与桌面和手机宽度；运行 `python wiki/check_performance.py` 验证配方分块和全文索引按需加载。先按上文启动本地预览服务。
+
+## 玩家版内容整理（2026-10-25）
+
+`wiki/player_content.py` 在构建时将导出资料整理成玩家页面：隐藏内部编号、源码和 FSM 证据页，保留物品用途、配方、掉落、商店条件、攻击方式和概率。原始导出继续保存在冻结资料目录，玩家下载的离线百科采用相同的整理内容。
+
+敌人首页按推荐阶段展示五种难度的生命、接触伤害和防御；随成长阶段变化的敌人另有完整阶段表。首领区分整场总血量和阶段血条；神居直接展示总血量，同时保留挑战带来的伤害、防御修正。失败冠军、灵魂暴君、失落近亲已使用本次隔离导出的新数值。
+
+台词覆盖检查比较实际文字而非内部键；`check_current_catalog.py` 对照导出逐项核对玩家版数值表。`check_knowledge.py` 还检查隐藏证据页、神居分页、全文搜索及手机宽度。

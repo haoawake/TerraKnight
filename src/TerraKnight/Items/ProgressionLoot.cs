@@ -11,11 +11,31 @@ namespace TerraKnight.Items
     internal static partial class ProgressionLoot
     {
         const int Main = 100, Function = 101, Rare = 102, Essential = 103, Ore = 200, Material = 201, Building = 202, Critter = 204;
+        // A boss's second piece of equipment, and its second ore and material picks (the user's, 2026-10-20).
+        const int Main2 = 104, Ore2 = 208, Material2 = 209;
         static readonly Dictionary<string, EnemyDrops.Drop[]> cache = new Dictionary<string, EnemyDrops.Drop[]>();
         static readonly Dictionary<string,List<ItemType>> catalogues = new Dictionary<string,List<ItemType>>();
         static readonly Dictionary<string,Dictionary<string,List<ItemType>>> sources = new Dictionary<string,Dictionary<string,List<ItemType>>>();
         static HashSet<ItemType> legacyItems;
         static Dictionary<string,int> ordinals;
+        static readonly Dictionary<(int, bool), SortedDictionary<string,List<string>>> sourceRosters =
+            new Dictionary<(int, bool), SortedDictionary<string,List<string>>>();
+
+        static SortedDictionary<string,List<string>> SourceRoster(int stage,bool main)
+        {
+            if(sourceRosters.TryGetValue((stage,main),out var areas))return areas;
+            areas=new SortedDictionary<string,List<string>>(StringComparer.Ordinal);
+            foreach(var rec in ordinals.Keys) {
+                if(NamedElites.Contains(rec))continue;
+                if(NativeTier(rec)>stage||World.Areas.LevelOf(EnemyDrops.SceneOf(rec))>stage||MainRoute(rec)!=main)continue;
+                string area=BestiaryRoute.AreaOf(rec);
+                if(stage>Math.Min(5,AreaBand(area)+1))continue;
+                if(!areas.TryGetValue(area,out var members))areas[area]=members=new List<string>();
+                members.Add(rec);
+            }
+            foreach(var members in areas.Values)members.Sort(StringComparer.Ordinal);
+            sourceRosters[(stage,main)]=areas;return areas;
+        }
         internal static readonly HashSet<string> NamedElites = new HashSet<string> { "BigBuzzer","MageKnight","PaleLurker" };
         static readonly HashSet<string> Elites = new HashSet<string> {
             "ZombieGuard","BigBee","MushroomBrawler","RoyalGuard","FatFluke","MawlekTurret","FlameBearerLarge","FlameBearerMed",
@@ -30,15 +50,51 @@ namespace TerraKnight.Items
             if (!Eligible(e) || Spawned(key)) return Array.Empty<EnemyDrops.Drop>();
             if(!string.IsNullOrEmpty(scene)){e.Scene=scene;e.AreaOverride=World.Areas.AreaName(scene);}
             bool boss = ProgressionBalance.FormalBoss(key);
-            if (boss && ProgressionBalance.BossRewards.TryGetValue(key, out var reward))
+            // A Godhome fight pays the player's own stage (Build); a boss elsewhere at least its own.
+            bool godhomeFight = e.AreaOverride=="神居" && GodhomeScene(e.Scene);
+            if (boss && !godhomeFight && ProgressionBalance.BossRewards.TryGetValue(key, out var reward))
                 stage = Math.Max(stage, reward.Stage);
-            string id = key + ":" + LootArea(key,e) + ":" + e.Scene + ":" + stage + ":" + first + ":" + entry + ":" + final;
+            string id = key + ":" + LootArea(key,e) + ":" + e.Scene + ":" + stage + ":" + first + ":" + entry + ":" + final + ":" + VanillaBossProgression.StateKey;
             if (!cache.TryGetValue(id, out var result))
             {
                 result=Build(key,e,stage,first,entry,final,boss);
-                if(!boss) result=RetainEarlierDrops(key,e,stage,entry,final,result);
+                if(!boss) {
+                    result=RetainEarlierDrops(key,e,stage,entry,final,result);
+                    result=BossDropPlan.Route(key,stage,result);
+                    // These single-copy recipe inputs were diluted below 0.25%
+                    // by material/retained pools. Keep their existing sources,
+                    // reserving removed weight instead of inflating other drops.
+                    var materialRows = new List<EnemyDrops.Drop>(result);
+                    var sparse = new HashSet<ItemType>();
+                    foreach (var type in new[] { ItemType.BlackLens, ItemType.BoneFeather })
+                    {
+                        float miss = 1f;
+                        var grouped = new Dictionary<int, float>();
+                        foreach (var row in result)
+                        {
+                            if (row.Type != type) continue;
+                            float p = row.Chance;
+                            if (row.Group > 0)
+                            {
+                                float total = 0, reserved = 0;
+                                foreach (var option in result) if (option.Group == row.Group)
+                                { total += Weight(option); reserved = Math.Max(reserved, option.GroupWeightTotal); }
+                                p *= Weight(row) / Math.Max(.00001f, Math.Max(total, reserved));
+                                grouped[row.Group] = (grouped.TryGetValue(row.Group, out float old) ? old : 0) + p;
+                            }
+                            else miss *= 1f - p;
+                        }
+                        foreach (float p in grouped.Values) miss *= 1f - p;
+                        if (miss < 1f && 1f - miss < .01f) sparse.Add(type);
+                    }
+                    if (sparse.Count > 0)
+                    {
+                        ImproveSpecialties(materialRows, sparse, false);
+                        result = materialRows.ToArray();
+                    }
+                }
                 var mounted = new List<EnemyDrops.Drop>(result);
-                Player.Mounts.AddDrops(mounted,key,stage,entry,final);
+                Player.Mounts.AddDrops(mounted,key,stage,entry,final,e.Scene);
                 result=mounted.ToArray();
                 NormalizeGroupChances(result);
                 cache[id]=result;
@@ -92,6 +148,30 @@ namespace TerraKnight.Items
         static EnemyDrops.Drop Row(ItemType type, int group, float probability, int min = 1, int max = 1, float weight = 1)
             => new EnemyDrops.Drop { Type=type,Group=group,Num=Mathf.RoundToInt(probability*100000),Den=100000,Min=min,Max=max,LockStage=0,Weight=weight };
 
+        /// <summary>
+        /// An enemy's own row that stays outside the equipment pools, as its copy (ungrouped, unlocked): Master relics, hearts,
+        /// healing, life and mana crystals, permanent upgrades (the Demon Heart on a first win only), tools and stations (at
+        /// most 1 in 20), and single non-combat items, whose original roll is kept rather than pooled into a stack (which could
+        /// otherwise give dozens of hooks). False when it isn't one, or isn't unlocked at the stage.
+        /// </summary>
+        internal static bool KeptOutsidePools(EnemyDrops.Drop d, int stage, bool first, bool entry, bool final, out EnemyDrops.Drop copy)
+        {
+            var def = ItemDb.Get(d.Type);
+            copy = d;
+            // A Master relic places too, but drops every time (MasterModeCommonDrop), not as a tool.
+            bool utility=!d.Master && (def.PickPower>0 || def.AxePower>0 || def.HammerPower>0 || def.PlacesStation!=World.StationKind.None);
+            bool single=def.MaxStack==1 && !def.IsWeapon && !def.IsArmor && !def.IsAccessory;
+            if (!(d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility || single))
+                return false;
+            copy.LockStage=0;
+            copy.Group=0;
+            if(def.MaxStack==1 || def.LifeCrystal || def.ManaCrystal || def.Boost!=PermanentBoost.None)
+            {copy.Min=copy.Max=1;copy.MeanCount=0;}
+            if(utility && copy.Chance>.05f) {copy.Num=1;copy.Den=20;}
+            if(d.Type==ItemType.DemonHeart && !first) return false;
+            return d.Master || d.Type == ItemType.Heart || ProgressionBalance.Unlocked(d.Type,stage,entry,final);
+        }
+
         static EnemyDrops.Drop[] Build(string key, EnemyDrops.Entry e, int stage, bool first, bool entry, bool final, bool boss)
         {
             var rows = new List<EnemyDrops.Drop>();
@@ -100,12 +180,16 @@ namespace TerraKnight.Items
             bool elite = Elite(key,e);
             string area=LootArea(key,e);
             bool stocked=MainArea(area) || RegionalProfiles.ContainsKey(area);
+            // Godhome's fights pay by the player's stage (the user's), whatever the boss's own: endgame loot only once at
+            // stage 5; GodhomeRewards adds its difficulty's bonus at the kill.
             bool godhome=e.AreaOverride=="神居" && GodhomeScene(e.Scene);
-            if(godhome)stage=5;
-            int tier = godhome ? 5 : Mathf.Clamp(Math.Min(stage,AreaBand(area)+1),0,5);
+            if(boss && VanillaBossProgression.All.ContainsKey(key))return BossDropPlan.Drops(key,e,stage,godhome,first,entry,final);
+            if(godhome)stage=Mathf.Clamp(stage,0,5);
+            bool lunar=GodhomeRewards.LunarFight(key, godhome, stage);
+            int tier = godhome ? stage : Mathf.Clamp(Math.Min(stage,AreaBand(area)+1),0,5);
             if (ProgressionBalance.BossRewards.TryGetValue(key,out var reward) && (boss || NamedElites.Contains(key)))
             {
-                tier = godhome ? 5 : reward.Stage;
+                tier = godhome ? stage : reward.Stage;
                 if(boss && !godhome) stage=reward.Stage; // An old boss cannot pay endgame resources.
             }
             // Genuine healing, master relics and first-only permanent upgrades survive outside equipment pools.
@@ -127,75 +211,61 @@ namespace TerraKnight.Items
                 {
                     rows.Add(Row(d.Type, 0, Mathf.Clamp(d.Chance, .05f, .1f), d.Min, d.Max));
                 }
-                // A Master relic places too, but drops every time (MasterModeCommonDrop), not as a tool.
-                bool utility=!d.Master && (def.PickPower>0 || def.AxePower>0 || def.HammerPower>0 || def.PlacesStation!=World.StationKind.None);
-                // Hooks, fishing poles and other single items are not stackable resources.
-                // Preserve their original roll instead of pooling their expectation into a
-                // large material stack (which can otherwise produce dozens of hooks).
-                bool single=def.MaxStack==1 && !def.IsWeapon && !def.IsArmor && !def.IsAccessory;
-                if (d.Master || d.Type == ItemType.Heart || def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || def.Boost != PermanentBoost.None || utility || single && !utility)
-                {
-                    var copy=d;
-                    copy.LockStage=0;
-                    copy.Group=0;
-                    if(def.MaxStack==1 || def.LifeCrystal || def.ManaCrystal || def.Boost!=PermanentBoost.None)
-                    {copy.Min=copy.Max=1;copy.MeanCount=0;}
-                    if(utility && copy.Chance>.05f) {copy.Num=1;copy.Den=20;}
-                    if(d.Type==ItemType.DemonHeart && !first) continue;
-                    if (d.Master || d.Type == ItemType.Heart || ProgressionBalance.Unlocked(d.Type,stage,entry,final)) rows.Add(copy);
-                }
+                if (KeptOutsidePools(d,stage,first,entry,final,out var copy)) rows.Add(copy);
             }
             if (boss || (NamedElites.Contains(key) && first))
             {
-                // Four equal weapon branches; same-tier armour shares a separate budget.
+                // Only natural, own-stage weapons. Crafted upgrades and armour must be made.
+                var assigned = BossDropPlan.Weapons(key,tier);
+                // A named elite outside the formal bosses (the Pale Lurker) has no BossDropPlan gear: its own reward's
+                // weapons, and its accessory among them, so its first kill pays as a boss's does.
+                var accessory = ItemType.None;
+                if (assigned.Length == 0 && !boss && ProgressionBalance.BossRewards.TryGetValue(key, out var own))
+                {
+                    assigned = own.Weapons ?? Array.Empty<ItemType>();
+                    accessory = own.Accessory;
+                }
+                int branches=0;
+                for(int cls=0;cls<assigned.Length;cls++)
+                    if(assigned[cls]!=ItemType.None)branches++;
                 for (int cls=0;cls<4;cls++)
                 {
-                    var weapon = RewardWeapon(tier, cls, godhome ? ProgressionBalance.LunarWeapons[cls] : ProgressionBalance.BossRewards[key].Weapons[cls], entry, final);
-                    var armor = new List<ItemType>();
-                    foreach (var t in godhome ? ProgressionBalance.LunarArmor[cls] : ProgressionBalance.ArmorFor(tier,cls))
-                        if (ProgressionBalance.Unlocked(t,stage,entry,final) && ItemDb.Get(t).Stage>=tier && ItemDb.Get(t).Rare>0) armor.Add(t);
-                    rows.Add(Row(weapon,Main,1,weight:.2125f));
-                    foreach (var t in armor) rows.Add(Row(t,Main,1,weight:.0375f/armor.Count));
+                    var weapon = cls<assigned.Length ? assigned[cls] : ItemType.None;
+                    if(weapon!=ItemType.None && !CraftOnlyLoot.OnlyCrafted(weapon)
+                        && ProgressionBalance.Unlocked(weapon,stage,entry,final))
+                        rows.Add(Row(weapon,Main,1,weight:1f/Math.Max(1,branches)));
                 }
-                // Keep four equal weapon branches even when a class has no same-tier
-                // armour. The available armour shares the separate 15% portion.
-                float armorWeight=0;
-                foreach(var row in rows)if(row.Group==Main && ItemDb.Get(row.Type).IsArmor)armorWeight+=row.Weight;
-                for(int i=0;i<rows.Count;i++)if(rows[i].Group==Main) {
-                    var row=rows[i];
-                    if(ItemDb.Get(row.Type).IsArmor)row.Weight=row.Weight/armorWeight*.15f;
-                    else if(armorWeight==0)row.Weight=.25f;
-                    rows[i]=row;
-                }
+                if(accessory!=ItemType.None && !CraftOnlyLoot.OnlyCrafted(accessory) && ProgressionBalance.Unlocked(accessory,stage,entry,final))
+                    rows.Add(Row(accessory,Main,1,weight:1f/Math.Max(1,branches)));
+                // A boss's kill another piece of the same now and then: the main pick again, at 30%.
+                if (boss)
+                    for(int i=0,n=rows.Count;i<n;i++)if(rows[i].Group==Main) {
+                        var extra=rows[i];
+                        extra.Group=Main2;
+                        extra.Num=Mathf.RoundToInt(extra.Den*.3f);
+                        rows.Add(extra);
+                    }
             }
             else
             {
-                // One shared rare-equipment roll, not one independent roll per candidate.
+                // One shared rare-equipment roll, not one independent roll per candidate. Each class's weapon, armour and
+                // accessory slot is something an enemy can drop (no crafted-only, sold or boss item: CraftOnlyLoot,
+                // BossDropPlan): the area's own core piece when it can be, else a droppable one of that stage (Fill).
                 float chance=elite ? .24f : .10f;
+                // What this kill's slots already hold: no two of its slots the same piece.
+                var taken=new HashSet<ItemType>();
                 for (int cls=0;cls<4;cls++)
                 {
                     var weapons=new List<ItemType>();
-                    for(int n=0;n<(stocked ? 1 : 0);n++)
-                    {
-                        int local=RegionalVariant(area,cls,ProgressionBalance.Core[tier][cls].Length);
-                        var t=ProgressionBalance.Core[tier][cls][local];
-                        if (ProgressionBalance.Unlocked(t,stage,entry,final)) weapons.Add(t);
-                    }
+                    if(stocked) AddPick(weapons,taken,key,area,cls,0,ProgressionBalance.Core[tier][cls],tier,stage,entry,final);
                     AddExtras(weapons,key,tier,cls,0,entry,final,specialties);
                     var armor=new List<ItemType>();
-                    foreach (var t in stocked ? ProgressionBalance.ArmorFor(tier,cls) : Array.Empty<ItemType>())
-                        if (ProgressionBalance.Unlocked(t,stage,entry,final)) armor.Add(t);
-                    if(armor.Count>1)
-                    {
-                        var local=armor[RegionalVariant(area,cls,armor.Count)];
-                        armor.Clear();armor.Add(local);
-                    }
+                    if(stocked) AddPick(armor,taken,key,area,cls,1,ProgressionBalance.ArmorFor(tier,cls),tier,stage,entry,final);
                     AddExtras(armor,key,tier,cls,1,entry,final,specialties);
                     foreach (var t in weapons) rows.Add(Row(t,Rare,chance,weight:.175f/Math.Max(1,weapons.Count)));
                     foreach (var t in armor) rows.Add(Row(t,Rare,chance,weight:.05f/Math.Max(1,armor.Count)));
                     var accessories=new List<ItemType>();
-                    var acc=ProgressionBalance.AccessoryPaths[tier][cls][1];
-                    if (stocked && ProgressionBalance.Unlocked(acc,stage,entry,final)) accessories.Add(acc);
+                    if(stocked) AddPick(accessories,taken,key,area,cls,2,new[]{ProgressionBalance.AccessoryPaths[tier][cls][1]},tier,stage,entry,final);
                     AddExtras(accessories,key,tier,cls,2,entry,final,specialties);
                     foreach(var t in accessories) rows.Add(Row(t,Rare,chance,weight:.025f/Math.Max(1,accessories.Count)));
                 }
@@ -251,9 +321,6 @@ namespace TerraKnight.Items
                 rows.Add(Row(ItemType.Hellstone,205,elite ? 1f : .65f,elite ? 3 : 2,elite ? 6 : 4));
             if(!boss && mats.Remove(ItemType.Obsidian))
                 rows.Add(Row(ItemType.Obsidian,206,elite ? 1f : .6f,elite ? 2 : 1,elite ? 4 : 3));
-            if(!boss && (key=="Mosquito" || key=="BlobFlyer" || key=="LazyFlyer" || key=="BigBuzzer")
-                && ProgressionBalance.Unlocked(ItemType.BeeWax,stage,entry,final))
-                mats[ItemType.BeeWax]=Math.Max(Value(mats,ItemType.BeeWax),.8f);
             // The stage-2 smelting chain has an accessible exploration source as well
             // as the merchant fallback. A whole station is always one item.
             if(ProgressionBalance.Unlocked(ItemType.Hellforge,stage,entry,final))
@@ -306,17 +373,13 @@ namespace TerraKnight.Items
                     : key == "WhiteDefender" || key == "Nailsage" ? ItemType.FragmentVortex
                     : key == "GreyPrince" || key == "Paintmaster" ? ItemType.FragmentNebula : ItemType.FragmentStardust;
                 rows.Add(Row(fragment, 0, 1, 18, 26));
-                rows.Add(Row(ItemType.LunarCraftingStation,0,first ? 1f : .25f));
+                // Once a save (EssentialDrops.With takes it out after the first).
+                rows.Add(Row(ItemType.LunarCraftingStation,0,1f));
             }
             if (!boss && key.StartsWith("Zombie"))
             {
                 mats[ItemType.Deathweed] = Math.Max(Value(mats, ItemType.Deathweed), .3f);
                 mats[ItemType.Blinkroot] = Math.Max(Value(mats, ItemType.Blinkroot), .3f);
-            }
-            if(boss && World.Areas.AreaName(e.Scene)=="蜂巢")
-            {
-                mats.Remove(ItemType.BeeWax);
-                rows.Add(Row(ItemType.BeeWax,0,1,first ? 12 : 8,first ? 18 : 11));
             }
             // Stage-0 paths must not require Crystal Peak or a later NPC for the first staff.
             if (tier==0 && !boss)
@@ -328,8 +391,8 @@ namespace TerraKnight.Items
                 mats[ItemType.Cobweb]=Math.Max(Value(mats,ItemType.Cobweb),.5f);
             }
             if(boss && !godhome)AddVanillaBossMaterials(key,rows,ores,mats);
-            Pool(rows,ores,Ore,boss || elite ? 1 : .6f,1.2f,boss ? -1 : stage,elite,boss);
-            Pool(rows,mats,Material,1f,boss ? 1.5f : 1.8f,boss ? -1 : stage,elite,boss);
+            Pool(rows,ores,Ore,boss || elite ? 1 : .6f,1.2f,boss ? -1 : stage,elite,boss,boss ? Ore2 : 0);
+            Pool(rows,mats,Material,1f,boss ? 1.5f : 1.8f,boss ? -1 : stage,elite,boss,boss ? Material2 : 0);
             // Common construction stock belongs to early-route farming, not advanced fights.
             if (!boss && NativeTier(key)<2) Pool(rows,blocks,Building,.8f,1.2f,stage,elite,boss);
             // Resource ingredients keep their local sources; obsolete equipment never leaks
@@ -351,12 +414,14 @@ namespace TerraKnight.Items
             else ConsolidateAccessories(rows, elite, first ? 1f : .25f);
             // Each boss has its own signature, outside the shared accessory lottery.
             if(boss) {
-                var signature=ProgressionBalance.BossSignatures[key];
-                rows.RemoveAll(d=>d.Type==signature || ProgressionBalance.ExclusiveBossItems.Contains(d.Type));
-                rows.Add(Row(signature,0,1));
+                var signature=BossDropPlan.Signature(key);
+                rows.RemoveAll(d=>d.Type==ProgressionBalance.BossSignatures[key] || d.Type==signature || ProgressionBalance.ExclusiveBossItems.Contains(d.Type));
+                // In Godhome, by the player's stage like the rest: a later boss's signature waits for its stage.
+                if(signature!=ItemType.None && (!godhome || ItemDb.Get(signature).Stage==stage)
+                    && ProgressionBalance.Unlocked(signature,stage,entry,final)) rows.Add(Row(signature,0,1));
             } else rows.RemoveAll(d=>ProgressionBalance.ExclusiveBossItems.Contains(d.Type));
             // Godhome's lunar payout stays beside Expert bags; it cannot be lost on opening elsewhere.
-            if(godhome || key=="FinalBoss") {
+            if(lunar || key=="FinalBoss" && !godhome) {
                 rows.RemoveAll(d=>d.Type==ItemType.LunarOre);
                 rows.Add(Row(ItemType.LunarOre,207,boss ? 1f : elite ? .8f : .4f,boss ? 70 : 1,boss ? 90 : 3));
             }
@@ -365,6 +430,12 @@ namespace TerraKnight.Items
             // Fish (and the fish weapons, the seafood) come only from fishing, never from an ordinary enemy (Items/FishingOnly.cs).
             if(!boss)rows.RemoveAll(d=>Fishing.FishOnly(d.Type));
             if(!boss)ImproveSpecialties(rows,specialties,elite);
+            if(!lunar && !(key=="FinalBoss" && !godhome))rows.RemoveAll(d => d.Type==ItemType.LunarOre || GodhomeRewards.LunarEquipment(d.Type));
+            if(boss)rows.RemoveAll(d => {
+                var def=ItemDb.Get(d.Type);
+                return (CombatWeapon(def) || def.IsArmor || def.IsAccessory)
+                    && (CraftOnlyLoot.Blocked(d.Type) || def.Stage!=tier || !BossDropPlan.Owns(key,d.Type,tier));
+            });
             return rows.ToArray();
         }
 
@@ -463,6 +534,94 @@ namespace TerraKnight.Items
 
         internal static bool CombatWeapon(ItemDef d) => d.IsWeapon && !d.IsAmmo && !d.GameTool && !d.HkItem && d.MaxStack==1
             && d.PickPower==0 && d.AxePower==0 && d.HammerPower==0 && d.FishingPower==0 && d.PlacesStation==World.StationKind.None;
+        /// <summary>
+        /// Items no enemy of Terraria's drops that go into the enemies' pools all the same (the user's): the Aglet, otherwise
+        /// only a surface chest's or the Skeleton Merchant's at one moon phase in eight.
+        /// </summary>
+        static readonly ItemType[] PoolExtras = { ItemType.Aglet };
+
+        /// <summary>
+        /// What an enemy may drop at all: not crafted-only nor sold by a townsperson (CraftOnlyLoot), not a boss's own
+        /// (BossDropPlan.BossOnly), not a shop-only weapon, lunar gear, a spell's weapon or a catch only fishing gives.
+        /// </summary>
+        internal static bool Droppable(ItemType t)
+        {
+            var d=ItemDb.Get(t);
+            return d!=null && !d.Placeholder && !d.HkItem && !CraftOnlyLoot.Blocked(t) && !BossDropPlan.BossOnly(t)
+                && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !GodhomeRewards.LunarEquipment(t) && !SpellRewards.Is(t)
+                && !Fishing.FishOnly(t);
+        }
+
+        /// <summary>A rare slot's item: the area's pick of the plan's (the core weapons, the armour path) that can drop, else Fill's.</summary>
+        static void AddPick(List<ItemType> into,HashSet<ItemType> taken,string key,string area,int cls,int slot,IEnumerable<ItemType> plan,int tier,int stage,bool entry,bool final)
+        {
+            var ok=new List<ItemType>();
+            foreach(var t in plan) if(t!=ItemType.None && Droppable(t) && ProgressionBalance.Unlocked(t,stage,entry,final)) ok.Add(t);
+            var pick=Take(ok,taken,RegionalVariant(area,cls,Math.Max(1,ok.Count)));
+            if(pick==ItemType.None) pick=Fill(taken,area,cls,slot,tier,NativeTier(key),stage,entry,final);
+            if(pick==ItemType.None) return;
+            taken.Add(pick);
+            if(!into.Contains(pick)) into.Add(pick);
+        }
+
+        /// <summary>The first not yet taken, from the area's own place in the list round.</summary>
+        static ItemType Take(List<ItemType> ok,HashSet<ItemType> taken,int from)
+        {
+            for(int i=0;i<ok.Count;i++)
+            {
+                var t=ok[(from+i)%ok.Count];
+                if(!taken.Contains(t)) return t;
+            }
+            return ItemType.None;
+        }
+
+        // Slot 0 a weapon, 1 armour, 2 an accessory; kind 0 weapons, 1 armour, 2 accessories; class 4 is everyone's
+        // (Kit.General); Back, the stages below the one tried.
+        static readonly (int Kind,bool General,int Back)[][] fillOrder =
+        {
+            new[]{(0,false,0),(0,false,1),(2,false,0),(2,true,0),(1,true,0)},
+            new[]{(1,false,0),(1,true,0),(1,false,1),(1,true,1),(2,false,0),(2,true,0),(0,false,0)},
+            new[]{(2,false,0),(2,true,0),(2,false,1),(2,true,1),(1,true,0),(0,false,0)},
+        };
+
+        /// <summary>
+        /// A rare slot with nothing of the plan that can drop: a droppable piece of the same class and kind of that stage
+        /// or the one below, then the class's or everyone's of other kinds (each area its own of them, RegionalVariant),
+        /// none this kill holds already; a stage with none of them, the stages below. Weapons and armour never below the
+        /// enemy's own tier (Build drops those as obsolete): an accessory instead.
+        /// </summary>
+        static ItemType Fill(HashSet<ItemType> taken,string area,int cls,int slot,int tier,int native,int stage,bool entry,bool final)
+        {
+            for(int s=tier;s>=0;s--)
+                foreach(var (kind,general,back) in fillOrder[slot])
+                {
+                    if(s-back<0 || kind!=2 && s-back<native) continue;
+                    var ok=new List<ItemType>();
+                    foreach(var t in DroppableIn(kind,general ? 4 : cls,s-back)) if(ProgressionBalance.Unlocked(t,stage,entry,final)) ok.Add(t);
+                    var pick=Take(ok,taken,RegionalVariant(area,cls+4*slot,Math.Max(1,ok.Count)));
+                    if(pick!=ItemType.None) return pick;
+                }
+            return ItemType.None;
+        }
+
+        static readonly Dictionary<(int,int,int),List<ItemType>> droppable=new Dictionary<(int,int,int),List<ItemType>>();
+
+        /// <summary>The droppable weapons (kind 0), armour with defense (1) or accessories (2) of a class (4: everyone's) and stage.</summary>
+        static List<ItemType> DroppableIn(int kind,int cls,int stage)
+        {
+            if(droppable.TryGetValue((kind,cls,stage),out var list)) return list;
+            list=new List<ItemType>();
+            foreach(var d in ItemDb.All)
+            {
+                if(d.Stage!=stage || !Droppable(d.Type)) continue;
+                int own=kind==0 ? ProgressionBalance.ClassIndex(d.Class) : d.Kit==Kit.General ? 4 : ProgressionBalance.ClassIndex(d.Kit);
+                bool match=kind==0 ? CombatWeapon(d) : kind==1 ? d.IsArmor && d.Defense>0 : d.IsAccessory;
+                if(match && own==cls) list.Add(d.Type);
+            }
+            list.Sort();
+            return droppable[(kind,cls,stage)]=list;
+        }
+
         static void AddExtras(List<ItemType> pool,string record,int stage,int cls,int category,bool entry,bool final,HashSet<ItemType> specialties=null)
         {
             if(legacyItems==null)
@@ -478,8 +637,9 @@ namespace TerraKnight.Items
                     if(Eligible(e) && !Spawned(records[i]) && records[i]!="Zote" && !ProgressionBalance.FormalBoss(records[i])) ordinals[records[i]]=ordinal++;
                     foreach(var row in EnemyDrops.LegacyOf(records[i])) legacyItems.Add(row.Type);
                 }
+                foreach(var t in PoolExtras) legacyItems.Add(t);
             }
-            string id=stage+":"+cls+":"+category+":"+entry+":"+final;
+            string id=stage+":"+cls+":"+category+":"+entry+":"+final+":"+VanillaBossProgression.StateKey;
             if(!catalogues.TryGetValue(id,out var candidates))
             {
                 candidates=new List<ItemType>();
@@ -487,6 +647,9 @@ namespace TerraKnight.Items
                 {
                     var d=ItemDb.Get(t);
                     if(ProgressionBalance.ShopOnlyWeapons.Contains(t))continue;
+                    if(GodhomeRewards.LunarEquipment(t))continue;
+                    // Equipment only: what can't drop would leave its two sources' rolls empty.
+                    if(category!=3 && !Droppable(t))continue;
                     if((category==3 ? d.Stage>stage : d.Stage!=stage) || !ProgressionBalance.Unlocked(t,stage,entry,final)) continue;
                     bool match=category==3 ? Recipes.IsMaterial(t) && (CombatWeapon(d) || d.IsArmor || d.IsAccessory)
                         : category==0 ? CombatWeapon(d) && ProgressionBalance.ClassIndex(d.Class)==cls
@@ -517,19 +680,8 @@ namespace TerraKnight.Items
                 string theme=null; // Regional variety takes precedence over biome-themed item names.
                 // Before the first ability there is no side-route roster: keep starter variants reachable.
                 bool main=stage==0 || category==3 || (theme!=null ? MainArea(theme) : Recipes.IsMaterial(t) || StableHash(t.ToString())%4 != 0);
-                var areas=new SortedDictionary<string,List<string>>(StringComparer.Ordinal);
-                foreach (var rec in ordinals.Keys)
-                {
-                    // Named elites use fixed boss-style reward tiers, including a separate
-                    // first-kill branch; they cannot own a scaling catalogue's sole source.
-                    if (NamedElites.Contains(rec)) continue;
-                    int sourceStage=category==3 ? ItemDb.Get(t).Stage : stage;
-                    if (NativeTier(rec)>sourceStage || World.Areas.LevelOf(EnemyDrops.SceneOf(rec))>sourceStage || MainRoute(rec)!=main) continue;
-                    string area=BestiaryRoute.AreaOf(rec);
-                    if(sourceStage>Math.Min(5,AreaBand(area)+1))continue;
-                    if (!areas.TryGetValue(area,out var members)) areas[area]=members=new List<string>();
-                    members.Add(rec);
-                }
+                int sourceStage=category==3 ? ItemDb.Get(t).Stage : stage;
+                var areas=SourceRoster(sourceStage,main);
                 if (areas.Count==0) continue;
                 if (theme!=null && areas.TryGetValue(theme,out var themed))
                 {
@@ -619,24 +771,34 @@ namespace TerraKnight.Items
             else {min=boss ? 5 : elite ? 3 : 2;max=boss ? 12 : elite ? 7 : 5;}
         }
 
-        static void Pool(List<EnemyDrops.Drop> rows,Dictionary<ItemType,float> pool,int group,float probability,float boost,int stage=-1,bool elite=false,bool boss=false)
+        /// <summary>
+        /// A pool's one roll (its group) for one of its kinds, by weight. With a second group (a boss's), two rolls for two
+        /// kinds: the kinds dealt in turn, heaviest first, into the two groups; a boss's amounts half as much again.
+        /// </summary>
+        static void Pool(List<EnemyDrops.Drop> rows,Dictionary<ItemType,float> pool,int group,float probability,float boost,int stage=-1,bool elite=false,bool boss=false,int second=0)
         {
-            float total=0,weighted=0;
+            float total=0;
             foreach(var v in pool.Values) total+=v;
             if(total<=0) return;
             bool mixed=stage>0 && System.Linq.Enumerable.Any(pool.Keys,t=>ItemDb.Get(t).Stage==stage)
                 && System.Linq.Enumerable.Any(pool.Keys,t=>ItemDb.Get(t).Stage<stage);
             float Bias(ItemType t)=>!mixed ? 1f : ItemDb.Get(t).Stage==stage ? 1.15f : .85f;
-            foreach(var kv in pool)weighted+=kv.Value*Bias(kv.Key);
             probability=Math.Min(probability,total*boost);
-            foreach(var kv in pool)
+            var kinds=new List<ItemType>(pool.Keys);
+            bool split=second>0 && kinds.Count>=2;
+            if(split) kinds.Sort((a,b)=>(pool[b]*Bias(b)).CompareTo(pool[a]*Bias(a)));
+            var weighted=new float[2];
+            for(int i=0;i<kinds.Count;i++) weighted[split ? i%2 : 0]+=pool[kinds[i]]*Bias(kinds[i]);
+            for(int i=0;i<kinds.Count;i++)
             {
+                var t=kinds[i];
+                int half=split ? i%2 : 0;
                 // Quantity belongs to the selected material's rarity, never the summed
                 // expectation of every unrelated candidate in this pool.
-                ResourceRange(kv.Key,elite,boss,out int low,out int high);
-                float w=kv.Value*Bias(kv.Key)/weighted;
-                var row=Row(kv.Key,group,probability,low,high,w);
-                rows.Add(row);
+                ResourceRange(t,elite,boss,out int low,out int high);
+                if(boss && ItemDb.Get(t).BaitPower<=0) { low=Mathf.CeilToInt(low*1.5f); high=Mathf.CeilToInt(high*1.5f); }
+                float w=weighted[half]>0 ? pool[t]*Bias(t)/weighted[half] : 0f;
+                rows.Add(Row(t,half==0 ? group : second,probability,low,high,w));
             }
         }
 
@@ -685,6 +847,9 @@ namespace TerraKnight.Items
             bool jungle=area=="苍绿之径" || area=="真菌荒地" || area=="王后花园";
             void Add(Dictionary<ItemType,float> pool,ItemType t,float amount)
             { if(ProgressionBalance.Unlocked(t,stage,entry,final)) pool[t]=Math.Max(Value(pool,t),amount); }
+            // The stage-1 herb was present only in legacy grouped boss rows, which the
+            // crafting-first drop rewrite retires. Keep its potion recipes reachable locally.
+            if(!boss && (area=="呼啸悬崖" || area=="安息之地")) Add(mat,ItemType.Shiverthorn,.3f);
             if(jungle)
             {
                 Add(mat,ItemType.JungleSpores,.8f); Add(mat,ItemType.Vine,.6f);
@@ -709,7 +874,8 @@ namespace TerraKnight.Items
             if(area=="泪水之城" || area=="皇家水道")
             {
                 Add(ore,ItemType.DemoniteOre,1.5f);Add(ore,ItemType.CrimtaneOre,1.5f);
-                Add(mat,ItemType.ShadowScale,.6f);Add(mat,ItemType.TissueSample,.6f);Add(mat,ItemType.Bone,1.5f);
+                // Shadow Scales and Tissue Samples are the evil bosses' (VanillaBossProgression.BossMaterial), never a common enemy's.
+                Add(mat,ItemType.Bone,1.5f);
             }
             if(area=="水晶山峰") { Add(ore,ItemType.Meteorite,1.5f);Add(mat,ItemType.Amethyst,.8f);Add(mat,ItemType.Ruby,.6f);Add(mat,ItemType.Diamond,.5f);Add(mat,ItemType.CrystalShard,.8f); }
             if(area=="水晶山峰") Add(ore,ItemType.Hellstone,2f);
@@ -721,7 +887,8 @@ namespace TerraKnight.Items
             if(area=="皇家水道" || area=="水晶山峰") Add(mat,ItemType.Obsidian,.6f);
             if(area=="深渊" || area=="远古盆地") { Add(ore,ItemType.Hellstone,2);Add(mat,ItemType.Obsidian,1);Add(mat,ItemType.SoulofNight,.4f); }
             if(area=="深巢" || area=="野兽巢穴") { Add(mat,ItemType.SpiderFang,.8f);Add(mat,ItemType.Cobweb,2); }
-            if(area=="蜂巢") Add(mat,ItemType.BeeWax,boss ? 12.5f : 1.2f);
+            // Bee Wax is the Hu's (the Queen Bee's place, stage 2): by the Hive (stage 4) the Bee set is long behind the
+            // player, so the Hive's own is the Tattered Bee Wing (RegionalProfiles) for the hardmode Bee Wings.
             if(area=="王国边缘" || area=="愚人斗兽场")
             {
                 Add(ore,ItemType.CobaltOre,1.5f);Add(ore,ItemType.PalladiumOre,1.5f);

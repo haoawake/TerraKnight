@@ -41,6 +41,9 @@ namespace TerraKnight.Items
             var b = Equipment.Current;
             void Add(string label, object value) => rows.Add(new Row(label, value?.ToString() ?? "—"));
             var weapon = CurrentWeapon(out var ammo);
+            Add("挑战伤害倍率", "×" + Number(PlayerChallenges.DamageShare));
+            Add("挑战生命倍率", "×" + Number(PlayerChallenges.LifeShare));
+            Add("恢复锁", PlayerChallenges.RecoveryLocked ? "战斗回血关闭，药水治疗70%" : "未生效");
             if (tab == 0)
             {
                 Add("生命", $"{stats.Life} / {stats.LifeMax}");
@@ -76,6 +79,11 @@ namespace TerraKnight.Items
                 if (weapon.UseAmmo != AmmoKind.None) Add("当前弹药", ammo != null ? ammo.Name : "缺少弹药；伤害未计弹药");
                 Add("伤害说明", "未计敌人防御、暴击与命中时的特殊效果");
                 Add("锻造等级", "+" + weapon.Forge);
+                if (weapon.Class == DamageClass.Ranged)
+                {
+                    Add("锻造盔甲穿透", Forging.ArmorPenOf(weapon));
+                    Add("暴击伤害", Mathf.RoundToInt((2f + Forging.RangedCritDamage(Forging.RangedLevel(weapon))) * 100f) + "%");
+                }
                 Add("暴击率", Number(Equipment.Crit(weapon)) + "%");
                 Add("击退", Number(Equipment.Knockback(weapon)));
                 Add("使用间隔", Number(weapon.UseTime * Equipment.UseScale(weapon)) + " 秒");
@@ -83,7 +91,15 @@ namespace TerraKnight.Items
                 Add("每次魔力消耗", Equipment.ManaCost(weapon));
                 Add("自动挥舞", Equipment.AutoReuses(weapon) ? "开启" : "关闭");
                 Add("武器尺寸倍率", "×" + Number(Equipment.ItemScale(weapon)));
-                Add("护甲穿透", b.ArmorPen);
+                if (weapon.Class == DamageClass.Summon && (weapon.Minion != MinionKind.None || weapon.Sentry))
+                {
+                    // A minion's or sentry's blow: the accessories', the staff's prefix's and its own (MeleeHits.MinionArmorPen;
+                    // the Blade Staff's daggers 25 more, as its tooltip says).
+                    int own = MeleeHits.MinionArmorPen + (weapon.Minion == MinionKind.BladeStaff ? 25 : 0);
+                    Add("护甲穿透（召唤物）", b.ArmorPen + weapon.PrefixArmorPen + own);
+                    Add("其中召唤物自带", own);
+                }
+                else Add("护甲穿透", b.ArmorPen);
                 Add("魔力热增伤倍率", "×" + Number(Equipment.ManaHeat));
             }
             else if (tab == 2)
@@ -96,7 +112,7 @@ namespace TerraKnight.Items
                 for (int i = 0; i < inv.EffectiveAccessories.Length; i++)
                 {
                     var stack = inv.EffectiveAccessories[i];
-                    Add("生效饰品 " + (i + 1), stack.IsEmpty ? "未装备" : stack.Def.Name);
+                    Add("生效饰品 " + (i + 1), stack.IsEmpty ? "未装备" : stack.Def.Name + (PlayerChallenges.AccessoriesLocked ? "（饰品锁：仅保留冲刺）" : ""));
                 }
                 Add("套装奖励", Equipment.SetBonusText(Equipment.FullSet) ?? "无完整套装奖励");
                 Add("装备范围", "当前配装及共享生效装备；时装不计入属性");
@@ -135,7 +151,7 @@ namespace TerraKnight.Items
                     Add("当前状态 · " + Player.PlayerBuffs.Name(type), remaining + " · " + Player.PlayerBuffs.Desc(type));
                 }
                 foreach (var stack in inv.EffectiveArmor) Effects(stack);
-                foreach (var stack in inv.EffectiveAccessories) Effects(stack);
+                foreach (var stack in inv.FunctionalAccessories) Effects(stack);
                 void Effects(ItemStack stack)
                 {
                     if (stack.IsEmpty || string.IsNullOrWhiteSpace(stack.Def.Tooltip)) return;

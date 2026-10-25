@@ -65,7 +65,11 @@ namespace TerraKnight.Player
                 UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, sum.ToString(), UI.CombatText.PlayerHurt);
                 sum = 0;
             }
-            if (stats.IsDead) hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1);
+            if (stats.IsDead)
+            {
+                Achievements.AchievementTracker.PoisonKill();
+                hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1);
+            }
         }
     }
 }

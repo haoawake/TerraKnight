@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -6,22 +6,23 @@ namespace TerraKnight.Items
     /// <summary>
     /// The Goblin Tinkerer's forging (the mod's own, beside Terraria's reforging): a weapon in his slot, paid for in Geo,
     /// goes up a level, each level +5% of its damage (on its damage before forging, prefix included). A weapon is forged
-    /// up to five levels a stage of its own: a stage-0 weapon to +5, each stage five more, a stage-5 one to +30; the
-    /// Knight's nail and the Dream Nail, whose damage follows the stage reached, to the stage reached's. One forged past
+    /// up to its own stage's modest cap (<see cref="StageCap"/>: +2, +3, +4, +5, +6, +6), its base
+    /// damage raised the more the earlier it is (ProgressionBalance.WeaponBoost): equipment supplies the main progression; the Knight's nail and
+    /// the Dream Nail, whose damage follows the stage reached, to the stage reached's. One forged past
     /// its cap before (an old save's) keeps its level and is forged no further. The price rises with the weapon's worth
-    /// (its plain reforge price) and its level; a forging takes one time in two, the money gone and the level kept. Each
+    /// (its plain reforge price) and its level; a forging takes three times in four, the money gone and the level kept. Each
     /// weapon carries its own level (ItemStack.Forge, kept in the save); a reforge keeps it. A shop pays for the levels too:
     /// a fifth of their prices, with the total sale capped at the cheapest forging investment (Shop.SellValue).
     /// A piece of armor is forged too, up
-    /// to three levels per stage (+3 .. +18), each level +1 defense, a warrior's piece +2 (<see cref="IsWarriorArmor"/>).
-    /// Its full-upgrade price stays near the former budget.
+    /// to the same stage caps as weapons, each level +1 defense, a warrior's piece +2 (<see cref="IsWarriorArmor"/>).
+    /// Its full-upgrade price is about 10000 Geo a stage. Forging is dear on purpose (the user's, 2026-10-21: few should lean on it,
+    /// the game's own gear first).
     /// </summary>
     internal static class Forging
     {
-        public const int LevelsPerStage = 5;
         public const float DamagePerLevel = 0.05f;
-        /// <summary>A piece of armor gains three available levels per stage, each adding one defense (a warrior's two).</summary>
-        public const int ArmorLevelsPerStage = 3, DefensePerLevel = 1, WarriorDefensePerLevel = 2;
+        /// <summary>Armor uses the shared stage cap; each level adds one defense (a warrior's two).</summary>
+        public const int DefensePerLevel = 1, WarriorDefensePerLevel = 2;
 
         /// <summary>The defense a level of forging adds to a piece of armor: two for a warrior's, one for any other.</summary>
         public static int DefensePerLevelOf(ItemDef d) => IsWarriorArmor(d) ? WarriorDefensePerLevel : DefensePerLevel;
@@ -59,10 +60,12 @@ namespace TerraKnight.Items
             return yes;
         }
 
-        public static int ArmorStageCap(int stage) => ArmorLevelsPerStage * (Mathf.Clamp(stage, 0, 5) + 1);
+        public static int ArmorStageCap(int stage) => StageCap(stage);
 
-        /// <summary>The cap of a stage's weapons: five levels a stage (stage 0 +5 .. stage 5 +30).</summary>
-        public static int StageCap(int stage) => LevelsPerStage * (Mathf.Clamp(stage, 0, 5) + 1);
+        /// <summary>A small optional upgrade: stages 0 to 5 allow +2, +3, +4, +5, +6, +6 (the user's, 2026-10-23).</summary>
+        public static int StageCap(int stage) => stageCaps[Mathf.Clamp(stage, 0, 5)];
+
+        static readonly int[] stageCaps = { 2, 3, 4, 5, 6, 6 };
 
         /// <summary>The cap of the stage reached (the Knight's nail's and the Dream Nail's).</summary>
         public static int MaxLevel => StageCap(Shop.UnlockedStage());
@@ -110,8 +113,8 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// The cost of the next level, in copper (a Geo is 100): dear, as the plainest way to more damage, yet not out of
-        /// reach for the strongest (whose damage isn't that much more): 20 Geo × the weapon's strength to the power 0.8
-        /// (the Night's Edge about 500 Geo, the Terra Blade 1150, the Zenith 3150), 20 Geo at the least; ×(1 + level/2).
+        /// reach for the strongest (whose damage isn't that much more): 40 Geo × the weapon's strength to the power 0.8
+        /// (the Night's Edge about 1000 Geo, the Terra Blade 2300, the Zenith 6300), 40 Geo at the least; ×(1 + level/2).
         /// Four fifths of it with the Discount Card (<see cref="Shop.Discounted"/>).
         /// </summary>
         public static long Cost(ItemStack s) => Shop.Discounted(ListCost(s));
@@ -122,21 +125,21 @@ namespace TerraKnight.Items
             if (s.IsEmpty) return 0;
             var plain = ItemDb.Get(s.Type);
             if (IsArmorPiece(plain)) return ArmorCost(plain, s.Forge);
-            double basePrice = System.Math.Pow(Strength(plain), 0.8) * 2000.0;
-            if (basePrice < 2000) basePrice = 2000;
+            double basePrice = System.Math.Pow(Strength(plain), 0.8) * 4000.0;
+            if (basePrice < 4000) basePrice = 4000;
             long cost = (long)System.Math.Round(basePrice * (1.0 + 0.5 * s.Forge));
             return (cost + 99) / 100 * 100;
         }
 
         /// <summary>
-        /// Armor's full-upgrade budget remains about 5000 Geo per stage (5000 .. 30000).
+        /// Armor's full-upgrade budget is about 10000 Geo per stage (10000 .. 60000).
         /// Spread it across its stage's cap, with the last step costing three times the first.
         /// Round each attempt up to whole Geo; this adds less than one Geo per available level.
         /// </summary>
         public static long ArmorCost(ItemDef plain, int level)
         {
             int stage = Mathf.Clamp(plain.Stage, 0, 5), cap = ArmorStageCap(stage);
-            long budget = 500000L * (stage + 1);
+            long budget = 1000000L * (stage + 1);
             long numerator = budget * (cap - 1 + 2L * Mathf.Max(0, level));
             long denominator = 2L * cap * (cap - 1) * 100;
             return (numerator + denominator - 1) / denominator * 100;
@@ -161,8 +164,8 @@ namespace TerraKnight.Items
         /// <summary>What a shop pays for a weapon's levels, in copper: a fifth of their prices (its levels' worth, as a sale pays a fifth of an item's).</summary>
         public static long SellBonus(ItemStack s) => s.IsEmpty || s.Forge == 0 || !Forgeable(ItemDb.Get(s.Type)) ? 0 : PricesTo(s.Type, s.Forge) / 5;
 
-        /// <summary>The chance the next level takes: one in two, whatever the weapon and its level.</summary>
-        public const float Odds = 0.5f;
+        /// <summary>The chance the next level takes: three in four, whatever the weapon and its level.</summary>
+        public const float Odds = 0.75f;
 
         public static float Chance(ItemStack s) => s.IsEmpty ? 0f : Odds;
 
@@ -235,5 +238,23 @@ namespace TerraKnight.Items
         }
 
         public static int Forged(int damage, int level) => Mathf.RoundToInt(damage * (1f + DamagePerLevel * level));
+
+        /// <summary>
+        /// A ranged weapon's levels (a bow's, a gun's, a launcher's...) each add, to what it fires (the user's): a point of armor
+        /// penetration, half a point of crit chance, and a hundredth more on a crit (2× at +0, 2.06× at +6).
+        /// </summary>
+        public const int RangedPenPerLevel = 1;
+        public const float RangedCritPerLevel = 0.5f, RangedCritDamagePerLevel = 0.01f;
+
+        /// <summary>The forging level a weapon's shots carry: a forged ranged weapon's, 0 for the rest.</summary>
+        public static int RangedLevel(ItemDef d) => d != null && d.Forge > 0 && d.Class == DamageClass.Ranged && !IsArmorPiece(d.Unforged ?? d) ? d.Forge : 0;
+
+        public static int RangedPen(int level) => level * RangedPenPerLevel;
+        /// <summary>Crit chance in points (Equipment.Crit's scale).</summary>
+        public static float RangedCrit(int level) => level * RangedCritPerLevel;
+        /// <summary>What a crit does on top of its double (0.06 at +6: 2.06×).</summary>
+        public static float RangedCritDamage(int level) => level * RangedCritDamagePerLevel;
+
+        public static int ArmorPenOf(ItemDef d) => RangedPen(RangedLevel(d));
     }
 }

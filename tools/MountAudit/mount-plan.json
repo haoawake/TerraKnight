@@ -3276,7 +3276,7 @@
     "layers": [
       {
         "texture": "Extra_301",
-        "front": true,
+        "front": false,
         "glow": false
       }
     ],
@@ -3373,7 +3373,7 @@
     "layers": [
       {
         "texture": "Extra_302",
-        "front": true,
+        "front": false,
         "glow": false
       }
     ],
@@ -3470,7 +3470,7 @@
     "layers": [
       {
         "texture": "Extra_301",
-        "front": true,
+        "front": false,
         "glow": false
       }
     ],
@@ -3567,7 +3567,7 @@
     "layers": [
       {
         "texture": "Extra_302",
-        "front": true,
+        "front": false,
         "glow": false
       }
     ],

@@ -22,7 +22,9 @@ namespace TerraKnight.Player
             Werewolf = 28, Merfolk = 34, IceBarrier = 62, BrainOfConfusion = 321, ManaHeat = 396,
             MushroomBoiMinion = 355, CattivaMinion = 385, FoxsparksMinion = 386, TrustyCattivaMinion = 389, TrustyFoxsparksMinion = 390, ClayPotMinion = 393, ForbiddenMinion = 394,
             // The buff furniture's (SceneMetrics, here carried: Items.CarriedFurniture) and the Water Candle's.
-            WaterCandle = 86, CozyFire = 87, HeartLamp = 89, Happy = 146, StarInBottle = 158, BastDefense = 215;
+            WaterCandle = 86, CozyFire = 87, HeartLamp = 89, Happy = 146, StarInBottle = 158, BastDefense = 215,
+            // The Wandering Soul Staff's little soul, the Elegy Mask's choir soul the Shade Soul Staff's little shade and the Dirge Mask's dirge soul (the mod's own; their icons Resources/hk_Buff_9020.png to 9023).
+            WanderingSoul = 9020, ChoirSoul = 9021, ShadeSoul = 9022, DirgeSoul = 9023;
 
         public static readonly int[] Type = new int[MaxBuffs];
         public static readonly int[] Time = new int[MaxBuffs];
@@ -70,6 +72,10 @@ namespace TerraKnight.Player
             [TwinEyesMinion] = new Info { Name = "双子魔眼", Desc = "双子魔眼将为你而战", NoTime = true, Minion = true },
             [BatOfLight] = new Info { Name = "血红蝙蝠", Desc = "血红蝙蝠将为你而战", NoTime = true, Minion = true },
             [Ravens] = new Info { Name = "乌鸦", Desc = "乌鸦将攻击你的敌人", NoTime = true, Minion = true },
+            [WanderingSoul] = new Info { Name = "游荡之魂", Desc = "小怨魂将为你而战", NoTime = true, Minion = true },
+            [ChoirSoul] = new Info { Name = "唱魂", Desc = "小唱魂将为你而战", NoTime = true, Minion = true },
+            [ShadeSoul] = new Info { Name = "暗魂", Desc = "小暗魂将为你而战", NoTime = true, Minion = true },
+            [DirgeSoul] = new Info { Name = "冥魂", Desc = "小冥魂将为你而战", NoTime = true, Minion = true },
             [Pygmies] = new Info { Name = "矮人", Desc = "矮人将为你而战", NoTime = true, Minion = true },
             [SharknadoMinion] = new Info { Name = "鲨鱼旋风", Desc = "鲨鱼旋风将为你而战", NoTime = true, Minion = true },
             [UFOMinion] = new Info { Name = "UFO", Desc = "UFO将为你而战", NoTime = true, Minion = true },
@@ -117,6 +123,13 @@ namespace TerraKnight.Player
         public static void Define(int type, string name, string desc, bool debuff = false, bool noTime = false)
         {
             if (!info.ContainsKey(type)) info[type] = new Info { Name = name, Desc = desc, Debuff = debuff, NoTime = noTime };
+        }
+
+        /// <summary>A buff whose name or tooltip changes as it goes (a charm's mode): defined again.</summary>
+        public static void Redefine(int type, string name, string desc, bool noTime)
+        {
+            if (info.TryGetValue(type, out var i) && i.Name == name && i.Desc == desc && i.NoTime == noTime) return;
+            info[type] = new Info { Name = name, Desc = desc, NoTime = noTime };
         }
 
         /// <summary>The minion flags (slime, hornetMinion…), set each tick while the buff holds.</summary>
@@ -183,6 +196,13 @@ namespace TerraKnight.Player
 
         public static void DrankManaPotion() => Add(ManaSickness, Mathf.Min(600, TimeLeft(ManaSickness) + 300));
         public static float ManaSicknessPenalty => Mathf.Clamp(TimeLeft(ManaSickness) / 60f * .05f, 0f, .5f);
+        internal static bool CanReceive(int type)
+        {
+            if(type<=0||Immune(type))return false;
+            for(int i=0;i<MaxBuffs;i++)if(Type[i]==type||Type[i]==0||!IsDebuff(Type[i]))return true;
+            return false;
+        }
+        internal static bool HasFreeSlot => System.Array.IndexOf(Type,0)>=0;
 
         /// <summary>The player flag a minion buff sets (slime, spiderMinion…): its minions live while it's on.</summary>
         public static bool Flag(int type) => flags.Contains(type);

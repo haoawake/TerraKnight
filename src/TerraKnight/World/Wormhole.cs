@@ -70,10 +70,12 @@ namespace TerraKnight.World
         }
 
         /// <summary>To a place: here at once if its room is loaded, else by the respawn road.</summary>
-        static bool TravelTo(string scene, Vector2 local, string why)
+        internal static bool TravelTo(string scene, Vector2 local, string why)
         {
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
+            if (gm == null || hero == null || string.IsNullOrEmpty(scene)) return false;
+            Player.DelicateFlower.OnTeleport();
             var region = TerrainSystem.Find(scene);
             if (region != null && region.Root != null)
             {

@@ -58,6 +58,9 @@ namespace TerraKnight.Player
         /// <summary>lifeRegenTime: ticks since the last hit (the natural regeneration's clock).</summary>
         public float SinceHitTicks => sinceHit * 60f;
 
+        /// <summary>The natural regeneration running now (Quick Focus's motes show it).</summary>
+        public bool RegeneratingNaturally;
+
         float sinceHit = 10f;
         float regenAccumulator;
         float manaDelay, manaAccumulator;
@@ -80,21 +83,52 @@ namespace TerraKnight.Player
         /// <summary>Recomputes the maximums from crystals, the Knight's masks and vessels, and equipment.</summary>
         public void UpdateMaximums(PlayerData pd, int manaBonus)
         {
+            int lifeMaxBefore = LifeMax;
             // The shards of the masks made beyond the first five, and of the one in the making.
             int shards = pd != null ? Mathf.Max(0, (pd.maxHealthBase - 5) * 4 + Mathf.Clamp(pd.heartPieces, 0, 3)) : 0;
             int vessels = pd != null ? Mathf.Max(0, pd.MPReserveMax / 33) : 0;
             MaskLife = shards * LifePerShard;
             int hearts = BaseLife + LifeCrystals * 20 + LifeFruits * 5;
-            // Lifeforce (Pl:10343-10347): statLifeMax / 5 / 20 * 20 more.
-            if (LifeForce) hearts += hearts / 5 / 20 * 20;
-            LifeMax = Mathf.Min(700, hearts + MaskLife);
+            // Apply the base cap before Lifeforce. Mask-derived life belongs to
+            // the same maximum, including partial hearts; do not round it to 20.
+            int baseLife = Mathf.Min(700, hearts + MaskLife);
+            MaskLife = Mathf.Max(0,baseLife-hearts);
+            LifeMax = baseLife;
+            // The Fragile Heart: the masks' cyan life twice over, past the cap (the charm's own).
+            int masksAgain = Items.CharmEffects.MaskLifeBonus(MaskLife);
+            LifeMax += masksAgain;
+            MaskLife += masksAgain;
+            if (LifeForce) {
+                int bonus=baseLife/5;
+                LifeMax+=bonus;
+                MaskLife+=bonus-Mathf.Min(hearts,baseLife)/5;
+            }
             ManaMax = Mathf.Min(400, BaseMana + ManaCrystals * 20 + vessels * 20 + manaBonus) + TempMana;
+            int unrestricted = LifeMax;
+            LifeMax = Items.PlayerChallenges.LifeLimit(unrestricted);
+            MaskLife = Mathf.Min(LifeMax, Mathf.FloorToInt(MaskLife * Items.PlayerChallenges.LifeShare));
+            if (Items.PlayerChallenges.LifeShare < 1f) Shield = Mathf.Min(Shield, LifeMax);
+            // More life at a bench (the Fragile Heart put on there): filled, as the bench fills the masks.
+            if (pd != null && pd.atBench && lifeMaxBefore > 0 && LifeMax > lifeMaxBefore && Life > 0) Life = Mathf.Min(LifeMax, Life + LifeMax - lifeMaxBefore);
             if (Life > LifeMax) Life = LifeMax;
             if (Mana > ManaMax) Mana = ManaMax;
         }
 
         /// <summary>Dev: hits leave at least one life (a test's fight against a boss that one-shots its starter gear).</summary>
         public static bool DevImmortal;
+
+        /// <summary>
+        /// Main.DamageVar(damage, -luck) on an enemy's hit (Pl:31623 a touch, P:15119 a shot): a whole percent from -15 to +15,
+        /// and with luck a second roll, the lower of the two kept (bad luck: the higher).
+        /// </summary>
+        public static float HurtVariation()
+        {
+            float v = 1f + Random.Range(-15, 16) * 0.01f;
+            float luck = -Items.Equipment.Current.Luck;
+            if (luck > 0f && Random.value < luck) v = Mathf.Max(v, 1f + Random.Range(-15, 16) * 0.01f);
+            else if (luck < 0f && Random.value < -luck) v = Mathf.Min(v, 1f + Random.Range(-15, 16) * 0.01f);
+            return v;
+        }
 
         /// <summary>Stage and source set a native hit's damage; only Hollow restores mask-count multipliers.</summary>
         public static int NativeHitDamage(int masks, int perMask, float share = 1f) =>
@@ -105,12 +139,18 @@ namespace TerraKnight.Player
         {
             if (masks <= 0) return 0;
             // Enemy scaling precedes defense. Keep fractional defense through endurance, as Player.Hurt does.
-            int damage = Mitigate(NativeHitDamage(masks, perMask, share));
+            int damage = Items.CharmEffects.ScaleHit(Mitigate(NativeHitDamage(masks, perMask, share)));
+            // A charm that takes the hit whole (the Stalwart Shell): nothing off the life, the regeneration's clock left be.
+            if (Items.CharmEffects.Absorb(damage)) return damage;
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
             return damage;
         }
+
+        /// <summary>Hollow hazards deal half the effective maximum, rounded up, past defense and damage reductions.</summary>
+        public int TakeEnvironment(int raw) => Items.PlayerChallenges.Hollow
+            ? TakeShare(Items.PlayerChallenges.EnvironmentDamage(LifeMax)) : TakeDirect(raw);
 
         /// <summary>
         /// Damage that isn't measured in masks (falls, explosions); defense applies as usual. Overcharmed, twice as much, as
@@ -119,7 +159,8 @@ namespace TerraKnight.Player
         public int TakeDirect(int raw)
         {
             if (Items.Charms.Enabled && PlayerData.instance != null && PlayerData.instance.overcharmed) raw *= 2;
-            int damage = Mitigate(raw);
+            int damage = Items.CharmEffects.ScaleHit(Mitigate(raw));
+            if (Items.CharmEffects.Absorb(damage)) return damage;
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
@@ -133,15 +174,20 @@ namespace TerraKnight.Player
         public int TakeShare(int damage)
         {
             damage = Mathf.Max(1, damage);
+            if (Items.CharmEffects.Absorb(damage)) return damage;
             Life = Mathf.Max(DevImmortal ? 1 : 0, Life - Shielded(damage));
             sinceHit = 0f;
             regenAccumulator = 0f;
             return damage;
         }
 
-        /// <summary>What of a hit gets past lifeblood's silver hearts (they take it first).</summary>
+        /// <summary>The shield the silver hearts show: lifeblood's and the Lifeblood charms' (CharmEffects).</summary>
+        public int ShieldShown => Shield + Items.CharmEffects.ShieldTotal;
+
+        /// <summary>What of a hit gets past the Lifeblood charms' shields and lifeblood's silver hearts (they take it first).</summary>
         int Shielded(int damage)
         {
+            damage = Items.CharmEffects.Shields(damage);
             int held = Mathf.Min(Shield, damage);
             Shield -= held;
             return damage - held;
@@ -153,8 +199,9 @@ namespace TerraKnight.Player
 
         float nebulaMana;
 
-        public int Heal(int amount)
+        public int Heal(int amount, bool recovery = false)
         {
+            if (recovery && Items.PlayerChallenges.RecoveryLocked) return 0;
             int before = Life;
             Life = Mathf.Min(LifeMax, Life + amount);
             return Life - before;
@@ -193,7 +240,8 @@ namespace TerraKnight.Player
         /// </summary>
         public void Tick(float dt, bool standingStill)
         {
-            bool honey = HoneyTicks > 0f;
+            // Hiveblood's honey while unhurt (Items.CharmEffects.HiveHoney).
+            bool honey = HoneyTicks > 0f || Items.CharmEffects.HiveHoney;
             if (honey) HoneyTicks -= dt * 60f;
             sinceHit += dt * (honey ? 3f : 1f);
             // The Soul Drain (Pl:19235-19279): (5 + drained) / 2 lifeRegen, its clock running that (and 2) more a tick.
@@ -218,13 +266,17 @@ namespace TerraKnight.Player
                 sinceHit = 0f;
                 regenAccumulator = 0f;
             }
-            if (Life > 0 && Life < LifeMax && !Burning && !Poisoned)
+            RegeneratingNaturally = false;
+            if (Life > 0 && Life < LifeMax && !Burning && !Poisoned && !EnemyAi.PlayerDebuffs.StopsRegen && !Items.PlayerChallenges.RecoveryLocked)
             {
                 // Rapid Healing (Palladium) adds whatever the time since a hit (Pl:19382-19386).
                 float perSecond = (LifeRegenBonus + (honey ? 2 : 0) + (shiny ? 4 : 0) + soul + Items.ArmorEffects.RegenBonus) * 0.5f;
-                if (sinceHit >= 4f)
+                // Natural regeneration starts 4 s after a hit (3 s with Quick Focus: CharmEffects.RegenStart).
+                float regenStart = Items.CharmEffects.RegenStart;
+                RegeneratingNaturally = sinceHit >= regenStart;
+                if (sinceHit >= regenStart)
                 {
-                    float natural = Mathf.Lerp(0.5f, 2.5f, Mathf.InverseLerp(4f, 30f, sinceHit));
+                    float natural = Mathf.Lerp(0.5f, 2.5f, Mathf.InverseLerp(regenStart, 30f, sinceHit));
                     natural = standingStill ? natural * 2f : natural;
                     // Past 50 s still, up to 30 lifeRegen more (Pl:19331-19345); the stone's ×1.1, and Master Mode's halving of
                     // the natural part only ×0.75 with it (Pl:19363-19378).
@@ -241,7 +293,7 @@ namespace TerraKnight.Player
                 {
                     int whole = Mathf.FloorToInt(regenAccumulator);
                     regenAccumulator -= whole;
-                    Heal(whole);
+                    Heal(whole, recovery: true);
                 }
             }
 

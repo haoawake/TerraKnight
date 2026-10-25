@@ -43,7 +43,7 @@ namespace TerraKnight.UI
         {
             if (gm == null || !GameHooks.IsGameplay(gm) || gm.isPaused || gm.IsInSceneTransition || gm.gameState != GlobalEnums.GameState.PLAYING) return false;
             if (Net.NetSession.Active || TerraMod.Instance == null) return false;
-            return IngameOptions.Open || (On && Items.InventoryGui.Open);
+            return IngameOptions.AnyOpen || (On && Items.InventoryGui.Open);
         }
 
         void LateUpdate()

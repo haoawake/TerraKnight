@@ -1,8 +1,9 @@
 {
-  "kind": "release",
-  "version": "4.3.1",
-  "tag": "v4.3.1",
-  "commit": "13afd7478d75c9befc70a120b82c08eaa607b50a",
+  "kind": "workspace-snapshot",
+  "version": "4.4.2",
+  "date": "2026-10-25",
   "source_hashes": "tools/encyclopedia_runtime.json",
-  "date": "2026-10-19"
+  "snapshot": "artifacts/wiki-current-20261025-r1/source",
+  "source_tree_hash": "ab27545e8f3cb1a600929d562ac232f4de82a18cb583f4b770ed362d0237eed2",
+  "build_hash": "6ed338baae1782d4497d4eb41ae155aa33c9659b3ba92d4553fa0be8f39156fe"
 }

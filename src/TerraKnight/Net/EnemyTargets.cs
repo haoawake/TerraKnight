@@ -28,6 +28,9 @@ namespace TerraKnight.Net
             public float Picked = -10f;
             public int Frame = -1;
             public bool Boss;
+            /// <summary>Where the picked player is (this world), and whether the stand-in leads him (the new enemy AI's aim).</summary>
+            public Vector2 At;
+            public bool Lead;
         }
         static readonly Dictionary<HealthManager, Target> targets = new Dictionary<HealthManager, Target>();
         static readonly AccessTools.FieldRef<LineOfSightDetector, bool> sight = AccessTools.FieldRefAccess<LineOfSightDetector, bool>("canSeeHero");
@@ -164,10 +167,15 @@ namespace TerraKnight.Net
                 if (slot != t.Slot || !hold) t.Picked = Time.time;
             }
             t.Slot = slot;
-            t.Proxy.transform.position = new Vector3(best.x, best.y, t.Hm.transform.position.z);
+            t.At = best;
+            // The new enemy AI (EnemyAi.Brain) leads the enemy's own aim: the stand-in goes ahead of the player, this game's too.
+            var brain = slot >= 0 ? t.Hm.GetComponent<EnemyAi.Brain>() : null;
+            t.Lead = brain != null && brain.Leading;
+            var aim = t.Lead ? best + brain.LeadOffset : best;
+            t.Proxy.transform.position = new Vector3(aim.x, aim.y, t.Hm.transform.position.z);
             var hero = HeroController.SilentInstance;
             if (hero == null) return;
-            var target = slot >= 0 && slot != NetSession.MySlot ? t.Proxy : hero.gameObject;
+            var target = slot >= 0 && (slot != NetSession.MySlot || t.Lead) ? t.Proxy : hero.gameObject;
             foreach (var fsm in t.Fsms)
             {
                 if (fsm == null) continue;
@@ -181,7 +189,20 @@ namespace TerraKnight.Net
             var t = Get(hm);
             if (t == null) return null;
             Update(t);
-            return t.Slot >= 0 && t.Slot != NetSession.MySlot ? t.Proxy : null;
+            return t.Slot >= 0 && (t.Slot != NetSession.MySlot || t.Lead) ? t.Proxy : null;
+        }
+
+        /// <summary>The player an enemy goes for (his slot) and where he is in this world; false when none can be gone for.</summary>
+        public static bool Where(HealthManager hm, out Vector2 at, out int slot)
+        {
+            at = default;
+            slot = -1;
+            var t = Get(hm);
+            if (t == null) return false;
+            Update(t);
+            at = t.At;
+            slot = t.Slot;
+            return slot >= 0;
         }
 
         public static int DevTarget(HealthManager hm) => targets.TryGetValue(hm, out var t) ? t.Slot : -1;

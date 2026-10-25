@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -25,7 +25,8 @@ namespace TerraKnight.Net
         public const int MaxSlots = 16;
         /// <summary>What a client must say in its Hello (Terraria: "Terraria" + curRelease).</summary>
         public static string Protocol => "TerraKnight" + Plugin.Version + "/net" + NetVersion;
-        const int NetVersion = 7;
+        // Regional house kit IDs and the atomic prefabHouse placement action.
+        const int NetVersion = 14;
         /// <summary>RemoteClient's timeout: two minutes without a word (a scene loading on the other end can stall it for seconds).</summary>
         const double TimeoutSeconds = 120;
 
@@ -43,7 +44,10 @@ namespace TerraKnight.Net
             /// <summary>The scenes the player is in (the current one, a boss room loaded with it) and since when; every scene they have loaded.</summary>
             public readonly Dictionary<string, long> In = new Dictionary<string, long>();
             public readonly HashSet<string> Loaded = new HashSet<string>();
+            /// <summary>The boss rooms they stand in whose boss their save hasn't beaten (NetScenes.CollectFresh).</summary>
+            public readonly HashSet<string> Fresh = new HashSet<string>();
             public int Deaths, PvpDeaths;
+            public long CasinoSequence;public float CasinoElapsed;public long CasinoAt;
         }
 
         readonly Client[] clients = new Client[MaxSlots];
@@ -300,6 +304,12 @@ namespace TerraKnight.Net
                             c.Loaded.Add(s);
                             if (!c.In.ContainsKey(s)) c.In[s] = tick;
                         }
+                        c.Fresh.Clear();
+                        if (r.BaseStream.Position < r.BaseStream.Length)
+                        {
+                            n = r.ReadByte();
+                            for (int i = 0; i < n; i++) c.Fresh.Add(r.ReadString());
+                        }
                         var left = new List<string>();
                         foreach (var s in c.In.Keys) if (!inNow.Contains(s)) left.Add(s);
                         foreach (var s in left) c.In.Remove(s);
@@ -308,6 +318,15 @@ namespace TerraKnight.Net
                         Relay(c, body);
                         RecomputeOwners();
                         return;
+                    }
+                    case Msg.CasinoRound:
+                    {
+                        r.ReadByte();var round=Items.CasinoShow.Round.Read(r);long now=System.Diagnostics.Stopwatch.GetTimestamp();
+                        if(!round.Valid()||(!c.Loaded.Contains(round.Scene)&&!c.In.ContainsKey(round.Scene))||round.Sequence<c.CasinoSequence)return;
+                        if(round.Sequence==c.CasinoSequence&&round.Elapsed<=c.CasinoElapsed)return;
+                        if(c.CasinoAt>0&&(now-c.CasinoAt)/(double)System.Diagnostics.Stopwatch.Frequency<.15)return;
+                        c.CasinoSequence=round.Sequence;c.CasinoElapsed=round.Elapsed;c.CasinoAt=now;
+                        Relay(c,body,o=>o.Loaded.Contains(round.Scene)||o.In.ContainsKey(round.Scene));return;
                     }
                     case Msg.Chat:
                         ChatFrom(c, r.ReadString());
@@ -334,6 +353,7 @@ namespace TerraKnight.Net
                     case Msg.EnemySnapshot:
                     case Msg.EnemyAttacks:
                     case Msg.SceneMirror:
+                    case Msg.EnemyAi:
                     {
                         r.ReadByte();
                         string scene = r.ReadString();
@@ -546,6 +566,15 @@ namespace TerraKnight.Net
                     pick = null;
                     foreach (var c in clients)
                         if (c != null && c.State == 2 && c.Loaded.Contains(s)) { pick = c; break; }
+                }
+                // A boss room's fight goes to one in the room whose save hasn't beaten its boss (the one running it already
+                // first): a beaten save has no fight there, its boss gone or put away, and the others' copy would follow it.
+                if (pick != null && !pick.Fresh.Contains(s))
+                {
+                    Client fresh = null;
+                    foreach (var c in clients)
+                        if (c != null && c.State == 2 && c.Fresh.Contains(s) && c.Loaded.Contains(s) && (fresh == null || c.Slot == now)) fresh = c;
+                    if (fresh != null) pick = fresh;
                 }
                 if (pick == null || pick.Slot == now) continue;
                 owners[s] = pick.Slot;

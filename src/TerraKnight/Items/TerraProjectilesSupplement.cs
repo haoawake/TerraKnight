@@ -7,12 +7,7 @@ namespace TerraKnight.Items
     {
         static void RegisterCraftingSupplement()
         {
-            specs[ProjKind.HallowLance] = new Spec
-            {
-                Ai = Ai.Custom, Texture = "Projectile_879", W = 24, H = 24, Time = 3600, Penetrate = -1,
-                OwnMove = true, TileCollide = false, OwnerHitCheck = true, TypeCooldown = 24,
-                Update = (t, p) => t.StepHallowLance(p), OnKill = (t, p) => { },
-            };
+            // The Hallowed Jousting Lance (879) is the other lances' (TerraProjectilesBatch1021).
             specs[ProjKind.ThunderBolt] = new Spec
             {
                 Ai = Ai.Custom, Texture = "Projectile_731", W = 10, H = 10, Time = 90, Extra = 1,
@@ -43,27 +38,7 @@ namespace TerraKnight.Items
             };
         }
 
-        public static float LanceMultiplier(Vector2 velocity, Vector2 aim)
-        {
-            // Forward movement drives a jousting lance; a stationary lance retains its base damage.
-            float forward = Mathf.Max(0f, Vector2.Dot(velocity, aim.normalized));
-            return 1f + forward / (TerraParticles.Px * 60f) / 6f;
-        }
-
-        void StepHallowLance(Proj p)
-        {
-            var hero = HeroController.SilentInstance;
-            var mod = TerraMod.Instance;
-            if (hero == null || mod == null || !mod.UseHeld || mod.Inventory.Current.Type != ItemType.HallowJoustingLance) { Kill(p); return; }
-            Vector2 center = hero.GetComponent<BoxCollider2D>().bounds.center;
-            Vector2 aim = (mod.DevAim ?? mod.AimPoint) - center;
-            if (aim.sqrMagnitude < .01f) aim = Vector2.right;
-            aim.Normalize();
-            p.Pos = center + aim * (100f * TerraParticles.Px);
-            p.Rot = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg - 45f;
-            if (p.LocalAi0 == 0) p.LocalAi0 = p.Damage;
-            p.Damage = Mathf.RoundToInt(p.LocalAi0 * LanceMultiplier(hero.GetComponent<Rigidbody2D>().linearVelocity, aim));
-            p.TimeLeft = 2;
-        }
+        /// <summary>A jousting lance's damage at a player's speed (world units a second): 0.1 + 0.9 of it over 7 px a tick (P:14536-14539), whichever way.</summary>
+        public static float LanceMultiplier(Vector2 velocity) => 0.1f + velocity.magnitude / (TerraParticles.Px * 60f) / 7f * 0.9f;
     }
 }

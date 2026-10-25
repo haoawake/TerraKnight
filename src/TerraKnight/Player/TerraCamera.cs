@@ -129,6 +129,12 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(CameraController), "LateUpdate")]
         static bool LateUpdate(CameraController __instance, bool ___isGameplayScene, HeroController ___hero_ctrl)
         {
+            // Last frame's scope pan on the game's own camera off again first (OnGameCamera).
+            if (onGame != Vector2.zero)
+            {
+                __instance.transform.position -= (Vector3)onGame;
+                onGame = Vector2.zero;
+            }
             // The zoom works with the game's own camera too (the centred one is a setting, off by default).
             bool gameplay = TerraMod.Instance != null && World.TerrainSystem.Current != null && ___isGameplayScene && ___hero_ctrl != null;
             ApplyZoom(__instance.cam != null ? __instance.cam : GameCameras.instance != null ? GameCameras.instance.mainCamera : null, gameplay);
@@ -141,10 +147,31 @@ namespace TerraKnight.Player
             }
             // A phase's native freeze/pan and our old boss framing must not move a locked view.
             bossPan = Vector2.zero;
-            Snap(__instance, HeroCenter(___hero_ctrl) + ScopePan(__instance));
+            Snap(__instance, HeroCenter(___hero_ctrl) + ScopePan(__instance) + Shake());
             ref float timer = ref startLockedTimer(__instance);
             if (timer > 0f) timer -= Time.deltaTime;
             return false;
+        }
+
+        static float shakeUntil, shakeLength = 1f, shakeStrength;
+
+        /// <summary>
+        /// A short shake of the view (Terraria's PunchCameraModifier, for the charged soul wave): about strength world units at
+        /// first, gone in seconds. The game's own shakes stay off with this camera (LockedShake).
+        /// </summary>
+        public static void Punch(float strength, float seconds)
+        {
+            float left = Mathf.Max(0f, shakeUntil - Time.unscaledTime) / shakeLength;
+            shakeStrength = Mathf.Max(shakeStrength * left, strength);
+            shakeLength = Mathf.Max(0.01f, seconds);
+            shakeUntil = Time.unscaledTime + seconds;
+        }
+
+        static Vector2 Shake()
+        {
+            float left = shakeUntil - Time.unscaledTime;
+            if (left <= 0f) return Vector2.zero;
+            return Random.insideUnitCircle * (shakeStrength * left / shakeLength);
         }
 
         static Vector2 bossPan;
@@ -166,9 +193,21 @@ namespace TerraKnight.Player
         public static Vector2 Pan => pan;
 
         /// <summary>
-        /// The scopes (GetPanControlValues Pl:6268-6291, M:63684-63828): with one worn and a gun
-        /// held, the right button held pushes the view toward the cursor, half the screen at most
-        /// each way (panFactor 0.5); it glides there and back at 36 px a frame.
+        /// GetPanControlValues (Pl:6268-6291, 1.4.5): a scope worn, whatever is held, half the screen (panFactor 0.5); the
+        /// Sniper Rifle's own scope two thirds, with a scope worn too 0.8. -1: no pan.
+        /// </summary>
+        static float PanFactor(TerraMod mod)
+        {
+            bool scope = Items.Equipment.Current.Scope;
+            float f = scope ? 0.5f : -1f;
+            if (mod.Inventory.Current.Type == Items.ItemType.SniperRifle) f = scope ? 0.8f : 2f / 3f;
+            return f;
+        }
+
+        /// <summary>
+        /// The scopes (M:63684-63828): the right button held pushes the view toward the cursor, at most the pan factor of
+        /// half the screen each way; it glides there and back at 36 px a frame. Not with the mouse over the interface.
+        /// With the Terraria camera or the game's own (OnGameCamera) alike.
         /// </summary>
         static Vector2 ScopePan(CameraController cc)
         {
@@ -176,19 +215,44 @@ namespace TerraKnight.Player
             var mod = TerraMod.Instance;
             var mouse = UnityEngine.InputSystem.Mouse.current;
             var cam = cc.cam != null ? cc.cam : Camera.main;
-            bool scoped = mod != null && cam != null && Items.Equipment.Current.Scope && mod.Inventory.Current.Def.UseAmmo == Items.AmmoKind.Bullet;
-            if (scoped && DevPan.HasValue) target = DevPan.Value;
-            else if (scoped && mouse != null && !TerraMod.DevNoRealMouse && mouse.rightButton.isPressed && !Items.InventoryGui.MouseOverUi)
+            float factor = mod != null && cam != null ? PanFactor(mod) : -1f;
+            if (factor > 0f && DevPan.HasValue) target = DevPan.Value;
+            else if (factor > 0f && mouse != null && !TerraMod.DevNoRealMouse && mouse.rightButton.isPressed && !Items.InventoryGui.MouseOverUi && !Items.InventoryGui.Open)
             {
                 var m = mouse.position.ReadValue();
                 var n = new Vector2(Mathf.Clamp01(m.x / Screen.width) * 2f - 1f, Mathf.Clamp01(m.y / Screen.height) * 2f - 1f);
                 float dist = Mathf.Abs(cc.transform.position.z);
                 float halfH = cam.orthographic ? cam.orthographicSize : dist * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-                target = new Vector2(n.x * halfH * cam.aspect, n.y * halfH) * 0.5f;
+                target = new Vector2(n.x * halfH * cam.aspect, n.y * halfH) * factor;
             }
             pan = Vector2.MoveTowards(pan, target, 36f * 60f * Effects.TerraParticles.Px * Time.unscaledDeltaTime);
             return pan;
         }
+
+        /// <summary>The pan put on the game's own camera last frame, taken off again before it moves (its smoothing starts from where it was).</summary>
+        static Vector2 onGame;
+
+        /// <summary>
+        /// The game's own camera (the Terraria camera off, its default): the scope's pan put on top of where it settles each
+        /// frame (after its look offsets, lock areas and scene bounds), and taken off before its next move, so its smoothing
+        /// never chases the pan.
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(CameraController), "LateUpdate")]
+        static void OnGameCamera(CameraController __instance, bool ___isGameplayScene, HeroController ___hero_ctrl)
+        {
+            bool gameplay = TerraMod.Instance != null && World.TerrainSystem.Current != null && ___isGameplayScene && ___hero_ctrl != null;
+            if (Active && gameplay) return;
+            bool follows = __instance.mode == CameraController.CameraMode.FOLLOWING || __instance.mode == CameraController.CameraMode.LOCKED;
+            var p = gameplay && follows ? ScopePan(__instance) : Vector2.zero;
+            if (!gameplay || !follows) pan = Vector2.zero;
+            if (p == Vector2.zero) return;
+            __instance.transform.position += (Vector3)p;
+            onGame = p;
+            DevGamePanFrames++;
+        }
+
+        public static int DevGamePanFrames;
 
         /// <summary>
         /// Scene entry and respawn snap the camera to the hero. Snap straight onto the player (the

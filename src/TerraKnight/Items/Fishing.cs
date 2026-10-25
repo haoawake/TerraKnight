@@ -13,7 +13,7 @@ namespace TerraKnight.Items
     /// falling at most 15.9 px a tick); in water it floats on the surface, and every tick
     /// (Projectile.AI_061_FishingBobber) the bite timer goes on by the fishing power until 660, when a fishing check is
     /// made (Projectile.FishingCheck): the pond's size (fewer than 75 tiles: none; fewer than it needs: less power, and
-    /// junk), the luck, the rarity rolls (common 1/max(2,150/FL) .. legendary 1/max(6,4500/FL)), the crate roll (10%, 25%
+    /// junk), the luck, the rarity rolls (common 1/max(2,150/FL) .. legendary 1/max(6,4500/FL)), the crate roll (15%, 30%
     /// with the Crate potion), the gate (Next(100) &lt;= (FL+75)/2), and Terraria's catch rules in their order (FishingData.cs)
     /// under the area's conditions: the zones it stands for, its height level, hardmode from stage 3 on, today's
     /// quest fish. A catch bobs the bobber for (90..240 + FL) / 2.5 ticks; using the pole then reels it in (the line
@@ -205,7 +205,11 @@ namespace TerraKnight.Items
                         CombatText.Show(hero.transform.position + Vector3.up, Lang.T("鱼线断了！"), new Color(1f, 0.4f, 0.4f));
                         DevLast = "断线";
                     }
-                    else Give(hero, inv, catchType, catchStack);
+                    else
+                    {
+                        Give(hero, inv, catchType, catchStack);
+                        Achievements.AchievementTracker.Fished(catchType, pond != null && pond.Poured, pond?.Scene, bait.Type);
+                    }
                 }
             }
             Cancel();
@@ -363,7 +367,8 @@ namespace TerraKnight.Items
             bool rare = Random.Range(0, Mathf.Max(4, 1050 / fl)) == 0;
             bool veryRare = Random.Range(0, Mathf.Max(5, 2250 / fl)) == 0;
             bool legendary = Random.Range(0, Mathf.Max(6, 4500 / fl)) == 0;
-            bool crate = Random.Range(0, 100) < (PlayerBuffs.Has(PotionBuffs.Crate) ? 25 : 10);
+            // The crate roll: 15%, 30% with the Crate potion (Terraria's 10% and 25%; the user's, 2026-10-20).
+            bool crate = Random.Range(0, 100) < (PlayerBuffs.Has(PotionBuffs.Crate) ? 30 : 15);
             // The gate: Next(100) <= (FL + 75) / 2.
             if (Random.Range(0, 100) > (fl + 75) / 2) return;
             ulong flags = Flags(area, tiles, rod, inv, junk, crate);
@@ -436,15 +441,23 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// The rules in order (FishDropRuleList.TryGetItemDropType): conditions, the rule's own chance, the rarity roll. Where
-        /// Terraria's biome crates stand, the area's own crate (its coffer in hardmode): the crate roll on a rare catch.
+        /// Terraria's biome crates stand, the area's own crate (its coffer in hardmode): the crate roll on an uncommon or rarer catch.
         /// </summary>
         static ItemType Roll(ulong flags, ItemType quest, bool common, bool uncommon, bool rare, bool veryRare, bool legendary, string area)
         {
             bool acid = (flags & InLava) != 0 && (flags & CanFishInLava) != 0;
             int stage = Shop.UnlockedStage();
             bool areaCrateAsked = false;
+            // Regional quest fish use the uncommon roll in either water or equipped acid fishing.
+            // They are independent of Terraria's biome/height quest rules below.
+            var regionalQuest = QuestFishCatalog.Find(quest);
+            if (regionalQuest != null && regionalQuest.Stage <= stage && regionalQuest.Area == area
+                && uncommon && (flags & (Junk | CrateRoll | InHoney)) == 0
+                && ((flags & InLava) == 0 || acid)) return quest;
             foreach (var r in rules)
             {
+                // Retain legacy item IDs for saves, but retire their catch rules.
+                if (r.Quest != ItemType.None) continue;
                 ulong f = flags;
                 // Acid with the gear: Terraria's lava catches first (the sure ones at half), then the area's water.
                 if (acid)
@@ -456,10 +469,21 @@ namespace TerraKnight.Items
                 {
                     if (areaCrateAsked) continue;
                     areaCrateAsked = true;
-                    if ((f & CrateRoll) == 0 || (f & InLava) != 0 || !rare) continue;
+                    // An uncommon catch or better (the user's, 2026-10-20; Terraria's biome crates want a rare one).
+                    if ((f & CrateRoll) == 0 || (f & InLava) != 0 || !(rare || uncommon)) continue;
                     var own = AreaCrateFor(area, (f & HardMode) != 0);
                     if (own != ItemType.None) return own;
                     continue;
+                }
+                // Honey's stopper ends the list before the crates: the Hive's own crate is asked for first.
+                if (r.Stopper && (r.Mask & InHoney) != 0 && (f & InHoney) != 0 && !areaCrateAsked)
+                {
+                    areaCrateAsked = true;
+                    if ((f & CrateRoll) != 0 && (rare || uncommon))
+                    {
+                        var own = AreaCrateFor(area, (f & HardMode) != 0);
+                        if (own != ItemType.None) return own;
+                    }
                 }
                 if ((r.Mask & ~f) != 0) continue;
                 if (r.Quest != ItemType.None && r.Quest != quest) continue;
@@ -479,7 +503,7 @@ namespace TerraKnight.Items
                 foreach (var t in r.Items)
                 {
                     var d = ItemDb.Get(t);
-                    if (d.QuestFish || d.Rare < 0 || d.Stage <= stage) pick.Add(t);
+                    if (!CraftOnlyLoot.Blocked(t) && (d.QuestFish || d.Rare < 0 || d.Stage <= stage)) pick.Add(t);
                 }
                 if (pick.Count == 0) continue;
                 return pick[Random.Range(0, pick.Count)];
@@ -619,6 +643,8 @@ namespace TerraKnight.Items
             }
             while (TerraWorld.LiquidAt(x, y + 1) > 0 && !TerraWorld.IsSolid(x, y + 1)) y++;
             var kind = TerraWorld.LiquidKindAt(x, y);
+            // The shimmer is no water to fish in (Terraria's bobber finds nothing in it).
+            if (kind == LiquidKind.Shimmer) return null;
             float surface = (y + TerraWorld.LiquidAt(x, y) / 255f) * CellGrid.CellSize;
             if (p.y > surface + above) return null;
             int minX = x, maxX = x;
@@ -759,7 +785,7 @@ namespace TerraKnight.Items
                 bool common = Random.Range(0, Mathf.Max(2, 150 / f)) == 0, uncommon = Random.Range(0, Mathf.Max(3, 300 / f)) == 0;
                 bool rare = Random.Range(0, Mathf.Max(4, 1050 / f)) == 0, veryRare = Random.Range(0, Mathf.Max(5, 2250 / f)) == 0;
                 bool legendary = Random.Range(0, Mathf.Max(6, 4500 / f)) == 0;
-                bool crate = Random.Range(0, 100) < (crateBuff ? 25 : 10);
+                bool crate = Random.Range(0, 100) < (crateBuff ? 30 : 15);
                 if (Random.Range(0, 100) > (f + 75) / 2) { Add(ItemType.None); continue; }
                 ulong flags = Flags(a, tiles, ItemDb.Get(ItemType.GoldenFishingRod), inv, junk, crate);
                 if (acid) flags |= InLava | CanFishInLava;

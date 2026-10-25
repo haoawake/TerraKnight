@@ -25,7 +25,7 @@ namespace TerraKnight.Items
                 foreach (var r in rules)
                     foreach (var i in r.Items)
                         if (i != ItemType.None && !alsoElsewhere.Contains(i) && !i.ToString().Contains("Crate")) set.Add(i);
-                foreach (var q in quests) set.Add(q.Fish);
+                foreach (var q in QuestFishCatalog.All) set.Add(q.Fish);
                 fishOnly = set;
             }
             return fishOnly.Contains(t);

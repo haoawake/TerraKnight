@@ -116,7 +116,7 @@ namespace TerraKnight.World
         static void DarknessSet(int darkness) => Darkness = darkness;
 
         /// <summary>The light of the room's own open air: full in a room the game keeps lit, little in a dark one.</summary>
-        public static float Ambient => (Darkness <= 0 ? 1f : Darkness == 1 ? 0.45f : 0.08f) * Items.Tombstones.LightFactor;
+        public static float Ambient => (Darkness <= 0 ? 1f : Darkness == 1 ? 0.45f : 0.08f) * Items.Tombstones.LightFactor * EnemyAi.PlayerDebuffs.LightFactor;
 
         void Awake()
         {
@@ -201,7 +201,7 @@ namespace TerraKnight.World
                     float s = !isSolid && !dug ? amb : 0f;
                     r[i] = g[i] = b[i] = s;
                     // A placed torch: TorchID.TorchColor of the plain torch, a regional one's own colour (World.RegionalTorches).
-                    if (kind == CellKind.Torch) Put(i, RegionalTorches.LightRgb(cellRegion.Grid.GetTorchStyle(gx - cellRegion.CellOffset.x, gy - cellRegion.CellOffset.y)));
+                    if (kind == CellKind.Torch) Put(i, RegionalTorches.LightRgb(cellRegion.Grid.GetTorchStyle(gx - cellRegion.CellOffset.x, gy - cellRegion.CellOffset.y), cellRegion.SceneName));
                     // TileLightScanner's Meteorite: (0.56, 0.43, 0.15), five in a hundred either way.
                     else if (kind == CellKind.Meteorite) Put(i, MeteoriteRgb * Random.Range(0.95f, 1.05f));
                 }

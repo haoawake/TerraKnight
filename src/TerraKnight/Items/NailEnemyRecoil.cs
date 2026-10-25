@@ -4,10 +4,10 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// The nail no longer throws the Knight back off enemies (the user's): a side or up slash landing on an enemy (or on
-    /// its shield, HealthManager.Invincible) leaves him where he is. What isn't an enemy still pushes back as in the game:
-    /// the hard things (TinkEffect: spikes, armor, crystal), geo rocks, levers, the bounce shrooms; and the down slash
-    /// still bounces off enemies (the pogo).
+    /// The nail never throws the Knight back off enemies (the user's): a side or up slash landing on an enemy, on its
+    /// shield (HealthManager.Invincible) or on a hard shell of its own (a TinkEffect on the enemy: Uumuu's) leaves him where
+    /// he is. What isn't an enemy still pushes back as in the game: the hard things of the room (TinkEffect: spikes,
+    /// crystal), geo rocks, levers, the bounce shrooms; and the down slash still bounces off enemies (the pogo).
     /// </summary>
     [HarmonyPatch]
     internal static class NailEnemyRecoil
@@ -36,10 +36,20 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(HealthManager), "Invincible")]
         static void Blocked() => blocking = false;
 
-        /// <summary>An enemy's shield struck by the nail: its clank and hit-stop as ever, no recoil.</summary>
+        /// <summary>A hard thing struck: an enemy's own shell blocks like its shield (no recoil), the room's pushes back.</summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TinkEffect), "OnTriggerEnter2D")]
+        static void Tink(TinkEffect __instance) => blocking = __instance != null && __instance.GetComponentInParent<HealthManager>() != null;
+
+        [HarmonyFinalizer]
+        [HarmonyPatch(typeof(TinkEffect), "OnTriggerEnter2D")]
+        static void Tinked() => blocking = false;
+
+        /// <summary>An enemy's shield or shell struck by the nail: its clank and hit-stop as ever, no recoil.</summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilLeft))]
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilRight))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilDown))]
         static bool OffShield()
         {
             if (!blocking) return true;

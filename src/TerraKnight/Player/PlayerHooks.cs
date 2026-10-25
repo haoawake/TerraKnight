@@ -63,8 +63,10 @@ namespace TerraKnight.Player
         static bool Disabled(ref bool __result, System.Reflection.MethodBase __originalMethod)
         {
             if (!Active) return true;
-            // The nail item in hand: the game's own nail checks (Items.NailItem).
-            if (__originalMethod.Name == "CanAttack" && Items.NailItem.LetsAttack) return true;
+            // The nail item in hand: the game's own nail checks (Items.NailItem); with the arts on (Items.NailArts), only its own
+            // swing attacks (the game's attack action is on for the charge), and the charge and the arts are the game's.
+            if (__originalMethod.Name == "CanAttack" && Items.NailItem.LetsAttack && (!Items.NailArts.Ready || Items.NailArts.Manual)) return true;
+            if ((__originalMethod.Name == "CanNailCharge" || __originalMethod.Name == nameof(HeroController.CanNailArt)) && Items.NailArts.Ready) return true;
             // A Dreamer struck down in its dream, the Dream Nail in hand: the focus that drains it (Items.DreamNailItem).
             if (__originalMethod.Name == "CanFocus" && Items.DreamNailItem.DreamFocus()) return true;
             __result = false;
@@ -92,6 +94,26 @@ namespace TerraKnight.Player
         {
             public bool Active, CanDash, DoubleJump, WallJump;
         }
+        static int movementSwapDepth;
+        static PlayerData movementPlayer;
+        static SavedFlags learnedMovement;
+        internal static void DevDuringAbilitySwap(HeroController hero,System.Action action)
+        {
+            SwapInAbilities(hero,out var state);
+            try {action();}finally{SwapOutAbilities(hero,state);}
+        }
+        internal static bool? LearnedSuperDash;
+        internal static bool LearnedAbility(string flag)
+        {
+            var pd=PlayerData.instance;
+            if(pd==null)return false;
+            if(movementSwapDepth>0&&ReferenceEquals(pd,movementPlayer)) {
+                if(flag=="hasWalljump")return learnedMovement.WallJump;
+                if(flag=="hasDoubleJump")return learnedMovement.DoubleJump;
+            }
+            if(flag=="hasSuperDash"&&LearnedSuperDash.HasValue)return LearnedSuperDash.Value;
+            return pd.GetBool(flag);
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HeroController), "Update")]
@@ -102,7 +124,9 @@ namespace TerraKnight.Player
             var pd = __instance.playerData;
             if (!Active || pd == null) return;
             __state = new SavedFlags { Active = true, CanDash = pd.canDash, DoubleJump = pd.hasDoubleJump, WallJump = pd.hasWalljump };
-            pd.canDash = Abilities.Dash;
+            if(movementSwapDepth++==0){movementPlayer=pd;learnedMovement=__state;}
+            // No dash of the Knight's on a mount (Terraria's mounts take none of the worn dashes either).
+            pd.canDash = Abilities.Dash && !Mounts.OwnMovement;
             pd.hasDoubleJump = Abilities.DoubleJump;
             pd.hasWalljump = Abilities.WallCling;
         }
@@ -113,6 +137,7 @@ namespace TerraKnight.Player
         static void SwapOutAbilities(HeroController __instance, SavedFlags __state)
         {
             if (!__state.Active) return;
+            if(--movementSwapDepth==0)movementPlayer=null;
             var pd = __instance.playerData;
             pd.canDash = __state.CanDash;
             pd.hasDoubleJump = __state.DoubleJump;
@@ -169,14 +194,15 @@ namespace TerraKnight.Player
         /// <summary>A mask's damage in the room now, at the level its enemies are met at (Areas.StatLevel), a little less when brought up to it.</summary>
         static float StageDamage(System.Func<int, int> perMask)
         {
-            int level = World.Areas.LevelOf(GameManager.UnsafeInstance?.sceneName);
+            int level = World.Areas.FightLevel(GameManager.UnsafeInstance?.sceneName);
             return perMask(World.Areas.StatLevel(level)) * World.Areas.CatchUp(level);
         }
 
         static float SourceFactor(GameObject go)
         {
             if (go == null || hazardNow > 1) return 1f;
-            var hm = go.GetComponentInParent<HealthManager>();
+            // The new AI's shots and areas hit as hard as their enemy's touch.
+            var hm = go.GetComponentInParent<HealthManager>() ?? EnemyAi.Hostiles.OwnerOf(go);
             if (hm != null) return Items.EnemyStats.DamageFactor(Items.EnemyStats.Of(hm));
             Vector2 at = go.transform.position;
             float best = 30f, factor = 1f;
@@ -199,6 +225,15 @@ namespace TerraKnight.Player
         /// Hurts the player for a Terraria amount (a bomb going off beside him) through the game's
         /// own damage path, so immunity, knockback and death all work as for any hit.
         /// </summary>
+        static bool environmentOverride;
+        public static void HurtEnvironment(HeroController hero, int damage, int dir, GameObject source)
+        {
+            bool previous = environmentOverride;
+            environmentOverride = true;
+            try { HurtPlayer(hero, damage, dir, source); }
+            finally { environmentOverride = previous; }
+        }
+
         public static void HurtPlayer(HeroController hero, int damage, int dir, GameObject source)
         {
             overrideDamage = damage;
@@ -226,9 +261,39 @@ namespace TerraKnight.Player
             inTakeHealth = true;
             try
             {
+                // Defender's Crest: the ground's harm (spikes, thorns, acid, pits) takes nothing, no poison; the game still
+                // puts the player back where it would (its hazard respawn).
+                if (hazardNow > 1 && overrideDamage <= 0 && Items.CharmEffects.Sheltered(HeroController.SilentInstance))
+                {
+                    amount = 0;
+                    return;
+                }
+                if (Items.PlayerChallenges.Hollow && (hazardNow > 1 || environmentOverride))
+                {
+                    TerraHurt.BeforeHurt();
+                    Items.ArmorEffects.CounterHit = false;
+                    int environmentDamage = mod.Stats.TakeEnvironment(1);
+                    overrideDamage = 0;
+                    TerraHurt.AfterHurt(HeroController.SilentInstance, environmentDamage, environmentDamage, false);
+                    TerraHurt.LastDamage = environmentDamage;
+                    if (hazardNow == SpikeHazard && Poison.IsThorn(sourceNow) && !mod.Stats.IsDead && !Items.CharmEffects.SoftHitNow) Poison.Prick();
+                    Hurt(__instance, ref amount, mod, environmentDamage);
+                    return;
+                }
                 if (hazardNow == SpikeHazard && overrideDamage <= 0)
                 {
                     SpikeHit(__instance, ref amount, mod);
+                    return;
+                }
+                // Native Radiant replaces a landed hit with 9999 masks. Ordinary Terraria
+                // hit conversion intentionally ignores mask count, so preserve this death rule explicitly.
+                if (amount >= 9999 && BossSceneController.IsBossScene && BossSceneController.Instance.BossLevel == 2)
+                {
+                    int lethal=mod.Stats.Life+mod.Stats.ShieldShown;
+                    mod.Stats.TakeShare(lethal);
+                    overrideDamage=0;
+                    TerraHurt.LastDamage=lethal;
+                    Hurt(__instance,ref amount,mod,lethal);
                     return;
                 }
                 // Scale the enemy's raw damage first; TerraStats then applies this difficulty's defense rule.
@@ -237,13 +302,18 @@ namespace TerraKnight.Player
                     : StageDamage(World.Areas.MasterDamagePerMask)) * SourceFactor(sourceNow));
                 // The enemy's banner carried (its body, its attack, a shot it spawned): its DamageReceived before the defense (Pl:31624-31627, P:14906-14909).
                 if (hazardNow <= 1 && overrideDamage <= 0) perMask = Items.Banners.Taken(sourceNow, perMask);
+                // An enemy's hit varies as Terraria's (Main.DamageVar, before the defense): within 15% either way, luck leaning it down.
+                if (hazardNow <= 1 && overrideDamage <= 0) perMask = Mathf.Max(1, Mathf.RoundToInt(perMask * TerraStats.HurtVariation()));
                 float share = World.GameDifficulty.EnemyFactor;
                 int raw = overrideDamage > 0 ? overrideDamage : TerraStats.NativeHitDamage(amount, perMask, share);
                 TerraHurt.BeforeHurt();
                 // An enemy's or a shot's hit (not a hazard): what the Solar flare answers.
                 Items.ArmorEffects.CounterHit = hazardNow <= 1;
                 int damage = overrideDamage > 0 ? mod.Stats.TakeDirect(overrideDamage) : mod.Stats.TakeMasks(amount, perMask, share);
+                bool overridden = overrideDamage > 0;
                 overrideDamage = 0;
+                DevLastHit = $"{(sourceNow != null ? sourceNow.name : "?")} 类型 {hazardNow}：{(overridden ? "指定伤害" : $"{amount} 面具 × 每面具 {perMask}")}，原始 {raw}，实受 {damage}";
+                Plugin.Log.LogInfo($"[受伤] {DevLastHit}");
                 // Hazards are Terraria's touch and lava damage: no stars or bees for them.
                 TerraHurt.AfterHurt(HeroController.SilentInstance, raw, damage, hazardNow <= 1);
                 TerraHurt.LastDamage = damage;
@@ -279,18 +349,26 @@ namespace TerraKnight.Player
             TerraHurt.AfterHurt(HeroController.SilentInstance, share, damage, false);
             TerraHurt.LastDamage = damage;
             bool thorn = Poison.IsThorn(sourceNow);
-            if (thorn && !mod.Stats.IsDead) Poison.Prick();
+            if (thorn && !mod.Stats.IsDead && !Items.CharmEffects.SoftHitNow) Poison.Prick();
             DevSpikeHits++;
             Plugin.Log.LogInfo($"[尖刺] {(sourceNow != null ? sourceNow.name : "?")}：{amount} 面具 / {masks}，扣 {damage} 生命（上限 {mod.Stats.LifeMax}）{(thorn ? "，荆棘中毒" : "")}");
             Hurt(pd, ref amount, mod, damage);
         }
 
         public static int DevSpikeHits;
+        /// <summary>The last hit taken through the enemy/hazard conversion: its source, hazard type, masks, damage per mask, the damage before and after defense.</summary>
+        public static string DevLastHit = "";
 
         /// <summary>A hit taken: its number over the head, the hurt voice, and the masks spent only when it killed.</summary>
         static void Hurt(PlayerData pd, ref int amount, TerraMod mod, int damage)
         {
             var hero = HeroController.SilentInstance;
+            // A hit a charm took its own way (the Stalwart Shell's): its own number and sound, no hurt voice.
+            if (Items.CharmEffects.ShowSoftHit(hero))
+            {
+                amount = mod.Stats.IsDead ? pd.health + pd.healthBlue + 10 : 0;
+                return;
+            }
             if (hero != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), UI.CombatText.PlayerHurt);
             // Player.PlayHurtSound, the default (male) voice: one of three.
             // The werewolf yelps as a wolf does (NPC_Hit_6, Pl:38977-38981).

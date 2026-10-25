@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.World
@@ -19,6 +19,7 @@ namespace TerraKnight.World
         {
             public Vector2 Pos;
             public float Vy;
+            public CellKind Kind;
             public SpriteRenderer Sr;
         }
 
@@ -53,9 +54,10 @@ namespace TerraKnight.World
             while (toCheck.Count > 0 && guard++ < 200)
             {
                 var c = toCheck.Dequeue();
-                if (TerraWorld.Get(c.x, c.y) != CellKind.Sand || TerraWorld.Get(c.x, c.y - 1) != CellKind.Empty || !TerraWorld.InWorld(c.x, c.y - 1)) continue;
+                var kind = TerraWorld.Get(c.x, c.y);
+                if (!VanillaBlocks.IsSand(kind) || TerraWorld.Get(c.x, c.y - 1) != CellKind.Empty || !TerraWorld.InWorld(c.x, c.y - 1)) continue;
                 TerraWorld.Set(c.x, c.y, CellKind.Empty);
-                Spawn(CellGrid.CellCenter(c.x, c.y));
+                Spawn(CellGrid.CellCenter(c.x, c.y), kind);
             }
             if (balls.Count == 0) return;
             tickAccumulator += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
@@ -67,7 +69,7 @@ namespace TerraKnight.World
             foreach (var b in balls) b.Sr.transform.position = new Vector3(b.Pos.x, b.Pos.y, CellVisuals.BlockZ - 0.001f);
         }
 
-        void Spawn(Vector2 at)
+        void Spawn(Vector2 at, CellKind kind)
         {
             if (sprite == null)
             {
@@ -78,7 +80,7 @@ namespace TerraKnight.World
             go.transform.SetParent(transform, false);
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
-            balls.Add(new Ball { Pos = at, Vy = 0f, Sr = sr });
+            balls.Add(new Ball { Pos = at, Vy = 0f, Sr = sr, Kind = kind });
         }
 
         void Step(int i)
@@ -109,7 +111,7 @@ namespace TerraKnight.World
             bool placed = !blocked && TerraWorld.Get(x, y) == CellKind.Empty && TerraWorld.InWorld(x, y);
             if (placed)
             {
-                TerraWorld.Set(x, y, CellKind.Sand);
+                TerraWorld.Set(x, y, balls[i].Kind);
                 TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3), 0.5f);
             }
             Remove(i, !placed, x, y);
@@ -121,7 +123,7 @@ namespace TerraKnight.World
             Destroy(b.Sr.gameObject);
             balls.RemoveAt(i);
             var mod = TerraMod.Instance;
-            if (dropItem && mod != null && !mod.Inventory.Infinite) Items.WorldItems.Drop(Items.ItemStack.Of(Items.ItemType.SandBlock), CellGrid.CellCenter(x, y));
+            if (dropItem && mod != null && !mod.Inventory.Infinite) Items.WorldItems.Drop(Items.ItemStack.Of(Items.ItemDb.DropFor(b.Kind)), CellGrid.CellCenter(x, y));
         }
     }
 }

@@ -1,0 +1,151 @@
+{
+  "groups": [
+    {
+      "stage": 0,
+      "reason": "开局自然材料、宝石、草药、丛林材料和基础加工品；仍按地区分布",
+      "items": "CopperOre TinOre IronOre LeadOre SilverOre TungstenOre GoldOre PlatinumOre CopperBar TinBar IronBar LeadBar SilverBar TungstenBar GoldBar PlatinumBar Gel PinkGel Lens BlackLens FallenStar Feather Cobweb Silk Chain Bottle BottledWater Glass Acorn ClayBlock Cactus Pumpkin PinkThread Wood StoneBlock DirtBlock SandBlock Ebonwood Shadewood RichMahogany PalmWood BorealWood GrassSeeds CrimsonSeeds CrimsandBlock MudBlock GlowingMushroom Amethyst Topaz Sapphire Emerald Ruby Diamond Amber Daybloom Moonglow Blinkroot Deathweed Waterleaf JungleSpores Vine Stinger FlinxFur SturdyFossil RottenChunk LadyBug VilePowder ViciousPowder"
+    },
+    {
+      "stage": 1,
+      "reason": "早期邪恶矿及蜂系路线；鳞片与组织仍跟随阶段2对应Boss",
+      "items": "DemoniteOre CrimtaneOre DemoniteBar CrimtaneBar BeeWax IceTorch CrispyHoneyBlock"
+    },
+    {
+      "stage": 2,
+      "reason": "地牢、狱石及对应Boss材料；保留原有地区和Boss路线",
+      "items": "Meteorite MeteoriteBar Hellstone HellstoneBar Obsidian AshWood Fireblossom ShadowScale TissueSample Bone Book"
+    },
+    {
+      "stage": 2,
+      "reason": "普通钓鱼、洞穴与酸水钓鱼材料；具体来源仍受鱼种群系限制",
+      "items": "ArmoredCavefish Damselfish FrostMinnow SpecularFish DoubleCod Ebonkoi FlarefinKoi Obsidifish"
+    },
+    {
+      "stage": 3,
+      "reason": "原有猩红深巢/深层丛林鱼种需要阶段3地区，不能只把标签标早",
+      "items": "CrimsonTigerfish Hemopiranha VariegatedLardfish"
+    },
+    {
+      "stage": 3,
+      "reason": "困难模式初期矿石、群系与羽翼材料，不要求机械Boss",
+      "items": "CobaltOre PalladiumOre MythrilOre OrichalcumOre AdamantiteOre TitaniumOre CobaltBar PalladiumBar MythrilBar OrichalcumBar AdamantiteBar TitaniumBar SoulofLight SoulofNight SoulofFlight CrystalShard PixieDust UnicornHorn CursedFlame Ichor LightShard DarkShard FrostCore AncientBattleArmorMaterial GiantHarpyFeather FireFeather IceFeather BrokenBatWing Pearlwood PearlsandBlock HallowedSeeds SpiderFang SpellTome Harp DjinnLamp ChaosFish Prismite"
+    },
+    {
+      "stage": 4,
+      "reason": "机械阶段及其后续材料；保留机械三魂、叶绿与海龟材料区别",
+      "items": "ChlorophyteOre ChlorophyteBar SoulofMight SoulofSight SoulofFright HallowedBar TurtleShell ButterflyDust TatteredBeeWing Cog"
+    },
+    {
+      "stage": 5,
+      "reason": "世纪之花及更后期事件、石巨人、四柱与月亮领主材料",
+      "items": "Ectoplasm SpectreBar ShroomiteBar BeetleHusk BrokenHeroSword BoneFeather BlackFairyDust SpookyWood SpookyTwig FragmentSolar FragmentVortex FragmentNebula FragmentStardust LunarOre LunarBar Nanites VialofVenom"
+    },
+    {
+      "stage": 1,
+      "reason": "现有早期军火商购买路线",
+      "items": "IllegalGunParts"
+    },
+    {
+      "stage": 3,
+      "reason": "困难模式初期弹药材料，商店入口同步",
+      "items": "EmptyBullet GoldDust ExplosivePowder"
+    },
+    {
+      "stage": 1,
+      "reason": "派对女孩属于肉前居民；购买入口同步，不改价格",
+      "items": "Confetti"
+    },
+    {
+      "stage": 0,
+      "reason": "当前模组已有开局彩虹砖来源；保留明确移植设计",
+      "items": "RainbowBrick"
+    },
+    {
+      "stage": 4,
+      "reason": "跨作品特殊加工材料，保留原有设计",
+      "items": "PalworldKinshipPeach"
+    },
+    {
+      "stage": 3,
+      "reason": "困难宝匣与困难模式钓鱼开关同步，不改开箱概率",
+      "items": "WoodenCrateHard IronCrateHard GoldenCrateHard DungeonFishingCrateHard OceanCrateHard CorruptFishingCrateHard CrimsonFishingCrateHard HallowedFishingCrateHard JungleFishingCrateHard FrozenCrateHard OasisCrateHard FloatingIslandFishingCrateHard LavaCrateHard"
+    },
+    {
+      "stage": 0,
+      "reason": "空洞原版骨钉升级资源，不作为泰拉矿或复制掉落",
+      "items": "HkPaleOre"
+    },
+    {
+      "stage": 1,
+      "reason": "沿用实际可达的早期海岸、真菌或寒冷地区来源，而不是把标签标在来源之前",
+      "items": "AntlionMandible Coral SharkFin WhitePearl BlackPearl PinkPearl MushroomGrassSeeds Shiverthorn CorruptSeeds"
+    },
+    {
+      "stage": 2,
+      "reason": "麦芽酒仍由现有酒馆老板供应，不额外创造免费或替代配方",
+      "items": "Ale"
+    },
+    {
+      "stage": 2,
+      "reason": "黑檀沙仍通过现有皇家水道来源取得",
+      "items": "EbonsandBlock"
+    },
+    {
+      "stage": 2,
+      "reason": "钓鱼任务奖励从阶段2渔夫开放，同期配饰合成链随之对齐",
+      "items": "HighTestFishingLine TackleBox AnglerEarring FishingBobber"
+    },
+    {
+      "stage": 3,
+      "reason": "金蠕虫和金蝴蝶的固定来源为深巢苔藓怪；按实际来源阶段标注，其他金色小动物仍保留早期获取路线",
+      "items": "GoldWorm GoldButterfly"
+    }
+  ],
+  "stations": [
+    {
+      "stage": 0,
+      "reason": "基础制作与建筑工位",
+      "items": "WorkBench Furnace IronAnvil LeadAnvil Sawmill Loom Keg CookingPot HeavyWorkBench GlassKiln LivingLoom"
+    },
+    {
+      "stage": 1,
+      "reason": "早期探索、蜂系与组合工位",
+      "items": "TinkerersWorkshop ImbuingStation SkyMill"
+    },
+    {
+      "stage": 2,
+      "reason": "地牢和地狱工位",
+      "items": "Hellforge Bookcase AlchemyTable BoneWelder"
+    },
+    {
+      "stage": 3,
+      "reason": "困难模式初期冶炼、砧与魔法工位",
+      "items": "MythrilAnvil OrichalcumAnvil AdamantiteForge TitaniumForge CrystalBall MeatGrinder"
+    },
+    {
+      "stage": 4,
+      "reason": "机械阶段蒸汽朋克工位",
+      "items": "SteampunkBoiler BlendOMatic"
+    },
+    {
+      "stage": 5,
+      "reason": "后期蘑菇矿、神庙与四柱工位",
+      "items": "Autohammer LihzahrdFurnace LunarCraftingStation"
+    },
+    {
+      "stage": 2,
+      "reason": "当前模组冰雪机的既有可达来源在水晶山峰",
+      "items": "IceMachine"
+    },
+    {
+      "stage": 3,
+      "reason": "当前模组血肉克隆台的既有可达来源在深巢",
+      "items": "FleshCloningVaat"
+    },
+    {
+      "stage": 4,
+      "reason": "蜂蜜分配机仍来自蜂巢原有敌人，不改变原始掉率",
+      "items": "HoneyDispenser"
+    }
+  ]
+}

@@ -127,7 +127,7 @@ namespace TerraKnight.Items
             {
                 if (onward) pages.Add(Voice(OnwardZh, OnwardEn));
                 if (behind) pages.Add(Voice(BehindZh, BehindEn));
-                pages.Add(Voice(next.HintZh, next.HintEn));
+                pages.Add(Hint(next));
             }
             else if (mod.GrantedAbilities.Add(ClosingFlag))
                 foreach (var line in Closing) pages.Add(new Page { Voice = line.Voice, Text = Pick(line.Zh, line.En) });
@@ -177,7 +177,7 @@ namespace TerraKnight.Items
             var pages = new List<Page>();
             foreach (var line in Opening) pages.Add(new Page { Voice = line.Voice, Text = Pick(line.Zh, line.En) });
             var first = Next(won, 0, out _, out _);
-            if (first != null) pages.Add(Voice(first.HintZh + OpeningLastZh, first.HintEn + " " + OpeningLastEn));
+            if (first != null) pages.Add(Voice(HintZhOf(first) + OpeningLastZh, HintEnOf(first) + " " + OpeningLastEn));
             waiting.Enqueue(new Talk { Lines = pages });
             queuedAt = Time.unscaledTime - AfterWin;
             Plugin.Log.LogInfo("[神的指引] 开场对白");
@@ -358,12 +358,7 @@ namespace TerraKnight.Items
         static void Outlined(Rect r, string text, GUIStyle style, Color color, float a, float ui)
         {
             var prev = style.normal.textColor;
-            style.normal.textColor = new Color(0f, 0f, 0f, 0.85f * a);
-            for (int ox = -1; ox <= 1; ox++)
-                for (int oy = -1; oy <= 1; oy++)
-                    if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 2f * ui, r.y + oy * 2f * ui, r.width, r.height), text, style);
-            style.normal.textColor = new Color(color.r, color.g, color.b, a);
-            GUI.Label(r, text, style);
+            UI.BorderText.Draw(r, text, style, new Color(0f, 0f, 0f, 0.85f * a), new Color(color.r, color.g, color.b, a), 2f * ui);
             style.normal.textColor = prev;
         }
     }

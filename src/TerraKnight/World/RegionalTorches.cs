@@ -102,8 +102,77 @@ namespace TerraKnight.World
         /// <summary>Its name as the mod writes it (the language's, from the item).</summary>
         public static string NameOf(int style) => Valid(style) ? ItemDb.Get(ItemOf(style)).Name : ItemDb.Get(ItemType.Torch).Name;
 
-        /// <summary>The light a torch of the style gives (LightMap's colour): the pack's suggested colour, the plain torch's for none.</summary>
-        public static Color LightRgb(int style) => Valid(style) ? All[style - 1].Light : LightMap.TorchRgb;
+        /// <summary>
+        /// A regional torch's light at its brightest channel (LightMap's colour; the plain torch's is 1): its own colour
+        /// lifted to this, brighter and reaching further than the plain torch, the dim colours (the Abyss's, the Basin's)
+        /// most of all.
+        /// </summary>
+        public const float Brightness = 1.25f;
+
+        /// <summary>
+        /// And in its own area (World.RegionalTorchAreas: the area a torch belongs to), as Terraria's biome torches are
+        /// the ones that suit their biome: this much brighter again.
+        /// </summary>
+        public const float OwnArea = 1.3f;
+
+        static Color[] lit;
+
+        /// <summary>The light a torch of the style gives (LightMap's colour): its colour lifted to <see cref="Brightness"/>, the plain torch's for none.</summary>
+        public static Color LightRgb(int style)
+        {
+            if (!Valid(style)) return LightMap.TorchRgb;
+            if (lit == null)
+            {
+                lit = new Color[All.Length];
+                for (int i = 0; i < All.Length; i++)
+                {
+                    var c = All[i].Light;
+                    float top = Mathf.Max(0.01f, Mathf.Max(c.r, Mathf.Max(c.g, c.b)));
+                    lit[i] = new Color(c.r / top * Brightness, c.g / top * Brightness, c.b / top * Brightness);
+                }
+            }
+            return lit[style - 1];
+        }
+
+        /// <summary>The light of a torch of the style set down (or held) in a scene: <see cref="OwnArea"/> brighter in its own area.</summary>
+        public static Color LightRgb(int style, string scene)
+        {
+            var c = LightRgb(style);
+            if (!Valid(style) || HomeStyle(scene) != style) return c;
+            return new Color(c.r * OwnArea, c.g * OwnArea, c.b * OwnArea);
+        }
+
+        static readonly Dictionary<string, (int Style, bool Infected)> homes = new Dictionary<string, (int, bool)>();
+
+        /// <summary>The torch a scene's area has (RegionalTorchAreas.StyleOf), kept by scene (the Crossroads' changes as they are infected).</summary>
+        public static int HomeStyle(string scene)
+        {
+            if (string.IsNullOrEmpty(scene)) return 0;
+            bool infected = PlayerData.instance != null && PlayerData.instance.crossroadsInfected;
+            if (homes.TryGetValue(scene, out var h) && h.Infected == infected) return h.Style;
+            int style = RegionalTorchAreas.StyleOf(scene);
+            if (homes.Count > 512) homes.Clear();
+            homes[scene] = (style, infected);
+            return style;
+        }
+
+        /// <summary>The torch of the area being played (0 for none).</summary>
+        public static int HereStyle()
+        {
+            var gm = GameManager.instance;
+            return gm != null ? HomeStyle(gm.sceneName) : 0;
+        }
+
+        /// <summary>The first stack of the torch of the area being played in the bag, -1 for none.</summary>
+        public static int HereSlot(Inventory inv)
+        {
+            int here = HereStyle();
+            if (inv == null || here == 0) return -1;
+            var item = ItemOf(here);
+            for (int i = 0; i < Inventory.Size; i++)
+                if (!inv.Slots[i].IsEmpty && inv.Slots[i].Type == item) return i;
+            return -1;
+        }
 
         /// <summary>The glow drawn round a placed one (Glow.CreateLight): its light at the plain torch's strength.</summary>
         public static Color GlowColor(int style)

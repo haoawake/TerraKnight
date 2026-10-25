@@ -72,11 +72,15 @@ namespace TerraKnight.Items
             for (int i = 0; i < count; i++) Pulse(covered[i], from, facing, damage);
         }
 
-        /// <summary>One hit on a collider: a stand-in nail slash on it, if it is a prop that answers one.</summary>
-        public static void Pulse(Collider2D col, Vector2 from, float facing, int damage)
+        /// <summary>
+        /// One hit on a collider: a stand-in nail slash on it, if it is a prop that answers one. A blow on its own (a
+        /// minion's, a sentry's, a spore's: <paramref name="onItsOwn"/>) doesn't work a lift (<see cref="LiftControl"/>).
+        /// </summary>
+        public static void Pulse(Collider2D col, Vector2 from, float facing, int damage, bool onItsOwn = false)
         {
             if (col == null || !col.enabled) return;
             if (Revek(col)) return;
+            if (onItsOwn && LiftControl(col)) { DevLiftsSpared++; return; }
             var tink = PropTink(col);
             if (tink == null && !Listens(col)) return;
             int id = col.GetInstanceID();
@@ -97,6 +101,7 @@ namespace TerraKnight.Items
             lastPulse[id] = now;
             if (lastPulse.Count > 512) lastPulse.Clear();
             Vector2 at = col.ClosestPoint(from);
+            PropHitFx.Mark();
             free.Begin(facing, damage);
             free.Tick(at, SizeOn(col));
             self.live.Add((free, at, col, from));
@@ -115,6 +120,33 @@ namespace TerraKnight.Items
                 proxy.Tick(at, on != null ? SizeOn(on) : Vector2.one * Size);
                 if (proxy.Live == null) live.RemoveAt(i);
             }
+        }
+
+        /// <summary>Dev: how a collider is taken: its tink, whether it answers the nail, a lift's control.</summary>
+        public static string DevWhy(Collider2D col) => col == null ? "无" : $"{col.GetType().Name} 层{col.gameObject.layer} 触发器 {col.isTrigger} 叮 {PropTink(col) != null} 听骨钉 {Listens(col)} 电梯 {LiftControl(col)}";
+
+        static readonly Dictionary<int, bool> liftControls = new Dictionary<int, bool>();
+        public static int DevLiftsSpared;
+
+        /// <summary>
+        /// A lift's control (the user's, 2026-10-20: a minion called the City's lifts away): a lift's call lever ("Call
+        /// Lever"), its car and the lever in it (a RuinsLift, an FSM named for a lift: "Lift Control", the great lift's
+        /// "Lift Move"), on the collider's object or above it. Doors' levers aren't.
+        /// </summary>
+        public static bool LiftControl(Collider2D col)
+        {
+            int id = col.GetInstanceID();
+            if (liftControls.TryGetValue(id, out bool known)) return known;
+            bool yes = false;
+            for (var t = col.transform; t != null && !yes; t = t.parent)
+            {
+                if (t.GetComponent<RuinsLift>() != null) yes = true;
+                foreach (var f in t.GetComponents<PlayMakerFSM>())
+                    if (f.FsmName == "Call Lever" || f.FsmName.IndexOf("Lift", System.StringComparison.OrdinalIgnoreCase) >= 0) { yes = true; break; }
+            }
+            if (liftControls.Count > 4096) liftControls.Clear();
+            liftControls[id] = yes;
+            return yes;
         }
 
         static bool Moving(Collider2D col)

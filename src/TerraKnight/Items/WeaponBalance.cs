@@ -61,7 +61,7 @@ namespace TerraKnight.Items
                 case ItemType.Celebration: count=units=2; break;
                 case ItemType.Flamethrower: case ItemType.ElfMelter: count=units=5; break;
                 case ItemType.Zenith:
-                    return new WeaponOutput(cycle,3,3,"三把剑独立7帧冷却；含往返及残影，每剑约4.5次命中（固定靶估计）",repeat:4.5f);
+                    return new WeaponOutput(cycle,3,3,"三把剑独立11帧冷却；往返与残影共用各剑命中间隔（固定靶估计）",repeat:4.5f*7f/ZenithSwords.ZenithHitCooldownTicks);
                 case ItemType.BetsysWrath: count=units=3; break;
                 case ItemType.BeeGun:
                     return new WeaponOutput(cycle,2+1f/3,2+1f/3,"平均7/3只蜜蜂；同类共享10帧冷却",hitLimit:6);
@@ -201,7 +201,10 @@ namespace TerraKnight.Items
             if(d.Type==ItemType.TerraBlade) vanilla*=2;
             // Lunar and final crafted weapons keep a wider power range, so the
             // Zenith's many returning hits aren't flattened into a normal late drop.
-            float relative=Mathf.Clamp(Mathf.Sqrt(vanilla/(reference[Mathf.Clamp(rare,0,11)]*role)),.55f,rare>=10 ? 2.5f : 1.55f);
+            // Compare weapons available in one region against the same reference.
+            // Dividing each by its rarity's reference made a crafted upgrade worse
+            // merely because crafting raised its rarity (Handgun -> Phoenix Blaster).
+            float relative=Mathf.Clamp(Mathf.Sqrt(vanilla/(reference[Mathf.Clamp(d.Stage,0,5)]*role)),.55f,rare>=10 ? 2.5f : 1.55f);
             float utility=d.Type==ItemType.VampireKnives ? .78f : d.Type==ItemType.BookofSkulls ? .8f : 1; // utility is retained, but budgeted
             float endgame=rare>=10 ? 1.25f : 1;
             float target=HitBudget[d.Stage]*2*role*relative*utility*endgame;
@@ -257,6 +260,41 @@ namespace TerraKnight.Items
                 if(d.Class==DamageClass.Magic && d.Texture!=null && d.Texture.StartsWith("Item_")
                     && int.TryParse(d.Texture.Substring(5),out int itemId) && VanillaWeaponDamage.Values.TryGetValue(itemId,out var original))
                     d.Mana=original.Mana;
+            }
+        }
+
+        // A native recipe which consumes a weapon must preserve that upgrade's
+        // output after all model/calibration passes, not only before them.
+        internal static void PreserveRecipeUpgrades(ItemDef[] items,IEnumerable<Recipe> recipes)
+        {
+            var upgrades=new List<Recipe>(recipes);
+            for(int pass=0;pass<8;pass++)
+            {
+                bool changed=false;
+                foreach(var recipe in upgrades)
+                {
+                    var result=items[(int)recipe.Result];
+                    // A weapon measured in play keeps its measured damage (WeaponCalibration): the model undercounts
+                    // some of their hits (the Night's Edge's, the Terra Blade's beams), so it would raise them twice.
+                    if(recipe.IsBought || !BalancedWeapon(result) || result.Source!=ItemSource.Craft || WeaponCalibration.Measured(result.Type))continue;
+                    foreach(var ingredient in recipe.Ingredients)
+                    {
+                        var prior=items[(int)ingredient.Type];
+                        if(!BalancedWeapon(prior) || prior.Class!=result.Class || prior.Stage>result.Stage || prior.Type==result.Type)continue;
+                        OriginalWeapon(prior,out int oldDamage,out _);OriginalWeapon(result,out int newDamage,out _);
+                        float nativeRatio=oldDamage>0 && newDamage>0
+                            ? newDamage/OriginalCycle(result)/(oldDamage/OriginalCycle(prior)):1.2f;
+                        float ratio=Mathf.Clamp(nativeRatio,1.2f,1.5f),defense=World.Areas.Defense(result.Stage);
+                        int ammo=Mathf.RoundToInt(AmmoBudget(result));
+                        float target=WeaponDps(prior,(int)defense,ammo)*ratio;
+                        if(WeaponDps(result,(int)defense,ammo)>=target)continue;
+                        var output=OutputOf(result);
+                        float crit=result.IsSummon||result.IsWhip?1:1+Mathf.Clamp01((result.Crit+4)/100f);
+                        int damage=Mathf.CeilToInt((target/crit+Mathf.Max(0,defense-WeaponArmorPen(result))*.5f*output.Hits)/output.Power-ammo);
+                        if(damage>result.Damage){result.Damage=damage;changed=true;}
+                    }
+                }
+                if(!changed)break;
             }
         }
     }

@@ -12,6 +12,7 @@ namespace TerraKnight.Items
             new Dictionary<IReadOnlyList<EnemyDrops.Drop>,IReadOnlyList<EnemyDrops.Drop>>();
 
         internal static bool OnlyCrafted(ItemType type)=>ItemDb.Get(type).Source==ItemSource.Craft;
+        internal static bool Blocked(ItemType type)=>OnlyCrafted(type)||ShopLoot.Equipment(type);
 
         internal static IReadOnlyList<EnemyDrops.Drop> Filter(IReadOnlyList<EnemyDrops.Drop> drops)
         {
@@ -20,7 +21,7 @@ namespace TerraKnight.Items
             var totals=new Dictionary<int,float>();
             var reserved=new Dictionary<int,float>();
             foreach(var row in drops) {
-                changed|=OnlyCrafted(row.Type);
+                changed|=Blocked(row.Type);
                 if(row.Group<=0)continue;
                 totals[row.Group]=(totals.TryGetValue(row.Group,out float sum) ? sum : 0)+ProgressionLoot.Weight(row);
                 reserved[row.Group]=Math.Max(reserved.TryGetValue(row.Group,out float old) ? old : 0,row.GroupWeightTotal);
@@ -28,7 +29,7 @@ namespace TerraKnight.Items
             if(!changed)return drops;
             var kept=new List<EnemyDrops.Drop>();
             foreach(var row in drops) {
-                if(OnlyCrafted(row.Type))continue;
+                if(Blocked(row.Type))continue;
                 var copy=row;
                 // Deleted outcomes become empty outcomes. Renormalising the
                 // remaining weights would silently raise every legal item's rate.

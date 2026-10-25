@@ -37,7 +37,8 @@ namespace TerraKnight.Items
                     Ai = Ai.Custom, Texture = "Projectile_" + id, W = 14, H = 14, Time = 1080, Extra = 2, Penetrate = 1, TrailLength = 20,
                     Update = (t, p) => t.StepCeleb2Rocket(p), Draw = (t, fx, p, px) => DrawCeleb2Rocket(fx, p, px), OnKill = (t, p) => t.KillCeleb2Rocket(p),
                 };
-            // P:5128: the Electrosphere missile, 10 s, gone at the cursor's block; P:5139: the electrosphere, 80 px breathing, an enemy every 8 ticks.
+            // P:5128: the Electrosphere missile, 10 s, gone at the cursor's block; P:5139: the electrosphere, 80 px breathing, an enemy every 8 ticks,
+            // 5 s (P:11069: NewProjectile gives 443 300 ticks).
             specs[ProjKind.ElectrosphereMissile] = new Spec
             {
                 Ai = Ai.Custom, Texture = "Projectile_442", W = 14, H = 14, Time = 600, AlphaStart = 1f, Penetrate = 1,
@@ -45,7 +46,7 @@ namespace TerraKnight.Items
             };
             specs[ProjKind.Electrosphere] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_443", W = 80, H = 80, Time = 3600, Penetrate = -1, TileCollide = false, AlphaStart = 1f, OwnerImmune = 8, Frames = 4,
+                Ai = Ai.Custom, Texture = "Projectile_443", W = 80, H = 80, Time = 300, Penetrate = -1, TileCollide = false, AlphaStart = 1f, OwnerImmune = 8, Frames = 4,
                 CanDamage = p => p.Ai1 != 1f, Update = (t, p) => t.StepSkyDragonField(p), Draw = (t, fx, p, px) => DrawSkyDragonField(fx, p, px), OnKill = (t, p) => { },
             };
         }

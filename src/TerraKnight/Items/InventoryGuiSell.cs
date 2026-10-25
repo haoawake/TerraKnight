@@ -62,7 +62,7 @@ namespace TerraKnight.Items
             why = null;
             if (s.IsEmpty) return false;
             if (s.Favorite) why = "收藏的物品不会卖出";
-            else if (s.Def.CannotDiscard || s.Def.HkItem || Currencies.Is(s.Type)) why = "这件不能卖";
+            else if (s.Def.CannotSell || Currencies.Is(s.Type)) why = "这件不能卖";
             return why == null;
         }
 
@@ -74,8 +74,11 @@ namespace TerraKnight.Items
                 if (why != null) Notice(Lang.T(why));
                 return false;
             }
+            HallownestRecovery.Record(inv, s.Type);
+            HkItems.Trade(inv, s.Type, -s.Count);
             long money = Shop.SellValue(s);
             Shop.Earn(money);
+            Achievements.AchievementTracker.Sold(s.Count);
             var item = s;
             item.Favorite = false;
             sold.Insert(0, (item, money));
@@ -110,6 +113,8 @@ namespace TerraKnight.Items
                 return;
             }
             inv.Mouse = item;
+            HkItems.Trade(inv, item.Type, item.Count);
+            HallownestRecovery.Record(inv, item.Type);
             sold.RemoveAt(index);
             TerraMod.Instance?.PlaySound(price > 0 ? "Coins" : "Grab", 0.7f);
         }

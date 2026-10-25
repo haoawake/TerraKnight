@@ -17,8 +17,8 @@ namespace TerraKnight.Player
     /// (NPC.SpawnNPC's spawn rate ×0.5 / ×1.3 / ×1.2); the Flipper potion swims in acid as the
     /// flippers do, the Water Walking potion walks on it as the boots do (<see cref="AcidLiquid"/>). The
     /// Heartreach potion pulls the bosses' hearts from further (WorldItems). The potions that only act on
-    /// water, fish or Terraria's own biomes (Gills, Fishing, Sonar, Crate, Biome Sight, Warmth) give their
-    /// buff and nothing here acts on it.
+    /// Fishing, Sonar and Crate are consumed by Fishing. Gills, Biome Sight and Warmth have no
+    /// corresponding oxygen, infection or cold-damage system in this world and are not consumed.
     /// </summary>
     [HarmonyPatch]
     internal static class PotionBuffs
@@ -92,6 +92,18 @@ namespace TerraKnight.Player
         public static int DevGiven, DevInfernoHits, DevTeleports;
 
         static bool Has(int buff) => PlayerBuffs.Has(buff);
+        internal static int QuickGroup(int buff) => System.Array.IndexOf(fed,buff)>=0 ? -1 : imbues.ContainsKey(buff) ? -2 : buff;
+        internal static int FoodRank(int buff) => buff==ExquisitelyStuffed?3:buff==PlentySatisfied?2:buff==WellFed?1:0;
+        internal static bool Applicable(int buff) => buff!=Gills&&buff!=BiomeSight&&buff!=Warmth;
+        internal static bool QuickAllowed(ItemDef def)
+        {
+            if(def.BuffType<=0||!Applicable(def.BuffType)||def.HealLife>0||def.HealMana>0||Has(def.BuffType))return false;
+            if(!PlayerBuffs.CanReceive(def.BuffType))return false;
+            if(QuickGroup(def.BuffType)==-2)foreach(int other in imbues.Keys)if(Has(other))return false;
+            int rank=FoodRank(def.BuffType);
+            if(rank>0)foreach(int other in fed)if(Has(other)&&FoodRank(other)>=rank)return false;
+            return true;
+        }
 
         /// <summary>What the buffs and the boosters add this frame.</summary>
         public static Bonuses Bonuses()
@@ -299,6 +311,7 @@ namespace TerraKnight.Player
                 if (Vector2.Distance(stand, col.bounds.center) < 4f) continue;
                 Sparkle(col.bounds.center);
                 hero.transform.position += (Vector3)(stand - (Vector2)col.bounds.center);
+                DelicateFlower.OnTeleport();
                 hero.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
                 Sparkle(stand);
                 TerraMod.Instance?.PlaySound("Item_6");

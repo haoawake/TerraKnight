@@ -98,7 +98,12 @@ namespace TerraKnight.Items
                 (ItemType.OrangePhaseblade, "橙陨石光剑", 4258, ProjKind.PhaseOrange), (ItemType.PinkPhaseblade, "粉陨石光剑", 5535, ProjKind.PhasePink),
                 (ItemType.RainbowPhaseblade, "彩虹相位剑", 5670, ProjKind.PhaseRainbow),
             })
-                list.Add(S(t, name, id, 26, 3f, 18, proj, 14f, 1));
+            {
+                var d = S(t, name, id, 26, 3f, 18, proj, 14f, 1);
+                // The rainbow one's blade is its glowmask, drawn in its running colour (ItemGlows).
+                if (t == ItemType.RainbowPhaseblade) d.Glow = "Glow_372";
+                list.Add(d);
+            }
             foreach (var (t, name, id, proj) in new[]
             {
                 (ItemType.BluePhasesaber, "蓝晶光刃", 3764, ProjKind.SaberBlue), (ItemType.RedPhasesaber, "红晶光刃", 3765, ProjKind.SaberRed),
@@ -107,7 +112,11 @@ namespace TerraKnight.Items
                 (ItemType.OrangePhasesaber, "橙晶光刃", 4259, ProjKind.SaberOrange), (ItemType.PinkPhasesaber, "粉晶光刃", 5536, ProjKind.SaberPink),
                 (ItemType.RainbowPhasesaber, "彩虹相位刃", 5671, ProjKind.SaberRainbow),
             })
-                list.Add(S(t, name, id, 50, 3f, 16, proj, 14f, 4));
+            {
+                var d = S(t, name, id, 50, 3f, 16, proj, 14f, 4);
+                if (t == ItemType.RainbowPhasesaber) d.Glow = "Glow_373";
+                list.Add(d);
+            }
             list.Add(S(ItemType.Keybrand, "钥匙剑", 671, 105, 6.5f, 20, ProjKind.KeybrandThrown, 15.9f, 8, crit: 16, sound: "Item_1", tip: "对受伤的敌人造成更多伤害"));
             list.Add(S(ItemType.AntlionClaw, "颌骨剑", 3772, 16, 4.5f, 15, ProjKind.MandibleBlade, 6.5f, 2, crit: 7, scale: 1.1f, sound: "Item_1"));
             list.Add(S(ItemType.StylistKilLaKillScissorsIWish, "时尚剪刀", 3352, 14, 5f, 13, ProjKind.StylishScissors, 7.5f, 2, sound: "Item_1"));
@@ -210,7 +219,7 @@ namespace TerraKnight.Items
             list.Add(Throw(ItemType.Trimarang, "三尖回旋镖", 5298, 21, 4.5f, 20, ProjKind.TrimarangProj, 11.5f, 0, true, tip: "“三个回旋镖总比一个好”"));
             list.Add(Throw(ItemType.Axearang, "斧头回旋镖", 5519, 20, 5f, 20, ProjKind.AxearangProj, 10.5f, 0, false, tip: "“伸手砍人”"));
             list.Add(Throw(ItemType.BouncingShield, "中士联盾", 4760, 80, 2f, 36, ProjKind.BouncingShieldProj, 10f, 5, false, tip: "“这个我可以玩一整天”"));
-            list.Add(Throw(ItemType.VampireKnives, "吸血鬼刀", 1569, 29, 2.75f, 16, ProjKind.VampireKnife, 15f, 8, true, tip: "快速投掷出吸血飞刀", sound: "Item_39"));
+            list.Add(Throw(ItemType.VampireKnives, "吸血鬼刀", 1569, 29, 2.75f, 16, ProjKind.VampireKnife, 15f, 8, true, tip: "快速投掷出吸血飞刀\n命中按伤害的7.5%吸血，单次最多5生命，每秒最多恢复20生命", sound: "Item_39"));
             list.Add(Throw(ItemType.ShadowFlameKnife, "暗影焰刀", 3054, 43, 5.75f, 12, ProjKind.ShadowFlameKnifeProj, 13f, 5, true, crit: 3, tip: "击中时造成暗影焰"));
             var flyingKnife = Throw(ItemType.FlyingKnife, "飞刀", 3030, 40, 4.5f, 15, ProjKind.FlyingKnifeProj, 17f, 6, false, tip: "投掷可控的飞刀");
             flyingKnife.Channel = true;

@@ -464,6 +464,43 @@ namespace TerraKnight.Items
         MountPalworldMountTrustyChilletIgnis,
         // Terraria's pylon items (World.PylonsMove): a pylon knocked out with a pickaxe, set down anywhere with room.
         PylonForest, PylonJungle, PylonHallow, PylonCavern, PylonOcean, PylonDesert, PylonSnow, PylonMushroom, PylonUniversal,
+        // Append-only: ability shield branches; HallownestShield keeps its old crystal + shade abilities.
+        DescendingDarkRune, CrystalShield, ShadeShield, DiveShield, DarkShield,
+        CrystalDiveShield, ShadeDiveShield, CrystalDarkShield, ShadeDarkShield,
+        HallownestDiveShield, VoidHallownestShield,
+        // Append-only: the Vengeful Spirit's four weapons (Items/SoulWave.cs).
+        RevenantEdge, RevenantPulseRifle, VengefulSpiritFocus, WanderingSoulStaff,
+        // Append-only: the altars as items (Items/AltarItems.cs), knocked off by a hammer of 80 or more.
+        DemonAltar, CrimsonAltar,
+        // Append-only: the Howling Wraiths' four weapons (Items/Howl.cs).
+        WailingDeathbell, GhostPipeOrgan, HowlingWraithsFocus, ElegyMask,
+        // Append-only: the Shade Soul's four weapons (Items/Shade.cs).
+        ShadeEdge, ShadeRiftRifle, ShadeSoulFocus, ShadeSoulStaff,
+        // Append-only: the Abyss Shriek's four weapons (Items/Abyss.cs).
+        AbyssYoyo, VoidSniper, AbyssStaff, DirgeMask,
+        // Append-only: the Target Dummy set down as furniture (World/TargetDummy.cs).
+        TargetDummy,
+        // Append only: guide's random purchase and its 24 permanent regional house kits.
+        RandomPrefabHouse,
+        PrefabHouseKingsPass, PrefabHouseDirtmouth, PrefabHouseHowlingCliffs, PrefabHouseCrossroads,
+        PrefabHouseGreenpath, PrefabHouseFungalWastes, PrefabHouseFogCanyon, PrefabHouseQueensGardens,
+        PrefabHouseCityOfTears, PrefabHouseRoyalWaterways, PrefabHouseCrystalPeak, PrefabHouseRestingGrounds,
+        PrefabHouseDeepnest, PrefabHouseBeastsDen, PrefabHouseKingdomsEdge, PrefabHouseHive,
+        PrefabHouseAncientBasin, PrefabHouseAbyss, PrefabHouseWhitePalace, PrefabHouseBlackEggTemple,
+        PrefabHouseColosseum, PrefabHouseGrimmTroupe, PrefabHouseDream, PrefabHouseGodhome,
+        // The 10-21 batch (Items/ItemsBatch1021.cs): Terraria's weapons and tools the mod was still missing.
+        ArcSurge, BloodRainBow, BloodHamaxe, TheUndertaker, ThunderSpear, JoustingLance, ShadowJoustingLance, PrincessWeapon, Toolbelt, Toolbox,
+        SimplePrefabHouse,
+        CasinoKit, CasinoSlots, CasinoPinball, CasinoRoulette,
+        BottomlessShimmerBucket,
+        // Append-only: Hallownest's 36 regional Angler quest fish (2026-10-24).
+        HkQuestFish01, HkQuestFish02, HkQuestFish03, HkQuestFish04, HkQuestFish05, HkQuestFish06,
+        HkQuestFish07, HkQuestFish08, HkQuestFish09, HkQuestFish10, HkQuestFish11, HkQuestFish12,
+        HkQuestFish13, HkQuestFish14, HkQuestFish15, HkQuestFish16, HkQuestFish17, HkQuestFish18,
+        HkQuestFish19, HkQuestFish20, HkQuestFish21, HkQuestFish22, HkQuestFish23, HkQuestFish24,
+        HkQuestFish25, HkQuestFish26, HkQuestFish27, HkQuestFish28, HkQuestFish29, HkQuestFish30,
+        HkQuestFish31, HkQuestFish32, HkQuestFish33, HkQuestFish34, HkQuestFish35, HkQuestFish36,
+        BejeweledStaff,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -572,6 +609,10 @@ namespace TerraKnight.Items
         TrustyFoxsparks,// 1113
         ClayPot,        // 1118
         ForbiddenRelic, // 1119 (gems 1120)
+        WanderingSoul,  // the Wandering Soul Staff's (Items/MinionsSoulWave.cs)
+        ChoirSoul,      // the Elegy Mask's (Items/MinionsHowl.cs)
+        ShadeSoul,      // the Shade Soul Staff's (Items/MinionsShade.cs)
+        DirgeSoul,      // the Dirge Mask's (Items/MinionsAbyss.cs)
     }
 
     /// <summary>The whips (Terraria projectile ids noted).</summary>
@@ -912,6 +953,15 @@ namespace TerraKnight.Items
         HallowLance, ThunderBolt, LightningStrikeBolt,
         ReflectedOrb, // (a shot a shield sent back, as a slow orb)
         MountScutlixLaser, MountCannonball,
+        // The Vengeful Spirit's weapons' (Items/TerraProjectilesSoulWave.cs).
+        SoulSlash, SoulBlade, SoulWraith, PulseLaser, PulseCharge, ChargedSoulWave, SpiritWave, SoulBurst, PulseBeam,
+        DeathBell, OrganBurst, ShriekWave, WraithTriad, WraithBeam, ChoirShout, ShoutRipple,
+        // The Shade Soul's weapons' (Items/TerraProjectilesShade.cs).
+        ShadeSwing, ShadeThrow, ShadeRay, ShadeRayHit, ShadeMark, ShadeBlast, ShadeGhost, ShadeShock,
+        // The Abyss Shriek's weapons' (Items/TerraProjectilesAbyss.cs; the yoyo on TerraProjectilesYoyo's table).
+        AbyssYoyo, AbyssRipple, AbyssRend, AbyssHitRing, VoidTracer, VoidSnipe, VoidMark, VoidSight, VoidBomb, AbyssTriad, AbyssPulse, AbyssThread, DirgeLaser, DirgeLaserHit,
+        // The 10-21 batch's (Items/TerraProjectilesBatch1021.cs): 1122 730 732 877 878 819 950.
+        ArcSurgeBolt, ThunderSpearThrust, ThunderSpearShot, JoustingLanceThrust, ShadowJoustingLanceThrust, BloodRainArrow, PrincessRing,
     }
 
     /// <summary>
@@ -939,6 +989,10 @@ namespace TerraKnight.Items
         public int FishingSkill, BobberKind;
         public bool FishingLine, TackleBox, AcidFishing;
         public int BlockRange, MeleeEnchant;
+        /// <summary>Player.tileRangeX / tileRangeY beyond the usual 5 and 3: every tile and tool reaches further (the Toolbox's 1).</summary>
+        public int TileRangeX, TileRangeY;
+        /// <summary>equippedAnyTileRangeAcc (the Extendo Grip and the packs built on it): 3 across and 2 up and down, once however many.</summary>
+        public bool TileRangeAcc;
         /// <summary>The boots' top speed (accRunSpeed, the strongest boots'); 0 = none.</summary>
         public float AccRunSpeed;
         /// <summary>rocketBoots: 1 Rocket Boots, 2 Spectre and Lightning Boots (their sound and smoke).</summary>
@@ -1023,6 +1077,7 @@ namespace TerraKnight.Items
         /// Glove, the Hive Pack's strong bees, the Stress Ball, the Ram Rune's down-dash; the money
         /// accessories (Lucky Coin, Gold Ring, Discount Card, Treasure Magnet).
         /// </summary>
+        public int DiveLevel;
         public bool ShinyStone, BrainOfConfusion, SporeSac, VolatileGelatin, BoneGlove, StrongBees, StressBall, DownDash, LuckyCoin, GoldRing, Discount, TreasureMagnet;
         /// <summary>Inert in Hallownest: the Paladin's absorption (teammates), the Royal Gel (slimes), the diving helm (breath), ice skates, echo sight.</summary>
         public bool Paladin, RoyalGel, DivingHelm, IceSkate, SeeInvisible;
@@ -1093,6 +1148,7 @@ namespace TerraKnight.Items
             Werewolf |= b.Werewolf; Merfolk |= b.Merfolk; SkyStone |= b.SkyStone; PickSpeed += b.PickSpeed;
             ShinyStone |= b.ShinyStone; BrainOfConfusion |= b.BrainOfConfusion; SporeSac |= b.SporeSac; VolatileGelatin |= b.VolatileGelatin; BoneGlove |= b.BoneGlove;
             StrongBees |= b.StrongBees; StressBall |= b.StressBall; DownDash |= b.DownDash;
+            DiveLevel = System.Math.Max(DiveLevel, b.DiveLevel);
             LuckyCoin |= b.LuckyCoin; GoldRing |= b.GoldRing; Discount |= b.Discount; TreasureMagnet |= b.TreasureMagnet;
             Paladin |= b.Paladin; RoyalGel |= b.RoyalGel; DivingHelm |= b.DivingHelm; IceSkate |= b.IceSkate; SeeInvisible |= b.SeeInvisible;
             if (b.StarKind > StarKind) StarKind = b.StarKind;
@@ -1102,6 +1158,7 @@ namespace TerraKnight.Items
             Archery |= b.Archery; ResistCold |= b.ResistCold; FindTreasure |= b.FindTreasure; DetectCreature |= b.DetectCreature; DangerSense |= b.DangerSense;
             Calm |= b.Calm; Battle |= b.Battle; Invisible |= b.Invisible; Shine |= b.Shine; NightVision |= b.NightVision; LifeMagnet |= b.LifeMagnet; AmmoPotion |= b.AmmoPotion;
             Thorns = System.Math.Max(Thorns, b.Thorns); Luck += b.Luck; TileSpeed += b.TileSpeed; BlockRange += b.BlockRange;
+            TileRangeX += b.TileRangeX; TileRangeY += b.TileRangeY; TileRangeAcc |= b.TileRangeAcc;
             if (b.MeleeEnchant != 0) MeleeEnchant = b.MeleeEnchant;
             SpaceGunFree |= b.SpaceGunFree; CrimsonRegen |= b.CrimsonRegen; CactusThorns |= b.CactusThorns; AshWood |= b.AshWood;
             AnglerSet |= b.AnglerSet; DeadMansSweater |= b.DeadMansSweater; Ooa |= b.Ooa;
@@ -1252,11 +1309,12 @@ namespace TerraKnight.Items
         public string BossSummonKey;
         public int HealLife, HealMana;
         public bool LifeCrystal, ManaCrystal;
-        /// <summary>Kept for good: never sold, thrown, dropped or trashed (the Dream Nail).</summary>
+        /// <summary>Protected from throwing and trashing. Hallownest recovery items may still be sold.</summary>
         public bool Permanent;
-        /// <summary>Protected against selling/discarding, while still allowing accessory reforging and crafting.</summary>
+        /// <summary>Protected against discarding, while still allowing sale, accessory reforging and crafting for Hallownest items.</summary>
         public bool NoDiscard;
-        public bool CannotDiscard => Permanent || NoDiscard;
+        public bool CannotDiscard => Permanent || NoDiscard || HallownestRecovery.IsUnique(Type);
+        public bool CannotSell => GameTool || CannotDiscard && !HallownestRecovery.IsUnique(Type);
         /// <summary>Used by the game's own controls, not the Terraria item use (the Dream Nail's FSM).</summary>
         public bool GameTool;
         /// <summary>Item.buffType / buffTime (ticks): the buff a drink gives; potion (potion sickness on drinking).</summary>
@@ -1318,7 +1376,7 @@ namespace TerraKnight.Items
         public bool IsAmmo => Ammo != AmmoKind.None;
         public bool IsSummon => Minion != MinionKind.None;
         public bool IsWhip => Whip != WhipKind.None;
-        public bool IsUsable => !IsPlainAmmo && !GameTool && (IsMount || IsPylon || IsWeapon || FishingPower > 0 || Bucket != BucketUse.None || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
+        public bool IsUsable => !IsPlainAmmo && !GameTool && (PrefabHouses.IsKit(Type) || IsMount || IsPylon || IsWeapon || FishingPower > 0 || Bucket != BucketUse.None || PickPower > 0 || HammerPower > 0 || PlacesWall > 0 || Places != CellKind.Empty || Shoot != ProjKind.None || HealLife > 0 || HealMana > 0 || LifeCrystal || ManaCrystal
             || BuffType > 0 || PetBuff > 0 || Boost != PermanentBoost.None || PlacesChest || PlacesStation != World.StationKind.None || BossSummonKey != null || Type == ItemType.RecallPotion || Type == ItemType.TeleportationPotion || ItemDb.IsMirror(Type) || ItemDb.IsTeleportRod(Type) || Type == ItemType.WaterCandle || Type == ItemType.MoneyTrough || Type == ItemType.VoidBag || Type == ItemType.PotionOfReturn || Containers.IsContainer(Type));
 
         /// <summary>
@@ -1567,9 +1625,14 @@ namespace TerraKnight.Items
             list.Add(Staff(ItemType.SapphireStaff, "蓝玉法杖", 741, 18, 4f, 34, 7.5f, 8, ProjKind.SapphireBolt, "Item_43", price: 0, tier: 0, rare: 1, tip: "蓝玉成对旋舞"));
             list.Add(Staff(ItemType.EmeraldStaff, "翡翠法杖", 742, 19, 4.25f, 32, 8f, 8, ProjKind.EmeraldBolt, "Item_43", price: 0, tier: 1, rare: 1, tip: "翡翠照亮黑夜"));
             list.Add(Staff(ItemType.AmberStaff, "琥珀法杖", 3377, 21, 4.75f, 28, 9f, 9, ProjKind.AmberBolt, "Item_43", price: 0, tier: 1, rare: 1, tip: "琥珀开辟前路"));
+            // I:47551-47555 (1.4.5, 6171, the Bejeweled Staff: unobtainable there, crafted here from every gem staff and the six
+            // souls): every gem in one, three bolts a use (ShootPatternsGuns.Bejeweled).
+            list.Add(Staff(ItemType.BejeweledStaff, "宝石镶嵌法杖", 6171, 27, 6f, 22, 6f, 15, ProjKind.DiamondBolt, "Item_43", price: 0, tier: 3, rare: 5,
+                tip: "汲取众多宝石的力量\n每次发射三颗随机宝石的魔法弹，兼具所有宝石的效果"));
             // Main.cs:6880-6972: held out like staves (Item.staff).
             foreach (var gem in list)
-                if (gem.Type == ItemType.TopazStaff || gem.Type == ItemType.SapphireStaff || gem.Type == ItemType.EmeraldStaff || gem.Type == ItemType.AmberStaff) gem.StaffHold = true;
+                if (gem.Type == ItemType.TopazStaff || gem.Type == ItemType.SapphireStaff || gem.Type == ItemType.EmeraldStaff || gem.Type == ItemType.AmberStaff
+                    || gem.Type == ItemType.BejeweledStaff) gem.StaffHold = true;
             // I:15559-15571: the Crimson Rod, swung; its cloud heads for the cursor like the Nimbus Rod's (Pl:48743).
             var crimsonRod = Staff(ItemType.CrimsonRod, "猩红魔杖", 1256, 12, 0f, 24, 12f, 30, ProjKind.CrimsonCloudMoving, "Item_8", price: 0, tier: 1, hold: false, rare: 1,
                 tip: "召唤云朵来向敌人降下血雨");
@@ -1746,8 +1809,14 @@ namespace TerraKnight.Items
             AddStations2(list);
             AddTombstones(list);
             AddAbilityAccessories(list);
+            AddSoulWaveWeapons(list);
+            AddAltarItems(list);
+            AddHowlWeapons(list);
+            AddShadeWeapons(list);
+            AddAbyssWeapons(list);
             AddCarriedFurniture(list);
             AddBatch1017(list);
+            AddBatch1021(list);
             AddContainers(list);
             AddArmor2(list);
             AddHeart(list);
@@ -1757,6 +1826,7 @@ namespace TerraKnight.Items
             AddWalls(list);
             World.AreaBlocks.AddItems(list);
             World.RegionalFurniture.AddItems(list);
+            World.PrefabHouses.AddItems(list);
             AddRegionalTorches(list);
             Fishing.AddAreaCrates(list);
             World.RegionalChests.AddItems(list);
@@ -1764,6 +1834,7 @@ namespace TerraKnight.Items
             AddBuckets(list);
             Player.Mounts.AddItems(list);
             World.Pylons.AddItems(list);
+            QuestFishCatalog.AddItems(list);
             var arr = new ItemDef[System.Enum.GetValues(typeof(ItemType)).Length];
             foreach (var d in list) arr[(int)d.Type] = d;
             // Held-out items not given one by hand: Terraria's own hold (Main.DrawPlayerItemPos).
@@ -1789,7 +1860,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1", Placeholder = true };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(AbilityAccessorySources(), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Batch1021Sources()), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(AbilityAccessorySources(), System.Linq.Enumerable.Concat(SoulWaveSources(), System.Linq.Enumerable.Concat(AltarSources(), System.Linq.Enumerable.Concat(HowlSources(), System.Linq.Enumerable.Concat(ShadeSources(), AbyssSources()))))), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -1933,6 +2004,7 @@ namespace TerraKnight.Items
             Show(ItemType.TigerClimbingGear, shoe: 4, handOn: 11, handOff: 6);
             Show(ItemType.Tabi, shoe: 3);
             Show(ItemType.BlackBelt, waist: 10);
+            Show(ItemType.Toolbelt, waist: 5);
             Show(ItemType.MasterNinjaGear, shoe: 14, waist: 10, handOn: 11, handOff: 6);
             Show(ItemType.HoneyBalloon, balloon: 7);
             Show(ItemType.BlueHorseshoeBalloon, balloon: 2);
@@ -1986,6 +2058,15 @@ namespace TerraKnight.Items
             ProgressionBalance.ApplyItems(arr);
             ProgressionBalance.NormalizeRecipeStages(arr, Recipes.BaseRecipes());
             ProgressionBalance.ApplyWeaponBalance(arr);
+            ProgressionBalance.ApplyWeaponBoost(arr);
+            SoulWave.Balance(arr);
+            Howl.Balance(arr);
+            Shade.Balance(arr);
+            Abyss.Balance(arr);
+            WeaponCalibration.Apply(arr);
+            ProgressionBalance.PreserveRecipeUpgrades(arr,Recipes.BaseRecipes());
+            ProgressionBalance.ApplyDamageProgression(arr);
+            World.VanillaBlocks.Apply(arr);
             return arr;
         }
 
@@ -2126,7 +2207,7 @@ namespace TerraKnight.Items
                 case CellKind.Rope: return ItemType.Rope;
                 case CellKind.Meteorite: return ItemType.Meteorite;
                 case CellKind.Obsidian: return ItemType.Obsidian;
-                default: return ItemType.None;
+                default: return World.VanillaBlocks.Drop(kind);
             }
         }
 
@@ -2312,6 +2393,7 @@ namespace TerraKnight.Items
         /// item a stored loadout shares into it (its favourite mark), and which loadout (-1 none).
         /// </summary>
         public readonly ItemStack[] EffectiveArmor = new ItemStack[ArmorSlots], EffectiveAccessories = new ItemStack[AccessorySlots];
+        public ItemStack[] FunctionalAccessories => PlayerChallenges.AccessoriesLocked ? System.Array.Empty<ItemStack>() : EffectiveAccessories;
         public readonly int[] ArmorSharedFrom = new int[ArmorSlots], AccessorySharedFrom = new int[AccessorySlots];
 
         /// <summary>
@@ -2403,7 +2485,18 @@ namespace TerraKnight.Items
         public int Override = -1;
         /// <summary>The slot in hand: the override's while there is one, else the selected one.</summary>
         public int Held => Override >= 0 && Override < Size && !Slots[Override].IsEmpty ? Override : Selected;
-        public bool Infinite;
+        bool infinite;
+        /// <summary>
+        /// Items never run out (a stack shows ∞, nothing is spent): the autotests' setting only. Set, it sets
+        /// <see cref="FreeMaking"/> along with it (endless items make everything free; off, a plain save's rules).
+        /// </summary>
+        public bool Infinite
+        {
+            get => infinite;
+            set { infinite = value; FreeMaking = value; }
+        }
+        /// <summary>The crafting column makes anything without its ingredients and the shops cost nothing: creative saves (and the autotests).</summary>
+        public bool FreeMaking;
         /// <summary>The inventory is open and an item is on the cursor: that item is the one in use.</summary>
         public bool UseMouse;
 
@@ -2413,6 +2506,10 @@ namespace TerraKnight.Items
 
         public void Clear()
         {
+            CollectedItems.Clear();
+            HallownestObtained.Clear();
+            HallownestTradeOffsets.Clear();
+            HallownestNativeCounts.Clear();
             for (int i = 0; i < Total; i++) Slots[i] = default;
             for (int i = 0; i < AccessorySlots; i++) Accessories[i] = default;
             for (int i = 0; i < ArmorSlots; i++) Armor[i] = VanityArmor[i] = default;
@@ -2449,6 +2546,8 @@ namespace TerraKnight.Items
         /// <summary>As much as fits, the same way; returns how many were left over.</summary>
         public int AddSome(ItemType type, int count)
         {
+            if (count > 0 && Room(type) > 0) RecordCollection(type);
+            if (count > 0 && Room(type) > 0) HallownestRecovery.Record(this, type);
             var def = ItemDb.Get(type);
             count = FillCoins(def, count);
             count = FillAmmo(def, count);
@@ -2479,6 +2578,8 @@ namespace TerraKnight.Items
                 if (Slots[i].IsEmpty)
                 {
                     Slots[i] = s;
+                    RecordCollection(s.Type);
+                    HallownestRecovery.Record(this, s.Type);
                     return 0;
                 }
             return s.Count;
@@ -2493,6 +2594,8 @@ namespace TerraKnight.Items
         /// </summary>
         public int Pickup(ItemType type, int count, bool favorite = false)
         {
+            if (count > 0 && Room(type) > 0) RecordCollection(type);
+            if (count > 0 && Room(type) > 0) HallownestRecovery.Record(this, type);
             var def = ItemDb.Get(type);
             count = FillCoins(def, count);
             count = FillAmmo(def, count);
@@ -2678,6 +2781,7 @@ namespace TerraKnight.Items
         /// <summary>An accessory with this effect is in effect (worn, or shared in).</summary>
         public bool HasEquipped(AccessoryEffect effect)
         {
+            if (PlayerChallenges.AccessoriesLocked) return false;
             foreach (var a in EffectiveAccessories)
                 if (!a.IsEmpty && a.Def.Accessory == effect) return true;
             return false;

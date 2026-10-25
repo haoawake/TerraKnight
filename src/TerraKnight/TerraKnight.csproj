@@ -37,13 +37,16 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\*.png" LogicalName="TerraKnight.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Resources\lang.json" LogicalName="TerraKnight.lang.json" />
+    <EmbeddedResource Include="Resources\terrarian-dialogue.json" LogicalName="TerraKnight.terrarian-dialogue.json" />
+    <EmbeddedResource Include="Resources\*.wav" LogicalName="TerraKnight.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- 编译后直接放进游戏的 BepInEx 插件目录 -->
   <Target Name="InstallPlugin" AfterTargets="Build" Condition="Exists('$(BepInExDir)') and '$(SkipPluginInstall)' != 'true'">
     <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" />
     <!-- 启动器放在游戏根目录：双击进 mod 版，Steam 里启动仍是原版 -->
-    <Copy SourceFiles="..\..\launcher\空洞泰拉.bat;..\..\launcher\terraknight-launch.ps1" DestinationFolder="$(HollowKnightDir)" />
+    <Copy SourceFiles="..\..\launcher\空洞泰拉.bat" DestinationFolder="$(HollowKnightDir)" />
+    <Copy SourceFiles="..\..\launcher\terraknight-launch.ps1" DestinationFolder="$(HollowKnightDir)\BepInEx\TerraKnight" />
     <Message Importance="high" Text="TerraKnight -> $(PluginInstallDir)" />
   </Target>
 

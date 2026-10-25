@@ -51,7 +51,7 @@ namespace TerraKnight.World
             {
                 DevHits++;
                 int dir = __instance.transform.position.x >= go.transform.position.x ? 1 : -1;
-                Player.PlayerHooks.HurtPlayer(__instance, Damage(), dir, go);
+                Player.PlayerHooks.HurtEnvironment(__instance, Damage(), dir, go);
             }
             finally
             {

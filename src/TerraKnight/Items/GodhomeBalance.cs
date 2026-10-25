@@ -17,16 +17,19 @@ namespace TerraKnight.Items
             {Key=key;Name=name;Life=life;Defense=defense;FlatDefense=flatDefense;Damage=damage;}
         }
         static readonly Profile World=new Profile("world","地图",1,1,0,1);
+        // Life, defense (times and plus) and damage over a fight of the player's stage (the user's, 2026-10-20): Attuned is
+        // the world's fight, Ascended has more life and hits harder, Radiant (the game's one-hit death) hits twice as hard;
+        // a pantheon's bosses come one after another without a rest, each lighter than a Hall fight.
         internal static readonly Profile[] Hall={
-            new Profile("attuned","众神堂·调谐",1.30f,1.25f,5,1.25f),
-            new Profile("ascended","众神堂·飞升",1.70f,1.50f,8,1.45f),
-            new Profile("radiant","众神堂·辐辉",2.10f,1.80f,10,1.70f)};
+            new Profile("attuned","众神堂·调谐",1.00f,1.00f,0,1.00f),
+            new Profile("ascended","众神堂·飞升",1.50f,1.15f,3,1.25f),
+            new Profile("radiant","众神堂·辐辉",1.50f,1.15f,3,2.00f)};
         internal static readonly Profile[] Pantheons={
-            new Profile("pantheon1","一门",1.40f,1.25f,5,1.20f),
-            new Profile("pantheon2","二门",1.70f,1.40f,6,1.30f),
-            new Profile("pantheon3","三门",2.00f,1.55f,8,1.45f),
-            new Profile("pantheon4","四门",2.40f,1.70f,9,1.60f),
-            new Profile("pantheon5","五门",2.90f,1.90f,10,1.75f)};
+            new Profile("pantheon1","一门",0.60f,1.00f,0,1.00f),
+            new Profile("pantheon2","二门",0.65f,1.00f,0,1.05f),
+            new Profile("pantheon3","三门",0.70f,1.05f,1,1.10f),
+            new Profile("pantheon4","四门",0.80f,1.05f,2,1.15f),
+            new Profile("pantheon5","五门",1.05f,1.10f,3,1.25f)};
         static readonly FieldInfo sequenceField=AccessTools.Field(typeof(BossSequenceController),"currentSequence");
         // Actual shipped Resources/GG assets; tier five's achievement is ENDINGD.
         internal static int DoorOf(BossSequence sequence)

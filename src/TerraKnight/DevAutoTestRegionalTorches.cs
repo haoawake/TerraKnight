@@ -12,7 +12,7 @@ namespace TerraKnight
     /// table: every surveyed scene's torch (DevAutoTestGates' scenes; those the names don't place are listed), each
     /// torch's own scene giving it back, the 48 items (pictures, placing torches, in the creative list), the pot roll's
     /// odds and its Geo. place: styled torches set down in a dug cave through the item's use, each drawn from its own row
-    /// with its flame layer's seven copies flickering over it and its own light, a plain one as before; one mined giving
+    /// with its flame layer's seven copies flickering over it and its own light, a plain one with Flame_0's; one mined giving
     /// its own item back; through a save written and read back and the scene entered again; styles from the network.
     /// break: the scene's breakables broken in several areas giving that area's torch and Geo, nothing from a copy the
     /// mod owns, nothing again from one broken before once the room is entered again.
@@ -248,7 +248,9 @@ namespace TerraKnight
                     ? tex != null && tex.name.Contains("HkTorchTiles") && (int)rect.x == fx && (int)rect.y == tex.height - (style - 1) * 22 - 20
                     : tex != null && tex.name.Contains("Tiles_4") && (int)rect.x == fx && (int)rect.y == tex.height - 20;
                 int layers = flame != null ? flame.GetComponentsInChildren<SpriteRenderer>().Length : 0;
-                bool flameOk = style > 0 ? layers == RegionalTorchFlames.Layers : flame == null;
+                // Every torch has its flame layer: the regional sheet's, Flame_0's for the plain torch.
+                var flameTex = flame != null ? flame.GetComponentInChildren<SpriteRenderer>()?.sprite?.texture : null;
+                bool flameOk = layers == RegionalTorchFlames.Layers && flameTex != null && flameTex.name.Contains(style > 0 ? "HkTorchFlames" : "Flame_0");
                 Color want = Glow.Additive
                     ? new Color(RegionalTorches.GlowColor(style).r * RegionalTorches.GlowColor(style).a, RegionalTorches.GlowColor(style).g * RegionalTorches.GlowColor(style).a, RegionalTorches.GlowColor(style).b * RegionalTorches.GlowColor(style).a, 1f)
                     : new Color(RegionalTorches.GlowColor(style).r, RegionalTorches.GlowColor(style).g, RegionalTorches.GlowColor(style).b, RegionalTorches.GlowColor(style).a * 0.45f);

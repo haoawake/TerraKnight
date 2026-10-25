@@ -1,0 +1,1237 @@
+{
+  "Hornet/HORNET_GREENPATH": {
+    "Zh": "站住，异乡人。<page>我看见了你在林间的身影。你不是圣巢的虫子，身上的武器也不属于这里。<page>这座王国里有可怕的东西正在苏醒。来自泰拉的本领，未必能让你安然穿过它的梦。<page>想继续前进，就让我看看你的决心。",
+    "En": "Stop, outsider.<page>I saw you moving through the undergrowth. You are no bug of Hallownest, and those weapons are foreign to this land.<page>Something terrible is waking in this kingdom. Your Terrarian skills may not carry you safely through its dreams.<page>If you mean to proceed, show me your resolve.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_FOUNTAIN_1": {
+    "Zh": "我们又见面了，泰拉旅人。<page>我原以为你只是来废墟寻宝，看来低估了你。<page>你见过王国之外的世界，也带来了这里没有的技艺。<page>不过，要理解圣巢，还得看清它以什么代价维持至今。",
+    "En": "We meet again, Terrarian.<page>I thought you merely sought treasure in these ruins. I underestimated you.<page>You have seen a world beyond this kingdom and brought unfamiliar skills.<page>To understand Hallownest, you must also understand the price that has kept it standing.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_FOUNTAIN_2": {
+    "Zh": "若了解真相之后，你仍愿意帮助圣巢，就去寻找灰烬中的坟墓。<page>那里留下的标记能打开旧王的道路，却不会让你成为他的子嗣。",
+    "En": "If you still wish to help Hallownest after learning its truth, seek the grave in ash.<page>The mark left there opens the old king's roads. It will not make you his child.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_OUTSKIRTS_1": {
+    "Zh": "你还要继续追查吗，泰拉旅人？前方的真相很沉重，带再多装备也不能替你作出选择。",
+    "En": "Will you keep searching, Terrarian? The truth ahead is a heavy burden. No amount of equipment can make your choice for you.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_OUTSKIRTS_2": {
+    "Zh": "想继续，就证明你已做好准备。我的针不会因为你来自异乡就留情。<page>你无需继承这个王国的血脉，但必须明白自己将触动什么。",
+    "En": "Prove you are ready if you mean to continue. My needle will not spare you for being foreign.<page>You need not inherit this kingdom's blood, but you must understand what you are about to disturb.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_OUTSKIRTS_DEFEAT": {
+    "Zh": "……这样的力量。泰拉的战士果然不能小看。<page>你已经赢得前进的资格。可你知道，这枚标记背后埋着多少牺牲吗？<page>去看清它。把标记带走，凭自己的意志决定如何使用，别让一位死去的国王替你选择。",
+    "En": "...Such strength. A Terrarian warrior is not to be underestimated.<page>You have earned the right to proceed. Do you know how much sacrifice lies behind that mark?<page>See for yourself. Take it, and decide how to use it. Do not let a dead king choose for you.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_DOOR_UNOPENED": {
+    "Zh": "你走得很远，泰拉旅人。守梦者的封印已不能拦住你。<page>接下来面对的不是你失落的身世，而是圣巢留下的难题。弄清自己的选择，再打开最后的大门。",
+    "En": "You have come far, Terrarian. The Dreamers' seals can no longer bar your way.<page>What awaits is not your forgotten origin, but Hallownest's unresolved tragedy. Understand your choice before opening the final door.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_ABYSS_ASCENT_01": {
+    "Zh": "你从深渊回来了，泰拉旅人，还学会了借用那里的暗影。<page>那里是容器们被创造和遗弃的地方，并不是你的故乡。不要把它们的命运当成自己的宿命。<page>但你能走出黑暗，确实给了我希望。<page>接下来的路由你选择：延续封印，或者设法直面感染的核心。",
+    "En": "You returned from the Abyss, Terrarian, carrying its shadow.<page>That is where the Vessels were made and discarded. It is not your birthplace. Their fate need not become yours.<page>Still, your return from that darkness gives me hope.<page>The next choice is yours: sustain the seal, or seek a way to confront the infection at its heart.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_ABYSS_REPEAT": {
+    "Zh": "泰拉旅人，我希望你能找到比延续封印更好的办法。但最终的选择，必须出自你自己的意志。",
+    "En": "Terrarian, I hope you find something better than another seal. But the final choice must be your own.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_ABYSS_DREAM": {
+    "Zh": "……有血有肉的异乡人，竟能承受那片黑暗……也许我们的旧办法并不是唯一的路……",
+    "En": "...An outsider of flesh and blood endured that darkness... Perhaps our old answer is not the only path...",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_PRE_FINAL_BATTLE": {
+    "Zh": "道路已经打开，泰拉旅人。黑卵里等着的是这个王国的旧债，不是你的出生之谜。<page>里面的束缚和感染对你我都很危险。我会留在外面，寻找能够出手的时机。<page>你不欠圣巢一条命。若仍要进去，就带上你信任的装备，记住自己为何而战。",
+    "En": "The way is open, Terrarian. The Black Egg holds this kingdom's old debt, not the secret of your birth.<page>Its bindings and infection endanger us both. I will wait outside for an opening.<page>You do not owe Hallownest your life. If you enter, take the equipment you trust and remember why you fight.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_PRE_FINAL_BATTLE_REPEAT": {
+    "Zh": "来自泰拉的战士，你已经能改变这个王国的结局。别把自己当成另一只注定牺牲的容器。找到你愿意承担的道路。",
+    "En": "Warrior of Terraria, you can change this kingdom's ending. Do not mistake yourself for another Vessel destined for sacrifice. Find a path you choose to bear.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_PRE_FINAL_BATTLE_DREAM": {
+    "Zh": "……我们未曾找到的出路，真会由这位泰拉旅人找到吗？……",
+    "En": "...Will this Terrarian find the way out that we never could?...",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_FINAL_BOSS": {
+    "Zh": "就是现在，泰拉旅人！我的丝线撑不了多久！<page>要维持封印，还是直面感染的核心——用你的行动作出选择！",
+    "En": "Now, Terrarian! My threads will not hold for long!<page>Preserve the seal, or confront the infection at its heart. Make your choice!",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_SPIDER_TOWN_01": {
+    "Zh": "你已经让那头野兽安息了……也让我的母亲终于能结束守望。<page>泰拉旅人，我不会阻止你，但这并不意味着我毫无痛苦。<page>她的选择使我得以出生。我感谢她，也无法轻易看着她离去。<page>你与我们的家族没有血缘，却承担了这一步。至少，让我独自向她告别。",
+    "En": "The beast is at rest... and my mother's watch can finally end.<page>Terrarian, I will not stop you. That does not mean this causes me no pain.<page>Her choice allowed me to be born. I am grateful, and cannot easily watch her go.<page>You share no blood with our family, yet have taken this step. At least let me say farewell alone.",
+    "Reason": "authored"
+  },
+  "Hornet/HORNET_SPIDER_TOWN_REPEAT": {
+    "Zh": "让我独自待一会儿，泰拉旅人。在这间卧室彻底成为陵墓之前。",
+    "En": "Leave me a moment, Terrarian, before this chamber becomes nothing but a tomb.",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC1_1": {
+    "Zh": "……异乡的意志……也想触碰封印？……",
+    "En": "...A foreign will... seeking our seal?...",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC1_1A": {
+    "Zh": "异乡人会打破封印？<br>封印不能被打破。<br>封印必须被打破。<page>来自泰拉的旅人，让我们继续沉睡。",
+    "En": "Will the outsider break the seal?<br>The seal cannot be broken.<br>The seal must be broken.<page>Traveller from Terraria, let us sleep.",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC1_4": {
+    "Zh": "让我们继续沉睡，泰拉旅人。<br>离开这座与你无血缘之系的王国。<br>给我们安宁。",
+    "En": "Let us sleep, Terrarian.<br>Leave this kingdom, to which no blood binds you.<br>Give us peace.",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC2_1": {
+    "Zh": "异乡人将触碰封印。<br>封印不能被打破。<br>封印必须被打破。<page>空的容器曾带来希望。强大的容器留下停滞。<br>但这位泰拉人并非容器。另一种意志，能带来终结，还是新的灾难？",
+    "En": "The outsider will touch the seal.<br>The seal cannot be broken.<br>The seal must be broken.<page>An empty Vessel promised hope. A mighty Vessel left stagnation.<br>But this Terrarian is no Vessel. Will another will bring an end, or a new disaster?",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC2_1A": {
+    "Zh": "不要再前进了，泰拉旅人。",
+    "En": "Go no further, Terrarian.",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC2_1A_2": {
+    "Zh": "是什么让这位泰拉人离开自己的世界，深入我们衰败的王国？",
+    "En": "What brought this Terrarian away from their own world and into our fallen kingdom?",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC2_1F": {
+    "Zh": "这位异乡人必须被放逐。",
+    "En": "This outsider must be cast out.",
+    "Reason": "authored"
+  },
+  "Dreamers/DREAMERS_EC2_2": {
+    "Zh": "离去吧，泰拉旅人。<br><br>离去，让我们安静地沉睡。",
+    "En": "Leave, Terrarian.<br><br>Leave us to our quiet sleep.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/TUT_TAB_01": {
+    "Zh": "石碑上刻着一段留给旅人的旧训。<br><br>来自泰拉的旅人，圣巢曾以灵魂驱动技艺。学习它们时，也别忘了你从故乡带来的工具与本领。<br>前路需要的不是高贵出身，而是准备和判断。",
+    "En": "An old lesson is carved here for travellers.<br><br>Traveller from Terraria, Hallownest once shaped its arts through Soul. Learn them, but remember the tools and skills of your homeland.<br>The road ahead demands preparation and judgement, not noble birth.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/TUT_TAB_02": {
+    "Zh": "圣巢的界碑。<br><br>旅人，越过此处，便进入旧王的领土。<br>碑上要求来者遵守王国的律法。<page>“最后而永恒的文明——圣巢。”<br><br>如今，来自泰拉的你只能在废墟中辨认这句许诺。",
+    "En": "A boundary stone of Hallownest.<br><br>Traveller, beyond this threshold lies the old king's realm.<br>The inscription demands obedience to its laws.<page>\"The last and eternal civilisation: Hallownest.\"<br><br>Coming from Terraria, you can now judge that promise only by its ruins.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/TUT_TAB_03": {
+    "Zh": "一段写给古代生灵的训诫。<br><br>旧王命令自己的造物显露真形，以威严统御虫群。<br>这是圣巢曾经的信条，并不是对泰拉旅人血统的宣告。",
+    "En": "An admonition addressed to ancient beings.<br><br>The old king ordered his creations to reveal their true forms and command the bugs' awe.<br>This was Hallownest's creed, not a declaration of a Terrarian traveller's ancestry.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/CLIFF_TAB_02": {
+    "Zh": "风化的界碑警告：离开王国，便会失去心智；荒原之外，再无世界。<page>来自泰拉的旅人知道，世界并未在这里终结。<br>这是旧王对臣民留下的警告，不是你的来历。",
+    "En": "A weathered boundary stone warns that leaving the kingdom means losing one's mind, and that no world lies beyond the wastes.<page>A traveller from Terraria knows the world does not end here.<br>This is an old king's warning to his subjects, not an account of your origin.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/ABYSS_TUT_TAB_01": {
+    "Zh": "封闭深渊的旧碑。<br><br>“被选中的容器已经升起。余下的只有被舍弃者，与创造它们的悔恨。我们不会再次进入此地。”<page>碑文记述的是圣巢创造容器的往事。泰拉旅人，你正站在那场悲剧的门外。",
+    "En": "An old stone sealing the Abyss.<br><br>\"The chosen Vessel has risen. Only the rejected, and regret for their creation, remain. We shall not enter again.\"<page>The stone records Hallownest's creation of the Vessels. Terrarian, you stand outside that tragedy, looking in.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/SENSE_TAB_01": {
+    "Zh": "这是留给被封印容器的记录：<br><br>“即使身受束缚，也应知晓外界的状况。圣巢终将再次完整。”<page>泰拉旅人，碑文所称的容器并不是你。那是一项早已许下、尚未兑现的承诺。",
+    "En": "A record left for the bound Vessel:<br><br>\"Though bound, you should know the state of the world. Hallownest shall be whole again.\"<page>Terrarian, the Vessel addressed here is not you. This is an old promise still unfulfilled.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/PILGRIM_TAB_01": {
+    "Zh": "朝圣者之路。<br>来自泰拉的旅人，也可以沿着青翠的野地与蘑菇林前往王国中心。<br>旧碑许诺那里藏着希望与真相。如今是否仍然如此，要由你亲眼确认。",
+    "En": "The Pilgrim's Way.<br>A traveller from Terraria may follow the green wilds and fungal groves towards the kingdom's heart.<br>The old stone promises hope and truth there. You must see for yourself what remains.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/PILGRIM_TAB_02": {
+    "Zh": "朝圣者之路在此结束。<br>圣巢的旧日中心就在前方。<br>旅人，谨慎前行；荣耀的许诺仍刻在石上，守门的人却已不在。",
+    "En": "The Pilgrim's Way ends here.<br>The old heart of Hallownest lies ahead.<br>Traveller, proceed carefully. The promise of glory remains in stone, but its gatekeepers are gone.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/RUIN_TAB_01": {
+    "Zh": "封城告示：<br>大门封闭，禁止出入。<br>没有为异乡旅人留下的例外。",
+    "En": "A city lockdown notice:<br>Gates sealed. No entry or departure.<br>No exception is recorded for foreign travellers.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/RUIN_TAB_02": {
+    "Zh": "石面上留下了臣民的恳求：<br>“失踪的君王，请回来。疯狂正在蔓延，我们需要你。”<page>这声音属于旧日的圣巢。来自泰拉的你，只能读到求救后的寂静。",
+    "En": "A plea from the subjects remains in stone:<br>\"Missing king, return. Madness spreads. We need you.\"<page>The voice belongs to old Hallownest. Coming from Terraria, you find only the silence after its plea.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/RUINS_FOUNTAIN": {
+    "Zh": "空洞骑士纪念碑。<br>“它被安置在高处的黑卵之中，以牺牲换取圣巢的永恒。”<page>泰拉旅人，这座碑纪念的是曾经承担封印的骑士，并非你的过去。",
+    "En": "A monument to the Hollow Knight.<br>\"Within the Black Egg above, its sacrifice preserves Hallownest for eternity.\"<page>Terrarian, this monument honours the Knight who bore the seal. It does not recount your past.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/MANTIS_PLAQUE_01": {
+    "Zh": "螳螂部族的战书：<br>寻求挑战的漫游者，欢迎。无论来自圣巢还是泰拉，都须以实力证明自己。<br>我们的利爪不会因来客的身份而留情。",
+    "En": "A challenge from the mantis tribe:<br>Wanderer seeking a trial, welcome. Hallownest or Terraria, all visitors must prove their strength.<br>Our claws make no allowance for your origin.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/MANTIS_PLAQUE_02": {
+    "Zh": "旧日的停战约定仍然有效。<br>螳螂继续守夜，阻挡边界另一侧的野兽。<br>过路的旅人，请勿把这份守望误当作臣服。",
+    "En": "The old truce still holds.<br>The mantises keep watch against the beasts beyond the border.<br>Passing traveller, do not mistake their vigil for submission.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/WISHING_WELL_INSPECT": {
+    "Zh": "旧王的许愿池。<br>碑文劝臣民将财富尽献王国，称苍白之王会为他们解除负担。<br>泰拉旅人，是否投下吉欧，由你自己决定。",
+    "En": "The old king's wishing well.<br>The inscription asks subjects to give their wealth to the kingdom, promising that the Pale King will relieve their burden.<br>Terrarian, whether to offer Geo is your choice.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/WP_WORKSHOP_01": {
+    "Zh": "旧王工坊的研究记录：<br>虚空拥有与光相反的力量，也许能抵抗岁月。<br>研究者试图驾驭它。石碑没有写出失败的代价。",
+    "En": "A research record from the king's workshop:<br>Void opposes light, and may resist time itself.<br>The researcher sought to command it. The stone does not state the price of failure.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/WP_THRONE_01": {
+    "Zh": "王座旁的残文：<br>旧日之光被驱逐，沃姆化身灯塔，以意志统御臣民。<br>永恒的许诺，却为后世留下了诅咒。<page>这不是泰拉旅人的王位，而是一个王国尚未结清的债。",
+    "En": "Fragments beside a throne:<br>The old light was cast out. Wyrm became a beacon and ruled his subjects through will.<br>The promise of eternity left a curse to later generations.<page>This is no Terrarian traveller's throne, but a kingdom's unsettled debt.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/ARCHIVE_01": {
+    "Zh": "档案碎片：<br>胚胎……外壳……容纳光……<br>容器……封印……守梦者环绕……<br>这些断裂的记录指向一项以生命维持封印的计划。",
+    "En": "Archive fragments:<br>Embryos... shells... contain the light...<br>Vessels... seals... Dreamers surrounding...<br>The broken record points to a plan that sustained a seal through living sacrifice.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/ARCHIVE_02": {
+    "Zh": "档案碎片：<br>王之光带来心智，旧日之光仍存于梦中。<br>信仰退却，记忆未灭。<br>记录到这里变得混乱，像是研究者也无法摆脱那个梦。",
+    "En": "Archive fragments:<br>The king's light grants thought. The old light remains in dreams.<br>Belief recedes; memory endures.<br>The record grows confused, as though its author could not escape that dream.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/ARCHIVE_03": {
+    "Zh": "档案碎片：<br>以外壳容纳液态的虚空……王与根的造物……<br>它们被称为容器。<page>泰拉旅人，这是对古老实验的记载，不是对你身体的描述。",
+    "En": "Archive fragments:<br>Liquid Void held within shells... creations of king and root...<br>They were called Vessels.<page>Terrarian, this describes an ancient experiment, not your body.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/FUNG_TAB_01": {
+    "Zh": "真菌部族的旧约：<br>接受沃姆的旨意，相信他的预言会庇护我们。<br>让命运与王国的未来缠绕。<page>如今，旅人只能在废墟中寻找这个约定的结局。",
+    "En": "An old pact of the fungal tribe:<br>Accept the Wyrm's will. Trust his foresight to shelter us.<br>Let our fate entwine with the kingdom's future.<page>Now a traveller must seek the pact's ending among ruins.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/FUNG_TAB_02": {
+    "Zh": "碑文向来客请求怜悯。<br>这些生灵的思想困在孤寂之中，言语只剩下微弱的影子。<br>泰拉旅人，听不懂它们，并不代表它们从未想过表达。",
+    "En": "The stone asks visitors for compassion.<br>These beings' thoughts are trapped in solitude; words are only their faint shadows.<br>Terrarian, not understanding them does not mean they never tried to speak.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/FUNG_TAB_03": {
+    "Zh": "共享思想，汇聚力量。<br>真菌的共同心智如此记述自己。<br>独行者经过时，它们只能感到忧郁与陌生。",
+    "En": "Shared thought gathers strength.<br>So the fungal mind describes itself.<br>When solitary travellers pass, it senses only sorrow and strangeness.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/FUNG_TAB_04": {
+    "Zh": "边界的警告：<br>另一侧的生灵，有过尊贵的父亲，也有被封印的母亲。<br>部族拒绝与它们共处。<page>这是圣巢各族留下的隔阂，不是你在泰拉的家族史。",
+    "En": "A warning at the border:<br>The creatures beyond had a noble father and a sealed mother.<br>The tribe refuses to share its home with them.<page>This records Hallownest's old divisions, not your family history in Terraria.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/GREEN_TABLET_01": {
+    "Zh": "苔藓部族的刻文：<br>生命从苔藓与叶片中萌发。只要绿意仍在道路上生长，族群便不会枯萎。",
+    "En": "A mosskin inscription:<br>Life springs from moss and leaf. While green growth covers the paths, the tribe shall not wither.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/GREEN_TABLET_02": {
+    "Zh": "部族在此宣告：<br>越过苍白之王的道路，便应尊重乌恩的法则。<br>泰拉旅人也不是这片绿地的例外。",
+    "En": "The tribe declares:<br>Beyond the Pale King's roads, respect the laws of Unn.<br>A Terrarian traveller is no exception in these green lands.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/GREEN_TABLET_03": {
+    "Zh": "伟大的心灵梦见了树叶，于是洞穴被绿意填满。<br>每片灌木、每根藤蔓，都被部族视为乌恩意志的延伸。",
+    "En": "A great mind dreamed of leaves, and green life filled the caverns.<br>The tribe sees each bush and vine as an extension of Unn's will.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/GREEN_TABLET_05": {
+    "Zh": "绿色之子从梦中来到此地。<br>它们等待着召唤，盼望回到造物者的身边。<br>碑文所说的是乌恩的族群。",
+    "En": "The green children came here from a dream.<br>They wait for a call to return to their maker.<br>The stone speaks of Unn's kin.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/GREEN_TABLET_06": {
+    "Zh": "写给乌恩的祈愿：<br>请回到我们身边。你的沉默让族群疲惫，叶片正在凋零。",
+    "En": "A prayer to Unn:<br>Return to us. Your silence wearies the tribe, and its leaves are fading.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/GREEN_TABLET_07": {
+    "Zh": "部族提醒过路者：<br>前方洞穴住着一位苍白的生灵。她看似和善，却不与此地共享同一个梦。<br>来自泰拉的旅人，接近时仍须谨慎。",
+    "En": "The tribe warns passing travellers:<br>A pale being occupies the cavern ahead. She seems kind, but does not share this land's dream.<br>Traveller from Terraria, approach with care.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/MAGE_COMP_01": {
+    "Zh": "圣所记录，森达：<br>悼念那些为探索献出生命的人。他们的成果将推动进化。<br>研究者相信，思想的瘟疫再也无法征服他们。",
+    "En": "Sanctum record, Cinda:<br>Mourn those who gave their lives to discovery. Their achievements shall drive our evolution.<br>The researchers believed no plague of thought could ever conquer them again.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/MAGE_COMP_02": {
+    "Zh": "圣所记录，贝拉：<br>操纵灵魂之前，先重塑头脑。能承受这种改变的虫子极少。<br>所谓通往真理的道路，已铺满失败。",
+    "En": "Sanctum record, Bera:<br>Before manipulating Soul, reshape the mind. Few bugs survive that change.<br>The road they called truth is paved with failures.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/MAGE_COMP_03": {
+    "Zh": "圣所记录，阿巴：<br>头脑仍是限制。怎样摆脱束缚，获得纯粹的聚合？<br>问题留在石上，答题的人已经不在。",
+    "En": "Sanctum record, Aba:<br>The mind remains a limit. How may its bonds be escaped, and pure focus attained?<br>The question remains in stone. Its author is gone.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/BELIEVE_MOTH": {
+    "Zh": "你读到了另一片世界留下的文字，泰拉旅人。<page>那些声音来自不同的心灵，却因某种缘由汇聚在此。它们未必与你熟悉的圣巢一致。<page>理解、怀疑，或只是记住它们，都由你决定。",
+    "En": "You have found words from another world, Terrarian.<page>Those voices belong to different minds, gathered here for reasons of their own. They may not match the Hallownest you know.<page>Understand, doubt, or simply remember them. The choice is yours.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/BELIEVE_MOTH_REPEAT": {
+    "Zh": "泰拉旅人，信与不信，都由你选择。",
+    "En": "Terrarian, belief or doubt is your choice.",
+    "Reason": "authored"
+  },
+  "Lore Tablets/BELIEVE_MOTH_02": {
+    "Zh": "你破坏了那些声音的寄托。<page>即使你来自另一个世界，也未必能理解每一种信仰。听不懂的低语，也曾承载真实的思念。<page>失去它们后，留下的人又该相信什么？",
+    "En": "You destroyed the home of those voices.<page>Coming from another world does not make every belief clear to you. Even unfamiliar whispers once carried someone's hopes.<page>Without them, what will those left behind believe?",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_01": {
+    "Zh": "一段旧王留下的记忆，向泰拉旅人展开：<br>“不论付出什么代价……”",
+    "En": "A memory left by the old king unfolds before the Terrarian:<br>\"No cost too great...\"",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_02": {
+    "Zh": "他要求被选中的造物没有可供思考的心智。",
+    "En": "He demanded that his chosen creation have no mind to think.",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_03": {
+    "Zh": "他要求那造物没有可以屈从的意志。",
+    "En": "He demanded that it have no will to break.",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_04": {
+    "Zh": "也没有能为苦难哭泣的声音。",
+    "En": "Nor a voice to cry suffering.",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_05": {
+    "Zh": "那是神与虚空共同创造的生命，不是来自泰拉的你。",
+    "En": "That life was born of god and Void. It was not you, the traveller from Terraria.",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_FINAL_A": {
+    "Zh": "旧王命那造物，封印在众人梦中散布瘟疫的障目之光。",
+    "En": "The old king charged that creation with sealing the blinding light that spread plague through dreams.",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_FINAL_B": {
+    "Zh": "他将那造物称作“容器”。",
+    "En": "He called that creation a \"Vessel\".",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_FINAL_C": {
+    "Zh": "他将那容器命名为“空洞骑士”。",
+    "En": "He named that Vessel \"the Hollow Knight\".",
+    "Reason": "authored"
+  },
+  "Minor NPC/KING_ABYSS_FINAL": {
+    "Zh": "记忆中的旧王，命被选中的造物封印瘟疫之光。<page>他称它为容器。<page>他称它为空洞骑士。<page>泰拉旅人，你见证了这项命令，却不属于这段身世。",
+    "En": "In the memory, the old king commands his chosen creation to seal the plague's light.<page>He calls it a Vessel.<page>He calls it the Hollow Knight.<page>Terrarian, you witnessed that command. It is not your origin.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_MEET": {
+    "Zh": "哦，有客人走过长路来到了这里。这样的气息……你来自泰拉，并非我们的造物。<page>我曾等待另一只容器。如今站在面前的，却是能自己选择道路的旅人。<page>我有一半旧日的护符可以交给你。找到另一半，或许能帮助你理解圣巢的往事。是否继续，由你决定。",
+    "En": "A visitor has travelled far to reach me. That presence... you come from Terraria, not from our making.<page>I waited for another Vessel. Instead, a traveller stands here with a will of their own.<page>I can give you half an old charm. Find the other half, and it may help you understand Hallownest's past. Whether to continue is yours to decide.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_TALK_01": {
+    "Zh": "我的根须能感觉到，被封印的容器正在衰弱。若任其崩溃，感染会再次夺走虫群的意志。<page>过去我们只想寻找替代者，重复那项残酷的计划。可你是有血肉、有思想的泰拉人，不能被当作空壳使用。<page>若你愿意帮助我们，就去探寻封印与感染的真相。请不要因为我的请求，就把自己当成注定的祭品。",
+    "En": "My roots sense the sealed Vessel weakening. If it fails, infection will claim the bugs' wills again.<page>Once we sought only a replacement for that cruel plan. But you are a Terrarian of flesh and thought, not an empty shell to be used.<page>If you wish to help, seek the truth of seal and infection. Do not take my plea as a sentence of sacrifice.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_TALK_02": {
+    "Zh": "我要提醒你：囚笼虽然衰弱，其中的感染却依然强大。<page>带好你的武器、护甲和补给。泰拉人的勇气也需要充分准备来支撑。",
+    "En": "A warning: the prison weakens, but the infection within remains mighty.<page>Prepare your weapons, armour and supplies. Even Terrarian courage needs preparation.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_MEET_REPEAT": {
+    "Zh": "做好准备再触碰封印，泰拉旅人。容器若过早被打破，多年囚禁的感染便会涌出。",
+    "En": "Prepare before touching the seal, Terrarian. Break the Vessel too soon, and the long-imprisoned infection will pour out.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_REPEAT_KINGSOUL": {
+    "Zh": "两半旧日的灵魂终于重聚。泰拉旅人，你的坚持让我想起了往昔。<page>但这枚护符不会改变你的血统。若想追查它的核心，就去深渊寻找那场实验留下的记忆。<page>那里是容器的起点，不是你的出生之地。",
+    "En": "The two halves of that old soul are reunited. Your persistence recalls another age, Terrarian.<page>But this charm does not change your ancestry. To learn its heart, seek the memory of the experiment in the Abyss.<page>It is where the Vessels began, not where you were born.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_DUNG": {
+    "Zh": "这气味……奥格瑞姆，是你吗，我忠诚的骑士？<page>岁月遮蔽了我的双眼，但旧日的气息仍能唤起回忆。<page>同行的泰拉旅人带着我交出的护符碎片，我因它而辨认出你们。愿那一小片力量，能护送你们走过废墟。",
+    "En": "That scent... Ogrim, my faithful knight, is it you?<page>Age has veiled my eyes, but an old scent can still stir memory.<page>The Terrarian beside you carries the charm fragment I gave away. Through it I can distinguish you both. May that small power guide you through these ruins.",
+    "Reason": "authored"
+  },
+  "CP2/QUEEN_GRIMMCHILD": {
+    "Zh": "你身旁跟着一只梦魇之火的孩子。泰拉旅人，你似乎已经参与了猩红剧团的仪式。<page>它会依赖你，也会带你继续那场循环。但你不是供他们随意使用的容器。<page>帮助谁、走多远，都应由你自己选择。",
+    "En": "A child of nightmare flame follows you. Terrarian, it seems you have joined the scarlet troupe's ritual.<page>It will depend on you and draw you into that cycle. But you are no Vessel for them to use.<page>Who to help, and how far to go, must be your choice.",
+    "Reason": "authored"
+  },
+  "CP2/QUEEN_GRIMMCHILD_FULL": {
+    "Zh": "你的伙伴眼中燃起了熟悉的火焰。猩红之心借助一位泰拉旅人，完成了自己的循环。<page>我认识那火焰，但它不是我的孩子，你也不是我的造物。愿你分清陪伴与支配，不要让仪式替你决定今后的道路。",
+    "En": "A familiar flame burns in your companion's eyes. The scarlet heart completed its cycle with a Terrarian's help.<page>I know that flame. It is not my child, and you are not my creation. Know the difference between companionship and control. Do not let a ritual decide your road.",
+    "Reason": "authored"
+  },
+  "CP2/GRIMM_DREAM": {
+    "Zh": "多么精彩！来自泰拉的血肉与意志，竟能驾驭如此丰富的力量。<page>这位演员无需出自沃姆之手，也足以让梦魇之心期待下一幕。",
+    "En": "Wonderful! Terrarian flesh and will command such varied power.<page>This performer need not be the Wyrm's creation to make the Nightmare Heart anticipate the next act.",
+    "Reason": "authored"
+  },
+  "CP2/DIVINE_CONVO_1": {
+    "Zh": "泥土、金属、药剂……还有一种我没闻过的故乡气味。泰拉来的客人，真有趣……",
+    "En": "Soil, metal, potions... and the scent of a homeland I have never known. A visitor from Terraria. How interesting...",
+    "Reason": "authored"
+  },
+  "Minor NPC/JINN_MEET": {
+    "Zh": "……是你……唤醒吉恩？<page>泰拉人……有心跳。有灵魂。不是吉恩熟悉的那些空壳……<page>你带东西来了吗？吉恩有发光的东西……可以交换。",
+    "En": "...You... woke Jinn?<page>Terrarian... a heartbeat. A soul. Not the empty shells Jinn knows...<page>Did you bring things? Jinn has shining things... can trade.",
+    "Reason": "authored"
+  },
+  "Minor NPC/JINN_SHADE_CHARM": {
+    "Zh": "这个护符……带着很深的黑暗。<page>但你……泰拉人……还是你自己。借来的力量，不是空白的灵魂。吉恩能分清……",
+    "En": "This charm... such deep darkness.<page>But you... Terrarian... are still yourself. Borrowed power, not an empty soul. Jinn can tell...",
+    "Reason": "authored"
+  },
+  "Minor NPC/JINN_KING_BRAND": {
+    "Zh": "……泰拉人带着旧王的标记。门会认它……吉恩不会因此叫你国王。<page>吉恩有别的主人……很远的主人。",
+    "En": "...A Terrarian carries the old king's mark. Doors recognise it... Jinn will not call you king for it.<page>Jinn has other masters... faraway masters.",
+    "Reason": "authored"
+  },
+  "Minor NPC/MASK_MAKER_GREET": {
+    "Zh": "一张不属于虫群的脸……泰拉人，你的故乡也用面具定义自己吗？",
+    "En": "A face unlike the bugs'... Terrarian, does your homeland define itself through masks as well?",
+    "Reason": "authored"
+  },
+  "Minor NPC/MASK_MAKER_REPEAT": {
+    "Zh": "你已有自己的脸，旅人。我的面具，是留给那些还在寻找自我的生灵的。",
+    "En": "You already have a face, traveller. My masks are for beings still seeking their own.",
+    "Reason": "authored"
+  },
+  "Minor NPC/MASK_MAKER_REPEAT2": {
+    "Zh": "我把面具交给圣巢的无脸者。泰拉旅人，你不需要借一张虫子的脸证明自己。",
+    "En": "I give masks to Hallownest's faceless. Terrarian, you need not borrow a bug's face to prove yourself.",
+    "Reason": "authored"
+  },
+  "Minor NPC/MASK_MAKER_REPEAT3": {
+    "Zh": "面具，脸孔，自我……它们在你的故乡，也会彼此混淆吗？",
+    "En": "Masks, faces, identity... Do they become confused in your homeland too?",
+    "Reason": "authored"
+  },
+  "Minor NPC/MASK_MAKER_DREAM": {
+    "Zh": "……异乡的脸孔，独立的意志……并非沃姆塑造的反差……",
+    "En": "...A foreign face, an independent will... not a contrast shaped by the Wyrm...",
+    "Reason": "authored"
+  },
+  "Minor NPC/MASK_MAKER_UNMASK4": {
+    "Zh": "泰拉人也带来了旧王的标记？一枚印记能开门，却不该把旧王的责任强加给你。<page>圣巢的废墟，正提醒着那些妄图统御一切的人：疆域越广，代价越重。",
+    "En": "Even a Terrarian carries the old king's mark? A mark can open doors. It should not force his burden upon you.<page>Hallownest's ruins remind those who would rule everything: the greater the realm, the greater its cost.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BIGCAT_KING_BRAND": {
+    "Zh": "哦嗯……来自泰拉的小客人，拿到了沃姆的标记。<page>想改变这里，还是想知道它为何衰败？印记给你道路，答案要自己找。",
+    "En": "Ohh... a visitor from Terraria has taken the Wyrm's mark.<page>Will you change this place, or learn why it fell? The mark gives you a road. Find the answer yourself.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BIGCAT_SHADECHARM": {
+    "Zh": "哦嗯……泰拉人借用了虚空，却仍保留自己的意志。<page>异乡的生命与古老的力量相遇，会带来什么？连我也想知道。",
+    "En": "Ohh... a Terrarian borrows the Void, yet keeps a will of their own.<page>Foreign life meeting ancient power. What might follow? Even I would like to know.",
+    "Reason": "authored"
+  },
+  "Minor NPC/TISO_TOWN_GREET": {
+    "Zh": "泰拉来的家伙，你的武器倒是挺多。可装备再多，也不等于配得上伟大战士的名号。<page>下面有座竞技场，敢来就去那里找我。到时候再看你的本事。",
+    "En": "You from Terraria. Quite a collection of weapons. Equipment alone does not make a great warrior.<page>There is a colosseum below. Meet me there if you dare. We shall see your skill then.",
+    "Reason": "authored"
+  },
+  "Minor NPC/TISO_BENCH_GREET": {
+    "Zh": "泰拉来的家伙，你也要坐这些老旧的线路？真正的战士该自己走上战场。<page>别拿你背包里的工具当借口。",
+    "En": "You from Terraria, travelling on these old lines too? A true warrior walks to battle.<page>Do not blame all the tools in your pack.",
+    "Reason": "authored"
+  },
+  "Minor NPC/TISO_COLOSSEUM": {
+    "Zh": "泰拉来的家伙，你也找到这里了。我就要上场，只是先休息一会儿。<page>带再多武器也别抢了我的风头。",
+    "En": "You from Terraria found this place too. I will enter soon. Just resting first.<page>Do not think all those weapons will steal my glory.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BRETTA_DIARY_1": {
+    "Zh": "异乡的救主<br>少女被荆棘与酸水困住，几乎以为自己再也回不了家。<page>一位来自泰拉的旅人穿过危险，向她伸出了手。那双手属于真正的血肉，带着远方的温度。<page>她还不知道旅人的名字，却已经在心里写下了一个过于美丽的故事。",
+    "En": "The Foreign Saviour<br>Trapped by thorns and acid, the maiden thought she would never return home.<page>A traveller from Terraria crossed the danger and reached out. Those living hands carried the warmth of a distant land.<page>She did not yet know the traveller's name, but had already begun a story too beautiful to be true.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BRETTA_DIARY_2": {
+    "Zh": "异乡的救主归来<br>旅人离开后，少女觉得整个村庄都冷了下来。<page>直到熟悉的脚步再次出现，带着远行的尘土。泰拉旅人在长椅旁坐下，她连一句问候都想了好久。<page>她把这片安静当成了默契，却还没有问过对方是否也有一样的心意。",
+    "En": "The Foreign Saviour Returns<br>After the traveller left, the whole village seemed colder to the maiden.<page>Then familiar footsteps returned, dusty from the road. The Terrarian sat beside the bench. Even a greeting took her an age to compose.<page>She mistook the quiet for understanding, without asking whether the traveller felt the same.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BRETTA_DIARY_3": {
+    "Zh": "梦中的异乡旅人<br>少女梦见救她的人再次出发，消失在井下的黑暗里。<page>她想象那位泰拉旅人总会及时回来，挡住每一场危险。<page>但梦里的身影越是完美，就越不像那个也会疲惫、受伤，有着自己旅程的真实来客。",
+    "En": "The Foreign Traveller in Dreams<br>The maiden dreamed that her rescuer left again, vanishing into darkness below the well.<page>She imagined the Terrarian always returning in time to turn away every danger.<page>Yet the more perfect the dream became, the less it resembled the real visitor, who could tire, be hurt, and follow a journey of their own.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BRETTA_DIARY_4": {
+    "Zh": "灰色王子的故事<br>井边又出现一位自称英雄的旅者，讲述自己如何战胜强敌。<page>他贬低那位泰拉来的救主，把每一件功劳都揽到自己身上。少女听着故事，再一次把想象当成了了解。<page>而那位异乡旅人早已继续自己的冒险，并不属于谁预先写好的爱情故事。",
+    "En": "The Grey Prince's Story<br>Another traveller appeared by the well, calling himself a hero and boasting of conquered foes.<page>He belittled the Terrarian rescuer and claimed every triumph. Listening, the maiden again mistook imagination for understanding.<page>The foreign traveller had already continued their adventure, belonging to no love story written for them.",
+    "Reason": "authored"
+  },
+  "CP2/BRETTA_DIARY_LEAVE": {
+    "Zh": "少女的追求之旅<br>灰色王子的故事开始重复。少女终于明白，自己爱上的许多东西，其实出自自己的想象。<page>来自泰拉的旅人有自己的道路，也不该被她留在梦里。<page>若想认识真正的人，就不能永远坐着等待。于是她收拾行装，走向自己的旅程。",
+    "En": "The Maiden's Journey<br>The Grey Prince's stories began to repeat. The maiden finally saw how much she loved had come from her own imagination.<page>The traveller from Terraria had a road of their own, and should not be kept inside her dream.<page>To meet someone real, she could not sit and wait forever. She packed, and began her own journey.",
+    "Reason": "authored"
+  },
+  "Minor NPC/BRETTA_DREAM_BED": {
+    "Zh": "泰拉来的旅人……一路上一定很累了……",
+    "En": "That traveller from Terraria... the road must be tiring...",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_INTRO_NORMAL": {
+    "Zh": "你好啊，来自泰拉的旅人。恐怕只剩我来欢迎你了。<page>德特茅斯如今很冷清。若要下井冒险，先在这里歇歇脚吧。",
+    "En": "Hello, traveller from Terraria. I fear I am all that remains to welcome you.<page>Dirtmouth is quiet these days. Rest here before venturing down the well.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_GENERIC_1": {
+    "Zh": "你带着和圣巢完全不同的气息，旅人。那些工具、衣装，还有走路的样子……泰拉一定是很不一样的地方吧。",
+    "En": "You carry a presence quite unlike Hallownest's, traveller. Your tools, clothes, even your walk... Terraria must be a very different place.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_GENERIC_2": {
+    "Zh": "累了吗，泰拉旅人？长椅虽硬，坐一会儿总比一直赶路好。<page>我喜欢有人陪着。你愿意聊聊故乡也好，安静整理背包也好，都不碍事。",
+    "En": "Tired, Terrarian? The bench is hard, but resting beats walking forever.<page>I enjoy the company. Tell me of your homeland, or quietly sort your pack. Either is welcome.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_TOWN_GREET_3": {
+    "Zh": "先歇一歇吧，泰拉旅人。井下的路不会跑掉。<page>补给、装备，还有自己的心情，都值得在出发前整理好。",
+    "En": "Rest a while, Terrarian. The roads below will wait.<page>Supplies, equipment, and your own spirits all deserve attention before you leave.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_BRETTA_RETURNED": {
+    "Zh": "那个年轻姑娘平安回来了！她一直说，是位来自泰拉的旅人救了她。<page>我早该想到是你。谢谢你还愿意把这里的人放在心上。",
+    "En": "That young girl returned safely! She keeps saying a traveller from Terraria rescued her.<page>I should have known it was you. Thank you for caring about the people here.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_FLOWER_ACCEPT": {
+    "Zh": "这朵花，真是送给我的？谢谢你，泰拉旅人。<page>我不过替你指了几次路，你却把这份心意带过了那么远。<page>我会好好照顾它。等你回来，我们再一起看。",
+    "En": "This flower is really for me? Thank you, Terrarian.<page>I only pointed out a few roads, yet you brought this kindness so far.<page>I shall care for it. We can admire it together when you return.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_FLOWER_DECLINE": {
+    "Zh": "啊，是我误会了。别介意，泰拉旅人。这样珍贵的花，一定有你想送到的地方。",
+    "En": "Ah, I misunderstood. Never mind, Terrarian. Such a precious flower must have somewhere you wish to take it.",
+    "Reason": "authored"
+  },
+  "Charm Slug/CHARMSLUG_MEET_1": {
+    "Zh": "哦哈，瞧瞧谁来了！泰拉来的新面孔！<page>进来吧，甜心。我的护符也很适合你这样的异乡冒险家。",
+    "En": "Oho, a new face from Terraria!<page>Come in, dear. My charms suit foreign adventurers like you as well.",
+    "Reason": "authored"
+  },
+  "Charm Slug/CHARMSLUG_MEET_3B": {
+    "Zh": "我们刚才说到护符，对吧？真惊讶，你这身泰拉装束还没配上一枚！<page>这些小东西凝着圣巢的神奇力量。挑喜欢的看看，说不定能和你的装备搭出新花样。",
+    "En": "Charms, wasn't it? Surprising that your Terrarian outfit has none!<page>These little things hold Hallownest's strange powers. Have a look. You may find something to suit your equipment.",
+    "Reason": "authored"
+  },
+  "Charm Slug/CHARMSLUG_REPEAT": {
+    "Zh": "是我的泰拉客人！远方的衣装，满满的装备，还有那股要去冒险的劲儿。<page>嗯，得配一枚同样出彩的护符才行！",
+    "En": "My Terrarian customer! Clothes from afar, all that equipment, and such an adventurous air.<page>Mmm, we must find a charm to match!",
+    "Reason": "authored"
+  },
+  "Ghosts/HIVEQUEEN_TALK": {
+    "Zh": "来自泰拉的旅人，我知道你不属于这个蜂巢。<page>若你在追查容器的起源，应去询问那苍白的存在。那是她与旧王留下的往事，不是你的血脉。<page>我们虽在圣巢之中，却从未加入他们追求永恒的计划。",
+    "En": "Traveller from Terraria, I know you are no kin of this hive.<page>If you seek the Vessels' origins, ask the pale being. That is her history with the old king, not your ancestry.<page>Our hive stood within Hallownest, but never joined their design for eternity.",
+    "Reason": "authored"
+  },
+  "Ghosts/BOSS_TALK": {
+    "Zh": "我也来自遥远的土地，泰拉旅人。你我并不同族，不过远行者总有相通的心情。",
+    "En": "I too came from distant lands, Terrarian. We are not of one kind, but travellers have much in common.",
+    "Reason": "authored"
+  },
+  "Ghosts/BOSS_REPEAT": {
+    "Zh": "你也是战士？那些来自泰拉的武器很特别。<page>不过，再好的装备也代替不了谨慎。这片土地不会因你来自远方就宽容一些。",
+    "En": "You are a warrior too? Those Terrarian weapons are unusual.<page>But fine equipment cannot replace caution. This land will not spare you for coming from afar.",
+    "Reason": "authored"
+  },
+  "Ghosts/CASPIAN_REPEAT": {
+    "Zh": "泰拉旅人，你心里藏着什么？故乡的记忆，还是未说出口的烦恼？<page>无论如何，不要让它们把你引向恶行。",
+    "En": "Terrarian, what do you carry within? Memories of home, or unspoken troubles?<page>Whatever they are, do not let them lead you to cruelty.",
+    "Reason": "authored"
+  },
+  "Ghosts/GALIEN_TALK": {
+    "Zh": "又一位战士！还是来自泰拉的？很好！<page>我是加利安，来到深巢磨练力量的勇士。你我虽不同族，却都为挑战而来。<page>来打一场吧，让我看看异乡的战斗技艺！",
+    "En": "Another warrior! From Terraria? Excellent!<page>I am Galien, a warrior who came to Deepnest to test his strength. Different kin, but the same hunger for a challenge.<page>Fight me. Show me the arts of your homeland!",
+    "Reason": "authored"
+  },
+  "Ghosts/MARISSA_TALK": {
+    "Zh": "欢迎来到我的舞台，泰拉旅人。我叫玛丽莎，曾是一位有些名气的歌手。<page>观众早已离去，歌声却还在这里。你愿意听一会儿吗？<page>这是圣巢留给远方来客的一首歌。",
+    "En": "Welcome to my stage, Terrarian. I am Marissa, once a singer of some renown.<page>The audience has gone, but the song remains. Will you listen a while?<page>A song from Hallownest for a visitor from afar.",
+    "Reason": "authored"
+  },
+  "Ghosts/MARKOTH_DEFEAT": {
+    "Zh": "我竟然……败了。<page>原来我仍躺在那里。已经过去多久？<page>战士、君王，甚至岁月都没能使我醒来，最后却是一位泰拉旅人。<page>我以为你是吞噬我的黑暗……也许，只是终于有人找到了我。",
+    "En": "I... was defeated.<page>So I still lie there. How long has it been?<page>Warriors, kings, even time could not wake me. In the end, a Terrarian did.<page>I thought you the darkness come to consume me... Perhaps someone has simply found me at last.",
+    "Reason": "authored"
+  },
+  "Shaman/SHAMAN_MEET": {
+    "Zh": "哦吼！从黑暗里走出来一位泰拉人！这身装备，这股活生生的灵魂气息，真新鲜！<page>是什么引你来到圣巢？算了，先不问。你既然找到这里，就该见识见识我的手艺。<page>收下这个小法术吧。让我们看看，异乡的冒险家能把它用成什么样！哦吼吼！",
+    "En": "Oho! A Terrarian steps from the dark! That equipment, that living Soul. How refreshing!<page>What brings you to Hallownest? Never mind for now. Since you found me, you should see my craft.<page>Take this little spell. Let us see what a foreign adventurer makes of it! Ohoho!",
+    "Reason": "authored"
+  },
+  "Shaman/SHAMAN_RETURN": {
+    "Zh": "哦吼，我的泰拉朋友回来了！又发现了什么？别光惦记挖矿，也来看看灵魂能玩出多少花样！",
+    "En": "Oho, my Terrarian friend returns! What have you found? Mining is not everything. See what wonders Soul can offer!",
+    "Reason": "authored"
+  },
+  "Shaman/SHAMAN_FIREBALL2": {
+    "Zh": "我的法术变了模样！你把它带进了什么黑暗里？<page>哦吼，原来如此。异乡的灵魂借用了深渊的力量……让人兴奋，也让人有点担心。小心掌握它，泰拉朋友。",
+    "En": "My spell has changed! What darkness did you take it into?<page>Oho, I see. A foreign Soul borrowing the Abyss's strength... Exciting, and a little worrying. Handle it carefully, Terrarian friend.",
+    "Reason": "authored"
+  },
+  "Shaman/SHAMAN_SCREAM": {
+    "Zh": "那一声呐喊……是我一位远亲留下的法术。<page>你把它带回来了，泰拉朋友。愿你的灵魂承受得住那份力量，也记得是谁留下了它。",
+    "En": "That cry... a spell left by a distant relative.<page>You brought it back, Terrarian friend. May your Soul bear its power, and remember who left it.",
+    "Reason": "authored"
+  },
+  "Shaman/SHAMAN_SCREAM2": {
+    "Zh": "哦哦哦，这呐喊连墙壁都在发抖！<page>泰拉朋友，你一定深入了我也不敢踏足的地方。借来的黑暗再强，也别让它盖过你自己的声音。",
+    "En": "Ohoho, that cry shakes the walls!<page>Terrarian friend, you reached places even I fear to enter. However strong that borrowed darkness, do not let it drown your own voice.",
+    "Reason": "authored"
+  },
+  "Quirrel/QUIRREL_MEET_TEMPLE": {
+    "Zh": "你好！在这被遗忘的道路上，居然能遇到一位来自泰拉的旅行者。<page>你的装备很特别。看来你也有不少值得讲的旅途故事。",
+    "En": "Hello! A traveller from Terraria on these forgotten roads. What a pleasure.<page>Unusual equipment. I imagine you have stories of your own journeys.",
+    "Reason": "authored"
+  },
+  "Quirrel/QUIRREL_MANTIS_01": {
+    "Zh": "又见面了，泰拉朋友。你见过村里的螳螂了吗？他们不太信任陌生人，却依然保有荣耀与清醒。<page>若要挑战首领，先检查自己的武器和护甲。你熟悉的泰拉技艺会有帮助，不过不能轻视这里的传统。<page>附近王城里还有一位钉子匠。想了解圣巢的锻造，也可以去拜访他。",
+    "En": "We meet again, Terrarian friend. Have you seen the mantises? They distrust strangers, but retain their honour and clarity.<page>Before challenging their leaders, check your weapons and armour. Terrarian skill will help, but do not underestimate their traditions.<page>A Nailsmith lives in the nearby city. Visit him if you wish to learn of Hallownest's metalwork.",
+    "Reason": "authored"
+  },
+  "Quirrel/DREAM_ARCHIVE_INTERIOR": {
+    "Zh": "一位远道而来的泰拉旅人，竟愿意走到这里，面对我们留下的难题。",
+    "En": "A traveller all the way from Terraria, willing to come here and face the problem we left behind.",
+    "Reason": "authored"
+  },
+  "Sly/SLY_BASEMENT_1": {
+    "Zh": "……看来骨钉之道，又多了一位来自泰拉的传人。",
+    "En": "...It seems the nail arts have found an heir from Terraria.",
+    "Reason": "authored"
+  },
+  "Sly/SLY_BASEMENT_2": {
+    "Zh": "收下这份礼物，泰拉战士。作为店主，免费送东西实在让我心疼。<page>但作为骨钉贤者，我承认你的技艺。出身异乡，也不妨碍你获得这枚勋章。",
+    "En": "Take this gift, Terrarian warrior. As a shopkeeper, giving anything away pains me.<page>As the Nail Sage, I recognise your skill. A foreign birth does not deny you this medal.",
+    "Reason": "authored"
+  },
+  "Cornifer/CORNIFER_MEET": {
+    "Zh": "嗯？你好！从泰拉来的探险家，也被这些遗迹吸引了吗？<page>我叫柯尼法，是个制图师。找到路、再发现一条没走过的路，这就是我的乐趣。<page>要一份这里的地图吗？希望它也能帮到你的旅程。",
+    "En": "Hmm? Hello! Have these ruins drawn an explorer from Terraria as well?<page>I am Cornifer, a cartographer. Finding a road, then discovering another, is my joy.<page>Would you like a map? I hope it helps your journey too.",
+    "Reason": "authored"
+  },
+  "Iselda/ISELDA_MEET": {
+    "Zh": "泰拉来的客人，是来买地图的吗？本来该我丈夫招呼你，他却又钻进地下了。<page>他负责探路，我守着店。看看吧，总有些用品能让你少走冤枉路。",
+    "En": "A customer from Terraria. Here for maps? My husband should be serving you, but he has gone underground again.<page>He explores; I mind the shop. Have a look. These supplies may save you a wrong turn.",
+    "Reason": "authored"
+  },
+  "Nailsmith/NAILSMITH_MEET_1": {
+    "Zh": "来整修武器？泰拉的锻造和我的手艺不同，先把东西放下，让我看看。",
+    "En": "A weapon to repair? Terrarian forging differs from my craft. Put it down and let me look.",
+    "Reason": "authored"
+  },
+  "Nailsmith/NAILSMITH_MEET_2": {
+    "Zh": "嗯？原来是位泰拉旅人。刚才只顾着炉火，没看清。",
+    "En": "Hmm? A Terrarian traveller. I was watching the furnace and did not look closely.",
+    "Reason": "authored"
+  },
+  "Nailsmith/NAILSMITH_MEET_3": {
+    "Zh": "我就是这里的钉子匠。你带着泰拉的武器，也想了解圣巢的锻造？<page>骨钉是我的老本行。若要整修它，就带着材料和吉欧来。不同地方的手艺，总有能互相借鉴的东西。",
+    "En": "I am the Nailsmith. You carry Terrarian weapons, but wish to know Hallownest's craft?<page>Nails are my trade. Bring materials and Geo if you need one reforged. Different crafts can always learn from each other.",
+    "Reason": "authored"
+  },
+  "Jiji/MEET1": {
+    "Zh": "欢迎，泰拉来的闯入者。你把我从很长的睡眠中唤醒了。<page>别紧张。来自远方的人，也会有需要面对的遗憾。",
+    "En": "Welcome, intruder from Terraria. You woke me from a very long sleep.<page>Do not worry. Even visitors from afar have regrets to face.",
+    "Reason": "authored"
+  },
+  "Jiji/MEET2": {
+    "Zh": "我是吉吉。我能召回人们留在外面的遗憾，让他们有机会亲手处理。<page>泰拉旅人，你也有不愿丢下的东西吗？让我看一看你的眼睛……",
+    "En": "I am Jiji. I can call back the regrets people leave behind, so they may face them themselves.<page>Terrarian, have you something you cannot leave behind? Let me see your eyes...",
+    "Reason": "authored"
+  },
+  "Jiji/SHADE_CHARM": {
+    "Zh": "这份黑暗已经与你的力量相连了，泰拉旅人。<page>我感受到的依然是你自己的灵魂。能面对遗憾而不被它吞没，是很难得的事。",
+    "En": "That darkness has become bound to your power, Terrarian.<page>I still sense your own Soul. To face regret without being consumed by it is rare.",
+    "Reason": "authored"
+  },
+  "CP3/KNIGHT_STATUE_1": {
+    "Zh": "一位来自泰拉的挑战者，曾在此面对诸神。",
+    "En": "A challenger from Terraria faced the gods here.",
+    "Reason": "authored"
+  },
+  "CP3/KNIGHT_STATUE_2": {
+    "Zh": "泰拉旅人，借虚空之力继续前行。",
+    "En": "The Terrarian traveller walked on with borrowed Void.",
+    "Reason": "authored"
+  },
+  "CP3/KNIGHT_STATUE_3": {
+    "Zh": "万千力量汇于一位泰拉战士的意志。",
+    "En": "Many powers gathered beneath a Terrarian warrior's will.",
+    "Reason": "authored"
+  },
+  "CP3/UI_BINDING_HEART": {
+    "Zh": "生命70%",
+    "En": "Life 70%",
+    "Reason": "Terrarian player-side challenge binding"
+  },
+  "CP3/UI_CHALLENGE_DESC_1": {
+    "Zh": "寻觅武技与坚韧之神",
+    "En": "Seek the Gods of Skill and Endurance",
+    "Reason": "authored"
+  },
+  "Enemy Dreams/HORNET_GREENPATH_1": {
+    "Zh": "……让我看看泰拉人的本领……",
+    "En": "...Show me a Terrarian's skill...",
+    "Reason": "authored"
+  },
+  "Enemy Dreams/HORNET_GREENPATH_2": {
+    "Zh": "……异乡的武器，也有破绽……",
+    "En": "...Foreign weapons have their openings too...",
+    "Reason": "authored"
+  },
+  "Enemy Dreams/HORNET_GREENPATH_3": {
+    "Zh": "……这位旅人不该为我们旧日的罪付出生命……",
+    "En": "...This traveller should not die for our old sins...",
+    "Reason": "authored"
+  },
+  "Enemy Dreams/HORNET_GG_2": {
+    "Zh": "泰拉旅人……我们为何同处这场梦？……",
+    "En": "Terrarian... why do we share this dream?...",
+    "Reason": "authored"
+  },
+  "CP3/HORNET_GG_2": {
+    "Zh": "泰拉旅人……我们为何同处这场梦？……",
+    "En": "Terrarian... why do we share this dream?...",
+    "Reason": "authored"
+  },
+  "Enemy Dreams/MANTIS_YOUNG_1": {
+    "Zh": "……异乡的战士？……",
+    "En": "...A foreign warrior?...",
+    "Reason": "authored"
+  },
+  "UI/INV_DESC_SPELL_FOCUS": {
+    "Zh": "泰拉旅人学会的圣巢技艺：聚集收集到的灵魂，治疗自己的伤口。<br><br>劈砍敌人收集灵魂。",
+    "En": "A Hallownest art learned by the Terrarian: focus collected Soul to heal your wounds.<br><br>Strike enemies to collect Soul.",
+    "Reason": "authored"
+  },
+  "UI/INV_DESC_HEARTPIECE_0": {
+    "Zh": "远古面具的碎片，其中仍有保护生命的力量。<br><br>收集四个便可组成完整护符，强化你的生命力。",
+    "En": "A fragment of an ancient mask, still holding protective power.<br><br>Collect four to form a whole and strengthen your vitality.",
+    "Reason": "authored"
+  },
+  "UI/INV_DESC_HEARTPIECE_1": {
+    "Zh": "远古面具的碎片，其中仍有保护生命的力量。<br><br>再收集三个便可组成完整护符，强化你的生命力。",
+    "En": "A fragment of an ancient mask, still holding protective power.<br><br>Collect three more to form a whole and strengthen your vitality.",
+    "Reason": "authored"
+  },
+  "UI/INV_DESC_HEARTPIECE_2": {
+    "Zh": "远古面具的碎片，其中仍有保护生命的力量。<br><br>再收集两个便可组成完整护符，强化你的生命力。",
+    "En": "A fragment of an ancient mask, still holding protective power.<br><br>Collect two more to form a whole and strengthen your vitality.",
+    "Reason": "authored"
+  },
+  "UI/INV_DESC_HEARTPIECE_3": {
+    "Zh": "远古面具的碎片，其中仍有保护生命的力量。<br><br>再收集一个便可组成完整护符，强化你的生命力。",
+    "En": "A fragment of an ancient mask, still holding protective power.<br><br>Collect one more to form a whole and strengthen your vitality.",
+    "Reason": "authored"
+  },
+  "Charm Slug/CHARMSLUG_TRUTH": {
+    "Zh": "想知道护符是怎么来的，泰拉甜心？这事说起来有点伤感。<page>许多护符来自垂死虫子未了的愿望。它们的情感凝结起来，成了能保护别人的饰物。<page>所以它们也愿意陪着异乡旅人。好好珍惜这些跨过生死的小礼物吧。",
+    "En": "Want to know where charms come from, my Terrarian dear? It is a little sad.<page>Many form from a dying bug's unfulfilled wishes. Those feelings gather into something that can protect another.<page>They can travel with an outsider too. Treasure these little gifts that crossed the boundary of life.",
+    "Reason": "authored"
+  },
+  "Charm Slug/CHARMSLUG_NOTCH_AVAIL_2": {
+    "Zh": "哦，我的泰拉客人！你的护符收藏越来越丰富了。<page>该看看新的凹槽了，多给心爱的护符腾点位置吧！",
+    "En": "Oh, my Terrarian customer! Your charm collection keeps growing.<page>Time for another notch. Make room for your favourites!",
+    "Reason": "authored"
+  },
+  "Cornifer/FUNGAL_WASTES_GREET": {
+    "Zh": "啊，我的泰拉朋友，你来得正好！我快画完这片有毒洞穴的地图了。<page>这里的生灵很在意领地。尤其更深处那些瘦削的武士，带着工具可别就以为哪里都能挖。<page>我这身子可经不起追赶，你也小心些。",
+    "En": "Ah, my Terrarian friend, perfect timing! My map of these toxic caverns is nearly finished.<page>The creatures here guard their territory, especially the slender warriors below. Carrying tools does not mean you may dig anywhere.<page>I could hardly outrun them. Take care yourself.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_FLOWER_REQUEST": {
+    "Zh": "嗯？你拿着什么，泰拉旅人？多么美丽的花！<page>我没想到你还愿意带着这么娇嫩的东西走那么远。它是要送给谁的？<page>难道……是给我的？",
+    "En": "Hmm? What is that, Terrarian? Such a beautiful flower!<page>I did not expect you to carry something so delicate all that way. Who is it for?<page>Could it... be for me?",
+    "Reason": "authored"
+  },
+  "Minor NPC/CLOTH_GHOST": {
+    "Zh": "这才是我一直盼望的战斗，激烈、痛快，没有再躲起来！<page>谢谢你，泰拉朋友。不同的故乡没有妨碍我们并肩作战。我会记得你的勇气。",
+    "En": "The battle I always hoped for! Fierce, glorious, and I did not hide!<page>Thank you, Terrarian friend. Different homelands did not stop us fighting side by side. I will remember your courage.",
+    "Reason": "authored"
+  },
+  "Minor NPC/CLOTH_FUNG_DREAM": {
+    "Zh": "……连蘑菇都差点把我打倒。要是早些向那位泰拉战士求助，就不用硬撑到这一步……",
+    "En": "...Even the mushrooms nearly defeated me. If I had asked that Terrarian warrior for help, I would not have had to pretend so long...",
+    "Reason": "authored"
+  },
+  "Minor NPC/CLOTH_TOWN_GREET": {
+    "Zh": "啊，泰拉战士！又见面了。你让我重新有了冒险的勇气。<page>不过，我也该去寻找自己的挑战。先在这个安静的小镇歇一歇，再出发。",
+    "En": "Ah, Terrarian warrior! We meet again. You helped me find the courage to adventure.<page>But I should seek challenges of my own. A rest in this quiet town, then onward.",
+    "Reason": "authored"
+  },
+  "Minor NPC/CLOTH_QG_GREET": {
+    "Zh": "泰拉战士，你也来挑战叛贼部落？<page>我曾因害怕而不敢靠近。可与你并肩作战的念头，让我想再勇敢一次。<page>要是都能回去，咱们可有个好故事讲了！",
+    "En": "Terrarian warrior, here to challenge the traitor tribe too?<page>I was afraid to approach. The thought of fighting beside you makes me want to be brave once more.<page>If we both return, we will have a fine story!",
+    "Reason": "authored"
+  },
+  "Minor NPC/EMILITIA_MEET": {
+    "Zh": "哈，看看什么风把泰拉人吹进我家了？我已经太久没有见过新面孔。<page>外面那些曾经高贵的同伴都在游荡，只有我还在这里欣赏他们的下场。<page>别忙着走，异乡人。至少陪我笑一会儿。",
+    "En": "Ha! What wind blew a Terrarian into my home? It has been so long since I saw a new face.<page>My once-noble peers wander outside, while I remain to enjoy their fate.<page>Do not rush away, outsider. At least share a laugh.",
+    "Reason": "authored"
+  },
+  "Minor NPC/EMILITIA_GREET": {
+    "Zh": "以前我可不会招待来自泰拉的客人。现在，那些讲究血统的蠢货都已经死了。<page>过来，陪我分享一点幸存者的快乐吧。",
+    "En": "Once I would never have received a visitor from Terraria. Now those fools who cared about ancestry are all dead.<page>Come, share a survivor's joy.",
+    "Reason": "authored"
+  },
+  "Minor NPC/EMILITIA_DREAM": {
+    "Zh": "……泰拉人也会倒在守卫的武器下。只有我会一直活着……",
+    "En": "...Even a Terrarian can fall to the guards. Only I will live on...",
+    "Reason": "authored"
+  },
+  "Minor NPC/XUN_KING_BRAND": {
+    "Zh": "你竟带着旧王的标记，泰拉旅人。它给予通行，却也会让人想起沉重的旧债。<page>我曾在王国盛时服侍于它。我知道，再高贵的许诺，也可能让正直的骑士痛苦不堪。",
+    "En": "You carry the old king's mark, Terrarian. It grants passage, but recalls a heavy debt.<page>I served this kingdom in its height. Even the noblest promise can leave an honourable knight in anguish.",
+    "Reason": "authored"
+  },
+  "Minor NPC/DUNG_DEFENDER_1": {
+    "Zh": "啊，是你，泰拉来的战士！<page>先让我为之前的战斗道歉。我把闯入者都当作被感染的躯壳，险些误伤一位高尚的客人。<page>你用自己的实力和风度赢得了我的敬意。",
+    "En": "Ah, the warrior from Terraria!<page>First, let me apologise for our battle. I mistook every intruder for an infected husk, and nearly harmed an honourable guest.<page>Your strength and conduct have earned my respect.",
+    "Reason": "authored"
+  },
+  "Minor NPC/XUN_FAILED2": {
+    "Zh": "又一朵花凋零了……别急，泰拉旅人，我还有。<page>它们珍贵又脆弱，路却那么长。我愿为爱再试一次。你愿意帮我吗？",
+    "En": "Another flower has faded... Wait, Terrarian, I have more.<page>They are precious and fragile, and the road so long. For love, I would try again. Will you help?",
+    "Reason": "authored"
+  },
+  "Relic Dealer/RELICDEALER_EGG_4": {
+    "Zh": "第四枚神秘蛋！泰拉旅人，你寻宝的本领真让我吃惊。<page>有人说这些蛋会挑选自己的主人，我却更相信耐心与观察。<page>你带来了值得研究的东西，我就照价付钱。传说可以慢慢争论。",
+    "En": "A fourth Arcane Egg! Your talent for finding relics amazes me, Terrarian.<page>Some say the eggs choose their owners. I place more trust in patience and observation.<page>You brought something worth studying, so I pay its price. The legends can wait.",
+    "Reason": "authored"
+  },
+  "Ghosts/KARINA_TALK": {
+    "Zh": "看见我的印记了吗，泰拉旅人？在我的族群中，那是卓越的证明。<page>你的故乡或许有不同的荣誉。若有一天能讲给我听，倒也不错。",
+    "En": "See my markings, Terrarian? Among my kind they signify excellence.<page>Your homeland may honour different things. I would not mind hearing of them one day.",
+    "Reason": "authored"
+  },
+  "Ghosts/KARINA_REPEAT": {
+    "Zh": "你身上没有我们族群区分高低的印记。泰拉人，是用什么认识彼此的呢？",
+    "En": "You bear none of the markings our kind uses for rank. How do Terrarians recognise one another?",
+    "Reason": "authored"
+  },
+  "Ghosts/GARRO_REPEAT": {
+    "Zh": "站稳，泰拉战士。",
+    "En": "Stand firm, Terrarian warrior.",
+    "Reason": "authored"
+  },
+  "Ghosts/HU_TALK": {
+    "Zh": "等等，泰拉旅人。你也是来征服这片废墟的吗？<page>曾有人自认在净化这里，最后却被骄傲与误解吞噬。<page>别把与你不同的生灵都视作怪物，也别把追求荣耀当成伤害的理由。",
+    "En": "Wait, Terrarian traveller. Have you come to conquer these ruins?<page>Others believed they were cleansing this land, only to be consumed by pride and misunderstanding.<page>Do not call every unfamiliar being a monster, or make glory an excuse for harm.",
+    "Reason": "authored"
+  },
+  "Stag/STAG_HOPE_2": {
+    "Zh": "我愿意相信，族人已经走到更广阔的天地里去了。<page>而我只要还听得到铃声，就会履行职责。<page>你也有自己的旅程，泰拉朋友。只要这把老骨头还能跑，我们就再同行一段。",
+    "En": "I choose to believe my kin have travelled into a wider world.<page>As long as I can hear the bell, I will keep my duty.<page>You have a journey of your own, Terrarian friend. While these old legs can run, let us share another stretch of road.",
+    "Reason": "authored"
+  },
+  "Zote/ZOTE_BUZZER_1_B": {
+    "Zh": "听好了，泰拉来的家伙！我是伟大的左特，声名卓著的骑士。再惹我，就让你见识“生命终结者”！",
+    "En": "Listen, you from Terraria! I am Zote the Mighty, a knight of great renown. Bother me again and you shall meet Life Ender!",
+    "Reason": "authored"
+  },
+  "Zote/DREAM_COL_CORPSE": {
+    "Zh": "……快逃吧，泰拉人！免得继续被伟大的左特羞辱！……",
+    "En": "...Flee, Terrarian! Before Zote the Mighty humiliates you further!...",
+    "Reason": "authored"
+  },
+  "CP3/AMELITIA_FLOWER": {
+    "Zh": "哈，泰拉人带来了一株异乡的花？确实罕见，却也比不上旧王的光辉。<page>拿走吧。我有自己的植物要照料，它们可比你的更合我心意。",
+    "En": "Ha, a Terrarian brings a foreign flower? Rare indeed, but hardly a match for the old king's radiance.<page>Take it away. I have plants of my own, far more to my taste.",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_ENGINE_GGMODE": {
+    "Zh": "诸神之神！大人的泰拉之躯，竟汇聚了如此强盛的力量！<page>吾等竟曾因来历而轻视大人。请在试炼中展示您的武技，让吾等亲见这异乡的光辉！",
+    "En": "God of gods! Such power gathered within a Terrarian body!<page>We once scorned your foreign origin. Show your skill in the trials, and let us witness that distant radiance!",
+    "Reason": "authored"
+  },
+  "Lore Tablets/RANDOM_POEM_STUFF": {
+    "Zh": "莫诺蒙的《圣巢挽歌》残篇。<page>诗中向苍白之王致辞，追忆他如何使虫群获得心智，又如何以永恒的许诺酿成灾难。<page>最后的字句提到“完美的空虚”，像是为创造容器辩护。<page>泰拉旅人，你读到的是一个文明写给旧王的悼词，不是对你的颂扬或命令。",
+    "En": "Fragments of Monomon's Elegy for Hallownest.<page>The poem addresses the Pale King, recalling the minds he granted the bugs and the disaster born of his promise of eternity.<page>Its final words invoke \"perfect emptiness\", as though justifying the creation of the Vessels.<page>Terrarian, this is a civilisation's elegy for its king, not praise or an order addressed to you.",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_ENGINE_PRIME": {
+    "Zh": "敬畏吧，泰拉来的挑战者！前方是被选中的纯粹容器，在此梦中重现的强大神明。<page>汝与它没有共同的血脉，武器与身躯也截然不同，竟仍敢挑战它？<page>吾等要看清：异乡的意志，是否真能胜过这座王国穷尽一切塑造的力量！",
+    "En": "Be awed, challenger from Terraria! Ahead stands the chosen Pure Vessel, a mighty god restored within this dream.<page>You share no blood with it. Your weapons and body are unlike its own. Still you dare challenge it?<page>We shall see whether a foreign will can overcome the power this kingdom spent everything to create!",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_ENGINE_PRIME_REVISIT": {
+    "Zh": "泰拉挑战者，汝又来与纯粹容器对决？<page>这不是同族的重逢，而是两种力量的试炼。吾等将聆听汝的战斗，看看汝究竟在追求什么。",
+    "En": "Terrarian challenger, you return to face the Pure Vessel?<page>No reunion of kin, but a trial between two powers. We shall listen to your battle and learn what you seek.",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_ENGINE_PRIME_DREAM": {
+    "Zh": "……这位泰拉人不受旧日血统束缚，却在以自己的意志走近那力量……",
+    "En": "...This Terrarian is bound by no ancient bloodline, yet approaches that power by a will of their own...",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_ENGINE_T5": {
+    "Zh": "即使在这至高的神殿，吾等也无法忽视汝了，泰拉挑战者。<page>汝带来了多少种武技，多少个异乡的奇迹？<page>继续战斗吧。吾等将聆听，不再用出身判断汝的力量。",
+    "En": "Even in this highest pantheon, we cannot ignore you, Terrarian challenger.<page>How many arts, how many foreign wonders have you brought?<page>Continue. We shall listen, and no longer judge your strength by your origin.",
+    "Reason": "authored"
+  },
+  "Dream Witch/WITCH_GREET": {
+    "Zh": "啊，泰拉来的梦之钉挥舞者，你回来了。让我看看，这一路又有多少记忆随你同行。",
+    "En": "Ah, the Dream Nail's wielder from Terraria returns. Let me see how many memories travel with you now.",
+    "Reason": "authored"
+  },
+  "Dream Witch/WITCH_MEET_A": {
+    "Zh": "你醒来了，泰拉旅人。欢迎回到清醒的世界。那些梦没有带走你自己的意志。",
+    "En": "You wake, Terrarian. Welcome back to the waking world. Those dreams have not taken your own will.",
+    "Reason": "authored"
+  },
+  "Dream Witch/WITCH_MEET_B": {
+    "Zh": "你平安回来了，泰拉旅人。我曾担心那些梦会把你困住。<page>坐一会儿吧。来自异乡的人，也需要从沉重的记忆里歇一歇。",
+    "En": "You returned safely, Terrarian. I feared those dreams would hold you.<page>Rest a while. Even someone from afar needs respite from heavy memories.",
+    "Reason": "authored"
+  },
+  "Dream Witch/WITCH_DREAM1": {
+    "Zh": "守梦者把你放逐到了梦境之间，泰拉旅人。<page>你不是他们旧日誓约中的容器，不必接受他们对你安排的命运。<page>沿着自己的意志前进。我会在前面等你，带你找到回去的路。",
+    "En": "The Dreamers cast you between dreams, Terrarian.<page>You are no Vessel of their old pact. You need not accept the fate they assign you.<page>Follow your own will. I will wait ahead and help you find a way back.",
+    "Reason": "authored"
+  },
+  "Dream Witch/WITCH_DREAM_FALL": {
+    "Zh": "即使脚下会坠落，也别丢掉自己的方向。<page>梦境不能决定你是谁，泰拉旅人。<page>握住你的意志，向前走。你还能回到清醒的世界。",
+    "En": "Even if the path falls away, do not lose your direction.<page>A dream cannot decide who you are, Terrarian.<page>Hold to your own will and walk on. You can still return to the waking world.",
+    "Reason": "authored"
+  },
+  "Minor NPC/QUEEN_REPEAT_SHADECHARM": {
+    "Zh": "护符中的虚空正在回应你。泰拉旅人，你把那段古老记忆带出了深渊。<page>我不能把你当成空无情感的工具。你的希望、愤怒与怜悯，都属于你自己。<page>圣巢的未来或许能因你改变，但你首先应当决定，自己愿意为它做什么。",
+    "En": "The Void in the charm answers you. Terrarian, you carried that ancient memory out of the Abyss.<page>I cannot treat you as a tool without feeling. Your hope, anger and compassion are your own.<page>You may change Hallownest's future, but first decide what you willingly choose to do for it.",
+    "Reason": "authored"
+  },
+  "Minor NPC/MINER_DREAM_2": {
+    "Zh": "……还要挖多久……陌生人……危险……赶走那个泰拉人……<page>……不……我还要唱……我还要挖多久……？",
+    "En": "...How much longer... stranger... danger... drive the Terrarian away...<page>...No... I still want to sing... how much longer must I dig...?",
+    "Reason": "authored"
+  },
+  "Ghosts/GALIEN_DEFEAT": {
+    "Zh": "我终于败了……这就是输给更强者的感觉。<page>泰拉战士，若你还能见到我们的国王，请替我说一句：加利安没有逃避挑战。<page>不，也许他早已不在。可我总算遇见了值得交手的旅人。<page>谢谢你……让我认清自己早已停下的旅程。",
+    "En": "Defeated at last... So this is losing to someone stronger.<page>Terrarian warrior, if you ever meet our king, tell him Galien did not flee a challenge.<page>No... perhaps he is long gone. At least I met a traveller worth facing.<page>Thank you... for showing me the journey I had already ceased to walk.",
+    "Reason": "authored"
+  },
+  "Zote/PRECEPT_48": {
+    "Zh": "戒律四十八：“小心火烛”。<page>火能取暖、照明，也会烧伤皮肉。泰拉人，别因为会做火把就以为能命令火焰！",
+    "En": "Precept Forty-Eight: \"Be Careful With Fire.\"<page>Fire warms and lights, but also burns flesh. Terrarian, making torches does not mean you command the flame!",
+    "Reason": "authored"
+  },
+  "Backer Messages/BELIEVE_TAB_20": {
+    "Zh": "盖姆<br><br>泰拉旅人，过去的阴影不该遮住眼前的可能。继续走吧，不要让昨日夺走你的梦想。",
+    "En": "Gaim<br><br>Terrarian, a dark past need not hide the promise of the present. Keep going. Do not let yesterday steal your dreams.",
+    "Reason": "authored"
+  },
+  "Backer Messages/BELIEVE_TAB_21": {
+    "Zh": "格兰特·霍尔特<br><br>来自泰拉的旅人穿过黑暗与恐惧。属于你的故事，将由你在这片陌生土地上的选择写成。",
+    "En": "Grant Holt<br><br>A traveller from Terraria crosses darkness and fear. Your choices in this unfamiliar land will write your own story.",
+    "Reason": "authored"
+  },
+  "Backer Messages/BELIEVE_TAB_50": {
+    "Zh": "惊奇先生<br><br>瘟疫在无月的地底蔓延，旧日的骑士背负了沉重的封印。<br>来自泰拉的旅人，愿你找到另一条通往黎明的路。",
+    "En": "Sir Prise<br><br>Plague spreads beneath a moonless earth, where an old knight bears a heavy seal.<br>Traveller from Terraria, may you find another road to dawn.",
+    "Reason": "authored"
+  },
+  "General/PROLOGUE_EXCERPT_01": {
+    "Zh": "旅人从泰拉走来，越过荒原与风声。",
+    "En": "A traveller came from Terraria, across wastes and whispering winds.",
+    "Reason": "authored"
+  },
+  "General/PROLOGUE_EXCERPT_02": {
+    "Zh": "行囊装着工具与旧日所学，前方却是未曾听闻的王国。",
+    "En": "Tools and hard-earned skills filled their pack; an unknown kingdom lay ahead.",
+    "Reason": "authored"
+  },
+  "General/PROLOGUE_EXCERPT_03": {
+    "Zh": "废墟没有为异乡人预定王位，也没有写好的宿命。",
+    "En": "The ruins promised the outsider no throne, and no fate already written.",
+    "Reason": "authored"
+  },
+  "General/PROLOGUE_EXCERPT_04": {
+    "Zh": "在圣巢深处，新的道路将由旅人亲手开辟。",
+    "En": "In the depths of Hallownest, the traveller would forge a road of their own.",
+    "Reason": "authored"
+  },
+  "General/PROLOGUE_EXCERPT_AUTHOR": {
+    "Zh": "——《泰拉旅人的圣巢纪行》序言",
+    "En": "—Prologue to A Terrarian's Journey through Hallownest",
+    "Reason": "authored"
+  },
+  "UI/CHARM_DESC_36_B": {
+    "Zh": "象征古老高等生灵联合的圣洁护符，能缓慢提供灵魂。<br><br>它能打开通往容器诞生地的道路，让泰拉旅人追查旧王的实验。",
+    "En": "A holy charm symbolising the union of ancient higher beings, slowly providing Soul.<br><br>It opens a path to the Vessels' birthplace, allowing the Terrarian to investigate the old king's experiment.",
+    "Reason": "authored"
+  },
+  "UI/CHARM_DESC_36_C": {
+    "Zh": "泰拉旅人与古老虚空建立的联系，使这股力量响应持有者的意志。<br><br>这份联系已无法通过卸下护符解除。",
+    "En": "A bond between the Terrarian and ancient Void, bringing that power under the bearer's will.<br><br>This bond can no longer be undone by removing a charm.",
+    "Reason": "authored"
+  },
+  "UI/INV_DESC_KINGSBRAND": {
+    "Zh": "旧王留下的通行印记，能让圣巢远古之地的大门开启。<br><br>泰拉旅人可以使用它，但它不会赋予王室血统。",
+    "En": "A mark of passage left by the old king, opening gates to Hallownest's ancient places.<br><br>The Terrarian may use it, but it grants no royal ancestry.",
+    "Reason": "authored"
+  },
+  "UI/CHARM_DESC_23": {
+    "Zh": "增加持有者的生命值，使其承受更多伤害。<br><br>这枚护符十分脆弱，持有者死亡时会损坏。",
+    "En": "Increases the bearer's health, allowing more damage to be endured.<br><br>This fragile charm breaks when its bearer dies.",
+    "Reason": "authored"
+  },
+  "UI/CHARM_DESC_24": {
+    "Zh": "使持有者击败敌人时获得更多吉欧。<br><br>这枚护符十分脆弱，持有者死亡时会损坏。",
+    "En": "Allows the bearer to find more Geo when defeating enemies.<br><br>This fragile charm breaks when its bearer dies.",
+    "Reason": "authored"
+  },
+  "UI/CHARM_DESC_25": {
+    "Zh": "增强持有者的力量，使骨钉攻击造成更多伤害。<br><br>这枚护符十分脆弱，持有者死亡时会损坏。",
+    "En": "Strengthens the bearer, increasing damage dealt by nail attacks.<br><br>This fragile charm breaks when its bearer dies.",
+    "Reason": "authored"
+  },
+  "UI/CHARM_DESC_27": {
+    "Zh": "乔尼留下的祝福，将生命力化作蓝色生命血。<br><br>持有者能承受更多伤害，但无法通过聚集灵魂治疗自身。",
+    "En": "Joni's blessing converts vitality into blue Lifeblood.<br><br>The bearer can endure more damage, but cannot heal by focusing Soul.",
+    "Reason": "authored"
+  },
+  "Elderbug/ELDERBUG_INTRO_MAIN": {
+    "Zh": "这口井下面，曾经有个叫圣巢的伟大王国。如今它成了废墟，仍有人为财富、荣耀或答案下去冒险。<page>你从泰拉带来的工具和本领，或许能帮你走得更远。可别忘了，那里的危险不只会伤到身体。<page>我见过归来的旅者失去记忆，也见过有人再没回来。无论你在寻找什么，都请给自己留一条回家的路。",
+    "En": "Below this well stood a great kingdom called Hallownest. It is ruined now, yet travellers still descend for wealth, glory, or answers.<page>The tools and skills you brought from Terraria may take you further. Remember, though: not every danger there wounds the body.<page>I have seen travellers return without their memories, and others never return at all. Whatever you seek, leave yourself a road home.",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_WATERWAYS_AWAKE_1": {
+    "Zh": "是尔辈唤醒了吾等，泰拉异乡人？<page>这王国败落的神明，正在吾等心中重现光辉。汝的故乡可曾有过如此盛景？<page>不要只顾凝视吾等的躯壳。吾等所追寻的，乃超越形体的伟大！",
+    "En": "Was it you who woke us, outsider from Terraria?<page>The fallen gods of this kingdom shine again within our mind. Has your homeland known such splendour?<page>Do not merely stare at our shell. We seek greatness beyond form!",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_WATERWAYS_AWAKE_2": {
+    "Zh": "泰拉异乡人，尔辈为何来到此处？为了力量，还是为了挑战神明？<page>拿上神明调谐器，去寻找强大的存在，以战斗让它们的共鸣传来。<page>若愿效劳，吾等便容许尔辈在此停留。好好珍惜这份恩准！",
+    "En": "Outsider from Terraria, why have you come? For power, or to challenge gods?<page>Take the Godtuner. Seek mighty beings and let their resonance reach us through battle.<page>If you will serve, we permit you to remain. Value that favour!",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_WATERWAYS_AWAKE_NO_GODFINDER": {
+    "Zh": "泰拉异乡人，尔辈在看神明调谐器？真是贪心！<page>拿去吧。吾等已能追寻更高的共鸣。愿尔辈的探索，至少能为吾等带来值得聆听的神音。",
+    "En": "Terrarian outsider, eyeing the Godtuner? Such greed!<page>Take it. We pursue a higher resonance now. May your exploration at least bring us a divine sound worth hearing.",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_WATERWAYS_AWAKE_ALLGODS": {
+    "Zh": "泰拉异乡人……诸神竟接连回应了尔辈的挑战。<page>吾等心灵充满了这座王国的力量，而其中还有汝带来的陌生回响。<page>也许力量，果真不能只由出身衡量。",
+    "En": "Terrarian outsider... the gods have answered your challenges, one after another.<page>Our mind is full of this kingdom's power, and a strange resonance you brought with you.<page>Perhaps strength truly cannot be measured by origin alone.",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_WATERWAYS_WHITEFLOWER": {
+    "Zh": "贡品？泰拉人竟向吾等献上一朵异乡的花。<page>微小，纯洁，却不曾发出吾等熟悉的神音。它来自怎样的土地？<page>不，礼物既已献出，便由吾等保管。尔辈不要再提出冒昧的要求！",
+    "En": "An offering? A Terrarian brings us a foreign flower.<page>Small and pure, yet without a divine voice we recognise. From what land did it come?<page>No. The offering is ours to keep. Make no impertinent demands!",
+    "Reason": "authored"
+  },
+  "CP3/GODSEEKER_ENGINE_2": {
+    "Zh": "这泰拉挑战者，竟还敢向诸神举起异乡的武器！<page>众神既然容许尔辈踏入此地，必定已备下更严酷的试炼。<page>继续前进吧，让吾等看看尔辈还能坚持多久！",
+    "En": "This Terrarian challenger still dares raise foreign weapons against the gods!<page>If the gods permit your presence, a harsher trial surely awaits.<page>Go on. Let us see how long you endure!",
+    "Reason": "authored"
+  },
+  "Nailmasters/SHEO_MEET": {
+    "Zh": "来客人了！泰拉旅人，你溜进来是要干嘛？也许你跟我一样有发现新事物的兴趣。<page>我是席奥，曾经是骨钉大师。没错，变得更强、不断磨练骨钉技艺曾是我唯一的人生动力。<page>那大概是我生命中唯一的目标。但这种感觉逐渐淡去。现在我要寻找新的目标，能和我的灵魂对话，使我不断前进的东西。<page>所以我才隐居于此，打算掌握创造、绘画和雕刻的技艺……它们能给我带来不一样的愉悦。<page>我的话似乎没能打动你。你是在寻找骨钉大师席奥吗？你要学习骨钉之技？你一定要学的话我就传授给你……",
+    "En": "A visitor! Why have you crept in here, Terrarian traveller? Perhaps, like me, you have a taste for discovering new things?<page>I am Sheo, and in a previous life I was a Nailmaster. Yes, the only thing that drove me was becoming stronger and honing my skills with a nail.<page>I imagined it was my one calling in life, but that feeling faded over time. Now I seek a new calling, something that speaks to my soul and compels me forward.<page>That’s why I spend my time here, secluded, trying to master the art of creation. Painting, sculpting... these things bring a different kind of pleasure.<page>Mmm. You don’t seem very moved by what I’ve said. Was it Sheo the Nailmaster you were looking for? Did you come to learn a Nail Art? I’ll teach you if you insist...",
+    "Reason": "reviewed player address"
+  },
+  "CP2/GRIMM_RITUAL_COMPLETE": {
+    "Zh": "我的亲族分散在这些土地的各处，收集我们……种族特有的精华，梦之火焰。<page>寻找我的亲族，收集它们的火焰并带回来给我。我们便能一同创造奇迹。<page>泰拉旅人别担心，你不会孤身一个完成这个任务。我的孩子会引导你找到火焰，并把那些燃烧的精华吸收到其体内。<page>和你一样，这孩子在任务中也是至关重要的。只有它陪伴在你身边时，火焰和我的亲族才会向你显形。",
+    "En": "Across these lands my kin now spread, harvesting that essence peculiar to my... breed, the flame in dream.<page>Seek my kin; claim their flame and return it to me. Together, marvels shall be achieved.<page>But don’t fret Terrarian traveller. For this task you won’t travel alone. My child shall guide you to the flame and gather within itself that burning essence.<page>Like you, the child plays key role in this task. Only with it by your side will the flame, and my kin, reveal themselves to you.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/JINN_ACCEPT": {
+    "Zh": "……礼物……可怕的礼物……恶心……<page>但吉恩知道谁喜欢……吉恩的朋友。吃脏东西。喜欢脏东西。要接受。要给予。<page>发光的东西给泰拉旅人……给发光的东西好。减少了吉恩的负担。",
+    "En": "...Gift is... horrible gift. Disgusting...<page>But Jinn knows one who appreciates...Friend of Jinn. Eats nasties. Loves nasties. Shall accept. Shall provide.<page>Shinies for Terrarian traveller... Good to give Shinies. Less burden for Jinn.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/CLOTH_DEEPNEST_MEET": {
+    "Zh": "你好啊泰拉旅人，你一看就是冒险家。我本来也是个冒险家，但这个恐怖的地方让我失去了这种自信。",
+    "En": "Greetings Terrarian traveller. You got the look of an adventurer alright. I’d call myself the same but this dreadful place makes me feel inadequate.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/CLOTH_TRAMWAY_DREAM_HAPPY": {
+    "Zh": "我这是什么运气！千钧一发的时候泰拉旅人就出现了。而且战斗技艺娴熟无比！<page>它是个强大的战士，我从它的招式里获益良多。",
+    "En": "Such luck! This Terrarian traveller appears at just the right moment. And what masterful skill it shows!<page>As a warrior it sets powerful precedent. I’d do well to learn from its form.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/XUN_HAVE_FLOWER": {
+    "Zh": "她的坟墓在王后的旧宅中间，那是个遥远的地方，路上到处都是野兽。<page>路上小心。这样的泰拉旅人居然如此善良，让我的心悸动不已。",
+    "En": "Her grave lies in the middle of the Queen’s old retreat, a far journey from here and the roads between are fraught with beasts.<page>Safe tiding on your journey. My heart does flutter to feel such kindness from a traveller from so far away.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/XUN_MEET": {
+    "Zh": "啊啊啊……这个世界，这个残酷罪恶的世界。我为什么要醒来？我为什么要坚持？<page>泰拉旅人，你知道的悲剧肯定远没有我多。真爱阴阳两隔，永无再见之日。<page>我的爱人过世已久，躺在遥远的地方，被人埋葬。埋葬在她满心憎恨的族人中间，他们不承认我们的结合，拒绝我……这个外人。<page>可以这样吗？……哎呀哎呀。我可以提出请求吗？可以麻烦你吗？<page>陌生人，你能在她的坟前替我献上礼物吗？<page>礼物很小，但旅途漫长。她安息在同族之中，就在王后的苍翠园林附近。<page>你做得到吗？也许这是个不可能的任务？我疯了吗？愿意接受这种请求的陌生人一定会心怀几乎被人忘却的善良。",
+    "En": "Ahhhh.... Me’hon. This world. This cruel, sinful world. Why does che’ wake? Why does che’ persist?<page>Ahhh Le’mer, you could not know of tragedy as complete as che’s, true lovers stripped apart, two worlds that could not meet.<page>And now meled’lover, dead so long in time. Dead, so far away. Buried, moina? Ai. Amongst its hateful kin that did deny our union, that did reject che’s... outside-ness.<page>She doesn’t suppose?... Nahlo, Nahlo. Could che’ ask? Could che’ burden?<page>Le’mer, woulds’t you, coulds’t you deliver gift to her grave?<page>The gift is, maybe small? But the trek is long. She rests amongst her kind near our Queen’s lush refuge.<page>Would such a thing be done? Che’ asks perhaps impossible things? Mad things? For Le’mer to take up such quest would be a kindness che’ has near forgotten.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/WHITE_DEFENDER_OUTRO_5": {
+    "Zh": "泰拉旅人，你出现在了我的梦中，真有意思。你高贵的举止风度让我想起了敬爱的国王。他回来之后，我会请求封你为骑士！这样我们就能愉快地冒险了……",
+    "En": "How funny that I see you in my dreams too, Terrarian traveller. Your noble bearing reminds me of our dear King. When he returns, I’ll ask him if you can become a Knight! What jolly adventures we will have...",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/TISO_DREAM_TOWN": {
+    "Zh": "这泰拉旅人肯定害怕我。我本来该就这么结果了它，但这样的结局也太遗憾了。",
+    "En": "This Terrarian traveller clearly fears me. I’d kill it right here, but it’d be too pitiful an end.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/BIGCAT_INTRO": {
+    "Zh": "嗷嗯……泰拉旅人。你爬得真高。想在这些地方寻求知识？<page>这个破败的地方是沃姆的坟墓。曾有传闻说它死在了这里。但对这个远古生物来说死亡意味着什么呢？我觉得更像是一种转变。<page>正是那次事件后产生的生物建立了这个衰败的王国。",
+    "En": "Ohrm... Terrarian traveller. You climb high. Seek then knowledge of these lands?<page>This ashen place is grave of Wyrm. Once told, it came to die. But what is death for that ancient being? More transformation methinks.<page>This failed kingdom is product of the being spawned from that event.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/CLOTH_FUNG_MEET": {
+    "Zh": "啊哈！泰拉旅人的脚步。你有冒险者的精神气儿，看来我们有很多相似之处。<page>在找危险的地方？那你就走对路了。<page>一个长脖子的家伙警告我说更下面的地方有个部落，她说那里的人都是战士，我等一场像样的战斗等得都心痒痒了。",
+    "En": "Ah ha! The footsteps of a Terrarian traveller. You got the look of an adventurer, so we’ve much in common.<page>Searching for dangerous places aye? Well you’re on the right track.<page>A long necked critter warned me of a tribe deeper down. Warrior sorts, so she says and I’m itching for some serious combat.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/XUN_HAVE_FLOWER2": {
+    "Zh": "她的坟墓在王后旧宅的中间，那是个遥远的地方，你也发现了旅途会有多危险。<page>注意安全……一定要多加小心，泰拉旅人。",
+    "En": "Her grave lies in the middle of the Queen’s old retreat. It’s a far journey from here and you’ve already learned how dangerous those paths can be.<page>Be safe...And be more careful. Me’hon.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/CLOTH_TRAMWAY_MEET": {
+    "Zh": "哇！哎哟，你来自异乡，居然还能把所有野兽都干掉？<page>你可能觉得我是躲起来了，但根本不是这样。我只是在等合适的攻击时机！……不……我不能这么撒谎……我就是躲起来了。<page>这些可怕的畜生追着我跑，要不是你，天知道我还是不是已经没命了。<page>别的虫子看我个头大，就都以为我是厉害的战士，但这王国的野兽，我不知道能不能对付得了？……<page>……",
+    "En": "Oh! Ahh. Such a Terrarian traveller, yet you dealt with all of those beasts?<page>I wasn’t hiding, if that’s what you’re thinking. Just waiting for the right moment to pounce!...No... I can’t speak such a lie... I was hiding.<page>Those ghastly things chased me and I ran. If you hadn’t come along, who knows if I’d ever have survived.<page>Others take me for a fearsome warrior, what with my impressive size, but this kingdom’s beasts, I wonder if I’m just no match for them?...<page>...",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/GIRAFFE_DREAM": {
+    "Zh": "这泰拉旅人看起来挺好吃。我是不是该吃掉它呢？这里的其他东西一点味道都没有。",
+    "En": "This Terrarian traveller looks tasty. I wonder, should I eat it? The others around here were awfully bland.",
+    "Reason": "reviewed player address"
+  },
+  "Elderbug/ELDERBUG_BLACK_EGG_OPENED": {
+    "Zh": "我听到井里传来一声刺耳的嚎叫。这声音回荡在我的脑海中，让我茫然无措。<page>我一开始以为是什么肮脏的野兽死去了，但这声音听起来与以往的并不相同……给我一种神圣的感觉？泰拉旅人，发生了什么事？<page>不，不要告诉我。如果有什么阴谋正在酝酿，我或许还是不知道的好。",
+    "En": "I heard a piercing cry from the well. It echoed about my mind and left me all a daze.<page>I’d say it was a foul beast’s death, but this cry sounded different...divine? Has something happened Terrarian traveller?<page>No. Don’t tell me. If foul events are brewing, it’s probably better I don’t know.",
+    "Reason": "reviewed player address"
+  },
+  "Banker/BANKER_DREAM_SPA": {
+    "Zh": "……哦不……别过来，可怕的泰拉旅人……",
+    "En": "...Oohh no... Leave me be, creepy Terrarian traveller...",
+    "Reason": "reviewed player address"
+  },
+  "Hunter/HUNTER_MEET": {
+    "Zh": "泰拉旅人……看上去你对我毫无畏惧。你也是像我一样的猎人吗？<page>你能够理解内心之中这份想要潜伏，捕获猎物的冲动吗？那你就把我的日志拿去吧！它会帮到你的。一开始你可能很难理解上面写的是什么，等你成为一名经验老到的猎人之后，你就能看懂了。<page>去探索这块土地的更深处，猎捕栖息其中的野兽吧！向我证明你有拥有猎人印记的资格！",
+    "En": "Terrarian traveller... You approach fearless. Are you a hunter like me?<page>Do you feel the urge inside, to stalk, to kill, to understand?<page>Then take it! My journal. It will aid you. At first the text may seem difficult to discern, but a learned hunter will come to understand its words.<page>Venture the depths of this land and slay its beasts. Prove yourself worthy to bear the mark of Hunter.",
+    "Reason": "reviewed player address"
+  },
+  "Hunter/HUNTER_ENTRIES_COMPLETED": {
+    "Zh": "所以你已经遇见过这块土地上所有的野兽了。真令人印象深刻！但你还有任务没完成，泰拉旅人。<page>继续狩猎吧，直到解锁我所有的笔记！只有这样，我才会承认你是跟我同一级别的猎人，到时候我会奖励你的。",
+    "En": "So, you’ve encountered all of the beasts in this land. Impressive! But one task remains, Terrarian traveller.<page>Keep hunting down creatures until you have deciphered all of my notes! Only then will I recognise you as my fellow Hunter and you shall receive your reward.",
+    "Reason": "reviewed player address"
+  },
+  "Hunter/HUNTER_CONVO_1": {
+    "Zh": "泰拉旅人！你或许已经战胜了一些生物，但那只是个开始。<page>别磨蹭了，去探索世界的更深处，狩猎你看见的各种生物！",
+    "En": "Terrarian traveller! You may have overcome a few creatures, but you are only just beginning.<page>Don’t delay, descend into the belly of this world and hunt down the life you find!",
+    "Reason": "reviewed player address"
+  },
+  "Hunter/HUNTER_CONVO_2": {
+    "Zh": "啊……我就知道没有看错人，你有猎人的资质。圣巢的生物都会在你面前倒下。<page>不要停滞不前，泰拉旅人，还有更多的生物等着你去发现、跟踪、搏斗。",
+    "En": "Ahhh... I knew I’d seen it right. That hunter’s quality. Hallownest’s creatures fall in your path.<page>Don’t stop now Terrarian traveller, many more there are to find, and stalk, and kill.",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_DEEPNEST": {
+    "Zh": "啊，泰拉旅人……我们这是在哪儿？我从来没来过这个车站。里面飘荡着陌生的危险气息。让我赶紧带去安全的地方吧。",
+    "En": "Ahh, Terrarian traveller... Where are we? I have never been to this station. It has a strange air of danger to it. Let me take you somewhere safer, quickly.",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_HOPE_1": {
+    "Zh": "觉得我的老家怎么样，泰拉旅人？<page>里面也曾生气勃勃。鹿角虫们络绎不绝，互相讲述他们去过的地方，见过的旅人。<page>但从很久之前起，这里就只剩下我了。最后的鹿角虫。<page>但回到巢里……让我觉得气氛有点不一样。一丝气味，一点温暖，还是一种存在？<page>难道其他鹿角虫走向了更广阔的世界？",
+    "En": "What do you think of my old home, Terrarian traveller?<page>It was full of life, once. Stags coming and going, swapping stories of the places they’d been and the passengers they’d met.<page>For a long time now, I’ve considered myself the only one remaining. The last stag.<page>But being in the Nest again... there’s something in the air. A smell, or a warmth, or a presence perhaps?<page>Could it be, other stags have made their way out into the wider world?",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_REMEMBER_3": {
+    "Zh": "泰拉旅人！我找到了！我出生和长大的鹿角虫之巢。<page>我不能私自回去，我要遵守职责去有虫子呼唤我的地方，但如果你想去看看那里的话，我就能带你去。<page>可能那里已经空无一人，但巢本身也值得一看！只要你发个话，我们就马上过去。",
+    "En": "Terrarian traveller! I’ve found it! The Stag Nest, where I was born and raised.<page>I’ve yet to go there again. My duty binds me to travel only where I am called, but if you wished to see it yourself, I could take you there.<page>None may remain to welcome us, but the nest is still a sight to behold! Give me the word, and we will go there at once.",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_RUINS2": {
+    "Zh": "泰拉旅人，这里是国王驿站！自然是得名于圣巢的国王，正是国王下令建造了鹿角虫道和各个驿站。<page>国王从未亲自踏足鹿角虫道，但我听说他是威风凛凛的虫子，容光焕发，亮得你根本没法直视。",
+    "En": "Terrarian traveller, we stand in the King’s Station! Named of course for the King of Hallownest, he who ordered the building of the stagways and stations.<page>The King never rode the stagways himself, but I’ve heard he was a glorious bug to behold, bright and radiant in visage, so much so it hurt to look at him.",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_TRAVEL_1": {
+    "Zh": "准备好出发了吗，泰拉旅人？",
+    "En": "Ready to go, Terrarian traveller?",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_HIDDEN": {
+    "Zh": "啊！在世界的底部居然隐藏了这样一座车站！<page>我在听到这里的铃声响起之前，还不知道鹿角虫道竟然建造到了这么深的地方。泰拉旅人，你确实发现了不可思议的东西！<page>虽然我已经很老了，但这个世界仍在不断地给我带来惊喜……",
+    "En": "Ah! What station is this, hidden all the way at the bottom of the world?<page>Until I heard the bell calling, I didn’t even know the Stagways travelled so deep. You’ve discovered something quite astounding, Terrarian traveller!<page>No matter how old I grow, the world still keeps surprises like this stowed away...",
+    "Reason": "reviewed player address"
+  },
+  "Stag/STAG_MEET": {
+    "Zh": "你好，泰拉旅人！上次听到车站响铃已经是很久之前的事了。铃声在鹿角虫道上回响，让我找到了你。<page>我在这许多年里变得僵硬又疲倦，还忘记了很多东西。但只要听到铃声我就会回来。<page>鹿角虫道贯穿圣巢。如果你想用它们旅行，在站台上招呼我就好。我会帮你去你想去的地方。",
+    "En": "Greetings, Terrarian traveller! It’s been an age since I last heard the ringing of a station bell. It echoed down the stagways and called me to you.<page>I’ve grown stiff and tired after all this time and I’ve forgotten much, but the sound of the bell will always call me back.<page>These stagways stretch the depths of Hallownest. If you want to travel them, hail me from the platform. I will take you where you need to go.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/100NAIL_TALK": {
+    "Zh": "泰拉旅人，你喜欢我的骨钉吗？我只持有三根，远不如传说中所描述的多。<page>但是！它们一根比一根锋利，只需要其中一根我就可以击败你。",
+    "En": "Do you like my nails Terrarian traveller? I carry only three, far less than legends may suggest.<page>Still! Each is sharper than the last and I’d require only one to cut you down.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/PERPETOS_REPEAT": {
+    "Zh": "你这样的泰拉旅人都能给人如此深刻的印象。我也觉得自己是个战士，但我甚至没有对你举起骨钉的勇气。",
+    "En": "You’re very impressive for such a Terrarian traveller. I’m something of a warrior myself, though even I’d hesitate to raise my nail against you.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/GRAVEDIGGER_REPEAT": {
+    "Zh": "泰拉旅人。你想做什么就去做。朝你的目标径直前进。<page>我不应该抱怨。就是你们这样的人让我们有生意可做。",
+    "En": "Do as you will Terrarian traveller. Cut a path toward your goal.<page>I shouldn’t complain. It’s your kind that keeps folks like me in business.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/MAGNUS_REPEAT": {
+    "Zh": "记住，泰拉战士，粉碎你的恐惧；消灭你的问题；碾碎你的敌人。",
+    "En": "Remember Terrarian traveller, crush your fears; crush your problems; crush your foes.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/ATRA_TALK": {
+    "Zh": "泰拉旅人，不要害怕。虽然我曾经被暴力与愤怒所支配，但在这个地方，平和的空气似乎让它们得以消停。",
+    "En": "Don’t fear Terrarian traveller. Though a violent rage once possessed me the peaceful air in this place seems to keep it at bay.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/CASPIAN_TALK": {
+    "Zh": "泰拉旅人，注意你内心的想法。扭曲的心灵会滋养黑暗的行为，而我的心比绝大部分人都要扭曲。<page>我曾认为这份扭曲会伴随我直到死亡，但我找到了这个拥有祥和氛围的林地。",
+    "En": "Beware your own mind Terrarian traveller. Twisted minds breed dark deeds and mine was more twisted than most.<page>I thought it would be my end, but instead I found this glade and with it a sort of peace.",
+    "Reason": "reviewed player address"
+  },
+  "Ghosts/GARRO_TALK": {
+    "Zh": "泰拉旅人，你是战士吗？真正的战士是那些可以在风暴中站稳的人。",
+    "En": "Are you a warrior, Terrarian traveller? A true warrior is one who can stand strong in the midst of a storm.",
+    "Reason": "reviewed player address"
+  },
+  "Minor NPC/BRETTA_DIARY_ZOTE": {
+    "Zh": "灰色王子的故事<br>井边又出现一位自称英雄的旅者，讲述自己如何战胜强敌。<page>他贬低那位泰拉来的救主，把每一件功劳都揽到自己身上。少女听着故事，再一次把想象当成了了解。<page>而那位异乡旅人早已继续自己的冒险，并不属于谁预先写好的爱情故事。",
+    "En": "The Grey Prince's Story<br>Another traveller appeared by the well, calling himself a hero and boasting of conquered foes.<page>He belittled the Terrarian rescuer and claimed every triumph. Listening, the maiden again mistook imagination for understanding.<page>The foreign traveller had already continued their adventure, belonging to no love story written for them.",
+    "Reason": "authored diary variant"
+  },
+  "CP3/UI_BINDING_NAIL": {
+    "Zh": "武器85%",
+    "En": "Weapon 85%",
+    "Reason": "Terrarian player-side challenge binding"
+  },
+  "CP3/UI_BINDING_CHARMS": {
+    "Zh": "饰品锁",
+    "En": "Accessories",
+    "Reason": "Terrarian player-side challenge binding"
+  },
+  "CP3/UI_BINDING_SOUL": {
+    "Zh": "恢复锁",
+    "En": "Recovery",
+    "Reason": "Terrarian player-side challenge binding"
+  }
+}

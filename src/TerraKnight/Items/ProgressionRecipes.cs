@@ -73,7 +73,7 @@ namespace TerraKnight.Items
                 if(r.IsBought) continue; // Preserve the original purchase cost; do not turn purchases into free recipes.
                 int required=IngredientStage(r,ItemDb.Get);
                 if(required!=r.StationStage)
-                    recipes[i]=new Recipe(r.Result,r.Count,r.Station,required,r.Ingredients) { Environment=r.Environment };
+                    recipes[i]=new Recipe(r.Result,r.Count,r.Station,required,r.Ingredients) { Environment=r.Environment, IngredientAlternative=r.IngredientAlternative };
             }
         }
     }

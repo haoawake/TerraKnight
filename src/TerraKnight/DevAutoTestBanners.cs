@@ -480,6 +480,101 @@ namespace TerraKnight
         }
 
         /// <summary>
+        /// Dev (suite "bannertip"): the Monster Banner buff's tooltip with many banners in effect (Banner Case pages filled,
+        /// the buff's icon hovered by the dev pointer), against Main.MouseText_DrawBuffTooltip: every monster listed, a
+        /// column under the buff's text and on into columns 220 px apart, none dropped and the whole box on screen, for 5,
+        /// 70 and all 127 banners; at the largest interface scale the columns the screen holds are full and end in "…".
+        /// Pictures of each.
+        /// </summary>
+        IEnumerator BannerTipTest()
+        {
+            // Any scene of play will do: wait out the opening (a death and its respawn) until the hero is back in control.
+            var gm = GameManager.instance;
+            float settle = Time.realtimeSinceStartup + 30f;
+            yield return new WaitForSeconds(2f);
+            while ((HeroController.instance == null || HeroController.instance.cState.dead || gm.IsInSceneTransition || !GameHooks.PlayerHasControl())
+                   && Time.realtimeSinceStartup < settle) yield return null;
+            yield return new WaitForSeconds(1f);
+            PlayerData.instance.isInvincible = true;
+            var inv = mod.Inventory;
+            string scene = GameManager.instance.sceneName;
+            InventoryGui.Open = false;
+            const int CaseSlot = 26;
+            var keptSlot = inv.Slots[CaseSlot];
+            float keptScale = UI.GameView.UiScaleSetting != null ? UI.GameView.UiScaleSetting.Value : 1f;
+            var types = new List<ItemType>(Banners.Types());
+            inv.Slots[CaseSlot] = ItemStack.Of(ItemType.BannerCase);
+
+            // The banner buff's icon under the dev pointer until the tooltip has been drawn again.
+            IEnumerator Hover()
+            {
+                UI.TerraCursor.DevDrives = true;
+                for (int tries = 0; tries < 60; tries++)
+                {
+                    int at = -1;
+                    for (int i = 0; i < Player.PlayerBuffs.MaxBuffs; i++) if (Player.PlayerBuffs.Type[i] == Banners.MonsterBannerBuff) at = i;
+                    var rect = at >= 0 ? InventoryGui.DevRectOf("Buff", at) : null;
+                    if (rect.HasValue) UI.TerraCursor.DevAt = rect.Value.center;
+                    int frame = Time.frameCount;
+                    yield return null;
+                    if (rect.HasValue && InventoryGui.DevBannerFrame >= frame && tries >= 5) yield break;
+                }
+            }
+
+            bool OnScreen(Rect r) => r.xMin >= 0f && r.yMin >= 0f && r.xMax <= Screen.width && r.yMax <= Screen.height;
+
+            foreach (int count in new[] { 5, 70, types.Count })
+            {
+                ClearPages(inv.BannerCase);
+                for (int i = 0; i < count; i++) inv.BannerCase[i / Inventory.ContainerPageSlots][i % Inventory.ContainerPageSlots] = ItemStack.Of(types[i]);
+                Banners.Refresh(true);
+                yield return null;
+                yield return Hover();
+                int active = Banners.ActiveCount;
+                var names = new List<string>();
+                Banners.BuffLines(Banners.MonsterBannerBuff, names);
+                bool everyName = names.Count == active;
+                for (int i = 0; i < count; i++) everyName &= names.Contains(Banners.MonsterName(types[i]));
+                int rows = InventoryGui.DevBannerRows, columns = InventoryGui.DevBannerColumns;
+                var box = InventoryGui.DevBannerBox;
+                bool flows = rows > 0 && columns == (active - 1) / rows + 1 && (active <= rows || columns > 1);
+                BannerCheck($"{count} 面旗帜：增益提示列出全部怪名，一列满了换到右边新的一列，整块在屏幕内",
+                    Player.PlayerBuffs.Has(Banners.MonsterBannerBuff) && everyName && InventoryGui.DevBannerNames == active && !InventoryGui.DevBannerCut && flows && OnScreen(box),
+                    $"生效 {active} 面，名单 {names.Count} 个（全在 {everyName}），画出 {InventoryGui.DevBannerNames} 个，每列 {rows} 行，{columns} 列，省略 {InventoryGui.DevBannerCut}，" +
+                    $"范围 {box}，屏幕 {Screen.width}x{Screen.height}，界面缩放 {UI.GameView.Scale:F2}");
+                Shot(scene, $"bannertip_{count}");
+                // The picture is taken at the end of this frame: nothing changes before it.
+                yield return null;
+                yield return new WaitForSeconds(0.3f);
+            }
+
+            // The largest interface scale: more banners than the columns on screen hold.
+            UI.GameView.SetUiScale(UI.GameView.MaxUiScale);
+            yield return null;
+            yield return null;
+            yield return Hover();
+            {
+                int active = Banners.ActiveCount, rows = InventoryGui.DevBannerRows, columns = InventoryGui.DevBannerColumns, shown = InventoryGui.DevBannerNames;
+                var box = InventoryGui.DevBannerBox;
+                bool full = InventoryGui.DevBannerCut && shown < active && shown == rows * columns;
+                BannerCheck("界面放到最大：屏幕放不下的列不画，最后一列末尾是“…”，整块在屏幕内", full && columns > 1 && OnScreen(box),
+                    $"生效 {active} 面，画出 {shown} 个（含省略号），每列 {rows} 行，{columns} 列，省略 {InventoryGui.DevBannerCut}，范围 {box}，" +
+                    $"屏幕 {Screen.width}x{Screen.height}，界面缩放 {UI.GameView.Scale:F2}");
+                Shot(scene, "bannertip_maxscale");
+                yield return null;
+                yield return new WaitForSeconds(0.3f);
+            }
+
+            UI.GameView.SetUiScale(keptScale);
+            UI.TerraCursor.DevDrives = false;
+            UI.TerraCursor.DevAt = null;
+            ClearPages(inv.BannerCase);
+            inv.Slots[CaseSlot] = keptSlot;
+            Banners.Refresh(true);
+            Plugin.Log.LogInfo($"[AutoTest] 旗帜 合计 通过 {bannerPass}，不通过 {bannerFail}");
+        }
+
+        /// <summary>
         /// The Auto-Sell Bag: what may be listed; a stack put in listed and sold for its price there and then (the nail
         /// refused, Shift+click alike, the item buttons gone); a pickup on the list sold with the bag carried and kept
         /// without it; an entry clicked off the list, nothing back, and kept after.

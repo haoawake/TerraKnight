@@ -3,18 +3,21 @@ using UnityEngine;
 
 namespace TerraKnight.World
 {
-    /// <summary>A cell's liquid (Tile.liquidType): water, or Hallownest's acid in the place of Terraria's lava.</summary>
+    /// <summary>A cell's liquid (Tile.liquidType): water, Hallownest's acid in the place of Terraria's lava, the shimmer.</summary>
     internal enum LiquidKind : byte
     {
         Water = 0,
         Acid = 1,
+        /// <summary>Poured from the Bottomless Shimmer Bucket: it moves as water does, and changes what lies in it (Items.Shimmer).</summary>
+        Shimmer = 2,
     }
 
     /// <summary>
     /// Terraria's liquid (Liquid.Update, UpdateLiquid, AddWater, DelWater, LiquidCheck) over one grid's cells: each cell holds
     /// 0..255 of one liquid; the cells that may still move are kept in a list and stepped every tick, falling first, then
     /// levelling with up to three cells either side; a cell that stays the same for 8 rounds leaves the list. Acid moves
-    /// as lava does, every sixth step. Water and acid meeting turn to obsidian. Terraria's y runs down and the grid's up:
+    /// as lava does, every sixth step; the shimmer as water. Water and acid meeting turn to obsidian; the shimmer (Terraria
+    /// makes Aetherium of it, a block Hallownest hasn't) keeps apart from both, each liquid stopping at the other. Terraria's y runs down and the grid's up:
     /// "below" here is y - 1. Out of the grid, and past a joined gate, is solid.
     /// </summary>
     internal sealed class LiquidSim
@@ -443,7 +446,7 @@ namespace TerraKnight.World
         {
             if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1 || Solid(x, y)) return;
             int i = y * w + x;
-            bool other(int ox, int oy) => L(ox, oy) > 0 && K(ox, oy) != me;
+            bool other(int ox, int oy) => L(ox, oy) > 0 && K(ox, oy) != me && K(ox, oy) != LiquidKind.Shimmer;
             if (other(x - 1, y) || other(x + 1, y) || other(x, y + 1))
             {
                 int num = 0;

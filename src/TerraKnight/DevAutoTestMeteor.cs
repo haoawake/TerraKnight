@@ -11,7 +11,7 @@ namespace TerraKnight
     /// Dev (suite "meteor"): Terraria's meteorite. A boss down queues one; at midnight it comes down in a room the player
     /// has been through (not the one they stand in, never Dirtmouth), into the save's edits and onto the map. There: its
     /// Meteorite blocks are solid, glow, burn the player standing on them (not with an Obsidian Skull), a copper pickaxe
-    /// only tinks on them and a gold one digs one out as a Meteorite. The scene's edits are put back after.
+    /// only tinks on them and a gold one digs one out as a Meteorite; the midnight fall brings two down. The scene's edits are put back after.
     /// </summary>
     internal sealed partial class DevAutoTest
     {
@@ -100,6 +100,19 @@ namespace TerraKnight
             yield return null;
             if (UI.WorldMap.Open) UI.WorldMap.Toggle();
             Check("踩上去燃烧掉血", burning && lost >= 25 && lost <= 60, $"燃烧 {burning}，1.5 秒掉 {lost} 血");
+            // Stood on as a player does: set down over it once and left to land and stand there (the physics keeps a body a
+            // hair off the ground it stands on).
+            stats.FullHeal();
+            Player.PlayerBuffs.Remove(Meteorites.Burning);
+            yield return new WaitForSeconds(0.4f);
+            Player.PlayerBuffs.Remove(Meteorites.Burning);
+            hero.transform.position = new Vector3(topWorld.x, topWorld.y + CellGrid.CellSize * 0.5f + 1.6f, hero.transform.position.z);
+            yield return new WaitForSeconds(0.8f);
+            bool standing = hero.cState.onGround;
+            Player.PlayerBuffs.Remove(Meteorites.Burning);
+            for (float t = 0f; t < 0.5f; t += Time.deltaTime) yield return null;
+            Check("自己落下站稳也会燃烧", standing && Player.PlayerBuffs.Has(Meteorites.Burning),
+                $"站在地上 {standing}，燃烧 {Player.PlayerBuffs.Has(Meteorites.Burning)}，脚底 {hero.GetComponent<BoxCollider2D>().bounds.min.y:F3}，陨石顶 {topWorld.y + CellGrid.CellSize * 0.5f:F3}");
             stats.FullHeal();
             var savedAcc = inv.Accessories[0];
             inv.Accessories[0] = ItemStack.Of(ItemType.ObsidianSkull);
@@ -130,9 +143,20 @@ namespace TerraKnight
             Check("陨石能放成方块", ItemDb.Get(ItemType.Meteorite).Places == CellKind.Meteorite && ItemDb.DropFor(CellKind.Meteorite) == ItemType.Meteorite);
 
             RestoreEdits(target, before);
-            Meteorites.Pending = wasPending;
             PlayerData.instance.isInvincible = false;
             yield return GoTo("Town", "left1");
+            yield return new WaitForSeconds(2f);
+            // The fall itself at midnight, from Dirtmouth: two meteorites, the second in another room or (the test's save has
+            // been through one other) apart in the first's.
+            var before2 = new Dictionary<int, ushort>(WorldEdits.For(target));
+            int dropped0 = Meteorites.DevDropped;
+            Meteorites.Pending = true;
+            Meteorites.DevAtMidnight = true;
+            for (float t = 0f; t < 3f && Meteorites.Pending; t += Time.deltaTime) { Meteorites.Tick(hero, mod); yield return null; }
+            Meteorites.DevAtMidnight = false;
+            Check("午夜一次落两颗", Meteorites.DevDropped == dropped0 + 2 && !Meteorites.Pending, $"落下 {Meteorites.DevDropped - dropped0} 颗，最后一颗 {Meteorites.DevLast}");
+            RestoreEdits(target, before2);
+            Meteorites.Pending = wasPending;
             Plugin.Log.LogInfo($"[AutoTest] 陨石 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
 

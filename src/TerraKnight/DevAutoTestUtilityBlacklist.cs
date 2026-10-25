@@ -92,7 +92,7 @@ namespace TerraKnight
                 var rects = Enumerable.Range(0, 4).Select(i => InventoryGui.UtilityButtonRect(new Rect(0, 0, 1280, 720), ui, i)).ToArray();
                 Check("四按钮同尺寸/" + ui, rects.All(r => Mathf.Abs(r.width - 32 * ui) < .01f && Mathf.Abs(r.height - 30 * ui) < .01f));
                 Check("按钮互不重叠/" + ui, !rects[0].Overlaps(rects[1]) && !rects[0].Overlaps(rects[2]) && !rects[2].Overlaps(rects[3]));
-                Check("两行两列/" + ui, rects[0].y == rects[1].y && rects[2].y == rects[3].y && rects[0].x == rects[2].x && rects[2].y > rects[0].y);
+                Check("四个弹药栏旁的按钮/" + ui, rects.All(r => r.x == rects[0].x) && rects[0].y < rects[1].y && rects[1].y < rects[2].y && rects[2].y < rects[3].y);
             }
             InventoryGui.ClearUtilities();
             InventoryGui.DevUtilityClick(1);
@@ -103,6 +103,79 @@ namespace TerraKnight
             Check("快捷商店图标功能", InventoryGui.SellMode && !InventoryGui.HkBagOpen);
             InventoryGui.DevUtilityClick(0);
             Check("面板互斥", InventoryGui.DevBlacklistOpen && !InventoryGui.SellMode);
+            // Exercise the real inventory click route, including its priority over ordinary trash.
+            void Click(int index, bool shift = false, bool ctrl = false)
+            {
+                InventoryGui.DevShift = shift; InventoryGui.DevCtrl = ctrl;
+                try { InventoryGui.DevLeftClick(index); }
+                finally { InventoryGui.DevShift = InventoryGui.DevCtrl = false; }
+            }
+            void State(string label) => Plugin.Log.LogInfo($"[AutoTest] 出售快捷键/{label}: purse={Shop.Purse}, expected={purse}, value={value}, slot0={inv.Slots[0].Type}/{inv.Slots[0].Count}, nail={inv.Slots[2].Type}, mouse={inv.Mouse.Type}/{inv.Mouse.Count}, sold={InventoryGui.DevSold.Count}, ironlisted={Containers.Listed(inv, ItemType.IronBar)}, silverlisted={Containers.Listed(inv, ItemType.SilverBar)}, panel={World.Chests.SellListOpen}, ironprice={Shop.SellValue(ItemStack.Of(ItemType.IronBar))}");
+            inv.Clear();
+            InventoryGui.ClearSold();
+            inv.Slots[0] = ItemStack.Of(ItemType.SilverBar, 7);
+            purse = Shop.Purse;
+            value = Shop.SellValue(inv.Slots[0]);
+            Click(0, ctrl: true);
+            Check("黑名单Ctrl整堆出售且不加入名单", inv.Slots[0].IsEmpty && Shop.Purse == purse + value && inv.DropBlacklist.Count == 0 && inv.Trash.IsEmpty && InventoryGui.DevSold.Count == 1);
+            inv.Slots[0] = ItemStack.Of(ItemType.IronBar, 8);
+            purse = Shop.Purse;
+            Click(0, shift: true);
+            Check("黑名单Shift加入模板不消耗", inv.DropBlacklist.Contains(ItemType.IronBar) && inv.Slots[0].Count == 8 && Shop.Purse == purse && inv.Mouse.IsEmpty);
+            inv.Slots[1] = ItemStack.Of(ItemType.SilverBar, 3);
+            inv.Slots[1].Favorite = true;
+            purse = Shop.Purse;
+            Click(1, ctrl: true);
+            Check("黑名单Ctrl保护收藏", inv.Slots[1].Count == 3 && inv.Slots[1].Favorite && Shop.Purse == purse && inv.Trash.IsEmpty);
+            inv.Slots[2] = ItemStack.Of(ItemType.KnightNail);
+            Click(2, ctrl: true);
+            Check("黑名单Ctrl保护骨钉", inv.Slots[2].Type == ItemType.KnightNail && inv.Trash.IsEmpty);
+            inv.Slots[3] = ItemStack.Of(ItemType.Geo, 10);
+            purse = Shop.Purse;
+            Click(3, ctrl: true);
+            Check("黑名单Ctrl保护货币", inv.Slots[3].Type == ItemType.Geo && inv.Slots[3].Count == 10 && Shop.Purse == purse && inv.Trash.IsEmpty);
+            inv.Mouse = ItemStack.Of(ItemType.Silk, 2);
+            purse = Shop.Purse;
+            Click(0, ctrl: true);
+            Check("持物时Ctrl不交换或误删", inv.Mouse.Type == ItemType.Silk && inv.Mouse.Count == 2 && inv.Slots[0].Count == 8 && Shop.Purse == purse && inv.Trash.IsEmpty);
+            inv.Mouse = default;
+            InventoryGui.DevUtilityClick(0);
+            inv.Slots[4] = ItemStack.Of(ItemType.AutoSellBag);
+            Containers.Toggle(ItemType.AutoSellBag);
+            Check("自动出售袋正常打开", World.Chests.SellListOpen);
+            purse = Shop.Purse;
+            value = Shop.SellValue(inv.Slots[0]);
+            Click(0, shift: true);
+            State("出售袋Shift");
+            Check("出售袋拒绝零售价物品时原物保留", value == 0 && inv.Slots[0].Type == ItemType.IronBar && inv.Slots[0].Count == 8 && !Containers.Listed(inv, ItemType.IronBar) && Shop.Purse == purse && inv.Trash.IsEmpty);
+            inv.Slots[0] = ItemStack.Of(ItemType.SilverBar, 4);
+            purse = Shop.Purse;
+            value = Shop.SellValue(inv.Slots[0]);
+            Click(0, ctrl: true);
+            State("出售袋Ctrl");
+            Check("出售袋Ctrl只出售不改名单", inv.Slots[0].IsEmpty && !Containers.Listed(inv, ItemType.SilverBar) && Shop.Purse == purse + value && InventoryGui.DevSold.Count == 2 && inv.Trash.IsEmpty);
+            inv.Slots[0] = ItemStack.Of(ItemType.SilverBar, 8);
+            purse = Shop.Purse;
+            value = Shop.SellValue(inv.Slots[0]);
+            Click(0, shift: true);
+            Check("出售袋Shift加入并卖整堆", value > 0 && inv.Slots[0].IsEmpty && Containers.Listed(inv, ItemType.SilverBar) && Shop.Purse == purse + value && inv.Trash.IsEmpty);
+            purse = Shop.Purse;
+            Click(1, ctrl: true);
+            Click(2, ctrl: true);
+            Check("出售袋Ctrl同样保护收藏和骨钉", inv.Slots[1].Count == 3 && inv.Slots[2].Type == ItemType.KnightNail && Shop.Purse == purse && inv.Trash.IsEmpty);
+            World.Chests.Close(false);
+            purse = Shop.Purse;
+            value = InventoryGui.DevSold[0].Price;
+            InventoryGui.DevBuyBack(0);
+            State("买回");
+            Check("快捷出售可按原价买回整堆", inv.Mouse.Type == ItemType.SilverBar && inv.Mouse.Count == 4 && Shop.Purse == purse - value && InventoryGui.DevSold.Count == 1);
+            inv.Mouse = default;
+            inv.Slots[0] = ItemStack.Of(ItemType.SilverBar, 4);
+            Click(0, ctrl: true);
+            Check("关闭两面板后Ctrl保持原垃圾桶行为", inv.Slots[0].IsEmpty && inv.Trash.Type == ItemType.SilverBar && inv.Trash.Count == 4);
+            var pouch = ItemDb.Get(ItemType.AutoSellBag);
+            var pouchArt = TerrariaAssets.Texture(pouch.Texture);
+            Check("出售袋独立像素图标", pouch.Texture == Relics.TexturePrefix + "auto_sell_bag" && pouchArt.width == 32 && pouchArt.height == 32 && pouchArt.filterMode == FilterMode.Point);
             InventoryGui.Open = false;
             Check("关闭背包收起黑名单", !InventoryGui.DevBlacklistOpen);
             File.WriteAllText(Path.Combine(DevCopy.SaveDir, "utility-blacklist-result.json"), JsonConvert.SerializeObject(new { Checks = checks, Failures = failures, NativePickupTest = true, VisualUiVerified = false, Evidence = evidence }, Formatting.Indented));

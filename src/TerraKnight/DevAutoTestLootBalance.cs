@@ -70,7 +70,7 @@ namespace TerraKnight
                     Check("阶段"+s+"普通掉落无越阶",!normalLeak);
                     yield return null;
                 }
-                Check("跳序能力不提前解锁",ProgressionBalance.AbilityStage(flag=>flag=="hasDoubleJump" || flag=="hasShadowDash")==0);
+                Check("跳序能力按种类计数",ProgressionBalance.AbilityStage(flag=>flag=="hasDoubleJump" || flag=="hasShadowDash")==2);
                 Check("叶绿同期开放",ProgressionBalance.Unlocked(ItemType.ChlorophyteOre,4,false,false) && ProgressionBalance.Unlocked(ItemType.ChlorophyteOre,4,true,false));
                 Check("夜明同期开放",ProgressionBalance.Unlocked(ItemType.LunarOre,5,true,false) && ProgressionBalance.Unlocked(ItemType.LunarOre,5,true,true));
                 Check("终极成品同期开放",ProgressionBalance.Unlocked(ItemType.Meowmere,5,true,false) && ProgressionBalance.Unlocked(ItemType.Meowmere,5,true,true));

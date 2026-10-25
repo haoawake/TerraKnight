@@ -21,7 +21,7 @@ namespace TerraKnight.World
         public static bool CanPlaceWall(Vector2Int cell)
         {
             int x = cell.x, y = cell.y;
-            if (!TerraWorld.InWorld(x, y) || BossRooms.Locked(x, y) || TerraWorld.HasWall(x, y)) return false;
+            if (!TerraWorld.InWorld(x, y) || TerraWorld.HasWall(x, y)) return false;
             return TerraWorld.IsOccupied(x - 1, y) || TerraWorld.IsOccupied(x + 1, y)
                 || TerraWorld.IsOccupied(x, y - 1) || TerraWorld.IsOccupied(x, y + 1)
                 || TerraWorld.HasWall(x - 1, y) || TerraWorld.HasWall(x + 1, y)
@@ -115,7 +115,8 @@ namespace TerraKnight.World
         /// <summary>
         /// SmartCursorHelper.Step_Torch: of the cells in reach a torch can go in (TerraMod.CanPlace) and that hold it by
         /// IsValidSpotForTorch's rules (a wall behind; a solid block beside it whose slope doesn't fall away from it; a
-        /// flat, whole block under it), those with no torch within eight tiles either way, the one nearest the mouse. A
+        /// flat, whole block or platform under it), those with no torch within eight tiles either way, the one nearest the
+        /// mouse. Never in liquid (CanPlace). A
         /// torch held with the smart cursor on lights a place that is dark, a torch's width apart from the last.
         /// </summary>
         public static bool SmartTorch(RectInt reach, Vector2 mouse, out Vector2Int target)
@@ -148,7 +149,7 @@ namespace TerraKnight.World
 
         /// <summary>
         /// IsValidSpotForTorch: a wall behind; else a solid block on the left not of slope 1 or 3, or one on the right not
-        /// of slope 2 or 4 (a half brick counts as unsloped there); else a flat, whole solid block under it.
+        /// of slope 2 or 4 (a half brick counts as unsloped there); else a flat, whole solid block or platform under it.
         /// </summary>
         static bool TorchSpot(int x, int y)
         {
@@ -160,14 +161,16 @@ namespace TerraKnight.World
             }
             if (TerraWorld.IsSolid(x - 1, y) && (Slope(x - 1, y) == 0 || Slope(x - 1, y) % 2 != 1)) return true;
             if (TerraWorld.IsSolid(x + 1, y) && (Slope(x + 1, y) == 0 || Slope(x + 1, y) % 2 != 0)) return true;
-            return TerraWorld.IsSolid(x, y - 1) && TerraWorld.GetSlope(x, y - 1) == 0;
+            // Under it a flat block or a flat platform (TileID.Sets.Platforms).
+            return (TerraWorld.IsSolid(x, y - 1) || TerraWorld.IsPlatform(x, y - 1)) && TerraWorld.GetSlope(x, y - 1) == 0;
         }
 
         // ------------------------------------------------------------------ hammers
 
         public static bool CanHammerWall(Vector2Int cell)
         {
-            if (!TerraWorld.InWorld(cell.x, cell.y) || BossRooms.Locked(cell.x, cell.y) || !TerraWorld.HasWall(cell.x, cell.y)) return false;
+            if (!TerraWorld.InWorld(cell.x, cell.y) || !TerraWorld.HasWall(cell.x, cell.y)) return false;
+            if (BossRooms.ProtectsNativeArea(cell.x, cell.y) && TerraWorld.GetWall(cell.x, cell.y) <= 0) return false;
             if (TerraWorld.GetWall(cell.x, cell.y) > 0) return true;
             // Natural walls must be opened from their edge; they never drop a wall item.
             for (int dx = -1; dx <= 1; dx++)

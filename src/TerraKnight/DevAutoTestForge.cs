@@ -8,7 +8,7 @@ namespace TerraKnight
     /// <summary>
     /// Dev (suite "forge"): the Goblin Tinkerer's forging. He is in Dirtmouth at stage 0; his "Forge" button opens his slot
     /// for a weapon or a piece of armor; a forging pays its price and, when it takes, adds a level (+5% damage, " +N" on the name, the
-    /// tooltip's line), when it fails keeps the level and the money spent; the cap is five levels a stage of the weapon's own
+    /// tooltip's line), when it fails keeps the level and the money spent; the cap is a small upgrade by the weapon's own stage
     /// (the nails' the stage reached's), an old save's weapon past it kept and forged no further; the price and the odds
     /// follow the weapon and its level; a shop pays more for a higher level; the level stays through a reforge and the
     /// save's packing.
@@ -63,14 +63,14 @@ namespace TerraKnight
             Forging.DevOutcome = true;
             for (int k = 0; k < 10; k++) { InventoryGui.DevReleaseHammer(); InventoryGui.DevForge(); }
             int ironStage = ItemDb.Get(ItemType.IronBroadsword).Stage;
-            Check("阶段 0 的武器上限 +5", ironStage == 0 && TownNpcs.ReforgeItem.Forge == 5 && Forging.MaxLevelOf(ItemType.IronBroadsword) == 5,
+            Check("阶段 0 的武器上限 +2", ironStage == 0 && TownNpcs.ReforgeItem.Forge == Forging.StageCap(0) && Forging.MaxLevelOf(ItemType.IronBroadsword) == Forging.StageCap(0) && Forging.StageCap(0) == 2,
                 $"铁阔剑阶段 {ironStage}，等级 {TownNpcs.ReforgeItem.Forge}，上限 {Forging.MaxLevelOf(ItemType.IronBroadsword)}");
             Shop.DevStage = 3;
             { InventoryGui.DevReleaseHammer(); InventoryGui.DevForge(); }
-            Check("玩家到了阶段 3，阶段 0 的武器满级了也不能再锻造", TownNpcs.ReforgeItem.Forge == 5 && Forging.AtMax(TownNpcs.ReforgeItem),
+            Check("玩家到了阶段 3，阶段 0 的武器满级了也不能再锻造", TownNpcs.ReforgeItem.Forge == Forging.StageCap(0) && Forging.AtMax(TownNpcs.ReforgeItem),
                 $"等级 {TownNpcs.ReforgeItem.Forge}，满级 {Forging.AtMax(TownNpcs.ReforgeItem)}");
             Shop.DevStage = 5;
-            // Each stage's weapons: five levels a stage of their own; the nails follow the stage reached.
+            // Each stage's weapons: their own stage's cap (+2, +3, +4, +5, +6, +6); the nails follow the stage reached.
             var capsWrong = new System.Collections.Generic.List<string>();
             var capsSeen = new System.Collections.Generic.List<string>();
             for (int st = 0; st <= 5; st++)
@@ -80,11 +80,11 @@ namespace TerraKnight
                 if (sample == null) { capsWrong.Add($"阶段 {st} 没有武器"); continue; }
                 int cap = Forging.MaxLevelOf(sample.Type);
                 capsSeen.Add($"{sample.Name}(阶段{st}) +{cap}");
-                if (cap != 5 * (st + 1)) capsWrong.Add($"{sample.Name} {cap}");
+                if (cap != new[] { 2, 3, 4, 5, 6, 6 }[st]) capsWrong.Add($"{sample.Name} {cap}");
             }
             Shop.DevStage = 3;
             int nailCap = Forging.MaxLevelOf(ItemType.KnightNail);
-            Check("武器每高一个阶段多 5 级，骨钉跟着玩家阶段", capsWrong.Count == 0 && nailCap == 20, $"{string.Join("，", capsSeen)}；玩家阶段 3 骨钉 +{nailCap}；不对的 {string.Join("、", capsWrong)}");
+            Check("武器上限保持小幅成长（+2/+3/+4/+5/+6/+6），骨钉跟着玩家阶段", capsWrong.Count == 0 && nailCap == 5, $"{string.Join("，", capsSeen)}；玩家阶段 3 骨钉 +{nailCap}；不对的 {string.Join("、", capsWrong)}");
             // An old save's weapon past its cap: kept as it is, forged no further.
             var old = ItemStack.Of(ItemType.IronBroadsword);
             old.Forge = 20;
@@ -118,7 +118,7 @@ namespace TerraKnight
                     if (sale > minimumSpent) saleFailures.Add($"{audit.Type}+{level}: {sale}>{minimumSpent}");
                     if (level == 1)
                     {
-                        long oldSale = System.Math.Max(1L, Shop.PriceOf(audit.Def) / 5) + Forging.SellBonus(audit);
+                        long oldSale = System.Math.Max(1L, Shop.ResalePriceOf(audit.Def) / 5) + Forging.SellBonus(audit);
                         if (definition.Value > 0 && !Recipes.Worthless(audit.Type) && oldSale > minimumSpent)
                         {
                             cappedAtOne++;
@@ -159,8 +159,8 @@ namespace TerraKnight
             var high = ItemStack.Of(ItemType.Zenith);
             var highLv = high;
             highLv.Forge = 10;
-            Check("越高阶越贵、成功率都是一半", Forging.Cost(high) > Forging.Cost(low) && Forging.Cost(highLv) > Forging.Cost(high)
-                && Forging.Chance(low) == 0.5f && Forging.Chance(high) == 0.5f && Forging.Chance(highLv) == 0.5f,
+            Check("越高阶越贵、成功率都是 75%", Forging.Cost(high) > Forging.Cost(low) && Forging.Cost(highLv) > Forging.Cost(high)
+                && Forging.Chance(low) == 0.75f && Forging.Chance(high) == 0.75f && Forging.Chance(highLv) == 0.75f,
                 $"铁阔剑 {Shop.Money(Forging.Cost(low))} {Forging.Chance(low):P0}；天顶剑 {Shop.Money(Forging.Cost(high))} {Forging.Chance(high):P0}；天顶剑+10 {Shop.Money(Forging.Cost(highLv))} {Forging.Chance(highLv):P0}");
 
             // Kept through a reforge and the save's packing (the stack itself: the Goblin may have walked off by now).
@@ -195,7 +195,23 @@ namespace TerraKnight
             Shot("Town", "forge_panel");
             yield return null;
 
-            // Iron is warrior armor: three levels per stage, +2 defense per level, with a level/cap label.
+            // Armor shares the six stage caps; old over-cap armor keeps its level without charging again.
+            for (int st = 0; st <= 5; st++)
+            {
+                int expected = new[] { 2, 3, 4, 5, 6, 6 }[st];
+                bool capsMatch = Forging.ArmorStageCap(st) == expected;
+                foreach (var armorDef in ItemDb.All)
+                    if (Forging.IsArmorPiece(armorDef) && armorDef.Stage == st)
+                        capsMatch &= Forging.MaxLevelOf(armorDef.Type) == expected;
+                Check($"阶段 {st} 所有盔甲上限 +{expected}", capsMatch);
+            }
+            var oldArmor = ItemStack.Of(ItemType.SolarFlareHelmet);
+            oldArmor.Forge = 18;
+            long oldArmorPurse = Shop.Purse;
+            int oldArmorDefense = oldArmor.Def.Defense;
+            Check("旧超限盔甲保留等级和防御，拒绝继续锻造且不扣款", Forging.Try(ref oldArmor) == Forging.Result.AtMax
+                && oldArmor.Forge == 18 && oldArmor.Def.Defense == oldArmorDefense && Shop.Purse == oldArmorPurse);
+            // Iron is warrior armor: +2 defense per level, with a level/cap label.
             {
                 var helm = ItemStack.Of(ItemType.IronHelmet);
                 int def0 = helm.Def.Defense, armorCap = Forging.MaxLevelOf(helm.Type);

@@ -176,6 +176,42 @@ namespace TerraKnight.World
         static bool Overlaps(Bounds b, Rect r) => b.max.x > r.xMin && b.min.x < r.xMax && b.max.y > r.yMin && b.min.y < r.yMax;
 
         /// <summary>
+        /// How far outside a boss room's zone a hand-placed collider still stays whole: the walls that close the fight in
+        /// stand just past its camera lock (the Pure Vessel's left Enemy Wall ends 1.3 short of it). Made cells instead, a
+        /// boss pressed against one turns into its hollow outline (a pose's collider reaching back) and falls into the floor.
+        /// </summary>
+        const float ZoneWallReach = 2.5f;
+
+        /// <summary>How far under a boss room's zone (its camera lock) the game's own ground is kept: its burrowers' depth (the
+        /// Dung Defender tunnels about 11 under the lock's bottom).</summary>
+        const float UnderArenaDepth = 12f;
+
+        static bool NearZone(Bounds b, Rect r) =>
+            Overlaps(b, new Rect(r.xMin - ZoneWallReach, r.yMin - ZoneWallReach, r.width + 2f * ZoneWallReach, r.height + 2f * ZoneWallReach));
+
+        /// <summary>How far past a boss room's zone its floor may run on to the room's wall and the zone is taken on to it.</summary>
+        const float WallSnap = 6f;
+
+        /// <summary>
+        /// A zone whose side ends over the open floor a little short of the room's wall (a camera lock narrower than the room:
+        /// Godhome's Nailmasters' intro view stops 3.6 short of the arena's left wall) taken on to that wall, a unit into it.
+        /// Cut on the floor, the game's floor edge ends in a free corner beside the grid's: a body sliding across the seam
+        /// caught on it, as on a wall that isn't there (Mato shut in by it, dashing at it for ever; the user's, 10-25).
+        /// </summary>
+        static Rect ToWalls(Rect z)
+        {
+            int mask = 1 << ChunkColliders.TerrainLayer;
+            var down = Physics2D.Raycast(z.center, Vector2.down, z.height, mask);
+            if (down.collider == null) return z;
+            float y = down.point.y + 0.75f, xMin = z.xMin, xMax = z.xMax;
+            var l = Physics2D.Raycast(new Vector2(z.xMin + 0.5f, y), Vector2.left, WallSnap + 0.5f, mask);
+            if (l.collider != null && l.point.x < z.xMin) xMin = l.point.x - 1f;
+            var r = Physics2D.Raycast(new Vector2(z.xMax - 0.5f, y), Vector2.right, WallSnap + 0.5f, mask);
+            if (r.collider != null && r.point.x > z.xMax) xMax = r.point.x + 1f;
+            return Rect.MinMaxRect(xMin, z.yMin, xMax, z.yMax);
+        }
+
+        /// <summary>
         /// Keeps the part of one of the tilemap's outlines within the zone: new edge colliders on its object (its markers,
         /// layer and material) along the pieces inside, cut at the zone's edge (Liang-Barsky); the outline itself goes off.
         /// </summary>
@@ -186,6 +222,9 @@ namespace TerraKnight.World
             var world = new Vector2[pts.Length];
             for (int i = 0; i < pts.Length; i++) world[i] = t.TransformPoint(pts[i] + col.offset);
             var pieces = new List<List<Vector2>>();
+            // Each piece's outline points just past its cut ends (none where it isn't cut): its neighbours there.
+            var before = new List<Vector2?>();
+            var after = new List<Vector2?>();
             List<Vector2> cur = null;
             for (int i = 0; i + 1 < world.Length; i++)
             {
@@ -198,13 +237,17 @@ namespace TerraKnight.World
                 {
                     cur = new List<Vector2> { a };
                     pieces.Add(cur);
+                    before.Add((a - world[i]).sqrMagnitude > 1e-6f ? world[i] : i > 0 ? world[i - 1] : (Vector2?)null);
+                    after.Add(null);
                 }
                 cur.Add(b);
+                after[after.Count - 1] = (b - world[i + 1]).sqrMagnitude > 1e-6f ? world[i + 1] : i + 2 < world.Length ? world[i + 2] : (Vector2?)null;
                 // Out of the zone at its end: the next piece starts afresh.
                 if ((b - world[i + 1]).sqrMagnitude > 1e-6f) cur = null;
             }
-            foreach (var piece in pieces)
+            for (int p = 0; p < pieces.Count; p++)
             {
+                var piece = pieces[p];
                 if (piece.Count < 2) continue;
                 var e = col.gameObject.AddComponent<EdgeCollider2D>();
                 e.sharedMaterial = col.sharedMaterial;
@@ -212,6 +255,11 @@ namespace TerraKnight.World
                 var local = new Vector2[piece.Count];
                 for (int i = 0; i < piece.Count; i++) local[i] = t.InverseTransformPoint(piece[i]);
                 e.points = local;
+                // The outline going on past the cut as the physics' ghost vertex: a free end on the open floor is a corner a
+                // body sliding onto the piece catches on, as on a wall (Godhome's Nailmasters' floor, cut by the zone at
+                // 33.1: Mato shut in against it).
+                if (before[p].HasValue) { e.useAdjacentStartPoint = true; e.adjacentStartPoint = t.InverseTransformPoint(before[p].Value); }
+                if (after[p].HasValue) { e.useAdjacentEndPoint = true; e.adjacentEndPoint = t.InverseTransformPoint(after[p].Value); }
                 DevClipped++;
             }
         }
@@ -287,25 +335,41 @@ namespace TerraKnight.World
             // Only the part the boss fights in (BossArenaZone): there the game's outlines are kept, cut at its edge, and
             // the rest of the room is the grid's. A zone of most of the room, or none found: the whole room, as before.
             Rect? zone = null;
+            // The game's own ground kept for it: the zone and the ground under it.
+            Rect ground = default;
             OwnZoneHow = null;
             if (SceneOwnGround)
             {
                 Vector3 tile = map.data.tileSize;
                 var room = new Rect(map.transform.position.x, map.transform.position.y, map.width * tile.x, map.height * tile.y);
                 zone = BossArenaZone.OfRoom(map.gameObject.scene, room, out string how);
+                if (zone != null)
+                {
+                    var walled = ToWalls(zone.Value);
+                    if (walled != zone.Value) how += $"，两边延到墙 x {walled.xMin:F1}~{walled.xMax:F1}";
+                    zone = walled;
+                }
                 if (zone != null && zone.Value.width * zone.Value.height > 0.8f * room.width * room.height)
                 {
                     how += "，占房间八成以上：整间保留";
                     zone = null;
                 }
+                // The ground under the arena is the boss's too: where it waits out of sight and burrows (the Dung Defender
+                // starts under its floor, below the camera lock, and its burrow's dirt takes its height from where it is then;
+                // the grid's cells there, solid, would push it up first and the dirt would float).
+                if (zone != null)
+                {
+                    var z = zone.Value;
+                    ground = Rect.MinMaxRect(z.xMin, Mathf.Max(room.yMin, z.yMin - UnderArenaDepth), z.xMax, z.yMax);
+                }
                 OwnZoneHow = how;
             }
-            var kept = new List<Bounds>();
-            if (SceneOwnGround && zone == null) root.SetActive(false);
+            var kept = new List<Collider2D>();
+            if (SceneOwnGround && zone == null) Region.KeepWholeRoomGround();
             else
                 foreach (var col in originals)
                 {
-                    if (zone != null && Overlaps(col.bounds, zone.Value)) ClipToZone(col, zone.Value);
+                    if (zone != null && Overlaps(col.bounds, ground)) ClipToZone(col, ground);
                     col.enabled = false;
                 }
             float largest = 0f;
@@ -320,11 +384,11 @@ namespace TerraKnight.World
                     FirstHandPlaced = col;
                     FirstHandPlacedBounds = col.bounds;
                 }
-                // In a zone's room, what reaches into the zone stays whole (and its cells unchanged).
-                if (zone != null && Overlaps(col.bounds, zone.Value)) kept.Add(col.bounds);
+                // In a zone's room, what reaches into the zone or closes it (a wall just past it) stays whole (and its cells unchanged).
+                if (zone != null && NearZone(col.bounds, ground)) kept.Add(col);
                 else if (!SceneOwnGround || zone != null) col.enabled = false;
             }
-            if (zone != null) Region.SetOwnZone(zone.Value, kept);
+            if (zone != null) Region.SetOwnZone(zone.Value, ground, kept);
             if (skipped.Count > 0)
             {
                 var sb = new System.Text.StringBuilder();

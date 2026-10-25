@@ -178,6 +178,15 @@ namespace TerraKnight.World
         /// Godhome, dreams, the Grimm Troupe and the end. What the townsfolk sell and which
         /// recipes open goes by the abilities got (Items.Shop.UnlockedStage).
         /// </summary>
+        /// <summary>One of Godhome's own rooms (not the world's rooms with "GG_" names: the Pipeway, the Lurker's).</summary>
+        public static bool GodhomeRoom(string scene) => scene != null && scene.StartsWith("GG_") && AreaName(scene) == "神居";
+
+        /// <summary>
+        /// The level a scene's fights are at: its area's, but Godhome's rematches at the stage the player has unlocked
+        /// (the user's, 2026-10-20), as their loot is: its bosses' hits, life and defense and their summons'.
+        /// </summary>
+        public static int FightLevel(string scene) => GodhomeRoom(scene) ? Mathf.Clamp(Items.Shop.UnlockedStage(), 0, MaxLevel) : LevelOf(scene);
+
         public static int LevelOf(string scene)
         {
             if (string.IsNullOrEmpty(scene)) return 0;
@@ -279,7 +288,7 @@ namespace TerraKnight.World
         public static int MasterHazardDamagePerMask(int level) => level switch { 1 => 30, 2 => 42, 3 => 58, 4 => 76, 5 => 100, _ => 20 };
 
         /// <summary>Bosses and elites hit harder than the common enemies around them, as Terraria's bosses do (settings Gameplay.BossDamage / EliteDamage).</summary>
-        public static float BossDamage = 2f, EliteDamage = 1.5f;
+        public static float BossDamage = 1.4f, EliteDamage = 1.25f;
 
         public static string TierName(int tier) => tier switch
         {

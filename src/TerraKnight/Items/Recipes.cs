@@ -20,6 +20,8 @@ namespace TerraKnight.Items
         public int Cost => (int)Shop.Discounted(listCost);
         readonly int listCost;
         public CraftEnvironment Environment;
+        /// <summary>An expanded ingredient variant must not replace an existing recipe's shimmer fallback.</summary>
+        internal bool IngredientAlternative;
 
         public Recipe(ItemType result, int count, string station, int stationStage, params (ItemType, int)[] ingredients)
         {
@@ -35,12 +37,23 @@ namespace TerraKnight.Items
             Result = result;
             Count = 1;
             Station = "";
-            Ingredients = new (ItemType, int)[0];
+            Ingredients = NoIngredients;
             listCost = cost;
         }
 
-        /// <summary>A basic item bought for its value (or, while testing, anything for free).</summary>
-        public static Recipe Bought(ItemDef d, bool free) => new Recipe(d.Type, free ? 0 : (int)Shop.PriceOf(d));
+        static readonly (ItemType, int)[] NoIngredients = new (ItemType, int)[0];
+        static readonly Dictionary<ItemType, Recipe> bought = new Dictionary<ItemType, Recipe>();
+
+        /// <summary>
+        /// A basic item bought for its value (or, while testing and in a creative game, anything for free): one entry kept
+        /// for each item at its price, as the crafting column's list is made again every frame it shows.
+        /// </summary>
+        public static Recipe Bought(ItemDef d, bool free)
+        {
+            int cost = free ? 0 : (int)Shop.PriceOf(d);
+            if (bought.TryGetValue(d.Type, out var r) && r.listCost == cost) return r;
+            return bought[d.Type] = new Recipe(d.Type, cost);
+        }
 
         public ItemDef Def => ItemDb.Get(Result);
         public bool IsBought => Ingredients.Length == 0;
@@ -97,7 +110,24 @@ namespace TerraKnight.Items
             result.AddRange(CarriedFurniture.Recipes());
             result.AddRange(ItemDb.Batch1017Recipes());
             result.AddRange(ItemDb.ContainerRecipes());
+            // Keep every supported vanilla ingredient alternative, without duplicating
+            // recipes already restored by another registration source.
+            foreach (var alternative in VanillaAlternativeRecipes())
+                if (!System.Linq.Enumerable.Any(result, r => SameRecipe(r, alternative)))
+                {
+                    alternative.IngredientAlternative = System.Linq.Enumerable.Any(result, r => r.Result == alternative.Result);
+                    result.Add(alternative);
+                }
             return result;
+        }
+
+        static bool SameRecipe(Recipe a, Recipe b)
+        {
+            if (a.Result != b.Result || a.Count != b.Count || a.Station != b.Station
+                || a.Environment != b.Environment || a.Ingredients.Length != b.Ingredients.Length) return false;
+            foreach (var ingredient in a.Ingredients)
+                if (!System.Linq.Enumerable.Contains(b.Ingredients, ingredient)) return false;
+            return true;
         }
 
         static HashSet<ItemType> worthless;
@@ -158,6 +188,7 @@ namespace TerraKnight.Items
         {
             int n = 0;
             foreach (var s in inv.Slots) if (!s.IsEmpty && s.Type == t) n += s.Count;
+            foreach (var s in inv.HkBag) if (!s.IsEmpty && s.Type == t) n += s.Count;
             return n;
         }
 
@@ -174,7 +205,7 @@ namespace TerraKnight.Items
         /// <summary>Whether the inventory, with the chests near the player, holds every ingredient (Recipe.FindRecipes: only those are offered).</summary>
         public static bool HasIngredients(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
-            if (inv.Infinite) return true;
+            if (inv.FreeMaking) return true;
             if (r.IsBought && !ProgressionBalance.Unlocked(r.Result)) return false;
             foreach (var (t, n) in r.Ingredients)
                 if (Count(inv, t, chests) < n) return false;
@@ -187,11 +218,13 @@ namespace TerraKnight.Items
         /// </summary>
         public static void Consume(Recipe r, Inventory inv, List<ItemStack[]> chests = null)
         {
-            if (inv.Infinite) return;
+            HallownestRecovery.Observe(inv);
+            if (inv.FreeMaking) return;
             List<(ItemStack[] Slots, ItemType Type, int Count)> fromChests = null;
             foreach (var (t, need) in r.Ingredients)
             {
                 int left = Take(inv.Slots, t, need);
+                if (left > 0) left = Take(inv.HkBag, t, left);
                 if (chests != null)
                     foreach (var slots in chests)
                     {

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Items;
 using TerraKnight.World;
 using UnityEngine;
@@ -64,6 +64,31 @@ namespace TerraKnight.Town
             (def.Items != null && def.Items.Length > 0) || def.Kind == NpcKind.Visitor   // the traveling merchant's stock is picked on arrival
             || def.Internal == "Guide" || def.Internal == "Nurse" || def.Internal == "Angler";
 
+        /// <summary>Functional residents may only be relocated after their natural unlock conditions.</summary>
+        public static string PlacementBlocked(NpcDef def)
+        {
+            if (def == null) return Lang.T("没有选中居民");
+            if (!AutoArrives(def)) return null;
+            int stage = Shop.UnlockedStage();
+            if (stage < def.Stage) return Lang.F("尚未解锁：需要阶段 {0}（当前 {1}）", def.Stage, stage);
+            if (def.Kind == NpcKind.Angler && !Angler.Saved) return Lang.T("需要先在蓝湖救醒渔夫");
+            if (def.Kind == NpcKind.Visitor && !TravelerVisiting()) return Lang.T("旅商尚未到访，请等待正常出场");
+            if (def.Kind == NpcKind.Princess && !Arrived.Contains(def.Internal))
+                foreach (var other in All)
+                    if (other != def && other.Kind == NpcKind.Resident && other.Stage <= stage && !Present(other.Internal))
+                        return Lang.T("需要其他居民先入住，公主才会到来");
+            return null;
+        }
+
+        static bool RefusePlacement(NpcDef def)
+        {
+            string reason = PlacementBlocked(def);
+            if (reason == null) return false;
+            Say(reason);
+            placing = null;
+            return true;
+        }
+
         /// <summary>
         /// A left click on the street while one is chosen: puts it there, or moves it there when it is
         /// already in town. True when this click was the panel's (so it isn't also a use of the item).
@@ -78,6 +103,7 @@ namespace TerraKnight.Town
             }
             if (placing == null) return false;
             var def = DefOf(placing);
+            if (RefusePlacement(def)) return true;
             // Terraria's housing (Main.TryMovingNPC, TownNpcsHousing): a click in a room the player built (anywhere
             // outside Dirtmouth) moves the chosen one in at once, or says what the room lacks; Dirtmouth's open street
             // keeps the chair and the bench below.
@@ -291,6 +317,7 @@ namespace TerraKnight.Town
                 return;
             }
             if (!left) return;
+            if (RefusePlacement(def)) return;
             // The same head again gives the click back; choosing another replaces the choice (and the query).
             querying = false;
             placing = placing == def.Internal ? null : def.Internal;

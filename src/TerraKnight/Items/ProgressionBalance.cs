@@ -26,14 +26,15 @@ namespace TerraKnight.Items
 
         internal static int ClassIndex(DamageClass c) => c == DamageClass.Melee ? 0 : c == DamageClass.Ranged ? 1 : c == DamageClass.Magic ? 2 : c == DamageClass.Summon ? 3 : -1;
         internal static int ClassIndex(Kit c) => c == Kit.Melee ? 0 : c == Kit.Ranged ? 1 : c == Kit.Magic ? 2 : c == Kit.Summon ? 3 : -1;
-        internal static bool EliteReward(string key) => key == "BigBuzzer" || key == "MageKnight" || key == "PaleLurker";
+        internal static bool EliteReward(string key) => key == "PaleLurker";
         internal static bool FormalBoss(string key) => key != "Zote" && !EliteReward(key) && BossRewards.ContainsKey(key);
 
+        internal static readonly string[] StageAbilityFlags = {"hasDash","hasWalljump","hasSuperDash","hasDoubleJump","hasShadowDash"};
         internal static int AbilityStage(Func<string, bool> has)
         {
             int stage = 0;
-            foreach (var flag in new[] {"hasDash","hasWalljump","hasSuperDash","hasDoubleJump","hasShadowDash"})
-            { if (!has(flag)) break; stage++; }
+            foreach (var flag in StageAbilityFlags)
+                if (has(flag)) stage++;
             return stage;
         }
         internal static bool EntryClear
@@ -52,7 +53,7 @@ namespace TerraKnight.Items
         internal static bool Unlocked(ItemType t, int stage, bool entry, bool final)
         {
             var d = ItemDb.Get(t);
-            return d != null && d.Stage <= stage && (ExtraGate(t) == 0 || (ExtraGate(t) == 1 ? entry : final));
+            return d != null && d.Stage <= stage && VanillaBossProgression.Allowed(t) && VanillaBossProgression.AllowedEquipment(t,d) && (ExtraGate(t) == 0 || (ExtraGate(t) == 1 ? entry : final));
         }
         internal static bool Unlocked(ItemType t) => Shop.Free || Unlocked(t, Shop.UnlockedStage(), EntryClear, FinalClear);
 
@@ -82,6 +83,11 @@ namespace TerraKnight.Items
             tiers[ItemType.HoneyComb]=1;
             tiers[ItemType.PygmyNecklace] = 0;
             tiers[ItemType.IronBow] = tiers[ItemType.FlintlockPistol] = 0;
+            // The travelling merchant first visits at stage 1. Keep information
+            // accessories and their downstream recipes aligned with that source.
+            tiers[ItemType.LifeformAnalyzer] = tiers[ItemType.DPSMeter] = tiers[ItemType.Stopwatch] = 1;
+            // The ice mirror comes from the Resting Grounds' ice-themed chests.
+            tiers[ItemType.IceMirror] = 2;
             tiers[ItemType.FeralClaws] = tiers[ItemType.PoisonBarb] = tiers[ItemType.BandofStarpower] = 0;
             tiers[ItemType.Gel] = tiers[ItemType.Feather] = tiers[ItemType.FallenStar] = tiers[ItemType.Amethyst] = 0;
             tiers[ItemType.WarriorEmblem] = tiers[ItemType.RangerEmblem] = tiers[ItemType.SorcererEmblem] = tiers[ItemType.SummonerEmblem] = 3;
@@ -101,8 +107,8 @@ namespace TerraKnight.Items
             tiers[ItemType.VioletMoss] = 3;
             tiers[ItemType.RainbowMoss] = 4;
             tiers[ItemType.Honeyfin] = 4;
-            // Early flying insects supply wax for the stage-1 Hornet Staff; the Hive
-            // remains the large local source for its boss and late bee equipment.
+            // Bee Wax is a boss material, the Hu's alone (the Queen Bee's place): VanillaBossProgression raises it, the Hornet
+            // Staff and the Bee set made of it to his band, 2.
             tiers[ItemType.BeeWax] = 1;
             tiers[ItemType.FishermansGuide] = tiers[ItemType.WeatherRadio] = tiers[ItemType.Sextant] = 2;
             tiers[ItemType.AnglerHat] = tiers[ItemType.AnglerVest] = tiers[ItemType.AnglerPants] = 2;
@@ -125,7 +131,25 @@ namespace TerraKnight.Items
             foreach (var t in new[] {ItemType.WoodenArrow,ItemType.Seed,ItemType.MusketBall})
             { items[(int)t].Stage = 0; items[(int)t].Value = 5; }
             items[(int)ItemType.LesserManaPotion].Value = 100;
+            VanillaBossProgression.ApplyBands(items);
         }
+
+        /// <summary>
+        /// Every weapon a little stronger, the early ones most (WeaponBoost): its base damage, before prefix and forging.
+        /// After the weapon balance (ApplyWeaponBalance), which sets the damage it raises.
+        /// </summary>
+        internal static void ApplyWeaponBoost(ItemDef[] items)
+        {
+            foreach (var d in items)
+                if (d != null && d.Type != ItemType.None && d.Type != ItemType.KnightNail && d.Type != ItemType.DreamNail && Forging.CanForge(d))
+                    d.Damage = Mathf.Max(1, Mathf.RoundToInt(d.Damage * WeaponBoost(d.Stage)));
+        }
+
+        /// <summary>
+        /// What a weapon's base damage is raised by, by its stage (the user's, 2026-10-20): a good deal early, so that an
+        /// unforged weapon does well there, a tenth late; forging remains a small optional upgrade (Forging.StageCap).
+        /// </summary>
+        internal static float WeaponBoost(int stage) => stage switch { <= 0 => 1.3f, 1 => 1.25f, 2 => 1.2f, 3 => 1.15f, _ => 1.1f };
 
         internal static readonly Dictionary<ItemType, (Bonuses Bonus, int Defense, string Tooltip, int Damage)> OriginalAccessories
             = new Dictionary<ItemType, (Bonuses, int, string, int)>();

@@ -16,9 +16,17 @@ namespace TerraKnight
         IEnumerator BossLoadoutTest(bool endgame=false, bool masterAudit=false, bool forgeAudit=false, bool variantAudit=false)
         {
             if(!DevCopy.Verified) throw new InvalidOperationException("Isolated saves required");
+            // A fresh isolated save has no world victories. Endgame equipment must be tested
+            // with its acquisition milestones, rather than failing the availability checks.
+            var savedEndgameClears=VanillaBossProgression.DevClears;
+            if(endgame)VanillaBossProgression.DevClears=new HashSet<string>(VanillaBossProgression.All.Keys);
             int checks=0,failures=0;
             void Check(string label,bool pass,string detail="")
             {checks++;if(!pass)failures++;Plugin.Log.LogInfo($"[AutoTest] Boss配装 {label} {detail} {(pass ? "通过" : "不通过")}");}
+            // Protect the trip as well as the later samples. Otherwise an early death
+            // respawns in Tutorial_01 before the pinned Crossroads target is selected.
+            Player.TerraStats.DevImmortal=true;PlayerData.instance.isInvincible=true;mod.DevNoFallDamage=true;
+            mod.Stats.Life=mod.Stats.LifeMax;
             yield return GoTo("Crossroads_01",EntryGateOf("Crossroads_01"));
             var hero=HeroController.instance;var inv=mod.Inventory;
             var oldSlots=(ItemStack[])inv.Slots.Clone();var oldArmor=(ItemStack[])inv.Armor.Clone();var oldAcc=(ItemStack[])inv.Accessories.Clone();
@@ -43,6 +51,7 @@ namespace TerraKnight
             var rows=new List<object>();
             var bosses=new List<object>();
             var sequences=new List<object>();
+            var endgameGodhome=new List<object>();
             if(endgame)foreach(var sequence in Resources.LoadAll<BossSequence>("GG"))
             {
                 sequences.Add(new {Name=sequence.name,sequence.Count,sequence.achievementKey});
@@ -79,6 +88,8 @@ namespace TerraKnight
             try
             {
                 if(masterAudit)mod.ApplyCreative(false);
+                // isInvincible doesn't stop Terraria damage: the pinned target's touch on Master killed the tester mid-case.
+                Player.TerraStats.DevImmortal=true;
                 GameDifficulty.Current=masterAudit ? DifficultyLevel.Master : DifficultyLevel.Normal;PlayerData.instance.isInvincible=true;mod.DevNoFallDamage=true;
                 inv.Infinite=!masterAudit;InventoryGui.Open=false;
                 foreach(var run in cases)
@@ -141,6 +152,10 @@ namespace TerraKnight
                     if(forgeAudit && Forging.CanForge(weapon))inv.Slots[0].Forge=(byte)Forging.MaxLevelOf(weapon.Type);
                     int summonForge=inv.Slots[0].Forge;
                     if(ammo!=null)inv.Slots[Inventory.Size-1]=ItemStack.Of(ammo.Type,9999);
+                    // Opt-in resource-complete follow-up: mana is consumed normally,
+                    // including potion sickness, rather than silently refilled.
+                    if(variantAudit && Environment.GetEnvironmentVariable("TK_MASTER_ATTACK_MANA_POTIONS")=="1")
+                        inv.Slots[Inventory.Size-2]=ItemStack.Of(gearStage>=4 ? ItemType.GreaterManaPotion : ItemType.ManaPotion,30);
                     mod.Stats.ManaCrystals=new[]{1,2,3,5,7,9}[gearStage];mod.Stats.UpdateMaximums(PlayerData.instance,Equipment.Current.ManaMax);mod.Stats.Mana=mod.Stats.ManaMax;
                     int at=rec.IndexOf('@');string key=at<0 ? rec : rec.Substring(0,at);
                     info.Record=key;info.Scene=masterAudit ? WorldScene(rec) : EnemyDrops.SceneOf(rec);info.Ref=BossStats.Of(key,at<0 ? -1 : int.Parse(rec.Substring(at+1)));info.Boss=true;info.Level=s;info.MaxHp=50000;info.Carry=0;target.hp=50000;target.IsInvincible=false;
@@ -170,6 +185,8 @@ namespace TerraKnight
                         if(Time.time-start<=burst)firstDamage+=damage;else lastDamage+=damage;
                     }
                     float elapsed=Time.time-start;
+                    // Why a blow took nothing off (the guards a world boss's hit goes through), when none did.
+                    if(firstDamage<=0 && target!=null)Plugin.Log.LogInfo($"[AutoTest] Boss配装 没打掉血：阶段{s}/{c} 场地外 {World.ArenaGuard.Outside(target)} 地图外 {World.ArenaGuard.OffMap(target)} 唤醒中 {BossWake.Asleep(target)} 可操作 {GameHooks.PlayerHasControl()} 无敌 {target.IsInvincible} 碰不到 {EnemyStats.Untouchable(target)} 打倒 {EnemyStats.Defeated(target)} 出招 {casts} 场景 {info.Scene}/{target.gameObject.scene.name}");
                     float first=(float)firstDamage/burst,last=(float)lastDamage/(elapsed-burst);
                     Check($"实际输出阶段{s}/{c}/{run.Entry}",first>0 && last>=0 && !float.IsNaN(first),$"{weapon.Type} burst={first:F1} sustained={last:F1} mana={manaBefore}->{mod.Stats.Mana}");
                     int budget=EnemyStats.LifeWhole(info);
@@ -201,9 +218,32 @@ namespace TerraKnight
                         }
                     }
                 }
+                if(endgame)
+                {
+                    Shop.DevStage=5;
+                    foreach(var pair in BossStats.DevAll)
+                    {
+                        var r=pair.Value;
+                        string scene=pair.Key=="Hornet@4"?"GG_Hornet_2":BestiaryHabitats.Of(pair.Key).FirstOrDefault(h=>Areas.GodhomeRoom(h.Scene)).Scene;
+                        if(scene==null)continue;
+                        var tune=BossBalance.Of(r.Record,EnemyDrops.VariantLevel(scene));
+                        foreach(var difficulty in new[]{DifficultyLevel.Normal,DifficultyLevel.Master})
+                        {
+                            GameDifficulty.Current=difficulty;
+                            int baseDefense=EnemyStats.BossDefense(r,tune,scene);
+                            foreach(var p in GodhomeBalance.Hall.Concat(GodhomeBalance.Pantheons))
+                                endgameGodhome.Add(new {Record=pair.Key,Scene=scene,Difficulty=difficulty.ToString(),Profile=p.Key,
+                                    Life=Mathf.RoundToInt(BossStats.GodhomeLifeOf(r,scene,difficulty,p)*tune.Life*BossPhases.WholeFactor(r.Record,scene)),
+                                    Defense=GodhomeBalance.Defense(baseDefense,p),
+                                    RawHit=Mathf.RoundToInt(Areas.MasterDamagePerMask(5)*GameDifficulty.FactorOf(difficulty)*Areas.BossDamage*tune.Damage*p.Damage)});
+                        }
+                    }
+                }
             }
             finally
             {
+                VanillaBossProgression.DevClears=savedEndgameClears;
+                Player.TerraStats.DevImmortal=false;
                 mod.DevHold=null;mod.DevAim=null;mod.DevNoFallDamage=false;Minions.Instance.Clear();TerraProjectiles.Instance.DevClear();Whips.Instance.Clear();SwordFx.Instance?.Clear();ZenithSwords.Instance?.DevClear();PlayerBuffs.Clear();ArmorEffects.Clear();
                 if(target!=null){target.hp=oldHp;info.MaxHp=oldMax;info.Level=oldLevel;info.Boss=oldBoss;info.Record=oldRecord;info.Scene=oldScene;info.Ref=oldRef;info.Carry=0;for(int i=0;i<fsms.Length;i++)if(fsms[i]!=null)fsms[i].enabled=fsmWas[i];}
                 foreach(var go in others)if(go!=null)go.SetActive(true);
@@ -211,7 +251,7 @@ namespace TerraKnight
                 inv.Infinite=oldInfinite;GameDifficulty.Current=oldDifficulty;Shop.DevStage=oldStage;mod.Stats.ManaCrystals=oldCrystals;PlayerData.instance.isInvincible=oldInvincible;
                 Equipment.Update(inv);mod.Stats.UpdateMaximums(PlayerData.instance,Equipment.Current.ManaMax);UnityEngine.Random.state=rng;
             }
-            File.WriteAllText(Path.Combine(DevCopy.SaveDir,masterAudit ? auditFile+"-audit.json" : "boss-loadouts.json"),JsonConvert.SerializeObject(new {Checks=checks,Failures=failures,Profiles=rows,Bosses=bosses,Sequences=sequences,Endgame=endgame,MasterAudit=masterAudit,Variants=variantAudit,FixedTarget=true,InfiniteAmmo=!masterAudit,RefilledMana=false,AccessorySlots=5,Potions=false,Prefixes=false,Forging=forgeAudit},Formatting.Indented));
+            File.WriteAllText(Path.Combine(DevCopy.SaveDir,masterAudit ? auditFile+"-audit.json" : "boss-loadouts.json"),JsonConvert.SerializeObject(new {Checks=checks,Failures=failures,Profiles=rows,Bosses=bosses,EndgameGodhome=endgameGodhome,Sequences=sequences,Endgame=endgame,MasterAudit=masterAudit,Variants=variantAudit,FixedTarget=true,InfiniteAmmo=!masterAudit,RefilledMana=false,AccessorySlots=5,Potions=false,ManaPotionSupply=variantAudit && Environment.GetEnvironmentVariable("TK_MASTER_ATTACK_MANA_POTIONS")=="1" ? 30 : 0,Prefixes=false,Forging=forgeAudit},Formatting.Indented));
             Check("汇总",failures==0 && rows.Count==((forgeAudit || variantAudit)?cases.Count:endgame?4:masterAudit?44:28),$"profiles={rows.Count} bosses={bosses.Count}");
         }
     }

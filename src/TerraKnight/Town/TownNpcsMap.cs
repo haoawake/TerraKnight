@@ -25,10 +25,17 @@ namespace TerraKnight.Town
         /// <summary>Forgets where the townsfolk were last seen (another save loaded).</summary>
         public static void ForgetMapHeads() => lastSeen.Clear();
 
+        // Made again every frame the map shows: the lists kept.
+        static readonly List<MapHead> heads = new List<MapHead>();
+        static readonly HashSet<string> headsDone = new HashSet<string>();
+
+        /// <summary>Where the townsfolk's heads go now (the list is kept and filled again by the next call).</summary>
         public static List<MapHead> MapHeads()
         {
-            var list = new List<MapHead>();
-            var done = new HashSet<string>();
+            var list = heads;
+            var done = headsDone;
+            list.Clear();
+            done.Clear();
             const float c = CellGrid.CellSize;
             foreach (var n in npcs)
             {

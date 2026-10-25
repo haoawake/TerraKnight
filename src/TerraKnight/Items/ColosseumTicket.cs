@@ -64,6 +64,7 @@ namespace TerraKnight.Items
             InventoryGui.Open = false;
             UI.HudDialogue.Close();
             World.PylonObject.TeleportEffect(hero);
+            Player.DelicateFlower.OnTeleport();
             gm.BeginSceneTransition(new GameManager.SceneLoadInfo
             {
                 SceneName = Scene, EntryGateName = Gate, HeroLeaveDirection = GlobalEnums.GatePosition.unknown, EntryDelay = 0f,

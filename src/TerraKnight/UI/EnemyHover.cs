@@ -128,9 +128,12 @@ namespace TerraKnight.UI
             return best;
         }
 
+        static readonly List<Renderer> renderers = new List<Renderer>();
+
         static bool AnyVisible(HealthManager hm)
         {
-            foreach (var r in hm.GetComponentsInChildren<Renderer>())
+            hm.GetComponentsInChildren(renderers);
+            foreach (var r in renderers)
                 if (r.enabled && r.isVisible) return true;
             return false;
         }
@@ -242,7 +245,9 @@ namespace TerraKnight.UI
         /// <summary>Object names whose journal record is another (null: not an enemy of its own, never counted).</summary>
         static readonly (string Prefix, string Record)[] nameToRecord =
         {
-            ("White Palace Fly", "PalaceFly"), ("Ordeal Zoteling", "ZotelingHopper"), ("Zote Balloon", "ZotelingBalloon"), ("Zoteling", "ZotelingBuzzer"),
+            // These pooled prefabs have no death-journal record; their object names use a lower-case b.
+            ("Flamebearer Small", "FlameBearerSmall"), ("Flamebearer Med", "FlameBearerMed"), ("Flamebearer Large", "FlameBearerLarge"),
+            ("White Palace Fly", "PalaceFly"), ("Big Centipede", "BigCentipede"), ("Ordeal Zoteling", "ZotelingHopper"), ("Zote Balloon", "ZotelingBalloon"), ("Zoteling", "ZotelingBuzzer"),
             ("Nightmare Grimm Boss", "NightmareGrimm"), ("Grimm Boss", "Grimm"), ("Corpse Flukeman", null), ("Flukeman Top", null), ("Flukeman Bot", null),
             ("fluke_baby", null), ("Hollow Shade", null),
             // Their deaths carry the placeholder record (Dummy) or none: the Soul Tyrant's two phases (the dream's, Godhome's;

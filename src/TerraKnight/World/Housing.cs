@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Terraria;
 using UnityEngine;
 
@@ -162,7 +162,7 @@ namespace TerraKnight.World
                 case CellKind.MagicIce: return 127;
                 case CellKind.Meteorite: return 37;
                 case CellKind.Obsidian: return 56;
-                default: return Cells.IsPlatform(kind) ? 19 : 1;
+                default: return VanillaBlocks.Contains(kind) ? VanillaBlocks.Tile(kind) : Cells.IsPlatform(kind) ? 19 : 1;
             }
         }
 

@@ -260,6 +260,12 @@ namespace TerraKnight.Items
 
         static void ActChest(int index, bool leftPress, bool rightPress, bool rightHeld)
         {
+            HallownestStorage.Move(inv, () => ActChestCore(index, leftPress, rightPress, rightHeld));
+            if (!inv.Mouse.IsEmpty) inv.RecordCollection(inv.Mouse.Type);
+        }
+
+        static void ActChestCore(int index, bool leftPress, bool rightPress, bool rightHeld)
+        {
             var items = Chests.OpenItems;
             if (items == null) return;
             ref var slot = ref items[index];
@@ -277,7 +283,6 @@ namespace TerraKnight.Items
                     return;
                 }
                 if (inv.Mouse.IsEmpty && slot.IsEmpty) return;
-                if (RefuseHkOutside()) return;
                 if (CanStack(inv.Mouse, slot) && slot.Count < slot.Def.MaxStack && inv.Mouse.Count < inv.Mouse.Def.MaxStack)
                 {
                     int moved = Mathf.Min(inv.Mouse.Count, slot.Def.MaxStack - slot.Count);

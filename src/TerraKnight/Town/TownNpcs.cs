@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.Items;
 using TerraKnight.World;
@@ -50,7 +50,7 @@ namespace TerraKnight.Town
             Internal = internalName;
             Zh = zh;
             Profile = profile;
-            Stage = stage;
+            Stage = TownShopExtra.Arrival(internalName, stage);
             Items = TownShopExtra.With(internalName, items);
         }
     }
@@ -87,13 +87,20 @@ namespace TerraKnight.Town
             {
                 get
                 {
-                    if (Lang.IsSource) return Def.Zh + Given;
+                    // Made once for its given name in the language (asked every frame by the map and the hover).
+                    if (name != null && ReferenceEquals(nameGiven, Given) && nameCulture == Lang.Culture && nameSource == Lang.IsSource) return name;
+                    nameGiven = Given;
+                    nameCulture = Lang.Culture;
+                    nameSource = Lang.IsSource;
+                    if (Lang.IsSource) return name = Def.Zh + Given;
                     string type = Terraria.TerrariaText.NpcName(Lang.Culture, Def.Id) ?? Def.Zh;
                     string title = Terraria.TerrariaText.Get(Lang.Culture, "Game.NPCTitle") ?? "{0} the {1}";
-                    try { return string.Format(title, Given, type); }
-                    catch (System.FormatException) { return Given + " " + type; }
+                    try { return name = string.Format(title, Given, type); }
+                    catch (System.FormatException) { return name = Given + " " + type; }
                 }
             }
+            string name, nameGiven, nameCulture;
+            bool nameSource;
         }
 
         static readonly List<Npc> npcs = new List<Npc>();
@@ -112,7 +119,15 @@ namespace TerraKnight.Town
             }
         }
 
-        static string TextureOf(NpcDef d) => d.Texture ?? "TownNPCs/" + d.Profile + "_Default";
+        static readonly Dictionary<NpcDef, string> defaultTextures = new Dictionary<NpcDef, string>();
+
+        /// <summary>The body sheet's name (made once: asked every frame).</summary>
+        static string TextureOf(NpcDef d)
+        {
+            if (d.Texture != null) return d.Texture;
+            if (!defaultTextures.TryGetValue(d, out var t)) defaultTextures[d] = t = "TownNPCs/" + d.Profile + "_Default";
+            return t;
+        }
         static int FramesOf(NpcDef d) => d.Frames > 0 ? d.Frames : FrameCount(d.Id);
         // Town residents have no HealthManager. Flymeal gives them a flee reaction without touching quest FSMs.
         public static int FlymealStrikes { get; private set; }
@@ -178,6 +193,8 @@ namespace TerraKnight.Town
         public static bool TalkingIsTaxCollector => talk != null && talk.Def.Id == 441;
         /// <summary>Talking to the Angler, whose chat has the "Quest" button.</summary>
         public static bool TalkingIsAngler => talk != null && talk.Def.Internal == "Angler";
+        /// <summary>Talking to the Stylist, whose chat has the "Hair Style" button (UI.AppearanceWindow).</summary>
+        public static bool TalkingIsStylist => talk != null && talk.Def.Id == 353;
 
         /// <summary>The Angler's "Quest" button (Lang.inter[64]): today's fish, or handing it in.</summary>
         public static void AnglerQuest()
@@ -194,8 +211,21 @@ namespace TerraKnight.Town
         public const int ShopColumns = 10, ShopBaseSlots = 40;
         public static readonly ItemStack[] ShopItems = new ItemStack[50];
         public static readonly bool[] BuyBack = new bool[50];
+        /// <summary>A buy-back slot's price apiece, in copper: what each fetched when sold.</summary>
+        public static readonly long[] BuyBackPrice = new long[50];
+
+        /// <summary>
+        /// Main.shopSellbackHelper (ItemShopSellbackHelper): what was bought at the townsfolk's since the save was entered,
+        /// by item, prefix and forging, with what each cost; sold back, as many as were bought fetch that price.
+        /// </summary>
+        static readonly List<(ItemType Type, int Prefix, int Forge, int Count, long Price)> bought = new List<(ItemType, int, int, int, long)>();
+
+        /// <summary>A new save or the title screen: the purchases forgotten (Main.shopSellbackHelper.Clear).</summary>
+        public static void ClearBought() => bought.Clear();
         /// <summary>A slot showing what the seller brings at a later stage (that stage; 0: on sale now): to look at, not to buy.</summary>
         public static readonly int[] ShopLock = new int[50];
+        /// <summary>A slot showing a spell's weapon before that spell is absorbed (the spell, 1-4: SpellRewards; 0: none): to look at, not to buy.</summary>
+        public static readonly int[] ShopSpell = new int[50];
 
         /// <summary>The rows the shop shows: four, five once something lies past the fortieth slot.</summary>
         public static int ShopRowsShown
@@ -255,6 +285,14 @@ namespace TerraKnight.Town
             return 0;
         }
 
+        // All possible stock, independent of today's moon, stage, visitor roll or spell flags.
+        internal static IEnumerable<ItemType> ShopCatalogue()
+        {
+            foreach(var stock in travelPool)yield return stock.Type;
+            foreach(var npc in All)
+                foreach(var stock in ProgressionBalance.ShopStock(npc.Internal,npc.Items))yield return stock.Type;
+        }
+
         internal static IEnumerable<(string Npc, ItemType Type)> DevSourcesAt(int stage)
         {
             if(stage>=1)
@@ -283,6 +321,8 @@ namespace TerraKnight.Town
             Names.Clear();
             Arrived.Clear();
             Dismissed.Clear();
+            Taxes = 0;
+            TaxClock = 0;
             ClearHouses();
             lastStage = -1;
             travelerCame = -1;
@@ -327,8 +367,7 @@ namespace TerraKnight.Town
         }
 
         /// <summary>
-        /// Main.UpdateTime_SpawnTownNPCs read in Hallownest: once moved in a resident stays (even if the progress reads lower
-        /// than when it came); the Angler once woken; Santa in December (Main.xMas: the 15th on); the Princess with every
+        /// Main.UpdateTime_SpawnTownNPCs read in Hallownest: functional residents obey their stage even after a save reload; the Angler once woken; Santa in December (Main.xMas: the 15th on); the Princess with every
         /// other resident home; the Traveling Merchant on his days, by day.
         /// </summary>
         static bool InTown(NpcDef def, int stage)
@@ -336,6 +375,7 @@ namespace TerraKnight.Town
             // Sent away with a right click in the panel: it stays away, whatever it would do on its own,
             // until the player puts it down again.
             if (Dismissed.Contains(def.Internal)) return false;
+            if (AutoArrives(def) && stage < def.Stage) return false;
             switch (def.Kind)
             {
                 case NpcKind.Angler: return Angler.Saved;
@@ -836,7 +876,8 @@ namespace TerraKnight.Town
                 fx.Draw(FxBatch.Frame(tex, 0, fh * n.Frame, t.width, fh, t.width / 2f, fh - 4f), feet, new Color(L, L, L, 1f), 0f, 1f, flipX: Facing(n) == 1, town: true);
                 // The chat bubble over a townsperson the cursor is on and the player can reach.
                 var hero = HeroController.SilentInstance;
-                if (mouse.HasValue && hero != null && n != talk && FrameRect(n).Contains(mouse.Value) && InReach(n, hero))
+                // Or the one the smart cursor picked (SmartInteract), as Main.HoverOverNPCs takes it.
+                if (mouse.HasValue && hero != null && n != talk && (FrameRect(n).Contains(mouse.Value) || SmartPicked(n)) && InReach(n, hero))
                 {
                     var head = TerraParticles.ToPx(new Vector2(n.X, n.FeetY)) + new Vector2((n.Dir == 1 ? 1f : -1f) * 17f, -40f - 13f);
                     fx.Draw(FxBatch.Whole("Chat"), head, Color.white, 0f, 1f, flipX: n.Dir != 1, overPlayer: true);
@@ -939,22 +980,24 @@ namespace TerraKnight.Town
             Npc pick = null;
             foreach (var c in npcs)
                 if (FrameRect(c).Contains(mouseWorld) && InReach(c, hero) && (pick == null || Mathf.Abs(c.X - mouseWorld.x) < Mathf.Abs(pick.X - mouseWorld.x))) pick = c;
-            foreach (var n in npcs)
-            {
-                if (n != pick) continue;
-                if (talk == n) return true;
-                ReturnGuideItem();
-                ReturnReforgeItem();
-                talk = n;
-                shop = false;
-                guideCraft = false;
-                reforge = false;
-                forge = false;
-                ChatText = Chat(n);
-                TerraMod.Instance?.PlaySound("Chat", 0.8f);
-                return true;
-            }
-            return false;
+            if (pick == null) return false;
+            Talk(pick);
+            return true;
+        }
+
+        /// <summary>The talk with a townsperson opens (sound Chat); already talking to it, nothing more.</summary>
+        static void Talk(Npc n)
+        {
+            if (talk == n) return;
+            ReturnGuideItem();
+            ReturnReforgeItem();
+            talk = n;
+            shop = false;
+            guideCraft = false;
+            reforge = false;
+            forge = false;
+            ChatText = Chat(n);
+            TerraMod.Instance?.PlaySound("Chat", 0.8f);
         }
 
         /// <summary>Main.OpenShop: the inventory opens, the chat text goes, the stock is set up anew.</summary>
@@ -962,6 +1005,7 @@ namespace TerraKnight.Town
         {
             if (talk == null || talk.Def.Items.Length == 0) return;
             shop = true;
+            RecoveryShop = false;
             ChatText = "";
             InventoryGui.Open = true;
             SetupShop(talk.Def);
@@ -1058,7 +1102,9 @@ namespace TerraKnight.Town
             {
                 ShopItems[i] = default;
                 BuyBack[i] = false;
+                BuyBackPrice[i] = 0;
                 ShopLock[i] = 0;
+                ShopSpell[i] = 0;
             }
             if (sound) TerraMod.Instance?.PlaySound("Menu_Close", 0.7f);
         }
@@ -1068,21 +1114,50 @@ namespace TerraKnight.Town
         /// brings at the later stages, from the nearest stage on, locked (<see cref="ShopLock"/>): every stock to look at
         /// from the start, with the stage it opens at.
         /// </summary>
+        public static bool RecoveryShop { get; private set; }
+        public static void OpenRecoveryShop()
+        {
+            if (!TalkingIsGoblin) return;
+            shop = true; RecoveryShop = true; ChatText = "";
+            InventoryGui.Open = true;
+            SetupShop(talk.Def);
+            TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
+        }
+
         static void SetupShop(NpcDef def)
         {
             for (int i = 0; i < ShopItems.Length; i++)
             {
                 ShopItems[i] = default;
                 BuyBack[i] = false;
+                BuyBackPrice[i] = 0;
                 ShopLock[i] = 0;
+                ShopSpell[i] = 0;
             }
             int stage = Shop.UnlockedStage(), phase = MoonPhase, k = 0;
+            if (RecoveryShop && def.Id == 107)
+            {
+                foreach (var type in HallownestRecovery.Stock(TerraMod.Instance?.Inventory))
+                {
+                    if (k >= ShopItems.Length) throw new System.InvalidOperationException("Recovery shop capacity exceeded");
+                    ShopItems[k++] = ItemStack.Of(type);
+                }
+                return;
+            }
             var later = new List<(ItemType Type, int Stage)>();
+            var spells = new List<(ItemType Type, int Spell)>();
             var shown = new HashSet<ItemType>();
             foreach (var s in ProgressionBalance.ShopStock(def.Internal,def.Items))
             {
                 if (s.Phases != null && System.Array.IndexOf(s.Phases, phase) < 0) continue;
-                if (s.Stage > stage || !ProgressionBalance.Unlocked(s.Type))
+                // A spell's weapon: by its spell, not by stage.
+                int spell = SpellRewards.SpellOf(s.Type);
+                if (spell > 0 && !SpellRewards.OnSale(s.Type))
+                {
+                    spells.Add((s.Type, spell));
+                    continue;
+                }
+                if (spell == 0 && (s.Stage > stage || !ProgressionBalance.Unlocked(s.Type)))
                 {
                     int at = Mathf.Max(s.Stage, ItemDb.Get(s.Type).Stage, stage + 1);
                     if (at <= World.Areas.MaxLevel) later.Add((s.Type, at));
@@ -1094,6 +1169,14 @@ namespace TerraKnight.Town
             }
             // The later stages' looks only in the four rows, or in the fifth when the stock on sale already reaches it.
             int lookLimit = k > ShopBaseSlots ? ShopItems.Length : ShopBaseSlots;
+            // The spells' weapons not yet absorbed first, by the spells' order, beside those on sale.
+            foreach (var l in spells)
+            {
+                if (k >= lookLimit) break;
+                if (!shown.Add(l.Type)) continue;
+                ShopSpell[k] = l.Spell;
+                ShopItems[k++] = ItemStack.Of(l.Type);
+            }
             // Stable by stage: the next stage's first, each stage's in the stock's order.
             var order = new Dictionary<ItemType, int>();
             for (int i = 0; i < later.Count; i++) if (!order.ContainsKey(later[i].Type)) order[later[i].Type] = i;
@@ -1107,13 +1190,19 @@ namespace TerraKnight.Town
             }
         }
 
-        public static bool Locked(int slot) => slot >= 0 && slot < ShopLock.Length && ShopLock[slot] > 0 && !ShopItems[slot].IsEmpty;
+        public static bool Locked(int slot) => slot >= 0 && slot < ShopLock.Length && (ShopLock[slot] > 0 || ShopSpell[slot] > 0) && !ShopItems[slot].IsEmpty;
 
         /// <summary>Buys from a shop slot onto the cursor (as many as count allows); false when nothing was bought.</summary>
         public static bool Buy(int slot, int count, Inventory inv)
         {
             if (!ShopOpen || slot < 0 || slot >= ShopItems.Length || ShopItems[slot].IsEmpty) return false;
-            if (Locked(slot) || !ProgressionBalance.Unlocked(ShopItems[slot].Type)) return false;
+            if (Locked(slot)) return false;
+            if(!BuyBack[slot]&&ShopItems[slot].Type==ItemType.RandomPrefabHouse)return PrefabHouses.Buy(inv,count);
+            if (RecoveryShop && !BuyBack[slot])
+            {
+                if (!HallownestRecovery.CanBuy(inv, ShopItems[slot].Type)) return false;
+            }
+            else if (!BuyBack[slot] && !SpellRewards.OnSale(ShopItems[slot].Type)) return false;
             int bought = 0;
             for (int k = 0; k < count; k++)
             {
@@ -1125,7 +1214,10 @@ namespace TerraKnight.Town
                 if (!Shop.Spend(price)) break;
                 if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix, Forge = item.Forge };
                 inv.Mouse.Count++;
+                HkItems.Trade(inv, item.Type, 1);
+                HallownestRecovery.Record(inv, item.Type);
                 bought++;
+                Achievements.AchievementTracker.Bought(price);
                 if (BuyBack[slot])
                 {
                     ShopItems[slot].Count--;
@@ -1133,8 +1225,10 @@ namespace TerraKnight.Town
                     {
                         ShopItems[slot] = default;
                         BuyBack[slot] = false;
+                        BuyBackPrice[slot] = 0;
                     }
                 }
+                else Bought(item, price);
             }
             if (bought > 0) TerraMod.Instance?.PlaySound(ItemDb.Get(inv.Mouse.Type).Value > 0 ? "Coins" : "Grab", 0.7f);
             return bought > 0;
@@ -1145,9 +1239,54 @@ namespace TerraKnight.Town
         {
             var item = ShopItems[slot];
             if (item.IsEmpty) return 0;
+            if(!BuyBack[slot]&&item.Type==ItemType.CasinoKit)return Casino.HousePrice;
+            if(!BuyBack[slot]&&item.Type==ItemType.RandomPrefabHouse)return PrefabHouses.Price;
+            if(!BuyBack[slot]&&item.Type==ItemType.SimplePrefabHouse)return PrefabHouses.SimplePrice;
             // The Discount Card (GetItemExpectedPrice, Pl:35648-35657): four fifths, as worn when the shop opened.
-            long price = Shop.PriceOf(item.Def);
-            return BuyBack[slot] ? System.Math.Max(1L, price / 5) : DiscountLatched ? (long)(price * 0.8f) : price;
+            if (BuyBack[slot]) return BuyBackPrice[slot];
+            long price = RecoveryShop ? HallownestRecovery.Price(item.Def) : Shop.PriceOf(item.Def);
+            return DiscountLatched ? (long)(price * 0.8f) : price;
+        }
+
+        /// <summary>One bought from the stock, at a price (ItemShopSellbackHelper.Add).</summary>
+        static void Bought(ItemStack item, long price)
+        {
+            for (int i = 0; i < bought.Count; i++)
+            {
+                var b = bought[i];
+                if (b.Type != item.Type || b.Prefix != item.Prefix || b.Forge != item.Forge || b.Price != price) continue;
+                bought[i] = (b.Type, b.Prefix, b.Forge, b.Count + 1, b.Price);
+                return;
+            }
+            bought.Add((item.Type, item.Prefix, item.Forge, 1, price));
+        }
+
+        /// <summary>
+        /// Of a stack being sold, how many were bought this session and what they cost together (taken off the record):
+        /// they fetch their price again (Player.SellItem with the helper's amount), the dearest first.
+        /// </summary>
+        static (int count, long paid) Refund(ItemStack stack)
+        {
+            int left = stack.Count, count = 0;
+            long paid = 0;
+            while (left > 0)
+            {
+                int best = -1;
+                for (int i = 0; i < bought.Count; i++)
+                {
+                    var b = bought[i];
+                    if (b.Type == stack.Type && b.Prefix == stack.Prefix && b.Forge == stack.Forge && (best < 0 || b.Price > bought[best].Price)) best = i;
+                }
+                if (best < 0) break;
+                var m = bought[best];
+                int n = System.Math.Min(left, m.Count);
+                count += n;
+                paid += m.Price * n;
+                left -= n;
+                if (m.Count - n <= 0) bought.RemoveAt(best);
+                else bought[best] = (m.Type, m.Prefix, m.Forge, m.Count - n, m.Price);
+            }
+            return (count, paid);
         }
 
         /// <summary>Dev: every shop's every item (any stage, any moon) whose icon doesn't load or is blank.</summary>
@@ -1183,25 +1322,42 @@ namespace TerraKnight.Town
         public static void Sell(ref ItemStack stack)
         {
             // Money isn't sold.
-            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.CannotDiscard || Currencies.Is(stack.Type)) return;
+            if (!ShopOpen || stack.IsEmpty || stack.Favorite || stack.Def.CannotSell || Currencies.Is(stack.Type)) return;
+            HallownestRecovery.Record(TerraMod.Instance?.Inventory, stack.Type);
+            HkItems.Trade(TerraMod.Instance?.Inventory, stack.Type, -stack.Count);
             long money = Shop.SellValue(stack);
+            long each = stack.Count > 0 ? money / stack.Count : 0;
+            // Bought here this session: those fetch what they cost, and go back to the stock rather than a buy-back slot
+            // (Chest.AddItemToShop takes them off the helper first).
+            var (refunded, paid) = Refund(stack);
+            if (refunded > 0) money += paid - each * refunded;
             Shop.Earn(money);
+            int keep = stack.Count - refunded;
+            if (keep <= 0)
+            {
+                stack = default;
+                TerraMod.Instance?.PlaySound(money > 0 ? "Coins" : "Grab", 0.7f);
+                return;
+            }
             int at = -1;
             int last = ShopItems.Length - 1;
             for (int i = 0; i < last; i++)
-                if (BuyBack[i] && ShopItems[i].Type == stack.Type && ShopItems[i].Prefix == stack.Prefix && ShopItems[i].Forge == stack.Forge) { at = i; break; }
+                if (BuyBack[i] && ShopItems[i].Type == stack.Type && ShopItems[i].Prefix == stack.Prefix && ShopItems[i].Forge == stack.Forge
+                    && BuyBackPrice[i] == each) { at = i; break; }
             if (at < 0)
                 for (int i = 0; i < last; i++)
                     if (ShopItems[i].IsEmpty) { at = i; break; }
             // A full shop: the last of the later stages' looks gives up its slot.
             if (at < 0)
                 for (int i = last - 1; i >= 0; i--)
-                    if (Locked(i)) { ShopItems[i] = default; ShopLock[i] = 0; at = i; break; }
+                    if (Locked(i)) { ShopItems[i] = default; ShopLock[i] = 0; ShopSpell[i] = 0; at = i; break; }
             if (at >= 0)
             {
                 if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge };
-                ShopItems[at].Count += stack.Count;
+                ShopItems[at].Count += keep;
                 BuyBack[at] = true;
+                // Bought back for exactly what each fetched (Terraria's buyOnce price: the sale's fifth).
+                BuyBackPrice[at] = each;
             }
             stack = default;
             TerraMod.Instance?.PlaySound(money > 0 ? "Coins" : "Grab", 0.7f);
@@ -1214,11 +1370,12 @@ namespace TerraKnight.Town
             if (n.Def.Internal == "Angler") return Angler.Chat(n.Name);
             if (n.Def.Chat != null && n.Def.Chat.Length > 0) return ChatOf(n);
             var lines = Dialog(n.Def.Internal);
-            string line = Lang.T(lines[Random.Range(0, lines.Length)]).Replace("{PlayerName}", Lang.T("小骑士"));
-            // The Guide's advice on what comes next (Main.HelpText): the ability that opens the next stage.
+            string line = Lang.T(lines[Random.Range(0, lines.Length)]).Replace("{PlayerName}", Lang.T("泰拉人"));
+            // Any new movement ability opens the next stage, regardless of acquisition order.
             int next = Shop.UnlockedStage() + 1;
             if (n.Def.Internal == "Guide" && next <= World.Areas.MaxLevel)
-                line += "\n" + Lang.F("想让更多人搬来德特茅斯、商店上新货、工作站能做更多东西，就去找到{0}吧。", Lang.T(Shop.GateAbility(next)));
+                line += "\n" + Lang.F("再取得任意一种尚未获得的移动能力，就能进入阶段 {0}，让更多人搬来、商店上新货、工作站开放更多配方。", next)
+                    + "\n" + Lang.T("计入阶段的能力：蛾翼披风、螳螂爪、水晶之心、帝王之翼、暗影披风。每种只计算一次，顺序不限。");
             return line;
         }
 

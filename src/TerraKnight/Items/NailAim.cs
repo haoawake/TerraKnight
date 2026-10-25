@@ -11,7 +11,9 @@ namespace TerraKnight.Items
     /// straight up, down within 45° of straight down while in the air, level otherwise (HeroController.DoAttack's vertical
     /// input); so the recoil off what is struck, the pogo and the wall's thunk stay the game's four ways, read from the
     /// slash FSM's direction (NailSlash.OnTriggerEnter2D: 0, 90, 180, 270). The slash itself, its picture and its hitbox,
-    /// is turned about the Knight from that way to the cursor's exact angle; the Dream Nail's slash alike (it has no recoil).
+    /// is turned about the Knight from that way to the cursor's exact angle; the Dream Nail's slash alike (it has no recoil),
+    /// its picture and its hitbox both; and the nail arts' Great Slash and Dash Slash as they come out (the Cyclone Slash
+    /// goes all round already).
     /// </summary>
     [HarmonyPatch]
     internal static class NailAim
@@ -147,6 +149,97 @@ namespace TerraKnight.Items
 
         public static string DevDreamSlash => dreamSlash != null ? dreamSlash.name : "";
 
+        static Transform dreamPicture;
+
+        /// <summary>The Dream Nail's slash as drawn: the machine's "Slash" (Dream Effects/Slash), not always the one that reads.</summary>
+        static Transform DreamPicture(HeroController hero, PlayMakerFSM dream)
+        {
+            if (dreamPicture != null && dreamPicture.IsChildOf(hero.transform)) return dreamPicture;
+            var v = dream.FsmVariables.FindFsmGameObject("Slash");
+            dreamPicture = v != null && v.Value != null ? v.Value.transform : null;
+            if (dreamPicture != null) Plugin.Log.LogInfo($"[骨钉朝向] 梦之钉挥砍的贴图：{dreamPicture.name}（读取的是 {(dreamSlash != null ? dreamSlash.name : "?")}）");
+            return dreamPicture;
+        }
+
+        /// <summary>Dev: the Dream Nail's drawn slash, for a test.</summary>
+        public static Transform DevDreamPicture => dreamPicture;
+
+        // ------------------------------------------------------------------ the nail arts
+
+        static readonly List<Transform> arts = new List<Transform>();
+        static readonly HashSet<Transform> artShown = new HashSet<Transform>();
+        static HeroController artsOf;
+        /// <summary>The Knight's effects drawn with an art (its white flash, SD Sharp Flash), turned with it while it lasts.</summary>
+        static readonly List<Transform> artFlashes = new List<Transform>();
+        static readonly HashSet<Transform> flashTurned = new HashSet<Transform>();
+        static float artTurnNow = float.NaN;
+
+        /// <summary>Dev: the last nail art turned, and by how much.</summary>
+        public static string DevLastArt = "";
+        public static float DevLastArtTurn;
+
+        /// <summary>
+        /// Each frame with the nail: the Great Slash and the Dash Slash turned to the cursor as they come out (facing its
+        /// side first), put back once they're done. Not while the setting is off.
+        /// </summary>
+        public static void TickArts(HeroController hero)
+        {
+            if (hero == null) return;
+            if (artsOf != hero)
+            {
+                artsOf = hero;
+                arts.Clear();
+                artShown.Clear();
+                artFlashes.Clear();
+                flashTurned.Clear();
+                foreach (var t in hero.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == "Great Slash" || t.name == "Dash Slash") arts.Add(t);
+                    if (t.name == "SD Sharp Flash") artFlashes.Add(t);
+                }
+            }
+            foreach (var t in arts)
+            {
+                if (t == null) continue;
+                bool shown = t.gameObject.activeInHierarchy;
+                if (shown && artShown.Add(t))
+                {
+                    Restore(t);
+                    float way = hero.cState.facingRight ? 0f : 180f;
+                    if (On && Aim(hero, out float angle))
+                    {
+                        Face(hero, angle);
+                        float turn = Mathf.DeltaAngle(hero.cState.facingRight ? 0f : 180f, angle);
+                        Turn(t, hero, turn);
+                        artTurnNow = turn;
+                        DevLastArt = t.name;
+                        DevLastArtTurn = turn;
+                        DevLastAngle = angle;
+                        way = (hero.cState.facingRight ? 0f : 180f) + turn;
+                    }
+                    // Quick Slash's echo and Grubberfly's beam for the art, its way.
+                    CharmEffects.OnArtShown(hero, t, way);
+                }
+                else if (!shown && artShown.Remove(t)) Restore(t);
+            }
+            // The art's white flash across the Knight goes its way too, while the art lasts.
+            if (artShown.Count > 0 && !float.IsNaN(artTurnNow))
+            {
+                foreach (var f in artFlashes)
+                    if (f != null && f.gameObject.activeInHierarchy && flashTurned.Add(f))
+                    {
+                        Restore(f);
+                        Turn(f, hero, artTurnNow);
+                    }
+            }
+            else
+            {
+                foreach (var f in flashTurned) if (f != null) Restore(f);
+                flashTurned.Clear();
+                artTurnNow = float.NaN;
+            }
+        }
+
         /// <summary>
         /// Each frame with the Dream Nail in hand: facing the cursor while it charges, and its slash turned to the cursor's
         /// angle as it comes (the Dream Nail FSM's "Slash"), put back once it is over.
@@ -158,7 +251,8 @@ namespace TerraKnight.Items
             if (state == lastDreamState) return;
             lastDreamState = state;
             var slash = DreamSlash(hero);
-            if (slash == null) return;
+            var picture = DreamPicture(hero, dream);
+            if (slash == null && picture == null) return;
             if (state == "Slash Antic" || state == "Slash")
             {
                 if (!On || !Aim(hero, out float angle)) return;
@@ -167,10 +261,20 @@ namespace TerraKnight.Items
                     Face(hero, angle);
                     dreamAngle = angle;
                 }
-                if (state == "Slash")
+                // Its picture turned from the antic on (it shows the swing coming), the hitbox as it strikes.
+                float turn = Mathf.DeltaAngle(hero.cState.facingRight ? 0f : 180f, dreamAngle);
+                if (picture != null && picture != slash && (slash == null || !picture.IsChildOf(slash)))
+                {
+                    Restore(picture);
+                    Turn(picture, hero, turn);
+                }
+                if (state == "Slash" && slash != null && (picture == null || !slash.IsChildOf(picture)))
                 {
                     Restore(slash);
-                    Turn(slash, hero, Mathf.DeltaAngle(hero.cState.facingRight ? 0f : 180f, dreamAngle));
+                    Turn(slash, hero, turn);
+                }
+                if (state == "Slash")
+                {
                     DevLastAngle = dreamAngle;
                     DevLastKind = "梦之钉";
                     dreamAngle = float.NaN;
@@ -178,7 +282,8 @@ namespace TerraKnight.Items
             }
             else
             {
-                Restore(slash);
+                if (slash != null) Restore(slash);
+                if (picture != null) Restore(picture);
                 dreamAngle = float.NaN;
             }
         }

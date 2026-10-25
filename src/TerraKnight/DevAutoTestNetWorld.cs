@@ -24,6 +24,8 @@ namespace TerraKnight
         IEnumerator NetWorldHost(string scene, HeroController hero)
         {
             PlayerData.instance.isInvincible = true;
+            mod.DevNoFallDamage = true;
+            Player.TerraStats.DevImmortal = true;
             yield return NetWorldWait(() => WorldSync.Ready, "共享世界主机就绪");
             var region = TerrainSystem.Current.Region;
             var centre = (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center;
@@ -149,6 +151,8 @@ namespace TerraKnight
         IEnumerator NetWorldClient(string scene, HeroController hero)
         {
             PlayerData.instance.isInvincible = true;
+            mod.DevNoFallDamage = true;
+            Player.TerraStats.DevImmortal = true;
             yield return NetWorldWait(() => WorldSync.Ready && WorldSync.DevSnapshots > 0, "客机安装完整世界快照", 60f);
             yield return new WaitForSecondsRealtime(1f);
             NetCheck(Stations.Count == 1 && Chests.Count == 1, "迟加入可见已有工作台和箱子");

@@ -39,6 +39,11 @@ namespace TerraKnight.World
 
         SpriteRenderer crystal;
         readonly SpriteRenderer[] shine = new SpriteRenderer[6];
+        readonly List<SpriteRenderer> baseParts = new List<SpriteRenderer>();
+        /// <summary>How clear a pylon not lit yet stands (Pylons.Dormant).</summary>
+        const float DormantAlpha = 0.38f;
+        /// <summary>Its strength shown now, easing to its state's: half clear dormant, whole lit.</summary>
+        float shown = 1f;
         SpriteRenderer light;
         /// <summary>Its style's light (TileLightScanner: the pylon tile's colour).</summary>
         Color lightColor;
@@ -59,6 +64,7 @@ namespace TerraKnight.World
                     sr.sprite = BaseTile(p.Style, c, r);
                     // Row 0 is the top; pivots are tile centres.
                     sr.transform.localPosition = new Vector3((c * 16 + 8) * Px, ((Pylons.HeightCells - 1 - r) * 16 + 8 - 2) * Px, BaseZ);
+                    baseParts.Add(sr);
                 }
             crystal = new GameObject("Crystal").AddComponent<SpriteRenderer>();
             crystal.transform.SetParent(transform, false);
@@ -74,13 +80,16 @@ namespace TerraKnight.World
             // Terraria's tile light, softened: Hallownest's painted dark has no light map to stop it at walls.
             light = Glow.Create(transform, new Color(lc.r * 0.75f, lc.g * 0.75f, lc.b * 0.75f, 0.3f), 2.4f);
             light.transform.localPosition = new Vector3(24 * Px, 40 * Px, Glow.Z);
+            shown = p.Dormant ? DormantAlpha : 1f;
             Update();
         }
 
         /// <summary>Fades in, with a burst of sparkles: just unlocked.</summary>
         public void Appear()
         {
-            appear = 0f;
+            // Lit where it stood half clear: from there up; new: from nothing.
+            appear = shown < 1f ? shown : 0f;
+            shown = 1f;
             Burst(transform.position + new Vector3(24 * Px, 32 * Px, 0f), 40, Pylon.Style);
         }
 
@@ -108,6 +117,10 @@ namespace TerraKnight.World
         {
             if (Pylon == null) return;
             if (appear < 1f) appear = Mathf.Min(1f, appear + Time.deltaTime / 0.6f);
+            // Not lit yet: half clear all over, no light, no sparkles (its place taken all the same).
+            bool dormant = Pylon.Dormant;
+            float whole = dormant ? DormantAlpha : appear;
+            foreach (var part in baseParts) if (part != null) part.color = new Color(1f, 1f, 1f, whole);
             float t = Time.time;
             // Main.tileFrameCounter[597]: 0..63 at a tick each, eight frames of eight ticks, offset per pylon.
             var cell = CellGrid.WorldToCell(transform.position);
@@ -117,7 +130,7 @@ namespace TerraKnight.World
             var center = new Vector3(24 * Px, (40 + bob * 4f) * Px, CrystalZ);
             crystal.sprite = frame;
             crystal.transform.localPosition = center;
-            crystal.color = new Color(0.86f, 0.86f, 0.9f, 0.7f * appear);
+            crystal.color = new Color(0.86f, 0.86f, 0.9f, 0.7f * whole);
             float pulse = Mathf.Sin(t * 2f * Mathf.PI) * 0.2f + 0.8f;
             for (int k = 0; k < shine.Length; k++)
             {
@@ -125,18 +138,81 @@ namespace TerraKnight.World
                 var off = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * ((6f + bob * 2f) * Px);
                 shine[k].sprite = frame;
                 shine[k].transform.localPosition = center + off - Vector3.forward * 0.0001f;
-                float v = 0.1f * pulse * appear;
+                float v = dormant ? 0f : 0.1f * pulse * appear;
                 shine[k].color = shine[k].sharedMaterial == crystal.sharedMaterial ? new Color(1f, 1f, 1f, v) : new Color(v, v, v, 1f);
             }
             // Terraria's lighting on: the pylon's colour lights the map round its crystal instead of the glow.
             if (LightMap.Active)
             {
                 light.enabled = false;
-                if (appear > 0.05f) LightMap.Add(transform.TransformPoint(center), lightColor * appear);
+                if (appear > 0.05f && !dormant) LightMap.Add(transform.TransformPoint(center), lightColor * appear);
             }
-            else light.enabled = appear > 0.05f;
+            else light.enabled = appear > 0.05f && !dormant;
             // TileDrawing: a 1 in 40 chance each frame of one sparkle drifting off the crystal.
-            if (Random.value < 1f / 40f) Burst(transform.TransformPoint(center), 1, Pylon.Style);
+            if (!dormant && Random.value < 1f / 40f) Burst(transform.TransformPoint(center), 1, Pylon.Style);
+            ShowHighlight(counter / 8, center);
+        }
+
+        /// <summary>The smart interact highlight on it (Pylons.SmartWin): 0 none, 1 in reach (grey), 2 picked (gold).</summary>
+        public int Highlight;
+
+        SpriteRenderer crystalHighlight;
+        readonly List<SpriteRenderer> baseOutlines = new List<SpriteRenderer>();
+        static readonly Dictionary<int, Sprite> highlightFrames = new Dictionary<int, Sprite>();
+        static readonly Dictionary<(int, int, int), Sprite> baseOutlineTiles = new Dictionary<(int, int, int), Sprite>();
+        static bool outlineMissing;
+
+        /// <summary>
+        /// DrawTeleportationPylons' selection glow: the crystal's highlight frame (Extra_181, column 2, the same row) over it;
+        /// the base's tiles their TileOutlines/Tiles_597 mask, as any highlighted tile.
+        /// </summary>
+        void ShowHighlight(int row, Vector3 center)
+        {
+            bool on = Highlight != 0;
+            if (crystalHighlight == null && on)
+            {
+                crystalHighlight = new GameObject("Crystal Highlight").AddComponent<SpriteRenderer>();
+                crystalHighlight.transform.SetParent(transform, false);
+                for (int i = 0; i < baseParts.Count; i++)
+                {
+                    var o = new GameObject("Tile Outline").AddComponent<SpriteRenderer>();
+                    o.transform.SetParent(baseParts[i].transform, false);
+                    o.transform.localPosition = new Vector3(0f, 0f, -0.0001f);
+                    int c = i / Pylons.HeightCells, r = i % Pylons.HeightCells;
+                    o.sprite = BaseOutline(Pylon.Style, c, r);
+                    baseOutlines.Add(o);
+                }
+            }
+            if (crystalHighlight == null) return;
+            crystalHighlight.enabled = on;
+            foreach (var o in baseOutlines) o.enabled = on && o.sprite != null;
+            if (!on) return;
+            var color = SmartInteract.OutlineColor(Highlight == 2);
+            if (!highlightFrames.TryGetValue(row, out var s))
+            {
+                var tex = TerrariaAssets.Texture("Extra_181");
+                s = Sprite.Create(tex, new Rect(2 * CrystalW, tex.height - (row + 1) * CrystalH, CrystalW, CrystalH), new Vector2(0.5f, 0.5f), 1f / Px, 0, SpriteMeshType.FullRect);
+                highlightFrames[row] = s;
+            }
+            crystalHighlight.sprite = s;
+            crystalHighlight.transform.localPosition = center - Vector3.forward * 0.0002f;
+            crystalHighlight.color = color;
+            foreach (var o in baseOutlines) o.color = color;
+        }
+
+        static Sprite BaseOutline(int style, int c, int r)
+        {
+            if (outlineMissing) return null;
+            if (baseOutlineTiles.TryGetValue((style, c, r), out var s)) return s;
+            Texture2D tex;
+            try { tex = TerrariaAssets.Texture("Misc/TileOutlines/Tiles_597"); }
+            catch (System.Exception) { tex = null; }
+            if (tex == null) { outlineMissing = true; return null; }
+            int x = style * 54 + c * 18, yTop = r * 18;
+            if (x + 16 > tex.width || yTop + 16 > tex.height) return null;
+            s = Sprite.Create(tex, new Rect(x, tex.height - yTop - 16, 16, 16), new Vector2(0.5f, 0.5f), 1f / Px, 0, SpriteMeshType.FullRect);
+            baseOutlineTiles[(style, c, r)] = s;
+            return s;
         }
 
         /// <summary>TeleportPylonsSystem.SpawnInWorldDust: dust 43 in the pylon's colour, slowed, drifting up.</summary>

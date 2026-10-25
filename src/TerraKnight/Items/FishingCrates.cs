@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TerraKnight.Items
@@ -7,7 +7,7 @@ namespace TerraKnight.Items
     /// Opening a crate (Player.OpenFishingCrate, a right click in the bag): a piece of equipment (an area's crate always
     /// one, from its area: FishingAreaCrates.cs; the special one 1 time in 5: the Fiberglass Fishing Pole in Greenpath's
     /// and the Queen's Gardens' crates, the Scarab Fishing Rod in Kingdom's Edge's and the Colosseum's, the Chum Caster in
-    /// the Waterways', the acid hook in the acid crate's; Wooden 1 in 4, Iron 1 in 3, Golden 1 in 2, of their stages), and
+    /// the Waterways', the acid hook in the acid crate's; Wooden and Iron 1 in 2, Golden always, of their stages), and
     /// as Terraria's crates give: geo, ore, bars, potions, healing and mana potions, bait; an area's crate its area's block,
     /// torch, material, bait and moss too. A hardmode crate's ore and bars are hardmode's half the time and more. Now and
     /// then (1 in 50) a pet, a light pet or a minecart too. Life Crystals are an independent bonus roll:
@@ -32,6 +32,7 @@ namespace TerraKnight.Items
             var got = new List<ItemStack>();
             Contents(def, got);
             inv.ConsumeAt(slot);
+            Achievements.AchievementTracker.CrateOpened();
             var hero = HeroController.SilentInstance;
             Vector2 at = hero != null ? (Vector2)hero.transform.position : Vector2.zero;
             foreach (var s in got)
@@ -55,14 +56,31 @@ namespace TerraKnight.Items
             foreach (var t in from)
             {
                 var d = ItemDb.Get(t);
-                if (d.Stage >= lo && d.Stage <= hi && Unlocked(t) && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !ProgressionBalance.ExclusiveBossItems.Contains(t)) ok.Add(t);
+                if (d.Stage >= lo && d.Stage <= hi && Unlocked(t) && !CraftOnlyLoot.Blocked(t) && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !BossDropPlan.BossOnly(t) && !GodhomeRewards.LunarEquipment(t)) ok.Add(t);
             }
             return ok.Count == 0 ? ItemType.None : ok[Random.Range(0, ok.Count)];
         }
 
+        /// <summary>A tier crate's piece: one of the stage reached's or the one before it (within the crate's own stages), else any of its own.</summary>
+        static ItemType PickNear(ItemType[] from, int lo, int hi)
+        {
+            int stage = Shop.UnlockedStage();
+            int a = Mathf.Max(lo, stage - 1), b = Mathf.Min(hi, stage);
+            var near = a <= b ? Pick(from, a, b) : ItemType.None;
+            if (near != ItemType.None) return near;
+            var any = Pick(from, lo, hi);
+            if (any != ItemType.None) return any;
+            // A stage-0 Golden crate has no legal member in its normal stage 1–3 pool.
+            // Keep its equipment roll and use an unlocked exploration item instead.
+            var fallback = new List<ItemType>();
+            foreach (var t in crates[ItemType.WoodenCrate].Pool)
+                if (Pickable(t) && !ProgressionBalance.BossSignatures.ContainsValue(t)) fallback.Add(t);
+            return Pick(fallback.ToArray(), 0, stage);
+        }
+
         static void Put(List<ItemStack> got, ItemType t, int min, int max)
         {
-            if (t == ItemType.None || t != ItemType.Geo && !Unlocked(t)) return;
+            if (t == ItemType.None || CraftOnlyLoot.Blocked(t) || t != ItemType.Geo && !Unlocked(t)) return;
             got.Add(ItemStack.Of(t, Random.Range(min, max + 1)));
         }
 
@@ -86,13 +104,21 @@ namespace TerraKnight.Items
                 return;
             }
             bool hard = c.Hard;
-            // The piece of equipment.
+            TerraMod.Instance?.Inventory.ObserveCollections();
+            // The piece of equipment (a coffer's two, two different ones where it can).
             if (Random.Range(0, c.Den) == 0)
             {
-                ItemType piece = ItemType.None;
-                if (c.Special != ItemType.None && Random.Range(0, 5) == 0 && Unlocked(c.Special)) piece = c.Special;
-                if (piece == ItemType.None) piece = c.Kind == CrateKind.Area ? AreaPiece(c) : Pick(c.Pool, c.Lo, c.Hi);
-                Put(got, piece, 1, 1);
+                int pieces = c.Kind == CrateKind.Area && c.Hard ? 2 : 1;
+                var first = ItemType.None;
+                for (int k = 0; k < pieces; k++)
+                {
+                    ItemType piece = ItemType.None;
+                    if (k == 0 && c.Special != ItemType.None && Random.Range(0, 5) == 0 && Unlocked(c.Special)) piece = c.Special;
+                    if (piece == ItemType.None)
+                        piece = c.Kind == CrateKind.Area ? AreaPiece(c, first) : PickNear(c.Pool, c.Lo, c.Hi);
+                    Put(got, piece, 1, 1);
+                    first = piece;
+                }
             }
             bool biome = c.Kind != CrateKind.Tier;
             int level = biome ? 3 : c.Level;
@@ -100,10 +126,11 @@ namespace TerraKnight.Items
             // Both early and hardmode counterparts qualify; oysters returned above do not.
             int crystalChance = biome ? 10 : level == 0 ? 5 : level == 1 ? 10 : 15;
             if (Random.Range(0, 100) < crystalChance) Put(got, ItemType.LifeCrystal, 1, 1);
-            // Geo (Terraria's coins, a fifth: a gold coin is 20 geo here, a silver one 0.2).
-            if (biome) { if (Random.Range(0, 4) == 0) got.Add(ItemStack.Of(ItemType.Geo, Random.Range(100, 241))); }
+            // Geo (Terraria's coins, a fifth: a gold coin is 20 geo here, a silver one 0.2), three times it (the user's,
+            // 2026-10-20); an area's crate geo every time, more each stage (100-240 at stage 0, four times it at stage 5).
+            if (biome) got.Add(ItemStack.Of(ItemType.Geo, Mathf.RoundToInt(Random.Range(100, 241) * (1f + 0.6f * Mathf.Clamp(Shop.UnlockedStage(), 0, 5)))));
             else if (Random.Range(0, new[] { 7, 4, 3 }[level]) == 0)
-                got.Add(ItemStack.Of(ItemType.Geo, level == 0 ? (Random.Range(0, 3) == 0 ? Random.Range(20, 101) : Random.Range(4, 19)) : level == 1 ? Random.Range(40, 201) : Random.Range(100, 301)));
+                got.Add(ItemStack.Of(ItemType.Geo, 3 * (level == 0 ? (Random.Range(0, 3) == 0 ? Random.Range(20, 101) : Random.Range(4, 19)) : level == 1 ? Random.Range(40, 201) : Random.Range(100, 301))));
             // Ore and bars, hardmode's in a hardmode crate half the time (bars two times in three).
             int oreDen = biome ? 7 : 7, oreMin = biome ? 20 : new[] { 4, 12, 20 }[level], oreMax = biome ? 35 : new[] { 15, 21, 35 }[level];
             if (Random.Range(0, oreDen) == 0)
@@ -145,18 +172,16 @@ namespace TerraKnight.Items
         /// <summary>The quest fish the Angler may ask for at a stage (Main.AnglerQuestSwap's rerolls: what Hallownest can't give, hardmode's).</summary>
         internal static IEnumerable<ItemType> QuestList(int stage)
         {
-            foreach (var q in quests) if (q.Stage <= stage) yield return q.Fish;
+            foreach (var q in QuestFishCatalog.All) if (q.Stage <= stage) yield return q.Fish;
         }
 
         /// <summary>Where a quest fish is caught, by Hallownest's areas in the language now.</summary>
         internal static string WhereText(ItemType fish)
         {
-            foreach (var q in quests)
+            foreach (var q in QuestFishCatalog.All)
                 if (q.Fish == fish)
                 {
-                    var names = new List<string>();
-                    foreach (var a in q.Where) names.Add(World.Areas.Display(a));
-                    return string.Join(Lang.T("、"), names);
+                    return World.Areas.Display(q.Area);
                 }
             return "";
         }
@@ -178,6 +203,9 @@ namespace TerraKnight.Items
             foreach (var p in ponds) list.Add((p.Area, p.Acid, p.Tiles, p.Scene));
             return list;
         }
+
+        /// <summary>Dev: the rooms' ponds read again (a test's water put down after the room was scanned).</summary>
+        internal static void DevRescan() => pondSignature = 0;
 
         internal static int DevRules => rules.Length;
         internal static int DevCrates
@@ -210,7 +238,8 @@ namespace TerraKnight.Items
     {
         /// <summary>
         /// The bait Hallownest's enemies drop (Terraria's critters, caught with a bug net, have no Hallownest kin): an ordinary
-        /// enemy 1 in 200 one of its area's, an elite 1 in 100, exactly one; moss 1 in 50.
+        /// enemy 1 in 200 one of its area's, an elite 1 in 100, exactly one; moss 1 in 50; each chance raised by the
+        /// difficulty as every drop's is (EnemyDrops.ChanceScale). The monster book lists them (<see cref="KillRows"/>).
         /// Golden critters keep their targeted sources instead of an extra roll on every enemy.
         /// </summary>
         internal static void KillDrops(string record, Vector2 at, bool direct, string scene = null)
@@ -224,16 +253,46 @@ namespace TerraKnight.Items
             }
             string area = World.Areas.AreaName(scene ?? "");
             bool elite = EnemyDrops.IsEliteRecord(record);
-            if (areaBait.TryGetValue(area, out var baits) && Random.Range(0, elite ? 100 : 200) == 0)
+            if (areaBait.TryGetValue(area, out var baits) && Random.value < KillChance(elite ? 100 : 200))
             {
                 var t = Pick(baits);
-                if (t != ItemType.None && !CraftOnlyLoot.OnlyCrafted(t)) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
+                if (t != ItemType.None && !CraftOnlyLoot.Blocked(t)) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
             }
-            if (areaMoss.TryGetValue(area, out var moss) && Random.Range(0, 50) == 0)
+            if (areaMoss.TryGetValue(area, out var moss) && Random.value < KillChance(50))
             {
                 var t = Pick(moss);
-                if (t != ItemType.None && !CraftOnlyLoot.OnlyCrafted(t)) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
+                if (t != ItemType.None && !CraftOnlyLoot.Blocked(t)) EnemyDrops.Spill(ItemStack.Of(t, 1), at, direct);
             }
+        }
+
+        /// <summary>One in that many, on the difficulty (as the book shows it).</summary>
+        static float KillChance(int oneIn) => EnemyDrops.EffectiveChance(new EnemyDrops.Drop { Num = 1, Den = oneIn });
+
+        /// <summary>
+        /// The monster book's rows for a kill's bait and moss in that scene at a stage: each of the area's that can come, at its
+        /// share of the roll (<see cref="Pick"/>: one of them, alike); none for a boss.
+        /// </summary>
+        internal static void KillRows(string record, string scene, int stage, List<EnemyDrops.Drop> into)
+        {
+            if (record == null || EnemyDrops.IsBoss(record) || !EnemyDrops.Known(record)) return;
+            string area = World.Areas.AreaName(scene ?? EnemyDrops.SceneOf(record) ?? "");
+            bool now = stage == Shop.UnlockedStage();
+            bool Can(ItemType t)
+            {
+                var d = ItemDb.Get(t);
+                return t != ItemType.None && d.Stage >= 0 && d.Stage <= 9 && (now ? Unlocked(t) : ProgressionBalance.Unlocked(t, stage, stage >= 4, stage >= 5))
+                    && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !BossDropPlan.BossOnly(t);
+            }
+            void Rows(ItemType[] from, int oneIn)
+            {
+                int n = 0;
+                foreach (var t in from) if (Can(t)) n++;
+                foreach (var t in from)
+                    if (Can(t) && !CraftOnlyLoot.Blocked(t) && !into.Exists(d => d.Type == t))
+                        into.Add(new EnemyDrops.Drop { Type = t, Num = 1, Den = oneIn * n, Min = 1, Max = 1 });
+            }
+            if (areaBait.TryGetValue(area, out var baits)) Rows(baits, EnemyDrops.IsEliteRecord(record) ? 100 : 200);
+            if (areaMoss.TryGetValue(area, out var moss)) Rows(moss, 50);
         }
     }
 }

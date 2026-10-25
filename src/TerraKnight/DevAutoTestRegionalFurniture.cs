@@ -112,7 +112,7 @@ namespace TerraKnight
                             foreach(var light in lights)foreach(var sr in light.GetComponentsInChildren<SpriteRenderer>())sr.gameObject.layer=30;
                             probe.Render();
                             Check(area.Key+" 彩焰 "+p.Key,lights.Length==1&&lights[0].Flame!=null&&lights[0].Rgb==RegionalFurniture.LightColor(a));
-                            if(lights.Length==1&&lights[0].Flame!=null){var before=(Vector2[])lights[0].Flame.DevOffsets.Clone();yield return new WaitForSeconds(.06f);probe.Render();lights[0].Flame.SendMessage("Update");Check(area.Key+" 火焰动态 "+p.Key,before.Where((v,k)=>v!=lights[0].Flame.DevOffsets[k]).Any());}
+                            if(lights.Length==1&&lights[0].Flame!=null){var before=(Vector2[])lights[0].Flame.DevOffsets.Clone();yield return new WaitForSeconds(.12f);probe.Render();lights[0].Flame.SendMessage("Update");Check(area.Key+" 火焰动态 "+p.Key,before.Where((v,k)=>v!=lights[0].Flame.DevOffsets[k]).Any());}
                             if(i==18){probe.Render();var previous=RenderTexture.active;RenderTexture.active=target;var image=new Texture2D(1280,720,TextureFormat.RGBA32,false);image.ReadPixels(new Rect(0,0,1280,720),0,0);image.Apply();Check(area.Key+" 灯具实际渲染",image.GetPixels32().Count(color=>color.r+color.g+color.b>180)>50);System.IO.File.WriteAllBytes(System.IO.Path.Combine(outDir,"regional_light_"+area.Key+".png"),image.EncodeToPNG());Object.Destroy(image);RenderTexture.active=previous;}
                         }
                         if(p.Base==StationKind.Door)

@@ -128,7 +128,7 @@ namespace TerraKnight.Items
         public static bool IsBossRecord(string record) => record != null && table.TryGetValue(record, out var e) && e.Boss;
 
         /// <summary>A record of an elite: a miniboss, or tough enough (70 life or more) not to be a boss.</summary>
-        public static bool IsEliteRecord(string record) => record != null && table.TryGetValue(record, out var e) && !e.Boss && (e.Kind == "miniboss" || e.Hp >= 70);
+        public static bool IsEliteRecord(string record) => record != null && table.TryGetValue(record, out var e) && !IsBoss(record) && (e.Kind == "miniboss" || e.Hp >= 70);
 
         /// <summary>A drop of a stage the player hasn't unlocked yet: it doesn't drop, and the book hides it.</summary>
         public static bool Locked(Drop d) => d.LockStage > Shop.UnlockedStage();
@@ -137,7 +137,7 @@ namespace TerraKnight.Items
         /// <summary>The geo a record's kill drops on the current difficulty (-1: the game's own).</summary>
         public static int GeoOf(string key) => ScaleGeo(BaseGeoOf(key));
         internal static int BaseGeoOf(string key) => key != null && table.TryGetValue(key, out var e) ? e.Geo : -1;
-        internal static int ScaleGeo(int geo) => geo < 0 ? -1 : Mathf.RoundToInt(geo * GeoScale);
+        internal static int ScaleGeo(int geo) => geo < 0 ? -1 : Mathf.RoundToInt(geo * GeoScale * PlayerChallenges.HollowReward);
 
         /// <summary>The bosses of the table (their records; a boss's stage variants "Record@n" are the same boss).</summary>
         public static IEnumerable<string> BossRecords()
@@ -164,7 +164,7 @@ namespace TerraKnight.Items
 
         public static int StageOf(string record) => record != null && table.TryGetValue(record, out var e) ? e.Stage : 0;
 
-        public static bool IsBoss(string record) => record != null && table.TryGetValue(record, out var e) && e.Boss;
+        public static bool IsBoss(string record) => record != null && table.TryGetValue(record, out var e) && (e.Boss || EnemyStats.RelicBosses.Contains(record));
 
         /// <summary>The roster's kind for a record (normal, boss, miniboss, unique, ...), or null.</summary>
         public static string KindOf(string record) => record != null && table.TryGetValue(record, out var e) ? e.Kind : null;
@@ -228,6 +228,19 @@ namespace TerraKnight.Items
             // Scale the monetary total once, not each denomination's coin count (one 25-geo coin must not
             // become two just because 1.5 rounds up). This also handles enemies absent from our table.
             if (geo < 0) geo = ScaleGeo(smallGeo(__instance) + mediumGeo(__instance) * 5 + largeGeo(__instance) * 25);
+            // Soul Catcher's and Soul Eater's more.
+            geo = CharmEffects.ScaleGeo(geo);
+            // A Godhome boss: its geo times the tier's (GodhomeRewards), straight into the bag; the fight sends the player
+            // back before coins could be picked up.
+            int godhome = rec != null && IsBoss(rec) ? GodhomeRewards.Geo(__instance, geo) : 0;
+            if (godhome > 0)
+            {
+                largeGeo(__instance) = mediumGeo(__instance) = smallGeo(__instance) = 0;
+                Place(ItemStack.Of(ItemType.Geo, godhome), __instance.transform.position, true, false);
+                GodhomeRewards.DevGeo += godhome;
+                DevGeo = godhome;
+                return;
+            }
             largeGeo(__instance) = geo / 25;
             mediumGeo(__instance) = geo % 25 / 5;
             smallGeo(__instance) = geo % 5;
@@ -284,6 +297,7 @@ namespace TerraKnight.Items
             // Whose loot it is in a LAN game: the kill's enemy's scene (Bestiary.Credit sets it just before); a bag's own
             // contents are the opener's.
             LootScene = fromBag ? null : scene ?? Relics.ContextScene;
+            if(!fromBag && record!=null)VanillaBossProgression.Credit(record,LootScene);
             bool first = firstKill ?? Bestiary.KillsOf(record)==0;
             var drops = record != null && table.TryGetValue(record,out var entry)
                 ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene ?? (fromBag ? null : Relics.ContextScene))) : none;
@@ -296,6 +310,11 @@ namespace TerraKnight.Items
             if (IsBoss(record) && !direct) at = SafeBossDropPoint(at);
             List<int> rolled = null;
             HashSet<ItemType> paidSingles=null;
+            // A Godhome boss's difficulty bonus (GodhomeRewards): its materials more, while its drops are paid; a bag's, when opened.
+            var godhome = fromBag ? GodhomeRewards.Bag : IsBoss(record) ? GodhomeRewards.For(scene ?? Relics.ContextScene) : null;
+            GodhomeRewards.Active = godhome;
+            try
+            {
             void Pay(Drop drop)
             {
                 if(SingleQuantity(ItemDb.Get(drop.Type)))
@@ -327,6 +346,7 @@ namespace TerraKnight.Items
                     var pick = Pick(options);
                     if(pick.Type==ItemType.None)continue;
                     Pay(pick);
+                    Achievements.AchievementTracker.Dropped(MarginalChance(drops, pick), fromBag && System.Array.IndexOf(BossDropPlan.DeveloperItems, pick.Type) >= 0);
                     DevGroupPicks++;
                     if(d.Group==100)DevMainPicks++;
                     continue;
@@ -340,8 +360,36 @@ namespace TerraKnight.Items
                     Relics.DevDropped++;
                 }
                 Pay(relic);
+                Achievements.AchievementTracker.Dropped(EffectiveChance(d), false);
             }
-            if (bag != ItemType.None) TreasureBags.Leave(bag, at, direct, first, ProgressionLoot.GodhomeScene(scene ?? Relics.ContextScene));
+            // The boss's own geo for the fight (BossGeo), once, beside the game's (MoreGeo); Godhome's times its challenge's.
+            if (!fromBag)
+            {
+                int bossGeo = BossGeo(record, scene ?? Relics.ContextScene);
+                if (bossGeo > 0)
+                {
+                    if (godhome != null) bossGeo = Mathf.RoundToInt(bossGeo * godhome.Geo);
+                    bossGeo = CharmEffects.ScaleGeo(bossGeo);
+                    Spill(ItemStack.Of(ItemType.Geo, bossGeo), at, direct);
+                    DevBossGeo = bossGeo;
+                }
+            }
+            // One of the stage's boss rewards at the tier's chance, beside the bag if there is one.
+            if (!fromBag && godhome != null)
+            {
+                var reward = GodhomeRewards.RollReward(godhome,record);
+                if (reward != ItemType.None)
+                {
+                    Plugin.Log.LogInfo($"[神居奖励] {godhome.Name}：额外给 {ItemDb.Get(reward).Name}");
+                    Put(new Drop { Type = reward, Num = 1, Den = 1, Min = 1, Max = 1 }, at, direct);
+                }
+            }
+            }
+            finally
+            {
+                GodhomeRewards.Active = null;
+            }
+            if (bag != ItemType.None) TreasureBags.Leave(bag, at, direct, first, ProgressionLoot.GodhomeScene(scene ?? Relics.ContextScene), GodhomeRewards.IndexOf(godhome));
             // What a bag holds is the boss's; the kill's own extras came with the kill.
             if (fromBag) return;
             // Fishing bait and moss (FishingCrates.cs).
@@ -350,11 +398,45 @@ namespace TerraKnight.Items
             Pets.KillDrop(record, at, direct);
         }
 
+        /// <summary>
+        /// A boss's own geo for its whole fight (the user's, 2026-10-20: a boss paid less for its life than common enemies did):
+        /// the fight's life on the difficulty (its stand-in's unit life times its tune and its bodies and phases, as EnemyStats
+        /// deals it out) times its stage's rate (<see cref="BossGeoRate"/>); in Godhome its life there at the player's stage's
+        /// rate (GodhomeRewards' challenge times it in Roll). None for a record that isn't a formal boss.
+        /// </summary>
+        internal static int BossGeo(string record, string scene)
+        {
+            if (record == null || !ProgressionBalance.FormalBoss(record) || !ProgressionBalance.BossRewards.TryGetValue(record, out var reward)) return 0;
+            bool godhome = World.Areas.GodhomeRoom(scene);
+            if (!godhome && (scene == null || BossStats.InGodhome(scene))) scene = BestiaryHabitats.WorldScene(record) ?? BossArena.SceneOf(record);
+            if (scene == null) return 0;
+            int level = VariantLevel(scene);
+            var r = BossStats.Of(record, level);
+            if (r == null) return 0;
+            float life = BossStats.LifeOf(r, scene, World.GameDifficulty.Current) * BossBalance.Of(r.Record, level).Life * BossPhases.WholeFactor(r.Record, scene);
+            int stage = godhome ? World.Areas.FightLevel(scene) : reward.Stage;
+            return Mathf.Max(0, Mathf.RoundToInt(life * BossGeoRate(stage)));
+        }
+
+        /// <summary>A boss's geo for each point of its fight's life, by its stage: about two to three times what common enemies pay for theirs there, with the items.</summary>
+        internal static float BossGeoRate(int stage) => stage switch { <= 0 => .4f, 1 => .48f, 2 => .5f, 3 => .55f, 4 => .3f, _ => .16f };
+
+        /// <summary>Dev: the last boss geo paid.</summary>
+        public static int DevBossGeo = -1;
+
         /// <summary>Dev: when set, kills' drops go here (type, count) instead of into the world, for counting them.</summary>
         public static System.Action<ItemType, int> DevSink;
 
         internal static Drop Pick(IReadOnlyList<Drop> options)
         {
+            if (Pity(options))
+            {
+                float sum = 0f;
+                foreach (var d in options) sum += PityWeight(d);
+                float at = Random.value * sum;
+                foreach (var d in options) { at -= PityWeight(d); if (at < 0) return d; }
+                return options[options.Count - 1];
+            }
             float total=GroupWeightTotal(options);
             float roll=Random.value*total;
             foreach(var d in options)
@@ -364,6 +446,20 @@ namespace TerraKnight.Items
             return options[options.Count-1];
         }
 
+        /// <summary>
+        /// A boss's pick of its own gear: what this character never collected counts twice (the area coffers' rule,
+        /// FishingAreaCrates). As in Terraria a missed piece is fought for again, its summoning item or the Hall of Gods, and
+        /// a long Hollow Knight fight shouldn't have to be won ten times for the tenth piece of a big pool.
+        /// </summary>
+        static bool Pity(IReadOnlyList<Drop> options)
+        {
+            if (options.Count < 2 || TerraMod.Instance == null) return false;
+            foreach (var d in options) if (!BossDropPlan.BossGear(d.Type) || d.GroupWeightTotal > 0f) return false;
+            return true;
+        }
+
+        static float PityWeight(Drop d) => ProgressionLoot.Weight(d) * (TerraMod.Instance.Inventory.CollectedItems.Contains(d.Type) ? 1f : 2f);
+
         internal static float GroupWeightTotal(IReadOnlyList<Drop> options)
         {
             float live=0,reserved=0;
@@ -372,6 +468,51 @@ namespace TerraKnight.Items
         }
 
         public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d) => MarginalChance(drops, d, Shop.UnlockedStage());
+        /// <summary>At least one copy: choices in one group are exclusive; different rolls are independent.</summary>
+        internal static float ItemChance(IReadOnlyList<Drop> drops,ItemType type,int stage)
+        {
+            float miss=1f;var groups=new Dictionary<int,float>();
+            foreach(var row in drops){
+                if(row.Type!=type || Locked(row,stage) || row.Master&&!World.GameDifficulty.MasterRules)continue;
+                float p=MarginalChance(drops,row,stage);
+                if(row.Group<=0)miss*=1f-p;
+                else groups[row.Group]=(groups.TryGetValue(row.Group,out float old)?old:0)+p;
+            }
+            foreach(float p in groups.Values)miss*=1f-Mathf.Clamp01(p);
+            return Mathf.Clamp01(1f-miss);
+        }
+        // The book needs every row at once. Work out each group's denominator once,
+        // instead of rescanning the entire table for every item and every duplicate.
+        internal sealed class ChanceSummary
+        {
+            internal readonly Dictionary<int,(int Count,float Total,float Reserved,float Chance)> Groups = new Dictionary<int,(int,float,float,float)>();
+            internal readonly Dictionary<ItemType,float> Items = new Dictionary<ItemType,float>();
+            internal float Marginal(Drop row) {
+                if(row.Group<=0)return EffectiveChance(row);
+                if(!Groups.TryGetValue(row.Group,out var g))return 0;
+                float total=System.Math.Max(g.Total,g.Reserved);
+                return total>0?g.Chance*ProgressionLoot.Weight(row)/total:0;
+            }
+            internal ChanceSummary(IReadOnlyList<Drop> rows,int stage) {
+                foreach(var row in rows) {
+                    if(row.Group<=0||Locked(row,stage))continue;
+                    Groups.TryGetValue(row.Group,out var g);
+                    if(g.Total==0)g.Chance=EffectiveChance(row);
+                    g.Count++;g.Total+=ProgressionLoot.Weight(row);g.Reserved=System.Math.Max(g.Reserved,row.GroupWeightTotal);
+                    Groups[row.Group]=g;
+                }
+                var grouped=new Dictionary<(ItemType,int),float>();
+                var miss=new Dictionary<ItemType,float>();
+                foreach(var row in rows) {
+                    if(Locked(row,stage)||row.Master&&!World.GameDifficulty.MasterRules)continue;
+                    float p=Marginal(row);
+                    if(row.Group<=0)miss[row.Type]=(miss.TryGetValue(row.Type,out float old)?old:1)*(1-p);
+                    else {var key=(row.Type,row.Group);grouped[key]=(grouped.TryGetValue(key,out float old)?old:0)+p;}
+                }
+                foreach(var pair in grouped) {var type=pair.Key.Item1;miss[type]=(miss.TryGetValue(type,out float old)?old:1)*(1-Mathf.Clamp01(pair.Value));}
+                foreach(var pair in miss)Items[pair.Key]=Mathf.Clamp01(1-pair.Value);
+            }
+        }
         internal static float MarginalChance(IReadOnlyList<Drop> drops,Drop d,int stage)
         {
             if(d.Group<=0) return EffectiveChance(d);
@@ -388,6 +529,8 @@ namespace TerraKnight.Items
 
         static void Put(Drop d, Vector2 at, bool direct)
         {
+            // Includes direct Godhome bonuses and future reward paths, not just table rolls.
+            if(CraftOnlyLoot.Blocked(d.Type))return;
             int n;
             if(SingleQuantity(ItemDb.Get(d.Type))) n=1;
             else if(d.MeanCount>0)
@@ -398,7 +541,13 @@ namespace TerraKnight.Items
             }
             else n = Random.Range(d.Min, EffectiveMax(d) + 1);
             if (n <= 0) return;
-            if (DevSink != null) { DevSink(d.Type, n); DevDropped++; return; }
+            // Godhome's tier: its materials more (GodhomeRewards).
+            n = GodhomeRewards.Scale(d.Type, n);
+            if (PlayerChallenges.Material(d.Type)) n = PlayerChallenges.ScaleCount(n, PlayerChallenges.HollowReward);
+            if (DevSink != null) {
+                if (d.Type == ItemType.LunarCraftingStation) EssentialDrops.MarkManipulator();
+                DevSink(d.Type, n); DevDropped++; return;
+            }
             // A boss's hearts: each its own, never into the bag.
             if (d.Type == ItemType.Heart)
             {
@@ -409,7 +558,9 @@ namespace TerraKnight.Items
             var stack = ItemStack.Of(d.Type, n);
             // Item.NewItem's prefixGiven -1 for an enemy's loot (Item.Prefix(-1)): a weapon or an accessory now and then reforged.
             if (n == 1) stack.Prefix = (byte)Prefixes.RollNatural(ItemDb.Get(d.Type));
+            if (d.Type == ItemType.LunarCraftingStation && !direct && PuppetsLoot) { DevPuppetSkipped++; return; }
             Place(stack, at, direct, false);
+            if (d.Type == ItemType.LunarCraftingStation) EssentialDrops.MarkManipulator();
             DevDropped++;
         }
 
@@ -493,6 +644,14 @@ namespace TerraKnight.Items
                 || (scene.StartsWith("GG_") && !scene.StartsWith("GG_Pipeway") && !scene.StartsWith("GG_Waterways") && !scene.StartsWith("GG_Lurker")));
 
         static readonly List<ItemStack> waiting = new List<ItemStack>();
+
+        // Ending/dream rewards which did not fit must survive quitting and save-slot changes.
+        internal static ItemStack[] PendingLoot() => waiting.ToArray();
+        internal static void RestorePendingLoot(IEnumerable<ItemStack> items)
+        {
+            waiting.Clear();
+            if(items!=null)foreach(var item in items)if(!item.IsEmpty)waiting.Add(item);
+        }
 
         static void Give(ItemStack stack)
         {

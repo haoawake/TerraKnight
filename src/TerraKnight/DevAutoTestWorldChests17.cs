@@ -24,9 +24,9 @@ namespace TerraKnight
             var areas = AreaBlocks.All.Select(a => a.Name).ToList();
             var counts = areas.ToDictionary(a => a, a => RegionalChests.DevScenesOf(a).Count);
             string largest = areas.Where(a => a != "神居").OrderByDescending(RegionalChests.DevSize).First();
-            bool rule = counts[largest] == RegionalChests.PerArea && counts["神居"] == 0 && areas.Where(a => a != "神居").All(a => counts[a] >= 1 && counts[a] <= RegionalChests.PerArea
+            bool rule = counts[largest] == RegionalChests.PerArea && counts["神居"] == 0 && areas.Where(a => a != "神居").All(a => counts[a] >= RegionalChests.Fewest && counts[a] <= RegionalChests.PerArea
                 && counts[a] == RegionalChests.CountOf(a));
-            FxCheck("箱子按地区面积分：最大的 5 个，其余按比例，神居没有", rule && RegionalChests.DevCount == counts.Values.Sum(),
+            FxCheck("箱子按地区面积分：最大的 10 个，其余按比例、至少 2 个，神居没有", rule && RegionalChests.DevCount == counts.Values.Sum(),
                 $"共 {RegionalChests.DevCount} 个，最大的是 {largest}；{string.Join("，", areas.Select(a => $"{a}{counts[a]}（{RegionalChests.DevSize(a)} 格）"))}");
 
             var visit = new List<string>();
@@ -79,19 +79,19 @@ namespace TerraKnight
             FxCheck("一个箱子不会同时放武器和饰品", rightParts == placed, $"{rightParts}/{placed}");
 
             // What the parts hold, over many rolls of an area.
-            int weaponOk = 0, accOk = 0, suppliesOk = 0, pets = 0;
+            int weaponOk = 0, accOk = 0, pieceOk = 0, pets = 0;
             for (int i = 0; i < 60; i++)
             {
                 var wpn = RegionalChests.Contents("遗忘十字路", RegionalChests.WeaponPart, 1).Where(s => !s.IsEmpty).ToList();
                 var acc = RegionalChests.Contents("遗忘十字路", RegionalChests.AccessoryPart, 1).Where(s => !s.IsEmpty).ToList();
-                var sup = RegionalChests.Contents("遗忘十字路", 3, 1).Where(s => !s.IsEmpty).ToList();
+                var sup = RegionalChests.Contents("遗忘十字路", RegionalChests.ChestPiecePart, 1).Where(s => !s.IsEmpty).ToList();
                 if (wpn.Count(s => s.Def.MaxStack == 1 && s.Def.IsWeapon) == 1) weaponOk++;
                 if (acc.Count(s => s.Def.MaxStack == 1 && s.Def.IsAccessory) == 1) accOk++;
-                if (!sup.Any(s => s.Def.MaxStack == 1 && (s.Def.IsWeapon || s.Def.IsAccessory)) && sup.Any(s => s.Type == ItemType.Geo)) suppliesOk++;
+                if (sup.Count(s => s.Def.MaxStack == 1 && (s.Def.IsWeapon || s.Def.IsAccessory || s.Def.IsArmor)) == 1 && sup.Any(s => s.Type == ItemType.Geo)) pieceOk++;
                 pets += sup.Count(s => Pets.Eggs.Contains(s.Type));
             }
-            FxCheck("武器箱一件当地武器，饰品箱一件当地饰品，补给箱没有装备", weaponOk == 60 && accOk == 60 && suppliesOk >= 58,
-                $"武器 {weaponOk}/60，饰品 {accOk}/60，补给 {suppliesOk}/60，宠物 {pets} 次；例：{string.Join("，", RegionalChests.Contents("遗忘十字路", 2, 1).Where(s => !s.IsEmpty).Select(s => s.Def.Name + "×" + s.Count))}");
+            FxCheck("武器箱一件当地武器，饰品箱一件当地饰品，宝箱货箱一件装备", weaponOk == 60 && accOk == 60 && pieceOk == 60,
+                $"武器 {weaponOk}/60，饰品 {accOk}/60，宝箱货 {pieceOk}/60，宠物 {pets} 次；例：{string.Join("，", RegionalChests.Contents("遗忘十字路", 2, 1).Where(s => !s.IsEmpty).Select(s => s.Def.Name + "×" + s.Count))}");
 
             // Drawn, and on the map once seen.
             if (shotScene != null)

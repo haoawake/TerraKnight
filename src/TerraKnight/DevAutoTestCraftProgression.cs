@@ -21,6 +21,7 @@ namespace TerraKnight
             var difficultyWas=GameDifficulty.Current;
             var rng=UnityEngine.Random.state;
             var sinkWas=EnemyDrops.DevSink;
+            var clearsWas=VanillaBossProgression.DevClears;
             var report=new List<object>();
             void Check(string name,bool pass,string detail="")
             {checks++;if(!pass) {failures++;Plugin.Log.LogError($"[AutoTest] 制作阶段 {name} {detail} 不通过");}}
@@ -45,6 +46,8 @@ namespace TerraKnight
                 for(int stage=0;stage<6;stage++)
                 {
                     Shop.DevStage=stage;
+                    // The bosses of this stage and before beaten (VanillaBossProgression's gates open behind them).
+                    VanillaBossProgression.DevClears=new HashSet<string>(VanillaBossProgression.All.Where(b=>b.Value.Band<=stage).Select(b=>b.Key));
                     var stock=new HashSet<ItemType>(ItemDb.All.Where(d=>d.Stage<=stage && d.Source==ItemSource.Basic).Select(d=>d.Type));
                     stock.UnionWith(Town.TownNpcs.DevSourcesAt(stage).Where(x=>ItemDb.Get(x.Type).Stage<=stage).Select(x=>x.Type));
                     foreach(var rec in records)
@@ -83,6 +86,8 @@ namespace TerraKnight
                 {
                     int stage=test=="Imp" ? 2 : 3;
                     Shop.DevStage=stage;
+                    // The bosses of this stage and before beaten (VanillaBossProgression's gates open behind them).
+                    VanillaBossProgression.DevClears=new HashSet<string>(VanillaBossProgression.All.Where(b=>b.Value.Band<=stage).Select(b=>b.Key));
                     var needs=test=="Imp" ? new Dictionary<ItemType,int>{{ItemType.Hellstone,51},{ItemType.Obsidian,17},{ItemType.Hellforge,1}}
                         : new Dictionary<ItemType,int>{{ItemType.MythrilOre,40},{ItemType.SpiderFang,76}};
                     var counts=new Dictionary<ItemType,int>();
@@ -164,7 +169,7 @@ namespace TerraKnight
                 File.WriteAllText(Path.Combine(DevCopy.SaveDir,"craft-progression-audit.json"),JsonConvert.SerializeObject(new {Checks=checks,Failures=failures,Routes=report},Formatting.Indented));
                 Plugin.Log.LogInfo($"[AutoTest] 制作阶段 合计 {checks-failures}/{checks} {(failures==0 ? "通过" : "不通过")}");
             }
-            finally {Shop.DevStage=stageWas;GameDifficulty.Current=difficultyWas;UnityEngine.Random.state=rng;EnemyDrops.DevSink=sinkWas;InventoryGui.Open=false;}
+            finally {VanillaBossProgression.DevClears=clearsWas;Shop.DevStage=stageWas;GameDifficulty.Current=difficultyWas;UnityEngine.Random.state=rng;EnemyDrops.DevSink=sinkWas;InventoryGui.Open=false;}
         }
     }
 }

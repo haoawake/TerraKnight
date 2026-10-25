@@ -9,7 +9,8 @@ namespace TerraKnight
     /// <summary>
     /// Dev (suite "geostack"): the Geo in the coin slot (where picked-up Geo lands) onto the Piggy Bank's Geo stack: the
     /// inventory's "Quick Stack to Nearby Chests", the bank panel's "Deposit All" and "Quick Stack", and a Shift+click on the
-    /// coin slot with the bank open. Each ends with the bank's Geo in one stack and the game's geo unchanged.
+    /// coin slot with the bank open; with a chest beside the bank holding Geo itself, both quick stacks (the chest's open
+    /// panel's and the inventory's) still into the bank. Each ends with the bank's Geo in one stack and the game's geo unchanged.
     /// </summary>
     internal sealed partial class DevAutoTest
     {
@@ -112,6 +113,41 @@ namespace TerraKnight
             yield return new WaitForSeconds(0.3f);
             Check("收藏的吉欧不动", !inv.Slots[c].IsEmpty && inv.Slots[c].Count == 500 && BankGeo() == 100, State());
             inv.Slots[c].Favorite = false;
+
+            // 6. A chest beside the bank, holding Geo itself: both quick stacks still send the Geo to the bank.
+            Chests.Close(false);
+            yield return null;
+            var at = hero.GetComponent<BoxCollider2D>().bounds;
+            bool chest = Chests.DevNearest(at.center) is Vector2 cn && Vector2.Distance(cn, at.center) < 6f;
+            foreach (float dx in new[] { -1.5f, 1.5f, -2.5f, 2.5f, -3.5f, 3.5f, -4.5f, 4.5f })
+            {
+                if (chest) break;
+                chest = Chests.TryPlace(hero, new Vector2(at.center.x + dx, at.min.y + 0.2f));
+            }
+            yield return new WaitForSeconds(0.3f);
+            int ChestGeo() { var items = Chests.OpenItems; return items == null ? -1 : items.Where(s => !s.IsEmpty && s.Type == ItemType.Geo).Sum(s => s.Count); }
+            bool chestOpen = chest && Chests.DevOpenNear(at.center);
+            yield return null;
+            if (chestOpen)
+            {
+                var items = Chests.OpenItems;
+                for (int i = 0; i < items.Length; i++) items[i] = default;
+                items[0] = ItemStack.Of(ItemType.Geo, 50);
+            }
+            yield return Reset();
+            Chests.QuickStack(inv);
+            yield return new WaitForSeconds(0.3f);
+            Check("箱子开着、存钱罐在旁边：箱子的快速堆叠把吉欧存进存钱罐", chestOpen && inv.Slots[c].IsEmpty && BankGeo() == 600 && ChestGeo() == 50, $"箱子 {chest}/{chestOpen}，箱子吉欧 {ChestGeo()}，{State()}");
+            yield return Reset();
+            moved = Chests.QuickStackNearby(inv, hero.GetComponent<BoxCollider2D>().bounds.center);
+            yield return new WaitForSeconds(0.3f);
+            Check("箱子和存钱罐都在：快速堆叠到附近把吉欧存进存钱罐", chestOpen && inv.Slots[c].IsEmpty && BankGeo() == 600 && ChestGeo() == 50, $"移动 {moved} 组，箱子吉欧 {ChestGeo()}，{State()}");
+            if (chestOpen)
+            {
+                var items = Chests.OpenItems;
+                if (items != null) for (int i = 0; i < items.Length; i++) items[i] = default;
+            }
+            Chests.Close(false);
 
             Shot("Town", "geostack_bank");
             yield return null;

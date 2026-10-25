@@ -48,6 +48,7 @@ namespace TerraKnight.Items
         // Projectiles draw behind the player.
         const float Z = 0.0045f;
         const int HitCooldownTicks = 7;
+        internal const int ZenithHitCooldownTicks = 11;
         const int EnemyLayer = 11;
 
         sealed class Sword
@@ -285,6 +286,7 @@ namespace TerraKnight.Items
             var off = (1f - Mathf.Clamp01(p / 0.5f)) * new Vector2(-side * a * 0.1f, -s.Ai0 * 0.3f);
             s.Rel = s.D + e + off;
             s.BladeAngle = th + ang;
+            if (s.T < 60f) Sparks(s, p);
             s.Opacity = Mathf.Clamp01(s.T / 5f) * Mathf.Clamp01((120f - s.T) / 5f);
             // Newest first; kept relative to the player, so the trail moves with him.
             int n = Mathf.Min(s.TrailCount, TrailLength - 1);
@@ -295,12 +297,47 @@ namespace TerraKnight.Items
             s.TrailCount = n + 1;
         }
 
+        /// <summary>
+        /// AI_182_FinalFractal on the way out (the swoop's first half): sparks off the blade's outer half in the sword's
+        /// colour (FinalFractalProfile.StripDust: one try in nine, one to three dust 278 flung off sideways), more tries for
+        /// a far target and at the swoop's middle; it comes out of the player among them, not out of nothing.
+        /// </summary>
+        void Sparks(Sword s, float p)
+        {
+            var dust = TerraParticles.Instance;
+            if (dust == null) return;
+            int tries = 1 + (int)(s.D.magnitude / 100f);
+            tries = Mathf.Max(1, (int)(tries * Mathf.Clamp01(p / 0.5f) * Mathf.Clamp01((1f - p) / 0.5f)));
+            var along = new Vector2(Mathf.Cos(s.BladeAngle), Mathf.Sin(s.BladeAngle));
+            float off = s.BladeAngle + Mathf.PI / 2f * s.Spin;
+            var fling = new Vector2(Mathf.Cos(off), Mathf.Sin(off));
+            for (int i = 0; i < tries; i++)
+            {
+                if (Random.Range(0, 9) != 0) continue;
+                var at = playerPx + s.Rel + along * (s.Profile.Blade / 2f) * Mathf.Lerp(0.5f, 1f, Random.value);
+                int count = Random.Range(1, 4);
+                for (int k = 0; k < count; k++)
+                {
+                    int d = dust.NewDust(at, 0, 0, 278, 0f, 0f, 100);
+                    if (d < 0) continue;
+                    ref var made = ref dust[d];
+                    made.Position = at;
+                    made.Color = Color.Lerp(s.Profile.Trail, Color.white, Random.value * 0.3f);
+                    made.Scale = 0.4f;
+                    made.FadeIn = 0.4f + Random.value * 0.3f;
+                    made.NoGravity = true;
+                    made.Velocity += fling * (3f + Random.value * 4f);
+                }
+            }
+        }
+
         static Vector2 Rotate(Vector2 v, float a) =>
             new Vector2(v.x * Mathf.Cos(a) - v.y * Mathf.Sin(a), v.x * Mathf.Sin(a) + v.y * Mathf.Cos(a));
 
         /// <summary>
         /// The blade, 80 px long and 20 thick, at the sword and at four points back along its trail;
-        /// each enemy is hit at most once every 7 ticks by each sword.
+        /// each enemy is hit at most once every 11 ticks by each Zenith sword.
+        /// The True Copper Shortsword retains its original seven-tick cadence.
         /// </summary>
         void HitTest(Sword s)
         {
@@ -320,11 +357,11 @@ namespace TerraKnight.Items
             {
                 var col = overlaps[i];
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null) PropHits.Pulse(col, world, s.Spin >= 0f ? 1f : -1f, Mathf.Max(1, Equipment.Damage(s.Item)));
+                if (hm == null) melee.HitProp(col, Mathf.Max(1, Equipment.Damage(s.Item)), s.Spin >= 0f ? 1f : -1f, world);
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (s.Cooldowns.ContainsKey(id)) continue;
-                s.Cooldowns[id] = HitCooldownTicks;
+                s.Cooldowns[id] = s.Item != null && s.Item.Type == ItemType.Zenith ? ZenithHitCooldownTicks : HitCooldownTicks;
                 melee.HitFrom(col, s.Item, s.Spin, world);
             }
         }
@@ -339,6 +376,8 @@ namespace TerraKnight.Items
         {
             s.Active = false;
             if (s.Root.activeSelf) s.Root.SetActive(false);
+            // Its last ribbon not shown for a frame when it is thrown again.
+            s.Ribbon.Clear();
         }
 
         // --- Drawing. ---
@@ -363,6 +402,14 @@ namespace TerraKnight.Items
             }
             DrawSparkle(s, fade);
             DrawRibbon(s);
+            // Its light on the way out (Lighting.AddLight): on the sword in its colour, a little on the player.
+            var fx = FxBatch.Instance;
+            if (s.T < 60f && fx != null)
+            {
+                var trail = s.Profile.Trail;
+                fx.Light(playerPx + s.Rel, trail * (0.5f * s.Opacity), 3f, true);
+                fx.Light(playerPx, Color.Lerp(Color.white, trail, 0.7f) * (0.15f * s.Opacity), 3f, true);
+            }
         }
 
         /// <summary>
@@ -377,7 +424,7 @@ namespace TerraKnight.Items
             sr.transform.rotation = Quaternion.Euler(0f, 0f, -rotation * Mathf.Rad2Deg);
             sr.transform.localScale = Vector3.one * scale;
             sr.flipX = s.Spin == -1;
-            sr.color = color;
+            sr.color = Effects.WeaponEffects.Straight(color);
         }
 
         /// <summary>Main.DrawPrettyStarSparkle at the blade's tip, brightest as the sword reaches its target.</summary>
@@ -398,7 +445,7 @@ namespace TerraKnight.Items
                 // One long streak across, a shorter one up and down.
                 sr.transform.rotation = Quaternion.Euler(0f, 0f, i == 0 ? 90f : 0f);
                 sr.transform.localScale = new Vector3(0.5f, i == 0 ? 5f : 2f, 1f) * g;
-                sr.color = c;
+                sr.color = Effects.WeaponEffects.Straight(c);
             }
         }
 
@@ -429,6 +476,7 @@ namespace TerraKnight.Items
                 // Fading towards the old end, and (the shader's gradient, roughly) across the blade from its middle.
                 var col = s.Profile.Trail;
                 col.a = 0.35f * Mathf.Max(0f, 1f - (i / 59f) / 0.98f) * s.Opacity;
+                col = Effects.WeaponEffects.Straight(col);
                 var edge = col;
                 edge.a = 0f;
                 colors.Add(edge);

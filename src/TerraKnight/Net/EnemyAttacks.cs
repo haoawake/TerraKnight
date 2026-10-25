@@ -71,6 +71,8 @@ namespace TerraKnight.Net
                 foreach (var collider in fsm.GetComponents<Collider2D>())
                     if (collider.enabled) SendCollider(scene, shift, collider, damage, false);
             }
+            // The new enemy AI's warnings and webs: no live hitbox, but the others must see them (EnemyAi.NetAi).
+            foreach (var collider in EnemyAi.NetAi.Unarmed(scene)) SendCollider(scene, shift, collider, 0, false);
             var end = NetSession.Mine(Msg.EnemyAttacks);
             end.W.Write(scene); end.W.Write(0);
             NetSession.Send(end.Done());
@@ -87,7 +89,8 @@ namespace TerraKnight.Net
             w.Write(tr.lossyScale.x); w.Write(tr.lossyScale.y);
             w.Write(collider.offset.x); w.Write(collider.offset.y);
             w.Write(amount); w.Write(shadow);
-            var source = collider.GetComponentInParent<HealthManager>();
+            // The new enemy AI's shots and areas: their own enemy's factor.
+            var source = collider.GetComponentInParent<HealthManager>() ?? EnemyAi.Hostiles.OwnerOf(collider.gameObject);
             float factor = source != null ? Items.EnemyStats.DamageFactor(Items.EnemyStats.Of(source)) : 1f;
             if (source == null)
             {
@@ -132,6 +135,8 @@ namespace TerraKnight.Net
                 w.Write(rend != null ? rend.sortingOrder : 0);
                 w.Write(tr.position.z);
             }
+            // The new enemy AI's part: a shot's look and flight, an area's warning, what its touch carries.
+            EnemyAi.NetAi.WriteExtra(w, collider);
             NetSession.Send(p.Done());
         }
 
@@ -216,6 +221,7 @@ namespace TerraKnight.Net
                 }
             }
             else if (g.Sprite != null) g.Sprite.GetComponent<Renderer>().enabled = false;
+            EnemyAi.NetAi.ReadExtra(r, g.Go, g.Collider, at);
             DevReceived++;
         }
 
@@ -238,7 +244,7 @@ namespace TerraKnight.Net
                     || (hero.cState.shadowDashing && g.Damage.shadowDashHazard)) continue;
                 // Both bodies can be kinematic in TerraMovement. Evaluate the mirrored shape
                 // explicitly, rather than relying on Unity generating a trigger callback.
-                if (g.Collider != null && g.Collider.enabled && Physics2D.Distance(heroCollider, g.Collider).isOverlapped)
+                if (g.Damage.damageDealt > 0 && g.Collider != null && g.Collider.enabled && Physics2D.Distance(heroCollider, g.Collider).isOverlapped)
                 {
                     int before = TerraMod.Instance?.Stats.Life ?? 0;
                     hero.TakeDamage(g.Go, g.Go.transform.position.x > hero.transform.position.x ? CollisionSide.right : CollisionSide.left, g.Damage.damageDealt, 1);

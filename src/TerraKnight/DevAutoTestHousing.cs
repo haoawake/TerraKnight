@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TerraKnight.Items;
 using TerraKnight.Town;
@@ -139,6 +139,15 @@ namespace TerraKnight
             // 2. The housing query on it: valid.
             string q = TownNpcs.DevQuery(inside);
             Check("房屋询问：合适的房子", Said(T("LegacyInterface.39")), q);
+
+            // Even a valid room cannot summon a functional resident before its unlock.
+            TownNpcs.Remove("Nurse");Shop.DevStage=0;
+            string denied=TownNpcs.DevHouse("Nurse",inside);
+            Check("合适房屋不能提前安置护士", !TownNpcs.Houses.ContainsKey("Nurse") && !TownNpcs.Present("Nurse") && TownNpcs.DevSaid.Count>0,denied);
+            Shop.DevStage=5;
+            string allowed=TownNpcs.DevHouse("Nurse",inside);
+            Check("达到阶段后同一房屋可安置护士",TownNpcs.Houses.ContainsKey("Nurse") && TownNpcs.Present("Nurse"),allowed);
+            TownNpcs.Remove("Nurse");
 
             // 3. What each missing thing gives (before anyone lives here, so the periodic look can't turn anyone out).
             TerraWorld.Set(hx + 9, hy + 4, CellKind.Empty);

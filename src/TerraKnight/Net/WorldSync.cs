@@ -42,7 +42,7 @@ namespace TerraKnight.Net
             public int Kind, Seed, Age, Delay, Dropper = -1, Owner = -1;
             /// <summary>A dropped item's reforge and forge level.</summary>
             public byte Prefix, Forge;
-            public bool Placed, Taken, Sky;
+            public bool Placed, Taken, Sky, Shimmered;
             /// <summary>A chest another player has open (the host's leases): not for others' crafting.</summary>
             public bool Busy;
             public Stack[] Slots;
@@ -212,7 +212,7 @@ namespace TerraKnight.Net
             Mix(r.Kind); Mix(r.Seed); Mix(r.Dropper); Mix(r.Owner); Mix(r.Prefix); Mix(r.Forge);
             Mix(item ? (r.Delay > 0 ? 1 : 0) : r.Delay);
             if (!item) Mix(r.Age);
-            Mix((r.Placed ? 1 : 0) | (r.Taken ? 2 : 0) | (r.Sky ? 4 : 0));
+            Mix((r.Placed ? 1 : 0) | (r.Taken ? 2 : 0) | (r.Sky ? 4 : 0) | (r.Shimmered ? 8 : 0));
             if (r.Slots != null) foreach (var st in r.Slots) { if (st == null) Mix(-2); else { Mix(st.Type); Mix(st.Count); Mix(st.Favorite ? 1 : 0); Mix(st.Prefix); Mix(st.Forge); } }
             if (r.Cells != null) { Mix(r.Cells.Length); foreach (long c in r.Cells) Mix(c); }
             if (r.Walls != null) { Mix(r.Walls.Length); foreach (long c in r.Walls) Mix(c); }
@@ -480,8 +480,10 @@ namespace TerraKnight.Net
             switch (a.Op)
             {
                 case "station": result.Ok = Stations.NetPlace(a); break;
+                case "prefabHouse": result.Ok = PrefabHouses.NetBuild(a); break;
                 case "chest": result.Ok = Chests.NetPlace(a); break;
                 case "mineStation": result.Ok = Stations.NetMine(a); break;
+                case "smashAltar": result.Ok = Stations.NetSmash(a); break;
                 case "door": result.Ok = Stations.NetToggleDoor(a); break;
                 case "mineChest": result.Ok = Chests.NetMine(a); break;
                 case "mineCrystal": result.Ok = LifeCrystals.NetMine(a); break;
@@ -491,6 +493,10 @@ namespace TerraKnight.Net
                     break;
                 case "motion":
                     result.Ok = WorldItems.NetMotion(a.Motion, slot);
+                    break;
+                case "shimmer":
+                    result.Count = WorldItems.NetShimmer(a.Key, slot);
+                    result.Ok = result.Count > 0;
                     break;
                 case "claim":
                     WorldItems.NetClaim(a, slot, out result.Type, out result.Count, out result.Prefix, out result.Forge);
@@ -575,8 +581,14 @@ namespace TerraKnight.Net
                     DevPickups++;
                 }
             }
+            else if (result.Op == "shimmer" && result.Ok) Achievements.AchievementTracker.Shimmered(result.Count);
             else if (result.Op == "stack") Restack(action, result);
             else if (result.Op == "craftTake" && !result.Ok) Uncraft(action);
+            else if(result.Op=="prefabHouse"&&!result.Ok&&action.Count>0)
+            {
+                Give((ItemType)action.Kind,1);
+                Notice("房屋位置已被占用，预制房已退回");
+            }
             else if (!result.Ok && action.Count > 0 && (result.Op == "station" || result.Op == "chest"))
             {
                 // The caller consumed one item on submitting placement; rejection refunds it.
@@ -644,7 +656,10 @@ namespace TerraKnight.Net
         }
 
         /// <summary>A quick stack's answer: what is left of each stack back into its slot (else the bag, else the floor); all of it with no answer.</summary>
-        static void Restack(Action action, Result result)
+        static void Restack(Action action, Result result) =>
+            HallownestStorage.Move(TerraMod.Instance?.Inventory, () => RestackCore(action, result));
+
+        static void RestackCore(Action action, Result result)
         {
             var mod = TerraMod.Instance;
             if (mod == null || action.Slots == null) return;
@@ -747,7 +762,7 @@ namespace TerraKnight.Net
         {
             if (personal == null) return Stations.Save();
             var list = new List<Stations.Saved>();
-            foreach (var r in personal) if (r.Key.StartsWith("s:")) list.Add(new Stations.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Kind = (StationKind)r.Kind, Right = r.Placed });
+            foreach (var r in personal) if (r.Key.StartsWith("s:") && !r.Taken) list.Add(new Stations.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Kind = (StationKind)r.Kind, Right = r.Placed });
             return list;
         }
         public static List<Chests.Saved> SaveChests()

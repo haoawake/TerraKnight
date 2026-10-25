@@ -28,7 +28,8 @@ namespace TerraKnight.Items
                 chatButtonStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft, wordWrap = false };
             }
             chatStyle.fontSize = Mathf.RoundToInt(17 * ui);
-            var lines = Wrap(TownNpcs.ChatText, 460f * ui, chatStyle, 10);
+            // A turn-in can include the next order; retain its location and queue hint.
+            var lines = Wrap(TownNpcs.ChatText, 460f * ui, chatStyle, TownNpcs.TalkingIsAngler ? 14 : 10);
             var buttons = new List<(string Text, int Index)>();
             if (TownNpcs.TalkingHasShop) buttons.Add((Lang.T("商店"), 0));
             // The Guide's crafting (Lang.inter[25]).
@@ -46,6 +47,9 @@ namespace TerraKnight.Items
             if (TownNpcs.TalkingIsGoblin) buttons.Add((TT("LegacyInterface.19", "重铸"), 6));
             // His forging (Items.Forging), the mod's own.
             if (TownNpcs.TalkingIsGoblin) buttons.Add((Lang.T("锻造"), 7));
+            if (TownNpcs.TalkingIsGoblin) buttons.Add((Lang.T("圣巢补购"), 8));
+            // The Stylist's hair styles (GameUI.HairStyle).
+            if (TownNpcs.TalkingIsStylist) buttons.Add((TT("GameUI.HairStyle", "发型"), 9));
             buttons.Add((Lang.T("关闭"), 1));
             float w = 500f * ui, h = (30f + 30f * lines.Count + 30f) * ui;
             var panel = new Rect(view.center.x - w / 2f, view.y + 100f * ui, w, h);
@@ -128,6 +132,7 @@ namespace TerraKnight.Items
             var held = inv.Mouse;
             inv.Mouse = TownNpcs.GuideItem;
             TownNpcs.GuideItem = held;
+            ClearRecipeTracking();
             focus = 0;
             focusY = 0f;
             Sound("Grab");
@@ -173,9 +178,12 @@ namespace TerraKnight.Items
             if (!TownNpcs.ShopOpen) return;
             float s = 52f * 0.755f * ui, step = 56f * 0.755f * ui;
             float x0 = view.x + 73f * ui, y0 = view.y + (258f + 18f + SlotStep) * ui;   // a slot lower than Terraria's: the trash slot stays clear
-            Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T("商店"), nameStyleLeft(ui), Color.white);
+            Outlined(new Rect(view.x + 504f * ui, y0 - 6f * ui, 300f * ui, 30f * ui), Lang.T(TownNpcs.RecoveryShop ? "圣巢补购" : "商店"), nameStyleLeft(ui), Color.white);
             Outlined(new Rect(view.x + 504f * ui, y0 + 26f * ui, 300f * ui, 22f * ui), TownNpcs.TalkingName, labelStyle, new Color(1f, 0.95f, 0.6f));
             Outlined(new Rect(view.x + 504f * ui, y0 + 48f * ui, 300f * ui, 22f * ui), Lang.F("持有 {0}", Shop.Money(Shop.Purse)), labelStyle, new Color(1f, 0.9f, 0.55f));
+            if (TownNpcs.RecoveryShop)
+                Outlined(new Rect(view.x + 504f * ui, y0 + 74f * ui, 340f * ui, 22f * ui),
+                    Lang.T("找回已获得的装备，不补售钥匙、矿石、遗物等消耗品"), labelStyle, Color.white);
             int rows = TownNpcs.ShopRowsShown;
             panels.Add(new Rect(x0, y0, 560f * 0.755f * ui, 56f * rows * 0.755f * ui));
             var prev = GUI.color;
@@ -189,7 +197,7 @@ namespace TerraKnight.Items
                 GUI.color = prev;
                 var st = TownNpcs.ShopItems[i];
                 if (st.IsEmpty) continue;
-                // A later stage's: dimmed under the book's lock, its stage and how to reach it over it.
+                // A later stage's (or a spell's weapon before its spell): dimmed under the book's lock, what opens it over it.
                 if (TownNpcs.Locked(i))
                 {
                     GUI.color = new Color(0.45f, 0.45f, 0.5f, 0.8f);
@@ -202,7 +210,9 @@ namespace TerraKnight.Items
                     hovered = st;
                     hoveredKind = Kind.ShopSlot;
                     int at = TownNpcs.ShopLock[i];
-                    hoveredExtra = Lang.F("阶段 {0}", at) + "：" + Lang.F("再获得 {0} 种能力后解锁（通常是{1}）", at - Shop.UnlockedStage(), Lang.T(Shop.GateAbility(at)));
+                    // A spell's weapon waits for its spell, not a stage.
+                    if (TownNpcs.ShopSpell[i] > 0) hoveredExtra = SpellRewards.LockText(TownNpcs.ShopSpell[i]);
+                    else hoveredExtra = Lang.F("阶段 {0}", at) + "：" + Lang.F("再获得 {0} 种不同移动能力后解锁，顺序不限", at - Shop.UnlockedStage());
                     continue;
                 }
                 DrawIcon(rect, st, false);

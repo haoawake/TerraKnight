@@ -28,17 +28,16 @@ namespace TerraKnight.Items
         public static bool IsAnyProxy(GameObject go) => go != null && all.Contains(go);
 
         /// <summary>
-        /// Geo deposits react to anything dealing damage that touches them (ReceivedDamage); a
-        /// sword's slash shouldn't get geo out of one, only a pickaxe aimed at it.
+        /// Geo deposits react to anything dealing damage that touches them (ReceivedDamage): a weapon's slash or shot breaks
+        /// one as the nail does, a stand-in slash at most once a quarter second (PropHits), as a pickaxe aimed at it does
+        /// (the user's, 2026-10-20: "吉欧堆加上一个可以用武器打掉"). Counted here.
         /// </summary>
         [HarmonyLib.HarmonyPrefix]
         [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ReceivedDamage), nameof(HutongGames.PlayMaker.Actions.ReceivedDamage.DoTriggerEnter2D))]
         [HarmonyLib.HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ReceivedDamage), nameof(HutongGames.PlayMaker.Actions.ReceivedDamage.DoTriggerStay2D))]
-        static bool NotOnGeoRocks(HutongGames.PlayMaker.Actions.ReceivedDamage __instance, Collider2D collisionInfo)
+        static void CountTouches(Collider2D collisionInfo)
         {
             if (collisionInfo != null && all.Contains(collisionInfo.gameObject)) DevReceivedTouches++;
-            return collisionInfo == null || !slashes.Contains(collisionInfo.gameObject)
-                || __instance.Owner == null || __instance.Owner.GetComponentInParent<GeoRock>() == null;
         }
 
         /// <summary>Dev: a stand-in come into a ReceivedDamage's trigger.</summary>
@@ -64,6 +63,9 @@ namespace TerraKnight.Items
             all.Add(go);
             var rb = go.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Kinematic;
+            // A kinematic body meets static colliders' triggers only so: a geo deposit has no body of its own (the nail's
+            // slash is on the Knight's dynamic one), and its ReceivedDamage never heard a stand-in.
+            rb.useFullKinematicContacts = true;
             box = go.AddComponent<BoxCollider2D>();
             box.isTrigger = true;
 

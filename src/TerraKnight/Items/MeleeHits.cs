@@ -34,13 +34,17 @@ namespace TerraKnight.Items
         /// <summary>The world box the swing covered this frame (empty when not swinging).</summary>
         public Rect SwingBox { get; private set; }
 
+        /// <summary>The name of the Source object of the player's hits (PropHitFx tells a Terraria hit on a prop by it).</summary>
+        internal const string SourceName = "Terra Weapon Hit";
+
         public MeleeHits(Transform parent)
         {
             // HealthManager places hit effects between the target and the Source, so it must exist.
-            source = new GameObject("Terra Weapon Hit");
+            source = new GameObject(SourceName);
             source.transform.SetParent(parent, false);
             TerraHitFx.Source = source;
             props = new NailAttackProxy(parent);
+            PropHitFx.Install();
         }
 
         public void Begin(ItemDef item, float facing)
@@ -104,8 +108,13 @@ namespace TerraKnight.Items
             if (DebugLog != null)
                 foreach (var col in overlaps)
                     if (logged.Add(col.name)) DebugLog($"挥砍覆盖 '{col.name}' layer={col.gameObject.layer} trigger={col.isTrigger} hm={(col.GetComponentInParent<HealthManager>() != null)}");
-            foreach (var col in overlaps) TryHit(col);
+            sweeping = true;
+            try { foreach (var col in overlaps) TryHit(col); }
+            finally { sweeping = false; }
         }
+
+        /// <summary>The swing's own arc is striking (not something it threw, not a tool's aimed strike).</summary>
+        bool sweeping;
 
         /// <summary>
         /// One hit on a single object regardless of the swing arc, for tools aimed with the mouse
@@ -173,8 +182,7 @@ namespace TerraKnight.Items
             // A barb come to rest is a kinematic body the swing's own slash never touches: told it was struck all the same.
             PropHits.TinkStruck(col, direction);
             HeroInRange(col);
-            // Geo deposits are mined, not cut: only a pickaxe gets geo out of them.
-            if (weapon.PickPower <= 0 && col.GetComponentInParent<GeoRock>() != null) return;
+            // Geo deposits break under any weapon as under the nail and the pickaxe (the user's, 2026-10-20): the TAKE DAMAGE below.
             // A boss or a battle's enemy struck from outside its arena: nothing (World.ArenaGuard).
             if (World.ArenaGuard.Refuse(col.GetComponentInParent<HealthManager>())) return;
             // A sleeping boss woken by it: one point, no more (Items.BossWake); one still waking takes nothing.
@@ -194,6 +202,8 @@ namespace TerraKnight.Items
             var hm = col.GetComponentInParent<HealthManager>();
             GameObject target = hm != null ? hm.gameObject : FindResponder(col);
             if (hm != null && Time.time < NoHitUntil) return;
+            // An enemy behind a wall, out of the player's sight (Terraria's Player.CanHit; Longnail reaches through).
+            if (sweeping && hm != null && !hitThisSwing.Contains(hm.gameObject) && !CharmEffects.MeleeReaches(col)) return;
             if (target == null || !hitThisSwing.Add(target)) return;
             if (hm != null && hm.isDead) return;
             var b = Equipment.Current;
@@ -260,11 +270,12 @@ namespace TerraKnight.Items
         /// NPC by <see cref="EnemyStats"/>: its level's life, defense and knockback resistance), or
         /// a prop that answers hits. Used by projectiles and explosions. True when an enemy took it.
         /// </summary>
-        public bool HitWith(Collider2D col, int damage, float knockback, float critChance, float facing, Vector2 from, int armorPen = -1, int addAfterVariation = 0, bool autonomous = false)
+        public bool HitWith(Collider2D col, int damage, float knockback, float critChance, float facing, Vector2 from, int armorPen = -1, int addAfterVariation = 0, bool autonomous = false, float critDamage = 0f)
         {
             var hm = col.GetComponentInParent<HealthManager>();
             // A prop that answers the nail (a bell, a lever) is set off as by a slash.
-            if (hm == null) PropHits.Pulse(col, from, facing, damage);
+            if (hm == null) PropHits.Pulse(col, from, facing, damage, autonomous);
+            if (hm == null && !autonomous) StrikeGeo(col);
             GameObject target = hm != null ? hm.gameObject : FindResponder(col);
             if (target == null || (hm != null && hm.isDead)) return false;
             if (World.ArenaGuard.Refuse(hm)) return false;
@@ -277,8 +288,9 @@ namespace TerraKnight.Items
                 Deal(col, hm, target, 1, 0f, 0f, facing, 0);
                 return true;
             }
-            // A minion's or sentry's blow on a boss or an elite takes its health and nothing else of it (MinionQuiet).
-            bool quiet = autonomous && hm != null && EnemyStats.Unstoppable(EnemyStats.Of(hm));
+            // A minion's or sentry's blow takes an enemy's health and nothing else of it (MinionQuiet): its machines never
+            // hear it, so none turns on the minion; struck, it comes for the player (EnemyAggro).
+            bool quiet = autonomous && hm != null;
             // As a spell's DamageEnemies does, the struck enemy's FSMs hear TAKE DAMAGE first (what wakes some of them).
             if (hm != null && !quiet && !Net.Enemies.IsPuppet(hm)) FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
             source.transform.position = new Vector3(from.x, from.y, 0f);
@@ -286,7 +298,11 @@ namespace TerraKnight.Items
             Autonomous = autonomous;
             try
             {
-                accepted = Deal(col, hm, target, damage, knockback, critChance, facing, armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen, addAfterVariation, quiet);
+                int pen = armorPen >= 0 ? armorPen : Equipment.Current.ArmorPen;
+                // A minion's or sentry's blow goes through MinionArmorPen of defense besides (the user's, 2026-10-20): its hits
+                // are small and many, and an early boss's defense took most of each.
+                if (autonomous && pen < 9999) pen += MinionArmorPen;
+                accepted = Deal(col, hm, target, damage, knockback, critChance, facing, pen, addAfterVariation, quiet, critDamage);
             }
             finally
             {
@@ -295,8 +311,59 @@ namespace TerraKnight.Items
             return hm != null && accepted > 0;
         }
 
+        static readonly Dictionary<int, float> propStruck = new Dictionary<int, float>();
+        public static int DevPropHits;
+
+        /// <summary>
+        /// A blow of the player's on what isn't an enemy, from an attack whose hit test goes over it frame after frame (a
+        /// shot, an explosion, a whip's tip, a yoyo, a flail, the Zenith's blades): as a swing's (TryHit) and HitWith's, the
+        /// props that answer the nail set off, a geo deposit struck, a breakable that takes hits (a pot, a jar, a crate:
+        /// IHitResponder) hit as by a slash, each at most once a quarter second (the nail's pace: a minigun mustn't empty a
+        /// geo deposit in a second). A minion's or a sentry's blow sets off only the props that answer the nail, as before.
+        /// </summary>
+        public void HitProp(Collider2D col, int damage, float facing, Vector2 from, bool autonomous = false)
+        {
+            if (col == null || !col.enabled || damage <= 0) return;
+            PropHits.Pulse(col, from, facing, damage, autonomous);
+            if (autonomous) return;
+            PropHitFx.Mark();
+            StrikeGeo(col);
+            var target = FindResponder(col);
+            if (target == null) return;
+            int id = target.GetInstanceID();
+            float now = Time.time;
+            if (propStruck.TryGetValue(id, out float at) && now - at < 0.25f) return;
+            propStruck[id] = now;
+            if (propStruck.Count > 256) propStruck.Clear();
+            DevPropHits++;
+            source.transform.position = new Vector3(from.x, from.y, 0f);
+            Deal(col, null, target, damage, 0f, 0f, facing, 0);
+        }
+
+        static readonly Dictionary<int, float> geoStruck = new Dictionary<int, float>();
+        public static int DevGeoStrikes;
+
+        /// <summary>
+        /// A geo deposit struck by a shot or a blast of the player's: the "TAKE DAMAGE" its FSM counts (as a swing's and the
+        /// pickaxe's), at most once a quarter second, as a slash; its trigger never hears a Terraria hit. Minions leave it alone.
+        /// </summary>
+        static void StrikeGeo(Collider2D col)
+        {
+            if (col == null || col.GetComponentInParent<GeoRock>() == null) return;
+            int id = col.gameObject.GetInstanceID();
+            if (geoStruck.TryGetValue(id, out float at) && Time.time - at < 0.25f) return;
+            geoStruck[id] = Time.time;
+            if (geoStruck.Count > 256) geoStruck.Clear();
+            DevGeoStrikes++;
+            PropHitFx.Mark();
+            FSMUtility.SendEventToGameObject(col.gameObject, "TAKE DAMAGE");
+        }
+
         /// <summary>A minion's or sentry's blow is being dealt (HitWith autonomous): not the player's own (MinionEngage).</summary>
         public static bool Autonomous;
+
+        /// <summary>The defense a minion's or sentry's blow goes through of its own (on top of the player's armor penetration).</summary>
+        public const int MinionArmorPen = 5;
 
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, PlayMakerFSM> stunFsm = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, PlayMakerFSM>("stunControlFSM");
         static readonly HarmonyLib.AccessTools.FieldRef<HealthManager, GameObject> sendHitTo = HarmonyLib.AccessTools.FieldRefAccess<HealthManager, GameObject>("sendHitTo");
@@ -318,7 +385,16 @@ namespace TerraKnight.Items
         /// </summary>
         public static bool Blocks(HealthManager hm, float facing, DamageClass cls) =>
             hm != null && !hm.isDead && !Net.Enemies.IsPuppet(hm)
-            && hm.IsBlockingByDirection(DirectionUtils.GetCardinalDirection(facing > 0f ? 0f : 180f), IsSpellOn(hm, cls) ? AttackTypes.Spell : AttackTypes.Generic);
+            && hm.IsBlockingByDirection(DirectionUtils.GetCardinalDirection(float.IsNaN(HitDirection) ? (facing > 0f ? 0f : 180f) : HitDirection),
+                IsSpellOn(hm, cls) ? AttackTypes.Spell : AttackTypes.Generic);
+
+        /// <summary>
+        /// The way the hit being dealt travels (degrees, the game's: 0 right, 90 up, 270 down) when it is the nail's (its
+        /// slash's own: NailItem.NailHit, Quick Slash's cut), judged against a shield as the game does; NaN: left or right by
+        /// where the enemy stands (every other weapon). The Crystal Crawlers on the walls and ceilings of Crystal Peak are
+        /// shelled on their outer side only: struck from above or below they are hurt.
+        /// </summary>
+        public static float HitDirection = float.NaN;
 
         /// <summary>
         /// A shield held one way (the game's invincibility from one side only: Husk Sentries, Husk Warriors...), the only
@@ -329,7 +405,7 @@ namespace TerraKnight.Items
 
         /// <summary>Returns the hit's rolled damage (crit doubled), 0 when nothing took it.</summary>
 
-        int Deal(Collider2D col, HealthManager hm, GameObject target, int baseDamage, float knockback, float critChance, float facing, int armorPen, int addAfterVariation = 0, bool quiet = false)
+        int Deal(Collider2D col, HealthManager hm, GameObject target, int baseDamage, float knockback, float critChance, float facing, int armorPen, int addAfterVariation = 0, bool quiet = false, float critDamage = 0f)
         {
             // Who dealt it, for the armor sets' on-hit effects (cleared whatever happens).
             var armorCtx = ArmorEffects.Context;
@@ -338,6 +414,8 @@ namespace TerraKnight.Items
             if (hm != null && !Autonomous) MinionEngage.Engage("命中");
             // The enemy's banner carried: its DamageDealt before the variation (Pl:20597-20600, 44656-44659; P:13388-13391).
             if (hm != null) baseDamage = Banners.Dealt(hm, baseDamage);
+            // Fury of the Fallen's frenzy: everything the player deals doubled for its second.
+            if (hm != null) baseDamage = CharmEffects.ScaleOutgoing(baseDamage);
             bool crit = Random.value * 100f < critChance;
             // Terraria rolls each hit within +-15% of the weapon's damage (Main.DamageVar); a snapping stone's strike comes after.
             // Main.DamageVar: ±15%, rolled again by luck (the better of two with good luck, the worse with bad).
@@ -367,8 +445,10 @@ namespace TerraKnight.Items
                 // Struck by the player: it comes for him (Terraria's npc.target), from wherever it stands.
                 World.EnemyAggro.Struck(hm, info);
                 if (Net.NetSession.Active) Net.EnemyTargets.Struck(hm, Net.NetSession.MySlot);
-                damage = EnemyStats.Strike(info, damage, crit, armorPen);
+                damage = EnemyStats.Strike(info, damage, crit, armorPen, critDamage);
                 LastStruck = damage;
+                // A Target Dummy counts every hit's Terraria damage, also the ones too small to take a point of its health.
+                if (info.Dummy && !blocked) World.TargetDummy.Record(hm, damage);
                 // Bosses and elites don't budge (knockBackResist 0), the rest by their level.
                 float resist = EnemyStats.NoKnockback(info) ? 0f : World.Areas.KnockbackTaken(info.Level);
                 pushSpeed = TerraKnockback.Launch(knockback, resist, crit);
@@ -397,9 +477,9 @@ namespace TerraKnight.Items
             }
             // A boss or elite isn't staggered by every hit: the game counts each one towards stunning it
             // (the Stun Control FSM's STUN DAMAGE), meant for a nail's few slashes, not a hail of shots.
-            // A boss whose attacks can be broken off counts one hit in so much damage (BossBalance).
+            // A boss counts one at a quick slash's pace, none in Hollow (BossBalance); an elite none.
             PlayMakerFSM heldStun = null;
-            if (hm != null && EnemyStats.Unstoppable(info) && (quiet || !BossBalance.StunCounts(info, damage)))
+            if (hm != null && EnemyStats.Unstoppable(info) && (quiet || !BossBalance.StunCounts(info, dealtHk)))
             {
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;
@@ -466,6 +546,9 @@ namespace TerraKnight.Items
             TerraHitFx.Bleed(hm, col.bounds, damage, facing, EnemyStats.LifeMax(info));
             mod.PlaySound(hm.isDead ? "NPC_Killed_1" : "NPC_Hit_1");
             ArmorEffects.OnHitNPC(hm, col.bounds.center, damage, armorCtx);
+            Achievements.AchievementTracker.Hit(hm, damage, armorCtx.Class, Autonomous);
+            // Soul Catcher's theft, Spell Twister's orb.
+            CharmEffects.OnPlayerHit(hm, col.bounds.center, damage, armorCtx, Autonomous);
             // All accepted hits share this path: swings, nails, projectiles, minions and sentries.
             // The caller and the projectile's accessory callback must not roll it again.
             if (Equipment.Current.LuckyCoin) AccessoryEffects.LuckyCoin(hm, facing > 0f ? 1 : -1, armorCtx.TrueMelee);
@@ -538,7 +621,8 @@ namespace TerraKnight.Items
             netSource.transform.position = new Vector3(from.x, from.y, 0f);
             evasion(hm) = 0f;
             PlayMakerFSM heldStun = null;
-            if (EnemyStats.Unstoppable(info))
+            // Another player's blow staggers as the player's own does (BossBalance.StunCounts).
+            if (EnemyStats.Unstoppable(info) && !BossBalance.StunCounts(info, dealtHk))
             {
                 heldStun = stunFsm(hm);
                 stunFsm(hm) = null;

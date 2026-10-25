@@ -38,7 +38,7 @@ namespace TerraKnight.Player
             if (GameHooks.PlayerHasControl() && !KnightHidden()) return;
             // A click on the inventory or the settings is theirs; resting on a bench, the game's own keys get up
             // (a click there would stand the player up while he sorts his things).
-            if (Items.InventoryGui.Open || Items.InventoryGui.MouseOverUi || UI.IngameOptions.Open || (PlayerData.instance != null && PlayerData.instance.atBench)) return;
+            if (Items.InventoryGui.Open || Items.InventoryGui.MouseOverUi || UI.IngameOptions.AnyOpen || (PlayerData.instance != null && PlayerData.instance.atBench)) return;
             // Only while the state that listens is still the one running (the game's own presses may have moved it on).
             if (__instance.Fsm == null || __instance.State != __instance.Fsm.ActiveState) return;
             if (__instance.wasPressed != null && TerraKeys.Pressed(TerraKeys.Action.UseItem))

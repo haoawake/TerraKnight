@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "4.4.1";
+        public const string Version = "5.0.0";
 
         internal static ManualLogSource Log;
 
@@ -86,11 +86,21 @@ namespace TerraKnight
                 "普通敌人死后多久重新刷出：按强弱分档的时间（原版血量 10 以下 30 秒、25 以下 45 秒、50 以下 70 秒、更结实的 100 秒、精英 4 分钟）乘以这个倍数，0 为不刷新。刷出来前 3 秒，出生点先出现它的半透明虚影；主角站在出生点旁时，等主角走开再刷。\nHow long ordinary enemies take to respawn: the time by toughness (vanilla health under 10: 30 seconds, under 25: 45 seconds, under 50: 70 seconds, tougher: 100 seconds, elites: 4 minutes) times this factor; 0 = no respawns. 3 seconds before an enemy respawns, its translucent ghost appears on its spawn point; with the player standing beside the spot, it waits until the player has moved away.");
             var respawnSeconds = Config.Bind("Gameplay", "EnemyRespawnSeconds", 5f, "保留的旧设置：只有填 0（不刷新）时生效；刷新时间由 EnemyRespawnScale 决定。\nKept from older versions: only 0 (no respawns) has an effect; respawn times come from EnemyRespawnScale.");
             World.EnemyRespawn.Scale = respawnSeconds.Value <= 0f ? 0f : Mathf.Max(0f, respawnScale.Value);
-            var bossDamage = Config.Bind("Gameplay", "BossDamage", 2f,
+            var bossDamage = Config.Bind("Gameplay", "BossDamage", 1.4f,
                 "首领的伤害是同区域普通敌人的几倍（每面具换算的伤害乘这个数，首领的弹幕也算）。\nBoss damage as a multiple of ordinary enemies' in the same area (the damage per mask times this; bosses' projectiles count too).");
-            World.Areas.BossDamage = Mathf.Clamp(bossDamage.Value, 0.5f, 5f);
-            var eliteDamage = Config.Bind("Gameplay", "EliteDamage", 1.5f,
+            var eliteDamage = Config.Bind("Gameplay", "EliteDamage", 1.25f,
                 "精英（复仇蝇之王、灵魂战士、大哨兵这类小首领和原本血量 70 以上的强敌）的伤害是同区域普通敌人的几倍。\nElite damage (mini-bosses such as the Vengefly King, the Soul Warrior and Great Husk Sentries, and strong enemies with 70+ vanilla health) as a multiple of ordinary enemies' in the same area.");
+            // The defaults 2 and 1.5 had a Master player's reference kit down in three boss hits (the user's review,
+            // 2026-10-21): a file still holding them takes the new ones once; a value set by hand stays.
+            var damageDefaults = Config.Bind("Gameplay", "DamageDefaultsVersion", 0,
+                "内部记录：首领和精英伤害默认值的版本，不用改。\nInternal: the version of the boss and elite damage defaults; leave it as it is.");
+            if (damageDefaults.Value < 1)
+            {
+                if (Mathf.Approximately(bossDamage.Value, 2f)) bossDamage.Value = 1.4f;
+                if (Mathf.Approximately(eliteDamage.Value, 1.5f)) eliteDamage.Value = 1.25f;
+                damageDefaults.Value = 1;
+            }
+            World.Areas.BossDamage = Mathf.Clamp(bossDamage.Value, 0.5f, 5f);
             World.Areas.EliteDamage = Mathf.Clamp(eliteDamage.Value, 0.5f, 5f);
             var skipIntro = Config.Bind("Gameplay", "SkipOpeningCutscenes", true,
                 "新游戏跳过开场的序章诗和开场动画，加载好就直接在国王山道从传送门里走出来。\nA new game skips the opening poem and cutscene: once loaded, the player steps out of a portal in King's Pass.");
@@ -103,9 +113,11 @@ namespace TerraKnight
             Player.TerraCamera.Bind(Config);
             UI.TerraCursor.Bind(Config);
             UI.GameView.Bind(Config);
+            Effects.WeaponEffects.Bind(Config);
             Items.Charms.Bind(Config);
             UI.DialogueBroadcast.Bind(Config);
             Items.NailAim.Bind(Config);
+            Items.SmartCursor.Bind(Config);
             World.HoleShapes.Bind(Config);
             var darkness = Config.Bind("Gameplay", "HollowKnightDarkness", false,
                 "保留空洞骑士的黑暗：没有光蝇灯笼时，黑暗区域（呼啸悬崖边缘、深巢、水晶山峰的矿道等）把视野缩成人物周围一小圈。默认关：不缩视野；开着泰拉瑞亚光照时，这些地方按泰拉瑞亚的方式是暗的，由火把、头灯、光蝇灯笼或法术的光照亮。\nHollow Knight's darkness: without the Lumafly Lantern, dark areas (the dark edges of the Howling Cliffs, Deepnest, Crystal Peak's mines and so on) close the view to a small circle around the player. Off by default: no narrowed view; with Terraria lighting on, these places are dark the Terraria way and are lit by torches, the Mining Helmet, the Lumafly Lantern or spells.");
@@ -145,11 +157,12 @@ namespace TerraKnight
             World.EnemyBlockers.Init();
             UI.TerraCursor.Install(host, harmony);
             if (mod.AutoTest != null && testSuite.Value == "profile") DevLoadProfiler.Install(harmony);
-            bool lagSuite = mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag");
+            bool lagSuite = mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag" || suite == "buildlag");
+            // "buildgc": the same building without the profiler, for the heap's own growth.
             // A player's slow room looked into: every script's per-frame time, written out with each slow stretch (PerfProbe).
             var frameProfiler = Config.Bind("Debug", "FrameProfiler", false,
                 "开启后，进游戏时给每个脚本的每帧方法加计时（启动会慢几秒、运行稍慢）；每 5 秒里出现掉帧，就把最耗时的方法、敌人和刚体数量写进 BepInEx/LogOutput.log。排查卡顿用，平时关着。\nWhen on, every script's per-frame methods are timed (a few seconds more to start, a little slower to run); each 5 s with slow frames writes the costliest methods and the counts of enemies and bodies to BepInEx/LogOutput.log. For finding a slow room; keep it off otherwise.");
-            if (lagSuite || frameProfiler.Value) DevFrameProfiler.Install(harmony);
+            if (lagSuite || frameProfiler.Value) DevFrameProfiler.Install(harmony, everyMethod: mod.AutoTest != null && suite == "buildlag");
             PerfProbe.Detailed = frameProfiler.Value && !lagSuite;
             Log.LogInfo($"{ModName} {Version} 已加载，泰拉瑞亚素材：{TerrariaAssets.ImagesDir}");
         }

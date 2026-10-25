@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -39,7 +39,7 @@ namespace TerraKnight.World
         /// <summary>Kinds that block movement as a full block.</summary>
         public static bool Blocks(CellKind k) =>
             k == CellKind.Original || k == CellKind.Dirt || k == CellKind.Stone || k == CellKind.Wood || k == CellKind.Sand || k == CellKind.MagicIce
-            || k == CellKind.Meteorite || k == CellKind.Obsidian || IsAreaBlock(k);
+            || k == CellKind.Meteorite || k == CellKind.Obsidian || IsAreaBlock(k) || VanillaBlocks.Contains(k);
 
         /// <summary>An area's own block (World/AreaBlocks.cs).</summary>
         public static bool IsAreaBlock(CellKind k) => k >= CellKind.AreaBlockFirst && k <= CellKind.AreaBlockLast;

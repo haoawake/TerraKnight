@@ -102,7 +102,7 @@ namespace TerraKnight.UI
 
         /// <summary>The Default frame's buttons: reset, zoom in, zoom out, by the frame's top left.</summary>
         static readonly Vector2[] buttonOffsets = { new Vector2(150f, 240f), new Vector2(202f, 240f), new Vector2(176f, 240f) };
-        static readonly string[] buttonTextures = { "MinimapButton_Reset", "MinimapButton_ZoomIn", "MinimapButton_ZoomOut" };
+        static readonly string[] buttonTextures = { FrameDir + "MinimapButton_Reset", FrameDir + "MinimapButton_ZoomIn", FrameDir + "MinimapButton_ZoomOut" };
 
         static bool MinimapButtonAt(Vector2 gui, out int button)
         {
@@ -112,7 +112,7 @@ namespace TerraKnight.UI
             var frame = FramePosition();
             for (int i = 0; i < 3; i++)
             {
-                var tex = TerrariaAssets.Texture(FrameDir + buttonTextures[i]);
+                var tex = TerrariaAssets.Texture(buttonTextures[i]);
                 if (tex == null) continue;
                 // Button.IsTouchingPoint: within half its width of its centre.
                 var centre = frame + buttonOffsets[i] * ui + new Vector2(tex.width, tex.height) * 0.5f * ui;
@@ -121,7 +121,8 @@ namespace TerraKnight.UI
             return false;
         }
 
-        static bool MinimapShown() => Enabled && !Open && Style == 1 && !Items.InventoryGui.Open && GameHooks.IsGameplay(GameManager.UnsafeInstance);
+        // Up with the inventory open too, as Terraria's: the equipment goes under it (InventoryGui.EquipShift).
+        static bool MinimapShown() => Enabled && !Open && Style == 1 && GameHooks.IsGameplay(GameManager.UnsafeInstance);
 
         /// <summary>The minimap is up in its frame (the information lines go under it).</summary>
         public static bool MinimapVisible => MinimapShown();
@@ -194,6 +195,8 @@ namespace TerraKnight.UI
             DrawGateMarkers(shown, toMini, 9f * ui, inside, null);
             DrawNpcHeads(toMini, ui * 0.75f, inside, null);
             DrawGrimmFlames(toMini, 18f * ui, inside, null);
+            // The Wayward Compass's way to the next fight (WorldMapCompass).
+            DrawCompassWay(toMini, inside, ui, miniAlpha);
             GUI.color = prev;
             DrawOthers(toMini, ui * 0.5f, false, inside);
             FullMap.DrawHead(new Vector2(area.width / 2f, area.height / 2f), ui * 0.5f);
@@ -205,7 +208,7 @@ namespace TerraKnight.UI
             var mp = Event.current.mousePosition;
             if (MinimapButtonAt(mp, out int b))
             {
-                var tex = TerrariaAssets.Texture(FrameDir + buttonTextures[b]);
+                var tex = TerrariaAssets.Texture(buttonTextures[b]);
                 var at = frame + buttonOffsets[b] * ui;
                 GUI.DrawTexture(new Rect(at.x, at.y, tex.width * ui, tex.height * ui), tex);
             }
@@ -224,6 +227,7 @@ namespace TerraKnight.UI
             DrawGateMarkers(shown, toOverlay, 11f * ui, screen, null);
             DrawNpcHeads(toOverlay, ui * 0.8f, screen, null);
             DrawGrimmFlames(toOverlay, 20f * ui, screen, null);
+            DrawCompassWay(toOverlay, screen, ui, Mathf.Max(overlayAlpha, 0.5f));
             DrawOthers(c => new Vector2(Screen.width / 2f + (c.x - centre.x) * oz, Screen.height / 2f - (c.y - centre.y) * oz), ui * 0.6f, false, screen);
             FullMap.DrawHead(new Vector2(Screen.width / 2f, Screen.height / 2f), ui * 0.6f);
             GUI.color = prev;

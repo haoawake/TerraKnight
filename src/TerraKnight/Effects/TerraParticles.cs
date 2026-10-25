@@ -68,20 +68,38 @@ namespace TerraKnight.Effects
         readonly Dictionary<int, Sprite> goreSprites = new Dictionary<int, Sprite>();
         float tickAccumulator;
         int nextDust;
+        bool dustSaturated;
+        internal long DevDustSlotChecks;
+        internal string DevSaturationBenchmark(int requests)
+        {
+            int cursor=nextDust;
+            var timer=System.Diagnostics.Stopwatch.StartNew();
+            for(int k=0;k<requests;k++) {
+                bool found=false;
+                for(int n=0;n<MaxDust;n++){int i=(cursor+n)%MaxDust;if(dust[i].Active)continue;cursor=(i+1)%MaxDust;found=true;break;}
+                if(!found)cursor=(cursor+1)%MaxDust;
+            }
+            System.GC.KeepAlive(cursor);double before=timer.Elapsed.TotalMilliseconds;
+            timer.Restart();for(int k=0;k<requests;k++)AllocateDust();
+            return $"requests={requests} legacy={before:F3}ms cached={timer.Elapsed.TotalMilliseconds:F3}ms";
+        }
 
         // Under sustained fire, retaining every old mote starved newly fired, dust-only
         // projectiles (Water Bolt, Lunar Flare). Prefer free slots, then recycle in a
         // round-robin instead of dropping all new effects until old ones expire.
         int AllocateDust()
         {
+            if(dustSaturated){int next=nextDust;nextDust=(nextDust+1)%MaxDust;return next;}
             for (int n = 0; n < MaxDust; n++)
             {
+                DevDustSlotChecks++;
                 int i = (nextDust + n) % MaxDust;
                 if (dust[i].Active) continue;
                 nextDust = (i + 1) % MaxDust;
                 return i;
             }
             int recycled = nextDust;
+            dustSaturated=true;
             nextDust = (nextDust + 1) % MaxDust;
             return recycled;
         }
@@ -249,6 +267,7 @@ namespace TerraKnight.Effects
 
         public void Clear()
         {
+            dustSaturated=false;
             for (int i = 0; i < MaxDust; i++) dust[i].Active = false;
             for (int i = 0; i < MaxGore; i++) gore[i].Active = false;
         }
@@ -267,6 +286,7 @@ namespace TerraKnight.Effects
                 for (int i = 0; i < MaxDust; i++) if (dust[i].Active) UpdateDust(ref dust[i]);
                 for (int i = 0; i < MaxGore; i++) if (gore[i].Active) UpdateGore(ref gore[i]);
             }
+            if(ticks>0)dustSaturated=false;
             Draw();
         }
 
@@ -332,6 +352,19 @@ namespace TerraKnight.Effects
                 d.Velocity *= 0.98f;
                 d.Scale += 0.02f;
             }
+            // The beams' line motes (160 the UFO's and the Magnet Sphere's, 162 the Heat Ray's; Dust.cs:1269-1302): no
+            // gravity, a jitter, and a tenth of their size gone each tick, so the line hangs where it was shot and is gone.
+            bool beamLine = d.Type == 160 || d.Type == 162;
+            if (beamLine)
+            {
+                if (d.NoGravity)
+                {
+                    d.Velocity *= 0.8f;
+                    d.Velocity += new Vector2(Random.Range(-20, 21) * 0.04f, Random.Range(-20, 21) * 0.04f);
+                }
+                else d.Velocity += new Vector2(Random.Range(-10, 11) * 0.02f, Random.Range(-10, 11) * 0.02f);
+                d.Scale -= 0.1f;
+            }
             bool smoke = d.Type == 16 || d.Type == 31;
             if (smoke)
             {
@@ -348,7 +381,7 @@ namespace TerraKnight.Effects
                     }
                 }
             }
-            else if (!d.NoGravity)
+            else if (!d.NoGravity && !beamLine)
             {
                 d.Velocity.y += 0.1f;
             }
@@ -427,7 +460,7 @@ namespace TerraKnight.Effects
                     faded = new Color(faded.r * faded.a, faded.g * faded.a, faded.b * faded.a, 1f);
                 }
                 else if (sr.sharedMaterial != defaultMaterial) sr.sharedMaterial = defaultMaterial;
-                sr.color = faded;
+                sr.color = mat != null ? WeaponEffects.Additive(faded) : WeaponEffects.Straight(faded);
                 Place(sr.transform, ToWorld(d.Position), d.Rotation, d.Scale);
             }
             for (int i = 0; i < MaxGore; i++)
@@ -449,14 +482,14 @@ namespace TerraKnight.Effects
                 {
                     // Gore.GetAlpha: (255,255,255,0), added white; and its light, gold or blue.
                     if (sr.sharedMaterial != mat) sr.sharedMaterial = mat;
-                    sr.color = Color.white;
+                    sr.color = WeaponEffects.Additive(Color.white);
                     var c = g.Type == 16 ? new Color(1f, 0.8f, 0.3f) : new Color(0.3f, 0.6f, 1f);
-                    FxBatch.Instance?.Light(g.Position + new Vector2(sprite.rect.width, sprite.rect.height) * 0.5f * g.Scale, c * g.Scale, 2.5f);
+                    FxBatch.Instance?.Light(g.Position + new Vector2(sprite.rect.width, sprite.rect.height) * 0.5f * g.Scale, c * g.Scale, 2.5f, weaponEffect: true);
                 }
                 else
                 {
                     if (sr.sharedMaterial != defaultMaterial) sr.sharedMaterial = defaultMaterial;
-                    sr.color = Faded(g.Alpha);
+                    sr.color = WeaponEffects.Straight(Faded(g.Alpha));
                 }
                 // Gore positions are the texture's top-left; it is drawn around its centre.
                 var center = g.Position + new Vector2(sprite.rect.width, sprite.rect.height) * 0.5f;

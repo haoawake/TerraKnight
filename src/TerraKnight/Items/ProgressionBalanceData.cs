@@ -6,8 +6,8 @@ namespace TerraKnight.Items
     {
         internal static readonly ItemType[][][] Core = new ItemType[][][]
         {
-            new ItemType[][] { new[] { ItemType.WoodenSword, ItemType.IronBroadsword, ItemType.EnchantedBoomerang, ItemType.Spear }, new[] { ItemType.WoodenBow, ItemType.Blowpipe, ItemType.IronBow, ItemType.FlintlockPistol }, new[] { ItemType.WandofSparking, ItemType.AmethystStaff, ItemType.CrimsonRod, ItemType.Vilethorn }, new[] { ItemType.FinchStaff, ItemType.SlimeStaff, ItemType.LeatherWhip, ItemType.AbigailsFlower } },
-            new ItemType[][] { new[] { ItemType.BladeofGrass, ItemType.ThornChakram, ItemType.Starfury, ItemType.EnchantedSword }, new[] { ItemType.GoldBow, ItemType.Musket, ItemType.Boomstick, ItemType.DemonBow }, new[] { ItemType.RubyStaff, ItemType.DiamondStaff, ItemType.WaterBolt, ItemType.MagicMissile }, new[] { ItemType.FlinxStaff, ItemType.Snapthorn, ItemType.VampireFrogStaff, ItemType.HornetStaff } },
+            new ItemType[][] { new[] { ItemType.WoodenSword, ItemType.IronBroadsword, ItemType.EnchantedBoomerang, ItemType.Spear }, new[] { ItemType.WoodenBow, ItemType.Blowpipe, ItemType.IronBow, ItemType.FlintlockPistol }, new[] { ItemType.WandofSparking, ItemType.AmethystStaff }, new[] { ItemType.FinchStaff, ItemType.SlimeStaff, ItemType.LeatherWhip, ItemType.AbigailsFlower } },
+            new ItemType[][] { new[] { ItemType.BladeofGrass, ItemType.ThornChakram, ItemType.Starfury, ItemType.EnchantedSword }, new[] { ItemType.GoldBow, ItemType.Musket, ItemType.Boomstick, ItemType.DemonBow }, new[] { ItemType.TopazStaff, ItemType.SapphireStaff, ItemType.RubyStaff, ItemType.DiamondStaff }, new[] { ItemType.FlinxStaff, ItemType.Snapthorn, ItemType.VampireFrogStaff, ItemType.CrimsonWhip } },
             new ItemType[][] { new[] { ItemType.Muramasa, ItemType.Valor, ItemType.BlueMoon, ItemType.FieryGreatsword }, new[] { ItemType.Handgun, ItemType.MoltenFury, ItemType.PhoenixBlaster, ItemType.Minishark }, new[] { ItemType.AquaScepter, ItemType.SpaceGun, ItemType.BookofSkulls, ItemType.DemonScythe }, new[] { ItemType.ImpStaff, ItemType.SpinalTap, ItemType.HoundiusShootius, ItemType.CorruptWhip } },
             new ItemType[][] { new[] { ItemType.NightsEdge, ItemType.DarkLance, ItemType.Cascade, ItemType.Sunfury }, new[] { ItemType.ClockworkAssaultRifle, ItemType.Shotgun, ItemType.HellwingBow, ItemType.Harpoon }, new[] { ItemType.Flamelash, ItemType.FlowerofFire, ItemType.LaserRifle, ItemType.MedusaHead }, new[] { ItemType.SpiderStaff, ItemType.Firecracker, ItemType.QueenSpiderStaff, ItemType.FlameburstCane } },
             new ItemType[][] { new[] { ItemType.BeeKeeper, ItemType.HiveFive, ItemType.Excalibur, ItemType.Amarok }, new[] { ItemType.BeesKnees, ItemType.HallowedRepeater, ItemType.DaedalusStormbow, ItemType.Megashark }, new[] { ItemType.BeeGun, ItemType.CrystalStorm, ItemType.GoldenShower, ItemType.SkyFracture }, new[] { ItemType.OpticStaff, ItemType.Durendal, ItemType.SanguineStaff, ItemType.CoolWhip } },
@@ -15,8 +15,8 @@ namespace TerraKnight.Items
         };
         internal static readonly ItemType[][][] AccessoryPaths = new ItemType[][][]
         {
-            new ItemType[][] { new[] { ItemType.FeralClaws, ItemType.BandofRegeneration }, new[] { ItemType.PoisonBarb, ItemType.BandofRegeneration }, new[] { ItemType.BandofStarpower, ItemType.BandofRegeneration }, new[] { ItemType.PygmyNecklace, ItemType.BandofRegeneration } },
-            new ItemType[][] { new[] { ItemType.SharkToothNecklace, ItemType.HermesBoots }, new[] { ItemType.HarpyCharm, ItemType.PanicNecklace }, new[] { ItemType.ManaRegenerationBand, ItemType.CelestialMagnet }, new[] { ItemType.SilverBracer, ItemType.CobaltShield } },
+            new ItemType[][] { new[] { ItemType.FeralClaws, ItemType.BandofRegeneration }, new[] { ItemType.PoisonBarb, ItemType.BandofRegeneration }, new[] { ItemType.ShinyRedBalloon, ItemType.BandofRegeneration }, new[] { ItemType.PygmyNecklace, ItemType.BandofRegeneration } },
+            new ItemType[][] { new[] { ItemType.SharkToothNecklace, ItemType.HermesBoots }, new[] { ItemType.HarpyCharm, ItemType.PanicNecklace }, new[] { ItemType.AnkletoftheWind, ItemType.CelestialMagnet }, new[] { ItemType.SilverBracer, ItemType.SharkToothNecklace } },
             new ItemType[][] { new[] { ItemType.PowerGlove, ItemType.CobaltShield }, new[] { ItemType.MagicQuiver, ItemType.CobaltShield }, new[] { ItemType.MagicCuffs, ItemType.ManaFlower }, new[] { ItemType.SnakeBand, ItemType.ApprenticeScarf } },
             new ItemType[][] { new[] { ItemType.WarriorEmblem, ItemType.CrossNecklace }, new[] { ItemType.RangerEmblem, ItemType.CrossNecklace }, new[] { ItemType.SorcererEmblem, ItemType.CrossNecklace }, new[] { ItemType.SummonerEmblem, ItemType.CrossNecklace } },
             new ItemType[][] { new[] { ItemType.MechanicalGlove, ItemType.FrozenTurtleShell }, new[] { ItemType.MoltenQuiver, ItemType.RifleScope }, new[] { ItemType.CelestialCuffs, ItemType.ArcaneFlower }, new[] { ItemType.MobiusStrip, ItemType.WickedArmlet } },
@@ -43,7 +43,8 @@ namespace TerraKnight.Items
             new ArmorPath(4, Kit.Melee, new[] { ItemType.TitaniumMask, ItemType.TitaniumBreastplate, ItemType.TitaniumLeggings }),
             new ArmorPath(4, Kit.Ranged, new[] { ItemType.HallowedHelmet, ItemType.HallowedPlateMail, ItemType.HallowedGreaves }),
             new ArmorPath(4, Kit.Magic, new[] { ItemType.HallowedHeadgear, ItemType.HallowedPlateMail, ItemType.HallowedGreaves }),
-            new ArmorPath(4, Kit.Summon, new[] { ItemType.BeeHeadgear, ItemType.BeeBreastplate, ItemType.BeeGreaves }),
+            // After the mechanical bosses Terraria's summoner wears the Hallowed Hood (1.4) with the Hallowed set; the Bee set is a stage-1 one.
+            new ArmorPath(4, Kit.Summon, new[] { ItemType.HallowedHood, ItemType.HallowedPlateMail, ItemType.HallowedGreaves }),
             new ArmorPath(5, Kit.Melee, new[] { ItemType.BeetleHelmet, ItemType.BeetleScaleMail, ItemType.BeetleLeggings }),
             new ArmorPath(5, Kit.Ranged, new[] { ItemType.ShroomiteHeadgear, ItemType.ShroomiteBreastplate, ItemType.ShroomiteLeggings }),
             new ArmorPath(5, Kit.Magic, new[] { ItemType.SpectreMask, ItemType.SpectreRobe, ItemType.SpectrePants }),
@@ -66,7 +67,7 @@ namespace TerraKnight.Items
             ["DungDefender"] = new BossReward(2, new[] { ItemType.BlueMoon, ItemType.MoltenFury, ItemType.AquaScepter, ItemType.CorruptWhip }, ItemType.WormScarf),
             ["FlukeMother"] = new BossReward(2, new[] { ItemType.FieryGreatsword, ItemType.PhoenixBlaster, ItemType.AquaScepter, ItemType.ImpStaff }, ItemType.BrainOfConfusion),
             ["MegaJellyfish"] = new BossReward(2, new[] { ItemType.Valor, ItemType.Handgun, ItemType.DemonScythe, ItemType.HoundiusShootius }, ItemType.BandofStarpower),
-            ["GhostHu"] = new BossReward(1, new[] { ItemType.ThornChakram, ItemType.DemonBow, ItemType.WaterBolt, ItemType.VampireFrogStaff }, ItemType.BandofRegeneration),
+            ["GhostHu"] = new BossReward(2, new[] { ItemType.ThornChakram, ItemType.DemonBow, ItemType.WaterBolt, ItemType.VampireFrogStaff }, ItemType.BandofRegeneration),
             ["GhostMarmu"] = new BossReward(3, new[] { ItemType.Cascade, ItemType.Shotgun, ItemType.MedusaHead, ItemType.QueenSpiderStaff }, ItemType.CrossNecklace),
             ["TraitorLord"] = new BossReward(5, new[] { ItemType.Seedler, ItemType.VenusMagnum, ItemType.LeafBlower, ItemType.PygmyStaff }, ItemType.PowerGlove),
             ["FalseKnight@5"] = new BossReward(2, new[] { ItemType.FieryGreatsword, ItemType.PhoenixBlaster, ItemType.BookofSkulls, ItemType.ImpStaff }, ItemType.BoneGlove),

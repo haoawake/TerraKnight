@@ -4,11 +4,12 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// A summoner's minions and sentries don't break off a boss (the user's): their blows on a boss or an elite take its
-    /// health and count for nothing more. HealthManager.TakeDamage tells the struck body's machines HIT and TOOK DAMAGE
-    /// (and HIT to the body it forwards its hits to), on which some flinch, dodge, counter or teleport out of what they were
-    /// doing, and its Stun Control STUN DAMAGE, towards a stagger: while such a blow is dealt (MeleeHits.Deal) the first two
-    /// are dropped here, and the stun machine is held off there. The player's own blows (whips too) are untouched.
+    /// A summoner's minions and sentries take health and count for nothing more (the user's): they don't break off a boss,
+    /// and they draw no enemy's aggression (a Moss Knight turned on the minion at its back, not on the player).
+    /// HealthManager.TakeDamage tells the struck body's machines HIT and TOOK DAMAGE (and HIT to the body it forwards its
+    /// hits to), on which some flinch, turn, block, dodge, counter or teleport, and a boss's Stun Control STUN DAMAGE,
+    /// towards a stagger: while a minion's blow is dealt (MeleeHits.Deal), on any enemy, the first two are dropped here, and
+    /// a boss's stun machine is held off there. The player's own blows (whips too) are untouched.
     /// </summary>
     [HarmonyPatch]
     internal static class MinionQuiet

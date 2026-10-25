@@ -51,6 +51,15 @@ namespace TerraKnight.Player
         static bool BeforeTakeDamage(HeroController __instance, GameObject go, int damageAmount, int hazardType)
         {
             if (!Active) return true;
+            if (damageAmount > 0) Achievements.AchievementTracker.Touched(go, hazardType);
+            // Spore Shroom's cloud: nothing touches the player (a pit still puts him back, unharmed: CharmEffects.Sheltered).
+            if (hazardType != 5 && Items.CharmEffects.Untouchable) return false;
+            // Shape of Unn on a mount: a calm enemy's touch doesn't hurt.
+            if (hazardType == 1 && Items.CharmEffects.CalmHit(go)) return false;
+            // Defender's Crest: spikes, thorns and acid don't touch the player at all (no harm, no putting back): stood on, gone through.
+            if ((hazardType == 2 || hazardType == 3) && Items.CharmEffects.WalksHazards(__instance)) return false;
+            // The Steady Body's skill: an enemy's hit (or its shot's) goes through a dash as if the player weren't there.
+            if (hazardType == 1 && Items.CharmEffects.DashImmune(__instance)) { Items.CharmEffects.PassedThrough(go); return false; }
             if (hazardType == 1 && TerraMovement.BonkReady && go != null && go.GetComponentInParent<HealthManager>() != null) return false;
             if (hazardType == 1 && Items.AbilityAccessories.SuperDashThrough(__instance, go)) return false;
             // The Turtle's thorns answer an enemy's touch before the hit, dodged or not (Pl:31586-31641); the
@@ -60,6 +69,10 @@ namespace TerraKnight.Player
                 var attacker = go.GetComponentInParent<HealthManager>();
                 if (attacker != null && Items.MeleeSpecials.TryParry(__instance, attacker, PlayerHooks.RawContact(damageAmount, go))) return false;
                 if (attacker != null) Items.ArmorEffects.OnContact(attacker, PlayerHooks.RawContact(damageAmount, go));
+                // The Baldur Shell's guard: a perfect one refuses the hit (a shot sent back); a late one lets 30% of it land.
+                int guard = Items.CharmEffects.Guard(__instance, go, damageAmount);
+                if (guard != 0) Achievements.AchievementTracker.Blocked();
+                if (guard == 1) return false;
             }
             // Player.Hurt's dodges, before any damage (Pl:38497-38513): the Mystic Arts Sash one in ten, the Brain of Confusion
             // one in six while its buff is off. Only an enemy's hit: a hazard's respawn can't be dodged.
@@ -184,15 +197,22 @@ namespace TerraKnight.Player
             return false;
         }
 
+        /// <summary>When the last hit threw the player (the Steady Body leaves its knockback a moment).</summary>
+        public static float LastHurtAt = -10f;
+
         static IEnumerator Hurt(HeroController hero, int hitDir)
         {
             int damage = Mathf.Max(1, LastDamage);
+            LastHurtAt = Time.time;
             lastHitDir = hitDir;
             // Player.Hurt: 40 ticks of immunity (80 with the Cross Necklace's longInvince).
             var bonus = Items.Equipment.Current;
-            startInvulnerable(hero, (damage == 1 ? 20 : bonus.LongImmunity ? 80 : 40) / 60f);
+            // The Stalwart Shell worn: a little longer (CharmEffects.ExtraImmunity).
+            startInvulnerable(hero, (damage == 1 ? 20 : bonus.LongImmunity ? 80 : 40) / 60f + Items.CharmEffects.ExtraImmunity);
             immuneAlpha = 0;
             immuneDir = 1;
+            // A hit a charm took (the shell): the immunity only, no knockback, no blood.
+            if (Items.CharmEffects.SoftHitNow) yield break;
             // noKnockback (Cobalt Shield): the hit doesn't throw the player.
             if (hitDir != 0 && !bonus.NoKnockback) hero.GetComponent<Rigidbody2D>().linearVelocity = new Vector2(4.5f * hitDir, 3.5f) * TerraMovement.PxT;
             var stats = TerraMod.Instance.Stats;
@@ -213,6 +233,9 @@ namespace TerraKnight.Player
         /// a hazard) brings down the Star Cloak's three stars and lets out the Honey Comb's bees.
         /// The stars and bees are Master Mode's (75 × 3, 13 × 2), as this world's enemies are.
         /// </summary>
+        /// <summary>The hurt being taken is a fall's (TerraMod.UpdateFallDamage): no enemy to answer.</summary>
+        public static bool FallHurt;
+
         public static void AfterHurt(HeroController hero, int raw, int damage, bool retaliate)
         {
             var mod = TerraMod.Instance;
@@ -220,6 +243,8 @@ namespace TerraKnight.Player
             if (mod == null || hero == null) return;
             if (Mounts.Riding && Mounts.Current.Native==56 && damage>0) Mounts.Dismount();
             Items.ArmorEffects.AfterHurt();
+            // Thorns of Agony, Hiveblood.
+            Items.CharmEffects.OnHurt(hero, damage, retaliate && !FallHurt);
             if (b.MagicCuffs && raw > 0)
             {
                 mod.Stats.RestoreMana(raw);
@@ -350,6 +375,7 @@ namespace TerraKnight.Player
 
         static void Die(HeroController hero, TerraPlayerSprite sprite)
         {
+            Achievements.AchievementTracker.Died();
             TerraMod.Instance.PlaySound("Player_Killed");
             Net.PvpHits.OnLocalDeath();
             Blood(hero, 100, 2f * lastHitDir, -2f);
@@ -380,6 +406,17 @@ namespace TerraKnight.Player
                 if (ox != 0 || oy != 0) GUI.Label(new Rect(rect.x + ox * 2f * ui, rect.y + oy * 2f * ui, rect.width, rect.height), Lang.T("你被杀死了……"), style);
             style.normal.textColor = new Color(1f, 0.55f, 0.55f, a);
             GUI.Label(rect, Lang.T("你被杀死了……"), style);
+            // A LAN game's respawn wait (Net.NetDeath): its seconds under it, as Terraria's multiplayer shows them.
+            int left = Net.NetDeath.SecondsLeft;
+            if (left <= 0) return;
+            var below = new Rect(rect.x, rect.yMax, rect.width, rect.height);
+            string n = left.ToString();
+            style.normal.textColor = new Color(0f, 0f, 0f, a * 0.6f);
+            for (int ox = -1; ox <= 1; ox++)
+            for (int oy = -1; oy <= 1; oy++)
+                if (ox != 0 || oy != 0) GUI.Label(new Rect(below.x + ox * 2f * ui, below.y + oy * 2f * ui, below.width, below.height), n, style);
+            style.normal.textColor = new Color(1f, 0.55f, 0.55f, a);
+            GUI.Label(below, n, style);
         }
     }
 }

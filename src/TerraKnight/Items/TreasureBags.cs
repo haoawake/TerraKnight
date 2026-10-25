@@ -63,10 +63,11 @@ namespace TerraKnight.Items
         public static int DevLeft, DevOpened;
 
         /// <summary>A bag left where the boss fell (into the bag when there's no time to pick it up), a first kill's marked.</summary>
-        public static void Leave(ItemType bag, Vector2 at, bool direct, bool first, bool godhome=false)
+        public static void Leave(ItemType bag, Vector2 at, bool direct, bool first, bool godhome=false, int bonus=0)
         {
             var s = ItemStack.Of(bag);
-            s.Forge = (byte)((first ? 1 : 0) | (godhome ? 2 : 0));
+            // Bit 0 first kill, bit 1 Godhome, bits 2-5 bonus index, bit 6 current reward policy.
+            s.Forge = (byte)((first ? 1 : 0) | (godhome ? 2 : 0) | (Mathf.Clamp(bonus, 0, 15) << 2) | 64);
             DevLeft++;
             if (EnemyDrops.DevSink != null) { EnemyDrops.DevSink(bag, 1); return; }
             // Each player's own in a LAN game (DropLocalPerClient).
@@ -85,9 +86,13 @@ namespace TerraKnight.Items
             inv.ConsumeAt(slot);
             var hero = HeroController.SilentInstance;
             Vector2 at = hero != null ? (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center : Vector2.zero;
-            EnemyDrops.Roll(key, at, direct: true, firstKill: first, fromBag: true, scene: godhome ? "GG_Workshop" : null);
+            GodhomeRewards.Bag = GodhomeRewards.OfIndex((stack.Forge >> 2) & 15, legacy: (stack.Forge & 64) == 0);
+            // A world fight's bag: its world room's loot (the roster's room can be the boss's Godhome one: Grimm's).
+            try { EnemyDrops.Roll(key, at, direct: true, firstKill: first, fromBag: true, scene: godhome ? "GG_Workshop" : BestiaryHabitats.WorldScene(key)); }
+            finally { GodhomeRewards.Bag = null; }
             TerraMod.Instance?.PlaySound("Grab");
             DevOpened++;
+            Achievements.AchievementTracker.BagOpened();
             Plugin.Log.LogInfo($"[宝藏袋] 打开 {ItemDb.Get(stack.Type).Name}（{key}{(first ? "，首次击败" : "")}）");
             return true;
         }
@@ -99,7 +104,7 @@ namespace TerraKnight.Items
         {
             if (firstDefs.TryGetValue(b, out var c) && c.Name == b.Name) return c;
             c = b.Clone();
-            c.Tooltip = (b.Tooltip ?? "") + "\n" + Lang.T("首次击败：必得首领武器");
+            c.Tooltip = (b.Tooltip ?? "") + "\n" + Lang.T("首次击败：含首杀才给的奖励");
             firstDefs[b] = c;
             return c;
         }
@@ -113,8 +118,8 @@ namespace TerraKnight.Items
             if(markedDefs.TryGetValue(key,out var cached))return cached;
             var copy=b.Clone();
             copy.Tooltip=(b.Tooltip ?? "")+"\n"+(Lang.IsSource || Lang.Culture.StartsWith("zh")
-                ? "神居战利品：开出终局装备\n夜明矿已在击败首领时发放"
-                : "Godhome spoils: endgame equipment\nLuminite awarded when the boss fell");
+                ? "神居战利品：按当前阶段开出装备，材料带神居难度的加成"
+                : "Godhome spoils: equipment of your stage, its materials with Godhome's difficulty bonus");
             markedDefs[key]=copy;return copy;
         }
 

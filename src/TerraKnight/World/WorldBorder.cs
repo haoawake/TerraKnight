@@ -29,6 +29,10 @@ namespace TerraKnight.World
         static float gatesAt = -10f;
         static float bottomSince = -1f;
         public static int DevPits;
+        /// <summary>The bottom of the scene the Knight was last in (world units), and since when he has been out under it.</summary>
+        static float? lastBottom;
+        static float outSince = -1f;
+        public static int DevFellOut;
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
@@ -38,13 +42,47 @@ namespace TerraKnight.World
             var gm = GameManager.UnsafeInstance;
             var cs = __instance.cState;
             if (gm == null || gm.IsInSceneTransition || cs.transitioning || cs.dead || cs.hazardDeath || cs.hazardRespawning) return;
+            // Native cutscenes may intentionally stage the Knight beyond the playable map.
+            // Their placement and motion must not be clamped back inside the world.
+            if (!GameHooks.PlayerHasControl() || Player.CutsceneAttack.KnightHidden())
+            {
+                bottomSince = outSince = -1f;
+                return;
+            }
             var col = __instance.GetComponent<BoxCollider2D>();
             if (col == null) return;
             var b = col.bounds;
             var centre = CellGrid.WorldToCell(b.center);
             var home = TerraWorld.RegionAt(centre.x, centre.y);
-            // Outside every scene already (a cutscene, a teleport on its way): not ours to hold.
-            if (home == null) return;
+            // Outside every scene already (a cutscene, a teleport on its way): not ours to hold. But under the scene he
+            // was last in, falling with control a second on (out past a gate at the bottom, down a dug-out lift's shaft,
+            // the user's: "泪城电梯被挖掉后玩家走进去会无限下坠"): a pit, as the bottom's.
+            if (home == null)
+            {
+                if (lastBottom != null && b.max.y < lastBottom.Value - 1f && ___rb2d.linearVelocity.y < -0.5f && GameHooks.PlayerHasControl())
+                {
+                    if (outSince < 0f) outSince = Time.time;
+                    else if (Time.time - outSince > 1f)
+                    {
+                        outSince = -1f;
+                        DevPits++;
+                        DevFellOut++;
+                        Plugin.Log.LogInfo($"[边界] 掉出了所有场景（{(Vector2)b.center:F1}，上一个场景底部 y {lastBottom.Value:F1}）：当作掉进深坑，回到上一个安全落脚点");
+                        SafeRespawn(__instance);
+                        __instance.TakeDamage(null, GlobalEnums.CollisionSide.bottom, 1, 1 + (int)GlobalEnums.HazardType.PIT);
+                    }
+                }
+                else outSince = -1f;
+                return;
+            }
+            outSince = -1f;
+            lastBottom = home.CellRect.yMin * CellGrid.CellSize;
+            // The last ground stood on here: static terrain (a grid cell under the feet, not a lift or a platform), with control.
+            if (cs.onGround && GameHooks.PlayerHasControl() && !cs.onConveyor && !cs.onConveyorV)
+            {
+                var under = CellGrid.WorldToCell(new Vector2(b.center.x, b.min.y - CellGrid.CellSize * 0.5f));
+                if (TerraWorld.IsSolid(under.x, under.y)) safeGround = new Vector2(b.center.x, b.min.y + 0.1f);
+            }
             RefreshGates();
             const float c = CellGrid.CellSize;
             var cr = home.CellRect;
@@ -85,6 +123,7 @@ namespace TerraKnight.World
                 bottomSince = -1f;
                 DevPits++;
                 Plugin.Log.LogInfo($"[边界] {home.SceneName} 掉出了场景底部：当作掉进深坑，回到上一个安全落脚点");
+                SafeRespawn(__instance);
                 __instance.TakeDamage(null, GlobalEnums.CollisionSide.bottom, 1, 1 + (int)GlobalEnums.HazardType.PIT);
                 return;
             }
@@ -97,7 +136,44 @@ namespace TerraKnight.World
                 ___rb2d.position = p;
             }
             DevStops++;
+            Achievements.AchievementTracker.WorldEdge();
             DevLast = $"{home.SceneName} {side}";
+        }
+
+        /// <summary>The last ground the Knight stood on in a scene (world units).</summary>
+        static Vector2? safeGround;
+        public static int DevRespawnMoved;
+        public static Vector2? DevSafeGround => safeGround;
+        public static string DevLastCheck = "";
+
+        /// <summary>
+        /// Before a pit: the game's hazard respawn outside every loaded scene (a room entered by its bottom gate, or by a
+        /// lift, keeps the spot under it; a pit there fell for ever) set to the last ground stood on.
+        /// </summary>
+        static void SafeRespawn(HeroController hero)
+        {
+            var pd = PlayerData.instance;
+            if (pd == null) return;
+            Vector2 at = pd.hazardRespawnLocation;
+            var cell = CellGrid.WorldToCell(at + Vector2.up * 0.5f);
+            // The game sets the Knight down on the ground under its spot (FindGroundPoint); none under it (the spot over a
+            // lift's open shaft, by the bottom gate) puts him at the world's origin, out of the room again.
+            var ground = Physics2D.Raycast(at, Vector2.down, 30f, 1 << ChunkColliders.TerrainLayer);
+            bool landed = ground.collider != null;
+            if (landed)
+            {
+                var gc = CellGrid.WorldToCell(ground.point + Vector2.up * 0.25f);
+                landed = TerraWorld.RegionAt(gc.x, gc.y) != null;
+            }
+            DevLastCheck = $"复活点 {at:F2} 在场景里 {TerraWorld.RegionAt(cell.x, cell.y) != null} 下面 {(ground.collider != null ? ground.collider.name + (ground.collider.isTrigger ? "(触发器)" : "") + " @" + ground.point.ToString("F2") : "没有")} 落地 {landed}";
+            if (TerraWorld.RegionAt(cell.x, cell.y) != null && landed) return;
+            DevLastCheck += $"；最近站过的地面 {safeGround}";
+            if (safeGround == null) return;
+            var g = CellGrid.WorldToCell(safeGround.Value);
+            if (TerraWorld.RegionAt(g.x, g.y) == null) { DevLastCheck += " 不在场景里"; return; }
+            hero.SetHazardRespawn(safeGround.Value + Vector2.up * 0.5f, hero.cState.facingRight);
+            DevRespawnMoved++;
+            Plugin.Log.LogInfo($"[边界] 原版的复活落脚点 {at:F1} 不在场景里或下面没有地面：改到最近站过的地面 {safeGround.Value:F1}");
         }
 
         /// <summary>A point in no loaded scene, and not by a gate.</summary>

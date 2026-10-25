@@ -66,13 +66,13 @@ namespace TerraKnight.UI
             float perHeart = heartLife <= 400 ? LifePerHeart : heartLife / 20f;
             int red = Mathf.CeilToInt(heartLife / perHeart - 0.001f);
             int masks = Mathf.CeilToInt(stats.MaskLife / (float)LifePerHeart);
-            int shields = Mathf.CeilToInt(stats.Shield / (float)LifePerHeart);
+            int shields = Mathf.CeilToInt(stats.ShieldShown / (float)LifePerHeart);
             int heartCount = red + masks + shields;
             ExtraHeartRows = Mathf.Max(0, (heartCount + HeartsPerRow - 1) / HeartsPerRow - 2);
             float hearts = Mathf.Min(HeartsPerRow, heartCount);
             float rowWidth = Mathf.Max(hearts * HeartStep * ui, 200f * ui);
             float x0 = right - rowWidth;
-            string lifeText = Lang.F("生命值：{0}/{1}", stats.Life, stats.LifeMax) + (stats.Shield > 0 ? " +" + stats.Shield : "");
+            string lifeText = Lang.F("生命值：{0}/{1}", stats.Life, stats.LifeMax) + (stats.ShieldShown > 0 ? " +" + stats.ShieldShown : "");
             // As wide as the words need (the shield's "+40" on the same line), widening to the left.
             float textWidth = Mathf.Max(rowWidth, textStyle.CalcSize(new GUIContent(lifeText)).x + 12f * ui);
             Outlined(new Rect(right - textWidth, top, textWidth, 26f * ui), lifeText, Color.white);
@@ -97,13 +97,15 @@ namespace TerraKnight.UI
                 {
                     // Lifeblood's silver hearts, after all of the life: the shield left in them.
                     from = (i - red - masks) * LifePerHeart;
-                    size = Mathf.Min(LifePerHeart, stats.Shield - from);
+                    size = Mathf.Min(LifePerHeart, stats.ShieldShown - from);
                     tex = silver;
                 }
-                float fill = size > 0f ? Mathf.Clamp01(((i < red + masks ? stats.Life : stats.Shield) - from) / size) : 0f;
+                float fill = size > 0f ? Mathf.Clamp01(((i < red + masks ? stats.Life : stats.ShieldShown) - from) / size) : 0f;
                 if (fill <= 0f) continue;
                 // A part-filled heart shrinks and fades like Terraria's.
                 float s = fill >= 1f ? 1f : Mathf.Lerp(0.5f, 1f, fill);
+                // The Fragile Heart worn: a slow wave swells through the masks' cyan hearts.
+                if (i >= red && i < red + masks) s *= 1f + 0.16f * Items.CharmEffects.MaskWave(i - red, masks);
                 float w = heart.width * ui * s, h = heart.height * ui * s;
                 int col = i % HeartsPerRow, row = i / HeartsPerRow;
                 float cx = right - (Mathf.Min(heartCount, HeartsPerRow) - col - 0.5f) * HeartStep * ui;
@@ -212,15 +214,7 @@ namespace TerraKnight.UI
             return t;
         }
 
-        static void Outlined(Rect r, string text, Color color)
-        {
-            float ui = GameView.Scale;
-            textStyle.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
-            for (int ox = -1; ox <= 1; ox++)
-            for (int oy = -1; oy <= 1; oy++)
-                if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 1.5f * ui, r.y + oy * 1.5f * ui, r.width, r.height), text, textStyle);
-            textStyle.normal.textColor = color;
-            GUI.Label(r, text, textStyle);
-        }
+        static void Outlined(Rect r, string text, Color color) =>
+            BorderText.Draw(r, text, textStyle, new Color(0f, 0f, 0f, 0.85f), color, 1.5f * GameView.Scale);
     }
 }

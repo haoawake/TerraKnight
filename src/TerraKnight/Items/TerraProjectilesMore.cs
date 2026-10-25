@@ -15,6 +15,11 @@ namespace TerraKnight.Items
             RegisterRanged();
             RegisterMagic();
             RegisterMagic2();
+            RegisterSoulWave();
+            RegisterSoulBurst();
+            RegisterHowl();
+            RegisterShade();
+            RegisterAbyss();
             RegisterMagic3();
             RegisterMagic4();
             RegisterLunar();
@@ -54,6 +59,8 @@ namespace TerraKnight.Items
             RegisterPal();
             RegisterGuns3();
             RegisterReflect();
+            // After the crafting supplement's: its Hallowed Jousting Lance goes the way of the other two.
+            RegisterBatch1021();
         }
     }
 }

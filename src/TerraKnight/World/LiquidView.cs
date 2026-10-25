@@ -6,13 +6,13 @@ namespace TerraKnight.World
 {
     /// <summary>
     /// How a region's poured liquid looks and feels. It is drawn as Terraria draws liquid (LiquidRenderer): each cell a
-    /// 16-px frame of the water sheet (Images/Misc/water_0 for water, the jungle's green water_3 for acid) picked by which
+    /// 16-px frame of the water sheet (Images/Misc/water_0 for water, the jungle's green water_3 for acid, the shimmer's
+    /// water_14 tinted and sparkling as LiquidRenderer.DrawShimmer has it) picked by which
     /// sides are open — the surface frame on top, the edge frames at the sides, the inside elsewhere — a cell partly full
     /// cut to its level with the surface frame at the top, the frames stepping through the sheet's 16 animation frames; more
     /// see-through than Terraria's (Hallownest's water is clear), a mesh per 16×16 cells. Every stretch of surface is given
-    /// a pool's working parts: a copy of a Surface Water Region the Knight swims in (its pictures off), and for acid an Acid
-    /// Box that hurts as Hallownest's acid does, followed by Player.AcidLiquid like the scene's own pools (Isma's Tear and
-    /// the flippers swim in it).
+    /// a bounded volume for water-walking and gear, and for acid an Acid Box that hurts as Hallownest's acid does.
+    /// PouredSwimming applies physical buoyancy from the actual cells without the native surface FSM taking control.
     /// </summary>
     internal sealed class LiquidView
     {
@@ -24,7 +24,9 @@ namespace TerraKnight.World
         const float LayoutEvery = 0.25f;
         /// <summary>Terraria's water at 0.6 and lava at 0.95 (LiquidRenderer.DEFAULT_OPACITY), clearer here.</summary>
         static readonly Color WaterTint = new Color(1f, 1f, 1f, 0.4f), AcidTint = new Color(0.95f, 1f, 0.8f, 0.5f);
-        const string WaterSheet = "Misc/water_0", AcidSheet = "Misc/water_3";
+        const string WaterSheet = "Misc/water_0", AcidSheet = "Misc/water_3", ShimmerSheet = "Misc/water_14";
+        /// <summary>The shimmer's opacity (Terraria's 0.75 for it in front, a little clearer as the water here).</summary>
+        const float ShimmerAlpha = 0.6f;
 
         readonly TerrainRegion region;
         readonly CellGrid g;
@@ -42,6 +44,19 @@ namespace TerraKnight.World
             public readonly List<Vector2> BaseUv = new List<Vector2>();
             public readonly List<bool> Slow = new List<bool>();
             public readonly List<Vector2> Uv = new List<Vector2>();
+            /// <summary>Each vertex's step on its sheet for one animation frame (80 px of that sheet's height).</summary>
+            public readonly List<float> FrameStep = new List<float>();
+            /// <summary>The colours as built; the shimmer's quads are coloured again each frame (Step).</summary>
+            public readonly List<Color> Colors = new List<Color>();
+            public readonly List<Color> Shown = new List<Color>();
+            public readonly List<ShimmerQuad> Shimmer = new List<ShimmerQuad>();
+        }
+
+        /// <summary>A quad of shimmer: its first vertex, its cell, and whether it is the sparkle laid over the body (edge: not an inside frame).</summary>
+        struct ShimmerQuad
+        {
+            public int V, X, Y;
+            public bool Sparkle, Edge;
         }
 
         public LiquidView(TerrainRegion region)
@@ -70,7 +85,6 @@ namespace TerraKnight.World
 
         public void Tick()
         {
-            LiquidTemplates.Watch();
             Animate();
             dirty.Clear();
             region.Liquid.TakeDirty(dirty);
@@ -105,8 +119,8 @@ namespace TerraKnight.World
 
         static readonly List<Vector3> verts = new List<Vector3>();
         static readonly List<Color> colors = new List<Color>();
-        static readonly List<int> waterTris = new List<int>(), acidTris = new List<int>();
-        static Material waterMaterial, acidMaterial;
+        static readonly List<int> waterTris = new List<int>(), acidTris = new List<int>(), shimmerTris = new List<int>(), sparkleTris = new List<int>();
+        static Material waterMaterial, acidMaterial, shimmerMaterial, sparkleMaterial;
 
         bool Open(int x, int y) => g.InClip(x, y) && !Cells.Blocks(g.Get(x, y));
         bool Wet(int x, int y) => g.GetLiquid(x, y) > 0 && Open(x, y);
@@ -120,8 +134,12 @@ namespace TerraKnight.World
             colors.Clear();
             ch.BaseUv.Clear();
             ch.Slow.Clear();
+            ch.FrameStep.Clear();
+            ch.Shimmer.Clear();
             waterTris.Clear();
             acidTris.Clear();
+            shimmerTris.Clear();
+            sparkleTris.Clear();
             for (int y = cy * n; y < Mathf.Min(g.Height, (cy + 1) * n); y++)
                 for (int x = cx * n; x < Mathf.Min(g.Width, (cx + 1) * n); x++)
                     if (Wet(x, y)) Cell(ch, x, y);
@@ -141,31 +159,107 @@ namespace TerraKnight.World
                 ch.Go.transform.SetParent(region.Root, false);
                 ch.Go.transform.localPosition = new Vector3(0f, 0f, Z);
                 ch.Go.AddComponent<MeshFilter>().sharedMesh = ch.Mesh;
-                ch.Go.AddComponent<MeshRenderer>().sharedMaterials = new[] { Material(false), Material(true) };
+                ch.Go.AddComponent<MeshRenderer>().sharedMaterials = new[] { Material(LiquidKind.Water), Material(LiquidKind.Acid), Material(LiquidKind.Shimmer), SparkleMaterial() };
             }
             ch.Mesh.Clear();
             ch.Mesh.SetVertices(verts);
+            ch.Colors.Clear();
+            ch.Colors.AddRange(colors);
             ch.Mesh.SetColors(colors);
-            ch.Mesh.subMeshCount = 2;
+            ch.Mesh.subMeshCount = 4;
             Step(ch);
             ch.Mesh.SetTriangles(waterTris, 0);
             ch.Mesh.SetTriangles(acidTris, 1);
+            ch.Mesh.SetTriangles(shimmerTris, 2);
+            ch.Mesh.SetTriangles(sparkleTris, 3);
             ch.Mesh.RecalculateBounds();
             if (!ch.Go.activeSelf) ch.Go.SetActive(true);
         }
 
-        /// <summary>The texture coordinates on the frame shown now: each sheet frame 80 px under the last.</summary>
+        /// <summary>
+        /// The texture coordinates on the frame shown now: each sheet frame 80 px under the last. The shimmer's sparkles go
+        /// by their own frame (GetShimmerFrame), and its quads take its colours of this moment (SetShimmerVertexColors, the
+        /// sparkles' GetShimmerGlitterColor).
+        /// </summary>
         void Step(Chunk ch)
         {
             if (ch.Mesh == null) return;
             ch.Uv.Clear();
-            float fast = frame * 80f / SheetHeight, slow = slowFrame * 80f / SheetHeight;
             for (int i = 0; i < ch.BaseUv.Count; i++)
-                ch.Uv.Add(ch.BaseUv[i] - new Vector2(0f, ch.Slow[i] ? slow : fast));
+                ch.Uv.Add(ch.BaseUv[i] - new Vector2(0f, (ch.Slow[i] ? slowFrame : frame) * ch.FrameStep[i]));
+            if (ch.Shimmer.Count > 0)
+            {
+                float t = Time.time * 60f;
+                ch.Shown.Clear();
+                ch.Shown.AddRange(ch.Colors);
+                foreach (var q in ch.Shimmer)
+                {
+                    int wx = q.X + region.CellOffset.x, wy = -(q.Y + region.CellOffset.y);
+                    if (q.Sparkle)
+                    {
+                        float off = ShimmerFrame(q.Edge, wx, wy, t) * ch.FrameStep[q.V];
+                        for (int k = 0; k < 4; k++) ch.Uv[q.V + k] = ch.BaseUv[q.V + k] - new Vector2(0f, off);
+                        ch.Shown[q.V] = Glitter(q.Edge, wx, wy + 1, t);
+                        ch.Shown[q.V + 1] = Glitter(q.Edge, wx, wy, t);
+                        ch.Shown[q.V + 2] = Glitter(q.Edge, wx + 1, wy, t);
+                        ch.Shown[q.V + 3] = Glitter(q.Edge, wx + 1, wy + 1, t);
+                    }
+                    else
+                    {
+                        ch.Shown[q.V] = ShimmerBase(wx, wy + 1, t);
+                        ch.Shown[q.V + 1] = ShimmerBase(wx, wy, t);
+                        ch.Shown[q.V + 2] = ShimmerBase(wx + 1, wy, t);
+                        ch.Shown[q.V + 3] = ShimmerBase(wx + 1, wy + 1, t);
+                    }
+                }
+                ch.Mesh.SetColors(ch.Shown);
+            }
             ch.Mesh.SetUVs(0, ch.Uv);
         }
 
-        static float SheetHeight => Material(false).mainTexture != null ? Material(false).mainTexture.height : 1360f;
+        // ------------------------------------------------------------------ the shimmer's colours (LiquidRenderer)
+
+        static float ShimmerWave(float x, float y, float t) => Mathf.Sin(((x + y / 6f) / 10f - t / 360f) * 2f * Mathf.PI);
+
+        /// <summary>GetShimmerBaseColor: lavender to pale blue in slow waves, at the shimmer's opacity.</summary>
+        static Color ShimmerBase(float x, float y, float t)
+        {
+            var c = Vector4.Lerp(new Vector4(0.64705884f, 26f / 51f, 14f / 15f, 1f), new Vector4(41f / 51f, 41f / 51f, 1f, 1f), 0.1f + ShimmerWave(x, y, t) * 0.4f);
+            return new Color(c.x, c.y, c.z, ShimmerAlpha);
+        }
+
+        /// <summary>GetShimmerGlitterColor: a rainbow hue running along it, as bright as GetShimmerGlitterOpacity (added light: its strength in alpha).</summary>
+        static Color Glitter(bool top, float x, float y, float t)
+        {
+            var c = Color.HSVToRGB(Mathf.Repeat(((x + y / 6f) + t / 30f) / 6f, 1f), 1f, 1f);
+            float a;
+            if (top) a = 0.5f;
+            else
+            {
+                float wave = Mathf.Clamp01(Mathf.InverseLerp(-0.5f, 1f, ShimmerWave(x, y, t))) * 0.35f;
+                float noise = Mathf.Sin(Noise((uint)x, (uint)y) / 10f + t / 180f);
+                a = Mathf.Clamp01(Mathf.InverseLerp(0f, 0.5f, wave * noise));
+            }
+            c.a = a * ShimmerAlpha;
+            return c;
+        }
+
+        static uint Noise(uint x, uint y)
+        {
+            x = 36469 * (x & 0xFFFF) + (x >> 16);
+            y = 18012 * (y & 0xFFFF) + (y >> 16);
+            return (x << 16) + y;
+        }
+
+        /// <summary>GetShimmerFrame: the sparkle's frame of the sheet, drifting along it (an inside one by its cell too).</summary>
+        static int ShimmerFrame(bool top, float x, float y, float t)
+        {
+            x += 0.5f;
+            y += 0.5f;
+            double n = (x + y / 6f) / 10f - t / 360f;
+            if (!top) n += x + y;
+            return ((int)n % 16 + 16) % 16;
+        }
 
         /// <summary>
         /// One cell (LiquidRenderer.InternalPrepareDraw): its frame from which sides are open and dry — the surface (top) row,
@@ -192,8 +286,9 @@ namespace TerraKnight.World
             const float c = CellGrid.CellSize;
             float x0 = x * c, y0 = y * c, y1 = y0 + (1f - cut) * c;
             int h = Mathf.CeilToInt((1f - cut) * 16f);
-            bool acid = g.GetLiquidKind(x, y) == LiquidKind.Acid;
-            var tex = Material(acid).mainTexture;
+            var kind = g.GetLiquidKind(x, y);
+            bool acid = kind == LiquidKind.Acid, shimmer = kind == LiquidKind.Shimmer;
+            var tex = Material(kind).mainTexture;
             float W = tex != null ? tex.width : 48f, H = tex != null ? tex.height : 1360f;
             // Unity's rows run up: Terraria's (fx, fy) top-left is (fx, H - fy) here.
             float u0 = fx / W, u1 = (fx + 16) / W, vTop = (H - fy) / H, vBottom = (H - fy - h) / H;
@@ -207,25 +302,63 @@ namespace TerraKnight.World
             ch.BaseUv.Add(new Vector2(u1, vTop));
             ch.BaseUv.Add(new Vector2(u1, vBottom));
             bool slow = fx == 16;
-            var col = acid ? AcidTint : WaterTint;
+            var col = acid ? AcidTint : shimmer ? new Color(1f, 1f, 1f, ShimmerAlpha) : WaterTint;
             for (int k = 0; k < 4; k++)
             {
                 ch.Slow.Add(slow);
+                ch.FrameStep.Add(80f / H);
                 colors.Add(col);
             }
-            var tris = acid ? acidTris : waterTris;
+            var tris = acid ? acidTris : shimmer ? shimmerTris : waterTris;
             tris.Add(b); tris.Add(b + 1); tris.Add(b + 2);
             tris.Add(b); tris.Add(b + 2); tris.Add(b + 3);
+            if (!shimmer) return;
+            ch.Shimmer.Add(new ShimmerQuad { V = b, X = x, Y = y });
+            // DrawShimmer's sparkle: the sheet's right half (48 px over), over every frame but the inside one, and over that
+            // one on every other cell.
+            bool edge = fx != 16 || fy % 80 != 48;
+            if (!edge && (x + y) % 2 != 0) return;
+            int s = verts.Count;
+            verts.Add(new Vector3(x0, y0));
+            verts.Add(new Vector3(x0, y1));
+            verts.Add(new Vector3(x0 + c, y1));
+            verts.Add(new Vector3(x0 + c, y0));
+            float su0 = (fx + 48) / W, su1 = (fx + 64) / W;
+            ch.BaseUv.Add(new Vector2(su0, vBottom));
+            ch.BaseUv.Add(new Vector2(su0, vTop));
+            ch.BaseUv.Add(new Vector2(su1, vTop));
+            ch.BaseUv.Add(new Vector2(su1, vBottom));
+            for (int k = 0; k < 4; k++)
+            {
+                ch.Slow.Add(false);
+                ch.FrameStep.Add(80f / H);
+                colors.Add(Color.clear);
+            }
+            ch.Shimmer.Add(new ShimmerQuad { V = s, X = x, Y = y, Sparkle = true, Edge = edge });
+            sparkleTris.Add(s); sparkleTris.Add(s + 1); sparkleTris.Add(s + 2);
+            sparkleTris.Add(s); sparkleTris.Add(s + 2); sparkleTris.Add(s + 3);
         }
 
-        static Material Material(bool acid)
+        static Material Material(LiquidKind kind)
         {
-            if (acid ? acidMaterial != null : waterMaterial != null) return acid ? acidMaterial : waterMaterial;
-            var m = new Material(Shader.Find("Sprites/Default")) { name = acid ? "Terra Acid" : "Terra Water" };
-            m.mainTexture = Terraria.TerrariaAssets.Texture(acid ? AcidSheet : WaterSheet);
+            var known = kind == LiquidKind.Acid ? acidMaterial : kind == LiquidKind.Shimmer ? shimmerMaterial : waterMaterial;
+            if (known != null) return known;
+            var m = new Material(Shader.Find("Sprites/Default")) { name = kind == LiquidKind.Acid ? "Terra Acid" : kind == LiquidKind.Shimmer ? "Terra Shimmer" : "Terra Water" };
+            m.mainTexture = Terraria.TerrariaAssets.Texture(kind == LiquidKind.Acid ? AcidSheet : kind == LiquidKind.Shimmer ? ShimmerSheet : WaterSheet);
             if (m.mainTexture != null) m.mainTexture.wrapMode = TextureWrapMode.Clamp;
-            if (acid) acidMaterial = m; else waterMaterial = m;
+            if (kind == LiquidKind.Acid) acidMaterial = m;
+            else if (kind == LiquidKind.Shimmer) shimmerMaterial = m;
+            else waterMaterial = m;
             return m;
+        }
+
+        /// <summary>The shimmer's sparkles: its sheet, added as light (their colours carry no alpha in Terraria's draw).</summary>
+        static Material SparkleMaterial()
+        {
+            if (sparkleMaterial != null) return sparkleMaterial;
+            var shader = Shader.Find("Legacy Shaders/Particles/Additive") ?? Shader.Find("Particles/Additive") ?? Shader.Find("Sprites/Default");
+            sparkleMaterial = new Material(shader) { name = "Terra Shimmer Sparkle", mainTexture = Material(LiquidKind.Shimmer).mainTexture };
+            return sparkleMaterial;
         }
 
         // ------------------------------------------------------------------ the surfaces: swimming, the acid's bite
@@ -294,8 +427,11 @@ namespace TerraKnight.World
                     while (x <= x1 && Surface(x, y, out bool a2) && a2 == acid)
                     {
                         int b = y;
-                        while (b - 1 >= 0 && g.GetLiquid(x, b - 1) > 0 && !Cells.Blocks(g.Get(x, b - 1))) b--;
-                        r.Bottom = Mathf.Min(r.Bottom, b);
+                        while (b - 1 >= 0 && g.GetLiquid(x, b - 1) > 0 && g.GetLiquidKind(x, b - 1) == g.GetLiquidKind(x, y) && !Cells.Blocks(g.Get(x, b - 1))) b--;
+                        // Each column must stop at its own floor. A single deepest
+                        // column must not extend the swim region below adjacent blocks.
+                        if (x > r.X0 && b != r.Bottom) break;
+                        r.Bottom = b;
                         r.Top = Mathf.Max(r.Top, (y + g.GetLiquid(x, y) / 255f) * CellGrid.CellSize);
                         x++;
                     }
@@ -326,12 +462,19 @@ namespace TerraKnight.World
             int depth = Mathf.CeilToInt((r.Top - r.Bottom * c) / c - 0.01f);
             if (depth >= SwimDepth)
             {
-                LiquidTemplates.Region(r.Acid, out var swim, out var scale);
-                if (swim != null)
-                {
-                    body.Region = LiquidTemplates.Place(swim, scale, region.Root, left, right, top);
-                    DevSwimRegions++;
-                }
+                // Native Surface Water Region takes control and snaps the hero to
+                // its surface. Poured liquid can fill doorways and have solid roofs;
+                // its buoyancy uses actual grid cells instead (PouredSwimming).
+                body.Region = new GameObject("Terra Poured Swim Region");
+                body.Region.AddComponent<TerraOwned>();
+                body.Region.AddComponent<PouredLiquidRegion>();
+                body.Region.transform.SetParent(region.Root, true);
+                body.Region.transform.position = new Vector3((left + right) / 2f, (top + bottom) / 2f, 0f);
+                var volume = body.Region.AddComponent<BoxCollider2D>();
+                volume.isTrigger = true;
+                volume.size = new Vector2(right - left, top - bottom);
+                volume.enabled = false;
+                DevSwimRegions++;
             }
             if (r.Acid)
             {
@@ -354,6 +497,8 @@ namespace TerraKnight.World
             return body;
         }
     }
+
+    internal sealed class PouredLiquidRegion : MonoBehaviour { }
 
     /// <summary>
     /// Copies of Hollow Knight's swim regions to give poured liquid its swimming: the first water Surface Water Region and the
@@ -400,7 +545,23 @@ namespace TerraKnight.World
             // Off itself, so each copy made from it is set in place before it wakes.
             copy.SetActive(false);
             copy.AddComponent<TerraOwned>();
-            Plugin.Log.LogInfo($"[液体] 记下原版{(go.GetComponents<PlayMakerFSM>().Length > 1 ? "酸池" : "水池")}的游泳区（{go.scene.name} 的 {go.name}）");
+            // Hallownest's pools kill what falls in (a DamageEnemies of the water's or the acid's, RuinsWater or Acid, that
+            // only enemies made to swim ignore): poured liquid hurts no enemy, a boss least of all (Terraria's water hurts no
+            // one; its lava spares the bosses).
+            var removed = new List<string>();
+            foreach (var de in copy.GetComponentsInChildren<DamageEnemies>(true))
+            {
+                removed.Add($"{de.gameObject.name}:{de.attackType}×{de.damageDealt}");
+                Object.DestroyImmediate(de);
+            }
+            foreach (var f in copy.GetComponentsInChildren<PlayMakerFSM>(true))
+                if (f.FsmName == "damages_enemy")
+                {
+                    removed.Add(f.gameObject.name + ":damages_enemy");
+                    Object.DestroyImmediate(f);
+                }
+            Plugin.Log.LogInfo($"[液体] 记下原版{(go.GetComponents<PlayMakerFSM>().Length > 1 ? "酸池" : "水池")}的游泳区（{go.scene.name} 的 {go.name}）"
+                + (removed.Count > 0 ? $"，去掉伤敌的部分 {string.Join("、", removed)}" : "，里面没有伤敌的部分"));
             return copy;
         }
 

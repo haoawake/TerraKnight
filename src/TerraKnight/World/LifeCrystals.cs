@@ -328,6 +328,21 @@ namespace TerraKnight.World
             return Rect.MinMaxRect(b.min.x - 5f * Cell, b.min.y - 4f * Cell, b.max.x + 5f * Cell, b.max.y + 4f * Cell);
         }
 
+        /// <summary>The crystals lying within the pickaxe's reach now, each by its box (the smart cursor's Step_Pickaxe_MineShinies).</summary>
+        public static IEnumerable<Rect> InReach(HeroController hero)
+        {
+            if (hero == null) yield break;
+            var reach = Reach(hero);
+            foreach (var c in crystals)
+            {
+                if (c.Taken || !c.Local.HasValue) continue;
+                var region = TerrainSystem.Find(c.Scene);
+                if (region == null) continue;
+                var box = Box(c, region);
+                if (reach.Overlaps(box)) yield return box;
+            }
+        }
+
         /// <summary>A pickaxe swung at a crystal in reach: pick power until 100 knocks it out. True when the swing was at one.</summary>
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {

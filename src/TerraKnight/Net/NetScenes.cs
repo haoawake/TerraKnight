@@ -103,6 +103,41 @@ namespace TerraKnight.Net
 
         static string RoomOf(string scene) => scene != null && scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
 
+        /// <summary>
+        /// Of the scenes listed, the boss rooms (and their boss scenes) the player stands in (anywhere in the room: its arena
+        /// or its way in) whose boss their save hasn't beaten (BossArena.FreshRoom): the server gives one of them the fight.
+        /// </summary>
+        public static void CollectFresh(List<string> inScenes, List<string> loaded, List<string> fresh)
+        {
+            fresh.Clear();
+            var hero = HeroController.SilentInstance;
+            if (hero == null) { freshAtEntry.Clear(); return; }
+            var cell = CellGrid.WorldToCell(hero.transform.position);
+            string here = RoomOf(TerraWorld.RegionAt(cell.x, cell.y)?.SceneName);
+            // Decided on walking into the room, kept until it is left: the fight's own records (an "encountered" set as it
+            // starts, the win at its end) mustn't hand it to someone else halfway.
+            if (freshAtEntry.Count > 0)
+            {
+                bool was = false;
+                bool had = here != null && freshAtEntry.TryGetValue(here, out was);
+                if (freshAtEntry.Count > (had ? 1 : 0))
+                {
+                    freshAtEntry.Clear();
+                    if (had) freshAtEntry[here] = was;
+                }
+            }
+            if (here == null) return;
+            foreach (var list in new[] { inScenes, loaded })
+                foreach (var s in list)
+                {
+                    if (!BossRooms.IsRoom(s) || RoomOf(s) != here || fresh.Contains(s)) continue;
+                    if (!freshAtEntry.TryGetValue(here, out bool f)) freshAtEntry[here] = f = Items.BossArena.FreshRoom(s);
+                    if (f) fresh.Add(s);
+                }
+        }
+
+        static readonly Dictionary<string, bool> freshAtEntry = new Dictionary<string, bool>();
+
         /// <summary>The hero within the room's own ground (anywhere in it, the arena or its way in).</summary>
         static bool InRoom(HeroController hero, string room)
         {

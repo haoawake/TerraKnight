@@ -51,6 +51,7 @@ namespace TerraKnight.Items
             list.Add(S(ItemType.SharpeningStation, "利器站", 3198, StationKind.SharpeningStation, 1, "放置后即可使用\n近战武器具有盔甲穿透力\n放在背包或猪猪存钱罐里也有它的增益"));
             list.Add(S(ItemType.WarTable, "战争桌", 3814, StationKind.WarTable, 1, "放置后即可使用\n哨兵数量上限增加1\n放在背包或猪猪存钱罐里也有它的增益"));
             list.Add(S(ItemType.SliceOfCake, "蛋糕块", 3750, StationKind.SliceOfCake, 3, "放置后即可使用\n“抹你脸上。抹别人脸上。管它呢。”\n放在背包或猪猪存钱罐里也有它的增益"));
+            list.Add(S(ItemType.TargetDummy, "训练假人", 3202, StationKind.TargetDummy, 0, "放下后用来试武器：它打不死，也不会被击退\n挨打时头顶显示每秒伤害\n用镐可以挖回来"));
             list.Add(Mat(ItemType.Book, "书", 149, 0, "材料\n“上面有些奇怪的符号”"));
         }
 
@@ -58,6 +59,7 @@ namespace TerraKnight.Items
         static IEnumerable<(ItemType, int, ItemSource, int)> Station2Sources()
         {
             yield return (ItemType.Campfire, 0, ItemSource.Craft, 0);
+            yield return (ItemType.TargetDummy, 0, ItemSource.Shop, 1000);
             yield return (ItemType.Hellforge, 3, ItemSource.Drop, 3000);
             yield return (ItemType.AdamantiteForge, 4, ItemSource.Craft, 50000);
             yield return (ItemType.TitaniumForge, 4, ItemSource.Craft, 50000);

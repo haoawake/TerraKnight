@@ -166,6 +166,10 @@ namespace TerraKnight.UI
             }
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：角色对话和碑文每秒一句进左下角聊天框；关：原版对话框"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
             y += 96f * ui;
+            // Player.SmartCursorSettings.SmartBlocksEnabled: Terraria's own option, LegacyMenu.215 / 216.
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), Items.SmartCursor.SmartBlocks ? TT("LegacyMenu.215", "智能放置物块: 到光标处") : TT("LegacyMenu.216", "智能放置物块: 禁用"), ui))
+                Items.SmartCursor.SetBlocks(!Items.SmartCursor.SmartBlocks);
+            y += 64f * ui;
             // How dug holes look (World.HoleShapes).
             if (Toggle(new Rect(lx, y, lw, 44f * ui), World.HoleShapes.Hollow ? Lang.T("挖洞样式：融合") : Lang.T("挖洞样式：泰拉瑞亚"), ui))
                 World.HoleShapes.Set(!World.HoleShapes.Hollow);
@@ -471,6 +475,8 @@ namespace TerraKnight.UI
         /// <summary>The interface scale shown while its bar is dragged; applied on letting go, as Terraria's (temporaryGUIScaleSlider).</summary>
         static float draggedScale = -1f;
         const int ScaleSlider = 10;
+        const int EffectSlider = 11;
+        public static Rect DevEffectSlider { get; private set; }
 
         /// <summary>
         /// Terraria's UI Scale (IngameOptions: 50% to 200%, the bar's value taken on release, Main.UIScaleMax capping what is
@@ -480,6 +486,7 @@ namespace TerraKnight.UI
         static void DrawInterfacePage(Rect a, float ui)
         {
             var e = Event.current;
+            if(dragging==EffectSlider && (e.type==EventType.MouseUp || !TerraCursor.LeftHeld(UnityEngine.InputSystem.Mouse.current))) dragging=-1;
             if (dragging == ScaleSlider && (e.type == EventType.MouseUp || !TerraCursor.LeftHeld(UnityEngine.InputSystem.Mouse.current)))
             {
                 dragging = -1;
@@ -500,6 +507,15 @@ namespace TerraKnight.UI
             y += 80f * ui;
             if (CreativeMenu.Button(new Rect(a.x, y, 220f * ui, 44f * ui), Lang.T("恢复 100%"), ui) && GameView.WantedScale != 1f)
                 GameView.SetUiScale(1f);
+            y += 72f * ui;
+            CreativeMenu.Shadowed(new Rect(a.x,y,labelW,30f*ui),Lang.F("武器特效不透明度：{0}%",Mathf.RoundToInt(Effects.WeaponEffects.Opacity*100f)),keyStyle,Color.white);
+            DevEffectSlider = new Rect(barX,y+7f*ui,barW,barH);
+            float opacity = Slider(EffectSlider,DevEffectSlider,Effects.WeaponEffects.Opacity,null,ui);
+            if (Mathf.Abs(opacity-Effects.WeaponEffects.Opacity)>.001f) Effects.WeaponEffects.Set(opacity);
+            y += 46f*ui;
+            CreativeMenu.Shadowed(new Rect(a.x,y,a.width,76f*ui),Lang.T("0% 隐藏，100% 正常显示。统一调整挥砍、弹幕、光束、拖尾、爆炸、粒子和召唤物等特效；立即生效并保存，不改变伤害或命中。"),CreativeMenu.text,note);
+            y += 88f*ui;
+            if(CreativeMenu.Button(new Rect(a.x,y,220f*ui,44f*ui),Lang.T("恢复特效 100%"),ui)) Effects.WeaponEffects.Set(1f);
         }
 
         static float Slider(int id, Rect bar, float v, Texture2D gradient, float ui)
@@ -507,10 +523,10 @@ namespace TerraKnight.UI
             var e = Event.current;
             var m = TerraCursor.GuiMouse();
             var hit = new Rect(bar.x - 8f * ui, bar.y - 10f * ui, bar.width + 16f * ui, bar.height + 20f * ui);
-            if (e.type == EventType.MouseDown && e.button == 0 && hit.Contains(m))
+            if ((e.type == EventType.MouseDown && e.button == 0 || TerraCursor.DevDrives && e.type == EventType.Repaint && TerraCursor.LeftPressed(UnityEngine.InputSystem.Mouse.current)) && hit.Contains(m))
             {
                 dragging = id;
-                e.Use();
+                if(e.type==EventType.MouseDown) e.Use();
                 TerraMod.Instance?.PlaySound("Menu_Tick", 0.5f);
             }
             if (dragging == id) v = Mathf.Clamp01((m.x - bar.x) / bar.width);
@@ -542,6 +558,9 @@ namespace TerraKnight.UI
         }
 
         /// <summary>The panel is up: clicks are its own, not a use.</summary>
-        public static bool MouseOver => Open;
+        public static bool MouseOver => AnyOpen;
+
+        /// <summary>A window over the game that takes its input and pauses it: this one or the achievements.</summary>
+        public static bool AnyOpen => Open || Achievements.AchievementPanel.Open;
     }
 }

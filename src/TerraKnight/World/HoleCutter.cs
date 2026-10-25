@@ -213,7 +213,7 @@ namespace TerraKnight.World
             if (Mathf.Abs(depth) < 1e-3f) return false;
             foreach (var sr in cover)
             {
-                if (sr == null || !sr.enabled || sr.forceRenderingOff || sr.color.a < 0.9f || !sr.gameObject.activeInHierarchy || IsGlow(sr)) continue;
+                if (sr == null || !sr.enabled || sr.forceRenderingOff || sr.color.a < 0.9f || !sr.gameObject.activeInHierarchy || Glow(sr)) continue;
                 if (holeAtPoint && sr.maskInteraction == SpriteMaskInteraction.VisibleOutsideMask) continue;
                 var b = sr.bounds;
                 if (b.size.x > 40f || b.size.y > 40f) continue;
@@ -235,7 +235,7 @@ namespace TerraKnight.World
             var found = new List<SpriteRenderer>();
             foreach (var sr in cover)
             {
-                if (sr == null || !sr.enabled || !sr.gameObject.activeInHierarchy || IsGlow(sr)) continue;
+                if (sr == null || !sr.enabled || !sr.gameObject.activeInHierarchy || Glow(sr)) continue;
                 var b = sr.bounds;
                 if (b.size.x > 40f || b.size.y > 40f) continue;
                 float toPlane = -cameraZ, toSprite = b.center.z - cameraZ;
@@ -245,6 +245,18 @@ namespace TerraKnight.World
                 if (r.Overlaps(area)) found.Add(sr);
             }
             return found;
+        }
+
+        /// <summary>Each cover sprite's glow test, kept (it reads names, new strings each time), again when its sprite changes.</summary>
+        readonly Dictionary<SpriteRenderer, (Sprite sprite, bool glow)> glowOf = new Dictionary<SpriteRenderer, (Sprite, bool)>();
+
+        bool Glow(SpriteRenderer sr)
+        {
+            var sprite = sr.sprite;
+            if (glowOf.TryGetValue(sr, out var g) && g.sprite == sprite) return g.glow;
+            bool glow = IsGlow(sr);
+            glowOf[sr] = (sprite, glow);
+            return glow;
         }
 
         static readonly string[] glowWords = { "light", "glow", "haze", "fog", "mist", "beam", "shine", "blur", "shadow", "vignette", "dust", "particle", "ray" };

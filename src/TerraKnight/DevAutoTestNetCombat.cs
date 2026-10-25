@@ -68,6 +68,7 @@ namespace TerraKnight
             yield return NetWorldWait(() => fixture != null && Enemies.IsPuppet(fixture) && fixture.gameObject.activeInHierarchy
                 && fixture.GetComponent<Renderer>().enabled && fixture.transform.GetChild(0).gameObject.activeInHierarchy,
                 "快照激活Boss父容器、根精灵及被本地关闭的子部件", 30f);
+            Plugin.Log.LogInfo($"[AutoTest] combat fixture puppet={Enemies.IsPuppet(fixture)} dead={fixture.isDead} parent={fixture.transform.parent.gameObject.activeSelf} body={fixture.gameObject.activeSelf} renderer={fixture.GetComponent<Renderer>().enabled} child={fixture.transform.GetChild(0).gameObject.activeSelf}; {Enemies.DevReport()}");
             NetChat.Say("combat: fixture visible");
             NetCombatUnmatched(scene);
             yield return WaitChat("combat: prepare hurt", 30f);
@@ -144,7 +145,8 @@ namespace TerraKnight
                 w.Write(scene); w.Write((ushort)1);
                 w.Write(int.MaxValue); w.Write((byte)11); w.Write("Missing Boss@999");
                 w.Write(0f); w.Write(0f); w.Write(1f); w.Write(1f); w.Write(0f);
-                w.Write((short)-1); w.Write((byte)0); w.Write(500); w.Write((ushort)0);
+                w.Write((short)-1); w.Write((byte)0); w.Write(500);
+                w.Write(500); w.Write(500); w.Write(0); w.Write((ushort)0);
                 stream.Position = 0;
                 Enemies.ReceiveSnapshot(Other().Slot, new System.IO.BinaryReader(stream));
                 NetCheck(local.activeSelf, "无法匹配远端Boss时不误隐藏本地Boss");

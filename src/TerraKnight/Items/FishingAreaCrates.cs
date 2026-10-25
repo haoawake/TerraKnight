@@ -29,9 +29,9 @@ namespace TerraKnight.Items
         static readonly ItemType[] jungle = { ItemType.AnkletoftheWind, ItemType.Boomstick, ItemType.FeralClaws, ItemType.StaffofRegrowth, ItemType.FlowerBoots };
         static readonly ItemType[] ocean = { ItemType.WaterWalkingBoots, ItemType.BreathingReed, ItemType.FloatingTube, ItemType.Trident, ItemType.Flipper };
         static readonly ItemType[] corrupt = { ItemType.BallOHurt, ItemType.BandofStarpower, ItemType.Musket, ItemType.ShadowOrb, ItemType.Vilethorn };
-        static readonly ItemType[] crimson = { ItemType.TheRottedFork, ItemType.CrimsonRod, ItemType.PanicNecklace, ItemType.CrimsonHeart };
+        static readonly ItemType[] crimson = { ItemType.TheUndertaker, ItemType.TheRottedFork, ItemType.CrimsonRod, ItemType.PanicNecklace, ItemType.CrimsonHeart };
         static readonly ItemType[] frozen = { ItemType.IceBoomerang, ItemType.IceBlade, ItemType.IceSkates, ItemType.SnowballCannon, ItemType.BlizzardinaBottle, ItemType.FlurryBoots, ItemType.GlacierFang };
-        static readonly ItemType[] oasis = { ItemType.AncientChisel, ItemType.SandBoots, ItemType.ThunderStaff, ItemType.CatBast, ItemType.SandstorminaBottle };
+        static readonly ItemType[] oasis = { ItemType.AncientChisel, ItemType.SandBoots, ItemType.ThunderSpear, ItemType.ThunderStaff, ItemType.CatBast, ItemType.SandstorminaBottle };
         static readonly ItemType[] sky = { ItemType.LuckyHorseshoe, ItemType.Starfury, ItemType.ShinyRedBalloon, ItemType.CelestialMagnet };
         // The Dungeon crate's Golden Lock Box.
         static readonly ItemType[] dungeon = { ItemType.Muramasa, ItemType.CobaltShield, ItemType.AquaScepter, ItemType.BlueMoon, ItemType.Handgun, ItemType.MagicMissile, ItemType.Valor };
@@ -201,31 +201,118 @@ namespace TerraKnight.Items
         const int FewPieces = 8;
 
         /// <summary>
-        /// The area crate's piece of equipment: its area's (and its Terraria crate's); an area whose enemies drop few (or
-        /// none: Dirtmouth, the Black Egg Temple, the Troupe's tent) with its neighbours' and the Golden crate's of the stage.
+        /// The area crate's piece of equipment, one of at most <see cref="MostPieces"/> (the user's, 2026-10-20: the whole
+        /// list was too many to hope for one): see <see cref="AreaPool"/>.
         /// </summary>
-        static ItemType AreaPiece(CrateDef c)
+        static ItemType AreaPiece(CrateDef c, ItemType exclude = ItemType.None)
+        {
+            var pool = AreaPool(c.Area, c.Hard);
+            if (pool.Count == 0)
+            {
+                pool = new List<ItemType>();
+                foreach (var t in crates[c.Hard ? ItemType.GoldenCrateHard : ItemType.GoldenCrate].Pool)
+                    if (Pickable(t) && !pool.Contains(t)) pool.Add(t);
+                if (pool.Count == 0) foreach (var t in crates[ItemType.WoodenCrate].Pool)
+                    if (Pickable(t) && !ProgressionBalance.BossSignatures.ContainsValue(t) && !pool.Contains(t)) pool.Add(t);
+            }
+            return PickCollectionWeighted(pool, exclude);
+        }
+
+        internal static ItemType PickCollectionWeighted(IReadOnlyList<ItemType> pool, ItemType exclude)
+        {
+            var collected = TerraMod.Instance?.Inventory.CollectedItems;
+            int total = 0;
+            foreach (var t in pool) if (t != exclude && Pickable(t)) total += collected != null && !collected.Contains(t) ? 2 : 1;
+            if (total == 0) return ItemType.None;
+            int roll = Random.Range(0, total);
+            foreach (var t in pool) if (t != exclude && Pickable(t))
+            {
+                roll -= collected != null && !collected.Contains(t) ? 2 : 1;
+                if (roll < 0) return t;
+            }
+            return ItemType.None;
+        }
+
+        /// <summary>The most pieces an area crate picks from.</summary>
+        const int MostPieces = 24;
+
+        /// <summary>
+        /// What an area crate's piece is picked from at the stage reached: the latest stage's pieces its enemies drop (the
+        /// stage before's too while fewer than <see cref="FewPieces"/>) and its Terraria crate's; an area whose enemies drop
+        /// fewer (or none: Dirtmouth, the Black Egg Temple, the Troupe's tent) with its neighbours' and then the Golden
+        /// crate's of the stage, up to that many; past <see cref="MostPieces"/> a stable choice of that many for the area (its
+        /// Terraria crate's kept). Only what can be had (Pick's rule); made once a stage.
+        /// </summary>
+        static List<ItemType> AreaPool(string area, bool hard)
         {
             EnsureAreaCrates();
-            if (!areaCrateByArea.TryGetValue(c.Area ?? "", out var a)) return ItemType.None;
-            var own = LootOf(a.Area).Gear;
+            if (!areaCrateByArea.TryGetValue(area ?? "", out var a)) return new List<ItemType>();
+            int stage = Shop.UnlockedStage();
+            string key = area + (hard ? "|1|" : "|0|") + stage + (ProgressionBalance.EntryClear ? "e" : "") + (ProgressionBalance.FinalClear ? "f" : "") + (Shop.Free ? "c" : "");
+            if (areaPools.TryGetValue(key, out var made)) return made;
+            var own = new List<ItemType>();
+            foreach (var t in Recent(LootOf(a.Area).Gear)) if (Pickable(t) && !own.Contains(t)) own.Add(t);
             var pool = new List<ItemType>(own);
-            pool.AddRange(a.Theme);
-            if (own.Length < FewPieces)
-                foreach (var near in a.Near) pool.AddRange(LootOf(near).Gear);
-            if (own.Length < FewPieces)
+            var theme = new List<ItemType>();
+            foreach (var t in a.Theme) if (Pickable(t) && !pool.Contains(t)) { pool.Add(t); theme.Add(t); }
+            if (own.Count < FewPieces)
+                foreach (var near in a.Near)
+                    foreach (var t in Recent(LootOf(near).Gear))
+                        if (pool.Count - theme.Count < FewPieces && Pickable(t) && !pool.Contains(t)) pool.Add(t);
+            if (pool.Count - theme.Count < FewPieces)
             {
-                int stage = Shop.UnlockedStage();
-                foreach (var t in crates[c.Hard ? ItemType.GoldenCrateHard : ItemType.GoldenCrate].Pool)
+                var golden = new List<ItemType>();
+                foreach (var t in crates[hard ? ItemType.GoldenCrateHard : ItemType.GoldenCrate].Pool)
                 {
                     var d = ItemDb.Get(t);
-                    if (d.MaxStack == 1 && d.Stage >= stage - 1 && d.Stage <= stage) pool.Add(t);
+                    if (d.MaxStack == 1 && d.Stage >= stage - 1 && d.Stage <= stage && Pickable(t) && !pool.Contains(t)) golden.Add(t);
                 }
+                golden.Sort((x, y) => Stable(area, x).CompareTo(Stable(area, y)));
+                foreach (var t in golden) if (pool.Count - theme.Count < FewPieces) pool.Add(t);
             }
-            var piece = Pick(pool.ToArray());
-            if (piece == ItemType.None) piece = Pick(crates[c.Hard ? ItemType.GoldenCrateHard : ItemType.GoldenCrate].Pool);
-            return piece;
+            if (pool.Count > MostPieces)
+            {
+                var rest = pool.FindAll(t => !theme.Contains(t));
+                rest.Sort((x, y) => Stable(area, x).CompareTo(Stable(area, y)));
+                pool = new List<ItemType>(theme);
+                foreach (var t in rest) if (pool.Count < MostPieces) pool.Add(t);
+            }
+            if (areaPools.Count > 400) areaPools.Clear();
+            areaPools[key] = pool;
+            return pool;
         }
+
+        static readonly Dictionary<string, List<ItemType>> areaPools = new Dictionary<string, List<ItemType>>();
+
+        /// <summary>Pick's rule: of the stages 0-9, unlocked, neither shop-only nor a boss's own.</summary>
+        static bool Pickable(ItemType t)
+        {
+            var d = ItemDb.Get(t);
+            return d != null && d.Stage >= 0 && d.Stage <= 9 && Unlocked(t) && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !BossDropPlan.BossOnly(t) && !GodhomeRewards.LunarEquipment(t);
+        }
+
+        /// <summary>A fixed order for an area's pieces (FNV of the area and the item), the same every game.</summary>
+        static uint Stable(string area, ItemType t)
+        {
+            uint h = 2166136261;
+            foreach (char ch in area) h = unchecked((h ^ ch) * 16777619);
+            h = unchecked((h ^ (uint)(int)t) * 16777619);
+            return unchecked(h * 2654435761u);
+        }
+
+        /// <summary>Of an area's pieces, its latest stage's (the stage reached at most), and the stage before's while fewer than <see cref="FewPieces"/>.</summary>
+        static ItemType[] Recent(ItemType[] gear)
+        {
+            int stage = Shop.UnlockedStage(), top = -1;
+            foreach (var t in gear) { int s = ItemDb.Get(t).Stage; if (s <= stage && s > top) top = s; }
+            var near = new List<ItemType>();
+            foreach (var t in gear) if (ItemDb.Get(t).Stage == top) near.Add(t);
+            if (near.Count < FewPieces) foreach (var t in gear) if (ItemDb.Get(t).Stage == top - 1) near.Add(t);
+            return near.ToArray();
+        }
+
+        /// <summary>Dev: how many pieces an area crate (or coffer) picks from at the stage reached.</summary>
+        internal static int DevAreaPool(string area, bool hard) => AreaPool(area, hard).Count;
 
         /// <summary>The area's own: its block and its torch (whatever the stage: they are of the waters fished), a material its enemies drop, its bait and moss.</summary>
         static void AreaExtras(CrateDef c, List<ItemStack> got)

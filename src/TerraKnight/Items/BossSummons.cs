@@ -54,16 +54,16 @@ namespace TerraKnight.Items
             S(ItemType.BossSigilFlukemarm, "FlukeMother", "吸虫母卵", "Fluke Brood Egg", 2, ItemType.Gel, 10, "Flukeman", ItemType.Bone, 8, "Flukeman", "皇家水道·吸虫之母周边"),
             S(ItemType.BossSigilCrystalGuardian, "MegaBeamMiner", "守卫晶镜", "Guardian's Crystal Lens", 2, ItemType.Diamond, 4, "BeamMiner", ItemType.Ruby, 4, "CrystalCrawler", "水晶山峰·水晶守卫周边"),
             S(ItemType.BossSigilElderHu, "GhostHu", "长老梦环", "Elder's Dream Ring", 2, ItemType.JungleSpores, 8, "MushroomRoller", ItemType.SturdyFossil, 6, "MushroomRoller", "真菌荒地·胡长老周边", true),
-            S(ItemType.BossSigilMarmu, "GhostMarmu", "翠梦弹珠", "Verdant Dream Marble", 2, ItemType.Stinger, 6, "HeavyMantis", ItemType.Vine, 6, "HeavyMantis", "王后花园·马尔穆周边", true),
+            S(ItemType.BossSigilMarmu, "GhostMarmu", "翠梦弹珠", "Verdant Dream Marble", 3, ItemType.Stinger, 6, "HeavyMantis", ItemType.Vine, 6, "HeavyMantis", "王后花园·马尔穆周边", true),
             S(ItemType.BossSigilWatcherKnights, "BlackKnight", "守望六印", "Six Watchers' Seal", 3, ItemType.DemoniteOre, 12, "RoyalDandy", ItemType.Bone, 10, "RoyalPlumper", "泪水之城·守望者尖塔周边"),
-            S(ItemType.BossSigilHiveKnight, "HiveKnight", "蜂卫蜡章", "Hiveguard Wax Seal", 3, ItemType.BeeWax, 8, "BeeStinger", ItemType.Stinger, 6, "BeeStinger", "蜂巢·蜂巢骑士周边"),
+            S(ItemType.BossSigilHiveKnight, "HiveKnight", "蜂卫蜡章", "Hiveguard Wax Seal", 4, ItemType.BeeWax, 8, "BeeStinger", ItemType.Stinger, 6, "BeeStinger", "蜂巢·蜂巢骑士周边"),
             S(ItemType.BossSigilCollector, "JarCollector", "空罐收藏契", "Empty Jar Covenant", 3, ItemType.TissueSample, 6, "RoyalCoward", ItemType.Bone, 8, "RoyalDandy", "泪水之城·爱之塔周边"),
             S(ItemType.BossSigilNosk, "MimicSpider", "拟形蛛蜕", "Mimic's Spider Husk", 3, ItemType.Cobweb, 12, "MiniSpider", ItemType.SpiderFang, 6, "ShootSpider", "深巢·诺斯克周边"),
             S(ItemType.BossSigilGalien, "GhostGalien", "旋镰梦符", "Dream Scythe Charm", 3, ItemType.SpiderFang, 8, "SlashSpider", ItemType.Cobweb, 10, "MiniSpider", "深巢·加利安周边", true),
-            S(ItemType.BossSigilXero, "GhostXero", "双钉残念", "Twin-Nail Reverie", 3, ItemType.Waterleaf, 4, "Mummy", ItemType.Fireblossom, 4, "Mummy", "安息之地·泽若与墓地周边", true),
+            S(ItemType.BossSigilXero, "GhostXero", "双钉残念", "Twin-Nail Reverie", 2, ItemType.Waterleaf, 4, "Mummy", ItemType.Fireblossom, 4, "Mummy", "安息之地·泽若与墓地周边", true),
             S(ItemType.BossSigilHornetSentinel, "Hornet@4", "哨兵棘丝", "Sentinel's Barbed Thread", 4, ItemType.Ichor, 8, "SuperSpitter", ItemType.PixieDust, 8, "Hopper", "王国边缘·大黄蜂哨兵周边"),
             S(ItemType.BossSigilMarkoth, "GhostMarkoth", "梦盾残片", "Dreamshield Fragment", 4, ItemType.PixieDust, 10, "BlowFly", ItemType.SoulofFlight, 6, "Hopper", "王国边缘·马科斯周边", true),
-            S(ItemType.BossSigilBrokenVessel, "InfectedKnight", "破碎容器印", "Broken Vessel Seal", 4, ItemType.CursedFlame, 8, "LesserMawlek", ItemType.Obsidian, 8, "MawlekTurret", "远古盆地·破碎容器周边"),
+            S(ItemType.BossSigilBrokenVessel, "InfectedKnight", "破碎容器印", "Broken Vessel Seal", 3, ItemType.CursedFlame, 8, "LesserMawlek", ItemType.Obsidian, 8, "MawlekTurret", "远古盆地·破碎容器周边"),
             S(ItemType.BossSigilGrimm, "Grimm", "猩红剧票", "Scarlet Troupe Ticket", 5, ItemType.Lens, 6, "Buzzer", ItemType.Daybloom, 4, "Climber", "德特茅斯剧团帐篷外·呼啸悬崖入口"),
             S(ItemType.BossSigilHollowKnight, "HollowKnight", "黑卵封契", "Black Egg Covenant", 5, ItemType.IronOre, 16, "ZombieShield", ItemType.Deathweed, 6, "ZombieRunner", "黑卵神殿外·遗忘十字路"),
             S(ItemType.BossSigilFailedChampion, "FalseKnight@5", "失败者王徽", "Fallen Champion's Crest", 2, ItemType.IronOre, 16, "ZombieGuard", ItemType.Gel, 8, "ZombieRunner", "梦境本体·遗忘十字路假骑士周边", true),
@@ -101,15 +101,30 @@ namespace TerraKnight.Items
         /// skipped (as for the one who used it), nothing spent. Once able to (out of a scene change, a talk, the bench);
         /// not out of a dream or Godhome, whose own ending decides where the player goes.
         /// </summary>
-        internal static void Follow(string key, string who)
+        internal static void Follow(string key, string who, int slot = -1)
         {
             var s = Find(key);
             if (s == null || !BossArena.Has(s.Key)) return;
-            TerraMod.Instance?.StartCoroutine(FollowWhenAble(s, who));
+            TerraMod.Instance?.StartCoroutine(FollowWhenAble(s, who, slot));
         }
 
-        static IEnumerator FollowWhenAble(Seal s, string who)
+        internal static int DevFollowWaits;
+
+        static IEnumerator FollowWhenAble(Seal s, string who, int slot)
         {
+            // The one who used it goes in first: their game runs the fight. The server makes the first game to have a
+            // scene its owner, and a follower's could load the arena sooner: then the summoner came into a copy of a fight
+            // already under way (its gates shut on the way in). Up to 15 s for the summoner's game to have it.
+            string arena = BossArena.SceneOf(s.Key);
+            float first = Time.realtimeSinceStartup + 15f;
+            bool waited = false;
+            while (slot >= 0 && arena != null && Net.NetSession.Active && Time.realtimeSinceStartup < first
+                   && !(Net.NetSession.Owners.TryGetValue(arena, out int owner) && owner == slot))
+            {
+                waited = true;
+                yield return new WaitForSecondsRealtime(0.25f);
+            }
+            if (waited) DevFollowWaits++;
             float until = Time.realtimeSinceStartup + 20f;
             while (Time.realtimeSinceStartup < until)
             {

@@ -141,6 +141,10 @@ namespace TerraKnight.Items
             new Recipe(ItemType.VenomStaff, 1, "秘银砧", 4, (ItemType.PoisonStaff, 1), (ItemType.ChlorophyteBar, 14)), // Recipe.cs:12069-12074
             new Recipe(ItemType.MeteorStaff, 1, "秘银砧", 4, (ItemType.MeteoriteBar, 20), (ItemType.PixieDust, 10), (ItemType.SoulofLight, 10)), // Recipe.cs:13620-13628
             new Recipe(ItemType.RainbowRod, 1, "秘银砧", 4, (ItemType.CrystalShard, 10), (ItemType.UnicornHorn, 2), (ItemType.PixieDust, 10), (ItemType.SoulofLight, 8), (ItemType.SoulofSight, 15)), // Recipe.cs:12671-12683
+            // The Bejeweled Staff has no recipe in Terraria (user 10-25: every gem staff and ten of each soul).
+            new Recipe(ItemType.BejeweledStaff, 1, "秘银砧", 4, (ItemType.AmethystStaff, 1), (ItemType.TopazStaff, 1), (ItemType.SapphireStaff, 1), (ItemType.EmeraldStaff, 1),
+                (ItemType.RubyStaff, 1), (ItemType.AmberStaff, 1), (ItemType.DiamondStaff, 1), (ItemType.SoulofLight, 10), (ItemType.SoulofNight, 10), (ItemType.SoulofFlight, 10),
+                (ItemType.SoulofMight, 10), (ItemType.SoulofSight, 10), (ItemType.SoulofFright, 10)),
             new Recipe(ItemType.CobWhip, 1, "织布机", 0, (ItemType.Cobweb, 30), (ItemType.Wood, 10)), // Recipe.cs:10487-10491
             new Recipe(ItemType.StardustCellStaff, 1, "远古操纵机", 5, (ItemType.FragmentStardust, 18)), // Recipe.cs:12488-12492
             new Recipe(ItemType.QueenSpiderStaff, 1, "秘银砧", 4, (ItemType.SpiderFang, 24)), // Recipe.cs:11794-11798

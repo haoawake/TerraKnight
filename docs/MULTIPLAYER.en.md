@@ -21,6 +21,7 @@ What is synced:
 - **Time**: day and night follow the host.
 - **World**: everyone plays in the host's world: chests, crafting stations and furniture, items on the ground, Life Crystals and dug or built terrain follow the host, and a chest opens for one player at a time; each player's own save keeps their own world.
 - **Boss fights**: a boss acts only on the players inside its arena, teammates outside stay where they are; a boss seal takes every player into the arena (only the user's seal is spent); on Expert and Master a boss has more life by the number of players.
+- **Death**: the respawn comes 15 seconds after it; meanwhile your character is a half-seen corpse wearing nothing, a countdown in the middle of the screen, and you can do nothing. Fallen in a boss room a teammate is still fighting in, you get up at your respawn point, then you're taken back into the room beside them with a second of invincibility.
 
 What it cannot do yet: enemies with special C# AI (not run by FSMs) chase only the player whose game runs them; boss-fight cutscenes (talk, titles) and town NPC shops are separate for each player; there are no Steam friend invites, only direct connection by IP. Both sides need the same version of TerraKnight.
 

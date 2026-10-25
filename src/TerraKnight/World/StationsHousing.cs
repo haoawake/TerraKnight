@@ -253,8 +253,15 @@ namespace TerraKnight.World
             }
         }
 
-        /// <summary>TileID.Sets.DisableSmartCursor among the stations: what a right click works on (doors, beds, the banks, the buff stations, a placed bottle, tombstones).</summary>
-        static readonly HashSet<int> disableSmartCursor = new HashSet<int> { 10, 11, 13, 29, 79, 85, 88, 97, 125, 287, 354, 463, 464, 491, 621 };
+        /// <summary>
+        /// TileID.Sets.DisableSmartCursor: what a right click works on (doors, beds, the banks, the buff stations, the clock,
+        /// a placed bottle, tombstones), candles, books, music boxes, fountains, signs, levers...
+        /// </summary>
+        static readonly HashSet<int> disableSmartCursor = new HashSet<int>
+        {
+            4, 104, 79, 209, 511, 510, 216, 335, 338, 219, 212, 21, 467, 13, 29, 463, 491, 97, 33, 49, 174, 50, 707, 139, 207, 55, 85,
+            237, 88, 10, 11, 125, 621, 354, 699, 287, 132, 136, 144, 334, 386, 387, 411, 389, 388, 425, 441, 468, 494, 573, 464, 642,
+        };
 
         /// <summary>A station whose tile turns the smart cursor off under the mouse (TileID.Sets.DisableSmartCursor) covers this cell.</summary>
         internal static bool DisablesSmartCursorAt(Vector2Int cell)

@@ -4,9 +4,9 @@ using UnityEngine;
 namespace TerraKnight.Items
 {
     /// <summary>
-    /// The geo economy and where crafting happens. Prices are Terraria's own item values with a
-    /// geo worth a silver coin (100 copper); what cheap things leave over is kept as spare copper,
-    /// so a 7-copper musket ball costs 0.07 geo. Recipes are made as in Terraria, by hand or at
+    /// The geo economy and where crafting happens. A geo is 100 copper internally; shop purchases
+    /// use whole geo and stage budgets, while dropped items retain the older liquidation curve.
+    /// Fractional income is kept as spare copper. Recipes are made as in Terraria, by hand or at
     /// their station set down nearby (InventoryGui.CanMakeHere); the basic items bought for geo
     /// at a bench or anywhere in Dirtmouth. While testing (infinite items) the crafting column
     /// offers everything, free.
@@ -63,8 +63,8 @@ namespace TerraKnight.Items
             : d.Class == DamageClass.Magic ? 4 : d.Class == DamageClass.Summon ? 5 : d.Shoot != ProjKind.None ? 6 : d.Places != World.CellKind.Empty ? 7 : d.IsArmor ? 8
             : d.IsAccessory ? 9 : d.Material ? 11 : 10;
 
-        /// <summary>Free and fully stocked while testing with infinite items.</summary>
-        public static bool Free => TerraMod.Instance != null && TerraMod.Instance.Inventory.Infinite;
+        /// <summary>Free and fully stocked in a creative save (and while testing with infinite items).</summary>
+        public static bool Free => TerraMod.Instance != null && TerraMod.Instance.Inventory.FreeMaking;
 
         /// <summary>Whether crafting is possible here: near a bench, or in Dirtmouth.</summary>
         public static bool Available(HeroController hero)
@@ -97,29 +97,21 @@ namespace TerraKnight.Items
         public static int DevStage = -1;
 
         /// <summary>
-        /// The progress reached, by the Knight's own abilities, each opening the next stretch of
-        /// Hallownest as Terraria's bosses open its next stretch: the Mothwing Cloak (Hornet's, the
-        /// Eye of Cthulhu's shield) for 1, the Mantis Claw for 2, the Crystal Heart for 3, the
-        /// Monarch Wings (the Broken Vessel's: the Wall of Flesh, hardmode) for 4, the Shade Cloak for
-        /// 5; one stage for each of them got. Who moves into Dirtmouth, what the townsfolk sell and
+        /// The number of distinct native movement abilities obtained, in any order:
+        /// Mothwing Cloak, Mantis Claw, Crystal Heart, Monarch Wings and Shade Cloak.
+        /// One new ability advances one stage. Who moves into Dirtmouth, what the townsfolk sell and
         /// which recipes open go by it; the enemies' strength and drops by where they live
         /// (World.Areas.LevelOf, laid out along the same road).
         /// </summary>
         public static int UnlockedStage()
         {
             if (DevStage >= 0) return DevStage;
-            if (Free) return World.Areas.MaxLevel;
+            // Free (a creative save): the stage it has chosen in the inventory (CreativeStage), else all of them.
+            if (Free) { int chosen = CreativeStage.Chosen; return chosen >= 0 ? chosen : World.Areas.MaxLevel; }
             var pd = PlayerData.instance;
             if (pd == null) return 0;
-            return ProgressionBalance.AbilityStage(pd.GetBool);
+            return ProgressionBalance.AbilityStage(Player.PlayerHooks.LearnedAbility);
         }
-
-        /// <summary>The abilities that open the stages 1 to 5, in the order the Knight gets them.</summary>
-        static readonly string[] StageAbilities = { "hasDash", "hasWalljump", "hasSuperDash", "hasDoubleJump", "hasShadowDash" };
-
-        /// <summary>The ability that opens a stage, for the townsfolk's word on it.</summary>
-        public static string GateAbility(int stage) =>
-            stage == 1 ? "蛾翼披风" : stage == 2 ? "螳螂爪" : stage == 3 ? "水晶之心" : stage == 4 ? "帝王之翼" : stage == 5 ? "暗影披风" : "";
 
         public static int Geo => PlayerData.instance != null ? PlayerData.instance.geo : 0;
 
@@ -212,8 +204,11 @@ namespace TerraKnight.Items
         /// </summary>
         public static long SellValue(ItemStack s)
         {
-            if (s.IsEmpty || s.Def.Value <= 0 || Recipes.Worthless(s.Type)) return 0;
-            long value = System.Math.Max(1L, PriceOf(s.Def) / 5) + Forging.SellBonus(s);
+            if (s.IsEmpty) return 0;
+            if (HallownestRecovery.RelicValue(s.Type) > 0) return HallownestRecovery.RelicValue(s.Type) * s.Count;
+            if (HallownestRecovery.IsUnique(s.Type)) return System.Math.Max(1L, HallownestRecovery.Price(s.Def) / 5) * s.Count;
+            if (s.Def.Value <= 0 || Recipes.Worthless(s.Type)) return 0;
+            long value = System.Math.Max(1L, (ShopEquipmentResale(s.Def) ? PriceOf(s.Def) : ResalePriceOf(s.Def)) / 5) + Forging.SellBonus(s);
             if (s.Forge > 0 && Forging.Forgeable(ItemDb.Get(s.Type)))
                 value = System.Math.Min(value, Forging.PricesTo(s.Type, s.Forge, minimumPaid: true));
             return value * s.Count;
@@ -226,21 +221,61 @@ namespace TerraKnight.Items
         public static long Discounted(long price) => Discounted(price, Equipment.Current.Discount);
         internal static long Discounted(long price, bool discount) => price > 0 && discount ? System.Math.Max(1L, (long)(price * 0.8f)) : price;
 
-        /// <summary>
-        /// What an item costs at the townsfolk's, in copper (a geo is 100): Terraria's value up to a
-        /// silver, past it growing as the value's 0.8th power, so the dear end of Terraria's money
-        /// (gold and platinum) stays within reach of Hallownest's geo and selling the drops of
-        /// strong enemies doesn't pay out fortunes. A gold's worth costs 40 geo, ten gold 250, a
-        /// platinum about 1600. Selling gives a fifth of it, as in Terraria.
-        /// </summary>
+        // Geo purchase budgets, independent from drop liquidation. Prices are in copper (100 = one geo).
+        static readonly int[] WeaponPrices={1000,2500,6000,12000,20000,35000};
+        static readonly int[] AccessoryPrices={500,1200,3000,6000,12000,20000};
+        static readonly int[] ArmorPrices={200,500,1200,2500,5000,9000};
         public static long PriceOf(ItemDef d)
         {
-            if (d == null) return 0;
-            // The Water Candle at the Merchant's: 3000 geo (the user's price).
-            if (d.Type == ItemType.WaterCandle) return 300000;
-            if (d.Value <= 0) return 0;
-            if (d.Value <= 100) return d.Value;
-            return (long)System.Math.Round(100.0 * System.Math.Pow(d.Value / 100.0, 0.8));
+            if(d==null)return 0;
+            long previous=ResalePriceOf(d);
+            // Native item 2203 is worth 100000 copper; the generated shop entry had zero.
+            // Correct the purchase without minting resale income from that former zero-value item.
+            if(d.Type==ItemType.SteampunkBoiler)previous=CompressedPrice(100000);
+            // Explicitly requested prices, and Hallownest's separate fivefold native shop policy.
+            if(d.Type==ItemType.CasinoKit||d.Type==ItemType.RandomPrefabHouse||d.Type==ItemType.SimplePrefabHouse||d.Type==ItemType.WaterCandle||d.HkItem)return previous;
+            if(previous<=0)return 0;
+            int stage=System.Math.Max(0,System.Math.Min(5,d.Stage));
+            long price=previous*5;
+            // Thrown by the piece and bought by the stack (shurikens, throwing knives, grenades): priced as ammunition is,
+            // not under a weapon's floor (a shuriken of 15 copper cost 300 geo apiece).
+            if(d.IsAmmo||SpentByThePiece(d))price=System.Math.Max(price,100L*(stage+1));
+            // Stage alone must not price a transitional item like a final weapon. Retain its value curve.
+            else if(ProgressionBalance.BalancedWeapon(d))price=System.Math.Max(price,
+                ProgressionBalance.TimberWeapon(d.Type)?15000L:System.Math.Min(100L*WeaponPrices[stage],System.Math.Max(30000L,previous*3)));
+            else if(d.IsAccessory)price=System.Math.Max(price,System.Math.Min(100L*AccessoryPrices[stage],System.Math.Max(20000L,previous*3)));
+            else if(d.IsArmor)price=System.Math.Max(price,System.Math.Min(100L*ArmorPrices[stage],System.Math.Max(10000L,previous*3)));
+            // Shop transactions use whole geo; bulk ammunition must not become a nearly free currency fraction.
+            return System.Math.Max(100L,((price+99)/100)*100);
+        }
+
+        // A 20% trade-in only for original shop equipment without a crafting recipe. Materials,
+        // consumables, drops and crafted equipment keep the previous liquidation curve.
+        internal static bool ShopEquipmentResale(ItemDef d)
+        {
+            if(d.Source!=ItemSource.Shop || SpentByThePiece(d) || !(ProgressionBalance.BalancedWeapon(d)||d.IsArmor||d.IsAccessory))return false;
+            foreach(var r in Recipes.All)if(!r.IsBought&&r.Result==d.Type)return false;
+            return true;
+        }
+
+        /// <summary>A weapon used up a piece at a time and kept in stacks (thrown knives, shurikens, grenades, spiky balls).</summary>
+        internal static bool SpentByThePiece(ItemDef d) => d != null && d.Consumable && d.MaxStack > 1 && d.Damage > 0;
+
+        /// <summary>The previous liquidation curve for materials, crafted equipment and drops.</summary>
+        internal static long ResalePriceOf(ItemDef d)
+        {
+            if(d==null)return 0;
+            if(d.Type==ItemType.CasinoKit)return Casino.HousePrice;
+            if(d.Type==ItemType.RandomPrefabHouse)return World.PrefabHouses.Price;
+            if(d.Type==ItemType.SimplePrefabHouse)return World.PrefabHouses.SimplePrice;
+            if(d.Type==ItemType.WaterCandle)return 300000;
+            return CompressedPrice(d.Value);
+        }
+        static long CompressedPrice(long value)
+        {
+            if(value<=0)return 0;
+            if(value<=100)return value;
+            return (long)System.Math.Round(100.0*System.Math.Pow(value/100.0,0.8));
         }
     }
 }

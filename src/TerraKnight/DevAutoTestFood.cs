@@ -68,8 +68,8 @@ namespace TerraKnight
             foreach (var b in new[] { PotionBuffs.WellFed, PotionBuffs.PlentySatisfied, PotionBuffs.ExquisitelyStuffed, PotionBuffs.Tipsy }) PlayerBuffs.Remove(b);
 
             var quests = Fishing.QuestList(5).ToList();
-            bool four = new[] { ItemType.BumblebeeTuna, ItemType.MirageFish, ItemType.MutantFlinxfin, ItemType.Fishron }.All(quests.Contains);
-            Check("渔夫任务 41 种", quests.Count == 41 && four, $"{quests.Count} 种，新四种 {four}，大黄蜂金枪鱼：{FishingQuestTip(ItemType.BumblebeeTuna)}");
+            bool regional = QuestFishCatalog.All.All(q => quests.Contains(q.Fish));
+            Check("渔夫任务36条地区鱼", quests.Count == 36 && regional, $"{quests.Count} 种，全部地区鱼 {regional}");
             Plugin.Log.LogInfo($"[AutoTest] 食物 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
 

@@ -5,12 +5,13 @@ namespace TerraKnight.World
 {
     /// <summary>
     /// Terraria's meteorite (1.4.5: NPC.DoDeathEvents's spawnMeteor, Main.HandleMeteorFall, WorldGen.dropMeteor and
-    /// meteor). One for the whole save: the first boss beaten queues it (none after one has come down); it comes down at the next
-    /// midnight (Main.time 16200 into the night: 1170 s into the day here) in a room the player has been through, never
-    /// the one they stand in, Dirtmouth, a boss's room, a dream, Godhome or the White Palace. It lands on a floor the player
-    /// has seen there, with room to stand above it, deep rock below and nothing of the room's (a bench, a door, a lever, a
-    /// stag) near, and smashes its crater as Terraria's five passes do (the Meteorite body, the pit, the clean-up, two
-    /// rings of specks), at half Terraria's size for Hallownest's rooms. "A meteorite has landed!" comes in the chat, and
+    /// meteor). One fall for the whole save, of two meteorites (one is too little ore for Hallownest's small rooms): the
+    /// first boss beaten queues it (none after it has come down); they come down at the next midnight (Main.time 16200 into
+    /// the night: 1170 s into the day here), each in a room the player has been through (the second in another room when
+    /// one will do, else well apart in the same), never the one they stand in, Dirtmouth, a boss's room, a dream, Godhome or
+    /// the White Palace. Each lands on a floor the player has seen there, with room to stand above it, deep rock below and
+    /// nothing of the room's (a bench, a door, a lever, a stag) near, and smashes its crater as Terraria's five passes do (the
+    /// Meteorite body, the pit, the clean-up, two rings of specks), at 0.65 of Terraria's size. "A meteorite has landed!" comes in the chat, and
     /// the map shows its cells bright at once. A Meteorite block wants a 50% pickaxe, glows, and burns whoever touches it
     /// without fire-walking gear (Burning: 30 life a second, no regeneration, half speed).
     /// </summary>
@@ -19,7 +20,9 @@ namespace TerraKnight.World
         public const int Burning = 67;
         /// <summary>Main.HandleMeteorFall's 16200 ticks into the night.</summary>
         const float Midnight = TerraTime.DaySeconds + 270f;
-        const float Scale = 0.5f;
+        const float Scale = 0.65f;
+        /// <summary>The second meteorite in the first's room: at least this many cells along (a crater is up to 28 across).</summary>
+        const int Apart = 40;
 
         /// <summary>WorldGen.spawnMeteor: one is coming (kept in the save).</summary>
         public static bool Pending;
@@ -95,9 +98,13 @@ namespace TerraKnight.World
             if (!DevAtMidnight && (TerraTime.IsDay || TerraTime.Now < Midnight)) return;
             var gm = GameManager.UnsafeInstance;
             if (gm == null || gm.IsInSceneTransition || !GameHooks.PlayerHasControl()) return;
-            // Main.HandleMeteorFall: the flag goes whether it found somewhere or not.
+            // Main.HandleMeteorFall: the flag goes whether it found somewhere or not. Two come down: the second in another
+            // room, else apart from the first in its room.
             Pending = false;
-            Drop(gm.sceneName);
+            if (!Drop(gm.sceneName)) return;
+            string first = LastScene;
+            int firstX = LastAt.x;
+            if (!Drop(gm.sceneName, avoid: first)) Drop(gm.sceneName, only: first, awayFromX: firstX);
         }
 
         internal static bool Excluded(string scene, string here)
@@ -111,17 +118,21 @@ namespace TerraKnight.World
             return Areas.LevelOf(scene) < 0;
         }
 
-        /// <summary>WorldGen.dropMeteor: somewhere to land in the rooms the player has been through; false when none would do.</summary>
-        public static bool Drop(string here, string only = null)
+        /// <summary>
+        /// WorldGen.dropMeteor: somewhere to land in the rooms the player has been through (not <paramref name="avoid"/>; only
+        /// <paramref name="only"/> when given, then <see cref="Apart"/> cells from <paramref name="awayFromX"/>); false when none would do.
+        /// </summary>
+        public static bool Drop(string here, string only = null, string avoid = null, int awayFromX = int.MinValue)
         {
             var rooms = UI.WorldMap.VisitedRooms();
-            rooms.RemoveAll(s => (only != null ? s != only : Excluded(s, here)));
+            rooms.RemoveAll(s => (only != null ? s != only : Excluded(s, here)) || s == avoid);
             if (rooms.Count == 0) { DevRefused++; Plugin.Log.LogInfo("[陨石] 没有能落的房间"); return false; }
             for (int attempt = 0; attempt < 400; attempt++)
             {
                 string scene = rooms[Random.Range(0, rooms.Count)];
                 if (!UI.WorldMap.RoomSize(scene, out int w, out int h) || w < 60 || h < 30) continue;
                 int x = Random.Range(20, w - 20);
+                if (awayFromX != int.MinValue && Mathf.Abs(x - awayFromX) < Apart) continue;
                 if (!Floor(scene, x, h, out int j)) continue;
                 if (!Dense(scene, x, j)) continue;
                 if (UI.WorldMap.ThingNear(scene, x, j, 16)) continue;
@@ -280,9 +291,17 @@ namespace TerraKnight.World
         static void Burn(HeroController hero, TerraMod mod)
         {
             if (hero == null || mod == null || mod.Creative) return;
-            if (!Items.Equipment.Current.FireWalk && Touching(hero)) Player.PlayerBuffs.Add(Burning, 20);
+            // Defender's Crest shelters from the hot stone as from the other ground's harm.
+            if (!Items.Equipment.Current.FireWalk && Touching(hero) && !Items.CharmEffects.Sheltered(hero)) Player.PlayerBuffs.Add(Burning, 20);
             mod.Stats.Burning = Player.PlayerBuffs.Has(Burning);
             if (!mod.Stats.Burning || mod.Stats.IsDead || PlayerData.instance == null || PlayerData.instance.isInvincible) { burnCarry = 0f; return; }
+            if (Items.PlayerChallenges.Hollow)
+            {
+                burnCarry = 0f;
+                if (!hero.cState.invulnerable)
+                    Player.PlayerHooks.HurtEnvironment(hero, 1, 0, hero.gameObject);
+                return;
+            }
             DevBurnTicks++;
             burnCarry += 30f * Time.deltaTime;
             int whole = (int)burnCarry;
@@ -305,9 +324,10 @@ namespace TerraKnight.World
             var col = hero.GetComponent<BoxCollider2D>();
             if (col == null) return false;
             var b = col.bounds;
-            // Half a Terraria pixel of give each way (a cell is 16 of them).
-            const float give = CellGrid.CellSize / 32f;
-            var lo = CellGrid.WorldToCell((Vector2)b.min - new Vector2(give, give));
+            // Half a Terraria pixel of give to the sides and over the head (a cell is 16 of them); under the feet as far as
+            // a body standing on the ground stays off it (the physics' contact gap; the sand under the feet is looked for as far).
+            const float give = CellGrid.CellSize / 32f, under = 0.06f;
+            var lo = CellGrid.WorldToCell((Vector2)b.min - new Vector2(give, under));
             var hi = CellGrid.WorldToCell((Vector2)b.max + new Vector2(give, give));
             for (int y = lo.y; y <= hi.y; y++)
                 for (int x = lo.x; x <= hi.x; x++)

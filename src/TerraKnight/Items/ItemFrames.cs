@@ -44,7 +44,7 @@ namespace TerraKnight.Items
         static bool Find(string texture, out Anim anim)
         {
             anim = default;
-            return texture != null && texture.StartsWith("Item_") && int.TryParse(texture.Substring(5), out int id) && byId.TryGetValue(id, out anim);
+            return Terraria.TerrariaAssets.NumberAfter(texture, "Item_", out int id) && byId.TryGetValue(id, out anim);
         }
 
         /// <summary>How many frames a picture has (1 for a still one).</summary>

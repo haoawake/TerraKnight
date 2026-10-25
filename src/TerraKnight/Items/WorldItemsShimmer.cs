@@ -11,7 +11,8 @@ namespace TerraKnight.Items
         /// WorldItem.UpdateShimmer, once a tick; true while gravity is off for it. What came out of the shimmer floats: it
         /// rises in it (0.05 px/tick² up to 4), keeps rising just over it, and slows to a stop above it. An item lying in it
         /// that can change (Shimmer.CanShimmer) changes once it has been in for 90 ticks (shimmerTime 0.01 a tick, at 0.9);
-        /// out of it the time runs back down. Only items of this game alone: a LAN game's are the host's.
+        /// out of it the time runs back down. A remote physics owner requests the
+        /// canonical conversion from the host; it never creates its own outputs.
         /// </summary>
         static bool ShimmerTick(Item it)
         {
@@ -28,13 +29,18 @@ namespace TerraKnight.Items
                 }
                 else it.Vel.y *= 0.9f;
             }
-            if (wet && !it.Shimmered && it.NetId == null && Shimmer.CanShimmer(it.Stack))
+            if (wet && !it.Shimmered && Shimmer.CanShimmer(it.Stack))
             {
                 it.ShimmerTime = Mathf.Min(1f, it.ShimmerTime + 0.01f);
                 if (it.ShimmerTime > 0.9f)
                 {
                     it.ShimmerTime = 0.9f;
-                    Shimmered(it);
+                    if (it.NetId == null || Net.NetSession.Hosting) Shimmered(it);
+                    else if (Time.unscaledTime - it.ShimmerRequestAt >= 1f)
+                    {
+                        it.ShimmerRequestAt = Time.unscaledTime;
+                        Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "shimmer", Key = it.NetId });
+                    }
                 }
             }
             else if (it.ShimmerTime > 0f) it.ShimmerTime = Mathf.Max(0f, it.ShimmerTime - 0.01f);
@@ -47,8 +53,9 @@ namespace TerraKnight.Items
         /// customShimmerResults), each piece out a little to the side (SpawnShimmeredItem), an alchemy recipe's losing each unit
         /// at one in three; what is left over stays. Item_176 and twenty sparkles (ShimmerEffect).
         /// </summary>
-        static void Shimmered(Item it)
+        static void Shimmered(Item it, bool award = true)
         {
+            int shimmeredCount = it.Stack.Count;
             var at = it.World;
             var to = Shimmer.TransformOf(it.Stack.Type, out _);
             if (to != ItemType.None)
@@ -75,7 +82,18 @@ namespace TerraKnight.Items
                     {
                         int part = Mathf.Min(n, max);
                         n -= part;
-                        var made = Spawn(ItemStack.Of(type, part), at, new Vector2(k * (k % 2 * 2 - 1), 0f), 0);
+                        var velocity = new Vector2(k * (k % 2 * 2 - 1), 0f);
+                        Item made;
+                        if (it.NetId != null)
+                        {
+                            // The host may not have this scene loaded. Preserve
+                            // scene-local coordinates instead of using its hero's region.
+                            made = new Item { NetId = "i:" + System.Guid.NewGuid().ToString("N"),
+                                Stack = ItemStack.Of(type, part), Scene = it.Scene, Local = it.Local,
+                                Region = it.Region, Vel = velocity, Dropper = -1 };
+                            items.Add(made);
+                        }
+                        else made = Spawn(ItemStack.Of(type, part), at, velocity, 0, personal: true);
                         k++;
                         if (made == null) continue;
                         made.Shimmered = true;
@@ -89,6 +107,7 @@ namespace TerraKnight.Items
             it.ShimmerTime = it.Stack.IsEmpty ? 0f : 1f;
             it.Vel *= 0.1f;
             DevShimmered++;
+            if (award) Achievements.AchievementTracker.Shimmered(shimmeredCount);
             TerraMod.Instance?.PlaySound("Item_176", 0.8f);
             // ShimmerEffect's twenty sparkles, here thrown wider and joined by a splash off the surface, so the change shows.
             var px = Effects.TerraParticles.ToPx(at);

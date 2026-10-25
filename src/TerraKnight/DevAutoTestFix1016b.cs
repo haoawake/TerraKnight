@@ -413,7 +413,7 @@ namespace TerraKnight
             bool againFirst = World.Meteorites.Pending;
             World.Meteorites.OnBossDown(false);
             bool againRepeat = World.Meteorites.Pending;
-            FxCheck("整个存档只落一颗陨石", first && !againFirst && !againRepeat, $"没落过时击败首领排上 {first}；落过一颗后再击败新首领 {againFirst}、重打首领 {againRepeat}");
+            FxCheck("整个存档只落一次陨石", first && !againFirst && !againRepeat, $"没落过时击败首领排上 {first}；落过一颗后再击败新首领 {againFirst}、重打首领 {againRepeat}");
             World.Meteorites.Pending = pending0;
             World.Meteorites.Landed = landed0;
             yield return null;
@@ -434,6 +434,7 @@ namespace TerraKnight
 
         IEnumerator FxReflect()
         {
+            TerraProjectiles.DevExportReflectionCatalog(System.IO.Path.Combine(DevCopy.SaveDir,"reflection-catalog.json"));
             var hero = HeroController.instance;
             var inv = mod.Inventory;
             var stats = mod.Stats;
@@ -472,14 +473,23 @@ namespace TerraKnight
             inv.Slots[Inventory.Size - 2] = ItemStack.Of(ItemType.MusketBall, 200);
             int crystals = stats.LifeCrystals;
             stats.LifeCrystals = TerraKnight.Player.TerraStats.MaxLifeCrystals;
-            var shots = new (string label, ItemType item, bool reflects)[]
+            FxCheck("原版反弹分类：无贴图小鬼火球及黄蜂毒刺", TerraProjectiles.ReflectableKind(ProjKind.ImpFireball) && TerraProjectiles.ReflectableKind(ProjKind.HornetStinger), "原版376/374都允许反弹");
+            FxCheck("原版反弹分类：共用贴图不能共用规则", TerraProjectiles.ReflectableKind(ProjKind.ThunderBolt) && !TerraProjectiles.ReflectableKind(ProjKind.LightningStrikeBolt), "原版731可反弹，1117不可反弹");
+            FxCheck("原版反弹分类：回旋镖与反弹光球不再反弹", !TerraProjectiles.ReflectableKind(ProjKind.WoodenBoomerang) && !TerraProjectiles.ReflectableKind(ProjKind.ReflectedOrb), "无反弹循环");
+            FxCheck("原版反弹分类：飞镖及魔法竖琴音符", TerraProjectiles.ReflectableKind(ProjKind.PoisonDartProj) && TerraProjectiles.ReflectableKind(ProjKind.CrystalDartProj) && TerraProjectiles.ReflectableKind(ProjKind.HarpNote1) && TerraProjectiles.ReflectableKind(ProjKind.HarpNote3), "原版267/477/76/78");
+            var shots = new (string label, ItemType item, ProjKind direct, bool reflects)[]
             {
-                ("木弓箭", ItemType.WoodenBow, true),
-                ("燧发枪子弹", ItemType.FlintlockPistol, true),
-                ("木制回旋镖（原版不反弹）", ItemType.WoodenBoomerang, false),
+                ("木弓箭", ItemType.WoodenBow, ProjKind.None, true),
+                ("燧发枪子弹", ItemType.FlintlockPistol, ProjKind.None, true),
+                ("木制回旋镖（原版不反弹）", ItemType.WoodenBoomerang, ProjKind.None, false),
+                ("小鬼火球", ItemType.None, ProjKind.ImpFireball, true),
+                ("黄蜂毒刺", ItemType.None, ProjKind.HornetStinger, true),
+                ("霹雳法杖弹幕", ItemType.None, ProjKind.ThunderBolt, true),
+                ("闪电之击弹幕（原版不反弹）", ItemType.None, ProjKind.LightningStrikeBolt, false),
             };
             foreach (var t in shots)
             {
+                TerraProjectiles.Instance.DevClear();
                 hm.transform.position = new Vector3(hold.x, hold.y, hm.transform.position.z);
                 // An arrow falls on its way back at half speed: from nearer.
                 hero.transform.position = new Vector3(c.x - (t.item == ItemType.WoodenBow ? 2.6f : 5f), c.y + 0.2f, hero.transform.position.z);
@@ -489,7 +499,8 @@ namespace TerraKnight
                 stats.FullHeal();
                 PlayerData.instance.isInvincible = false;
                 int life0 = stats.Life, refl0 = TerraProjectiles.DevReflected, hits0 = TerraProjectiles.DevReflectHits, blocked0 = MeleeHits.DevBlocked, hp0 = hm.hp;
-                yield return UseOn(t.item, c);
+                if(t.direct==ProjKind.None) yield return UseOn(t.item, c);
+                else TerraProjectiles.Instance.Shoot(t.direct,c-Vector2.right*.7f,Vector2.right*8f,160,0f,0f);
                 float until = Time.time + 4f;
                 while (Time.time < until && TerraProjectiles.DevReflectHits == hits0 && !(!t.reflects && MeleeHits.DevBlocked > blocked0 && Time.time > until - 2.5f))
                 {
@@ -507,7 +518,7 @@ namespace TerraKnight
                 else
                     FxCheck($"盾反弹 {t.label}", !reflected && MeleeHits.DevBlocked > blocked0 && lost == 0 && hm.hp == hp0,
                         $"反弹 {reflected}，挡住 {MeleeHits.DevBlocked - blocked0} 次，主角掉血 {lost}，怪掉血 {hp0 - hm.hp}");
-                Shot("Crossroads_15", $"fx_reflect_{(int)t.item}");
+                Shot("Crossroads_15", $"fx_reflect_{(int)t.item}_{t.direct}");
                 yield return new WaitForSeconds(1.5f);
             }
             // Invincible all round (an enemy hiding, curled up): the shot is stopped, not sent back.

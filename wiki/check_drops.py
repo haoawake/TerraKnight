@@ -3,11 +3,18 @@ import html
 import json
 import os
 import re
+from functools import cache
 from pathlib import Path
+from table_data import expand_tables
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = Path(os.environ.get('TK_WIKI_SOURCE_ROOT', ROOT))
 OUT = ROOT/'artifacts/wiki-preview/terraknight-wiki'
+
+
+@cache
+def read_page(name):
+    return expand_tables((OUT/name).read_text(encoding='utf-8'),OUT)
 
 
 def plain(value):
@@ -28,7 +35,7 @@ def main():
                     merged[signature]['Stages'].append(int(stage))
         drops = list(merged.values())
         enemy_file = 'enemy-'+key.lower().replace('@', '-')+'.html'
-        page = (OUT/enemy_file).read_text(encoding='utf-8')
+        page = read_page(enemy_file)
         tables = [table for table in re.findall(r'<table>.*?</table>', page, re.S)
                   if '掉落物' in table.split('</thead>')[0]]
         assert bool(tables) == bool(drops), key
@@ -51,7 +58,7 @@ def main():
                 label = f'{stages[0]}–{stages[-1]}' if len(stages)>1 and stages==list(range(stages[0],stages[-1]+1)) else '/'.join(map(str,stages))
                 expected = f"{drop['Area']}；阶段{label}：{100*drop['Probability']:.4g}%" + (f"（组{drop['Group']}互斥）" if drop['Group'] else '')
                 assert chance == expected, (key, drop, chance, expected)
-            item_page = (OUT/('item-'+drop['Type'].lower()+'.html')).read_text(encoding='utf-8')
+            item_page = read_page('item-'+drop['Type'].lower()+'.html')
             assert f'href="/terraknight-wiki/{enemy_file}"' in item_page, (key, drop['Type'])
             checked += 1
     pets = re.findall(r'\[ItemType\.(\w+)\]\s*=\s*new PetDef',

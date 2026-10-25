@@ -4,7 +4,7 @@ using UnityEngine;
 namespace TerraKnight.World
 {
     /// <summary>
-    /// Bosses are fought where the game made them: nothing is dug, placed, blown up or frozen where a
+    /// Bosses are fought on the game's original terrain: that ground is never dug or blown up where a
     /// boss fights. A boss room is the room of every boss of the monster book's table (its "_boss" scene
     /// belongs to the room it is loaded into), the Greenpath Hornet's, the Grimm Troupe's tent, the
     /// Colosseum and every fight of Godhome (its statues' and pantheons' rooms); what stays as it is there is the part the boss reaches (BossArenaZone: what the camera
@@ -65,13 +65,38 @@ namespace TerraKnight.World
         static bool GodhomeFight(string scene)
         {
             if (DevNoGodhome || !scene.StartsWith("GG_")) return false;
-            if (godhome.TryGetValue(scene, out bool yes)) return yes;
+            if (godhome.TryGetValue(scene, out bool yes) && (yes || Time.unscaledTime < godhomeAgain)) return yes;
             var s = UnityEngine.SceneManagement.SceneManager.GetSceneByName(scene);
             if (!s.IsValid() || !s.isLoaded) return false;
-            foreach (var root in s.GetRootGameObjects())
-                if (root.GetComponentInChildren<BossSceneController>(true) != null) { yes = true; break; }
+            // The fight's own controller (up while it runs), else one in the scene's objects; a no looked at again
+            // after a while (the room looked at mid-load).
+            var up = BossSceneController.Instance;
+            yes = up != null && up.gameObject.scene == s;
+            if (!yes)
+                foreach (var root in s.GetRootGameObjects())
+                    if (root.GetComponentInChildren<BossSceneController>(true) != null) { yes = true; break; }
             godhome[scene] = yes;
+            if (!yes) godhomeAgain = Time.unscaledTime + 2f;
             return yes;
+        }
+
+        static float godhomeAgain;
+        static readonly HashSet<string> told = new HashSet<string>();
+
+        /// <summary>
+        /// Dev's note in the log, once a room: native ground changed (dug, poured into) in one of Godhome's rooms or in a
+        /// room with a boss up, and why it was let be.
+        /// </summary>
+        public static void TellChanged(int gx, int gy, string what)
+        {
+            var r = TerraWorld.RegionAt(gx, gy);
+            if (r == null || !told.Add(r.SceneName + what)) return;
+            string room = Room(r.SceneName);
+            bool bossUp = BossReach(r, room).Count > 0;
+            if (!r.SceneName.StartsWith("GG_") && !bossUp) { told.Remove(r.SceneName + what); return; }
+            Plugin.Log.LogInfo($"[首领房] {r.SceneName} 让{what}了 ({gx},{gy})：首领房表={Rooms().Contains(room)} 神居战斗={GodhomeFight(room)} "
+                + $"保留原版地形={r.SceneOwnGround} 战斗范围={(r.OwnZone != null ? "有" : "无")} 本格在内={r.IsOwnCell(gx - r.CellOffset.x, gy - r.CellOffset.y)} "
+                + $"格子={TerraWorld.Get(gx, gy)} 首领在场={bossUp}");
         }
 
         /// <summary>Whether this cell may not be changed: in a boss room's fight, or within reach of a boss up.</summary>
@@ -80,7 +105,7 @@ namespace TerraKnight.World
             var r = TerraWorld.RegionAt(gx, gy);
             if (r == null) return false;
             string room = Room(r.SceneName);
-            if (Rooms().Contains(room) && (r.OwnZone == null || r.IsOwnCell(gx - r.CellOffset.x, gy - r.CellOffset.y))) return true;
+            if ((Rooms().Contains(room) || GodhomeFight(room)) && (r.OwnZone == null || r.IsOwnCell(gx - r.CellOffset.x, gy - r.CellOffset.y))) return true;
             var at = new Vector2((gx + 0.5f) * CellGrid.CellSize, (gy + 0.5f) * CellGrid.CellSize);
             foreach (var reach in BossReach(r, room)) if (reach.Contains(at)) return true;
             return false;
@@ -92,6 +117,35 @@ namespace TerraKnight.World
             return Locked(c.x, c.y);
         }
 
+        /// <summary>The entire native boss room, or a temporary boss's combat area.</summary>
+        public static bool ProtectsNativeArea(int gx, int gy)
+        {
+            var r = TerraWorld.RegionAt(gx, gy);
+            return r != null && (IsRoom(r.SceneName) || Locked(gx, gy));
+        }
+
+        public static bool ProtectsNativeArea(Vector2 world)
+        {
+            var c = CellGrid.WorldToCell(world);
+            return ProtectsNativeArea(c.x, c.y);
+        }
+
+        /// <summary>Protect native ground; player-built blocks in the same room remain removable.</summary>
+        public static bool ProtectsTerrain(int gx, int gy) => ProtectsNativeArea(gx, gy) && TerraWorld.Get(gx, gy) == CellKind.Original;
+
+        /// <summary>
+        /// What a block set down here becomes: in a boss room (or within a boss's reach) every solid block is the room's
+        /// area platform, the plain platform outside the areas (the user's, 2026-10-23: nothing put up there walls a boss off
+        /// or shuts the player in); elsewhere itself.
+        /// </summary>
+        public static CellKind Placed(int gx, int gy, CellKind kind)
+        {
+            if (!Cells.Blocks(kind) || kind == CellKind.Original || kind == CellKind.MagicIce || !ProtectsNativeArea(gx, gy)) return kind;
+            var r = TerraWorld.RegionAt(gx, gy);
+            int a = r != null ? AreaBlocks.IndexOfScene(r.SceneName) : -1;
+            return a >= 0 ? (CellKind)((int)CellKind.AreaPlatformFirst + a) : CellKind.Platform;
+        }
+
         static float nextNotice;
 
         /// <summary>The refusal over the point tried, at most every two seconds.</summary>
@@ -99,7 +153,7 @@ namespace TerraKnight.World
         {
             if (Time.unscaledTime < nextNotice) return;
             nextNotice = Time.unscaledTime + 2f;
-            UI.CombatText.Show(new Vector3(at.x, at.y + 0.4f, 0f), Lang.T("首领的战斗范围内不能改动地形"), UI.CombatText.Notice);
+            UI.CombatText.Show(new Vector3(at.x, at.y + 0.4f, 0f), Lang.T("首领房间的原生地形不能挖掘；放下的方块会变成平台"), UI.CombatText.Notice);
         }
 
         public static string DevRooms() => string.Join(" ", Rooms());

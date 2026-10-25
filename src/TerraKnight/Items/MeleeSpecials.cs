@@ -159,6 +159,10 @@ namespace TerraKnight.Items
                             TerraParticles.Instance?.NewGore(tl + new Vector2(Random.Range(0, 20), Random.Range(0, 20)), new Vector2(Random.Range(-10, 11) * 0.4f, -(3f + Random.Range(0, 6) * 0.3f)), 1218, 1f, 1f, default, true, falls: true);
                     }
                     break;
+                // The Revenant Edge's blow: a wraith out of the enemy (Items/TerraProjectilesSoulWave.cs), its strike a burst of souls.
+                case ItemType.RevenantEdge:
+                    tp?.SpawnWraith(npcPx, baseDamage, kb, crit, dir, hm);
+                    break;
                 // Pl:44746-44752: the Bone Sword's and the Bone Pickaxe's bone.
                 case ItemType.BoneSword:
                 case ItemType.BonePickaxe:
@@ -201,7 +205,7 @@ namespace TerraKnight.Items
             if (batReady && w.Type == ItemType.BatBat && mod != null && mod.Stats.Life < mod.Stats.LifeMax)
             {
                 batReady = false;
-                int healed = mod.Stats.Heal(1);
+                int healed = mod.Stats.Heal(1, recovery: true);
                 DevBatHeals++;
                 if (hero != null) CombatText.Show(hero.transform.position + Vector3.up * 0.9f, healed.ToString(), CombatText.Heal);
             }
@@ -328,7 +332,7 @@ namespace TerraKnight.Items
         {
             var mod = TerraMod.Instance;
             if (mod == null) return false;
-            foreach (var a in mod.Inventory.EffectiveAccessories)
+            foreach (var a in mod.Inventory.FunctionalAccessories)
                 if (!a.IsEmpty && a.Def.Shield > 0) return true;
             return false;
         }
@@ -394,6 +398,7 @@ namespace TerraKnight.Items
             TerraHurt.Invulnerable(hero, Equipment.Current.LongImmunity ? 60 : 30);
             PlayerBuffs.Add(StrikingMoment, 300);
             DevParries++;
+            Achievements.AchievementTracker.Blocked();
             return true;
         }
 

@@ -61,7 +61,7 @@ namespace TerraKnight.Items
         static bool Usable(ItemType t, int stage)
         {
             var d = ItemDb.Get(t);
-            return d != null && d.Name != t.ToString() && d.Stage <= stage && ProgressionBalance.Unlocked(t);
+            return d != null && d.Name != t.ToString() && d.Stage <= stage && ProgressionBalance.Unlocked(t) && !CraftOnlyLoot.Blocked(t);
         }
 
         /// <summary>The critters that are bait, now: not the three made baits, not the golden ones or the Truffle Worm.</summary>
@@ -84,8 +84,8 @@ namespace TerraKnight.Items
         public static void Contents(List<ItemStack> got)
         {
             got.Add(ItemStack.Of(ItemType.ApprenticeBait, Random.Range(2, 6)));
-            if (Random.Range(0, 2) == 0) got.Add(ItemStack.Of(ItemType.JourneymanBait, Random.Range(1, 4)));
-            if (Random.Range(0, 4) == 0) got.Add(ItemStack.Of(ItemType.MasterBait, Random.Range(1, 3)));
+            if (Random.Range(0, 2) == 0 && ProgressionBalance.Unlocked(ItemType.JourneymanBait)) got.Add(ItemStack.Of(ItemType.JourneymanBait, Random.Range(1, 4)));
+            if (Random.Range(0, 4) == 0 && ProgressionBalance.Unlocked(ItemType.MasterBait)) got.Add(ItemStack.Of(ItemType.MasterBait, Random.Range(1, 3)));
             var critters = Critters();
             for (int i = 0; i < 3 && critters.Count > 0; i++)
             {

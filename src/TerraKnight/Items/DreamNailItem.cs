@@ -171,6 +171,9 @@ namespace TerraKnight.Items
         static HeroController fsmOf;
         static float heldGravity = float.NaN;
 
+        /// <summary>The Knight's Dream Nail machine (for the charms' looks).</summary>
+        public static PlayMakerFSM DevFsm(HeroController hero) => DreamFsm(hero);
+
         static PlayMakerFSM DreamFsm(HeroController hero)
         {
             if (fsmOf == hero && dreamFsm != null) return dreamFsm;
@@ -200,7 +203,8 @@ namespace TerraKnight.Items
         {
             if (TerraMod.Instance == null || ___rb2d == null) return;
             var fsm = DreamFsm(__instance);
-            bool still = fsm != null && __instance.cState.onGround && !__instance.cState.dead && Still(fsm.ActiveStateName);
+            // Dream Wielder: not held at all (CharmEffects.DreamFree).
+            bool still = fsm != null && __instance.cState.onGround && !__instance.cState.dead && Still(fsm.ActiveStateName) && !CharmEffects.DreamFree;
             if (still)
             {
                 if (float.IsNaN(heldGravity)) heldGravity = ___rb2d.gravityScale;
@@ -249,6 +253,8 @@ namespace TerraKnight.Items
             if (hm == null || hm.isDead || BossWake.DreamWindow(hm)) return;
             var col = hm.GetComponent<Collider2D>() ?? target.GetComponent<Collider2D>();
             if (col == null) return;
+            // Behind a wall, out of sight: no damage (melee's rule; Longnail through walls).
+            if (!CharmEffects.MeleeReaches(col)) return;
             // The Dream Nail in hand: a reforged one hits with its prefix.
             var def = mod.Inventory.Current.Type == ItemType.DreamNail ? mod.Inventory.Current.Def : ItemDb.Get(ItemType.DreamNail);
             Vector2 from = hero.GetComponent<BoxCollider2D>().bounds.center;
@@ -276,7 +282,8 @@ namespace TerraKnight.Items
             var def = ItemDb.Get(ItemType.DreamNail);
             def.Damage = DamageNow();
             var pd = PlayerData.instance;
-            if (pd == null || !pd.hasDreamNail || hero == null || UniqueItems.Keep(mod.Inventory, ItemType.DreamNail, includeGround: false)) return;
+            if (pd == null || !pd.hasDreamNail || hero == null || HallownestRecovery.SoldTool(mod.Inventory, ItemType.DreamNail)
+                || UniqueItems.Keep(mod.Inventory, ItemType.DreamNail, includeGround: false)) return;
             // The pickup's cutscene can leave this scene immediately. A drop in that old scene
             // is not an owned Dream Nail: recover the actual stack (including its prefix/forge).
             var stack = WorldItems.PersonalStack(ItemType.DreamNail);

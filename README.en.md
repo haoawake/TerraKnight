@@ -105,15 +105,16 @@ You need the Steam versions of **Hollow Knight** and **Terraria** installed on t
 | :--- | :--- |
 | **Hollow Knight** | Steam stable release **1.5.12620** |
 | **Terraria** | Steam **1.4.x** |
-| **Mod Loader** | **BepInEx 5.4.23.x**, Windows x64 |
+| **Mod Loader** | **BepInEx 5.4.23.x**, Windows x64 (included in the installer) |
 | **Operating System** | **Windows 64-bit** |
 
 ### Quick Installation
 
-1. Download **BepInEx 5.4.23.x win_x64** from [BepInEx Releases](https://github.com/BepInEx/BepInEx/releases) and extract it into the Hollow Knight game directory.
-2. Launch Hollow Knight once, reach the main menu, and then quit to initialize BepInEx.
-3. Download the latest ZIP from [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases) and extract it into the same game directory, replacing files as prompted.
-4. Double-click **`空洞泰拉.bat`** in the game directory to launch the mod.
+1. Download the latest **`TerraKnight-vX.Y.Z-Setup.exe`** from [TerraKnight Releases](https://github.com/haoawake/TerraKnight/releases).
+2. Close Hollow Knight, run the installer and click "安装" (Install). The installer includes the BepInEx 5 framework and finds Hollow Knight and Terraria in the Steam libraries on every drive (the two games may be on different drives).
+3. Double-click **`空洞泰拉.bat`** in the game directory (or the "空洞泰拉" desktop shortcut) to launch the mod.
+
+`TerraKnight-vX.Y.Z.zip` on the same releases page is the archive for a manual install: extract it into the Hollow Knight game directory.
 
 > [!IMPORTANT]
 > **Use a fresh save slot when possible and back up your original saves beforehand.**

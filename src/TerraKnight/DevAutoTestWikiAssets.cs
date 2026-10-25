@@ -1,6 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using TerraKnight.Items;
 using TerraKnight.Terraria;
@@ -76,11 +77,17 @@ namespace TerraKnight
                     Places = def.Places.ToString(), PlacesStation = def.PlacesStation.ToString(), def.PlacesWall,
                     def.UseTime, def.UseAnimation, def.Channel, def.NoUseMana, def.PayManaAfterCheck, def.ManaEveryOtherShot, def.ShotsPerUse };
             int magicCount = 0, manaErrors = 0;
+            // Terraria's magic weapons (the mod's own, drawn from tk_ sheets, have no vanilla cost to keep).
             foreach (var def in ItemDb.All)
-                if (def.Class == DamageClass.Magic && def.IsWeapon)
+                if (def.Class == DamageClass.Magic && def.IsWeapon && def.Texture != null && def.Texture.StartsWith("Item_"))
                 {
                     magicCount++;
-                    if (def.Texture == null || !def.Texture.StartsWith("Item_") || !int.TryParse(def.Texture.Substring(5), out int id)
+                    if (def.Type == ItemType.BejeweledStaff)
+                    {
+                        if (def.Mana != 15) { manaErrors++; Plugin.Log.LogError("[AutoTest] 宝石镶嵌法杖蓝耗应为15，不通过"); }
+                        continue; // Custom weapon may reuse a vanilla gem-staff icon.
+                    }
+                    if (!int.TryParse(def.Texture.Substring(5), out int id)
                         || !VanillaWeaponDamage.Values.TryGetValue(id, out var original) || def.Mana != original.Mana)
                     {
                         manaErrors++;
@@ -109,9 +116,13 @@ namespace TerraKnight
             var regionDrops = new Dictionary<int, Dictionary<string, object>>();
             var originalDifficulty = World.GameDifficulty.Current;
             World.GameDifficulty.Current = World.DifficultyLevel.Normal;
+            var clearsWas = VanillaBossProgression.DevClears;
             for (int stage = 0; stage < 6; stage++)
             {
                 Shop.DevStage = stage;
+                // The bosses of this stage and before beaten: what the stage's enemies give once it is played through
+                // (VanillaBossProgression keeps a boss's materials behind its victory).
+                VanillaBossProgression.DevClears = new HashSet<string>(VanillaBossProgression.All.Where(b => b.Value.Band <= stage).Select(b => b.Key));
                 var records = new Dictionary<string, object>();
                 var regions = new Dictionary<string, object>();
                 foreach (var record in EnemyDrops.DevRecords)
@@ -179,7 +190,7 @@ namespace TerraKnight
                 }
                 byArea["酸水"] = CatchRows(Fishing.DevSimulate("遗忘十字路", true, FishingPower, 1500, Casts), Casts);
                 fishingStages[stage] = byArea;
-                // Each area's chests (World.RegionalChests): its weapon chest, its accessory chest, a supplies chest.
+                // Each area's chests (World.RegionalChests): its weapon chest, its accessory chest, its Terraria chest piece's.
                 var byChest = new Dictionary<string, object>();
                 foreach (var a in World.AreaBlocks.All)
                     for (int part = 0; part < 3; part++)
@@ -209,10 +220,12 @@ namespace TerraKnight
             }
             mod.Inventory.Infinite = wasInfinite;
             Shop.DevStage = originalStage;
+            VanillaBossProgression.DevClears = clearsWas;
             World.GameDifficulty.Current = originalDifficulty;
             File.WriteAllText(Path.Combine(folder, "runtime-data.json"), JsonConvert.SerializeObject(new { items = itemData, recipes = recipeData, drops = dropData, drop_stages = stageDrops, drop_regions = regionDrops,
                 crate_stages = crateStages, crate_opens = CrateOpens, shop_stages = shopStages,
                 fishing_stages = fishingStages, fishing_casts = Casts, fishing_power = FishingPower, chest_stages = chestStages, chest_opens = ChestOpens }, Formatting.Indented));
+            yield return WikiKnowledgeExport(folder);
             Plugin.Log.LogInfo($"[AutoTest] Wiki 资源导出 {count} 张，缺失 {failures} 张{(failures > 0 ? "，不通过" : "")}");
         }
 

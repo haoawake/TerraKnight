@@ -375,13 +375,13 @@ namespace TerraKnight.Items
             if (c != null) c.Melee = p.Melee;
         }
 
-        /// <summary>A raining cloud's life, in updates: 30 seconds (Terraria's 18000, five minutes, outlasts a Hallownest room's fight).</summary>
-        const int CloudLife = 1800;
+        /// <summary>A raining cloud's life, in updates: Terraria's 18000, five minutes (SetDefaults' timeLeft for 238 and 244).</summary>
+        const int CloudLife = 18000;
 
         /// <summary>
         /// AI_045 for 238: rains a drop (239) 5 px an update down from within 14 px of its middle
         /// every 9 updates while nothing solid is within 20 px under it; six frames of 9 (three over
-        /// blocks); after <see cref="CloudLife"/> updates it fades out; with more than three, the oldest fades. The
+        /// blocks); after <see cref="CloudLife"/> updates it fades out; with more than two, the oldest fades. The
         /// Crimson Rod's (244) rains blood (245) every 11 and keeps only one.
         /// </summary>
         void StepNimbusCloud(Proj p)

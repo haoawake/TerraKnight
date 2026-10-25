@@ -778,11 +778,13 @@ namespace TerraKnight
             inv.Slots[31] = ItemStack.Of(ItemType.ShadeCloak);
             inv.Slots[32] = ItemStack.Of(ItemType.CrystalHeart);
             yield return null;
-            bool offered = InventoryGui.DevOffered().Contains(ItemType.HallownestShield);
+            bool offered = InventoryGui.DevOffered().Contains(ItemType.CrystalShield);
             inv.Mouse = default;
-            bool made = InventoryGui.DevCraft(ItemType.HallownestShield);
+            bool firstShield = InventoryGui.DevCraft(ItemType.CrystalShield);
+            if (firstShield) { inv.Slots[30] = inv.Mouse; inv.Mouse = default; }
+            bool made = firstShield && InventoryGui.DevCraft(ItemType.HallownestShield);
             bool used = inv.Slots[30].IsEmpty && inv.Slots[31].IsEmpty && inv.Slots[32].IsEmpty;
-            V301Check("工匠作坊旁用三件合成圣巢之盾", workshop && offered && made && used && inv.Mouse.Type == ItemType.HallownestShield,
+            V301Check("工匠作坊旁分步合成晶心之盾和晶影之盾", workshop && offered && made && used && inv.Mouse.Type == ItemType.HallownestShield,
                 $"放下工匠作坊 {workshop}（{Stations.DevWhy}），列表里有 {offered}，做出 {made}，三件用掉 {used}，鼠标上 {inv.Mouse.Def?.Name}");
             inv.Mouse = default;
             Shop.DevStage = stage;
@@ -853,6 +855,8 @@ namespace TerraKnight
             }
             if (enemy == null) { V301Check("暗影冲刺穿过敌人", false, "找不到怪"); yield break; }
             enemy.hp = Mathf.Max(enemy.hp, 5000);
+            // A hit while it waits leaves a life (the enemy's own attacks, faster on the hard difficulties, could end the run).
+            Player.TerraStats.DevImmortal = true;
             var erb = enemy.GetComponent<Rigidbody2D>();
             if (erb != null) { erb.linearVelocity = Vector2.zero; erb.bodyType = RigidbodyType2D.Kinematic; }
             var eb = enemy.GetComponent<Collider2D>().bounds;
@@ -891,6 +895,7 @@ namespace TerraKnight
                         shotShade = true;
                         Shot("Crossroads_01", doubleTap ? "fx_shadow_doubletap" : "fx_shadow_key");
                     }
+                    if (enemy == null) break;
                     enemy.transform.position = stand;
                     if (t > 0.2f && Time.frameCount % 4 == 0) tr.Append($" [{t:F2} x{hero.transform.position.x - eb.min.x:F2} y{hero.transform.position.y - eb.min.y:F2} v{hero.GetComponent<Rigidbody2D>().linearVelocity.x:F1},{hero.GetComponent<Rigidbody2D>().linearVelocity.y:F1} 冲{(Player.TerraMovement.IsDashing ? 1 : 0)} 影{(AbilityAccessories.ShadowDashing ? 1 : 0)} 输入{(hero.acceptingInput ? 1 : 0)} 无敌{(hero.cState.invulnerable ? 1 : 0)} 后退{(hero.cState.recoiling ? 1 : 0)} 怪{enemy.transform.position.x - stand.x:F2}]");
                     yield return null;
@@ -918,6 +923,21 @@ namespace TerraKnight
             passed = hero.transform.position.x - eb.max.x;
             V301Check("圣巢之盾：按住冲刺键蓄力时双击方向键打出暗影冲刺；冷却中按键无效", refused && AbilityAccessories.DevShadowDashes > shadows0 && passed > 0f && mod.Stats.Life == lifeBefore,
                 $"冷却中没冲 {refused}；双击后暗影冲刺 {AbilityAccessories.DevShadowDashes - shadows0} 次，冲过怪的右边 {passed:F2}，掉血 {lifeBefore - mod.Stats.Life}，{AbilityAccessories.DevPress}，超级冲刺状态机 {HeroFsm(hero, "Superdash")?.ActiveStateName}");
+            // A plain double tap (the Dash key not held, TerraMod's): the shadow dash when it is ready, the Shield's dash
+            // while it cools down.
+            AbilityAccessories.DevDashKey = false;
+            yield return new WaitForSeconds(1.7f);
+            mod.Stats.FullHeal();
+            int taps0 = AbilityAccessories.DevTapShadows, plain0 = Player.TerraMovement.DevDashes;
+            shadows0 = AbilityAccessories.DevShadowDashes;
+            bool tapShadow = AbilityAccessories.TapShadowDash(-1);
+            yield return new WaitForSeconds(0.45f);
+            bool tapAgain = AbilityAccessories.TapShadowDash(-1);
+            if (!tapAgain) Player.TerraMovement.RequestDash(-1);
+            yield return new WaitForSeconds(0.45f);
+            V301Check("圣巢之盾：不按冲刺键直接双击方向键先出暗影冲刺，暗影冲刺冷却中的双击是普通冲刺",
+                tapShadow && !tapAgain && AbilityAccessories.DevTapShadows == taps0 + 1 && AbilityAccessories.DevShadowDashes == shadows0 + 1 && Player.TerraMovement.DevDashes > plain0,
+                $"第一次双击暗影冲刺 {tapShadow}，冷却中第二次 {tapAgain}，暗影冲刺 {AbilityAccessories.DevShadowDashes - shadows0} 次，普通冲刺 {Player.TerraMovement.DevDashes - plain0} 次");
             AbilityAccessories.DevDashKey = null;
 
             // 5. The shade gate: a plain dash stops at it, a shadow dash goes through, and it shuts after.

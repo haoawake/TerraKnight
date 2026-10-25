@@ -7,12 +7,12 @@ namespace TerraKnight.Items
     /// Each boss's own measure on top of its Terraria stand-in (<see cref="BossStats"/>): life, defense
     /// and damage by how it fights. A big, slow or armoured boss has more life and defense and hits no
     /// harder; a quick, agile one less life and defense and harder hits; one that fights through
-    /// summons or hazards hits softer itself. Whether its attacks can be broken off: the bosses the game
-    /// itself staggers (its Stun Control: Hornet, the Soul Master, the Traitor Lord, the Hive Knight, the
-    /// Broken Vessel, Grimm, the Hollow Knight...) are staggered again, once for every 2.2% of their life
-    /// taken (about as often as the nail's slashes stagger them in the game), not by every hit of a fast
-    /// weapon; the rest keep their super armour. All of it on every difficulty and stage alike: those
-    /// set the stand-in's life and damage, this only shapes it.
+    /// summons or hazards hits softer itself. Its attacks are broken off as the game breaks them: every boss
+    /// with its own Stun Control (Hornet, the Soul Master, the Traitor Lord, the Hive Knight, the Broken
+    /// Vessel, Grimm, the Hollow Knight...) hears a hit as a nail's slash, at most once a quick slash's time
+    /// (<see cref="StunGap"/>), above 40% life; at or below that it has super armour. Hollow uses the same stagger rules as Master. The stun flags below note which the
+    /// game staggers; the bosses' own FSMs decide. The rest on every difficulty and stage alike: those set the
+    /// stand-in's life and damage, this only shapes it.
     ///
     /// A boss fought in phases (the False Knight's rounds, the Soul Master's two, the Mantis Lords', the
     /// Watcher Knights', Oro and Mato's) has a whole stand-in's life in each (<see cref="BossPhases"/>).
@@ -39,6 +39,7 @@ namespace TerraKnight.Items
             ["FalseKnight"] = T(1.15f, 1.5f, 1.0f, false, "身躯庞大、盔甲厚重，动作慢"),
             ["BigFly"] = T(1.1f, 1.0f, 0.9f, false, "体型大、飞得慢，撞击为主"),
             ["Mawlek"] = T(1.2f, 1.2f, 1.0f, false, "体型大，酸液和跳压"),
+            ["BigBuzzer"] = T(0.95f, 0.9f, 1.0f, false, "飞得快的大反击蝇，叫来小蝇"),
             // Stage 1
             ["Hornet"] = T(0.8f, 0.6f, 1.2f, true, "灵活快速，原版能被打出硬直"),
             ["MegaMossCharger"] = T(1.1f, 1.3f, 0.9f, false, "厚重冲撞，招式单一"),
@@ -49,6 +50,7 @@ namespace TerraKnight.Items
             ["TraitorLord"] = T(0.95f, 0.9f, 1.15f, true, "攻势凶猛，原版能被打出硬直"),
             ["MantisLord"] = T(0.85f, 0.7f, 1.2f, false, "身法灵活的三位领主"),
             ["MageLord"] = T(0.85f, 0.6f, 1.2f, true, "瞬移施法、身体脆弱，原版能被打出硬直"),
+            ["MageKnight"] = T(0.85f, 0.7f, 1.15f, false, "瞬移冲撞的灵魂战士"),
             ["MegaJellyfish"] = T(0.8f, 0.8f, 1.0f, false, "只在短暂的空隙能受伤"),
             ["FlukeMother"] = T(1.0f, 1.0f, 0.7f, false, "不动，靠孵出的吸虫攻击"),
             ["MegaBeamMiner"] = T(1.0f, 1.3f, 1.1f, false, "缓慢厚重，激光伤害高"),
@@ -93,21 +95,25 @@ namespace TerraKnight.Items
             return table.TryGetValue(record, out t) ? t : Plain;
         }
 
-        /// <summary>A boss whose attacks can be broken off takes a stagger for every this much of its life.</summary>
-        public const float StunEvery = 0.022f;
+        /// <summary>The least time between two hits a boss's stagger counts: a quick slash's (Quick Slash's nail cooldown).</summary>
+        public const float StunGap = 0.25f;
 
         /// <summary>
-        /// Whether this hit counts towards the boss's own stagger (its Stun Control): for a boss that can
-        /// be broken off, once each <see cref="StunEvery"/> of its whole life dealt; never for one in super
-        /// armour or an elite.
+        /// Whether this hit counts towards the boss's own stagger (its Stun Control, the game's STUN DAMAGE): for any
+        /// boss above 40% life, at most once each <see cref="StunGap"/>;
+        /// never an elite's. A boss without a Stun Control hears nothing of it either way.
         /// </summary>
-        public static bool StunCounts(EnemyStats.Info info, int terraDamage)
+        public const int ArmourLifePercent = 40;
+
+        /// <summary>At or below 40% native health, including this hit, no new stagger is accumulated.</summary>
+        public static bool SuperArmour(EnemyStats.Info info, int incomingGameDamage = 0) =>
+            info != null && info.Boss && (info.Hm != null && (long)Mathf.Max(0, info.Hm.hp - Mathf.Max(0, incomingGameDamage)) * 100 <= (long)Mathf.Max(1, info.MaxHp) * ArmourLifePercent);
+
+        public static bool StunCounts(EnemyStats.Info info, int incomingGameDamage = 0)
         {
-            if (info == null || !info.Boss || info.Ref == null || !Of(info.Record, EnemyDrops.VariantLevel(info.Scene)).Stun) return false;
-            float every = Mathf.Max(1f, EnemyStats.LifePhase(info) * StunEvery);
-            info.StunCarry += terraDamage;
-            if (info.StunCarry < every) return false;
-            info.StunCarry -= every;
+            if (info == null || !info.Boss || SuperArmour(info, incomingGameDamage)) return false;
+            if (Time.time - info.LastStunCount < StunGap) return false;
+            info.LastStunCount = Time.time;
             DevStuns++;
             return true;
         }

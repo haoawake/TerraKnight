@@ -55,6 +55,7 @@ namespace TerraKnight.Items
             }
             yield return new WaitForSecondsRealtime(0.2f);
             var done = new List<string>();
+            Refind(room, done);
             yield return RestoreWorldBattle(key, room, record, done);
             var before = States(room, record);
             for (int attempt = 0; attempt < 3; attempt++)
@@ -72,6 +73,7 @@ namespace TerraKnight.Items
                     if (why != null)
                     {
                         DevStarted++;
+                        BossArena.CloseGates();
                         DevLast = $"{key} 开战（{why}）：{string.Join("，", done)}";
                         Plugin.Log.LogInfo("[首领召唤物] " + DevLast);
                         TerraMod.Instance?.StartCoroutine(Free(room, record));
@@ -83,6 +85,50 @@ namespace TerraKnight.Items
             }
             DevLast = $"{key} 未确认开战：{string.Join("，", done)}";
             Plugin.Log.LogWarning("[首领召唤物] " + DevLast);
+        }
+
+        /// <summary>
+        /// What the room's scripts found by name as it loaded (FindGameObject), while the room left behind was still loaded,
+        /// in that room: gone with it. A warrior's dream reached straight from another's: Elder Hu's "Warrior" was Gorb's,
+        /// and his fight's start woke nothing. Found again in this room.
+        /// </summary>
+        static void Refind(string room, List<string> done)
+        {
+            int n = 0;
+            foreach (var f in Object.FindObjectsByType<PlayMakerFSM>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var sc = f.gameObject.scene;
+                if (sc.name != room && sc.name != room + "_boss") continue;
+                foreach (var st in f.FsmStates)
+                    foreach (var a in st.Actions)
+                    {
+                        if (!(a is HutongGames.PlayMaker.Actions.FindGameObject find) || find.store == null || find.objectName == null) continue;
+                        string name = find.objectName.Value;
+                        // A script not yet started finds its own when it starts.
+                        if (string.IsNullOrEmpty(name) || find.store.IsNone || !f.Fsm.Started) continue;
+                        var was = find.store.Value;
+                        if (was != null && (was.scene.name == room || was.scene.name == room + "_boss" || was.scene.name == "DontDestroyOnLoad")) continue;
+                        var again = Named(sc, name);
+                        if (again == null) continue;
+                        find.store.Value = again;
+                        n++;
+                    }
+            }
+            if (n > 0) done.Add($"重新找到房间里的对象 {n} 个");
+        }
+
+        /// <summary>An object of a scene by its name (an active one first, as GameObject.Find takes).</summary>
+        static GameObject Named(UnityEngine.SceneManagement.Scene scene, string name)
+        {
+            GameObject inactive = null;
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name != name) continue;
+                    if (t.gameObject.activeInHierarchy) return t.gameObject;
+                    if (inactive == null) inactive = t.gameObject;
+                }
+            return inactive;
         }
 
         // A completed world encounter may load only its empty base room. Restore the native
@@ -313,16 +359,22 @@ namespace TerraKnight.Items
                 if (hero == null || hero.cState.dead) yield break;
                 // Only the start's: once the fight is under way (the player has had a second and a half in hand, or the
                 // boss is hurt or down) what holds the player is the fight's own (a death, the Radiance's last blow).
+                bool underWay = false;
                 foreach (var hm in Parts(room, record))
                 {
                     int id = hm.GetInstanceID();
-                    if (hm.isDead || hp.TryGetValue(id, out int was) && hm.hp < was) yield break;
+                    if (hm.isDead || hp.TryGetValue(id, out int was) && hm.hp < was) underWay = true;
                     if (!hp.ContainsKey(id)) hp[id] = hm.hp;
                 }
                 bool free = GameHooks.PlayerHasControl();
                 if (!free) freeSince = -1f;
                 else if (freeSince < 0f) freeSince = Time.realtimeSinceStartup;
-                else if (Time.realtimeSinceStartup - freeSince > 1.5f) yield break;
+                else if (Time.realtimeSinceStartup - freeSince > 1.5f) underWay = true;
+                if (underWay)
+                {
+                    Vulnerable(room);
+                    yield break;
+                }
                 if (free || UI.HudDialogue.DevOpen) heldSince = -1f;
                 else if (heldSince < 0f) heldSince = Time.realtimeSinceStartup;
                 else if (Time.realtimeSinceStartup - heldSince > 4f)
@@ -332,11 +384,28 @@ namespace TerraKnight.Items
                     PlayerData.instance.SetBool("disablePause", false);
                     DevFreed++;
                     Plugin.Log.LogInfo("[首领召唤物] 开战后把操作还给玩家（" + room + "）");
+                    Vulnerable(room);
                     yield break;
                 }
                 yield return new WaitForSecondsRealtime(0.1f);
             }
         }
+
+        /// <summary>
+        /// The fight under way, the player can be hurt again: an opening skipped on the way may have made him invincible
+        /// for itself and never got to the step that ends that (the Troupe Master's "Initial Scene": Take Control on,
+        /// Battle Start off), and he went through the whole fight untouchable.
+        /// </summary>
+        static void Vulnerable(string room)
+        {
+            var pd = PlayerData.instance;
+            if (pd == null || !pd.GetBool("isInvincible")) return;
+            pd.SetBool("isInvincible", false);
+            DevVulnerable++;
+            Plugin.Log.LogInfo("[首领召唤物] 开战后取消开场留下的无敌（" + room + "）");
+        }
+
+        public static int DevVulnerable;
 
         /// <summary>
         /// A boss's words before its fight (the Troupe Master's) skipped: while they show, the box put down and the FSM in

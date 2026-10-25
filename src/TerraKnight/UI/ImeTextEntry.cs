@@ -13,6 +13,8 @@ namespace TerraKnight.UI
         static ImeTextEntry owner;
         Keyboard keyboard;
         bool legacyAvailable;
+        bool imeApplied, wasFocused;
+        Vector2? cursor;
         IMECompositionMode oldMode;
         int readFrame = -100, imeFrame = -100, compositionEventFrame = -100;
         public bool Active { get; private set; }
@@ -32,6 +34,7 @@ namespace TerraKnight.UI
             imeFrame = -100;
             compositionEventFrame = -100;
             readFrame = Time.frameCount;
+            imeApplied=false;wasFocused=Application.isFocused;cursor=null;
             try { oldMode = Input.imeCompositionMode; legacyAvailable = true; }
             catch (InvalidOperationException) { legacyAvailable = false; }
             Ensure();
@@ -45,17 +48,23 @@ namespace TerraKnight.UI
             {
                 Detach();
                 keyboard = current;
+                imeApplied=false;cursor=null;
                 if (keyboard != null)
                 {
                     keyboard.onTextInput += Text;
                     keyboard.onIMECompositionChange += Composing;
                 }
             }
-            // Reassert after window focus changes and IMGUI's own focus processing.
+            bool focused=Application.isFocused;
+            if(focused&&!wasFocused)imeApplied=false;
+            wasFocused=focused;
+            if(imeApplied)return;
+            // Native IME commands are state changes, not draw commands.
             if (legacyAvailable)
                 try { Input.imeCompositionMode = IMECompositionMode.On; }
                 catch (InvalidOperationException) { legacyAvailable = false; }
             keyboard?.SetIMEEnabled(true);
+            imeApplied=true;
         }
 
         void Text(char c)
@@ -100,6 +109,8 @@ namespace TerraKnight.UI
         {
             if (!Active) return;
             Ensure();
+            if(cursor.HasValue&&cursor.Value==point)return;
+            cursor=point;
             if (legacyAvailable)
                 try { Input.compositionCursorPos = point; }
                 catch (InvalidOperationException) { legacyAvailable = false; }

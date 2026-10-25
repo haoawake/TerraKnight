@@ -44,6 +44,7 @@ namespace TerraKnight.Items
                 // Closed with the inventory: the crafting window and the Hallownest bag go with it.
                 if (!value && open)
                 {
+                    ClearRecipeTracking();
                     EndRename(false);
                     EndBookSearch();
                     grid = false;
@@ -51,6 +52,7 @@ namespace TerraKnight.Items
                     blacklistOpen = false;
                     statsOpen = false;
                     Charms.ForgetTries();
+                    CharmIntro = false;
                 }
                 open = value;
             }
@@ -59,7 +61,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory, InfoToggle, BuilderToggle, CreativeStage, RecipeTracePanel, RecipeTraceIngredient, RecipeTraceSource, RecipeTraceAction }
 
         struct Hit
         {
@@ -95,8 +97,11 @@ namespace TerraKnight.Items
         /// <summary>Every frame of play: the inventory's clicks, held buttons and the wheel, on Terraria's 60 Hz tick.</summary>
         public static void Tick()
         {
+            if(Casino.IsOpen){leftPress=rightPress=false;stackSplit=0;return;}
             var mouse = Mouse.current;
             if (mouse == null || TerraMod.Instance == null) return;
+            TerrariaAssets.TickDeferred();
+            if(RecipeTracking.Active)RecipeTracking.TickSources();
             TickRename();
             TickBookSearch();
             leftPress |= UI.TerraCursor.LeftPressed(mouse);
@@ -120,6 +125,11 @@ namespace TerraKnight.Items
                     }
                     else if (wheel > 0.1f) ScrollBestiary(-1);
                     else if (wheel < -0.1f) ScrollBestiary(1);
+                }
+                else if (RecipeTracking.Active)
+                {
+                    if(wheel>.1f)trackingScroll=Mathf.Max(0,trackingScroll-3);
+                    else if(wheel<-.1f)trackingScroll+=3;
                 }
                 else if (Town.TownNpcs.PanelOpen)
                 {
@@ -273,6 +283,16 @@ namespace TerraKnight.Items
                 case Kind.Recipe:
                     ClickRecipe(hit.Index, leftPress || rightPress, leftHeld || rightHeld);
                     return;
+                case Kind.RecipeTracePanel: return;
+                case Kind.RecipeTraceIngredient:
+                    if(leftPress)TrackIngredient(hit.Index,false);
+                    return;
+                case Kind.RecipeTraceSource:
+                    if(leftPress)TrackIngredient(hit.Index,true);
+                    return;
+                case Kind.RecipeTraceAction:
+                    if(leftPress)TrackAction(hit.Index);
+                    return;
                 case Kind.FilterEntry:
                     ClickFilter(hit.Index, leftPress, rightPress);
                     return;
@@ -285,10 +305,27 @@ namespace TerraKnight.Items
                         Sound("Menu_Tick");
                     }
                     return;
+                case Kind.InfoToggle:
+                    // Main.DrawInfoAccs: a click on an information icon hides its line, or shows it again.
+                    if (leftPress) { UI.InfoAccessories.ToggleHidden(hit.Index); Sound("Menu_Tick"); }
+                    return;
+                case Kind.BuilderToggle:
+                    // The ruler ticks (SoundID 12); the block swap unlocks (SoundID 22).
+                    if (leftPress) { UI.BuilderToggles.Toggle(hit.Index); Sound(hit.Index == UI.BuilderToggles.BlockSwapIndex ? "Unlock" : "Menu_Tick"); }
+                    return;
+                case Kind.CreativeStage:
+                    if (leftPress && Items.CreativeStage.Chosen != hit.Index)
+                    {
+                        Items.CreativeStage.Set(hit.Index);
+                        Sound("Menu_Tick");
+                        UI.CenterNotice.Show(Lang.F("当前阶段：{0}", hit.Index));
+                    }
+                    return;
                 case Kind.Settings:
                     if (!leftPress) return;
                     if (hit.Index == 0) TerraMod.Instance?.OpenGameMenu();
                     else if (hit.Index == 1) TerraMod.Instance?.OpenSettings();
+                    else if (hit.Index == 3) TerraMod.Instance?.OpenAchievements();
                     else OpenWiki();
                     return;
                 case Kind.Loadout:
@@ -313,6 +350,13 @@ namespace TerraKnight.Items
                     else if (hit.Index == 5) Town.TownNpcs.TaxCollect();
                     else if (hit.Index == 6) Town.TownNpcs.OpenReforge();
                     else if (hit.Index == 7) Town.TownNpcs.OpenForge();
+                    else if (hit.Index == 8) Town.TownNpcs.OpenRecoveryShop();
+                    else if (hit.Index == 9)
+                    {
+                        // Main.OpenHairWindow: the chat gives way to the hair window.
+                        Town.TownNpcs.Close(false);
+                        UI.AppearanceWindow.OpenHair();
+                    }
                     else Town.TownNpcs.Close(true);
                     return;
                 case Kind.GuideSlot:
@@ -396,15 +440,21 @@ namespace TerraKnight.Items
                             int page = hit.Index == 2 ? CharmPage : 2;
                             equipPage = equipPage == page && !fromHousing ? 0 : page;
                             Charms.ForgetTries();
+                            if (hit.Index == 2) CharmIntro = false;
                         }
                         Sound("Menu_Open");
                     }
                     return;
                 case Kind.CharmSlot:
-                    if (leftPress) ClickCharm(hit.Index, hit.Rect);
+                    // The favourite key held: favourited, its skill the key's (InventoryGuiCharms.FavoriteCharm).
+                    if (leftPress) { if (Alt) FavoriteCharm(hit.Index); else ClickCharm(hit.Index, hit.Rect); }
                     return;
                 case Kind.CharmWorn:
-                    if (leftPress && Charms.WornList != null && hit.Index < Charms.WornList.Count) ClickCharm(Charms.WornList[hit.Index], hit.Rect);
+                    if (leftPress && Charms.WornList != null && hit.Index < Charms.WornList.Count)
+                    {
+                        int charm = Charms.WornList[hit.Index];
+                        if (Alt) FavoriteCharm(charm); else ClickCharm(charm, hit.Rect);
+                    }
                     return;
                 case Kind.Misc:
                     if (leftPress) LeftClickMisc(hit.Index);
@@ -437,14 +487,22 @@ namespace TerraKnight.Items
                 return;
             }
             // Quick selling on: the click sells the stack (InventoryGuiSell.cs).
+            // These two lists act as sale panels: Ctrl sells once without changing either list.
+            if (Ctrl && (blacklistOpen || World.Chests.SellListOpen))
+            {
+                if (inv.Mouse.IsEmpty) SellStack(ref slot);
+                return; // Protected stacks must never fall through into the ordinary trash slot.
+            }
             if (SellFromSlot(ref slot)) return;
+            // A panel that takes items open: the click puts the item there (InventoryGuiUtilities.cs).
+            if (PanelTakesClick(i, ref slot)) return;
             // ItemSlot.OverrideHover / SellOrTrash: with an NPC's shop open, Shift+click sells the stack too.
-            if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.CannotDiscard)
+            if (Shift && Town.TownNpcs.ShopOpen && !slot.IsEmpty && !slot.Favorite && !slot.Def.CannotSell)
             {
                 Town.TownNpcs.Sell(ref slot);
                 return;
             }
-            if (Ctrl && !slot.IsEmpty && !slot.Favorite && !slot.Def.CannotDiscard)
+            if (Ctrl && !slot.IsEmpty && !slot.Favorite && (!slot.Def.CannotDiscard || Town.TownNpcs.ShopOpen && !slot.Def.CannotSell))
             {
                 if (Town.TownNpcs.ShopOpen)
                 {
@@ -459,7 +517,12 @@ namespace TerraKnight.Items
                 Sound("Grab");
                 return;
             }
-            // A Hallownest item: Shift+click sends it to its bag; put down only in the hotbar.
+            if (Shift && World.Chests.IsOpen && !slot.IsEmpty && !slot.Favorite)
+            {
+                World.Chests.Put(ref slot);
+                return;
+            }
+            // Without open storage, Hallownest items shift into their dedicated bag.
             if (Shift && ShiftHkToBag(ref slot)) return;
             if (i >= Inventory.HotbarSize && RefuseHkOutside()) return;
             // ItemSlot.ShiftClick with a chest open: the stack goes into it.
@@ -788,7 +851,15 @@ namespace TerraKnight.Items
             {
                 // Recipe.CollectGuideRecipes: every recipe the Guide's item goes into, whatever can be made now.
                 foreach (var r in Recipes.All)
-                    if (!r.IsBought && System.Array.Exists(r.Ingredients, g => g.Type == guide.Type)) recipes.Add(r);
+                {
+                    if (r.IsBought) continue;
+                    foreach (var g in r.Ingredients)
+                        if (g.Type == guide.Type)
+                        {
+                            recipes.Add(r);
+                            break;
+                        }
+                }
             }
             else if (Shop.Free)
             {
@@ -805,31 +876,37 @@ namespace TerraKnight.Items
                 // (the stations and waters in reach, what the bag and the chests near the player hold), as
                 // CanMakeHere and Recipes.HasIngredients would find it for each.
                 nearStations.Clear();
-                foreach (var s in World.Stations.NearNames(hero)) nearStations.Add(s);
+                World.Stations.NearNames(hero, nearStations);
                 System.Array.Clear(environments, 0, environments.Length);
-                CountCarried(World.Chests.ForCrafting(hero));
+                nearChests.Clear();
+                World.Chests.ForCrafting(hero, nearChests);
+                CountCarried(nearChests);
                 foreach (var r in Recipes.All)
                 {
                     if (r.IsBought && !ProgressionBalance.Unlocked(r.Result)) continue;
-                    if (r.IsBought ? !here : !ByHand(r) && !nearStations.Contains(r.Station)) continue;
+                    if (r.IsBought ? !here : !ByHand(r) && !DevAnyStation && !nearStations.Contains(r.Station)) continue;
                     if (!EnvironmentHere(r.Environment)) continue;
-                    if (!inv.Infinite && !Carried(r)) continue;
+                    if (!inv.FreeMaking && !Carried(r)) continue;
                     recipes.Add(r);
                 }
                 // A basic item that can be made from what is carried isn't offered for money as well (a torch from wood and gel).
-                var made = new HashSet<ItemType>();
-                foreach (var r in recipes) if (!r.IsBought) made.Add(r.Result);
-                recipes.RemoveAll(r => r.IsBought && made.Contains(r.Result));
+                madeHere.Clear();
+                foreach (var r in recipes) if (!r.IsBought) madeHere.Add(r.Result);
+                recipes.RemoveAll(r => r.IsBought && madeHere.Contains(r.Result));
             }
             // NewCraftingUI.UpdateContents: then the list is cut down to the chosen filter
             // (RecipeFilter.Accepts); the window offers the categories alone, nothing else.
             ApplyFilter();
             // TryRefocusingRecipe: stay on the same item when the list changes.
-            int found = recipes.FindIndex(r => (int)r.Result == keep);
+            int found = -1;
+            for (int i = 0; i < recipes.Count && found < 0; i++) if ((int)recipes[i].Result == keep) found = i;
             focus = found >= 0 ? found : Mathf.Clamp(focus, 0, Mathf.Max(0, recipes.Count - 1));
         }
 
+        // Kept for the list made every frame the column shows.
         static readonly HashSet<string> nearStations = new HashSet<string>();
+        static readonly List<ItemStack[]> nearChests = new List<ItemStack[]>();
+        static readonly HashSet<ItemType> madeHere = new HashSet<ItemType>();
         static readonly Dictionary<ItemType, int> carried = new Dictionary<ItemType, int>();
 
         /// <summary>The crafting environments found this refresh (0 not asked yet, 1 here, -1 not).</summary>
@@ -849,6 +926,7 @@ namespace TerraKnight.Items
         {
             carried.Clear();
             Tally(inv.Slots);
+            Tally(inv.HkBag);
             if (chests != null) foreach (var slots in chests) Tally(slots);
         }
 
@@ -877,7 +955,7 @@ namespace TerraKnight.Items
         /// </summary>
         static bool CanMakeHere(Recipe r, bool here) =>
             (!r.IsBought || ProgressionBalance.Unlocked(r.Result)) && CraftEnvironments.Available(r.Environment)
-            && (r.IsBought ? here : ByHand(r) || World.Stations.Near(r.Station, HeroController.SilentInstance));
+            && (r.IsBought ? here : ByHand(r) || DevAnyStation || World.Stations.Near(r.Station, HeroController.SilentInstance));
 
         static void Scroll(int delta)
         {
@@ -897,6 +975,11 @@ namespace TerraKnight.Items
         static void ClickRecipe(int i, bool press, bool held)
         {
             if (i < 0 || i >= recipes.Count) return;
+            if(Town.TownNpcs.GuideCraftOpen&&!Town.TownNpcs.GuideItem.IsEmpty)
+            {
+                if(press){focus=i;focusY=0f;StartRecipeTracking(recipes[i]);}
+                return;
+            }
             if (i != focus)
             {
                 if (!press) return;
@@ -939,6 +1022,8 @@ namespace TerraKnight.Items
                 }
                 if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(r.Result, 0);
                 inv.Mouse.Count += r.Count;
+                inv.RecordCollection(r.Result);
+                HallownestRecovery.Record(inv, r.Result);
                 made++;
             }
             if (made == 0) return;
@@ -964,19 +1049,21 @@ namespace TerraKnight.Items
         /// </summary>
         public static void Draw(Inventory inv, bool smartCursor)
         {
+            if(Casino.IsOpen){MouseOverUi=true;hits.Clear();return;}
             deferredLines.Clear();
             deferring = true;
             try { DrawPanels(inv, smartCursor); }
             finally
             {
                 deferring = false;
-                foreach (var d in deferredLines) DrawLines(d.Mouse, d.Lines, d.First, d.Colors);
+                foreach (var d in deferredLines) DrawLines(d.Mouse, d.Lines, d.First, d.Colors, d.Columns);
                 deferredLines.Clear();
             }
         }
 
         static bool deferring;
-        static readonly List<(Vector2 Mouse, List<string> Lines, Color First, Dictionary<int, Color> Colors)> deferredLines = new List<(Vector2, List<string>, Color, Dictionary<int, Color>)>();
+        static readonly List<(Vector2 Mouse, List<string> Lines, Color First, Dictionary<int, Color> Colors, List<string> Columns)> deferredLines =
+            new List<(Vector2, List<string>, Color, Dictionary<int, Color>, List<string>)>();
 
         static void DrawPanels(Inventory inv, bool smartCursor)
         {
@@ -1011,10 +1098,10 @@ namespace TerraKnight.Items
                 DrawSlot(rect, st, back, inv.Infinite);
                 if (r == 0)
                 {
-                    Outlined(new Rect(rect.x + 4f * ui, rect.y + 1f * ui, 20f * ui, 18f * ui), ((c + 1) % 10).ToString(), labelStyle, Color.white);
+                    Outlined(new Rect(rect.x + 4f * ui, rect.y + 1f * ui, 20f * ui, 18f * ui), Num((c + 1) % 10), labelStyle, Color.white);
                     long left = HotbarCount(st);
                     if (left >= 0)
-                        Outlined(new Rect(rect.x + 6f * ui, rect.yMax - 20f * ui, rect.width, 18f * ui), inv.Infinite && left > 0 ? "∞" : left.ToString(), labelStyle, Color.white);
+                        Outlined(new Rect(rect.x + 6f * ui, rect.yMax - 20f * ui, rect.width, 18f * ui), inv.Infinite && left > 0 ? "∞" : Num(left), labelStyle, Color.white);
                 }
                 if (rect.Contains(mouse))
                 {
@@ -1105,7 +1192,7 @@ namespace TerraKnight.Items
                 }
 
                 // Equipment column on the right, under the life and mana display: armor, then accessories.
-                float ax = view.xMax - 120f * ui, ay = view.y + 230f * ui;
+                float ax = view.xMax - 120f * ui, ay = view.y + (230f + EquipShift(view, ui)) * ui;
                 DrawEquipPageIcon(new Vector2(ax + 52f * ui, ay - 46f * ui), ui, mouse);
                 if (Town.TownNpcs.PanelOpen)
                 {
@@ -1193,11 +1280,14 @@ namespace TerraKnight.Items
                 if (!World.Chests.IsOpen && !Town.TownNpcs.ShopOpen && !Town.TownNpcs.ForgeMode && !Town.TownNpcs.ReforgeOpen)
                     DrawUtilityButtons(view, ui, mouse);
 
+                DrawToggles(inv, view, ui, mouse);
+                if (Shop.Free) DrawCreativeStage(view, ui, mouse, x0 + Inventory.Columns * step + 8f * ui);
+
                 // Terraria's Settings button in the bottom-right corner: "设置" opens the game's own menu, "泰拉瑞亚设置" over it
-                // Terraria's (the autoswing switch, the key bindings), "Wiki" over that the mod's wiki in the browser. Drawn in
-                // plain white whatever tint is left on the GUI.
+                // Terraria's (the autoswing switch, the key bindings), "Wiki" over that the mod's wiki in the browser, "成就"
+                // over that the achievements. Drawn in plain white whatever tint is left on the GUI.
                 var settingsTint = GUI.color;
-                for (int k = 0; k < 3; k++)
+                for (int k = 0; k < 4; k++)
                 {
                     var settings = new Rect(view.xMax - 330f * ui, view.yMax - (50f + 42f * k) * ui, 310f * ui, 36f * ui);
                     Add(settings, Kind.Settings, k);
@@ -1205,15 +1295,17 @@ namespace TerraKnight.Items
                     buttonStyle.fontSize = Mathf.RoundToInt((hover ? 30 : 26) * ui);
                     if (k == 0) CheckSettingsLook(settings, settingsTint);
                     GUI.color = Color.white;
-                    Outlined(settings, k == 2 ? "Wiki" : Lang.T(k == 0 ? "设置" : "泰拉瑞亚设置"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
+                    Outlined(settings, k == 2 ? "Wiki" : Lang.T(k == 0 ? "设置" : k == 1 ? "泰拉瑞亚设置" : "成就"), buttonStyle, hover ? new Color(1f, 0.85f, 0.3f) : Color.white);
                     if (k == 2 && hover) DrawLines(mouse, new List<string> { Lang.T("在浏览器中打开空洞泰拉 Wiki"), WikiUrl }, Color.white);
                 }
                 GUI.color = settingsTint;
             }
 
             DrawChat(view, ui, mouse);
+            DrawAppearanceWindow(view);
             BookHint = null;
             if (Open && bestiaryOpen) DrawBestiary(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+            if (Open) DrawRecipeTracking(view,ui,mouse,ref hovered,ref hoveredExtra,ref hoveredKind);
             if (Open && hkOpen && !bestiaryOpen) DrawHkBag(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             if (Open && blacklistOpen) DrawBlacklist(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             if (Open && statsOpen)
@@ -1223,7 +1315,8 @@ namespace TerraKnight.Items
                 hovered = default;
                 hoveredExtra = null;
             }
-            MouseOverUi = UI.WorldMap.MouseOnMinimap(mouse);
+            if (Open) DrawCharmIntro(ui);
+            MouseOverUi = Casino.IsOpen || UI.WorldMap.MouseOnMinimap(mouse);
             foreach (var p in panels)
                 if (p.Contains(mouse)) MouseOverUi = true;
 
@@ -1315,13 +1408,19 @@ namespace TerraKnight.Items
             if (hovered >= 0)
             {
                 int type = Player.PlayerBuffs.Type[hovered];
-                var buffLines = new List<string> { Player.PlayerBuffs.Name(type), Player.PlayerBuffs.Desc(type) };
-                // The Monster Banner's monsters under it (Banners).
-                Banners.BuffLines(type, buffLines);
-                DrawLines(mouse, buffLines, Color.white);
+                buffLines.Clear();
+                buffLines.Add(Player.PlayerBuffs.Name(type));
+                buffLines.Add(Player.PlayerBuffs.Desc(type));
+                // The Monster Banner's monsters under it, in columns (Banners).
+                bannerNames.Clear();
+                Banners.BuffLines(type, bannerNames);
+                DrawLines(mouse, buffLines, Color.white, null, bannerNames);
             }
             return n == 0 ? 0 : (n - 1) / 11 + 1;
         }
+
+        /// <summary>The hovered buff's name and description, and the Monster Banner's monsters, kept from frame to frame.</summary>
+        static readonly List<string> buffLines = new List<string>(), bannerNames = new List<string>();
 
         /// <summary>Dev: whether a point (GUI coordinates) is on the interface as last drawn.</summary>
         public static bool DevOverUi(Vector2 p) => UI.WorldMap.MouseOnMinimap(p) || panels.Exists(r => r.Contains(p));
@@ -1346,7 +1445,7 @@ namespace TerraKnight.Items
             string icon = null;
             if (kind == Kind.Slot && Alt) icon = "UI/Cursor_3";
             else if (kind == Kind.Slot && hovered.Favorite) return;
-            else if (kind == Kind.Slot && Ctrl) icon = Town.TownNpcs.ShopOpen ? "UI/Cursor_10" : "UI/Cursor_6";
+            else if (kind == Kind.Slot && Ctrl) icon = Town.TownNpcs.ShopOpen || blacklistOpen || World.Chests.SellListOpen ? "UI/Cursor_10" : "UI/Cursor_6";
             else if (kind == Kind.Slot && Shift && Town.TownNpcs.ShopOpen) icon = "UI/Cursor_10";
             else if (kind == Kind.Slot && sellMode && inv.Mouse.IsEmpty && Sellable(hovered, out _)) icon = "UI/Cursor_10";
             else if ((kind == Kind.Armor || kind == Kind.Accessory) && Alt) icon = "UI/Cursor_3";
@@ -1447,7 +1546,7 @@ namespace TerraKnight.Items
                             GUI.DrawTexture(rect, TerrariaAssets.Texture("Inventory_Back4"));
                             DrawIconOnly(rect, ItemStack.Of(t));
                             int carried = Recipes.Count(inv, t), have = Recipes.Count(inv, t, near);
-                            Outlined(new Rect(rect.x + 2f * ui, rect.yMax - 16f * ui, 60f * ui, 16f * ui), n.ToString(), labelStyle,
+                            Outlined(new Rect(rect.x + 2f * ui, rect.yMax - 16f * ui, 60f * ui, 16f * ui), Num(n), labelStyle,
                                 have >= n ? Color.white : new Color(1f, 140 / 255f, 160 / 255f));
                             panels.Add(rect);
                             if (rect.Contains(mouse))
@@ -1508,7 +1607,7 @@ namespace TerraKnight.Items
             float w = tex.width / 3f, h = tex.height / 2f;
             var rect = new Rect(center.x - w * 0.42f * ui, center.y - h * 0.42f * ui, w * 0.85f * ui, h * 0.85f * ui);
             GUI.DrawTextureWithTexCoords(rect, tex, new Rect(0f, 0.5f, 1f / 3f, 0.5f));
-            Outlined(new Rect(rect.x, rect.y + rect.height * 0.25f, rect.width, 22f * ui), defense.ToString(), nameStyle, Color.white);
+            Outlined(new Rect(rect.x, rect.y + rect.height * 0.25f, rect.width, 22f * ui), Num(defense), nameStyle, Color.white);
             if (!rect.Contains(UI.TerraCursor.GuiMouse())) return;
             var stats = TerraMod.Instance.Stats;
             var bonus = Equipment.Current;
@@ -1745,7 +1844,7 @@ namespace TerraKnight.Items
             DrawIconOnly(rect, stack);
             // ItemSlot.Draw: the number only for more than one (testing shows ∞ on anything that stacks).
             if (infinite ? stack.Def.MaxStack > 1 : stack.Count > 1)
-                Outlined(new Rect(rect.x + 6f * ui, rect.yMax - 20f * ui, rect.width, 18f * ui), infinite ? "∞" : stack.Count.ToString(), labelStyle, Color.white);
+                Outlined(new Rect(rect.x + 6f * ui, rect.yMax - 20f * ui, rect.width, 18f * ui), infinite ? "∞" : Num(stack.Count), labelStyle, Color.white);
         }
 
         static void DrawIconOnly(Rect rect, ItemStack stack)
@@ -1756,7 +1855,11 @@ namespace TerraKnight.Items
             float frameH = icon.height / (float)ItemFrames.FramesOf(stack.Def.Texture);
             float fit = Mathf.Min(1f, 32f / Mathf.Max(icon.width, frameH)) * ui * (rect.width / (SlotSize * ui));
             float w = icon.width * fit, h = frameH * fit;
-            GUI.DrawTextureWithTexCoords(new Rect(rect.center.x - w / 2f, rect.center.y - h / 2f, w, h), icon, ItemFrames.CoordsNow(stack.Def.Texture));
+            var at = new Rect(rect.center.x - w / 2f, rect.center.y - h / 2f, w, h);
+            var coords = ItemFrames.CoordsNow(stack.Def.Texture);
+            GUI.DrawTextureWithTexCoords(at, icon, coords);
+            // ItemSlot.Draw: the glowmask over it (the rainbow blades' are their blades).
+            if (stack.Def.Glow != null) ItemGlows.DrawIcon(at, stack.Def, coords);
         }
 
         static readonly string[] className = { "", "近战", "远程", "魔法", "召唤" };
@@ -1797,6 +1900,7 @@ namespace TerraKnight.Items
             if (def.Defense > 0) lines.Add(Lang.F("{0} 防御", def.Defense));
             if (def.IsArmor) lines.Add(Lang.T(def.Armor == ArmorSlot.Head ? "头部装备" : def.Armor == ArmorSlot.Body ? "身体装备" : "腿部装备"));
             if (def.IsAccessory) lines.Add(Lang.T("可装备"));
+            if (HallownestRecovery.IsUnique(def.Type)) lines.Add(Lang.T("不可丢弃；获得过后可在哥布林处补购"));
             if (def.Places != World.CellKind.Empty || def.PlacesStation != World.StationKind.None || def.PlacesChest) lines.Add(Lang.T("可放置"));
             if (def.Consumable && !def.IsAmmo) lines.Add(Lang.T("消耗品"));
             // A permanent booster this character has had already (each once; the Life Fruit twenty times): it can't be used again.
@@ -1828,6 +1932,30 @@ namespace TerraKnight.Items
                 lines.Add(Forging.IsArmorPiece(def.Unforged ?? def)
                     ? Lang.F("锻造 +{0}：防御 +{1}", def.Forge, def.Forge * Forging.DefensePerLevelOf(def.Unforged ?? def))
                     : Lang.F("锻造 +{0}：伤害 +{1}%", def.Forge, Mathf.RoundToInt(def.Forge * Forging.DamagePerLevel * 100f)));
+                int ranged = Forging.RangedLevel(def);
+                if (ranged > 0)
+                {
+                    lineColors[lines.Count] = new Color(1f, 0.82f, 0.35f);
+                    lines.Add(RangedForgeLine(ranged));
+                }
+            }
+            // The Nail's arts learned (NailArts).
+            if ((def.Unforged ?? def).Type == ItemType.KnightNail || def.Type == ItemType.KnightNail)
+            {
+                if (lineColors == null) lineColors = new Dictionary<int, Color>();
+                foreach (var l in NailArts.TooltipLines())
+                {
+                    lineColors[lines.Count] = new Color(0.65f, 0.85f, 1f);
+                    lines.Add(l);
+                }
+            }
+            // The recall items and the teleport rods: the key that uses them (TerraKeys.Action.Recall, DiscordTeleport).
+            string quickKey = TerraMod.QuickKeyLine(def);
+            if (quickKey != null)
+            {
+                if (lineColors == null) lineColors = new Dictionary<int, Color>();
+                lineColors[lines.Count] = new Color(0.65f, 0.85f, 1f);
+                lines.Add(quickKey);
             }
             if (def.IsArmor && def.Set != ArmorSet.None && Equipment.FullSet != ArmorSet.None
                 && (Equipment.FamilyOf(Equipment.FullSet) == def.Set || (def.Set == ArmorSet.Robe && (Equipment.FullSet == ArmorSet.Wizard || Equipment.FullSet == ArmorSet.MagicHat))))
@@ -1840,11 +1968,15 @@ namespace TerraKnight.Items
         /// <summary>Dev: the item tooltip last drawn, its lines.</summary>
         public static string DevTooltip = "";
 
-        static void DrawLines(Vector2 mouse, List<string> lines, Color first, Dictionary<int, Color> colors = null)
+        /// <summary>
+        /// A hover text: its lines, right of the cursor, the first in <paramref name="first"/>. A buff's tooltip passes
+        /// the Monster Banner's monsters as <paramref name="columns"/>, laid out under the lines as Terraria does.
+        /// </summary>
+        static void DrawLines(Vector2 mouse, List<string> lines, Color first, Dictionary<int, Color> colors = null, List<string> columns = null)
         {
             if (deferring)
             {
-                deferredLines.Add((mouse, lines, first, colors));
+                deferredLines.Add((mouse, lines, first, colors, columns));
                 return;
             }
             float ui = GameView.Scale;
@@ -1852,8 +1984,13 @@ namespace TerraKnight.Items
             float y = mouse.y - 8f * ui;
             // Keep the tooltip on screen near the right and bottom edges.
             float width = 0f;
-            foreach (var l in lines) width = Mathf.Max(width, tipStyle.CalcSize(new GUIContent(l)).x);
+            foreach (var l in lines) width = Mathf.Max(width, TipWidth(l));
             float x = mouse.x + 26f * ui;
+            if (columns != null && columns.Count > 0)
+            {
+                DrawBannerColumns(x, y, width, lines, first, columns, ui);
+                return;
+            }
             if (x + width > Screen.width - 10f) x = Mathf.Max(10f, mouse.x - width - 10f * ui);
             if (y + lines.Count * 22f * ui > Screen.height - 10f) y = Mathf.Max(10f, Screen.height - 10f - lines.Count * 22f * ui);
             y = Mathf.Max(4f, y);
@@ -1864,16 +2001,77 @@ namespace TerraKnight.Items
             }
         }
 
+        static readonly GUIContent tipContent = new GUIContent();
+
+        /// <summary>A hover line's width in the tooltip's style, measured through one kept content.</summary>
+        static float TipWidth(string text)
+        {
+            tipContent.text = text;
+            return tipStyle.CalcSize(tipContent).x;
+        }
+
+        /// <summary>Dev: the Monster Banner's names in the buff tooltip last drawn: how many (with "…"), rows a column, columns, the frame.</summary>
+        public static int DevBannerNames, DevBannerRows, DevBannerColumns, DevBannerFrame = -1;
+        /// <summary>Dev: the last list ended in "…" (more banners than the columns on screen hold).</summary>
+        public static bool DevBannerCut;
+        /// <summary>Dev: the box the buff tooltip took, its lines and every name (GUI coordinates).</summary>
+        public static Rect DevBannerBox;
+
+        /// <summary>
+        /// Main.MouseText_DrawBuffTooltip with bannerMouseOver (Main.cs:21592-21737), in the interface's scale: under the
+        /// buff's text each monster on a line of its own, 20 px apart, the first 30 px below the description's top
+        /// (Y + mouseTextSize.Y + n * 20 + 10); a column holds (screenHeight - Y - 24 - 72) / 20 of them (at least one),
+        /// and each next column goes 220 px right, from the top again. The whole box, measured where everything is drawn,
+        /// moves left and up to stay on screen (X + size.X + 24, Y + size.Y + 4), never past the 10 px margin; when there
+        /// are more than the columns the screen holds take, the last of them reads "…" (UI.Ellipsis) and the list stops
+        /// there, as vanilla ends on the last name before the column off the edge. The names in Terraria's green
+        /// (80, 255, 120) at the text's brightness.
+        /// </summary>
+        static void DrawBannerColumns(float x, float y, float width, List<string> lines, Color first, List<string> names, float ui)
+        {
+            float line = 22f * ui, row = 20f * ui, column = 220f * ui;
+            int rows = Mathf.Max(1, (int)((Screen.height - y) / ui - 24f - 72f) / 20);
+            int fit = Mathf.Max(1, (int)((Screen.width - 10f - 24f * ui) / column));
+            int shown = Mathf.Min(names.Count, fit * rows);
+            bool cut = shown < names.Count;
+            string ellipsis = cut ? TerrariaText.Get(Lang.Culture, "UI.Ellipsis") ?? "..." : null;
+            // The names start under the last line (the description), as vanilla's start under the buff's text.
+            float top = (lines.Count - 1) * line + 10f * ui;
+            float sizeX = width, sizeY = lines.Count * line;
+            for (int k = 0; k < shown; k++)
+            {
+                string text = cut && k == shown - 1 ? ellipsis : names[k];
+                sizeX = Mathf.Max(sizeX, k / rows * column + TipWidth(text));
+                sizeY = Mathf.Max(sizeY, top + (k % rows + 1) * row + line);
+            }
+            if (x + sizeX + 24f * ui > Screen.width) x = Screen.width - sizeX - 24f * ui;
+            if (y + sizeY + 4f * ui > Screen.height) y = Screen.height - sizeY - 4f * ui;
+            x = Mathf.Max(10f, x);
+            y = Mathf.Max(4f, y);
+            for (int i = 0; i < lines.Count; i++)
+                Outlined(new Rect(x, y + i * line, width + 20f * ui, line), lines[i], tipStyle, i == 0 ? first : new Color(0.85f, 0.85f, 0.85f));
+            var green = new Color(80 / 255f * 0.85f, 0.85f, 120 / 255f * 0.85f);
+            for (int k = 0; k < shown; k++)
+            {
+                string text = cut && k == shown - 1 ? ellipsis : names[k];
+                Outlined(new Rect(x + k / rows * column, y + top + (k % rows + 1) * row, column, line), text, tipStyle, green);
+            }
+            DevBannerNames = shown;
+            DevBannerRows = rows;
+            DevBannerColumns = (shown - 1) / rows + 1;
+            DevBannerCut = cut;
+            DevBannerBox = new Rect(x, y, sizeX, sizeY);
+            DevBannerFrame = Time.frameCount;
+        }
+
+        static readonly string[] numbers = new string[10000];
+
+        /// <summary>A number's text, made once for the counts a slot shows (drawn every frame).</summary>
+        static string Num(long n) => n >= 0 && n < numbers.Length ? numbers[n] ??= n.ToString() : n.ToString();
+
         static void Outlined(Rect r, string text, GUIStyle style, Color color)
         {
-            if (Event.current.type != EventType.Repaint || string.IsNullOrEmpty(text)) return;
-            float ui = GameView.Scale;
-            style.normal.textColor = new Color(0f, 0f, 0f, 0.85f * color.a);
-            for (int ox = -1; ox <= 1; ox++)
-            for (int oy = -1; oy <= 1; oy++)
-                if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 1.5f * ui, r.y + oy * 1.5f * ui, r.width, r.height), text, style);
-            style.normal.textColor = color;
-            GUI.Label(r, text, style);
+            UI.BorderText.Draw(r, text, style, new Color(0f, 0f, 0f, 0.85f * color.a), color, 1.5f * GameView.Scale);
         }
 
         static float nextSettingsLookLog;
@@ -1935,6 +2133,9 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Dev: takes one of an item from the crafting column onto the cursor, as a click on it would.</summary>
+        /// <summary>Dev: every recipe's station counts as within reach (suites checking recipes, not where they're made).</summary>
+        public static bool DevAnyStation;
+
         public static bool DevCraft(ItemType type)
         {
             RefreshRecipes();

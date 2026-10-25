@@ -291,6 +291,8 @@ namespace TerraKnight.Items
             public Proj Parent;
             /// <summary>The damage class of what shot it (its parent's for a projectile's own children).</summary>
             public DamageClass Class;
+            /// <summary>Made bigger than its kind (Shaman Stone on a magic shot): drawn and hitting that much bigger.</summary>
+            public float Grow = 1f;
             /// <summary>Projectile.arrow.</summary>
             public bool Arrow;
             /// <summary>AI_001_Features (ai[2]): 1 charmed by the Harpy Charm, 2 spent, 4 Phoenix-quivered, 8 Seraph-necklaced.</summary>
@@ -301,6 +303,8 @@ namespace TerraKnight.Items
             public int Hits;
             /// <summary>localNPCHitCooldown when it changes by state (a flail's); 0 = the spec's.</summary>
             public int Cooldown;
+            /// <summary>Shared owner immunity when the current state changes it (Last Prism's slow magic).</summary>
+            public int OwnerCooldown;
             /// <summary>ownerHitCheck by state (a spinning flail's).</summary>
             public bool OwnerCheck;
             /// <summary>The item it was thrown from (a yoyo's, a flail's).</summary>
@@ -312,6 +316,8 @@ namespace TerraKnight.Items
             /// <summary>A held spell's clock short of mana (<see cref="MagicTick"/>).</summary>
             public float SlowAcc;
             public int GemArmorPen;
+            /// <summary>The forging level of the ranged weapon that fired it (Forging.RangedLevel: armor penetration, crit damage), its children's too.</summary>
+            public int RangedForge;
             /// <summary>A flail wielded with its partner (Blue Moon and Sunfury), and the off-hand one of the pair; a second timer.</summary>
             public bool Dual, OffHand;
             public float Timer2;
@@ -331,19 +337,24 @@ namespace TerraKnight.Items
             /// <summary>Its own shot instead (the player's centre and the aim's direction, world units).</summary>
             public System.Action<Vector2, Vector2> Then;
             public DamageClass Class;
+            public int Forge;
         }
 
         /// <summary>The damage class new projectiles get: the weapon firing, or the projectile whose update makes them.</summary>
         public static DamageClass SpawnClass;
 
+        /// <summary>The ranged forging level new projectiles get, alongside <see cref="SpawnClass"/>.</summary>
+        public static int SpawnForge;
+
         /// <summary>Something to fire a number of ticks from now, aimed where the player aims then (a burst's later shots).</summary>
-        public void Later(int ticks, System.Action<Vector2, Vector2> fire) => pending.Add(new Pending { Ticks = ticks, Then = fire, Class = SpawnClass });
+        public void Later(int ticks, System.Action<Vector2, Vector2> fire) => pending.Add(new Pending { Ticks = ticks, Then = fire, Class = SpawnClass, Forge = SpawnForge });
 
         readonly List<Proj> live = new List<Proj>();
         readonly List<Pending> pending = new List<Pending>();
         readonly List<Collider2D> overlaps = new List<Collider2D>();
         /// <summary>NPC.immune[player]: an enemy hit by a non-local-immunity projectile can't be hit by another such shot for 10 ticks.</summary>
         readonly Dictionary<int, int> npcImmune = new Dictionary<int, int>();
+        readonly List<int> immuneTickKeys = new List<int>();
         /// <summary>Projectile.perIDStaticNPCImmunity: an enemy immune to a whole kind of projectile for a while.</summary>
         readonly Dictionary<(ProjKind, int), int> typeImmune = new Dictionary<(ProjKind, int), int>();
         static readonly List<(ProjKind, int)> typeKeys = new List<(ProjKind, int)>();
@@ -364,6 +375,17 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: the kind of the newest projectile made, and where it started.</summary>
         public static ProjKind DevLastKind = ProjKind.None;
+        /// <summary>Dev: the size the last shot was made (Shaman Stone: 1.3 on a magic one) and its class.</summary>
+        public static float DevLastGrow = 1f;
+
+        /// <summary>Dev: the live shots of a kind, and how many of them carry Shaman Stone's size.</summary>
+        public (int All, int Grown) DevGrown(ProjKind kind)
+        {
+            int all = 0, grown = 0;
+            foreach (var p in live) if (!p.Dead && p.Kind == kind) { all++; if (p.Grow > 1f) grown++; }
+            return (all, grown);
+        }
+        public static DamageClass DevLastClass;
         public static Vector2 DevLastFrom;
 
         /// <summary>Dev: how many enemy hits each kind has landed.</summary>
@@ -389,6 +411,14 @@ namespace TerraKnight.Items
         {
             foreach (var q in live) q.Dead = true;
             pending.Clear();
+        }
+
+        /// <summary>Dev: the gem bolts alive: their kind, features, pierce, time left and armour penetration.</summary>
+        public List<(ProjKind Kind, GemFx Gem, int Penetrate, int TimeLeft, int ArmorPen)> DevGemBolts()
+        {
+            var list = new List<(ProjKind, GemFx, int, int, int)>();
+            foreach (var q in live) if (!q.Dead && q.Gem != GemFx.None) list.Add((q.Kind, q.Gem, q.Penetrate, q.TimeLeft, q.GemArmorPen));
+            return list;
         }
 
         public int DevCount(ProjKind kind)
@@ -436,7 +466,7 @@ namespace TerraKnight.Items
 
         /// <summary>Projectile.GemStaffFeatures (1.4.5, ai[0]): what a gem staff's bolt does, by its gem and the robe worn.</summary>
         [System.Flags]
-        public enum GemFx : byte { None = 0, Homing = 1, Aoe = 2, Swirl = 4, FastSlow = 8, Bounce = 16, ArPen = 32, Bigger = 64, Repeats = 128 }
+        public enum GemFx : ushort { None = 0, Homing = 1, Aoe = 2, Swirl = 4, FastSlow = 8, Bounce = 16, ArPen = 32, Bigger = 64, Repeats = 128, AllGems = 256 }
 
         /// <summary>Each gem's own feature (PackGemStaffFeatures: Amethyst homing, Topaz the burst, Sapphire the twins, Emerald fast then slow, Amber bouncing, Ruby the spread, Diamond the bigger hitbox).</summary>
         public static GemFx GemOf(ProjKind kind) => kind switch
@@ -485,6 +515,14 @@ namespace TerraKnight.Items
             p.Penetrate = p.MaxPenetrate = 1 + more;
             p.TimeLeft = (fx & GemFx.FastSlow) != 0 ? 600 : 300;
             p.GemArmorPen = (fx & GemFx.ArPen) != 0 ? 4 : 0;
+            // The Bejeweled Staff's (AllGems, P:22286-22291): through two more and 4 armour penetration whatever its gems,
+            // gone after a second and a half.
+            if ((fx & GemFx.AllGems) != 0)
+            {
+                p.Penetrate = p.MaxPenetrate = 3;
+                p.GemArmorPen = 4;
+                p.TimeLeft = 90;
+            }
         }
 
         /// <summary>A minion's shot (stinger, fireball, laser): the minion's damage and knockback, never a crit of its own.</summary>
@@ -521,7 +559,7 @@ namespace TerraKnight.Items
         Proj Spawn(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int extraUpdates = 0, int useTicks = 0)
         {
             if (!specs.TryGetValue(kind, out var spec)) return null;
-            if ((spec.Ai == Ai.Boomerang || kind == ProjKind.HallowLance) && Holds(kind)) return null; // one out at a time
+            if ((spec.Ai == Ai.Boomerang || IsLance(kind)) && Holds(kind)) return null; // one out at a time
             // AI_001's launch clamp: no faster than 16 px an update on either axis.
             if (spec.Ai == Ai.Arrow)
                 for (int g = 0; g < 100 && (Mathf.Abs(velocity.x) >= 16f || Mathf.Abs(velocity.y) >= 16f); g++) velocity *= 0.97f;
@@ -535,6 +573,15 @@ namespace TerraKnight.Items
             if(kind==ProjKind.RazorbladeTyphoon) ClearTyphoonLaunch(p);
             p.Rot = Angle(velocity);
             p.Class = SpawnClass;
+            // Shaman Stone: a magic shot 30% bigger, its hitbox too.
+            if (p.Class == DamageClass.Magic && CharmEffects.SpellSize != 1f)
+            {
+                p.Grow = CharmEffects.SpellSize;
+                p.Scale *= p.Grow;
+            }
+            DevLastGrow = p.Grow;
+            DevLastClass = p.Class;
+            p.RangedForge = SpawnForge;
             p.Arrow = IsArrow(kind);
             DevSpawned[kind] = DevMade(kind) + 1;
             DevLastKind = kind;
@@ -598,8 +645,8 @@ namespace TerraKnight.Items
             if (PhantasmTime > 0) PhantasmTime--;
             if (npcImmune.Count > 0)
             {
-                var keys = new List<int>(npcImmune.Keys);
-                foreach (var k in keys) if (--npcImmune[k] <= 0) npcImmune.Remove(k);
+                immuneTickKeys.Clear();immuneTickKeys.AddRange(npcImmune.Keys);
+                foreach (var k in immuneTickKeys) if (--npcImmune[k] <= 0) npcImmune.Remove(k);
             }
             if (typeImmune.Count > 0)
             {
@@ -618,19 +665,31 @@ namespace TerraKnight.Items
                 var dir = (TerraMod.Instance != null ? TerraMod.Instance.DevAim ?? TerraMod.Instance.AimPoint : center + Vector2.right) - center;
                 if (dir.sqrMagnitude < 1e-4f) dir = Vector2.right;
                 SpawnClass = s.Class;
+                SpawnForge = s.Forge;
                 if (s.Then != null) s.Then(center, dir.normalized);
                 else Shoot(s.Kind, center, dir.normalized * s.Speed, s.Damage, s.Knockback, s.Crit);
                 SpawnClass = DamageClass.None;
+                SpawnForge = 0;
             }
             for (int i = 0; i < live.Count; i++)
             {
                 var p = live[i];
                 p.Ticks++;
-                var keys = new List<int>(p.Immune.Keys);
-                foreach (var k in keys) if (--p.Immune[k] <= 0) p.Immune.Remove(k);
+                if(p.Immune.Count>0) {
+                    immuneTickKeys.Clear();immuneTickKeys.AddRange(p.Immune.Keys);
+                    foreach(var k in immuneTickKeys)if(p.Immune[k]!=int.MaxValue&&--p.Immune[k]<=0)p.Immune.Remove(k);
+                }
                 int updates = p.Extra;
+                // A shot made magic after it was made (the spell's split wraiths, the staffs' souls): Shaman Stone's size from
+                // its first step, as one made magic is given it as it is made.
+                if (p.Ticks == 1 && p.Grow == 1f && p.Class == DamageClass.Magic && CharmEffects.SpellSize != 1f)
+                {
+                    p.Grow = CharmEffects.SpellSize;
+                    p.Scale *= p.Grow;
+                }
                 // What it makes as it goes is of its class.
                 SpawnClass = ClassOf(p);
+                SpawnForge = p.RangedForge;
                 DevCurrentKind = p.Kind;
                 DevCurrentId = p.GetHashCode();
                 devCurrent = p;
@@ -640,6 +699,7 @@ namespace TerraKnight.Items
                 devCurrent = null;
             }
             SpawnClass = DamageClass.None;
+            SpawnForge = 0;
             for (int i = live.Count - 1; i >= 0; i--)
                 if (live[i].Dead) Remove(i);
             TickGhosts();
@@ -793,8 +853,10 @@ namespace TerraKnight.Items
                     StepBee(p);
                     break;
                 case Ai.Spear:
-                    // Held by the player, not moved: it hits where the thrust puts it.
+                    // Held by the player, not moved: it hits where the thrust puts it. Its own part after the thrust's
+                    // (the Storm Spear's bolt, the Rotted Fork's and the Slime Spear's motes).
                     StepSpear(p, hero);
+                    if (!p.Dead) s.Update?.Invoke(this, p);
                     if (!p.Dead) HitEnemies(p);
                     return;
                 case Ai.Thrown2:
@@ -1308,6 +1370,26 @@ namespace TerraKnight.Items
             }
         }
 
+        /// <summary>A beam's ends and width, the width Shaman Stone's size on a magic one.</summary>
+        static (Vector2, Vector2, float) GrownBeam(Proj p)
+        {
+            if (p.Grow == 1f) return p.Spec.Beam(p);
+            float keep = p.Scale;
+            p.Scale = keep / p.Grow;
+            try { var (a, b, w) = p.Spec.Beam(p); return (a, b, w * p.Grow); }
+            finally { p.Scale = keep; }
+        }
+
+        /// <summary>An area's middle and size, the size Shaman Stone's on a magic one.</summary>
+        static (Vector2, Vector2) GrownArea(Proj p)
+        {
+            if (p.Grow == 1f) return p.Spec.HitArea(p);
+            float keep = p.Scale;
+            p.Scale = keep / p.Grow;
+            try { var (c, size) = p.Spec.HitArea(p); return (c, size * p.Grow); }
+            finally { p.Scale = keep; }
+        }
+
         void HitEnemies(Proj p)
         {
             if (p.Hostile)
@@ -1317,22 +1399,23 @@ namespace TerraKnight.Items
             }
             var s = p.Spec;
             // SetDefaults scales the hitbox once and truncates it (the laser keeps its 2×2 as it grows).
-            var size = (p.HitSize != Vector2.zero ? p.HitSize : new Vector2((int)(s.W * s.Scale), (int)(s.H * s.Scale))) * Px;
+            var size = (p.HitSize != Vector2.zero ? p.HitSize : new Vector2((int)(s.W * s.Scale), (int)(s.H * s.Scale))) * Px * p.Grow;
             // BiggerHitbox (the Diamond's, P:15458-15474): it hits 30 px further all round.
             if ((p.Gem & GemFx.Bigger) != 0) size += Vector2.one * 60f * Px;
             overlaps.Clear();
             var filter = new ContactFilter2D { useTriggers = true, useLayerMask = true, layerMask = MeleeHits.HitMask };
             if (s.Beam != null)
             {
-                // A beam: a box turned along it, as long as it and as wide (AABB against a thick line).
-                var (from, to, width) = s.Beam(p);
+                // A beam: a box turned along it, as long as it and as wide (AABB against a thick line); Shaman Stone's 30% on a
+                // magic one's width (p.Scale's share taken off for a width that reads it).
+                var (from, to, width) = GrownBeam(p);
                 Vector2 a = TerraParticles.ToWorld(from), b = TerraParticles.ToWorld(to), d = b - a;
                 if (width <= 0f || d.sqrMagnitude < 1e-6f) return;
                 Physics2D.OverlapBox((a + b) * 0.5f, new Vector2(d.magnitude, width * Px), Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg, filter, overlaps);
             }
             else if (s.HitArea != null)
             {
-                var (areaCentre, areaSize) = s.HitArea(p);
+                var (areaCentre, areaSize) = GrownArea(p);
                 Physics2D.OverlapBox(areaCentre, areaSize, 0f, filter, overlaps);
             }
             else Physics2D.OverlapBox(p.Pos, size, 0f, filter, overlaps);
@@ -1355,7 +1438,8 @@ namespace TerraKnight.Items
             {
                 if (p.Dead) return;
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null && p.Damage > 0) PropHits.Pulse(col, p.Pos - p.Vel.normalized * 0.3f, p.Vel.x >= 0f ? 1f : -1f, p.Damage);
+                // A prop, a pot, a geo deposit: hit as by a slash (MeleeHits.HitProp).
+                if (hm == null && p.Damage > 0) melee.HitProp(col, p.Damage, p.Vel.x >= 0f ? 1f : -1f, p.Pos - p.Vel.normalized * 0.3f, OnItsOwn(p));
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (!hitNow.Add(id)) continue;
@@ -1429,8 +1513,8 @@ namespace TerraKnight.Items
                 // A minion's or sentry's shot knocks nothing back.
                 float kb = p.MinionShot ? 0f : p.Knockback * (s.KnockbackScale != null ? s.KnockbackScale(p) : 1f);
                 // P:12855-12860: the Hive Pack's wasps go through 5 more defence.
-                int pen = Equipment.Current.ArmorPen + s.ArmorPen + p.GemArmorPen + (p.Kind == ProjKind.Wasp && Equipment.Current.StrongBees ? 5 : 0);
-                melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap, autonomous: p.MinionShot);
+                int pen = Equipment.Current.ArmorPen + s.ArmorPen + p.GemArmorPen + Forging.RangedPen(p.RangedForge) + (p.Kind == ProjKind.Wasp && Equipment.Current.StrongBees ? 5 : 0);
+                melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap, autonomous: p.MinionShot, critDamage: Forging.RangedCritDamage(p.RangedForge));
                 p.Hits++;
                 AccAfterHit(p, hm, dealt);
                 DevHits[p.Kind] = DevHit(p.Kind) + 1;
@@ -1447,7 +1531,7 @@ namespace TerraKnight.Items
                 else if (typed) typeImmune[typeKey] = s.TypeCooldown;
                 else if (!single && !s.NoImmunity)
                 {
-                    int ticks = s.OwnerImmune > 0 ? s.OwnerImmune : 10;
+                    int ticks = p.OwnerCooldown > 0 ? p.OwnerCooldown : s.OwnerImmune > 0 ? s.OwnerImmune : 10;
                     npcImmune[id] = ticks;
                     p.Immune[id] = ticks;
                 }
@@ -1777,9 +1861,11 @@ namespace TerraKnight.Items
                 foreach (var col in overlaps)
                 {
                     var hm = col.GetComponentInParent<HealthManager>();
+                    // An explosion breaks the pots and geo deposits in it too.
+                    if (hm == null && damage > 0) melee.HitProp(col, damage, col.bounds.center.x >= p.Pos.x ? 1f : -1f, p.Pos, p.MinionShot);
                     if (hm == null || hm.isDead || !done.Add(hm.GetInstanceID())) continue;
                     float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-                    if (melee.HitWith(col, damage, p.MinionShot ? 0f : s.BlastKnockback, 4f, facing, p.Pos, autonomous: p.MinionShot)) hitEnemies++;
+                    if (melee.HitWith(col, damage, p.MinionShot ? 0f : s.BlastKnockback, 4f, facing, p.Pos, Equipment.Current.ArmorPen + Forging.RangedPen(p.RangedForge), autonomous: p.MinionShot, critDamage: Forging.RangedCritDamage(p.RangedForge))) hitEnemies++;
                 }
 
             // The player, if caught in it (Terraria's explosives hurt their owner).
@@ -1881,6 +1967,8 @@ namespace TerraKnight.Items
         {
             var fx = FxBatch.Instance;
             if (fx == null) return;
+            bool previousEffect = fx.WeaponEffect;
+            fx.WeaponEffect = true;
             fx.OnTop = true;
             try
             {
@@ -1891,6 +1979,7 @@ namespace TerraKnight.Items
             finally
             {
                 fx.OnTop = false;
+                fx.WeaponEffect = previousEffect;
             }
         }
 
@@ -1905,6 +1994,7 @@ namespace TerraKnight.Items
             var px = TerraParticles.ToPx(p.Pos);
             var light = p.Kind == ProjKind.CrystalShard ? s.Light * (p.Scale * 0.5f) : s.Light;
             if (light.r + light.g + light.b > 0f && p.Delay <= 0) fx.Light(px, light, s.Ai == Ai.Thrown ? 3f : 2.5f);
+            if (p.Grow > 1f && p.Delay <= 0) CharmEffects.DrawSpellAura(fx, px, Mathf.Max(s.W, s.H) * s.Scale * p.Grow);
             // A projectile drawn its own way draws its own trail.
             if (s.TrailLength > 0 && p.Delay <= 0 && s.Ai != Ai.Missile && s.Draw == null) DrawTrail(fx, p);
             if (s.Ai == Ai.GemBolt)
@@ -1914,7 +2004,17 @@ namespace TerraKnight.Items
             }
             if (s.Draw != null)
             {
-                if (p.Delay <= 0) s.Draw(this, fx, p, px);
+                if (p.Delay > 0) return;
+                // Shaman Stone on a shot drawn its own way: every picture of it 30% larger round where it is drawn (a beam's only
+                // thicker), p.Scale's share of it taken off meanwhile for the draws that read it. Not a weapon held in the hand.
+                bool holdout = s.Held && s.OwnMove && s.Time <= 3;
+                if (p.Grow == 1f || holdout) { s.Draw(this, fx, p, px); return; }
+                float keep = p.Scale;
+                p.Scale = keep / p.Grow;
+                fx.Grow = p.Grow;
+                fx.GrowThick = s.Beam != null;
+                try { s.Draw(this, fx, p, px); }
+                finally { fx.Grow = 1f; fx.GrowThick = false; p.Scale = keep; }
                 return;
             }
             switch (s.Ai)
@@ -2363,12 +2463,12 @@ namespace TerraKnight.Items
             foreach (var col in overlaps)
             {
                 var hm = col.GetComponentInParent<HealthManager>();
-                if (hm == null && damage > 0) PropHits.Pulse(col, p.Pos, col.bounds.center.x >= p.Pos.x ? 1f : -1f, damage);
+                if (hm == null && damage > 0) melee.HitProp(col, damage, col.bounds.center.x >= p.Pos.x ? 1f : -1f, p.Pos, OnItsOwn(p));
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (id == p.LastHit || npcImmune.ContainsKey(id) || p.Immune.ContainsKey(id) || typeImmune.ContainsKey((p.Kind, id)) || !done.Add(id)) continue;
                 float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-                if (melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, p.Pos, Equipment.Current.ArmorPen + p.Spec.ArmorPen, autonomous: p.MinionShot)) hit.Add(id);
+                if (melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, p.Pos, Equipment.Current.ArmorPen + p.Spec.ArmorPen + Forging.RangedPen(p.RangedForge), autonomous: p.MinionShot, critDamage: Forging.RangedCritDamage(p.RangedForge))) hit.Add(id);
             }
             return hit;
         }
@@ -2385,7 +2485,7 @@ namespace TerraKnight.Items
             int id = hm.GetInstanceID();
             if (col == null || npcImmune.ContainsKey(id)) return false;
             float facing = col.bounds.center.x >= p.Pos.x ? 1f : -1f;
-            if (!melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, col.bounds.center, Equipment.Current.ArmorPen + p.Spec.ArmorPen, autonomous: p.MinionShot)) return false;
+            if (!melee.HitWith(col, damage, p.MinionShot ? 0f : knockback, p.Crit, facing, col.bounds.center, Equipment.Current.ArmorPen + p.Spec.ArmorPen + Forging.RangedPen(p.RangedForge), autonomous: p.MinionShot, critDamage: Forging.RangedCritDamage(p.RangedForge))) return false;
             npcImmune[id] = 10;
             DevHits[p.Kind] = DevHit(p.Kind) + 1;
             return true;
@@ -3233,6 +3333,7 @@ namespace TerraKnight.Items
                 length = seconds;
                 sr = GetComponent<SpriteRenderer>();
                 start = sr.color;
+                sr.color = World.Glow.Additive ? WeaponEffects.Additive(start) : WeaponEffects.Straight(start);
             }
 
             void Update()
@@ -3244,7 +3345,7 @@ namespace TerraKnight.Items
                     Destroy(gameObject);
                     return;
                 }
-                sr.color = start * k;
+                sr.color = World.Glow.Additive ? WeaponEffects.Additive(start*k) : WeaponEffects.Straight(start*k);
             }
         }
     }

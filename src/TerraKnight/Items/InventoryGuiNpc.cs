@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Terraria;
 using TerraKnight.Town;
 using UnityEngine;
@@ -71,20 +71,22 @@ namespace TerraKnight.Items
                 }
                 int index = entry - 1;
                 bool alive = TownNpcs.Lives(all[index].Internal);
+                string blocked = TownNpcs.PlacementBlocked(all[index]);
                 if (TownNpcs.PlacingName != null && TownNpcs.PlacingName == TownNpcs.DisplayName(all[index]))
                     Rim(rect, new Color(1f, 0.85f, 0.3f), 2f * ui);
-                DrawNpcHead(rect, all[index], alive ? 1f : 0.42f);
+                DrawNpcHead(rect, all[index], alive && blocked == null ? 1f : 0.42f);
                 if (over)
                 {
                     Fill(new Rect(rect.x, rect.y, rect.width, rect.height), new Color(1f, 1f, 1f, 0.12f));
                     var lines = new List<string> { TerrariaText.NpcName(Lang.Culture, all[index].Id) ?? all[index].Zh };
                     string house = TownNpcs.HouseArea(all[index].Internal);
-                    if (TownNpcs.Dismissed.Contains(all[index].Internal)) lines.Add(Lang.T("已经请走了，不会自己回来：左键选中再放下就回来"));
+                    if (blocked != null) lines.Add(blocked);
+                    else if (TownNpcs.Dismissed.Contains(all[index].Internal)) lines.Add(Lang.T("已经请走了，不会自己回来：左键选中再放下就回来"));
                     else if (house != null) lines.Add(Lang.F("住在{0}的房屋里：右键请它离开", house));
                     else if (TownNpcs.Present(all[index].Internal)) lines.Add(Lang.T("在德特茅斯：右键请它离开"));
                     else if (alive) lines.Add(Lang.T("已入住，现在不在"));
                     else lines.Add(Lang.T("还没来：左键选中，再点一把木椅；点别处就站在长椅上"));
-                    if (TownNpcs.Housable(all[index])) lines.Add(Lang.T("左键选中，再点一间合适的房屋：立刻住进去"));
+                    if (blocked == null && TownNpcs.Housable(all[index])) lines.Add(Lang.T("左键选中，再点一间合适的房屋：立刻住进去"));
                     if (TownNpcs.AutoArrives(all[index])) lines.Add(Lang.T("会自己入住"));
                     DrawLines(mouse, lines, Color.white);
                 }

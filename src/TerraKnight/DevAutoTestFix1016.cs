@@ -38,7 +38,7 @@ namespace TerraKnight
             else if (which == "fkgates") { yield return FkGatesTest(); Plugin.Log.LogInfo($"[AutoTest] 修复1016 合计 {fxOk}/{fxAll} {(fxOk == fxAll ? "通过" : "不通过")}"); }
             else if (which == "ggdoor") { yield return GodhomeDoorTest(); Plugin.Log.LogInfo($"[AutoTest] 修复1016 合计 {fxOk}/{fxAll} {(fxOk == fxAll ? "通过" : "不通过")}"); }
             else if (which == "props") { yield return PropsRootTest(); Plugin.Log.LogInfo($"[AutoTest] 修复1016 合计 {fxOk}/{fxAll} {(fxOk == fxAll ? "通过" : "不通过")}"); }
-            else if (which == "radiance") { yield return RadianceBlowTest(); Plugin.Log.LogInfo($"[AutoTest] 修复1016 合计 {fxOk}/{fxAll} {(fxOk == fxAll ? "通过" : "不通过")}"); }
+            else if (which == "radiance" || which == "radiancefall") { yield return RadianceBlowTest(); Plugin.Log.LogInfo($"[AutoTest] 修复1016 合计 {fxOk}/{fxAll} {(fxOk == fxAll ? "通过" : "不通过")}"); }
             else if (which.StartsWith("fsm_")) yield return SceneFsmDump(which.Substring(4));
             else if (which == "web") { yield return WebTrapProbe(false); Plugin.Log.LogInfo($"[AutoTest] 修复1016 合计 {fxOk}/{fxAll} {(fxOk == fxAll ? "通过" : "不通过")}"); }
             else if (which == "all" || which == "map" || which == "pause" || which == "trap" || which == "guard" || which == "stars" || which == "knock" || which == "reflect" || which == "time" || which == "candle" || which == "meteoronce" || which == "maskreturn") yield return Fix1016Checks(which);

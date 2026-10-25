@@ -33,7 +33,7 @@ namespace TerraKnight.World
                 {
                     Type = styleItemTypes[i], Name = StyleNames[i], Texture = "Item_" + StyleItems[i], PylonStyle = i, MaxStack = 99,
                     Source = ItemSource.Drop, Stage = 0, Rare = 1, Value = 100000, AutoReuse = false, UseAnimation = .25f, UseTime = .25f, NoMelee = true,
-                    Tooltip = "放在有空地的地面上（宽 3 格、高 4 格），之后和其他晶塔一样可以传送过来\n首领的战斗区域、梦境和神居里不能放\n用镐敲下来可以再搬到别处",
+                    Tooltip = "放在有空地的地面上（宽 3 格、高 4 格），之后和其他晶塔一样可以传送过来\n梦境和神居里不能放\n用镐敲下来可以再搬到别处",
                 });
         }
 
@@ -54,6 +54,16 @@ namespace TerraKnight.World
         static readonly Dictionary<Pylon, int> hits = new Dictionary<Pylon, int>();
 
         /// <summary>A pickaxe swung at a pylon in reach: pick power until 100 knocks it out, as its item. True when the swing was at one.</summary>
+        /// <summary>The smart cursor's Step_ForceCursorToAnyMinableThing: a lit pylon at this point in reach.</summary>
+        public static bool MinableAt(Vector2 p, HeroController hero)
+        {
+            if (hero == null) return false;
+            var reach = ReachRect(hero);
+            foreach (var o in spawned)
+                if (o != null && o.isActiveAndEnabled && o.Bounds.Contains(p) && reach.Overlaps(o.Bounds)) return !o.Pylon.Dormant;
+            return false;
+        }
+
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
             if (pick == null || pick.PickPower <= 0 || hero == null) return false;
@@ -62,6 +72,12 @@ namespace TerraKnight.World
             {
                 if (o == null || !o.isActiveAndEnabled || !o.Bounds.Contains(mouse) || !reach.Overlaps(o.Bounds)) continue;
                 var p = o.Pylon;
+                // Not lit yet: it stays (lit by resting on its bench).
+                if (p.Dormant)
+                {
+                    Refuse(mouse, "这座晶塔还没点亮，在旁边的长椅上坐一下");
+                    return true;
+                }
                 hits.TryGetValue(p, out int done);
                 done += pick.PickPower;
                 TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
@@ -120,13 +136,6 @@ namespace TerraKnight.World
             var corner = CellGrid.CellCenter(x0, y) - Vector2.one * (CellGrid.CellSize / 2f);
             var foot = new Rect(corner, size);
             if (!ReachRect(hero).Overlaps(foot)) return false;
-            for (int x = x0; x < x0 + WidthCells; x++)
-                for (int k = 0; k < HeightCells; k++)
-                    if (BossRooms.Locked(x, y + k))
-                    {
-                        Refuse(mouse, "首领的战斗区域里不能放晶塔");
-                        return false;
-                    }
             foreach (var o in spawned)
                 if (o != null && o.Bounds.Overlaps(foot))
                 {

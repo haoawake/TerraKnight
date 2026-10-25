@@ -24,6 +24,12 @@ namespace TerraKnight.Items
             foreach (var a in inv.EffectiveAccessories)
             {
                 if (a.IsEmpty) continue;
+                if (PlayerChallenges.AccessoriesLocked)
+                {
+                    // Preserve only the dash itself, not this accessory's defense, prefix, stats or other effects.
+                    if (a.Def.Bonus.DashKind != 0) b.DashKind = a.Def.Bonus.DashKind;
+                    continue;
+                }
                 b.Defense += a.Def.Defense;
                 b.Add(a.Def.Bonus);
             }
@@ -104,6 +110,8 @@ namespace TerraKnight.Items
                     : armor[0].Def.SetBonus != ArmorSet.None ? armor[0].Def.SetBonus : head;
             b.Add(SetBonus(FullSet));
             b.Add(ArmorEffects.DynamicBonuses());
+            // The charm bag's charms (Fury of the Fallen at its low line).
+            b.Add(CharmEffects.DynamicBonuses());
             b.Add(MeleeSpecials.DynamicBonuses());
             b.Add(Player.PotionBuffs.Bonuses());
             b.MagicDamage -= Player.PlayerBuffs.ManaSicknessPenalty;
@@ -326,7 +334,7 @@ namespace TerraKnight.Items
             float mult = 1f;
             switch (item.Class)
             {
-                case DamageClass.Melee: mult += b.MeleeDamage; break;
+                case DamageClass.Melee: mult += b.MeleeDamage + CharmEffects.NailBonus(item); break;
                 case DamageClass.Ranged:
                     mult += b.RangedDamage + (ammo != null && ammo.Ammo == AmmoKind.Arrow ? b.ArrowDamage : 0f);
                     // GetWeaponDamageMultiplier (Pl:54028-54060): the Shroomite heads' arrowDamage / bulletDamage / specialistDamage ×1.12 on the whole.
@@ -339,6 +347,8 @@ namespace TerraKnight.Items
             }
             if (item.Class == DamageClass.Magic) mult *= ManaHeat;
             int dmg = (int)(item.Damage * mult + 5e-6f) + (ammo != null ? (int)(ammo.Damage * mult) : 0);
+            // Soul Eater's whip mode: a whip doubled.
+            dmg = CharmEffects.WhipDamage(item, dmg);
             return UnityEngine.Mathf.Max(1, dmg);
         }
 
@@ -386,6 +396,8 @@ namespace TerraKnight.Items
             float c = 4f + item.Crit + b.AllCrit * 100f;
             // The Revolver's timing bonus (Item.cs:641, P:11134).
             if (item.Type == ItemType.Revolver && TerraMod.RevolverCrit > 0) c += TerraMod.RevolverCrit;
+            // A forged ranged weapon: half a point a level (Forging.RangedCrit).
+            c += Forging.RangedCrit(Forging.RangedLevel(item));
             switch (item.Class)
             {
                 case DamageClass.Melee: c += b.MeleeCrit * 100f; break;
@@ -419,7 +431,9 @@ namespace TerraKnight.Items
         }
 
         /// <summary>ApplyMeleeScale: the Power Glove makes melee weapons a tenth bigger.</summary>
-        public static float ItemScale(ItemDef item) => item.Scale * (item.Class == DamageClass.Melee && Current.MeleeScaleGlove ? 1.1f : 1f);
+        public static float ItemScale(ItemDef item) => item.Scale * (item.Class == DamageClass.Melee && Current.MeleeScaleGlove ? 1.1f : 1f)
+            // Mark of Pride and Longnail (CharmEffects.MeleeReach).
+            * (item.Class == DamageClass.Melee ? CharmEffects.MeleeReach : 1f);
 
         /// <summary>A use's length with melee speed: Terraria divides melee useAnimation by the melee speed.</summary>
         /// <summary>
@@ -427,7 +441,9 @@ namespace TerraKnight.Items
         /// (Pl:29251-29269: attack speed at most ×3, so never below a third).
         /// </summary>
         public static float UseScale(ItemDef item) =>
-            item.IsWhip ? WhipScale() : item.Class == DamageClass.Melee && !item.ShootsFinalFractal ? 1f / UnityEngine.Mathf.Min(3f, 1f + Current.MeleeSpeed) : 1f;
+            item.IsWhip ? WhipScale() : item.Class == DamageClass.Melee && !item.ShootsFinalFractal ? 1f / UnityEngine.Mathf.Min(3f, 1f + Current.MeleeSpeed)
+            // Spell Twister: magic 30% quicker.
+            : item.Class == DamageClass.Magic ? CharmEffects.MagicUseScale : 1f;
 
         /// <summary>The mana a use costs; the Tome of Infinite Wisdom's twister twice its own (Pl:53317-53325).</summary>
         public static int ManaCost(ItemDef item)
@@ -436,7 +452,8 @@ namespace TerraKnight.Items
             // The Meteor set (spaceGun, Pl:51200, 53333): the Space Gun, the Zapinators and the Laser Rifle cost nothing.
             if (Current.SpaceGunFree && (item.Type == ItemType.SpaceGun || item.Type == ItemType.ZapinatorGray || item.Type == ItemType.ZapinatorOrange || item.Type == ItemType.LaserRifle)) return 0;
             int mana = item.Type == ItemType.BookStaff && TerraMod.Instance != null && TerraMod.Instance.AltFunction ? item.Mana * 2 : item.Mana;
-            return UnityEngine.Mathf.Max(1, UnityEngine.Mathf.FloorToInt(mana * (1f - UnityEngine.Mathf.Clamp01(Current.ManaCost))));
+            // Spell Twister's tenth and Kingsoul's half for magic (CharmEffects.ManaFactor) on top of the gear's.
+            return UnityEngine.Mathf.Max(1, UnityEngine.Mathf.FloorToInt(mana * (1f - UnityEngine.Mathf.Clamp01(Current.ManaCost)) * CharmEffects.ManaFactor(item)));
         }
     }
 }

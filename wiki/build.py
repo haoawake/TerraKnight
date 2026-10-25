@@ -15,18 +15,23 @@ from pathlib import Path
 from urllib.parse import quote
 import markdown
 from world_map_page import content as world_map_content
+from knowledge import load as load_knowledge
+from player_content import apply as player_content, player_release_notes
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'artifacts/wiki-preview/terraknight-wiki'
 BASE = '/terraknight-wiki/'
-CATALOG_ROOT = Path(os.environ.get('TK_WIKI_SOURCE_ROOT', ROOT)).resolve()
+_active = json.loads((ROOT/'wiki-source.json').read_text('utf-8')) if (ROOT/'wiki-source.json').exists() else {}
+_snapshot = ROOT / _active.get('snapshot', '.')
+CATALOG_ROOT = Path(os.environ.get('TK_WIKI_SOURCE_ROOT', _snapshot if _snapshot.is_dir() else ROOT)).resolve()
 SOURCE = CATALOG_ROOT / '泰拉圣巢本地百科全书.md'
 VERSION = json.loads((CATALOG_ROOT/'wiki-source.json').read_text(encoding='utf-8')) if (CATALOG_ROOT/'wiki-source.json').exists() else {}
 TITLE = '空洞泰拉wiki'
 RELEASES_FILE = ROOT / 'wiki/releases.json'
-BUILD = hashlib.sha256(SOURCE.read_bytes() + RELEASES_FILE.read_bytes() + json.dumps(VERSION, sort_keys=True).encode('utf-8') + Path(__file__).read_bytes() + b''.join(p.read_bytes() for p in sorted((ROOT/'wiki/assets').glob('*')) if p.is_file()) + (ROOT/'wiki/world_map_page.py').read_bytes() + (ROOT/'artifacts/wiki-world-map/map.json').read_bytes() + (ROOT/'artifacts/wiki-illustrations/manifest.json').read_bytes()).hexdigest()[:12]
-NAV = [('map', '世界地图'), ('progress', '阶段与解锁'), ('items', '物品图鉴'), ('enemies', '怪物图鉴'),
-       ('npcs', 'NPC 与商店'), ('recipes', '合成配方'), ('fishing', '钓鱼与宝匣'), ('boss-summons', 'Boss 召唤物'), ('systems', '玩法系统'), ('changelog', '更新日志')]
+BUILD = hashlib.sha256(SOURCE.read_bytes() + RELEASES_FILE.read_bytes() + json.dumps(VERSION, sort_keys=True).encode('utf-8') + Path(__file__).read_bytes() + (ROOT/'wiki/knowledge.py').read_bytes() + b''.join(p.read_bytes() for p in sorted((CATALOG_ROOT/'tools').glob('encyclopedia_knowledge*.json'))) + b''.join(p.read_bytes() for p in sorted((ROOT/'wiki/assets').glob('*')) if p.is_file()) + (ROOT/'wiki/world_map_page.py').read_bytes() + (ROOT/'artifacts/wiki-world-map/map.json').read_bytes() + (ROOT/'artifacts/wiki-illustrations/manifest.json').read_bytes()).hexdigest()[:12]
+BUILD = hashlib.sha256((BUILD + (ROOT/'wiki/player_content.py').read_text('utf-8')).encode('utf-8')).hexdigest()[:12]
+NAV = [('knowledge', '全部资料'), ('map', '世界地图'), ('progress', '阶段与解锁'), ('items', '物品图鉴'), ('enemies', '怪物图鉴'),
+       ('npcs', 'NPC 与商店'), ('recipes', '合成配方'), ('fishing', '钓鱼与宝匣'), ('casino', '赌博概率'), ('dialogue', '全部台词'), ('enemy-ai', '攻击与打法'), ('boss-summons', 'Boss 召唤物'), ('systems', '玩法系统'), ('changelog', '更新日志')]
 
 
 def plain(value):
@@ -35,17 +40,39 @@ def plain(value):
     return re.sub(r'[`*#|_]', '', value).strip()
 
 
+table_serial = 0
+
+
 def render(value):
     result = markdown.markdown(value, extensions=['tables', 'fenced_code', 'toc'],
                                extension_configs={'toc': {'permalink': False}})
-    return re.sub(r'(<table>.*?</table>)', r'<div class="table-scroll" tabindex="0">\1</div>', result, flags=re.S)
+    def bounded(match):
+        global table_serial
+        table = match[0]
+        tbody = re.search(r'<tbody>(.*?)</tbody>', table, re.S)
+        if not tbody:
+            return '<div class="table-scroll" tabindex="0">'+table+'</div>'
+        rows = re.findall(r'<tr>.*?</tr>', tbody[1], re.S)
+        if len(rows) <= 48 or 'data-preserve-table' in table:
+            return '<div class="table-scroll" tabindex="0">'+table+'</div>'
+        table_serial += 1
+        directory = OUT/f'data/tables/{table_serial}'
+        directory.mkdir(parents=True, exist_ok=True)
+        for offset in range(0, len(rows), 24):
+            (directory/f'{offset//24}.json').write_text(json.dumps(rows[offset:offset+24],ensure_ascii=False,separators=(',',':')),'utf-8')
+        table=table[:tbody.start(1)]+''.join(rows[:24])+table[tbody.end(1):]
+        return f'<div class="table-scroll" tabindex="0" data-chunk-table="{table_serial}" data-total="{len(rows)}">{table}</div><noscript>完整表格可下载页脚百科；启用脚本可翻页。</noscript>'
+    # Recipes have their own 40-row chunker, below.
+    if value.startswith('<!-- recipe-table -->'):
+        return re.sub(r'(<table>.*?</table>)', r'<div class="table-scroll" tabindex="0">\1</div>',result,flags=re.S)
+    return re.sub(r'<table>.*?</table>', bounded, result, flags=re.S)
 
 
 def shell(title, content, active='', description='', toc=''):
     nav = ''.join(f'<a class="{"active" if active == key else ""}" href="{BASE}{key}.html">{label}</a>' for key, label in NAV)
     safe_title = html.escape(title)
     desc = html.escape(description or '空洞泰拉游戏百科：全物品获取、怪物实际血量、合成配方、NPC 商店与阶段解锁。', quote=True)
-    version_notice = (f'{html.escape(VERSION.get("version", ""))} 工作区版本 · 物品、配方与掉落实测快照'
+    version_notice = (f'{html.escape(VERSION.get("version", ""))} 本地更新版 · 游戏资料已同步'
                       if VERSION.get('kind') == 'workspace-snapshot' else
                       f'已发布版本 <a href="https://github.com/haoawake/TerraKnight/releases/tag/{html.escape(VERSION.get("tag", "v" + VERSION.get("version", "")))}">{html.escape(VERSION.get("version", ""))}</a> · 物品、配方、掉落与游戏图标已同步')
     notice_html = '' if active == 'changelog' else f'<div class="version-notice">{version_notice}</div>'
@@ -56,7 +83,7 @@ def shell(title, content, active='', description='', toc=''):
 <link rel="stylesheet" href="{BASE}assets/wiki.css?v={BUILD}"><script src="{BASE}assets/wiki.js?v={BUILD}" defer></script></head>
 <body><a class="skip" href="#main">跳到正文</a><header class="topbar"><a class="brand" href="{BASE}"><img src="{BASE}assets/crest.svg" width="34" height="34" alt=""><span>空洞泰拉<span class="brand-tag">WIKI</span></span></a>
 <nav aria-label="主导航">{nav}</nav><a class="search-link" href="{BASE}search.html">搜索百科 <kbd>/</kbd></a></header>
-<main id="main">{notice_html}{content}</main><footer><a href="{BASE}">空洞泰拉wiki</a><span>以当前 Mod 源码与游戏实测快照为依据 · <a href="{BASE}audit.html">数据来源</a> · <a href="{BASE}downloads/encyclopedia.md">下载百科 MD</a></span><a href="#main">回到顶部 ↑</a></footer>
+<main id="main">{notice_html}{content}</main><footer><a href="{BASE}">空洞泰拉wiki</a><span>当前版本游戏资料 · <a href="{BASE}audit.html">数据来源</a> · <a href="{BASE}downloads/encyclopedia.md">下载离线百科</a></span><a href="#main">回到顶部 ↑</a></footer>
 <div class="toast" role="status" aria-live="polite"></div></body></html>'''
 
 
@@ -81,6 +108,12 @@ def main():
     illustrations = ROOT / 'artifacts/wiki-illustrations'
     if illustrations.is_dir():
         shutil.copytree(illustrations, OUT / 'assets/illustrations', dirs_exist_ok=True)
+        packed = {}
+        for key,row in json.loads((illustrations/'manifest.json').read_text('utf-8')).items():
+            if row['kind'] not in packed:
+                packed[row['kind']] = {k:row[k] for k in ['sheet','cell','sheet_width','sheet_height']} | {'entries':[]}
+            packed[row['kind']]['entries'].append([key,row['x'],row['y']])
+        (OUT/'assets/illustrations/manifest-lite.json').write_text(json.dumps(packed,ensure_ascii=False,separators=(',',':')),'utf-8')
     source = SOURCE.read_text(encoding='utf-8')
     matches = list(re.finditer(r'<a id="([^"]+)"></a>\s*\n', source))
     sections = {}
@@ -121,12 +154,18 @@ def main():
         stage = re.search(r'入住阶段 (\d+)', part[1])
         entries.append({'id': f'npc-{i+1}', 'title': title, 'body': npcs['body'][part.end():end].strip(),
                         'kind': 'NPC', 'category': '城镇居民', 'stage': stage[1] if stage else '', 'parent': 'npcs'})
+    base_sections = set(sections)
+    coverage = load_knowledge(CATALOG_ROOT, sections, entries)
+    coverage.update(player_content(CATALOG_ROOT, sections, entries))
+    knowledge_sections = [s for key,s in sections.items() if key not in base_sections]
+    npc_intro = '[圣巢本地商店与服务](#native-shops) · [全部新版台词](#dialogue)\n\n城镇居民按能力阶段与条件入住。商品会随阶段、月相和首领进度变化，具体购买条件请查看居民词条。月相按游戏内时间轮换，共八个阶段。'
     releases = json.loads(RELEASES_FILE.read_text(encoding='utf-8'))
     assert releases and len({r['tag'] for r in releases}) == len(releases)
     releases.sort(key=lambda r: r['published_at'], reverse=True)
     log = []
     inline_notes = []
     for release in releases:
+        release['body'] = player_release_notes(release['body'])
         tag = release['tag']
         assert re.fullmatch(r'v\d+\.\d+\.\d+', tag), tag
         assert release['url'] == 'https://github.com/haoawake/TerraKnight/releases/tag/' + tag
@@ -199,7 +238,7 @@ def main():
             body = f'<p class="map-entry-link"><a href="{BASE}map.html#boss={quote(boss["id"])}">在世界地图定位：{html.escape(boss["name"])} →</a></p>' + body
         doc = f'''<div class="article-wrap"><div class="breadcrumbs"><a href="{BASE}">首页</a> / <a href="{BASE}{parent}.html">{e['kind']}图鉴</a> / 词条</div>
 <div class="article-heading"><div><span class="eyebrow">{html.escape(e['category'])} / 阶段 {e['stage'] or '—'}</span><h1>{html.escape(e['title'])}</h1></div><button class="bookmark" data-id="{e['id']}" aria-pressed="false">收藏词条 ☆</button></div>
-<div class="article-layout"><article class="prose">{body}</article><aside class="article-aside"><div class="aside-title">查阅提示</div><p>蓝绿色文字可跳转至相关物品、怪物和配方。</p><p>血量表依次为普通、困难、专家、大师、空洞；分阶段和多部位以词条说明为准。</p><a href="{BASE}reading.html">查看数据规则 →</a><a href="{BASE}search.html">搜索更多词条 →</a></aside></div></div>'''
+<div class="article-layout"><article class="prose">{body}</article><aside class="article-aside"><div class="aside-title">查阅提示</div><p>蓝绿色文字可跳转至相关物品、怪物和配方。</p><p>血量表依次为普通、困难、专家、大师、空洞；分阶段和多部位以词条说明为准。</p><a href="{BASE}reading.html">查阅说明 →</a><a href="{BASE}search.html">搜索更多词条 →</a></aside></div></div>'''
         write(e['id'] + '.html', shell(e['title'], doc, parent, plain(e['body'])[:140]))
 
     for key, section in sections.items():
@@ -207,11 +246,11 @@ def main():
         if key in ('items', 'index', 'enemies', 'npcs'):
             kind = {'items': '物品', 'index': '物品', 'enemies': '怪物', 'npcs': 'NPC'}[key]
             subset = [e for e in entries if e['kind'] == kind]
-            intro = npc_intro if key == 'npcs' else '全部物品均可按配置阶段和分类组合筛选，也可输入名称、内部 ID 或获取方式。配置阶段是物品标签，实际获取条件请查看词条。' if kind == '物品' else body
+            intro = npc_intro if key == 'npcs' else '全部物品均可按配置阶段和分类组合筛选，也可输入名称或获取方式。配置阶段是物品标签，实际获取条件请查看词条。' if kind == '物品' else body
             intro_html = render(rewrite(intro))
             if kind == '怪物':
                 notes = re.split(r'^### 战斗阶段 ', body, maxsplit=1, flags=re.M)[0].strip()
-                intro_html = '<p>按小怪、精英、首领与战斗阶段组合筛选，也可搜索名称、内部 ID 或掉落物。</p><details><summary>分类与血量说明</summary>' + render(rewrite(notes)) + '</details>'
+                intro_html = '<p>按小怪、精英、首领与战斗阶段组合筛选，也可搜索名称或掉落物。</p><details><summary>分类与血量说明</summary>' + render(rewrite(notes)) + '</details>'
             listing = cards(subset[:24])
             categories = ['小怪', '精英', '首领'] if kind == '怪物' else sorted(set(e['category'] for e in subset))
             shortcuts = ''
@@ -224,10 +263,10 @@ def main():
                     f'<a class="filter-link" data-value="{value}" href="?category={quote(value)}"'+(' aria-current="true"' if value == '' else '')+f'>{label}</a>'
                     for value, label in [('', f'全部 {len(subset)}')] + [(c, f'{c} {sum(e["category"] == c for e in subset)}') for c in categories]) + '</nav>' + shortcuts
             # Bound the initial DOM; the full catalog remains available through filtering.
-            filters = shortcuts + f'<div class="browse-controls"><label class="field">检索词条<input id="browse-query" type="search" placeholder="输入名称、内部 ID 或获取方式"></label><label class="field">阶段<select id="stage-filter"><option value="">全部阶段</option>{"".join(f"<option>{i}</option>" for i in range(6))}</select></label><label class="field">分类<select id="category-filter"><option value="">全部分类</option>{"".join(f"<option>{html.escape(c)}</option>" for c in categories)}</select></label></div><p id="result-count" class="muted" aria-live="polite">共 {len(subset)} 条记录</p>'
+            filters = shortcuts + f'<div class="browse-controls"><label class="field">检索词条<input id="browse-query" type="search" placeholder="输入名称或获取方式"></label><label class="field">阶段<select id="stage-filter"><option value="">全部阶段</option>{"".join(f"<option>{i}</option>" for i in range(6))}</select></label><label class="field">分类<select id="category-filter"><option value="">全部分类</option>{"".join(f"<option>{html.escape(c)}</option>" for c in categories)}</select></label></div><p id="result-count" class="muted" aria-live="polite">共 {len(subset)} 条记录</p>'
             content = f'<div class="page-wrap"><span class="eyebrow">THE FIELD GUIDE</span><h1>{section["title"]}</h1><div class="prose intro">{intro_html}</div><section data-browser="{kind}">{filters}<div id="browse-results">{listing}</div></section></div>'
         elif key == 'recipes':
-            rendered = render(rewrite(body))
+            rendered = render('<!-- recipe-table -->\n'+rewrite(body))
             table = re.search(r'<div class="table-scroll"[^>]*>(<table>.*?</table>)</div>', rendered, re.S)
             assert table, 'Recipe table missing'
             head = re.search(r'<thead>.*?</thead>', table[1], re.S)[0]
@@ -261,7 +300,7 @@ def main():
     home = f'''<section class="hero"><div class="hero-copy"><span class="eyebrow"><span class="live-dot"></span> TERRAKNIGHT · 泰拉瑞亚 × 空洞骑士</span><h1>一段冒险，<br>一整座<span>圣巢的知识。</span></h1><p>欢迎来到空洞泰拉wiki。<br>装备从哪里来，下一站去哪里，在这里找到答案。</p><form action="{BASE}search.html" class="hero-search"><label class="sr-only" for="home-query">搜索百科</label><span aria-hidden="true">⌕</span><input id="home-query" name="q" type="search" placeholder="搜索物品、怪物、材料、NPC…"><button type="submit">探索百科 →</button></form><div class="quick-links">热门查阅 <a href="{BASE}item-zenith.html">天顶剑</a><a href="{BASE}enemy-falseknight.html">假骑士</a><a href="{BASE}progress.html">阶段解锁</a><a href="{BASE}recipes.html">合成配方</a><a href="{BASE}boss-summons.html">Boss 召唤物</a></div></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><img src="{BASE}assets/crest.svg" alt=""><span class="art-note">在地表之下，继续探索。<br>THE KINGDOM BENEATH</span></div></section>
 <section class="stats" aria-label="收录统计">{stats}<a href="{BASE}audit.html">收录范围<br>与数据来源 ↗</a></section><section class="home-section"><div class="section-heading"><div><span class="eyebrow">YOUR ADVENTURE STARTS HERE</span><h2>选择你的探索方向</h2></div><a href="{BASE}index.html#all-guides">全部指南 ↓</a></div><div class="portals">{portal_html}</div></section>
 <section class="home-section split" id="all-guides"><div><span class="eyebrow">FROM FIRST STEPS TO THE FINAL LIGHT</span><h2>每一次解锁，<br>都是新的起点。</h2><p class="muted">六个成长阶段，串起能力、探索与城镇生活。<br>路线是建议，探索由你决定。</p><a class="button" href="{BASE}progress.html">查看完整成长路线 →</a></div><div class="stage-list">{''.join(f'<a href="{BASE}progress.html"><span>0{i}</span><div><strong>{name}</strong><small>{detail}</small></div><span>↗</span></a>' for i,name,detail in [(0,'初入圣巢','开局即为阶段 0'),(1,'蛾翼披风','击败苍绿之径的大黄蜂后取得'),(2,'螳螂爪','在螳螂村拾取，无需击败首领'),(3,'水晶之心','在水晶山峰拾取，无需击败首领'),(4,'帝王之翼','击败远古盆地的残破容器后取得'),(5,'暗影披风','击败王国边缘的大黄蜂得王者之印，再进深渊')])}</div></section>
-<section class="home-section guide-strip">{''.join(f'<a href="{BASE}{key}.html"><span>{name}</span><small>{desc}</small><b>↗</b></a>' for key,name,desc in [('npcs','NPC 与商店','入住、库存、月相与价格'),('systems','玩法系统','生命、装备、经济与探索'),('original','剧情与结局','原版 NPC 与终局路线'),('manual','安装与操作','上手、联机与配置参考')])}</section><div class="data-note">资料基于当前项目源码与游戏运行时快照整理。血量已核对五种难度；场景核对范围与特殊机制请阅读 <a href="{BASE}audit.html">数据说明</a>。</div>'''
+<section class="home-section guide-strip">{''.join(f'<a href="{BASE}{key}.html"><span>{name}</span><small>{desc}</small><b>↗</b></a>' for key,name,desc in [('npcs','NPC 与商店','入住、库存、月相与价格'),('systems','玩法系统','生命、装备、经济与探索'),('original','剧情与结局','原版 NPC 与终局路线'),('manual','安装与操作','上手、联机与配置参考')])}</section><div class="data-note">资料按当前游戏版本整理。血量已核对五种难度；场景核对范围与特殊机制请阅读 <a href="{BASE}audit.html">数据说明</a>。</div>'''
     # Place an obvious map entry on the home page as well as the shared navigation.
     home = home.replace('<section class="stats"', f'<section class="home-section"><a class="button" href="{BASE}map.html">探索圣巢全境地图 · {len(map_data["rooms"])} 个房间与 {len(map_data["bosses"])} 个 Boss →</a></section><section class="stats"', 1)
     write('index.html', shell(TITLE, home))
@@ -276,7 +315,9 @@ def main():
     for name, kind in [('items', '物品'), ('enemies', '怪物'), ('npcs', 'NPC')]:
         write(f'data/{name}-index.json', json.dumps([e for e in index if e['kind'] == kind], ensure_ascii=False, separators=(',', ':')))
         write(f'data/{name}-browse.json', json.dumps([e for e in compact if e['kind'] == kind], ensure_ascii=False, separators=(',', ':')))
-    shutil.copyfile(SOURCE, OUT / 'downloads/encyclopedia.md')
+    combined = '# 空洞泰拉玩家百科\n\n' + '\n\n'.join(
+        '<a id="'+e['id']+'"></a>\n\n## '+e['title']+'\n\n'+e['body'] for e in [*sections.values(),*entries])
+    (OUT/'downloads/encyclopedia.md').write_text(combined,'utf-8')
     for rel in sorted(references):
         src = CATALOG_ROOT / rel
         dest = OUT / 'sources' / (rel + ('.txt' if src.suffix == '.cs' else ''))
@@ -285,6 +326,7 @@ def main():
     write('404.html', shell('没有找到这个词条', f'<div class="page-wrap"><h1>这条路暂时没有词条。</h1><p>可以返回首页，或搜索你想找的内容。</p><a class="button" href="{BASE}search.html">搜索百科 →</a></div>'))
     summary = {'name': TITLE, 'base': BASE, 'entries': dict(counts), 'guides': len(sections),
                'recipes': recipe_count, 'source_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(), 'pages': len(list(OUT.glob('*.html'))), 'release': VERSION, 'boss_summons': sum(e['category']=='Boss召唤物' for e in entries), 'release_notes': len(releases)}
+    summary['knowledge_coverage'] = coverage
     summary['world_map'] = map_data['source'] | {'bosses': len(map_data['bosses']), 'entrance_markers': sum(b['precision']=='entrance' for b in map_data['bosses'])}
     write('build-info.json', json.dumps(summary, ensure_ascii=False, indent=2))
     bundle = ROOT / 'artifacts/terraknight-wiki.zip'

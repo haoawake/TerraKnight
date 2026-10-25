@@ -121,6 +121,13 @@ def money(value):
     return f'{price / 100:g} 吉欧'
 
 
+def shop_money(item):
+    """Prices are calculated by the actual game purchase function, not resale compression."""
+    if not hasattr(shop_money, 'prices'):
+        shop_money.prices = json.loads((ROOT/'tools/encyclopedia_details.json').read_text(encoding='utf-8'))['prices']
+    return f'{shop_money.prices[item] / 100:g} 吉欧'
+
+
 def expand_tuple_loops(s):
     """Expand literal foreach tables just as the item builders do."""
     pattern = r'foreach\s*\(var\s*\(([^)]+)\)\s+in\s+new\[\]\s*\{'
@@ -365,6 +372,7 @@ def build(assets_only=False):
             elif rd.get('Damage', 0) > 0:
                 d['kind'] = {'Melee':'近战武器','Ranged':'远程武器','Magic':'魔法武器','Summon':'召唤武器'}.get(rd['Class'], '其他')
         for field, label in [('Damage','伤害'),('Defense','防御'),('Mana','耗魔'),('PickPower','镐力'),('HealLife','恢复生命'),('HealMana','恢复魔力')]:
+            d['stats'].pop(label, None)
             if rd.get(field, 0) or (field == 'Defense' and d['kind'] == '盔甲'):
                 d['stats'][label] = str(rd[field])
 
@@ -548,6 +556,16 @@ def build(assets_only=False):
             for q in re.finditer(r'new Stock\(Items.ItemType\.(\w+),\s*(\d+),\s*(null|new\[\]\s*\{[^}]*\})\)', a[5]):
                 n['stock'].append((q[1], int(q[2]), list(map(int,re.findall(r'\d+', q[3]))) if q[3]!='null' else []))
             npcs.append(n)
+    # NpcDef applies arrival overrides in its constructor (e.g. TaxCollector).
+    # Use final runtime stages rather than the generated constructor arguments.
+    npc_runtime = json.loads((ROOT/'tools/encyclopedia_details.json').read_text(encoding='utf-8'))['npcs']
+    arrivals = {n['Internal']: n['Stage'] for n in npc_runtime}
+    for n in npcs:
+        key = n['internal']
+        if key not in arrivals and key == 'TravellingMerchant':
+            key = 'TravelingMerchant'
+        assert key in arrivals, 'Missing final runtime NPC stage: ' + key
+        n['stage'] = arrivals[key]
     extra = clean(read('Town/TownShopExtra.cs')) if (SRC/'Town/TownShopExtra.cs').exists() else ''
     for npc,t,stage in re.findall(r'\("(\w+)",\s*ItemType\.(\w+),\s*(\d+)\)',extra):
         owner = next((n for n in npcs if n['internal']==npc), None)
@@ -559,7 +577,9 @@ def build(assets_only=False):
         earliest = {}
         for stage, stocks in sorted(actual['shop_stages'].items(), key=lambda pair:int(pair[0])):
             for stock in stocks:
-                earliest.setdefault((stock['Npc'],stock['Type']),int(stage))
+                npc = {'TravelingMerchant':'TravellingMerchant'}.get(stock['Npc'], stock['Npc'])
+                earliest.setdefault((npc,stock['Type']),int(stage))
+        assert {npc for npc,t in earliest} <= {n['internal'] for n in npcs}, 'Unmapped runtime shop NPC; do not silently omit its inventory'
         for n in npcs:
             n['stock'] = [(t,earliest[(n['internal'],t)],phases) for t,_,phases in n['stock'] if (n['internal'],t) in earliest]
             seen = {t for t,_,_ in n['stock']}
@@ -746,7 +766,10 @@ def build(assets_only=False):
                          (f'第 {i+1} 次：露出的头',phase_pool(head_actor,40,i))]
             rows.append(('地板坠落后的最后一次露头',phase_pool(head_actor,40,3)))
             rows.append(('含最后露头的血池合计',[sum(row[1][i] for row in rows) for i in range(5)]))
-            notes.append('头部没有独立图鉴记录，但继承盔甲的首领身份、血量预算和挑战倍率；每轮盔甲与头的预算为 10:3，后续阶段分别使用 1.2／1.4／1.6 倍。表格按场景组件的最大生命、露头 FSM 的 40 点原版生命与导出 Scale 换算，包含地板坠落后的最后露头。')
+            armour_life = re.search(r'const float FalseKnightArmourLife\s*=\s*([\d.]+)f', read('Items/BossPhases.cs'))
+            assert armour_life, 'Review False Knight armour scaling before publishing'
+            armour_note = ('失败冠军保持原先的盔甲与头部血量。' if key.endswith('@5') else f'假骑士盔甲单独调整为原来的 {armour_life[1]} 倍（包含神居假骑士），露出的头及最后露头不变。')
+            notes.append('头部没有独立图鉴记录，但继承盔甲的首领身份、血量预算和挑战倍率；原始盔甲与头的预算为 10:3。'+armour_note+'后续阶段分别使用 1.2／1.4／1.6 倍。表格按场景组件的最大生命、露头 FSM 的 40 点原版生命与导出 Scale 换算，包含地板坠落后的最后露头。')
         elif key in ('MageLord','MageLord@5'):
             if key=='MageLord@5':
                 rows=[('第一阶段：Dream Mage Lord',observed_pools('Dream_02_Mage_Lord','Dream Mage Lord')),('第二阶段：Dream Mage Lord Phase2',observed_pools('Dream_02_Mage_Lord','Dream Mage Lord Phase2'))]
@@ -860,14 +883,17 @@ def build(assets_only=False):
         add('| '+' | '.join(row)+' |')
     add()
     add('不堆叠装备不增加数量上限。首领生命使用 BossStats 与 BossBalance 单独计算，不套普通怪比例。')
-    add('空洞难度沿用大师的生命、掉落、防御减伤与饰品栏规则，额外恢复原版攻击的面具数量增伤；大师及以下只使用阶段伤害，不再叠加面具数量。血量表中的大师数值也适用于空洞（单人、对应场景和挑战等级）。')
+    assert 'stage switch { <= 0 => .4f, 1 => .48f, 2 => .5f, 3 => .55f, 4 => .3f, _ => .16f }' in read('Items/EnemyDrops.cs')
+    add('吉欧另行结算：原版死亡掉钱总额在普通／困难／专家／大师与空洞分别乘 1.5／1.875／2.25／3，取整后再应用护符加成。正式首领另有独立吉欧奖励，按当前难度整场生命预算 × 首领阶段系数计算；阶段 0–5 系数为 0.4／0.48／0.5／0.55／0.3／0.16。神居改用所在场景与玩家战斗阶段，并叠加挑战奖励倍率；因此不能把普通世界基础吉欧当成神居最终奖励。')
+    add('空洞难度沿用大师的敌人技能、攻击速度、硬直、防御减伤与饰品栏规则，保留原生面具数量增伤；角色生命上限为85%，治疗药水冷却延长20%，每次环境伤害固定为当前生命上限的50%（向上取整，生命上限本身不变，防御和减伤不降低该伤害，原有免疫和护盾仍有效），敌人材料与吉欧收益额外×1.4。四锁：武器最终伤害85%、生命70%、饰品属性与技能失效（保留冲刺和护甲套装）、恢复锁在战斗中禁用自然恢复与吸血且药水治疗70%（休息时解除，蓝量不受限）。空洞与生命锁合并取70%。通关材料奖励：武器/生命/恢复各+20%，饰品+40%，全四锁×2.5，空洞全四锁×3.5；按阶段发放，不额外掉落成品装备。大师及以下只使用阶段伤害，不再叠加面具数量。血量表中的大师数值也适用于空洞（单人、对应场景和挑战等级）。')
 
     heading('progress','阶段路线与解锁')
-    add('空洞泰拉把流程分成 0–5 共六个阶段。**解锁阶段等于按顺序取得的原版移动能力数量**：蛾翼披风 → 螳螂爪 → 水晶之心 → 帝王之翼 → 暗影披风，每取得一样进入下一阶段（Shop.UnlockedStage）。顺序中前一样能力未取得时，后面的能力不计入，例如持有帝王之翼而没有水晶之心时，阶段为 2。阶段升高后德特茅斯搬来新的 NPC，商店上新，工作站开放新配方。')
+    add('空洞泰拉把流程分成 0–5 共六个阶段。**解锁阶段等于已取得的不同原版移动能力数量，顺序不限**：蛾翼披风、螳螂爪、水晶之心、帝王之翼、暗影披风，每种只计算一次（Shop.UnlockedStage）。例如先拿螳螂爪就是阶段 1，随后取得帝王之翼就是阶段 2，不需要先拿披风或水晶之心。装备提供的临时移动能力不计入。阶段升高后德特茅斯搬来新的 NPC，商店上新，工作站开放新配方。')
     add()
     by_key = {e['key']: e for e in enemies}
     add('### 怎样进入下一阶段'); add()
-    add('| 阶段变化 | 需要击败的首领 | 之后取得的能力 |'); add('|---|---|---|')
+    add('以下是常规取得顺序的路线示例，不是进入各阶段必须满足的能力顺序。'); add()
+    add('| 常规路线的阶段变化 | 此能力路线的首领 | 之后取得的能力 |'); add('|---|---|---|')
     for row in [
         ('阶段 0 → 阶段 1', f'**{enemy_link(by_key["Hornet"])}**（苍绿之径，一战）', '**蛾翼披风**：击败后在苍绿之径取得'),
         ('阶段 1 → 阶段 2', '无需击败首领', '**螳螂爪**：在真菌荒地的螳螂村拾取；螳螂领主可以之后再打'),
@@ -894,6 +920,8 @@ def build(assets_only=False):
         (f'击败王国边缘的{enemy_link(by_key["Hornet"])}取得王者之印，再在深渊取得暗影披风', '白色宫殿、梦境、格林剧团、神居、最终战'),
     ]
     for stage,(gate,places) in enumerate(routes):
+        if stage > 0:
+            gate = f'取得任意 {stage} 种不同移动能力；常规路线示例：{gate}'
         bosses = [e for e in enemies if e['boss'] and e['kind'] in ('boss','dream_boss','arena_boss')
                   and not e['scene'].startswith('GG_') and combat_stage(e)==stage]
         seen_names = set()
@@ -915,12 +943,14 @@ def build(assets_only=False):
     for n in npcs:
         add(); add(f'### {n["name"]}（入住阶段 {n["stage"]}）'); add()
         if n['internal'] == 'Angler':
-            add('入住前提：在蓝湖（`Crossroads_50`）左侧岸边找到沉睡的渔夫，靠近并右键叫醒，再返回德特茅斯。只有阶段 0 并不会自动入住。无商店；提供每日钓鱼任务，交付当天任务鱼后领取奖励，每天黎明刷新任务。'); continue
+            add('入住前提：在蓝湖（`Crossroads_50`）左侧岸边找到沉睡的渔夫，靠近并右键叫醒，再返回德特茅斯。无商店；每天获得一个任务名额，最多积累三个，交鱼后立即抽取下一条任务。任务鱼与台词已替换为 36 条圣巢新任务。'); continue
+        if n['internal'] == 'TravellingMerchant':
+            add('旅商为来访 NPC，下表是完整候选商品池，每次来访只随机带来 4–6 种达到阶段要求的商品，不保证当天出售指定物品。')
         if not n['stock']:
             add('无商店；提供对话与材料配方查询。'); continue
         add('| 商品 | 开售阶段 | 月相编号 | 单价 |'); add('|---|---:|---|---:|')
         for t,stage,phases in n['stock']:
-            add(f'| {itemlink(t)} | {max(stage,n["stage"])} | {"、".join(map(str,phases)) if phases else "不限"} | {money(items[t]["value"])} |')
+            add(f'| {itemlink(t)} | {max(stage,n["stage"])} | {"、".join(map(str,phases)) if phases else "不限"} | {shop_money(t)} |')
 
     heading('enemies','各阶段怪物与完整掉落')
     add('网页图鉴可按**小怪 / 精英 / 首领**和战斗阶段组合筛选。分类沿用游戏图鉴规则：标记为 Boss 的记录归首领；其余记录中，小首领或原始生命至少 70 的归精英，其他归小怪。特殊、无敌和环境记录仍以各词条的原始类型说明为准。')
@@ -943,6 +973,12 @@ def build(assets_only=False):
             category = '首领' if e['boss'] else '精英' if e['kind'] == 'miniboss' or e['hp'] >= 70 else '小怪'
             add(f'- 图鉴分类：{category}。')
             add(f'- 代表地点：{area(e["scene"])}，`{e["scene"]}`。')
+            geo_source = read('Items/EnemyDrops.cs')
+            assert '1.5f * (World.GameDifficulty.Current switch' in geo_source
+            if e['geo'] >= 0:
+                add('- 原版击杀吉欧（无贪婪等加成）：'+ '；'.join(f'{name} {round(e["geo"] * factor)}' for name, factor in [('普通',1.5),('困难',1.875),('专家',2.25),('大师 / 空洞',3)])+'。该数额为原版死亡掉钱通道，独立首领奖励另算。')
+            else:
+                add('- 原版击杀吉欧：读取敌人对象的原版钱币总额后缩放；普通 ×1.5、困难 ×1.875、专家 ×2.25、大师／空洞 ×3，四舍六入五取偶。不将未配置的原版金额当作零。')
             if e['key'] in summons_by_boss:
                 add(f'- 对应召唤物：{itemlink(summons_by_boss[e["key"]]["result"])}（点击查看获取方式与合成配方）。')
             for bag in bags_by_boss[e['key']]:
@@ -958,11 +994,15 @@ def build(assets_only=False):
             assert all('defense' in d and 'stage_stats' in d for d in stats), 'Refresh healthbook with defense and progression stats'
             if e['boss']:
                 add(f'- 代表场景实际首领防御：{stats[0]["defense"]}；神居挑战另叠加对应挑战的防御倍率与固定防御。')
-            add('- 阶段预览（大师／空洞）：普通敌人沿用游戏的进度追赶规则；首领沿用自身战斗预算。攻击为接触伤害，未实测接触面具数的记录按 1 面具估算。')
-            add('| 玩家阶段 | 生命 | 攻击 | 防御 |'); add('|---:|---:|---:|---:|')
-            master = next(d for d in stats if d['difficulty'] == 'Master')
-            for preview in master['stage_stats']:
-                add(f'| {preview["stage"]} | {preview["life"]} | {preview["damage"]} | {preview["defense"]} |')
+            add('- 全难度阶段预览：普通敌人沿用游戏的进度追赶规则；首领沿用自身战斗预算。攻击为接触伤害，未实测接触面具数的记录按 1 面具估算；具体弹幕及招式伤害不由此表推断。生命为游戏图鉴预算，多部位和补血以本页上方血池说明为准。')
+            add()
+            add('| 难度 | 玩家阶段 | 生命 | 攻击 | 防御 |'); add('|---|---:|---:|---:|---:|')
+            difficulty_names = {'Normal':'普通','Hard':'困难','Expert':'专家','Master':'大师','Hollow':'空洞'}
+            assert len(stats) == 5 and {d['difficulty'] for d in stats} == set(difficulty_names)
+            for difficulty in stats:
+                assert [p['stage'] for p in difficulty['stage_stats']] == list(range(6))
+                for preview in difficulty['stage_stats']:
+                    add(f'| {difficulty_names[difficulty["difficulty"]]} | {preview["stage"]} | {preview["life"]} | {preview["damage"]} | {preview["defense"]} |')
             add()
             for note in hp_notes:
                 add('- '+note)
@@ -973,7 +1013,9 @@ def build(assets_only=False):
                 add(f'- 配置的数值参照：{bn}'+(f'（{share[1]}）' if share else '')+'；实际命中首领映射的部位已应用倍率，未命中的部位按上方实测说明计算。泰拉参照首领的身体部件不是本场战斗的额外部位，不额外累计。')
             if e['key'] in tunes:
                 life,df,dm,stun,note=tunes[e['key']]
-                add(f'- 首领映射命中时的配置：生命 ×{life}，防御为泰拉参照值 × min(1, {df}) × 0.5 后取整，伤害 ×{dm}；'+('原版可硬直，按伤害累计打出硬直。' if stun else '全程霸体。')+' '+note+'。')
+                armour = re.search(r'const int ArmourLifePercent\s*=\s*(\d+)', read('Items/BossBalance.cs'))
+                assert armour, 'Review current boss stagger rules before publishing'
+                add(f'- 首领映射命中时的配置：生命 ×{life}，防御为泰拉参照值 × min(1, {df}) × 0.5 后取整，伤害 ×{dm}。'+f'原版具有硬直机制的首领，剩余生命高于 {armour[1]}% 时允许累计硬直，降至 {armour[1]}% 或以下进入霸体；空洞难度使用相同硬直规则。')
             if e['kind'] in ('invulnerable','non_enemy','pogo','passive'):
                 add('- 获取提示：这是特殊/环境记录；表内数据不代表正常流程一定可击杀或可刷。优先查物品的其他来源。')
             add()
@@ -1109,18 +1151,12 @@ def build(assets_only=False):
             add('**盔甲套装**：`'+d['set']+'`；套装判定 `'+d['setbonus']+'`。'+esc(bonus_texts.get(d['setbonus'],''))); add()
         sources = []
         sources.extend(extra_sources[t])
-        for place, sts, best in sorted(from_fishing[t], key=lambda x:-x[2])[:8]:
+        for place, sts, best in sorted(from_fishing[t], key=lambda x:-x[2]):
             sources.append(f'钓鱼：{place}的水域，阶段 {stage_span(sts)}，渔力 {fishing_power} 时每次抛竿约 {pct(best)}（统计 {fishing_casts} 次抛竿）。')
-        if len(from_fishing[t]) > 8:
-            sources.append(f'钓鱼：另有 {len(from_fishing[t])-8} 个地区也能钓到，见[钓鱼、宝匣与地区储物箱](#fishing)。')
-        for crate, sts, best, lo, hi in sorted(from_crates[t], key=lambda x:-x[2])[:8]:
+        for crate, sts, best, lo, hi in sorted(from_crates[t], key=lambda x:-x[2]):
             sources.append(f'开宝匣：{itemlink(crate)}，阶段 {stage_span(sts)}，每个最多约 {pct(best)}，×{amount(lo, hi)}（每阶段统计开 {crate_opens} 个）。')
-        if len(from_crates[t]) > 8:
-            sources.append(f'开宝匣：另有 {len(from_crates[t])-8} 种宝匣也可能开出，见各宝匣词条。')
-        for key, sts, best, lo, hi in sorted(from_chests[t], key=lambda x:-x[2])[:6]:
+        for key, sts, best, lo, hi in sorted(from_chests[t], key=lambda x:-x[2]):
             sources.append(f'地区储物箱：新存档放在{chest_name(key)}中，阶段 {stage_span(sts)}，最多约 {pct(best)}，×{amount(lo, hi)}。')
-        if len(from_chests[t]) > 6:
-            sources.append(f'地区储物箱：另有 {len(from_chests[t])-6} 种储物箱也可能放有，见[钓鱼、宝匣与地区储物箱](#fishing)。')
         if t in bag_routes:
             bag = bag_routes[t]
             boss = next(e for e in enemies if e['key'] == bag['key'])
@@ -1131,9 +1167,9 @@ def build(assets_only=False):
         if t in special:
             sources.append(special[t])
         if d['source']=='Basic' and t not in ('KnightNail','DreamNail') and not (t.startswith('Relic') and not relics_enabled):
-            sources.append(f'基础制作栏：德特茅斯或长椅附近可取得，单件基础价 {money(d["value"])}；若材料齐全能合成，同一物品的付费项会被合成项取代。')
+            sources.append(f'基础制作栏：德特茅斯或长椅附近可取得，单件基础价 {shop_money(t)}；若材料齐全能合成，同一物品的付费项会被合成项取代。')
         for n,stage,phases in shops[t]:
-            sources.append(f'商店：{n["name"]}，阶段 {stage} 起'+('，月相 '+ '、'.join(map(str,phases)) if phases else '，不限月相')+f'；单价 {money(d["value"])}。')
+            sources.append(f'商店：{n["name"]}，阶段 {stage} 起'+('，来访时随机选入库存，不保证每次出售' if n['internal']=='TravellingMerchant' else ('，月相 '+ '、'.join(map(str,phases)) if phases else '，不限月相'))+f'；单价 {shop_money(t)}。')
         for r in made[t]:
             sources.append('合成：'+recipe_text(r)+'。')
         for e,dr in drops[t]:
@@ -1283,12 +1319,12 @@ def build(assets_only=False):
         ('制图师柯尼法 / 伊塞尔达','各区域遇到制图师；镇上地图店','区域地图购买与查图；未探索区域 70% 透明度，亲自探索后完全不透明'),
         ('骨钉匠','进入泪水之城找到工坊；按原版费用与苍白矿石升级','四次骨钉升级，对本 Mod 骨钉各加 25%'),
         ('先知','安息之地梦之钉剧情；收集精华','梦之钉、梦之门、觉醒梦之钉等奖励沿原版流程；觉醒需要 1800 精华'),
-        ('大黄蜂（苍绿之径）→ 蛾翼披风','苍绿之径击败大黄蜂后取得',f'进入玩家阶段 1；{stage_npcs(1)}入住'),
-        ('螳螂爪','真菌荒地螳螂村拾取；不需要先击败螳螂领主',f'进入玩家阶段 2；{stage_npcs(2)}入住'),
-        ('水晶之心','水晶山峰拾取，不需要击败首领',f'进入玩家阶段 3；{stage_npcs(3)}入住'),
-        ('残破容器 → 帝王之翼','远古盆地击败残破容器后，在战斗房间后方取得',f'进入玩家阶段 4；{stage_npcs(4)}入住'),
+        ('大黄蜂（苍绿之径）→ 蛾翼披风','苍绿之径击败大黄蜂后取得','已取得的移动能力种类增加 1，玩家阶段随之增加 1'),
+        ('螳螂爪','真菌荒地螳螂村拾取；不需要先击败螳螂领主','已取得的移动能力种类增加 1，玩家阶段随之增加 1'),
+        ('水晶之心','水晶山峰拾取，不需要击败首领','已取得的移动能力种类增加 1，玩家阶段随之增加 1'),
+        ('残破容器 → 帝王之翼','远古盆地击败残破容器后，在战斗房间后方取得','已取得的移动能力种类增加 1，玩家阶段随之增加 1'),
         ('大黄蜂二战 → 王者之印','王国边缘战胜后进入弃置外壳领取','开启通向深渊的原版资格；不是击败瞬间就给暗影披风'),
-        ('暗影披风','持王者之印进入深渊，沿原版能力路线取得',f'进入玩家阶段 5；{stage_npcs(5)}入住'),
+        ('暗影披风','持王者之印进入深渊，沿原版能力路线取得','已取得的移动能力种类增加 1，玩家阶段随之增加 1'),
         ('三个守梦人','教师档案馆 / 守望者尖塔 / 野兽巢穴，需梦之钉及各自路线','解除黑卵封印；守望者骑士、乌姆等战斗按原版路线关联'),
         ('白色夫人 / 白色宫殿 / 出生地','完成原版王后花园、觉醒梦之钉入白宫及王之魂路线','王之魂与虚空之心；用于辐光路线'),
         ('空洞骑士 / 辐光','黑卵封印解除；辐光还需虚空之心与战斗中的原版梦之钉触发','对应结局与掉落；不意味着所有 DLC 内容自动通关'),
@@ -1299,8 +1335,19 @@ def build(assets_only=False):
 
     heading('manual','操作、联机、安装与配置参考')
     add('以下保留项目文档的安装、功能与操作正文，供离线查阅；物品来源、价格与阶段发生矛盾时，以前面直接从源码生成的表和规则为准。功能说明不能替代逐项运行验证。')
-    ranges = [(ROOT/'docs'/name).read_text(encoding='utf-8-sig') for name in
-              ('INSTALL.md','FEATURES.md','GAMEPLAY.md','MULTIPLAYER.md','UNINSTALL.md')]
+    ranges = []
+    for name in ('INSTALL.md','FEATURES.md','GAMEPLAY.md','MULTIPLAYER.md','UNINSTALL.md'):
+        document = ROOT/'docs'/name
+        def rebase_document_link(match):
+            label, url = match[1], match[2]
+            if url.startswith(('#', 'http:', 'https:')):
+                return match[0]
+            local, sep, fragment = url.partition('#')
+            target = (document.parent/local).resolve()
+            if target.is_relative_to(ROOT) and target.is_file():
+                return f'[{label}]({target.relative_to(ROOT).as_posix()}{sep}{fragment})'
+            return match[0]
+        ranges.append(re.sub(r'\[([^\]]+)\]\(([^)]+)\)', rebase_document_link, document.read_text(encoding='utf-8-sig')))
     for block in ranges:
         add()
         block = re.sub(r'(\]\()((?:\.\./|\./)[^)]+)(\))', lambda m: m[1]+posixpath.normpath('docs/'+m[2])+m[3], block)

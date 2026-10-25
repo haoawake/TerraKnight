@@ -77,6 +77,7 @@ namespace TerraKnight
         IEnumerator Net2Host(string scene, HeroController hero)
         {
             PlayerData.instance.isInvincible = true;
+            mod.DevNoFallDamage = true;
             var col = hero.GetComponent<BoxCollider2D>();
             // The client's character arrives in King's Pass.
             RemotePlayer other = null;
@@ -95,7 +96,8 @@ namespace TerraKnight
             yield return WaitChat("client: puppets ok", 60f);
             yield return new WaitForSeconds(1f);
             NetCheck(Net.Enemies.DevApplied > 0, $"客户端打傀儡的伤害在主机结算：{Net.Enemies.DevReport()}");
-            NetCheck(EnemyStats.All.Any(i => i.Hm != null && EnemyTargets.DevTarget(i.Hm) == Other()?.Slot), "小怪将远端命中玩家作为仇恨目标");
+            NetCheck(EnemyStats.All.Any(i => i.Hm != null && EnemyTargets.DevTarget(i.Hm) == Other()?.Slot), "小怪按距离选择更近的远端玩家作为目标");
+            NetChat.Say("host: targeting checked");
 
             // Shots and a minion for the client to see.
             mod.DevUse(ItemType.SlimeStaff, (Vector2)col.bounds.center + Vector2.right * 2f);
@@ -153,6 +155,7 @@ namespace TerraKnight
         IEnumerator Net2Client(string scene, HeroController hero)
         {
             PlayerData.instance.isInvincible = true;
+            mod.DevNoFallDamage = true;
             var col = hero.GetComponent<BoxCollider2D>();
             for (float t = 0f; t < 60f && !(NetSession.Owners.TryGetValue(scene, out int o) && o != NetSession.MySlot && Net.Enemies.DevPuppets > 0); t += Time.unscaledDeltaTime) yield return null;
             NetCheck(Net.Enemies.DevPuppets > 0, $"主机的敌人在这边是傀儡：{Net.Enemies.DevReport()}");
@@ -163,12 +166,17 @@ namespace TerraKnight
             Shot(scene, "net2_client_1_both");
             yield return null;
             var pup = NearestEnemy(hero.transform.position, true);
+            Vector3? targetProbe = null;
             if (pup != null)
             {
                 Vector2 a = pup.transform.position;
                 yield return new WaitForSeconds(1f);
                 Plugin.Log.LogInfo($"[AutoTest] 联机2 傀儡 {pup.name}：一秒内从 {a:F2} 到 {(Vector2)pup.transform.position:F2}，脚本全关 {Net.Enemies.DevScriptsOff(pup)}，血 {pup.hp}");
                 var pcol = pup.GetComponent<Collider2D>() ?? pup.GetComponentInChildren<Collider2D>();
+                // TargetClosest is distance/aggro based, not last-attacker based.
+                // Stay clearly closer than the host while the authoritative game checks it.
+                targetProbe = pup.transform.position + Vector3.right * 2f;
+                hero.transform.position = targetProbe.Value;
                 if (pcol != null) mod.Melee.HitWith(pcol, 10, 2f, 0f, 1f, col.bounds.center);
                 yield return new WaitForSeconds(0.2f);
                 NetCheck(Net.Enemies.DevForwarded > 0, $"打傀儡 {pup.name}：伤害交给主机（{Net.Enemies.DevForwarded} 次）");
@@ -176,6 +184,11 @@ namespace TerraKnight
                 Plugin.Log.LogInfo($"[AutoTest] 联机2 傀儡 {pup.name} 打完一秒后血 {pup.hp}（主机那边算过的）");
             }
             NetChat.Say("client: puppets ok");
+            for (float until = Time.realtimeSinceStartup + 15f; !NetChat.DevHas("host: targeting checked") && Time.realtimeSinceStartup < until;)
+            {
+                if (targetProbe.HasValue) hero.transform.position = targetProbe.Value;
+                yield return null;
+            }
             // The host's shots and its minion, drawn here.
             int ghosts = 0, minions = 0;
             for (float t = 0f; t < 20f && !NetChat.DevHas("host: shots"); t += Time.deltaTime)

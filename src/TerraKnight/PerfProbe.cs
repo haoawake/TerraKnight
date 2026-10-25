@@ -17,6 +17,8 @@ namespace TerraKnight
 
         /// <summary>Every script's per-frame methods timed (the FrameProfiler setting): their list goes with each slow stretch.</summary>
         public static bool Detailed;
+        // Last completed call, for isolated regional benchmarks without invasive profiling.
+        internal static readonly double[] LastMilliseconds = new double[3];
 
         const float Window = 5f;
         static readonly double[] sum = new double[3], max = new double[3];
@@ -31,6 +33,7 @@ namespace TerraKnight
         {
             double ms = (Stopwatch.GetTimestamp() - began) * tickMs;
             int k = (int)part;
+            LastMilliseconds[k] = ms;
             sum[k] += ms;
             if (ms > max[k]) max[k] = ms;
             if (part != Part.Update) return;

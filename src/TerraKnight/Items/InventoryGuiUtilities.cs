@@ -85,7 +85,7 @@ namespace TerraKnight.Items
             if (index == -2) { blacklistPage = Mathf.Min(last, blacklistPage + 1); Sound("Menu_Tick"); return; }
             if (!right && !inv.Mouse.IsEmpty)
             {
-                if (!LootBlacklist.Add(inv, inv.Mouse, out var why)) Notice(why);
+                if (!LootBlacklist.Add(inv, inv.Mouse, out var why)) Notice(Lang.T(why));
                 else Sound("Menu_Tick");
                 return;
             }
@@ -96,17 +96,49 @@ namespace TerraKnight.Items
             Sound("Menu_Tick");
         }
 
+        /// <summary>
+        /// From the panel's top to the bottom of the bag's trash slot (the last thing of the bag's): where a panel under
+        /// the bag starts at the earliest, at every interface scale.
+        /// </summary>
+        static float UnderBag(float ui) => (Margin + 18f + Inventory.Rows * SlotStep + SlotSize) * ui;
+
+        /// <summary>
+        /// A plain or Shift click (no Ctrl or favourite key, nothing on the cursor) while the blacklist is open:
+        /// its kind goes on the list, the item staying in the bag. Every other panel (the shops, the sell list, the forge
+        /// and reforge slots, the Guide's) takes items the usual way: picked up, then put in. False: the click is the bag's own.
+        /// </summary>
+        static bool PanelTakesClick(int i, ref ItemStack slot)
+        {
+            if (!inv.Mouse.IsEmpty || slot.IsEmpty || Ctrl || Alt || !blacklistOpen) return false;
+            BlacklistFromBag(slot);
+            return true;
+        }
+
+        static void BlacklistFromBag(ItemStack stack)
+        {
+            if (inv.DropBlacklist.Contains(stack.Type)) Notice(Lang.T("已在黑名单中"));
+            else if (!LootBlacklist.Add(inv, stack, out var why))
+            {
+                Notice(Lang.T(why));
+                return;
+            }
+            else Sound("Menu_Tick");
+            // Its page shown.
+            int at = BlacklistEntries().IndexOf(stack.Type);
+            if (at >= 0) blacklistPage = at / BlacklistPageSize;
+        }
+
         static void DrawBlacklist(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string extra, ref Kind kind)
         {
             float step = SlotStep * ui, size = SlotSize * ui;
-            float x = view.x + Margin * ui, y = view.y + (Margin + 18f + Inventory.Rows * SlotStep + 48f) * ui;
+            float x = view.x + Margin * ui, y = view.y + UnderBag(ui) + 14f * ui;
             var panel = new Rect(x - 8f * ui, y - 8f * ui, 10f * step + 16f * ui, 4f * step + 102f * ui);
             panels.Add(panel);
             Add(panel, Kind.BestiaryPanel, 0);
             Fill(panel, new Color(.07f, .06f, .13f, .98f));
             Rim(panel, new Color(.48f, .4f, .68f), 2f * ui);
             Outlined(new Rect(x, y, panel.width, 24f * ui), Lang.T("掉落物黑名单 · 拾取时自动出售"), labelStyle, new Color(1f, .85f, .45f));
-            Outlined(new Rect(x, y + 26f * ui, panel.width, 22f * ui), Lang.T("拿着物品点击格子添加；空手点击或右键移除"), labelStyle, Color.white);
+            Outlined(new Rect(x, y + 26f * ui, panel.width, 22f * ui), Lang.T("左键或Shift+左键添加；Ctrl+左键出售；点名单移除"), labelStyle, Color.white);
             var entries = BlacklistEntries();
             int last = entries.Count / BlacklistPageSize;
             blacklistPage = Mathf.Clamp(blacklistPage, 0, last);

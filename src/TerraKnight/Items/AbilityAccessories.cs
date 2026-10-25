@@ -18,26 +18,34 @@ namespace TerraKnight.Items
             list.Add(new ItemDef
             {
                 Type = ItemType.ShadeCloak, Name = "暗影披风", Texture = HkItems.TexturePrefix + ItemType.ShadeCloak, Accessory = AccessoryEffect.Passive, Rare = 8, NoDiscard = true,
-                Tooltip = "按暗影冲刺键，或按住冲刺键时双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门",
+                Tooltip = "按暗影冲刺键，或双击方向键：暗影冲刺\n冲刺时穿过敌人和它们的攻击，并能穿过暗影之门",
             });
             list.Add(new ItemDef
             {
                 Type = ItemType.CrystalHeart, Name = "水晶之心", Texture = HkItems.TexturePrefix + ItemType.CrystalHeart, Accessory = AccessoryEffect.Passive, Rare = 5, NoDiscard = true,
                 Tooltip = "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺",
             });
-            list.Add(new ItemDef
-            {
-                Type = ItemType.HallownestShield, Name = "圣巢之盾", Texture = Relics.TexturePrefix + "item_hallownest_shield", Accessory = AccessoryEffect.ShieldDash,
-                Bonus = new Bonuses { DashKind = 2 }, Defense = 4, Rare = 8, NoDiscard = true,
-                Tooltip = "点按冲刺键：克苏鲁护盾的冲刺，撞击敌人\n长按冲刺键（空中也行）：水晶之心蓄力，松开超级冲刺\n按住冲刺键时双击方向键，或按暗影冲刺键：暗影冲刺，穿过敌人、攻击和暗影之门",
+            list.Add(new ItemDef {
+                Type = ItemType.DescendingDarkRune, Name = "暗渊符文",
+                Texture = Relics.TexturePrefix + "ability_descending_dark", Accessory = AccessoryEffect.Passive,
+                Rare = 8, NoDiscard = true, Bonus = new Bonuses { DownDash = true, DiveLevel = 2 },
+                Tooltip = "空中按住下并跳跃：黑砸，猛击伤害为普通下砸的两倍\n落地短暂无敌，并砸开脆弱地板",
             });
+            foreach (var shield in AbilityShields.All)
+                list.Add(new ItemDef {
+                    Type = shield.Type, Name = shield.Name, Texture = Relics.TexturePrefix + "ability_" + shield.Icon,
+                    Accessory = AccessoryEffect.ShieldDash, Defense = 4, Rare = shield.Stage >= 5 ? 8 : 5,
+                    NoDiscard = true, Bonus = new Bonuses { DashKind = 2, DownDash = shield.Level > 0, DiveLevel = shield.Level },
+                    Tooltip = AbilityShields.Tip(shield),
+                });
         }
 
         static IEnumerable<(ItemType, int, ItemSource, int)> AbilityAccessorySources()
         {
             yield return (ItemType.CrystalHeart, 3, ItemSource.Drop, 0);
             yield return (ItemType.ShadeCloak, 5, ItemSource.Drop, 0);
-            yield return (ItemType.HallownestShield, 5, ItemSource.Craft, 200000);
+            yield return (ItemType.DescendingDarkRune, 5, ItemSource.Drop, 100000);
+            foreach (var d in AbilityShields.All) yield return (d.Type, d.Stage, ItemSource.Craft, 200000);
         }
     }
 
@@ -46,14 +54,15 @@ namespace TerraKnight.Items
         /// <summary>The Hallownest Shield: the Shield of Cthulhu, the Shade Cloak and the Crystal Heart at the Tinkerer's Workshop.</summary>
         public static IEnumerable<Recipe> Recipes()
         {
-            yield return new Recipe(ItemType.HallownestShield, 1, "工匠作坊", 2, (ItemType.ShieldOfCthulhu, 1), (ItemType.ShadeCloak, 1), (ItemType.CrystalHeart, 1));
+            foreach (var r in AbilityShields.Recipes()) yield return r;
         }
     }
 
     /// <summary>
     /// The Knight's two dashes Terraria has no item for. The Shade Cloak worn gives a shadow dash, after the game's own
-    /// cooldown (SHADOW_DASH_COOLDOWN), on its own key (TerraKeys' Shadow Dash) or on a double tap of a direction while the
-    /// Dash key is held (the Crystal Heart charging is broken off for it): Hollow Knight's own dash, straight and level at
+    /// cooldown (SHADOW_DASH_COOLDOWN), on its own key (TerraKeys' Shadow Dash) or on a double tap of a direction, the Dash
+    /// key held (the Crystal Heart charging is broken off for it) or not (TapShadowDash: while it cools down that tap is
+    /// the worn Terraria dash's): Hollow Knight's own dash, straight and level at
     /// its DASH_SPEED for its DASH_TIME (TerraMovement.HkShadowDash), during which the game's own cState.shadowDashing is
     /// set, so enemies and their attacks pass through the player (TakeDamage, HeroBox) while spikes still hurt, and the
     /// shade gates (ShadowGateColliderControl) open as in the game. The Crystal Heart worn turns a long press of the Dash key, on the ground, on a wall or in the
@@ -72,14 +81,15 @@ namespace TerraKnight.Items
 
         static bool Worn(ItemType t)
         {
+            if (PlayerChallenges.AccessoriesLocked && !PlayerChallenges.DashComponent(t)) return false;
             var inv = TerraMod.Instance?.Inventory;
             if (inv == null) return false;
-            foreach (var s in inv.EffectiveAccessories) if (!s.IsEmpty && s.Type == t) return true;
+            foreach (var s in inv.EffectiveAccessories) if (!s.IsEmpty && (s.Type == t || AbilityShields.Includes(s.Type, t))) return true;
             return false;
         }
 
-        public static bool ShadeWorn => Worn(ItemType.ShadeCloak) || Worn(ItemType.HallownestShield);
-        public static bool CrystalWorn => Worn(ItemType.CrystalHeart) || Worn(ItemType.HallownestShield);
+        public static bool ShadeWorn => Worn(ItemType.ShadeCloak);
+        public static bool CrystalWorn => Worn(ItemType.CrystalHeart);
 
         // ------------------------------------------------------------------ the shadow dash
 
@@ -94,7 +104,7 @@ namespace TerraKnight.Items
         static readonly AccessTools.FieldRef<HeroController, GameObject> shadowRing = AccessTools.FieldRefAccess<HeroController, GameObject>("shadowRingPrefab");
 
         /// <summary>The Knight's own shadow dash as it starts (HeroController.HeroDash): its black burst ahead, its ring, its trail of smoke.</summary>
-        static void KnightShadowFx(HeroController hero, float dir)
+        static void KnightShadowFx(HeroController hero, float dir, Vector2 aim)
         {
             try
             {
@@ -102,12 +112,19 @@ namespace TerraKnight.Items
                 var burst = shadowBurst(hero);
                 if (burst != null)
                 {
-                    var b = burst.Spawn(new Vector3(at.x + 5.21f * dir, at.y - 0.58f, at.z + 0.00101f));
+                    // Turned the way the dash goes (Dashmaster's any way; level otherwise).
+                    if (aim.sqrMagnitude < 0.01f) aim = new Vector2(dir, 0f);
+                    var off = aim.normalized * 5.21f;
+                    var b = burst.Spawn(new Vector3(at.x + off.x, at.y - 0.58f + off.y, at.z + 0.00101f));
+                    Effects.NativeWeaponEffects.Track(b);
                     b.transform.localScale = new Vector3(1.919591f * dir, b.transform.localScale.y, b.transform.localScale.z);
+                    float deg = dir > 0f ? Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg : Mathf.Atan2(-aim.y, -aim.x) * Mathf.Rad2Deg;
+                    b.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Abs(aim.y) < 0.08f ? 0f : deg);
                 }
                 var ring = shadowRing(hero);
-                if (ring != null) ring.Spawn(at);
+                if (ring != null) Effects.NativeWeaponEffects.Track(ring.Spawn(at));
                 var trail = shadowParticles(hero);
+                Effects.NativeWeaponEffects.Track(trail);
                 var ps = trail != null ? trail.GetComponent<ParticleSystem>() : null;
                 if (ps != null) { var em = ps.emission; em.enabled = true; }
             }
@@ -122,7 +139,10 @@ namespace TerraKnight.Items
         }
 
         static bool shadowAsked;
-        static int lastTapDir;
+        static int lastTapDir, lastVTapDir;
+        static float lastVTapTime = -10f;
+        /// <summary>The way the shadow dash running goes (world, unit).</summary>
+        public static Vector2 ShadowAim = Vector2.right;
         static float lastTapTime = -10f;
 
         /// <summary>Seconds until the shadow dash may go again.</summary>
@@ -135,9 +155,14 @@ namespace TerraKnight.Items
         /// A shadow dash asked for (its key, or a double tap while Dash is held): the Super Dash's charge broken off, a dash
         /// of the worn kind now whatever its own cooldown, made a shadow dash as it starts.
         /// </summary>
-        static bool TryShadowDash(HeroController hero, int dir)
+        static bool TryShadowDash(HeroController hero, int dir) => TryShadowDash(hero, dir, Vector2.zero);
+
+        /// <summary>The shadow dash, level or (aim not zero: Dashmaster) any way.</summary>
+        static bool TryShadowDash(HeroController hero, int dir, Vector2 aim)
         {
             if (hero == null || !ShadeWorn || Time.time < shadowReady || hero.cState.dead || hero.cState.transitioning || hero.cState.superDashing) return false;
+            // On a mount the worn dashes stay off (Mounts.RequestDash: only the Chillets dash, their own way).
+            if (Mounts.OwnMovement) return false;
             // No cooldown, but one at a time: a press inside a shadow dash doesn't start another.
             if (ShadowDashing && TerraMovement.IsDashing) return false;
             if (!GameHooks.PlayerHasControl() && !Charging(hero)) return false;
@@ -153,8 +178,10 @@ namespace TerraKnight.Items
             shadowAsked = true;
             // Hollow Knight's own dash, straight and level, made a shadow one.
             Mounts.Dismount();
-            TerraMovement.HkShadowDash(hero, dir);
-            OnDashStart(hero, dir);
+            if (aim != Vector2.zero) TerraMovement.HkShadowDashToward(hero, aim);
+            else TerraMovement.HkShadowDash(hero, dir);
+            ShadowAim = TerraMovement.DashAim;
+            OnDashStart(hero, ShadowAim.x < 0f ? -1 : 1);
             return true;
         }
 
@@ -164,9 +191,17 @@ namespace TerraKnight.Items
             return f != null && f.ActiveStateName != "Inactive";
         }
 
+        static readonly Dictionary<string, PlayMakerFSM> heroFsms = new Dictionary<string, PlayMakerFSM>();
+
         static PlayMakerFSM HeroFsm(HeroController hero, string name)
         {
-            foreach (var f in hero.GetComponents<PlayMakerFSM>()) if (f.FsmName == name) return f;
+            if (heroFsms.TryGetValue(name, out var known) && known != null && known.gameObject == hero.gameObject) return known;
+            foreach (var f in hero.GetComponents<PlayMakerFSM>())
+                if (f.FsmName == name)
+                {
+                    heroFsms[name] = f;
+                    return f;
+                }
             return null;
         }
 
@@ -179,8 +214,25 @@ namespace TerraKnight.Items
             if (TerraKeys.Pressed(TerraKeys.Action.ShadowDash) || DevShadowKey)
             {
                 DevShadowKey = false;
-                TryShadowDash(hero, held != 0 ? held : facing);
+                // Dashmaster: toward the cursor.
+                TryShadowDash(hero, held != 0 ? held : facing, CharmEffects.DashAnyWay ? CharmEffects.MouseAim(hero) : Vector2.zero);
                 return;
+            }
+            // Dashmaster: up and down tapped twice too (with Dash held).
+            if (CharmEffects.DashAnyWay && DashKeyHeld)
+            {
+                int vtap = TerraKeys.Pressed(TerraKeys.Action.Up) ? 1 : TerraKeys.Pressed(TerraKeys.Action.Down) ? -1 : 0;
+                if (vtap != 0)
+                {
+                    if (vtap == lastVTapDir && Time.unscaledTime - lastVTapTime < DoubleTapWindow)
+                    {
+                        lastVTapDir = 0;
+                        TryShadowDash(hero, facing, new Vector2(0f, vtap));
+                        return;
+                    }
+                    lastVTapDir = vtap;
+                    lastVTapTime = Time.unscaledTime;
+                }
             }
             int tap = TerraKeys.Pressed(TerraKeys.Action.Left) ? -1 : TerraKeys.Pressed(TerraKeys.Action.Right) ? 1 : DevTap;
             DevTap = 0;
@@ -194,6 +246,22 @@ namespace TerraKnight.Items
             lastTapDir = tap;
             lastTapTime = Time.unscaledTime;
         }
+
+        /// <summary>
+        /// A direction tapped twice without the Dash key (TerraMod's double tap dash): the shadow dash when the Shade Cloak
+        /// is worn (alone, with a Terraria dash, or in the Hallownest Shield) and off its cooldown, true; else false, and the
+        /// worn Terraria dash goes as before.
+        /// </summary>
+        public static bool TapShadowDash(int dir)
+        {
+            var hero = HeroController.SilentInstance;
+            if (hero == null || !ShadeWorn || DashKeyHeld || Time.time < shadowReady) return false;
+            if (!TryShadowDash(hero, dir)) return false;
+            DevTapShadows++;
+            return true;
+        }
+
+        public static int DevTapShadows;
 
         /// <summary>Dev: a direction tapped (-1, 1) for a test.</summary>
         public static int DevTap;
@@ -211,7 +279,7 @@ namespace TerraKnight.Items
             hero.cState.shadowDashing = true;
             // Wrapped in shadow at once, with the Knight's own burst, ring and smoke.
             TerraPlayerSprite.DashShade = 1f;
-            KnightShadowFx(hero, direction < 0 ? -1f : 1f);
+            KnightShadowFx(hero, direction < 0 ? -1f : 1f, ShadowAim);
             DevShadowDashes++;
             var clip = shadowClip(hero);
             var audio = hero.GetComponent<AudioSource>();
@@ -259,15 +327,17 @@ namespace TerraKnight.Items
                 if (ShadowDashing || TerraPlayerSprite.DashShade > 0.3f)
                 {
                     // The cloud about the body, drifting back off the dash and a little up.
+                    // Back along the way it goes (Dashmaster's any way).
+                    var back = ShadowDashing && Mathf.Abs(ShadowAim.y) >= 0.08f ? new Vector2(-ShadowAim.x, ShadowAim.y) : new Vector2(-dir, 0f);
                     for (int k = 0; k < 4; k++)
                     {
-                        int d = p.NewDust(tl - new Vector2(8f, 6f), 36, 54, 54, -dir * Random.Range(1f, 3f), Random.Range(-0.8f, 0.3f), 40, Random.Range(1.3f, 2f));
+                        int d = p.NewDust(tl - new Vector2(8f, 6f), 36, 54, 54, back.x * Random.Range(1f, 3f), back.y * Random.Range(1f, 3f) + Random.Range(-0.8f, 0.3f), 40, Random.Range(1.3f, 2f));
                         if (d < 0) continue;
                         p[d].NoGravity = true;
                     }
                     for (int k = 0; k < 2; k++)
                     {
-                        int s2 = p.NewDust(tl - new Vector2(4f, 4f), 28, 50, 27, -dir * Random.Range(0.5f, 2.5f), Random.Range(-1f, 0.5f), 80, Random.Range(1f, 1.5f));
+                        int s2 = p.NewDust(tl - new Vector2(4f, 4f), 28, 50, 27, back.x * Random.Range(0.5f, 2.5f), back.y * Random.Range(0.5f, 2.5f) + Random.Range(-1f, 0.5f), 80, Random.Range(1f, 1.5f));
                         if (s2 >= 0) p[s2].NoGravity = true;
                     }
                 }
@@ -414,12 +484,14 @@ namespace TerraKnight.Items
             __state = -1;
             if (TerraMod.Instance == null) return true;
             var pd = PlayerData.instance;
-            if (pd == null || !CrystalWorn || Time.time < superReady)
+            // Nor on a mount (the worn dashes stay off there).
+            if (pd == null || !CrystalWorn || Time.time < superReady || Mounts.OwnMovement)
             {
                 __result = false;
                 return false;
             }
             __state = pd.hasSuperDash ? 1 : 0;
+            PlayerHooks.LearnedSuperDash = pd.hasSuperDash;
             pd.hasSuperDash = true;
             if (!__instance.cState.onGround && !__instance.cState.wallSliding)
             {
@@ -488,6 +560,7 @@ namespace TerraKnight.Items
         static void AfterCanSuperDash(HeroController __instance, int __state)
         {
             if (__state < 0) return;
+            PlayerHooks.LearnedSuperDash = null;
             var pd = PlayerData.instance;
             if (pd != null) pd.hasSuperDash = (__state & 1) == 1;
             if ((__state & 2) != 0 && __instance != null) __instance.cState.onGround = false;
@@ -598,7 +671,9 @@ namespace TerraKnight.Items
             {
                 var hm = h.GetComponentInParent<HealthManager>();
                 if (hm == null || hm.isDead || !dashStruck.Add(hm.GetInstanceID())) continue;
-                melee.HitWith(h, TerraMovement.ShieldBashDamage, TerraMovement.ShieldBashKnockback, TerraMovement.ShieldBashCrit, dir, b.center);
+                // Sharp Shadow: the shadow dash cuts for one and a half nail blows.
+                int damage = super ? TerraMovement.ShieldBashDamage : CharmEffects.ShadowDashDamage(TerraMovement.ShieldBashDamage);
+                if (melee.HitWith(h, damage, TerraMovement.ShieldBashKnockback, TerraMovement.ShieldBashCrit, dir, b.center) && !super) CharmEffects.ShadowCut(h, dir);
                 DevDashStrikes++;
             }
         }
@@ -623,12 +698,12 @@ namespace TerraKnight.Items
             if (inv == null) return;
             bool Has(ItemType t)
             {
-                bool In(ItemStack[] xs) { foreach (var s in xs) if (!s.IsEmpty && (s.Type == t || s.Type == ItemType.HallownestShield)) return true; return false; }
+                bool In(ItemStack[] xs) { foreach (var s in xs) if (!s.IsEmpty && (s.Type == t || AbilityShields.Includes(s.Type, t))) return true; return false; }
                 if (In(inv.Slots) || In(inv.Accessories) || In(inv.VanityAccessories) || In(inv.HkBag) || !inv.Mouse.IsEmpty && inv.Mouse.Type == t) return true;
                 foreach (var l in inv.Loadouts) if (In(l.Accessories) || In(l.VanityAccessories) || In(l.Bag)) return true;
                 return false;
             }
-            foreach (var t in new[] { ItemType.ShadeCloak, ItemType.CrystalHeart })
+            foreach (var t in new[] { ItemType.ShadeCloak, ItemType.CrystalHeart, ItemType.DescendingDarkRune })
                 if (!Has(t))
                 {
                     int left = HkItems.TryStoreAbility(inv, ItemStack.Of(t)) ? 0 : 1;

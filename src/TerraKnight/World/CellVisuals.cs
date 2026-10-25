@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Terraria;
 using UnityEngine;
 
@@ -171,7 +171,12 @@ namespace TerraKnight.World
             {
                 // Tiles_19, wood (row 0): the frame its neighbours call for, flat or stair.
                 int fx = PlatformStairs.FrameX(grid, x, y);
-                var sprite = grid.GetSlope(x, y) == CellGrid.HalfBrick ? GetShapedSprite(RegionalFurniture.PlatformSheet(kind), fx, 0, CellGrid.HalfBrick) : GetSprite(RegionalFurniture.PlatformSheet(kind), fx, 0, TileFraming.FrameSize);
+                int platformSlope=grid.GetSlope(x,y);
+                bool regional=RegionalPlatformVisuals.IsRegional(kind);
+                var sprite = regional&&(platformSlope==1||platformSlope==2)
+                    ? RegionalPlatformVisuals.Stair(kind,platformSlope,Cells.Blocks(grid.Get(x,y-1)))
+                    : platformSlope == CellGrid.HalfBrick ? GetShapedSprite(RegionalFurniture.PlatformSheet(kind), fx, 0, CellGrid.HalfBrick)
+                    : GetSprite(RegionalFurniture.PlatformSheet(kind),regional&&fx>=144?0:fx,0,TileFraming.FrameSize);
                 Show(blocks, i, x, y, BlockZ, sprite, BlockTint);
             }
             else if (kind == CellKind.Rope)
@@ -184,12 +189,12 @@ namespace TerraKnight.World
             else if (kind == CellKind.Torch)
             {
                 // Tiles_4, the plain torch: standing on a block, else on the wall beside it. A regional torch: its row of
-                // RegionalTorches.TileSheet, its flame layer over it.
+                // RegionalTorches.TileSheet. Either with its flame layer over it (Main.tileFlame[4]: Flame_0's, or the
+                // regional sheet's), flickering as Terraria's does (RegionalTorchFlames).
                 int fx = Solid(x, y - 1) ? 0 : Solid(x - 1, y) ? 22 : Solid(x + 1, y) ? 44 : 0;
                 int style = grid.TorchStyleAt(i);
                 Show(blocks, i, x, y, BlockZ, style > 0 ? RegionalTorches.Sprite(style, fx, false) : GetTorchSprite(fx), Color.white);
-                if (style > 0) flames.Show(i, x, y, style, fx, BlockZ - 0.0003f);
-                else flames.Hide(i);
+                flames.Show(i, x, y, style, fx, BlockZ - 0.0003f);
             }
             else
             {
@@ -199,6 +204,9 @@ namespace TerraKnight.World
             if (kind == CellKind.Torch) ShowLight(i, x, y, grid.TorchStyleAt(i));
             else HideLight(i);
             int brace = TerraKnight.World.Cells.IsPlatform(kind) ? PlatformStairs.SupportFrameX(grid, x, y) : -1;
+            // Regional diagonal decks already include their sloping underside; the old
+            // square wooden brace is not aligned with that deck and must not be overlaid.
+            if(RegionalPlatformVisuals.IsRegional(kind)&&(grid.GetSlope(x,y)==1||grid.GetSlope(x,y)==2))brace=-1;
             if (brace >= 0) Show(supports, i, x, y - 1, BlockZ + 0.0005f, GetSprite(RegionalFurniture.PlatformSheet(kind), brace, 0, TileFraming.FrameSize), BlockTint);
             else Hide(supports, i);
         }
@@ -214,7 +222,7 @@ namespace TerraKnight.World
                 case CellKind.MagicIce: return "Tiles_127";
                 case CellKind.Meteorite: return "Tiles_37";
                 case CellKind.Obsidian: return "Tiles_56";
-                default: return AreaBlocks.Sheet(kind);
+                default: return VanillaBlocks.Sheet(kind) ?? AreaBlocks.Sheet(kind);
             }
         }
 

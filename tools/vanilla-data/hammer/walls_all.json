@@ -1,0 +1,3234 @@
+[
+ {
+  "item": 26,
+  "itemName": "StoneWall",
+  "zh": "石墙",
+  "en": "Stone Wall",
+  "wall": 1,
+  "wallName": "Stone",
+  "itemLine": 1694,
+  "dropsItem": 26,
+  "recipes": [
+   "x4 <- 1×石块/Stone Block[3] @WorkBenches(18)工作台 (Recipe.cs:4568)"
+  ],
+  "rev": "reverse:4 StoneWall -> 1"
+ },
+ {
+  "item": 30,
+  "itemName": "DirtWall",
+  "zh": "土墙",
+  "en": "Dirt Wall",
+  "wall": 16,
+  "wallName": "Dirt",
+  "itemLine": 1743,
+  "dropsItem": 30,
+  "recipes": [
+   "x4 <- 1×土块/Dirt Block[2] @WorkBenches(18)工作台 (Recipe.cs:4521)"
+  ],
+  "rev": "reverse:4 DirtWall -> 1"
+ },
+ {
+  "item": 93,
+  "itemName": "WoodWall",
+  "zh": "木墙",
+  "en": "Wood Wall",
+  "wall": 4,
+  "wallName": "Wood",
+  "itemLine": 2463,
+  "dropsItem": 93,
+  "recipes": [
+   "x4 <- 1×木材/Wood[9] @WorkBenches(18)工作台 (Recipe.cs:4619)"
+  ],
+  "rev": "reverse:4 WoodWall -> 1"
+ },
+ {
+  "item": 130,
+  "itemName": "GrayBrickWall",
+  "zh": "灰砖墙",
+  "en": "Gray Brick Wall",
+  "wall": 5,
+  "wallName": "GrayBrick",
+  "itemLine": 2956,
+  "dropsItem": 130,
+  "recipes": [
+   "x4 <- 1×灰砖/Gray Brick[129] @WorkBenches(18)工作台 (Recipe.cs:3456)"
+  ],
+  "rev": "reverse:4 GrayBrickWall -> 1"
+ },
+ {
+  "item": 132,
+  "itemName": "RedBrickWall",
+  "zh": "红砖墙",
+  "en": "Red Brick Wall",
+  "wall": 6,
+  "wallName": "RedBrick",
+  "itemLine": 2978,
+  "dropsItem": 132,
+  "recipes": [
+   "x4 <- 1×红砖/Red Brick[131] @WorkBenches(18)工作台 (Recipe.cs:3466)"
+  ],
+  "rev": "reverse:4 RedBrickWall -> 1"
+ },
+ {
+  "item": 135,
+  "itemName": "BlueBrickWall",
+  "zh": "蓝砖墙",
+  "en": "Blue Brick Wall",
+  "wall": 17,
+  "wallName": "BlueDungeon",
+  "itemLine": 3011,
+  "dropsItem": 135,
+  "recipes": [
+   "x4 <- 1×蓝砖/Blue Brick[134] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3336)"
+  ],
+  "rev": "reverse:4 BlueBrickWall -> 1"
+ },
+ {
+  "item": 138,
+  "itemName": "GreenBrickWall",
+  "zh": "绿砖墙",
+  "en": "Green Brick Wall",
+  "wall": 18,
+  "wallName": "GreenDungeon",
+  "itemLine": 3045,
+  "dropsItem": 138,
+  "recipes": [
+   "x4 <- 1×绿砖/Green Brick[137] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3351)"
+  ],
+  "rev": "reverse:4 GreenBrickWall -> 1"
+ },
+ {
+  "item": 140,
+  "itemName": "PinkBrickWall",
+  "zh": "粉砖墙",
+  "en": "Pink Brick Wall",
+  "wall": 19,
+  "wallName": "PinkDungeon",
+  "itemLine": 3067,
+  "dropsItem": 140,
+  "recipes": [
+   "x4 <- 1×粉砖/Pink Brick[139] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3366)"
+  ],
+  "rev": "reverse:4 PinkBrickWall -> 1"
+ },
+ {
+  "item": 142,
+  "itemName": "GoldBrickWall",
+  "zh": "金砖墙",
+  "en": "Gold Brick Wall",
+  "wall": 10,
+  "wallName": "GoldBrick",
+  "itemLine": 3089,
+  "dropsItem": 142,
+  "recipes": [
+   "x4 <- 1×金砖/Gold Brick[141] @WorkBenches(18)工作台 (Recipe.cs:3523)"
+  ],
+  "rev": "reverse:4 GoldBrickWall -> 1"
+ },
+ {
+  "item": 144,
+  "itemName": "SilverBrickWall",
+  "zh": "银砖墙",
+  "en": "Silver Brick Wall",
+  "wall": 11,
+  "wallName": "SilverBrick",
+  "itemLine": 3111,
+  "dropsItem": 144,
+  "recipes": [
+   "x4 <- 1×银砖/Silver Brick[143] @WorkBenches(18)工作台 (Recipe.cs:3510)"
+  ],
+  "rev": "reverse:4 SilverBrickWall -> 1"
+ },
+ {
+  "item": 146,
+  "itemName": "CopperBrickWall",
+  "zh": "铜砖墙",
+  "en": "Copper Brick Wall",
+  "wall": 12,
+  "wallName": "CopperBrick",
+  "itemLine": 3133,
+  "dropsItem": 146,
+  "recipes": [
+   "x4 <- 1×铜砖/Copper Brick[145] @WorkBenches(18)工作台 (Recipe.cs:3479)"
+  ],
+  "rev": "reverse:4 CopperBrickWall -> 1"
+ },
+ {
+  "item": 330,
+  "itemName": "ObsidianBrickWall",
+  "zh": "黑曜石砖墙",
+  "en": "Obsidian Brick Wall",
+  "wall": 20,
+  "wallName": "ObsidianBrick",
+  "itemLine": 5257,
+  "dropsItem": 330,
+  "recipes": [
+   "x4 <- 1×黑曜石砖/Obsidian Brick[192] @WorkBenches(18)工作台 (Recipe.cs:3620)"
+  ],
+  "rev": "reverse:4 ObsidianBrickWall -> 1"
+ },
+ {
+  "item": 392,
+  "itemName": "GlassWall",
+  "zh": "玻璃墙",
+  "en": "Glass Wall",
+  "wall": 21,
+  "wallName": "Glass",
+  "itemLine": 6004,
+  "dropsItem": 392,
+  "recipes": [
+   "x4 <- 1×玻璃/Glass[170] @WorkBenches(18)工作台 (Recipe.cs:3120)"
+  ],
+  "rev": "reverse:4 GlassWall -> 1"
+ },
+ {
+  "item": 417,
+  "itemName": "PearlstoneBrickWall",
+  "zh": "珍珠石砖墙",
+  "en": "Pearlstone Brick Wall",
+  "wall": 22,
+  "wallName": "PearlstoneBrick",
+  "itemLine": 6238,
+  "dropsItem": 417,
+  "recipes": [
+   "x4 <- 1×珍珠石砖/Pearlstone Brick[412] @WorkBenches(18)工作台 (Recipe.cs:3725)"
+  ],
+  "rev": "reverse:4 PearlstoneBrickWall -> 1"
+ },
+ {
+  "item": 418,
+  "itemName": "IridescentBrickWall",
+  "zh": "荧光砖墙",
+  "en": "Iridescent Brick Wall",
+  "wall": 23,
+  "wallName": "IridescentBrick",
+  "itemLine": 6249,
+  "dropsItem": 418,
+  "recipes": [
+   "x4 <- 1×荧光砖/Iridescent Brick[413] @WorkBenches(18)工作台 (Recipe.cs:3845)"
+  ],
+  "rev": "reverse:4 IridescentBrickWall -> 1"
+ },
+ {
+  "item": 419,
+  "itemName": "MudstoneBrickWall",
+  "zh": "泥石砖墙",
+  "en": "Mudstone Brick Wall",
+  "wall": 24,
+  "wallName": "MudstoneBrick",
+  "itemLine": 6260,
+  "dropsItem": 419,
+  "recipes": [
+   "x4 <- 1×泥石砖/Mudstone Brick[414] @WorkBenches(18)工作台 (Recipe.cs:3855)"
+  ],
+  "rev": "reverse:4 MudstoneBrickWall -> 1"
+ },
+ {
+  "item": 420,
+  "itemName": "CobaltBrickWall",
+  "zh": "钴砖墙",
+  "en": "Cobalt Brick Wall",
+  "wall": 25,
+  "wallName": "CobaltBrick",
+  "itemLine": 6271,
+  "dropsItem": 420,
+  "recipes": [
+   "x4 <- 1×钴砖/Cobalt Brick[415] @WorkBenches(18)工作台 (Recipe.cs:3988)"
+  ],
+  "rev": "reverse:4 CobaltBrickWall -> 1"
+ },
+ {
+  "item": 421,
+  "itemName": "MythrilBrickWall",
+  "zh": "秘银砖墙",
+  "en": "Mythril Brick Wall",
+  "wall": 26,
+  "wallName": "MythrilBrick",
+  "itemLine": 6282,
+  "dropsItem": 421,
+  "recipes": [
+   "x4 <- 1×秘银砖/Mythril Brick[416] @WorkBenches(18)工作台 (Recipe.cs:4000)"
+  ],
+  "rev": "reverse:4 MythrilBrickWall -> 1"
+ },
+ {
+  "item": 479,
+  "itemName": "PlankedWall",
+  "zh": "板条墙",
+  "en": "Planked Wall",
+  "wall": 27,
+  "wallName": "Planked",
+  "itemLine": 7080,
+  "dropsItem": 479,
+  "recipes": [
+   "x4 <- 1×石块/Stone Block[3] + 1×木材/Wood[9] (group:Wood) @Sawmill(106)锯木机 (Recipe.cs:6599)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 587,
+  "itemName": "CandyCaneWall",
+  "zh": "糖棒墙",
+  "en": "Candy Cane Wall",
+  "wall": 29,
+  "wallName": "CandyCane",
+  "itemLine": 8257,
+  "dropsItem": 587,
+  "recipes": [
+   "x4 <- 1×糖棒块/Candy Cane Block[586] @WorkBenches(18)工作台 (Recipe.cs:3668)"
+  ],
+  "rev": "reverse:4 CandyCaneWall -> 1"
+ },
+ {
+  "item": 592,
+  "itemName": "GreenCandyCaneWall",
+  "zh": "绿糖棒墙",
+  "en": "Green Candy Cane Wall",
+  "wall": 30,
+  "wallName": "GreenCandyCane",
+  "itemLine": 8300,
+  "dropsItem": 592,
+  "recipes": [
+   "x4 <- 1×绿糖棒块/Green Candy Cane Block[591] @WorkBenches(18)工作台 (Recipe.cs:3673)"
+  ],
+  "rev": "reverse:4 GreenCandyCaneWall -> 1"
+ },
+ {
+  "item": 595,
+  "itemName": "SnowBrickWall",
+  "zh": "雪砖墙",
+  "en": "Snow Brick Wall",
+  "wall": 31,
+  "wallName": "SnowBrick",
+  "itemLine": 8333,
+  "dropsItem": 595,
+  "recipes": [
+   "x4 <- 1×雪砖/Snow Brick[594] @WorkBenches(18)工作台 (Recipe.cs:3641)"
+  ],
+  "rev": "reverse:4 SnowBrickWall -> 1"
+ },
+ {
+  "item": 605,
+  "itemName": "AdamantiteBeamWall",
+  "zh": "精金梁墙",
+  "en": "Adamantite Beam Wall",
+  "wall": 32,
+  "wallName": "AdamantiteBeam",
+  "itemLine": 8432,
+  "dropsItem": 605,
+  "recipes": [
+   "x4 <- 1×精金梁/Adamantite Beam[604] @WorkBenches(18)工作台 (Recipe.cs:4012)"
+  ],
+  "rev": "reverse:4 AdamantiteBeamWall -> 1"
+ },
+ {
+  "item": 606,
+  "itemName": "DemoniteBrickWall",
+  "zh": "魔矿砖墙",
+  "en": "Demonite Brick Wall",
+  "wall": 33,
+  "wallName": "DemoniteBrick",
+  "itemLine": 8443,
+  "dropsItem": 606,
+  "recipes": [
+   "x4 <- 1×魔矿砖/Demonite Brick[577] @WorkBenches(18)工作台 (Recipe.cs:3631)"
+  ],
+  "rev": "reverse:4 DemoniteBrickWall -> 1"
+ },
+ {
+  "item": 608,
+  "itemName": "SandstoneBrickWall",
+  "zh": "沙岩砖墙",
+  "en": "Sandstone Brick Wall",
+  "wall": 34,
+  "wallName": "SandstoneBrick",
+  "itemLine": 8465,
+  "dropsItem": 608,
+  "recipes": [
+   "x4 <- 1×沙岩砖/Sandstone Brick[607] @WorkBenches(18)工作台 (Recipe.cs:3682)"
+  ],
+  "rev": "reverse:4 SandstoneBrickWall -> 1"
+ },
+ {
+  "item": 610,
+  "itemName": "EbonstoneBrickWall",
+  "zh": "黑檀石砖墙",
+  "en": "Ebonstone Brick Wall",
+  "wall": 35,
+  "wallName": "EbonstoneBrick",
+  "itemLine": 8487,
+  "dropsItem": 610,
+  "recipes": [
+   "x4 <- 1×黑檀石砖/Ebonstone Brick[609] @WorkBenches(18)工作台 (Recipe.cs:3765)"
+  ],
+  "rev": "reverse:4 EbonstoneBrickWall -> 1"
+ },
+ {
+  "item": 615,
+  "itemName": "RedStuccoWall",
+  "zh": "红泥灰墙",
+  "en": "Red Stucco Wall",
+  "wall": 36,
+  "wallName": "RedStucco",
+  "itemLine": 8542,
+  "dropsItem": 615,
+  "recipes": [
+   "x4 <- 1×红泥灰/Red Stucco[611] @WorkBenches(18)工作台 (Recipe.cs:3867)"
+  ],
+  "rev": "reverse:4 RedStuccoWall -> 1"
+ },
+ {
+  "item": 616,
+  "itemName": "YellowStuccoWall",
+  "zh": "黄泥灰墙",
+  "en": "Yellow Stucco Wall",
+  "wall": 37,
+  "wallName": "YellowStucco",
+  "itemLine": 8553,
+  "dropsItem": 616,
+  "recipes": [
+   "x4 <- 1×黄泥灰/Yellow Stucco[612] @WorkBenches(18)工作台 (Recipe.cs:3879)"
+  ],
+  "rev": "reverse:4 YellowStuccoWall -> 1"
+ },
+ {
+  "item": 617,
+  "itemName": "GreenStuccoWall",
+  "zh": "绿泥灰墙",
+  "en": "Green Stucco Wall",
+  "wall": 38,
+  "wallName": "GreenStucco",
+  "itemLine": 8564,
+  "dropsItem": 617,
+  "recipes": [
+   "x4 <- 1×绿泥灰/Green Stucco[613] @WorkBenches(18)工作台 (Recipe.cs:3892)"
+  ],
+  "rev": "reverse:4 GreenStuccoWall -> 1"
+ },
+ {
+  "item": 618,
+  "itemName": "GrayStuccoWall",
+  "zh": "灰泥灰墙",
+  "en": "Gray Stucco Wall",
+  "wall": 39,
+  "wallName": "Gray",
+  "itemLine": 8575,
+  "dropsItem": 618,
+  "recipes": [
+   "x4 <- 1×灰泥灰/Gray Stucco[614] @WorkBenches(18)工作台 (Recipe.cs:3904)"
+  ],
+  "rev": "reverse:4 GrayStuccoWall -> 1"
+ },
+ {
+  "item": 622,
+  "itemName": "EbonwoodWall",
+  "zh": "乌木墙",
+  "en": "Ebonwood Wall",
+  "wall": 41,
+  "wallName": "Ebonwood",
+  "itemLine": 8619,
+  "dropsItem": 622,
+  "recipes": [
+   "x4 <- 1×乌木/Ebonwood[619] @WorkBenches(18)工作台 (Recipe.cs:4629)"
+  ],
+  "rev": "reverse:4 EbonwoodWall -> 1"
+ },
+ {
+  "item": 623,
+  "itemName": "RichMahoganyWall",
+  "zh": "红木墙",
+  "en": "Rich Mahogany Wall",
+  "wall": 42,
+  "wallName": "RichMaogany",
+  "itemLine": 8630,
+  "dropsItem": 623,
+  "recipes": [
+   "x4 <- 1×红木/Rich Mahogany[620] @WorkBenches(18)工作台 (Recipe.cs:4624)"
+  ],
+  "rev": "reverse:4 RichMahoganyWall -> 1"
+ },
+ {
+  "item": 624,
+  "itemName": "PearlwoodWall",
+  "zh": "珍珠木墙",
+  "en": "Pearlwood Wall",
+  "wall": 43,
+  "wallName": "Pearlwood",
+  "itemLine": 8641,
+  "dropsItem": 624,
+  "recipes": [
+   "x4 <- 1×珍珠木/Pearlwood[621] @WorkBenches(18)工作台 (Recipe.cs:4639)"
+  ],
+  "rev": "reverse:4 PearlwoodWall -> 1"
+ },
+ {
+  "item": 663,
+  "itemName": "RainbowBrickWall",
+  "zh": "彩虹砖墙",
+  "en": "Rainbow Brick Wall",
+  "wall": 44,
+  "wallName": "RainbowBrick",
+  "itemLine": 9154,
+  "dropsItem": 663,
+  "recipes": [
+   "x4 <- 1×彩虹砖/Rainbow Brick[662] @WorkBenches(18)工作台 (Recipe.cs:3015)"
+  ],
+  "rev": "reverse:4 RainbowBrickWall -> 1"
+ },
+ {
+  "item": 720,
+  "itemName": "TinBrickWall",
+  "zh": "锡砖墙",
+  "en": "Tin Brick Wall",
+  "wall": 45,
+  "wallName": "TinBrick",
+  "itemLine": 9799,
+  "dropsItem": 720,
+  "recipes": [
+   "x4 <- 1×锡砖/Tin Brick[717] @WorkBenches(18)工作台 (Recipe.cs:3544)"
+  ],
+  "rev": "reverse:4 TinBrickWall -> 1"
+ },
+ {
+  "item": 721,
+  "itemName": "TungstenBrickWall",
+  "zh": "钨砖墙",
+  "en": "Tungsten Brick Wall",
+  "wall": 46,
+  "wallName": "TungstenBrick",
+  "itemLine": 9810,
+  "dropsItem": 721,
+  "recipes": [
+   "x4 <- 1×钨砖/Tungsten Brick[718] @WorkBenches(18)工作台 (Recipe.cs:3549)"
+  ],
+  "rev": "reverse:4 TungstenBrickWall -> 1"
+ },
+ {
+  "item": 722,
+  "itemName": "PlatinumBrickWall",
+  "zh": "铂金砖墙",
+  "en": "Platinum Brick Wall",
+  "wall": 47,
+  "wallName": "PlatinumBrick",
+  "itemLine": 9821,
+  "dropsItem": 722,
+  "recipes": [
+   "x4 <- 1×铂金砖/Platinum Brick[719] @WorkBenches(18)工作台 (Recipe.cs:3562)"
+  ],
+  "rev": "reverse:4 PlatinumBrickWall -> 1"
+ },
+ {
+  "item": 745,
+  "itemName": "GrassWall",
+  "zh": "草墙",
+  "en": "Grass Wall",
+  "wall": 66,
+  "wallName": "Grass",
+  "itemLine": 10087,
+  "dropsItem": 745,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 746,
+  "itemName": "JungleWall",
+  "zh": "丛林墙",
+  "en": "Jungle Wall",
+  "wall": 67,
+  "wallName": "Jungle",
+  "itemLine": 10099,
+  "dropsItem": 746,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 747,
+  "itemName": "FlowerWall",
+  "zh": "花墙",
+  "en": "Flower Wall",
+  "wall": 68,
+  "wallName": "Flower",
+  "itemLine": 10111,
+  "dropsItem": 747,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 750,
+  "itemName": "CactusWall",
+  "zh": "仙人掌墙",
+  "en": "Cactus Wall",
+  "wall": 72,
+  "wallName": "Cactus",
+  "itemLine": 10139,
+  "dropsItem": 750,
+  "recipes": [
+   "x4 <- 1×仙人掌/Cactus[276] @WorkBenches(18)工作台 (Recipe.cs:8096)"
+  ],
+  "rev": "reverse:4 CactusWall -> 1"
+ },
+ {
+  "item": 752,
+  "itemName": "CloudWall",
+  "zh": "云墙",
+  "en": "Cloud Wall",
+  "wall": 73,
+  "wallName": "Cloud",
+  "itemLine": 10161,
+  "dropsItem": 752,
+  "recipes": [
+   "x4 <- 1×云/Cloud[751] @WorkBenches(18)工作台 (Recipe.cs:3089)"
+  ],
+  "rev": "reverse:4 CloudWall -> 1"
+ },
+ {
+  "item": 764,
+  "itemName": "MushroomWall",
+  "zh": "蘑菇墙",
+  "en": "Mushroom Wall",
+  "wall": 74,
+  "wallName": "Mushroom",
+  "itemLine": 10323,
+  "dropsItem": 764,
+  "recipes": [
+   "x4 <- 1×发光蘑菇/Glowing Mushroom[183] @WorkBenches(18)工作台 (Recipe.cs:4659)"
+  ],
+  "rev": "reverse:4 MushroomWall -> 1"
+ },
+ {
+  "item": 768,
+  "itemName": "BoneBlockWall",
+  "zh": "骨块墙",
+  "en": "Bone Block Wall",
+  "wall": 75,
+  "wallName": "Bone",
+  "itemLine": 10367,
+  "dropsItem": 768,
+  "recipes": [
+   "x4 <- 1×骨头/Bone[154] @BoneWelder(300) (Recipe.cs:8645)"
+  ],
+  "rev": "reverse:4 BoneBlockWall -> 1"
+ },
+ {
+  "item": 769,
+  "itemName": "SlimeBlockWall",
+  "zh": "史莱姆块墙",
+  "en": "Slime Block Wall",
+  "wall": 76,
+  "wallName": "Slime",
+  "itemLine": 10378,
+  "dropsItem": 769,
+  "recipes": [
+   "x4 <- 1×史莱姆块/Slime Block[762] @WorkBenches(18)工作台 (Recipe.cs:8626)"
+  ],
+  "rev": "reverse:4 SlimeBlockWall -> 1"
+ },
+ {
+  "item": 770,
+  "itemName": "FleshBlockWall",
+  "zh": "血肉块墙",
+  "en": "Flesh Block Wall",
+  "wall": 77,
+  "wallName": "Flesh",
+  "itemLine": 10389,
+  "dropsItem": 770,
+  "recipes": [
+   "x4 <- 1×血肉块/Flesh Block[763] @WorkBenches(18)工作台 (Recipe.cs:8497)"
+  ],
+  "rev": "reverse:4 FleshBlockWall -> 1"
+ },
+ {
+  "item": 825,
+  "itemName": "DiscWall",
+  "zh": "飞盘墙",
+  "en": "Disc Wall",
+  "wall": 82,
+  "wallName": "DiscWall",
+  "itemLine": 11067,
+  "dropsItem": 825,
+  "recipes": [
+   "x4 <- 1×日盘块/Sunplate Block[824] @WorkBenches(18)工作台 (Recipe.cs:7547)"
+  ],
+  "rev": "reverse:4 DiscWall -> 1"
+ },
+ {
+  "item": 884,
+  "itemName": "IceBrickWall",
+  "zh": "冰雪砖墙",
+  "en": "Ice Brick Wall",
+  "wall": 84,
+  "wallName": "IceBrick",
+  "itemLine": 11675,
+  "dropsItem": 884,
+  "recipes": [
+   "x4 <- 1×冰雪砖/Ice Brick[883] @WorkBenches(18)工作台 (Recipe.cs:3663)"
+  ],
+  "rev": "reverse:4 IceBrickWall -> 1"
+ },
+ {
+  "item": 927,
+  "itemName": "ShadewoodWall",
+  "zh": "暗影木墙",
+  "en": "Shadewood Wall",
+  "wall": 85,
+  "wallName": "Shadewood",
+  "itemLine": 12090,
+  "dropsItem": 927,
+  "recipes": [
+   "x4 <- 1×暗影木/Shadewood[911] @WorkBenches(18)工作台 (Recipe.cs:4634)"
+  ],
+  "rev": "reverse:4 ShadewoodWall -> 1"
+ },
+ {
+  "item": 1102,
+  "itemName": "LihzahrdBrickWall",
+  "zh": "丛林蜥蜴砖墙",
+  "en": "Lihzahrd Brick Wall",
+  "wall": 112,
+  "wallName": "LihzahrdBrick",
+  "itemLine": 13584,
+  "dropsItem": 1102,
+  "recipes": [
+   "x4 <- 1×丛林蜥蜴砖/Lihzahrd Brick[1101] @WorkBenches(18)工作台 (Recipe.cs:3441)"
+  ],
+  "rev": "reverse:4 LihzahrdBrickWall -> 1"
+ },
+ {
+  "item": 1126,
+  "itemName": "HiveWall",
+  "zh": "蜂巢墙",
+  "en": "Hive Wall",
+  "wall": 108,
+  "wallName": "Hive",
+  "itemLine": 13864,
+  "dropsItem": 1126,
+  "recipes": [
+   "x4 <- 1×蜂巢/Hive[1124] @WorkBenches(18)工作台 (Recipe.cs:8640)"
+  ],
+  "rev": "reverse:4 HiveWall -> 1"
+ },
+ {
+  "item": 1267,
+  "itemName": "PurpleStainedGlass",
+  "zh": "紫花窗玻璃",
+  "en": "Purple Stained Glass",
+  "wall": 88,
+  "wallName": "PurpleStainedGlass",
+  "itemLine": 15748,
+  "dropsItem": null,
+  "recipes": [
+   "x20 <- 20×玻璃墙/Glass Wall[392] + 1×紫晶/Amethyst[181] @WorkBenches(18)工作台 (Recipe.cs:3125)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 1268,
+  "itemName": "YellowStainedGlass",
+  "zh": "黄花窗玻璃",
+  "en": "Yellow Stained Glass",
+  "wall": 89,
+  "wallName": "YellowStainedGlass",
+  "itemLine": 15760,
+  "dropsItem": null,
+  "recipes": [
+   "x20 <- 20×玻璃墙/Glass Wall[392] + 1×黄玉/Topaz[180] @WorkBenches(18)工作台 (Recipe.cs:3132)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 1269,
+  "itemName": "BlueStainedGlass",
+  "zh": "蓝花窗玻璃",
+  "en": "Blue Stained Glass",
+  "wall": 90,
+  "wallName": "BlueStainedGlass",
+  "itemLine": 15772,
+  "dropsItem": null,
+  "recipes": [
+   "x20 <- 20×玻璃墙/Glass Wall[392] + 1×蓝玉/Sapphire[177] @WorkBenches(18)工作台 (Recipe.cs:3139)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 1270,
+  "itemName": "GreenStainedGlass",
+  "zh": "绿花窗玻璃",
+  "en": "Green Stained Glass",
+  "wall": 91,
+  "wallName": "GreenStainedGlass",
+  "itemLine": 15784,
+  "dropsItem": null,
+  "recipes": [
+   "x20 <- 20×玻璃墙/Glass Wall[392] + 1×翡翠/Emerald[179] @WorkBenches(18)工作台 (Recipe.cs:3146)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 1271,
+  "itemName": "RedStainedGlass",
+  "zh": "红花窗玻璃",
+  "en": "Red Stained Glass",
+  "wall": 92,
+  "wallName": "RedStainedGlass",
+  "itemLine": 15796,
+  "dropsItem": null,
+  "recipes": [
+   "x20 <- 20×玻璃墙/Glass Wall[392] + 1×红玉/Ruby[178] @WorkBenches(18)工作台 (Recipe.cs:3153)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 1272,
+  "itemName": "MulticoloredStainedGlass",
+  "zh": "五彩花窗玻璃",
+  "en": "Multicolored Stained Glass",
+  "wall": 93,
+  "wallName": "RainbowStainedGlass",
+  "itemLine": 15808,
+  "dropsItem": null,
+  "recipes": [
+   "x50 <- 50×玻璃墙/Glass Wall[392] + 1×紫晶/Amethyst[181] + 1×黄玉/Topaz[180] + 1×蓝玉/Sapphire[177] + 1×翡翠/Emerald[179] + 1×红玉/Ruby[178] @WorkBenches(18)工作台 (Recipe.cs:3167)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 1378,
+  "itemName": "BlueSlabWall",
+  "zh": "蓝板墙",
+  "en": "Blue Slab Wall",
+  "wall": 100,
+  "wallName": "BlueDungeonSlab",
+  "itemLine": 17071,
+  "dropsItem": 1378,
+  "recipes": [
+   "x4 <- 1×蓝砖/Blue Brick[134] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3346)"
+  ],
+  "rev": "reverse:4 BlueSlabWall -> 1"
+ },
+ {
+  "item": 1379,
+  "itemName": "BlueTiledWall",
+  "zh": "蓝瓷砖墙",
+  "en": "Blue Tiled Wall",
+  "wall": 101,
+  "wallName": "BlueDungeonTile",
+  "itemLine": 17082,
+  "dropsItem": 1379,
+  "recipes": [
+   "x4 <- 1×蓝砖/Blue Brick[134] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3341)"
+  ],
+  "rev": "reverse:4 BlueTiledWall -> 1"
+ },
+ {
+  "item": 1380,
+  "itemName": "PinkSlabWall",
+  "zh": "粉板墙",
+  "en": "Pink Slab Wall",
+  "wall": 102,
+  "wallName": "PinkDungeonSlab",
+  "itemLine": 17093,
+  "dropsItem": 1380,
+  "recipes": [
+   "x4 <- 1×粉砖/Pink Brick[139] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3376)"
+  ],
+  "rev": "reverse:4 PinkSlabWall -> 1"
+ },
+ {
+  "item": 1381,
+  "itemName": "PinkTiledWall",
+  "zh": "粉瓷砖墙",
+  "en": "Pink Tiled Wall",
+  "wall": 103,
+  "wallName": "PinkDungeonTile",
+  "itemLine": 17104,
+  "dropsItem": 1381,
+  "recipes": [
+   "x4 <- 1×粉砖/Pink Brick[139] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3371)"
+  ],
+  "rev": "reverse:4 PinkTiledWall -> 1"
+ },
+ {
+  "item": 1382,
+  "itemName": "GreenSlabWall",
+  "zh": "绿板墙",
+  "en": "Green Slab Wall",
+  "wall": 104,
+  "wallName": "GreenDungeonSlab",
+  "itemLine": 17115,
+  "dropsItem": 1382,
+  "recipes": [
+   "x4 <- 1×绿砖/Green Brick[137] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3361)"
+  ],
+  "rev": "reverse:4 GreenSlabWall -> 1"
+ },
+ {
+  "item": 1383,
+  "itemName": "GreenTiledWall",
+  "zh": "绿瓷砖墙",
+  "en": "Green Tiled Wall",
+  "wall": 105,
+  "wallName": "GreenDungeonTile",
+  "itemLine": 17126,
+  "dropsItem": 1383,
+  "recipes": [
+   "x4 <- 1×绿砖/Green Brick[137] @HeavyWorkBench(283)重型组装机 (Recipe.cs:3356)"
+  ],
+  "rev": "reverse:4 GreenTiledWall -> 1"
+ },
+ {
+  "item": 1447,
+  "itemName": "WoodenFence",
+  "zh": "木栅栏",
+  "en": "Wooden Fence",
+  "wall": 106,
+  "wallName": "WoodenFence",
+  "itemLine": 17948,
+  "dropsItem": 1447,
+  "recipes": [
+   "x4 <- 1×木材/Wood[9] @WorkBenches(18)工作台 (Recipe.cs:6451)"
+  ],
+  "rev": "reverse:4 WoodenFence -> 1"
+ },
+ {
+  "item": 1448,
+  "itemName": "LeadFence",
+  "zh": "铅栅栏",
+  "en": "Lead Fence",
+  "wall": 107,
+  "wallName": "MetalFence",
+  "itemLine": 17959,
+  "dropsItem": 1448,
+  "recipes": [
+   "x4 <- 1×铅锭/Lead Bar[704] @Anvils(16)铁砧 (Recipe.cs:6499)"
+  ],
+  "rev": "reverse:4 LeadFence -> 1"
+ },
+ {
+  "item": 1590,
+  "itemName": "PalladiumColumnWall",
+  "zh": "钯金柱墙",
+  "en": "Palladium Column Wall",
+  "wall": 109,
+  "wallName": "PalladiumColumn",
+  "itemLine": 19025,
+  "dropsItem": 1590,
+  "recipes": [
+   "x4 <- 1×钯金柱/Palladium Column[1589] @WorkBenches(18)工作台 (Recipe.cs:4024)"
+  ],
+  "rev": "reverse:4 PalladiumColumnWall -> 1"
+ },
+ {
+  "item": 1592,
+  "itemName": "BubblegumBlockWall",
+  "zh": "泡泡糖块墙",
+  "en": "Bubblegum Block Wall",
+  "wall": 110,
+  "wallName": "BubblegumBlock",
+  "itemLine": 19047,
+  "dropsItem": 1592,
+  "recipes": [
+   "x4 <- 1×泡泡糖块/Bubblegum Block[1591] @WorkBenches(18)工作台 (Recipe.cs:4036)"
+  ],
+  "rev": "reverse:4 BubblegumBlockWall -> 1"
+ },
+ {
+  "item": 1594,
+  "itemName": "TitanstoneBlockWall",
+  "zh": "钛石块墙",
+  "en": "Titanstone Block Wall",
+  "wall": 111,
+  "wallName": "TitanstoneBlock",
+  "itemLine": 19069,
+  "dropsItem": 1594,
+  "recipes": [
+   "x4 <- 1×钛石块/Titanstone Block[1593] @WorkBenches(18)工作台 (Recipe.cs:4048)"
+  ],
+  "rev": "reverse:4 TitanstoneBlockWall -> 1"
+ },
+ {
+  "item": 1723,
+  "itemName": "LivingWoodWall",
+  "zh": "生命木墙",
+  "en": "Living Wood Wall",
+  "wall": 78,
+  "wallName": "LivingWood",
+  "itemLine": 19323,
+  "dropsItem": 1723,
+  "recipes": [
+   "x4 <- 1×木材/Wood[9] @LivingLoom(304) (Recipe.cs:4609)"
+  ],
+  "rev": "reverse:4 LivingWoodWall -> 1"
+ },
+ {
+  "item": 1726,
+  "itemName": "PumpkinWall",
+  "zh": "南瓜墙",
+  "en": "Pumpkin Wall",
+  "wall": 113,
+  "wallName": "Pumpkin",
+  "itemLine": 19354,
+  "dropsItem": 1726,
+  "recipes": [
+   "x4 <- 1×南瓜/Pumpkin[1725] @WorkBenches(18)工作台 (Recipe.cs:4664)"
+  ],
+  "rev": "reverse:4 PumpkinWall -> 1"
+ },
+ {
+  "item": 1728,
+  "itemName": "HayWall",
+  "zh": "干草墙",
+  "en": "Hay Wall",
+  "wall": 114,
+  "wallName": "Hay",
+  "itemLine": 19376,
+  "dropsItem": 1728,
+  "recipes": [
+   "x4 <- 1×干草/Hay[1727] @WorkBenches(18)工作台 (Recipe.cs:4669)"
+  ],
+  "rev": "reverse:4 HayWall -> 1"
+ },
+ {
+  "item": 1730,
+  "itemName": "SpookyWoodWall",
+  "zh": "阴森木墙",
+  "en": "Spooky Wood Wall",
+  "wall": 115,
+  "wallName": "SpookyWood",
+  "itemLine": 19398,
+  "dropsItem": 1730,
+  "recipes": [
+   "x4 <- 1×阴森木/Spooky Wood[1729] @WorkBenches(18)工作台 (Recipe.cs:4674)"
+  ],
+  "rev": "reverse:4 SpookyWoodWall -> 1"
+ },
+ {
+  "item": 1948,
+  "itemName": "ChristmasTreeWallpaper",
+  "zh": "圣诞树壁纸",
+  "en": "Christmas Tree Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1949,
+  "itemName": "OrnamentWallpaper",
+  "zh": "装饰壁纸",
+  "en": "Ornament Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1950,
+  "itemName": "CandyCaneWallpaper",
+  "zh": "糖棒壁纸",
+  "en": "Candy Cane Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1951,
+  "itemName": "FestiveWallpaper",
+  "zh": "节日壁纸",
+  "en": "Festive Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1952,
+  "itemName": "StarsWallpaper",
+  "zh": "星星壁纸",
+  "en": "Stars Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1953,
+  "itemName": "SquigglesWallpaper",
+  "zh": "波浪条纹壁纸",
+  "en": "Squiggles Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1954,
+  "itemName": "SnowflakeWallpaper",
+  "zh": "雪花壁纸",
+  "en": "Snowflake Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1955,
+  "itemName": "KrampusHornWallpaper",
+  "zh": "坎卜斯犄角壁纸",
+  "en": "Krampus Horn Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1956,
+  "itemName": "BluegreenWallpaper",
+  "zh": "蓝绿壁纸",
+  "en": "Bluegreen Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 1957,
+  "itemName": "GrinchFingerWallpaper",
+  "zh": "格林奇手指壁纸",
+  "en": "Grinch Finger Wallpaper",
+  "wall": 116,
+  "wallName": "ChristmasTreeWallpaper",
+  "itemLine": 21139,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2008,
+  "itemName": "FancyGreyWallpaper",
+  "zh": "别致灰壁纸",
+  "en": "Fancy Gray Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2009,
+  "itemName": "IceFloeWallpaper",
+  "zh": "浮冰壁纸",
+  "en": "Ice Floe Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2010,
+  "itemName": "MusicWallpaper",
+  "zh": "音符壁纸",
+  "en": "Music Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2011,
+  "itemName": "PurpleRainWallpaper",
+  "zh": "紫雨壁纸",
+  "en": "Purple Rain Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2012,
+  "itemName": "RainbowWallpaper",
+  "zh": "彩虹壁纸",
+  "en": "Rainbow Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2013,
+  "itemName": "SparkleStoneWallpaper",
+  "zh": "烁石壁纸",
+  "en": "Sparkle Stone Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2014,
+  "itemName": "StarlitHeavenWallpaper",
+  "zh": "星光天堂壁纸",
+  "en": "Starlit Heaven Wallpaper",
+  "wall": 126,
+  "wallName": "FancyGrayWallpaper",
+  "itemLine": 21428,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2158,
+  "itemName": "BubbleWallpaper",
+  "zh": "泡泡壁纸",
+  "en": "Bubble Wallpaper",
+  "wall": 133,
+  "wallName": "BubbleWallpaper",
+  "itemLine": 22090,
+  "dropsItem": 2158,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2159,
+  "itemName": "CopperPipeWallpaper",
+  "zh": "铜管壁纸",
+  "en": "Copper Pipe Wallpaper",
+  "wall": 133,
+  "wallName": "BubbleWallpaper",
+  "itemLine": 22090,
+  "dropsItem": 2158,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2160,
+  "itemName": "DuckyWallpaper",
+  "zh": "黄鸭壁纸",
+  "en": "Ducky Wallpaper",
+  "wall": 133,
+  "wallName": "BubbleWallpaper",
+  "itemLine": 22090,
+  "dropsItem": 2158,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2169,
+  "itemName": "WaterfallWall",
+  "zh": "瀑布墙",
+  "en": "Waterfall Wall",
+  "wall": 136,
+  "wallName": "Waterfall",
+  "itemLine": 22131,
+  "dropsItem": 2169,
+  "recipes": [
+   "x4 <- 1×瀑布块/Waterfall Block[2693] @WorkBenches(18)工作台 (Recipe.cs:2782)"
+  ],
+  "rev": "reverse:4 WaterfallWall -> 1"
+ },
+ {
+  "item": 2170,
+  "itemName": "LavafallWall",
+  "zh": "熔岩瀑布墙",
+  "en": "Lavafall Wall",
+  "wall": 137,
+  "wallName": "Lavafall",
+  "itemLine": 22142,
+  "dropsItem": 2170,
+  "recipes": [
+   "x4 <- 1×熔岩瀑布块/Lavafall Block[2694] @WorkBenches(18)工作台 (Recipe.cs:2793)"
+  ],
+  "rev": "reverse:4 LavafallWall -> 1"
+ },
+ {
+  "item": 2210,
+  "itemName": "EbonwoodFence",
+  "zh": "乌木栅栏",
+  "en": "Ebonwood Fence",
+  "wall": 138,
+  "wallName": "EbonwoodFence",
+  "itemLine": 22370,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×乌木/Ebonwood[619] @WorkBenches(18)工作台 (Recipe.cs:6457)"
+  ],
+  "rev": "reverse:4 EbonwoodFence -> 1"
+ },
+ {
+  "item": 2211,
+  "itemName": "RichMahoganyFence",
+  "zh": "红木栅栏",
+  "en": "Rich Mahogany Fence",
+  "wall": 138,
+  "wallName": "EbonwoodFence",
+  "itemLine": 22370,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×红木/Rich Mahogany[620] @WorkBenches(18)工作台 (Recipe.cs:6463)"
+  ],
+  "rev": "reverse:4 RichMahoganyFence -> 1"
+ },
+ {
+  "item": 2212,
+  "itemName": "PearlwoodFence",
+  "zh": "珍珠木栅栏",
+  "en": "Pearlwood Fence",
+  "wall": 138,
+  "wallName": "EbonwoodFence",
+  "itemLine": 22370,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×珍珠木/Pearlwood[621] @WorkBenches(18)工作台 (Recipe.cs:6469)"
+  ],
+  "rev": "reverse:4 PearlwoodFence -> 1"
+ },
+ {
+  "item": 2213,
+  "itemName": "ShadewoodFence",
+  "zh": "暗影木栅栏",
+  "en": "Shadewood Fence",
+  "wall": 138,
+  "wallName": "EbonwoodFence",
+  "itemLine": 22370,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×暗影木/Shadewood[911] @WorkBenches(18)工作台 (Recipe.cs:6475)"
+  ],
+  "rev": "reverse:4 ShadewoodFence -> 1"
+ },
+ {
+  "item": 2260,
+  "itemName": "DynastyWood",
+  "zh": "王朝木",
+  "en": "Dynasty Wood",
+  "wall": 142,
+  "wallName": "WhiteDynasty",
+  "itemLine": 22795,
+  "dropsItem": 2263,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2261,
+  "itemName": "RedDynastyShingles",
+  "zh": "红王朝瓦",
+  "en": "Red Dynasty Shingles",
+  "wall": 142,
+  "wallName": "WhiteDynasty",
+  "itemLine": 22795,
+  "dropsItem": 2263,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2262,
+  "itemName": "BlueDynastyShingles",
+  "zh": "蓝王朝瓦",
+  "en": "Blue Dynasty Shingles",
+  "wall": 142,
+  "wallName": "WhiteDynasty",
+  "itemLine": 22795,
+  "dropsItem": 2263,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2271,
+  "itemName": "ArcaneRuneWall",
+  "zh": "奥术神符墙",
+  "en": "Arcane Rune Wall",
+  "wall": 144,
+  "wallName": "ArcaneRunes",
+  "itemLine": 22872,
+  "dropsItem": 2271,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2333,
+  "itemName": "IronFence",
+  "zh": "铁栅栏",
+  "en": "Iron Fence",
+  "wall": 145,
+  "wallName": "IronFence",
+  "itemLine": 23445,
+  "dropsItem": 2333,
+  "recipes": [
+   "x4 <- 1×铁锭/Iron Bar[22] @Anvils(16)铁砧 (Recipe.cs:6505)"
+  ],
+  "rev": "reverse:4 IronFence -> 1"
+ },
+ {
+  "item": 2432,
+  "itemName": "CopperPlatingWall",
+  "zh": "铜护板墙",
+  "en": "Copper Plating Wall",
+  "wall": 146,
+  "wallName": "CopperPlating",
+  "itemLine": 24086,
+  "dropsItem": 2432,
+  "recipes": [
+   "x4 <- 1×铜护板/Copper Plating[2173] @WorkBenches(18)工作台 (Recipe.cs:3417)"
+  ],
+  "rev": "reverse:4 CopperPlatingWall -> 1"
+ },
+ {
+  "item": 2433,
+  "itemName": "StoneSlabWall",
+  "zh": "石板墙",
+  "en": "Stone Slab Wall",
+  "wall": 146,
+  "wallName": "CopperPlating",
+  "itemLine": 24086,
+  "dropsItem": 2432,
+  "recipes": [
+   "x4 <- 1×石板/Stone Slab[2119] @WorkBenches(18)工作台 (Recipe.cs:3385)"
+  ],
+  "rev": "reverse:4 StoneSlabWall -> 1"
+ },
+ {
+  "item": 2434,
+  "itemName": "Sail",
+  "zh": "船帆",
+  "en": "Sail",
+  "wall": 146,
+  "wallName": "CopperPlating",
+  "itemLine": 24086,
+  "dropsItem": 2432,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2505,
+  "itemName": "BorealWoodWall",
+  "zh": "针叶木墙",
+  "en": "Boreal Wood Wall",
+  "wall": 149,
+  "wallName": "BorealWood",
+  "itemLine": 24340,
+  "dropsItem": 2505,
+  "recipes": [
+   "x4 <- 1×针叶木/Boreal Wood[2503] @WorkBenches(18)工作台 (Recipe.cs:4644)"
+  ],
+  "rev": "reverse:4 BorealWoodWall -> 1"
+ },
+ {
+  "item": 2506,
+  "itemName": "PalmWoodWall",
+  "zh": "棕榈木墙",
+  "en": "Palm Wood Wall",
+  "wall": 151,
+  "wallName": "PalmWood",
+  "itemLine": 24351,
+  "dropsItem": 2506,
+  "recipes": [
+   "x4 <- 1×棕榈木/Palm Wood[2504] @WorkBenches(18)工作台 (Recipe.cs:4649)"
+  ],
+  "rev": "reverse:4 PalmWoodWall -> 1"
+ },
+ {
+  "item": 2507,
+  "itemName": "BorealWoodFence",
+  "zh": "针叶木栅栏",
+  "en": "Boreal Wood Fence",
+  "wall": 150,
+  "wallName": "BorealWoodFence",
+  "itemLine": 24362,
+  "dropsItem": 2507,
+  "recipes": [
+   "x4 <- 1×针叶木/Boreal Wood[2503] @WorkBenches(18)工作台 (Recipe.cs:6481)"
+  ],
+  "rev": "reverse:4 BorealWoodFence -> 1"
+ },
+ {
+  "item": 2508,
+  "itemName": "PalmWoodFence",
+  "zh": "棕榈木栅栏",
+  "en": "Palm Wood Fence",
+  "wall": 152,
+  "wallName": "PalmWoodFence",
+  "itemLine": 24373,
+  "dropsItem": 2508,
+  "recipes": [
+   "x4 <- 1×棕榈木/Palm Wood[2504] @WorkBenches(18)工作台 (Recipe.cs:6487)"
+  ],
+  "rev": "reverse:4 PalmWoodFence -> 1"
+ },
+ {
+  "item": 2677,
+  "itemName": "AmberGemsparkWall",
+  "zh": "琥珀晶莹宝石墙",
+  "en": "Amber Gemspark Wall",
+  "wall": 153,
+  "wallName": "AmberGemspark",
+  "itemLine": 25912,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2678,
+  "itemName": "AmberGemsparkWallOff",
+  "zh": "黯淡琥珀晶莹宝石墙",
+  "en": "Offline Amber Gemspark Wall",
+  "wall": 157,
+  "wallName": "AmberGemsparkOff",
+  "itemLine": 25915,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2679,
+  "itemName": "AmethystGemsparkWall",
+  "zh": "紫晶晶莹宝石墙",
+  "en": "Amethyst Gemspark Wall",
+  "wall": 154,
+  "wallName": "AmethystGemspark",
+  "itemLine": 25918,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2680,
+  "itemName": "AmethystGemsparkWallOff",
+  "zh": "黯淡紫晶晶莹宝石墙",
+  "en": "Offline Amethyst Gemspark Wall",
+  "wall": 158,
+  "wallName": "AmethystGemsparkOff",
+  "itemLine": 25921,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2681,
+  "itemName": "DiamondGemsparkWall",
+  "zh": "钻石晶莹宝石墙",
+  "en": "Diamond Gemspark Wall",
+  "wall": 155,
+  "wallName": "DiamondGemspark",
+  "itemLine": 25924,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2682,
+  "itemName": "DiamondGemsparkWallOff",
+  "zh": "黯淡钻石晶莹宝石墙",
+  "en": "Offline Diamond Gemspark Wall",
+  "wall": 159,
+  "wallName": "DiamondGemsparkOff",
+  "itemLine": 25927,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2683,
+  "itemName": "EmeraldGemsparkWall",
+  "zh": "翡翠晶莹宝石墙",
+  "en": "Emerald Gemspark Wall",
+  "wall": 156,
+  "wallName": "EmeraldGemspark",
+  "itemLine": 25930,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2684,
+  "itemName": "EmeraldGemsparkWallOff",
+  "zh": "黯淡翡翠晶莹宝石墙",
+  "en": "Offline Emerald Gemspark Wall",
+  "wall": 160,
+  "wallName": "EmeraldGemsparkOff",
+  "itemLine": 25933,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2685,
+  "itemName": "RubyGemsparkWall",
+  "zh": "红玉晶莹宝石墙",
+  "en": "Ruby Gemspark Wall",
+  "wall": 164,
+  "wallName": "RubyGemspark",
+  "itemLine": 25936,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2686,
+  "itemName": "RubyGemsparkWallOff",
+  "zh": "黯淡红玉晶莹宝石墙",
+  "en": "Offline Ruby Gemspark Wall",
+  "wall": 161,
+  "wallName": "RubyGemsparkOff",
+  "itemLine": 25939,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2687,
+  "itemName": "SapphireGemsparkWall",
+  "zh": "蓝玉晶莹宝石墙",
+  "en": "Sapphire Gemspark Wall",
+  "wall": 165,
+  "wallName": "SapphireGemspark",
+  "itemLine": 25942,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2688,
+  "itemName": "SapphireGemsparkWallOff",
+  "zh": "黯淡蓝玉晶莹宝石墙",
+  "en": "Offline Sapphire Gemspark Wall",
+  "wall": 162,
+  "wallName": "SapphireGemsparkOff",
+  "itemLine": 25945,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2689,
+  "itemName": "TopazGemsparkWall",
+  "zh": "黄玉晶莹宝石墙",
+  "en": "Topaz Gemspark Wall",
+  "wall": 166,
+  "wallName": "TopazGemspark",
+  "itemLine": 25948,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2690,
+  "itemName": "TopazGemsparkWallOff",
+  "zh": "黯淡黄玉晶莹宝石墙",
+  "en": "Offline Topaz Gemspark Wall",
+  "wall": 163,
+  "wallName": "TopazGemsparkOff",
+  "itemLine": 25951,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 2691,
+  "itemName": "TinPlatingWall",
+  "zh": "锡护板墙",
+  "en": "Tin Plating Wall",
+  "wall": 167,
+  "wallName": "TinPlating",
+  "itemLine": 25967,
+  "dropsItem": 2691,
+  "recipes": [
+   "x4 <- 1×锡护板/Tin Plating[2692] @WorkBenches(18)工作台 (Recipe.cs:3430)"
+  ],
+  "rev": "reverse:4 TinPlatingWall -> 1"
+ },
+ {
+  "item": 2696,
+  "itemName": "ConfettiWall",
+  "zh": "彩纸墙",
+  "en": "Confetti Wall",
+  "wall": 168,
+  "wallName": "Confetti",
+  "itemLine": 26022,
+  "dropsItem": 2696,
+  "recipes": [
+   "x4 <- 1×彩纸块/Confetti Block[2695] @WorkBenches(18)工作台 (Recipe.cs:3026)"
+  ],
+  "rev": "reverse:4 ConfettiWall -> 1"
+ },
+ {
+  "item": 2698,
+  "itemName": "ConfettiWallBlack",
+  "zh": "午夜彩纸墙",
+  "en": "Midnight Confetti Wall",
+  "wall": 169,
+  "wallName": "ConfettiBlack",
+  "itemLine": 26044,
+  "dropsItem": 2698,
+  "recipes": [
+   "x4 <- 1×午夜彩纸块/Midnight Confetti Block[2697] @WorkBenches(18)工作台 (Recipe.cs:3037)"
+  ],
+  "rev": "reverse:4 ConfettiWallBlack -> 1"
+ },
+ {
+  "item": 2788,
+  "itemName": "HoneyfallWall",
+  "zh": "蜂蜜瀑布墙",
+  "en": "Honeyfall Wall",
+  "wall": 172,
+  "wallName": "Honeyfall",
+  "itemLine": 26638,
+  "dropsItem": 2788,
+  "recipes": [
+   "x4 <- 1×蜂蜜瀑布块/Honeyfall Block[2787] @WorkBenches(18)工作台 (Recipe.cs:2804)"
+  ],
+  "rev": "reverse:4 HoneyfallWall -> 1"
+ },
+ {
+  "item": 2789,
+  "itemName": "ChlorophyteBrickWall",
+  "zh": "叶绿砖墙",
+  "en": "Chlorophyte Brick Wall",
+  "wall": 173,
+  "wallName": "ChlorophyteBrick",
+  "itemLine": 26651,
+  "dropsItem": 2789,
+  "recipes": [
+   "x4 <- 1×叶绿砖/Chlorophyte Brick[2792] @WorkBenches(18)工作台 (Recipe.cs:4060)"
+  ],
+  "rev": "reverse:4 ChlorophyteBrickWall -> 1"
+ },
+ {
+  "item": 2790,
+  "itemName": "CrimtaneBrickWall",
+  "zh": "猩红矿砖墙",
+  "en": "Crimtane Brick Wall",
+  "wall": 173,
+  "wallName": "ChlorophyteBrick",
+  "itemLine": 26651,
+  "dropsItem": 2789,
+  "recipes": [
+   "x4 <- 1×猩红矿砖/Crimtane Brick[2793] @WorkBenches(18)工作台 (Recipe.cs:3928)"
+  ],
+  "rev": "reverse:4 CrimtaneBrickWall -> 1"
+ },
+ {
+  "item": 2791,
+  "itemName": "ShroomitePlatingWall",
+  "zh": "蘑菇矿护板墙",
+  "en": "Shroomite Plating Wall",
+  "wall": 173,
+  "wallName": "ChlorophyteBrick",
+  "itemLine": 26651,
+  "dropsItem": 2789,
+  "recipes": [
+   "x4 <- 1×蘑菇矿护板/Shroomite Plating[2794] @WorkBenches(18)工作台 (Recipe.cs:4072)"
+  ],
+  "rev": "reverse:4 ShroomitePlatingWall -> 1"
+ },
+ {
+  "item": 2861,
+  "itemName": "MartianConduitWall",
+  "zh": "火星管道墙",
+  "en": "Martian Conduit Wall",
+  "wall": 176,
+  "wallName": "MartianConduit",
+  "itemLine": 27160,
+  "dropsItem": 2861,
+  "recipes": [
+   "x4 <- 1×火星管道护板/Martian Conduit Plating[2860] @WorkBenches(18)工作台 (Recipe.cs:4684)"
+  ],
+  "rev": "reverse:4 MartianConduitWall -> 1"
+ },
+ {
+  "item": 3067,
+  "itemName": "HellstoneBrickWall",
+  "zh": "狱石砖墙",
+  "en": "Hellstone Brick Wall",
+  "wall": 177,
+  "wallName": "HellstoneBrick",
+  "itemLine": 28389,
+  "dropsItem": 3067,
+  "recipes": [
+   "x4 <- 1×狱石砖/Hellstone Brick[214] @WorkBenches(18)工作台 (Recipe.cs:3583)"
+  ],
+  "rev": "reverse:4 HellstoneBrickWall -> 1"
+ },
+ {
+  "item": 3082,
+  "itemName": "MarbleWall",
+  "zh": "大理石墙",
+  "en": "Marble Wall",
+  "wall": 183,
+  "wallName": "Marble",
+  "itemLine": 28494,
+  "dropsItem": 3082,
+  "recipes": [
+   "x4 <- 1×大理石块/Marble Block[3081] @WorkBenches(18)工作台 (Recipe.cs:5892)"
+  ],
+  "rev": "reverse:4 MarbleWall -> 1"
+ },
+ {
+  "item": 3083,
+  "itemName": "MarbleBlockWall",
+  "zh": "光面大理石墙",
+  "en": "Smooth Marble Wall",
+  "wall": 179,
+  "wallName": "MarbleBlock",
+  "itemLine": 28505,
+  "dropsItem": 3083,
+  "recipes": [
+   "x4 <- 1×光面大理石块/Smooth Marble Block[3066] @WorkBenches(18)工作台 (Recipe.cs:5887)"
+  ],
+  "rev": "reverse:4 MarbleBlockWall -> 1"
+ },
+ {
+  "item": 3088,
+  "itemName": "GraniteWall",
+  "zh": "花岗岩墙",
+  "en": "Granite Wall",
+  "wall": 184,
+  "wallName": "Granite",
+  "itemLine": 28579,
+  "dropsItem": 3088,
+  "recipes": [
+   "x4 <- 1×花岗岩块/Granite Block[3086] @WorkBenches(18)工作台 (Recipe.cs:6031)"
+  ],
+  "rev": "reverse:4 GraniteWall -> 1"
+ },
+ {
+  "item": 3089,
+  "itemName": "GraniteBlockWall",
+  "zh": "光面花岗岩墙",
+  "en": "Smooth Granite Wall",
+  "wall": 181,
+  "wallName": "GraniteBlock",
+  "itemLine": 28590,
+  "dropsItem": 3089,
+  "recipes": [
+   "x4 <- 1×光面花岗岩块/Smooth Granite Block[3087] @WorkBenches(18)工作台 (Recipe.cs:6026)"
+  ],
+  "rev": "reverse:4 GraniteBlockWall -> 1"
+ },
+ {
+  "item": 3101,
+  "itemName": "MeteoriteBrickWall",
+  "zh": "陨石砖墙",
+  "en": "Meteorite Brick Wall",
+  "wall": 182,
+  "wallName": "MeteoriteBrick",
+  "itemLine": 28692,
+  "dropsItem": 3101,
+  "recipes": [
+   "x4 <- 1×陨石砖/Meteorite Brick[3100] @WorkBenches(18)工作台 (Recipe.cs:3916)"
+  ],
+  "rev": "reverse:4 MeteoriteBrickWall -> 1"
+ },
+ {
+  "item": 3238,
+  "itemName": "CrystalBlockWall",
+  "zh": "水晶块墙",
+  "en": "Crystal Block Wall",
+  "wall": 186,
+  "wallName": "Crystal",
+  "itemLine": 29836,
+  "dropsItem": 3238,
+  "recipes": [
+   "x4 <- 1×水晶块/Crystal Block[3234] @WorkBenches(18)工作台 (Recipe.cs:4470)"
+  ],
+  "rev": "reverse:4 CrystalBlockWall -> 1"
+ },
+ {
+  "item": 3273,
+  "itemName": "SandstoneWall",
+  "zh": "沙岩墙",
+  "en": "Sandstone Wall",
+  "wall": 275,
+  "wallName": "SandstoneEcho",
+  "itemLine": 30375,
+  "dropsItem": 3273,
+  "recipes": [
+   "x4 <- 1×沙岩块/Sandstone Block[3271] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:3696)"
+  ],
+  "rev": "reverse:4 SandstoneWall -> 1"
+ },
+ {
+  "item": 3340,
+  "itemName": "HardenedSandWall",
+  "zh": "硬化沙墙",
+  "en": "Hardened Sand Wall",
+  "wall": 304,
+  "wallName": "HardenedSandEcho",
+  "itemLine": 30419,
+  "dropsItem": 3340,
+  "recipes": [
+   "x4 <- 1×硬化沙块/Hardened Sand Block[3272] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2967)"
+  ],
+  "rev": "reverse:4 HardenedSandWall -> 1"
+ },
+ {
+  "item": 3341,
+  "itemName": "CorruptHardenedSandWall",
+  "zh": "硬化黑檀沙墙",
+  "en": "Hardened Ebonsand Wall",
+  "wall": 305,
+  "wallName": "CorruptHardenedSandEcho",
+  "itemLine": 30430,
+  "dropsItem": 3341,
+  "recipes": [
+   "x4 <- 1×硬化黑檀沙块/Hardened Ebonsand Block[3274] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2973)"
+  ],
+  "rev": "reverse:4 CorruptHardenedSandWall -> 1"
+ },
+ {
+  "item": 3342,
+  "itemName": "CrimsonHardenedSandWall",
+  "zh": "硬化猩红沙墙",
+  "en": "Hardened Crimsand Wall",
+  "wall": 306,
+  "wallName": "CrimsonHardenedSandEcho",
+  "itemLine": 30441,
+  "dropsItem": 3342,
+  "recipes": [
+   "x4 <- 1×硬化猩红沙块/Hardened Crimsand Block[3275] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2979)"
+  ],
+  "rev": "reverse:4 CrimsonHardenedSandWall -> 1"
+ },
+ {
+  "item": 3343,
+  "itemName": "HallowHardenedSandWall",
+  "zh": "硬化珍珠沙墙",
+  "en": "Hardened Pearlsand Wall",
+  "wall": 307,
+  "wallName": "HallowHardenedSandEcho",
+  "itemLine": 30452,
+  "dropsItem": 3343,
+  "recipes": [
+   "x4 <- 1×硬化珍珠沙块/Hardened Pearlsand Block[3338] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2985)"
+  ],
+  "rev": "reverse:4 HallowHardenedSandWall -> 1"
+ },
+ {
+  "item": 3344,
+  "itemName": "CorruptSandstoneWall",
+  "zh": "黑檀沙岩墙",
+  "en": "Ebonsandstone Wall",
+  "wall": 308,
+  "wallName": "CorruptSandstoneEcho",
+  "itemLine": 30386,
+  "dropsItem": 3344,
+  "recipes": [
+   "x4 <- 1×黑檀沙岩块/Ebonsandstone Block[3276] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2991)"
+  ],
+  "rev": "reverse:4 CorruptSandstoneWall -> 1"
+ },
+ {
+  "item": 3345,
+  "itemName": "CrimsonSandstoneWall",
+  "zh": "猩红沙岩墙",
+  "en": "Crimsandstone Wall",
+  "wall": 309,
+  "wallName": "CrimsonSandstoneEcho",
+  "itemLine": 30397,
+  "dropsItem": 3345,
+  "recipes": [
+   "x4 <- 1×猩红沙岩块/Crimsandstone Block[3277] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2997)"
+  ],
+  "rev": "reverse:4 CrimsonSandstoneWall -> 1"
+ },
+ {
+  "item": 3346,
+  "itemName": "HallowSandstoneWall",
+  "zh": "珍珠沙岩墙",
+  "en": "Pearlsandstone Wall",
+  "wall": 310,
+  "wallName": "HallowSandstoneEcho",
+  "itemLine": 30408,
+  "dropsItem": 3346,
+  "recipes": [
+   "x4 <- 1×珍珠沙岩块/Pearlsandstone Block[3339] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:3003)"
+  ],
+  "rev": "reverse:4 HallowSandstoneWall -> 1"
+ },
+ {
+  "item": 3348,
+  "itemName": "DesertFossilWall",
+  "zh": "沙漠化石墙",
+  "en": "Desert Fossil Wall",
+  "wall": 311,
+  "wallName": "DesertFossilEcho",
+  "itemLine": 30540,
+  "dropsItem": 3348,
+  "recipes": [
+   "x4 <- 1×沙漠化石/Desert Fossil[3347] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:3009)"
+  ],
+  "rev": "reverse:4 DesertFossilWall -> 1"
+ },
+ {
+  "item": 3472,
+  "itemName": "LunarBrickWall",
+  "zh": "夜明砖墙",
+  "en": "Luminite Brick Wall",
+  "wall": 224,
+  "wallName": "LunarBrickWall",
+  "itemLine": 31118,
+  "dropsItem": 3472,
+  "recipes": [
+   "x4 <- 1×夜明砖/Luminite Brick[3461] @WorkBenches(18)工作台 (Recipe.cs:4084)"
+  ],
+  "rev": "reverse:4 LunarBrickWall -> 1"
+ },
+ {
+  "item": 3584,
+  "itemName": "LivingLeafWall",
+  "zh": "生命树叶墙",
+  "en": "Living Leaf Wall",
+  "wall": 60,
+  "wallName": "LivingLeaf",
+  "itemLine": 32330,
+  "dropsItem": 3584,
+  "recipes": [
+   "x4 <- 1×木材/Wood[9] @LivingLoom(304) (Recipe.cs:4614)"
+  ],
+  "rev": "reverse:4 LivingLeafWall -> 1"
+ },
+ {
+  "item": 3751,
+  "itemName": "CogWall",
+  "zh": "齿轮墙",
+  "en": "Cog Wall",
+  "wall": 225,
+  "wallName": "CogWall",
+  "itemLine": 33235,
+  "dropsItem": 3751,
+  "recipes": [
+   "x4 <- 1×齿轮/Cog[1344] @WorkBenches(18)工作台 (Recipe.cs:4679)"
+  ],
+  "rev": "reverse:4 CogWall -> 1"
+ },
+ {
+  "item": 3752,
+  "itemName": "SandFallWall",
+  "zh": "落沙墙",
+  "en": "Sandfall Wall",
+  "wall": 226,
+  "wallName": "SandFall",
+  "itemLine": 33246,
+  "dropsItem": 3752,
+  "recipes": [
+   "x4 <- 1×落沙块/Sandfall Block[3754] @WorkBenches(18)工作台 (Recipe.cs:2815)"
+  ],
+  "rev": "reverse:4 SandFallWall -> 1"
+ },
+ {
+  "item": 3753,
+  "itemName": "SnowFallWall",
+  "zh": "降雪墙",
+  "en": "Snowfall Wall",
+  "wall": 227,
+  "wallName": "SnowFall",
+  "itemLine": 33257,
+  "dropsItem": 3753,
+  "recipes": [
+   "x4 <- 1×降雪块/Snowfall Block[3755] @WorkBenches(18)工作台 (Recipe.cs:2826)"
+  ],
+  "rev": "reverse:4 SnowFallWall -> 1"
+ },
+ {
+  "item": 3760,
+  "itemName": "SillyBalloonPinkWall",
+  "zh": "呆萌粉气球墙",
+  "en": "Silly Pink Balloon Wall",
+  "wall": 228,
+  "wallName": "SillyBalloonPinkWall",
+  "itemLine": 33328,
+  "dropsItem": 3760,
+  "recipes": [
+   "x4 <- 1×呆萌粉气球/Silly Pink Balloon[3736] @WorkBenches(18)工作台 (Recipe.cs:4689)"
+  ],
+  "rev": "reverse:4 SillyBalloonPinkWall -> 1"
+ },
+ {
+  "item": 3761,
+  "itemName": "SillyBalloonPurpleWall",
+  "zh": "呆萌紫气球墙",
+  "en": "Silly Purple Balloon Wall",
+  "wall": 228,
+  "wallName": "SillyBalloonPinkWall",
+  "itemLine": 33328,
+  "dropsItem": 3760,
+  "recipes": [
+   "x4 <- 1×呆萌紫气球/Silly Purple Balloon[3737] @WorkBenches(18)工作台 (Recipe.cs:4694)"
+  ],
+  "rev": "reverse:4 SillyBalloonPurpleWall -> 1"
+ },
+ {
+  "item": 3762,
+  "itemName": "SillyBalloonGreenWall",
+  "zh": "呆萌绿气球墙",
+  "en": "Silly Green Balloon Wall",
+  "wall": 228,
+  "wallName": "SillyBalloonPinkWall",
+  "itemLine": 33328,
+  "dropsItem": 3760,
+  "recipes": [
+   "x4 <- 1×呆萌绿气球/Silly Green Balloon[3738] @WorkBenches(18)工作台 (Recipe.cs:4699)"
+  ],
+  "rev": "reverse:4 SillyBalloonGreenWall -> 1"
+ },
+ {
+  "item": 3952,
+  "itemName": "IronBrickWall",
+  "zh": "铁砖墙",
+  "en": "Iron Brick Wall",
+  "wall": 231,
+  "wallName": "IronBrick",
+  "itemLine": 35033,
+  "dropsItem": 3952,
+  "recipes": [
+   "x4 <- 1×铁砖/Iron Brick[3951] @WorkBenches(18)工作台 (Recipe.cs:3492)"
+  ],
+  "rev": "reverse:4 IronBrickWall -> 1"
+ },
+ {
+  "item": 3954,
+  "itemName": "LeadBrickWall",
+  "zh": "铅砖墙",
+  "en": "Lead Brick Wall",
+  "wall": 232,
+  "wallName": "LeadBrick",
+  "itemLine": 35055,
+  "dropsItem": 3954,
+  "recipes": [
+   "x4 <- 1×铅砖/Lead Brick[3953] @WorkBenches(18)工作台 (Recipe.cs:3505)"
+  ],
+  "rev": "reverse:4 LeadBrickWall -> 1"
+ },
+ {
+  "item": 3956,
+  "itemName": "LesionBlockWall",
+  "zh": "病变块墙",
+  "en": "Lesion Block Wall",
+  "wall": 233,
+  "wallName": "LesionBlock",
+  "itemLine": 35077,
+  "dropsItem": 3956,
+  "recipes": [
+   "x4 <- 1×病变块/Lesion Block[3955] @WorkBenches(18)工作台 (Recipe.cs:15731)"
+  ],
+  "rev": "reverse:4 LesionBlockWall -> 1"
+ },
+ {
+  "item": 4052,
+  "itemName": "CrimstoneBrickWall",
+  "zh": "猩红石砖墙",
+  "en": "Crimstone Brick Wall",
+  "wall": 234,
+  "wallName": "CrimstoneBrick",
+  "itemLine": 35626,
+  "dropsItem": 4052,
+  "recipes": [
+   "x4 <- 1×猩红石砖/Crimstone Brick[4050] @WorkBenches(18)工作台 (Recipe.cs:3805)"
+  ],
+  "rev": "reverse:4 CrimstoneBrickWall -> 1"
+ },
+ {
+  "item": 4053,
+  "itemName": "SmoothSandstoneWall",
+  "zh": "光面沙岩墙",
+  "en": "Smooth Sandstone Wall",
+  "wall": 235,
+  "wallName": "SmoothSandstone",
+  "itemLine": 35629,
+  "dropsItem": 4053,
+  "recipes": [
+   "x4 <- 1×光面沙岩/Smooth Sandstone[4051] @WorkBenches(18)工作台 (Recipe.cs:3691)"
+  ],
+  "rev": "reverse:4 SmoothSandstoneWall -> 1"
+ },
+ {
+  "item": 4140,
+  "itemName": "SpiderWall",
+  "zh": "蜘蛛窝墙",
+  "en": "Spider Nest Wall",
+  "wall": 236,
+  "wallName": "Spider",
+  "itemLine": 35959,
+  "dropsItem": 4140,
+  "recipes": [
+   "x4 <- 1×蜘蛛窝块/Spider Nest Block[4139] @WorkBenches(18)工作台 (Recipe.cs:15635)"
+  ],
+  "rev": "reverse:4 SpiderWall -> 1"
+ },
+ {
+  "item": 4233,
+  "itemName": "SolarBrickWall",
+  "zh": "日耀砖墙",
+  "en": "Solar Brick Wall",
+  "wall": 237,
+  "wallName": "SolarBrick",
+  "itemLine": 36502,
+  "dropsItem": 4233,
+  "recipes": [
+   "x4 <- 1×日耀砖/Solar Brick[4229] @WorkBenches(18)工作台 (Recipe.cs:15267)"
+  ],
+  "rev": "reverse:4 SolarBrickWall -> 1"
+ },
+ {
+  "item": 4234,
+  "itemName": "VortexBrickWall",
+  "zh": "星旋砖墙",
+  "en": "Vortex Brick Wall",
+  "wall": 238,
+  "wallName": "VortexBrick",
+  "itemLine": 36505,
+  "dropsItem": 4234,
+  "recipes": [
+   "x4 <- 1×星旋砖/Vortex Brick[4230] @WorkBenches(18)工作台 (Recipe.cs:15359)"
+  ],
+  "rev": "reverse:4 VortexBrickWall -> 1"
+ },
+ {
+  "item": 4235,
+  "itemName": "NebulaBrickWall",
+  "zh": "星云砖墙",
+  "en": "Nebula Brick Wall",
+  "wall": 239,
+  "wallName": "NebulaBrick",
+  "itemLine": 36508,
+  "dropsItem": 4235,
+  "recipes": [
+   "x4 <- 1×星云砖/Nebula Brick[4231] @WorkBenches(18)工作台 (Recipe.cs:15451)"
+  ],
+  "rev": "reverse:4 NebulaBrickWall -> 1"
+ },
+ {
+  "item": 4236,
+  "itemName": "StardustBrickWall",
+  "zh": "星尘砖墙",
+  "en": "Stardust Brick Wall",
+  "wall": 240,
+  "wallName": "StardustBrick",
+  "itemLine": 36511,
+  "dropsItem": 4236,
+  "recipes": [
+   "x4 <- 1×星尘砖/Stardust Brick[4232] @WorkBenches(18)工作台 (Recipe.cs:15543)"
+  ],
+  "rev": "reverse:4 StardustBrickWall -> 1"
+ },
+ {
+  "item": 4260,
+  "itemName": "OrangeStainedGlass",
+  "zh": "橙花窗玻璃",
+  "en": "Orange Stained Glass",
+  "wall": 241,
+  "wallName": "OrangeStainedGlass",
+  "itemLine": 36634,
+  "dropsItem": 4260,
+  "recipes": [
+   "x20 <- 20×玻璃墙/Glass Wall[392] + 1×琥珀/Amber[999] @WorkBenches(18)工作台 (Recipe.cs:3160)"
+  ],
+  "rev": ""
+ },
+ {
+  "item": 4279,
+  "itemName": "GoldStarryGlassWall",
+  "zh": "金星墙",
+  "en": "Gold Starry Wall",
+  "wall": 242,
+  "wallName": "GoldStarryGlassWall",
+  "itemLine": 36837,
+  "dropsItem": 4279,
+  "recipes": [
+   "x4 <- 1×金星块/Gold Starry Block[4277] @WorkBenches(18)工作台 (Recipe.cs:2843)"
+  ],
+  "rev": "reverse:4 GoldStarryGlassWall -> 1"
+ },
+ {
+  "item": 4280,
+  "itemName": "BlueStarryGlassWall",
+  "zh": "蓝星墙",
+  "en": "Blue Starry Wall",
+  "wall": 243,
+  "wallName": "BlueStarryGlassWall",
+  "itemLine": 36840,
+  "dropsItem": 4280,
+  "recipes": [
+   "x4 <- 1×蓝星块/Blue Starry Block[4278] @WorkBenches(18)工作台 (Recipe.cs:2855)"
+  ],
+  "rev": "reverse:4 BlueStarryGlassWall -> 1"
+ },
+ {
+  "item": 4424,
+  "itemName": "WroughtIronFence",
+  "zh": "铁艺栅栏",
+  "en": "Wrought Iron Fence",
+  "wall": 245,
+  "wallName": "WroughtIronFence",
+  "itemLine": 37477,
+  "dropsItem": 4424,
+  "recipes": [
+   "x4 <- 1×铁锭/Iron Bar[22] @HeavyWorkBench(283)重型组装机 {needGraveyardBiome} (Recipe.cs:6511)"
+  ],
+  "rev": "reverse:4 WroughtIronFence -> 1"
+ },
+ {
+  "item": 4512,
+  "itemName": "Cave8Echo",
+  "zh": "崎岖石墙",
+  "en": "Craggy Stone Wall",
+  "wall": 274,
+  "wallName": "Cave8Echo",
+  "itemLine": 37904,
+  "dropsItem": 4512,
+  "recipes": [
+   "x4 <- 1×石块/Stone Block[3] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:4579)"
+  ],
+  "rev": "reverse:4 Cave8Echo -> 1"
+ },
+ {
+  "item": 4548,
+  "itemName": "LargeBambooBlockWall",
+  "zh": "大竹墙",
+  "en": "Large Bamboo Wall",
+  "wall": 313,
+  "wallName": "LargeBambooBlockWall",
+  "itemLine": 38133,
+  "dropsItem": 4548,
+  "recipes": [
+   "x4 <- 1×大竹子/Large Bamboo[4547] @WorkBenches(18)工作台 (Recipe.cs:3715)"
+  ],
+  "rev": "reverse:4 LargeBambooBlockWall -> 1"
+ },
+ {
+  "item": 4565,
+  "itemName": "BambooBlockWall",
+  "zh": "竹墙",
+  "en": "Bamboo Wall",
+  "wall": 312,
+  "wallName": "BambooBlockWall",
+  "itemLine": 38126,
+  "dropsItem": 4565,
+  "recipes": [
+   "x4 <- 1×竹子/Bamboo[4564] @WorkBenches(18)工作台 (Recipe.cs:3702)"
+  ],
+  "rev": "reverse:4 BambooBlockWall -> 1"
+ },
+ {
+  "item": 4647,
+  "itemName": "AmberStoneWallEcho",
+  "zh": "琥珀石墙",
+  "en": "Amber Stone Wall",
+  "wall": 314,
+  "wallName": "AmberStoneWallEcho",
+  "itemLine": 38358,
+  "dropsItem": 4647,
+  "recipes": [
+   "x4 <- 1×琥珀石块/Amber Stone Block[4646] @WorkBenches(18)工作台 {needGraveyardBiome} (Recipe.cs:2901)"
+  ],
+  "rev": "reverse:4 AmberStoneWallEcho -> 1"
+ },
+ {
+  "item": 4667,
+  "itemName": "BambooFence",
+  "zh": "竹栅栏",
+  "en": "Bamboo Fence",
+  "wall": 315,
+  "wallName": "BambooFence",
+  "itemLine": 38494,
+  "dropsItem": 4667,
+  "recipes": [
+   "x4 <- 1×竹子/Bamboo[4564] @WorkBenches(18)工作台 (Recipe.cs:6518)"
+  ],
+  "rev": "reverse:4 BambooFence -> 1"
+ },
+ {
+  "item": 5216,
+  "itemName": "AshWoodWall",
+  "zh": "灰烬木墙",
+  "en": "Ash Wood Wall",
+  "wall": 316,
+  "wallName": "AshWood",
+  "itemLine": 41207,
+  "dropsItem": 5216,
+  "recipes": [
+   "x4 <- 1×灰烬木/Ash Wood[5215] @WorkBenches(18)工作台 (Recipe.cs:4654)"
+  ],
+  "rev": "reverse:4 AshWoodWall -> 1"
+ },
+ {
+  "item": 5217,
+  "itemName": "AshWoodFence",
+  "zh": "灰烬木栅栏",
+  "en": "Ash Wood Fence",
+  "wall": 317,
+  "wallName": "AshWoodFence",
+  "itemLine": 41210,
+  "dropsItem": 5217,
+  "recipes": [
+   "x4 <- 1×灰烬木/Ash Wood[5215] @WorkBenches(18)工作台 (Recipe.cs:6493)"
+  ],
+  "rev": "reverse:4 AshWoodFence -> 1"
+ },
+ {
+  "item": 5291,
+  "itemName": "EchoWall",
+  "zh": "回声墙",
+  "en": "Echo Wall",
+  "wall": 318,
+  "wallName": "EchoWall",
+  "itemLine": 42104,
+  "dropsItem": 5291,
+  "recipes": [
+   "x4 <- 1×回声块/Echo Block[4392] @WorkBenches(18)工作台 (Recipe.cs:2860)"
+  ],
+  "rev": "reverse:4 EchoWall -> 1"
+ },
+ {
+  "item": 5307,
+  "itemName": "ReefWall",
+  "zh": "珊瑚礁墙",
+  "en": "Reef Wall",
+  "wall": 319,
+  "wallName": "ReefWall",
+  "itemLine": 42112,
+  "dropsItem": 5307,
+  "recipes": [
+   "x4 <- 1×珊瑚礁块/Reef Block[5306] @WorkBenches(18)工作台 (Recipe.cs:4491)"
+  ],
+  "rev": "reverse:4 ReefWall -> 1"
+ },
+ {
+  "item": 5363,
+  "itemName": "SpiderWallUnsafe",
+  "zh": "蜘蛛栖息墙",
+  "en": "Infested Spider Wall",
+  "wall": 62,
+  "wallName": "SpiderUnsafe",
+  "itemLine": 42551,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5365,
+  "itemName": "BlueBrickWallUnsafe",
+  "zh": "诅咒蓝砖墙",
+  "en": "Cursed Blue Brick Wall",
+  "wall": 7,
+  "wallName": "BlueDungeonUnsafe",
+  "itemLine": 42566,
+  "dropsItem": 135,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5366,
+  "itemName": "BlueSlabWallUnsafe",
+  "zh": "诅咒蓝板墙",
+  "en": "Cursed Blue Slab Wall",
+  "wall": 94,
+  "wallName": "BlueDungeonSlabUnsafe",
+  "itemLine": 42569,
+  "dropsItem": 1378,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5367,
+  "itemName": "BlueTiledWallUnsafe",
+  "zh": "诅咒蓝瓷砖墙",
+  "en": "Cursed Blue Tiled Wall",
+  "wall": 95,
+  "wallName": "BlueDungeonTileUnsafe",
+  "itemLine": 42572,
+  "dropsItem": 1379,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5368,
+  "itemName": "PinkBrickWallUnsafe",
+  "zh": "诅咒粉砖墙",
+  "en": "Cursed Pink Brick Wall",
+  "wall": 9,
+  "wallName": "PinkDungeonUnsafe",
+  "itemLine": 42575,
+  "dropsItem": 140,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5369,
+  "itemName": "PinkSlabWallUnsafe",
+  "zh": "诅咒粉板墙",
+  "en": "Cursed Pink Slab Wall",
+  "wall": 96,
+  "wallName": "PinkDungeonSlabUnsafe",
+  "itemLine": 42578,
+  "dropsItem": 1380,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5370,
+  "itemName": "PinkTiledWallUnsafe",
+  "zh": "诅咒粉瓷砖墙",
+  "en": "Cursed Pink Tiled Wall",
+  "wall": 97,
+  "wallName": "PinkDungeonTileUnsafe",
+  "itemLine": 42581,
+  "dropsItem": 1381,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5371,
+  "itemName": "GreenBrickWallUnsafe",
+  "zh": "诅咒绿砖墙",
+  "en": "Cursed Green Brick Wall",
+  "wall": 8,
+  "wallName": "GreenDungeonUnsafe",
+  "itemLine": 42584,
+  "dropsItem": 138,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5372,
+  "itemName": "GreenSlabWallUnsafe",
+  "zh": "诅咒绿板墙",
+  "en": "Cursed Green Slab Wall",
+  "wall": 98,
+  "wallName": "GreenDungeonSlabUnsafe",
+  "itemLine": 42587,
+  "dropsItem": 1382,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5373,
+  "itemName": "GreenTiledWallUnsafe",
+  "zh": "诅咒绿瓷砖墙",
+  "en": "Cursed Green Tiled Wall",
+  "wall": 99,
+  "wallName": "GreenDungeonTileUnsafe",
+  "itemLine": 42590,
+  "dropsItem": 1383,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5374,
+  "itemName": "SandstoneWallUnsafe",
+  "zh": "危险沙岩墙",
+  "en": "Treacherous Sandstone Wall",
+  "wall": 187,
+  "wallName": "Sandstone",
+  "itemLine": 42593,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5375,
+  "itemName": "HardenedSandWallUnsafe",
+  "zh": "危险硬化沙墙",
+  "en": "Treacherous Hardened Sand Wall",
+  "wall": 216,
+  "wallName": "HardenedSand",
+  "itemLine": 42596,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5376,
+  "itemName": "LihzahrdWallUnsafe",
+  "zh": "禁戒丛林蜥蜴砖墙",
+  "en": "Forbidden Lihzahrd Brick Wall",
+  "wall": 87,
+  "wallName": "LihzahrdBrickUnsafe",
+  "itemLine": 42599,
+  "dropsItem": 1102,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5396,
+  "itemName": "PoopWall",
+  "zh": "臭臭墙",
+  "en": "Poo Wall",
+  "wall": 320,
+  "wallName": "PoopWall",
+  "itemLine": 42916,
+  "dropsItem": 5396,
+  "recipes": [
+   "x4 <- 1×臭臭/Poo[5395] @WorkBenches(18)工作台 (Recipe.cs:4496)"
+  ],
+  "rev": "reverse:4 PoopWall -> 1"
+ },
+ {
+  "item": 5397,
+  "itemName": "ShimmerWall",
+  "zh": "以太墙",
+  "en": "Aetherium Wall",
+  "wall": 321,
+  "wallName": "ShimmerBlockWall",
+  "itemLine": 42764,
+  "dropsItem": 5397,
+  "recipes": [
+   "x4 <- 1×以太块/Aetherium Block[5349] @WorkBenches(18)工作台 (Recipe.cs:4251)"
+  ],
+  "rev": "reverse:4 ShimmerWall -> 1"
+ },
+ {
+  "item": 5399,
+  "itemName": "ShimmerBrickWall",
+  "zh": "以太砖墙",
+  "en": "Aetherium Brick Wall",
+  "wall": 322,
+  "wallName": "ShimmerBrickWall",
+  "itemLine": 42771,
+  "dropsItem": 5399,
+  "recipes": [
+   "x4 <- 1×以太砖/Aetherium Brick[5398] @WorkBenches(18)工作台 (Recipe.cs:4261)"
+  ],
+  "rev": "reverse:4 ShimmerBrickWall -> 1"
+ },
+ {
+  "item": 5409,
+  "itemName": "LunarRustBrickWall",
+  "zh": "月锈砖墙",
+  "en": "Lunar Rust Brick Wall",
+  "wall": 323,
+  "wallName": "LunarRustBrickWall",
+  "itemLine": 42815,
+  "dropsItem": 5409,
+  "recipes": [
+   "x4 <- 1×月锈砖/Lunar Rust Brick[5401] @WorkBenches(18)工作台 (Recipe.cs:4089)"
+  ],
+  "rev": "reverse:4 LunarRustBrickWall -> 1"
+ },
+ {
+  "item": 5410,
+  "itemName": "DarkCelestialBrickWall",
+  "zh": "暗黑天界砖墙",
+  "en": "Dark Celestial Brick Wall",
+  "wall": 324,
+  "wallName": "DarkCelestialBrickWall",
+  "itemLine": 42819,
+  "dropsItem": 5410,
+  "recipes": [
+   "x4 <- 1×暗黑天界砖/Dark Celestial Brick[5402] @WorkBenches(18)工作台 (Recipe.cs:4094)"
+  ],
+  "rev": "reverse:4 DarkCelestialBrickWall -> 1"
+ },
+ {
+  "item": 5411,
+  "itemName": "AstraBrickWall",
+  "zh": "星芒砖墙",
+  "en": "Astra Brick Wall",
+  "wall": 325,
+  "wallName": "AstraBrickWall",
+  "itemLine": 42823,
+  "dropsItem": 5411,
+  "recipes": [
+   "x4 <- 1×星芒砖/Astra Brick[5403] @WorkBenches(18)工作台 (Recipe.cs:4099)"
+  ],
+  "rev": "reverse:4 AstraBrickWall -> 1"
+ },
+ {
+  "item": 5412,
+  "itemName": "CosmicEmberBrickWall",
+  "zh": "宇宙余烬砖墙",
+  "en": "Cosmic Ember Brick Wall",
+  "wall": 326,
+  "wallName": "CosmicEmberBrickWall",
+  "itemLine": 42827,
+  "dropsItem": 5412,
+  "recipes": [
+   "x4 <- 1×宇宙余烬砖/Cosmic Ember Brick[5404] @WorkBenches(18)工作台 (Recipe.cs:4104)"
+  ],
+  "rev": "reverse:4 CosmicEmberBrickWall -> 1"
+ },
+ {
+  "item": 5413,
+  "itemName": "CryocoreBrickWall",
+  "zh": "冷核砖墙",
+  "en": "Cryocore Brick Wall",
+  "wall": 327,
+  "wallName": "CryocoreBrickWall",
+  "itemLine": 42831,
+  "dropsItem": 5413,
+  "recipes": [
+   "x4 <- 1×冷核砖/Cryocore Brick[5405] @WorkBenches(18)工作台 (Recipe.cs:4109)"
+  ],
+  "rev": "reverse:4 CryocoreBrickWall -> 1"
+ },
+ {
+  "item": 5414,
+  "itemName": "MercuryBrickWall",
+  "zh": "水星砖墙",
+  "en": "Mercury Brick Wall",
+  "wall": 328,
+  "wallName": "MercuryBrickWall",
+  "itemLine": 42835,
+  "dropsItem": 5414,
+  "recipes": [
+   "x4 <- 1×水星砖/Mercury Brick[5406] @WorkBenches(18)工作台 (Recipe.cs:4114)"
+  ],
+  "rev": "reverse:4 MercuryBrickWall -> 1"
+ },
+ {
+  "item": 5415,
+  "itemName": "StarRoyaleBrickWall",
+  "zh": "星星皇家砖墙",
+  "en": "Star Royale Brick Wall",
+  "wall": 329,
+  "wallName": "StarRoyaleBrickWall",
+  "itemLine": 42839,
+  "dropsItem": 5415,
+  "recipes": [
+   "x4 <- 1×星星皇家砖/Star Royale Brick[5407] @WorkBenches(18)工作台 (Recipe.cs:4119)"
+  ],
+  "rev": "reverse:4 StarRoyaleBrickWall -> 1"
+ },
+ {
+  "item": 5416,
+  "itemName": "HeavenforgeBrickWall",
+  "zh": "天熔砖墙",
+  "en": "Heavenforge Brick Wall",
+  "wall": 330,
+  "wallName": "HeavenforgeBrickWall",
+  "itemLine": 42843,
+  "dropsItem": 5416,
+  "recipes": [
+   "x4 <- 1×天熔砖/Heavenforge Brick[5408] @WorkBenches(18)工作台 (Recipe.cs:4124)"
+  ],
+  "rev": "reverse:4 HeavenforgeBrickWall -> 1"
+ },
+ {
+  "item": 5418,
+  "itemName": "AncientBlueDungeonBrickWall",
+  "zh": "远古蓝砖墙",
+  "en": "Ancient Blue Brick Wall",
+  "wall": 331,
+  "wallName": "AncientBlueBrickWall",
+  "itemLine": 42850,
+  "dropsItem": 5418,
+  "recipes": [
+   "x4 <- 1×远古蓝砖/Ancient Blue Brick[5417] @WorkBenches(18)工作台 (Recipe.cs:4129)"
+  ],
+  "rev": "reverse:4 AncientBlueDungeonBrickWall -> 1"
+ },
+ {
+  "item": 5420,
+  "itemName": "AncientGreenDungeonBrickWall",
+  "zh": "远古绿砖墙",
+  "en": "Ancient Green Brick Wall",
+  "wall": 332,
+  "wallName": "AncientGreenBrickWall",
+  "itemLine": 42856,
+  "dropsItem": 5420,
+  "recipes": [
+   "x4 <- 1×远古绿砖/Ancient Green Brick[5419] @WorkBenches(18)工作台 (Recipe.cs:4134)"
+  ],
+  "rev": "reverse:4 AncientGreenDungeonBrickWall -> 1"
+ },
+ {
+  "item": 5422,
+  "itemName": "AncientPinkDungeonBrickWall",
+  "zh": "远古粉砖墙",
+  "en": "Ancient Pink Brick Wall",
+  "wall": 333,
+  "wallName": "AncientPinkBrickWall",
+  "itemLine": 42862,
+  "dropsItem": 5422,
+  "recipes": [
+   "x4 <- 1×远古粉砖/Ancient Pink Brick[5421] @WorkBenches(18)工作台 (Recipe.cs:4139)"
+  ],
+  "rev": "reverse:4 AncientPinkDungeonBrickWall -> 1"
+ },
+ {
+  "item": 5424,
+  "itemName": "AncientGoldBrickWall",
+  "zh": "远古金砖墙",
+  "en": "Ancient Gold Brick Wall",
+  "wall": 334,
+  "wallName": "AncientGoldBrickWall",
+  "itemLine": 42868,
+  "dropsItem": 5424,
+  "recipes": [
+   "x4 <- 1×远古金砖/Ancient Gold Brick[5423] @WorkBenches(18)工作台 (Recipe.cs:4144)"
+  ],
+  "rev": "reverse:4 AncientGoldBrickWall -> 1"
+ },
+ {
+  "item": 5426,
+  "itemName": "AncientSilverBrickWall",
+  "zh": "远古银砖墙",
+  "en": "Ancient Silver Brick Wall",
+  "wall": 335,
+  "wallName": "AncientSilverBrickWall",
+  "itemLine": 42874,
+  "dropsItem": 5426,
+  "recipes": [
+   "x4 <- 1×远古银砖/Ancient Silver Brick[5425] @WorkBenches(18)工作台 (Recipe.cs:4149)"
+  ],
+  "rev": "reverse:4 AncientSilverBrickWall -> 1"
+ },
+ {
+  "item": 5428,
+  "itemName": "AncientCopperBrickWall",
+  "zh": "远古铜砖墙",
+  "en": "Ancient Copper Brick Wall",
+  "wall": 336,
+  "wallName": "AncientCopperBrickWall",
+  "itemLine": 42880,
+  "dropsItem": 5428,
+  "recipes": [
+   "x4 <- 1×远古铜砖/Ancient Copper Brick[5427] @WorkBenches(18)工作台 (Recipe.cs:4154)"
+  ],
+  "rev": "reverse:4 AncientCopperBrickWall -> 1"
+ },
+ {
+  "item": 5430,
+  "itemName": "AncientCobaltBrickWall",
+  "zh": "远古钴砖墙",
+  "en": "Ancient Cobalt Brick Wall",
+  "wall": 339,
+  "wallName": "AncientCobaltBrickWall",
+  "itemLine": 42886,
+  "dropsItem": 5430,
+  "recipes": [
+   "x4 <- 1×远古钴砖/Ancient Cobalt Brick[5429] @WorkBenches(18)工作台 (Recipe.cs:4174)"
+  ],
+  "rev": "reverse:4 AncientCobaltBrickWall -> 1"
+ },
+ {
+  "item": 5432,
+  "itemName": "AncientMythrilBrickWall",
+  "zh": "远古秘银砖墙",
+  "en": "Ancient Mythril Brick Wall",
+  "wall": 340,
+  "wallName": "AncientMythrilBrickWall",
+  "itemLine": 42892,
+  "dropsItem": 5432,
+  "recipes": [
+   "x4 <- 1×远古秘银砖/Ancient Mythril Brick[5431] @WorkBenches(18)工作台 (Recipe.cs:4169)"
+  ],
+  "rev": "reverse:4 AncientMythrilBrickWall -> 1"
+ },
+ {
+  "item": 5434,
+  "itemName": "AncientObsidianBrickWall",
+  "zh": "远古黑曜石砖墙",
+  "en": "Ancient Obsidian Brick Wall",
+  "wall": 337,
+  "wallName": "AncientObsidianBrickWall",
+  "itemLine": 42898,
+  "dropsItem": 5434,
+  "recipes": [
+   "x4 <- 1×远古黑曜石砖/Ancient Obsidian Brick[5433] @WorkBenches(18)工作台 (Recipe.cs:4164)"
+  ],
+  "rev": "reverse:4 AncientObsidianBrickWall -> 1"
+ },
+ {
+  "item": 5436,
+  "itemName": "AncientHellstoneBrickWall",
+  "zh": "远古狱石砖墙",
+  "en": "Ancient Hellstone Brick Wall",
+  "wall": 338,
+  "wallName": "AncientHellstoneBrickWall",
+  "itemLine": 42904,
+  "dropsItem": 5436,
+  "recipes": [
+   "x4 <- 1×远古狱石砖/Ancient Hellstone Brick[5435] @WorkBenches(18)工作台 (Recipe.cs:4159)"
+  ],
+  "rev": "reverse:4 AncientHellstoneBrickWall -> 1"
+ },
+ {
+  "item": 5445,
+  "itemName": "LavaMossBlockWall",
+  "zh": "熔岩苔藓砖墙",
+  "en": "Lava Moss Brick Wall",
+  "wall": 341,
+  "wallName": "LavaMossBlockWall",
+  "itemLine": 42937,
+  "dropsItem": 5445,
+  "recipes": [
+   "x4 <- 1×熔岩苔藓砖/Lava Moss Brick[5439] @WorkBenches(18)工作台 (Recipe.cs:4221)"
+  ],
+  "rev": "reverse:4 LavaMossBlockWall -> 1"
+ },
+ {
+  "item": 5446,
+  "itemName": "ArgonMossBlockWall",
+  "zh": "氩苔藓砖墙",
+  "en": "Argon Moss Brick Wall",
+  "wall": 342,
+  "wallName": "ArgonMossBlockWall",
+  "itemLine": 42940,
+  "dropsItem": 5446,
+  "recipes": [
+   "x4 <- 1×氩苔藓砖/Argon Moss Brick[5440] @WorkBenches(18)工作台 (Recipe.cs:4226)"
+  ],
+  "rev": "reverse:4 ArgonMossBlockWall -> 1"
+ },
+ {
+  "item": 5447,
+  "itemName": "KryptonMossBlockWall",
+  "zh": "氪苔藓砖墙",
+  "en": "Krypton Moss Brick Wall",
+  "wall": 343,
+  "wallName": "KryptonMossBlockWall",
+  "itemLine": 42943,
+  "dropsItem": 5447,
+  "recipes": [
+   "x4 <- 1×氪苔藓砖/Krypton Moss Brick[5441] @WorkBenches(18)工作台 (Recipe.cs:4231)"
+  ],
+  "rev": "reverse:4 KryptonMossBlockWall -> 1"
+ },
+ {
+  "item": 5448,
+  "itemName": "XenonMossBlockWall",
+  "zh": "氙苔藓砖墙",
+  "en": "Xenon Moss Brick Wall",
+  "wall": 344,
+  "wallName": "XenonMossBlockWall",
+  "itemLine": 42946,
+  "dropsItem": 5448,
+  "recipes": [
+   "x4 <- 1×氙苔藓砖/Xenon Moss Brick[5442] @WorkBenches(18)工作台 (Recipe.cs:4236)"
+  ],
+  "rev": "reverse:4 XenonMossBlockWall -> 1"
+ },
+ {
+  "item": 5449,
+  "itemName": "VioletMossBlockWall",
+  "zh": "氖苔藓砖墙",
+  "en": "Neon Moss Brick Wall",
+  "wall": 345,
+  "wallName": "VioletMossBlockWall",
+  "itemLine": 42949,
+  "dropsItem": 5449,
+  "recipes": [
+   "x4 <- 1×氖苔藓砖/Neon Moss Brick[5443] @WorkBenches(18)工作台 (Recipe.cs:4241)"
+  ],
+  "rev": "reverse:4 VioletMossBlockWall -> 1"
+ },
+ {
+  "item": 5450,
+  "itemName": "RainbowMossBlockWall",
+  "zh": "氦苔藓砖墙",
+  "en": "Helium Moss Brick Wall",
+  "wall": 346,
+  "wallName": "RainbowMossBlockWall",
+  "itemLine": 42952,
+  "dropsItem": 5450,
+  "recipes": [
+   "x4 <- 1×氦苔藓砖/Helium Moss Brick[5444] @WorkBenches(18)工作台 (Recipe.cs:4246)"
+  ],
+  "rev": "reverse:4 RainbowMossBlockWall -> 1"
+ },
+ {
+  "item": 5494,
+  "itemName": "ShimmerFallWall",
+  "zh": "微光瀑布墙",
+  "en": "Shimmerfall Wall",
+  "wall": 347,
+  "wallName": "Shimmerfall",
+  "itemLine": 43312,
+  "dropsItem": 5494,
+  "recipes": [
+   "x4 <- 1×微光瀑布块/Shimmerfall Block[5493] @WorkBenches(18)工作台 (Recipe.cs:2831)"
+  ],
+  "rev": "reverse:4 ShimmerFallWall -> 1"
+ },
+ {
+  "item": 5545,
+  "itemName": "LivingWoodWallUnsafe",
+  "zh": "杂草丛生的生命木墙",
+  "en": "Overgrown Living Wood Wall",
+  "wall": 244,
+  "wallName": "LivingWoodUnsafe",
+  "itemLine": 43708,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5546,
+  "itemName": "DirtWallUnsafe",
+  "zh": "天然土墙",
+  "en": "Natural Dirt Wall",
+  "wall": 2,
+  "wallName": "DirtUnsafe",
+  "itemLine": 43711,
+  "dropsItem": null,
+  "recipes": [],
+  "rev": ""
+ },
+ {
+  "item": 5623,
+  "itemName": "FallenStarWall",
+  "zh": "坠落之星墙",
+  "en": "Fallen Star Wall",
+  "wall": 348,
+  "wallName": "FallenStarWall",
+  "itemLine": 44199,
+  "dropsItem": 5623,
+  "recipes": [
+   "x4 <- 1×坠落之星块/Fallen Star Block[5622] @WorkBenches(18)工作台 (Recipe.cs:4271)"
+  ],
+  "rev": "reverse:4 FallenStarWall -> 1"
+ },
+ {
+  "item": 5711,
+  "itemName": "FeywoodWall",
+  "zh": "仙林墙",
+  "en": "Feywood Wall",
+  "wall": 351,
+  "wallName": "FeywoodWall",
+  "itemLine": 44830,
+  "dropsItem": 5711,
+  "recipes": [
+   "x4 <- 1×仙林/Feywood[5710] @WorkBenches(18)工作台 (Recipe.cs:4282)"
+  ],
+  "rev": "reverse:4 FeywoodWall -> 1"
+ },
+ {
+  "item": 5734,
+  "itemName": "HallowedBrickWall",
+  "zh": "神圣砖墙",
+  "en": "Hallowed Brick Wall",
+  "wall": 352,
+  "wallName": "HallowedBrickWall",
+  "itemLine": 44962,
+  "dropsItem": 5734,
+  "recipes": [
+   "x4 <- 1×神圣砖/Hallowed Brick[5733] @WorkBenches(18)工作台 (Recipe.cs:4292)"
+  ],
+  "rev": "reverse:4 HallowedBrickWall -> 1"
+ },
+ {
+  "item": 5919,
+  "itemName": "PineTreeBlockWall",
+  "zh": "松树墙",
+  "en": "Pine Tree Wall",
+  "wall": 353,
+  "wallName": "PineTreeBlockWall",
+  "itemLine": 46079,
+  "dropsItem": 5919,
+  "recipes": [
+   "x4 <- 1×松树块/Pine Tree Block[1872] @WorkBenches(18)工作台 (Recipe.cs:4297)"
+  ],
+  "rev": "reverse:4 PineTreeBlockWall -> 1"
+ },
+ {
+  "item": 5921,
+  "itemName": "EasterBlockWall",
+  "zh": "复活节墙",
+  "en": "Easter Wall",
+  "wall": 354,
+  "wallName": "EasterBlockWall",
+  "itemLine": 46086,
+  "dropsItem": 5921,
+  "recipes": [
+   "x4 <- 1×复活节物块/Easter Block[5920] @WorkBenches(18)工作台 (Recipe.cs:4302)"
+  ],
+  "rev": "reverse:4 EasterBlockWall -> 1"
+ },
+ {
+  "item": 5923,
+  "itemName": "GothicBrickWall",
+  "zh": "哥特砖墙",
+  "en": "Gothic Brick Wall",
+  "wall": 355,
+  "wallName": "GothicBrickWall",
+  "itemLine": 46092,
+  "dropsItem": 5923,
+  "recipes": [
+   "x4 <- 1×哥特砖/Gothic Brick[5922] @WorkBenches(18)工作台 (Recipe.cs:4312)"
+  ],
+  "rev": "reverse:4 GothicBrickWall -> 1"
+ },
+ {
+  "item": 5925,
+  "itemName": "FlinxFurBlockWall",
+  "zh": "小雪怪皮墙",
+  "en": "Flinx Fur Wall",
+  "wall": 356,
+  "wallName": "FlinxFurBlockWall",
+  "itemLine": 46098,
+  "dropsItem": 5925,
+  "recipes": [
+   "x4 <- 1×小雪怪皮物块/Flinx Fur Block[5924] @WorkBenches(18)工作台 (Recipe.cs:4322)"
+  ],
+  "rev": "reverse:4 FlinxFurBlockWall -> 1"
+ },
+ {
+  "item": 5927,
+  "itemName": "JellyfishBlockWall",
+  "zh": "水母墙",
+  "en": "Jellyfish Wall",
+  "wall": 357,
+  "wallName": "JellyfishBlockWall",
+  "itemLine": 46105,
+  "dropsItem": 5927,
+  "recipes": [
+   "x4 <- 1×水母物块/Jellyfish Block[5926] @WorkBenches(18)工作台 (Recipe.cs:4327)"
+  ],
+  "rev": "reverse:4 JellyfishBlockWall -> 1"
+ },
+ {
+  "item": 5931,
+  "itemName": "PineWoodBlockWall",
+  "zh": "松木墙",
+  "en": "Pine Wood Wall",
+  "wall": 358,
+  "wallName": "PineWoodBlockWall",
+  "itemLine": 46115,
+  "dropsItem": 5931,
+  "recipes": [
+   "x4 <- 1×松木/Pine Wood[5930] @WorkBenches(18)工作台 (Recipe.cs:4430)"
+  ],
+  "rev": "reverse:4 PineWoodBlockWall -> 1"
+ },
+ {
+  "item": 5954,
+  "itemName": "HarpyBlockWall",
+  "zh": "鹰身女妖墙",
+  "en": "Harpy Wall",
+  "wall": 359,
+  "wallName": "HarpyBlockWall",
+  "itemLine": 46253,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×鹰身女妖块/Harpy Block[5953] @WorkBenches(18)工作台 (Recipe.cs:4337)"
+  ],
+  "rev": "reverse:4 HarpyBlockWall -> 1"
+ },
+ {
+  "item": 5997,
+  "itemName": "MoonplateBlockWall",
+  "zh": "新月墙",
+  "en": "Crescent Wall",
+  "wall": 360,
+  "wallName": "MoonplateBlockWall",
+  "itemLine": 46505,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×月盘块/Moonplate Block[5996] @WorkBenches(18)工作台 (Recipe.cs:4342)"
+  ],
+  "rev": "reverse:4 MoonplateBlockWall -> 1"
+ },
+ {
+  "item": 6020,
+  "itemName": "LibrarianBlockWall",
+  "zh": "图书管理员墙",
+  "en": "Librarian Wall",
+  "wall": 361,
+  "wallName": "LibrarianBlockWall",
+  "itemLine": 46637,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×图书管理员块/Librarian Block[6019] @WorkBenches(18)工作台 (Recipe.cs:4353)"
+  ],
+  "rev": "reverse:4 LibrarianBlockWall -> 1"
+ },
+ {
+  "item": 6043,
+  "itemName": "SpikeBlockWall",
+  "zh": "尖刺墙",
+  "en": "Spike Wall",
+  "wall": 362,
+  "wallName": "SpikeBlockWall",
+  "itemLine": 46769,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×尖刺块/Spike Block[6042] @WorkBenches(18)工作台 (Recipe.cs:4363)"
+  ],
+  "rev": "reverse:4 SpikeBlockWall -> 1"
+ },
+ {
+  "item": 6066,
+  "itemName": "OfficeBlockWall",
+  "zh": "办公墙",
+  "en": "Office Wall",
+  "wall": 363,
+  "wallName": "OfficeBlockWall",
+  "itemLine": 46901,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×办公块/Office Block[6065] @WorkBenches(18)工作台 (Recipe.cs:4384)"
+  ],
+  "rev": "reverse:4 OfficeBlockWall -> 1"
+ },
+ {
+  "item": 6089,
+  "itemName": "ForbiddenBlockWall",
+  "zh": "禁戒墙",
+  "en": "Forbidden Wall",
+  "wall": 364,
+  "wallName": "ForbiddenBlockWall",
+  "itemLine": 47033,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×禁戒块/Forbidden Block[6088] @WorkBenches(18)工作台 (Recipe.cs:4394)"
+  ],
+  "rev": "reverse:4 ForbiddenBlockWall -> 1"
+ },
+ {
+  "item": 6110,
+  "itemName": "WaterBlockWall",
+  "zh": "水族墙",
+  "en": "Aquarium Wall",
+  "wall": 365,
+  "wallName": "WaterBlockWall",
+  "itemLine": 47153,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×水族块/Aquarium Block[6109] @WorkBenches(18)工作台 (Recipe.cs:4405)"
+  ],
+  "rev": "reverse:4 WaterBlockWall -> 1"
+ },
+ {
+  "item": 6133,
+  "itemName": "BoulderBlockWall",
+  "zh": "巨石墙",
+  "en": "Boulder Wall",
+  "wall": 366,
+  "wallName": "BoulderBlockWall",
+  "itemLine": 47285,
+  "dropsItem": null,
+  "recipes": [
+   "x4 <- 1×巨石块/Boulder Block[6132] @WorkBenches(18)工作台 (Recipe.cs:4415)"
+  ],
+  "rev": "reverse:4 BoulderBlockWall -> 1"
+ }
+]

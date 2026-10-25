@@ -62,8 +62,11 @@ namespace TerraKnight.World
             int n = 0;
             var seen = new HashSet<PlayMakerFSM>();
             foreach (var col in Physics2D.OverlapCircleAll(center, radius))
+            {
+                if (BossRooms.ProtectsNativeArea(col.ClosestPoint(center))) continue;
                 foreach (var fsm in col.GetComponentsInParent<PlayMakerFSM>())
                     if (seen.Add(fsm) && Break(fsm)) n++;
+            }
             return n;
         }
 
@@ -76,6 +79,7 @@ namespace TerraKnight.World
             int n = 0;
             var seen = new HashSet<PlayMakerFSM>();
             var at = new Vector2(hero.center.x, hero.min.y - 0.25f);
+            if (BossRooms.ProtectsNativeArea(at)) return 0;
             foreach (var col in Physics2D.OverlapBoxAll(at, new Vector2(hero.size.x + 0.2f, 0.6f), 0f))
                 foreach (var fsm in col.GetComponentsInParent<PlayMakerFSM>())
                     if (IsDive(fsm) && seen.Add(fsm) && Break(fsm)) n++;
@@ -100,6 +104,7 @@ namespace TerraKnight.World
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
             if (pick == null || pick.PickPower <= 0 || hero == null) return false;
+            if (BossRooms.ProtectsNativeArea(mouse)) return false;
             var reach = Reach(hero);
             foreach (var col in Physics2D.OverlapPointAll(mouse))
             {

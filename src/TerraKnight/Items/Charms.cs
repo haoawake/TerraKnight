@@ -22,38 +22,52 @@ namespace TerraKnight.Items
         const int OverchargeTries = 3;
         const string MigratedKey = "charms.page.v1";
 
-        static readonly System.Reflection.FieldInfo[] got = new System.Reflection.FieldInfo[Count + 1];
-        static readonly System.Reflection.FieldInfo[] worn = new System.Reflection.FieldInfo[Count + 1];
-        static readonly System.Reflection.FieldInfo[] cost = new System.Reflection.FieldInfo[Count + 1];
+        // The records read without boxing (asked every frame).
+        static readonly AccessTools.FieldRef<PlayerData, bool>[] got = new AccessTools.FieldRef<PlayerData, bool>[Count + 1];
+        static readonly AccessTools.FieldRef<PlayerData, bool>[] worn = new AccessTools.FieldRef<PlayerData, bool>[Count + 1];
+        static readonly AccessTools.FieldRef<PlayerData, int>[] cost = new AccessTools.FieldRef<PlayerData, int>[Count + 1];
 
         static Charms()
         {
             for (int id = 1; id <= Count; id++)
             {
-                got[id] = AccessTools.Field(typeof(PlayerData), "gotCharm_" + id);
-                worn[id] = AccessTools.Field(typeof(PlayerData), "equippedCharm_" + id);
-                cost[id] = AccessTools.Field(typeof(PlayerData), "charmCost_" + id);
+                got[id] = Ref<bool>("gotCharm_" + id);
+                worn[id] = Ref<bool>("equippedCharm_" + id);
+                cost[id] = Ref<int>("charmCost_" + id);
             }
+        }
+
+        static AccessTools.FieldRef<PlayerData, T> Ref<T>(string name)
+        {
+            var f = AccessTools.Field(typeof(PlayerData), name);
+            return f != null && f.FieldType == typeof(T) ? AccessTools.FieldRefAccess<PlayerData, T>(f) : null;
         }
 
         static PlayerData Pd => PlayerData.instance;
 
         static BepInEx.Configuration.ConfigEntry<bool> pageSetting;
 
+        /// <summary>
+        /// Its own key (5.0.0, the charms done): [Gameplay] CharmBag, on unless switched off. The old [Dev] CharmPage, off in
+        /// every config written before, no longer counts.
+        /// </summary>
         public static void Bind(BepInEx.Configuration.ConfigFile cfg) =>
-            pageSetting = cfg.Bind("Dev", "CharmPage", false,
-                "护符页（还在制作中，默认关闭）：开启后装备栏上方出现护符页，国王之魂、虚空之心、格林之子改在护符页里装。\nThe charm page (still being made, off by default): on, the Charms page shows above the equipment column and the Kingsoul, the Void Heart and the Grimmchild are worn there.");
+            pageSetting = cfg.Bind("Gameplay", "CharmBag", true,
+                "护符背包：装备栏上方的护符背包，在长椅上装卸护符，国王之魂、虚空之心、格林之子也在这里装。关闭后护符不生效，这三样改回原来的物品用法。\nThe Charm Bag above the equipment column: charms are put on and taken off at a bench, the Kingsoul, the Void Heart and the Grimmchild worn there too. Off, no charm works and those three keep their items' ways.");
 
         /// <summary>
-        /// The charm page is on (the CharmPage setting; still being made). Off, nothing of it shows or works: the Kingsoul,
-        /// the Void Heart and the Grimmchild keep their items' ways (HkItems), and a save that had the page is put back (RollBack).
+        /// The charm page is on (the CharmBag setting). Off, nothing of it shows or works: the Kingsoul, the Void Heart and
+        /// the Grimmchild keep their items' ways (HkItems), and a save that had the page is put back (RollBack).
         /// </summary>
         public static bool Enabled => pageSetting != null && pageSetting.Value;
 
-        public static bool Got(int id) => Pd != null && got[id] != null && (bool)got[id].GetValue(Pd);
-        public static bool Worn(int id) => Pd != null && worn[id] != null && (bool)worn[id].GetValue(Pd);
+        /// <summary>Dev: the charm page switched on or off (the setting itself, as the settings would).</summary>
+        public static void DevSetPage(bool on) { if (pageSetting != null) pageSetting.Value = on; }
+
+        public static bool Got(int id) => Pd != null && got[id] != null && got[id](Pd);
+        public static bool Worn(int id) => Pd != null && worn[id] != null && worn[id](Pd);
         /// <summary>The notches it takes (the Void Heart none, whatever its record says).</summary>
-        public static int Cost(int id) => Pd == null || cost[id] == null ? 0 : id == Royal && Pd.royalCharmState >= 4 ? 0 : (int)cost[id].GetValue(Pd);
+        public static int Cost(int id) => Pd == null || cost[id] == null ? 0 : id == Royal && Pd.royalCharmState >= 4 ? 0 : cost[id](Pd);
 
         public static int Notches => Pd != null ? Pd.charmSlots : 0;
         public static int Filled => Pd != null ? Pd.charmSlotsFilled : 0;
@@ -71,13 +85,15 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Charms are changed only while resting on a bench, as in the game.</summary>
-        public static bool CanChange => Pd != null && Pd.atBench;
+        public static bool CanChange => Pd != null && (Pd.atBench || DevAnywhere);
+        /// <summary>Dev: charms changed anywhere (the autotests, which can't always sit the Knight down).</summary>
+        public static bool DevAnywhere;
 
         /// <summary>A fragile charm broken by a death (the Leg Eater mends it).</summary>
         public static bool Broken(int id) => Pd != null && (id == 23 ? Pd.brokenCharm_23 : id == 24 ? Pd.brokenCharm_24 : id == 25 && Pd.brokenCharm_25);
         static bool Unbreakable(int id) => Pd != null && (id == 23 ? Pd.fragileHealth_unbreakable : id == 24 ? Pd.fragileGreed_unbreakable : id == 25 && Pd.fragileStrength_unbreakable);
 
-        public enum Answer { None, On, Off, Overcharmed, NotFound, NotAtBench, NoNotch, Crack, CantWear, CantRemove }
+        public enum Answer { None, On, Off, Overcharmed, NotFound, NotAtBench, NoNotch, Crack, CantWear, CantRemove, Broken }
 
         static int triesFor, tries;
 
@@ -102,6 +118,7 @@ namespace TerraKnight.Items
                 Apply();
                 return Answer.Off;
             }
+            if (Broken(id)) return Answer.Broken;
             // CHARM_DESC_36_A: the White Fragment "can't be equipped".
             if (id == Royal && pd.royalCharmState < 3) return Answer.CantWear;
             int c = Cost(id);
@@ -120,7 +137,7 @@ namespace TerraKnight.Items
         static void Set(int id, bool on)
         {
             var pd = Pd;
-            worn[id].SetValue(pd, on);
+            worn[id](pd) = on;
             if (on) { if (!pd.equippedCharms.Contains(id)) pd.EquipCharm(id); }
             else while (pd.equippedCharms.Contains(id)) pd.UnequipCharm(id);
         }
@@ -163,9 +180,41 @@ namespace TerraKnight.Items
                 return;
             }
             if (!mod.GrantedAbilities.Contains(MigratedKey)) Migrate(mod, pd);
+            KeepCosts(pd, true);
             Player.PlayerBuffs.Define(OverchargeBuff, "护符过载", "受到的伤害翻倍", debuff: true, noTime: true);
             if (pd.overcharmed) { if (!Player.PlayerBuffs.Has(OverchargeBuff)) Player.PlayerBuffs.Add(OverchargeBuff, 18000); }
             else if (Player.PlayerBuffs.Has(OverchargeBuff)) Player.PlayerBuffs.Remove(OverchargeBuff);
+        }
+
+        /// <summary>The notch costs the charm bag changes (护符设计记录.md): the charm, its cost here, the game's.</summary>
+        static readonly (int Id, int Cost, int Vanilla)[] CostChanges = { (7, 2, 3), (14, 4, 1), (32, 2, 3) };
+
+        /// <summary>
+        /// The bag's notch costs kept in the save's records (the game's back with the bag off). A worn charm that costs more now
+        /// and no longer fits, where the set fitted before, comes off with a word, rather than overcharm the player unasked.
+        /// </summary>
+        static void KeepCosts(PlayerData pd, bool bag)
+        {
+            bool changed = false;
+            foreach (var (id, here, vanilla) in CostChanges)
+            {
+                int want = bag ? here : vanilla;
+                if (cost[id] == null || cost[id](pd) == want) continue;
+                pd.CalculateNotchesUsed();
+                bool fitted = pd.charmSlotsFilled <= pd.charmSlots;
+                cost[id](pd) = want;
+                changed = true;
+                Plugin.Log.LogInfo($"[护符] {id} 号凹槽 {(bag ? vanilla : here)} → {want}");
+                if (!bag || !Worn(id)) continue;
+                pd.CalculateNotchesUsed();
+                if (fitted && pd.charmSlotsFilled > pd.charmSlots)
+                {
+                    Set(id, false);
+                    UI.CenterNotice.Show(Lang.F("{0}现在要占 {1} 个凹槽，放不下了，已经帮你摘下", Name(id), want));
+                    Plugin.Log.LogInfo($"[护符] {id} 号放不下了，摘下（凹槽 {pd.charmSlots}）");
+                }
+            }
+            if (changed) Apply();
         }
 
         /// <summary>
@@ -176,10 +225,11 @@ namespace TerraKnight.Items
         static void RollBack(TerraMod mod, PlayerData pd)
         {
             mod.GrantedAbilities.Remove(MigratedKey);
+            KeepCosts(pd, false);
             string was = string.Join(",", pd.equippedCharms);
             bool voidHeart = pd.royalCharmState >= 4;
             for (int id = 1; id <= Count; id++)
-                if (Worn(id) && !(id == Royal && voidHeart)) worn[id].SetValue(pd, false);
+                if (Worn(id) && !(id == Royal && voidHeart)) worn[id](pd) = false;
             pd.equippedCharms.RemoveAll(id => !(id == Royal && voidHeart));
             Apply();
             Plugin.Log.LogInfo($"[护符] 护符页关闭：卸下 {was}，凹槽 {pd.charmSlotsFilled}/{pd.charmSlots}");
@@ -226,7 +276,7 @@ namespace TerraKnight.Items
             foreach (int id in pd.equippedCharms) if (id >= 1 && id <= Count && Worn(id) && Got(id) && !list.Contains(id)) list.Add(id);
             for (int id = 1; id <= Count; id++)
             {
-                if (Worn(id) && !Got(id)) { worn[id].SetValue(pd, false); changes.Add("卸下未获得的 " + id); }
+                if (Worn(id) && !Got(id)) { worn[id](pd) = false; changes.Add("卸下未获得的 " + id); }
                 else if (Worn(id) && !list.Contains(id)) list.Add(id);
             }
             if (list.Count != pd.equippedCharms.Count || !list.TrueForAll(pd.equippedCharms.Contains)) changes.Add("整理已装备列表");
@@ -287,8 +337,11 @@ namespace TerraKnight.Items
         /// <summary>The charm's name as the game names it (the mod's own Chinese names in Chinese).</summary>
         public static string Name(int id) => Lang.IsSource ? Zh(id) : Text("CHARM_NAME_" + id + Suffix(id, false), Zh(id));
 
+        /// <summary>The charm bag's own description (CharmTexts: the story and what it does now), one line per paragraph.</summary>
+        public static string Desc(int id) => Lang.T(CharmTexts.Zh(id, Pd));
+
         /// <summary>The game's own description, in the game's language, one line per paragraph.</summary>
-        public static string Desc(int id)
+        public static string VanillaDesc(int id)
         {
             string s = Text("CHARM_DESC_" + id + Suffix(id, true), "");
             if (s == "") s = Text("CHARM_DESC_" + id, "");

@@ -97,6 +97,7 @@ namespace TerraKnight.World
         public static bool IsOpen => open != null && open.Region != null;
         /// <summary>The open chest's slots (null when none is open).</summary>
         public static ItemStack[] OpenItems => IsOpen ? open.Items : null;
+        internal static string DevOpenKey => IsOpen && !open.Bank ? Net.WorldSync.Key("c", open.Scene, open.Local) : null;
 
         /// <summary>A loaded chest stands on top of this box (its bottom on the box's top, over it).</summary>
         public static bool RestsOn(Rect below)
@@ -152,7 +153,6 @@ namespace TerraKnight.World
             if (!Net.WorldSync.CanInteract) return false;
             if (hero == null) return false;
             if (!FindSpot(hero, aim, out var bottom, style)) return false;
-            if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var region = TerraWorld.RegionAt(CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).x, CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f)).y)
                          ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
@@ -194,6 +194,8 @@ namespace TerraKnight.World
             foreach (var c in chests)
                 if (c.Region != null && c.Box.Overlaps(box)) return false;
             if (Stations.Overlaps(box)) return false;
+            // A pylon stands there (lit or not: its place is kept for it).
+            if (Pylons.Occupies(box)) return false;
             if (!InReach(hero, box)) return false;
             bottom = new Vector2(x, y);
             return true;
@@ -218,6 +220,13 @@ namespace TerraKnight.World
             foreach (var c in chests)
             {
                 if (c.Region == null || !c.Box.Contains(mouse) || !InReach(hero, c.Box)) continue;
+                // A dresser's lower half (Player.TileInteractionsUse, frameY past 0): its clothes window, not its drawers.
+                if (RegionalFurniture.IsDresser(c.Style) && mouse.y < c.Box.center.y)
+                {
+                    if (open == c) Close(true);
+                    UI.AppearanceWindow.OpenClothes();
+                    return true;
+                }
                 if (open == c) Close(true);
                 else Open(c);
                 return true;
@@ -227,31 +236,29 @@ namespace TerraKnight.World
 
         // ------------------------------------------------------------------ the smart cursor's choice (SmartInteractSystem)
 
-        /// <summary>The chest the smart cursor has picked (nearest the cursor of those in reach), or none.</summary>
-        static Chest smart;
+        /// <summary>The chest the smart cursor has picked (SmartInteract: nearest the cursor of all it weighs), or none.</summary>
+        static Chest smart, smartBest;
         public static int DevSmartOpened;
 
         /// <summary>
-        /// SmartInteractSystem: with the smart cursor on and the pointer off the interface, of the chests within the
-        /// player's reach (the world's, an area's, his own) the one nearest the cursor is picked: a gold outline on it,
-        /// a grey one on the others in reach (TileDrawing's highlight), and a right click anywhere opens it.
+        /// SmartInteract's tiles among the chests (the world's, an area's, the player's own) within reach: the one whose cell
+        /// is nearest the mouse (SmartInteract.NearestCell). It gets the gold outline, the others in reach a grey one
+        /// (TileDrawing's highlight), and a right click anywhere opens it, when it wins (SmartWin).
         /// </summary>
-        static void PickSmart(HeroController hero)
+        public static bool SmartCandidate(HeroController hero, Vector2 mouse, out float centre, out float rect)
         {
-            smart = null;
-            var mod = TerraMod.Instance;
-            if (mod == null || !mod.SmartCursor || InventoryGui.MouseOverUi || !Net.WorldSync.CanInteract) return;
-            Vector2 aim = mod.AimPoint;
-            float best = float.MaxValue;
+            smartBest = null;
+            centre = rect = float.MaxValue;
             foreach (var c in chests)
             {
                 if (c.Region == null || !InReach(hero, c.Box)) continue;
-                var b = c.Box;
-                float dx = Mathf.Max(b.xMin - aim.x, 0f, aim.x - b.xMax), dy = Mathf.Max(b.yMin - aim.y, 0f, aim.y - b.yMax);
-                float d = dx * dx + dy * dy;
-                if (d < best) { best = d; smart = c; }
+                SmartInteract.NearestCell(c.Box, mouse, out float cc, out float rr);
+                if (cc < centre) { centre = cc; rect = rr; smartBest = c; }
             }
+            return smartBest != null;
         }
+
+        public static void SmartWin(bool win) => smart = win ? smartBest : null;
 
         /// <summary>A right click that nothing under the cursor took: the smart cursor's chest opens (or shuts, the open one).</summary>
         public static bool TrySmartOpen()
@@ -360,6 +367,7 @@ namespace TerraKnight.World
             if (!IsOpen || open.Bank) return;
             name = (name ?? "").Trim();
             if (name.Length > MaxNameLength) name = name.Substring(0, MaxNameLength);
+            if (name != (open.Name ?? "")) Achievements.AchievementTracker.ChestRenamed();
             open.Name = name;
         }
 
@@ -458,7 +466,9 @@ namespace TerraKnight.World
         // ------------------------------------------------------------------ moving items
 
         /// <summary>ChestUI.LootAll: everything into the inventory, as much as fits.</summary>
-        public static void LootAll(Inventory inv)
+        public static void LootAll(Inventory inv) => HallownestStorage.Move(inv, () => LootAllCore(inv));
+
+        static void LootAllCore(Inventory inv)
         {
             if (!IsOpen) return;
             for (int i = 0; i < Capacity; i++)
@@ -472,7 +482,9 @@ namespace TerraKnight.World
         }
 
         /// <summary>ChestUI.DepositAll: the currencies first (MoveCoins), then the inventory below the hotbar, but its favourites, into the chest.</summary>
-        public static void DepositAll(Inventory inv)
+        public static void DepositAll(Inventory inv) => HallownestStorage.Move(inv, () => DepositAllCore(inv));
+
+        static void DepositAllCore(Inventory inv)
         {
             if (!IsOpen) return;
             foreach (var t in Currencies.All) MoveCoins(inv, open, t);
@@ -486,13 +498,21 @@ namespace TerraKnight.World
 
         /// <summary>
         /// ChestUI.QuickStack: the inventory's items (below the hotbar, not favourites) that the chest already holds go on its
-        /// stacks; each currency (MoveCoins, the coin slots' too) into the Piggy Bank, or onto a chest's stack of it.
+        /// stacks; each currency (MoveCoins, the coin slots' too) into the Piggy Bank when it is within reach (the user's,
+        /// 10-20: the bank before a chest), else onto the open chest's stack of it.
         /// </summary>
-        public static void QuickStack(Inventory inv)
+        public static void QuickStack(Inventory inv) => HallownestStorage.Move(inv, () => QuickStackCore(inv));
+
+        static void QuickStackCore(Inventory inv)
         {
             if (!IsOpen) return;
+            var hero = HeroController.SilentInstance;
+            Chest bank = !open.Bank && hero != null && BankWithin(hero.GetComponent<BoxCollider2D>().bounds.center, 600f * Effects.TerraParticles.Px) ? new Chest(inv.Bank) { Bank = true } : null;
             foreach (var t in Currencies.All)
-                if (open.Bank || Holds(open, t)) MoveCoins(inv, open, t);
+            {
+                if (bank != null) MoveCoins(inv, bank, t);
+                else if (open.Bank || Holds(open, t)) MoveCoins(inv, open, t);
+            }
             for (int i = Inventory.HotbarSize; i < Inventory.Size; i++)
             {
                 ref var s = ref inv.Slots[i];
@@ -511,7 +531,9 @@ namespace TerraKnight.World
         }
 
         /// <summary>ChestUI.Restock: the inventory's stacks not yet full topped up from the chest's of the same item.</summary>
-        public static void Restock(Inventory inv)
+        public static void Restock(Inventory inv) => HallownestStorage.Move(inv, () => RestockCore(inv));
+
+        static void RestockCore(Inventory inv)
         {
             if (!IsOpen) return;
             for (int i = 0; i < inv.Slots.Length; i++)
@@ -542,15 +564,21 @@ namespace TerraKnight.World
         public static List<ItemStack[]> ForCrafting(HeroController hero)
         {
             var list = new List<ItemStack[]>();
-            if (hero == null) return list;
+            ForCrafting(hero, list);
+            return list;
+        }
+
+        /// <summary>The chests crafting draws from added to <paramref name="list"/> (the crafting column asks every frame).</summary>
+        public static void ForCrafting(HeroController hero, List<ItemStack[]> list)
+        {
+            if (hero == null) return;
             var col = hero.GetComponent<BoxCollider2D>();
-            if (col == null) return list;
+            if (col == null) return;
             var b = col.bounds;
             float reach = CraftTiles * CellGrid.CellSize;
             var around = Rect.MinMaxRect(b.min.x - reach, b.min.y - reach, b.max.x + reach, b.max.y + reach);
             foreach (var c in chests)
                 if (c.Region != null && !c.Bank && CraftsFrom(c) && around.Overlaps(c.Box)) list.Add(c.Items);
-            return list;
         }
 
         static bool CraftsFrom(Chest c) => !Net.NetSession.Active || Net.WorldSync.OwnsChest(c.Scene, c.Local)
@@ -561,17 +589,20 @@ namespace TerraKnight.World
         /// hotbar, not its favourites, onto every chest within 600 px (NearbyChests.GetChestsInRangeOf)
         /// that already holds that item, a Piggy Bank in range among them (its storage is the player's
         /// bank). Each currency goes too, from anywhere in the bag and the coin slots: into the Piggy Bank
-        /// when one stands in range, else onto the chests in range that hold it, else into the nearest of
-        /// them. How many stacks moved.
+        /// when it is within reach (BankWithin), else onto the chests in range that hold it, else into the
+        /// nearest of them. How many stacks moved.
         /// A LAN game's chests are the host's (Net.WorldSync): the ones this player hasn't open go there, in one request
         /// (QuickStacking's packet 85, Chest.ServerPlaceItem), and what they had no room for comes back to its slot.
         /// </summary>
-        public static int QuickStackNearby(Inventory inv, Vector2 from)
+        public static int QuickStackNearby(Inventory inv, Vector2 from) =>
+            HallownestStorage.Move(inv, () => QuickStackNearbyCore(inv, from));
+
+        static int QuickStackNearbyCore(Inventory inv, Vector2 from)
         {
             int moved = 0;
             float range = 600f * Effects.TerraParticles.Px;
             var near = new List<Chest>();
-            if (Stations.PiggyBankWithin(from, range)) near.Add(new Chest(inv.Bank) { Bank = true });
+            if (BankWithin(from, range)) near.Add(new Chest(inv.Bank) { Bank = true });
             foreach (var c in chests)
                 if (c.Region != null && !c.Bank && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
             near.Sort((a, b) => a.Bank != b.Bank ? (a.Bank ? -1 : 1) : (a.Bank ? 0 : Vector2.Distance(a.Box.center, from).CompareTo(Vector2.Distance(b.Box.center, from))));
@@ -614,6 +645,32 @@ namespace TerraKnight.World
         }
 
         /// <summary>
+        /// The player's Piggy Bank within reach of a quick stack: one standing within range, Chester by them, or the bank
+        /// open where they are (the Money Trough's): the currencies go there before any chest.
+        /// </summary>
+        const float AutoBankSeconds = .5f;
+        static float nextAutoBank;
+        public static void AutoBankTick(TerraMod mod, HeroController hero)
+        {
+            if (mod == null || hero == null || mod.Creative || hero.cState.dead || Time.time < nextAutoBank) return;
+            nextAutoBank = Time.time + AutoBankSeconds;
+            var box = hero.GetComponent<BoxCollider2D>();
+            if (box != null) AutoDepositCoins(mod.Inventory, box.bounds.center);
+        }
+        // Personal bank only; never sends inventory into a shared world chest.
+        public static int AutoDepositCoins(Inventory inv, Vector2 from)
+        {
+            if (inv == null || !BankWithin(from, 8f * CellGrid.CellSize)) return 0;
+            bool any = false;
+            foreach (var s in inv.Slots) if (!s.IsEmpty && !s.Favorite && s.Type == ItemType.Geo) { any = true; break; }
+            return any ? MoveCoins(inv, new Chest(inv.Bank) { Bank = true }, ItemType.Geo) : 0;
+        }
+
+        static bool BankWithin(Vector2 from, float range) =>
+            Stations.PiggyBankWithin(from, range) || (Items.Minions.Instance != null && Items.Minions.Instance.ChesterWithin(from, range))
+            || (BankOpen && open.BankKind == 0);
+
+        /// <summary>
         /// ChestUI.MoveCoins: a currency of the whole inventory (the hotbar, the bag, the coin slots; not favourites) onto the
         /// chest's stack of it, else into its first empty slot. How many stacks moved.
         /// </summary>
@@ -639,7 +696,9 @@ namespace TerraKnight.World
         public static bool Put(ref ItemStack s, bool sound = true)
         {
             if (!IsOpen) return false;
+            var before = HallownestStorage.Snapshot(TerraMod.Instance?.Inventory);
             bool moved = PutIn(open, ref s);
+            HallownestStorage.Complete(TerraMod.Instance?.Inventory, before);
             if (moved && sound) TerraMod.Instance?.PlaySound("Grab");
             return moved;
         }
@@ -681,6 +740,14 @@ namespace TerraKnight.World
         /// one with items just takes the hit), wood dust each hit, the chest item where it stood.
         /// True when the swing was at a chest.
         /// </summary>
+        /// <summary>The smart cursor's Step_ForceCursorToAnyMinableThing: an empty, shut chest at this point in reach (WorldGen.CanKillTile).</summary>
+        public static bool MinableAt(Vector2 p, HeroController hero)
+        {
+            foreach (var c in chests)
+                if (c.Region != null && c.Box.Contains(p) && InReach(hero, c.Box)) return c.Empty && open != c;
+            return false;
+        }
+
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
             if (!Net.WorldSync.CanInteract) return false;
@@ -759,7 +826,6 @@ namespace TerraKnight.World
                     if (c.Damage > 0 && Random.Range(0, 60) == 0) c.Damage = 0;
                 }
             }
-            PickSmart(hero);
             Draw();
         }
 
@@ -799,7 +865,7 @@ namespace TerraKnight.World
         {
             var hero = HeroController.SilentInstance;
             var mod = TerraMod.Instance;
-            bool show = hero != null && mod != null && mod.SmartCursor && !InventoryGui.MouseOverUi && InReach(hero, c.Box);
+            bool show = hero != null && mod != null && SmartInteract.Showing && InReach(hero, c.Box);
             var sprite = show && !RegionalFurniture.IsDresser(c.Style) ? OutlineSprite(Frame(c)) : null;
             if (sprite == null)
             {
@@ -817,10 +883,7 @@ namespace TerraKnight.World
             c.Outline.sprite = sprite;
             c.Outline.sortingLayerID = c.Renderer.sortingLayerID;
             c.Outline.sortingOrder = c.Renderer.sortingOrder + 1;
-            // Main.mouseTextColor: 190..255 and back, 1 a tick.
-            float pulse = 190f + 65f * Mathf.PingPong(Time.unscaledTime * 60f / 65f, 1f);
-            float n = (pulse * 2f + 255f) / 3f / 255f;
-            c.Outline.color = c == smart ? new Color(n, n, n / 3f, n) : new Color(n / 2f, n / 2f, n / 2f, n);
+            c.Outline.color = SmartInteract.OutlineColor(c == smart);
         }
 
         static readonly Sprite[] outlines = new Sprite[3];

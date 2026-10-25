@@ -59,7 +59,7 @@ namespace TerraKnight.Items
 
         static WorldSync.Record NetRecord(Item it) => new WorldSync.Record { Key = it.NetId, Scene = it.Scene, X = it.Local.x, Y = it.Local.y,
             Vx = it.Vel.x, Vy = it.Vel.y, Kind = (int)it.Stack.Type, Seed = it.Stack.Count, Prefix = it.Stack.Prefix, Forge = it.Stack.Forge,
-            Age = it.Age, Delay = it.GrabDelay, Sky = it.FromSky, Dropper = it.Dropper,
+            Age = it.Age, Delay = it.GrabDelay, Sky = it.FromSky, Dropper = it.Dropper, Shimmered = it.Shimmered,
             Owner = NetSession.Owners.TryGetValue(it.Scene, out int owner) ? owner : NetSession.Hosting ? NetSession.MySlot : it.PhysicsOwner };
 
         internal static void NetApply(WorldSync.Record r)
@@ -85,6 +85,23 @@ namespace TerraKnight.Items
             it.FromSky = r.Sky;
             it.Dropper = r.Dropper;
             it.PhysicsOwner = r.Owner;
+            if (r.Shimmered && !it.Shimmered) { it.Pop = PopTicks; it.Vel = new Vector2(r.Vx, r.Vy); }
+            it.Shimmered = r.Shimmered;
+            if (it.Shimmered) it.ShimmerTime = 1f;
+        }
+
+        internal static int NetShimmer(string key, int slot)
+        {
+            if (!NetSession.Hosting) return 0;
+            var it = items.Find(item => item.NetId == key && !item.Stack.IsEmpty);
+            if (it == null || it.Shimmered || !NetSession.Owners.TryGetValue(it.Scene, out int owner)
+                || owner != slot || !Shimmer.CanShimmer(it.Stack)) return 0;
+            // As with motion, the scene owner supplies collision / immersion for
+            // scenes absent on the host. If loaded here, verify the pool as well.
+            if (it.Region != null && !Shimmer.In(it.World)) return 0;
+            int count = it.Stack.Count;
+            Shimmered(it, slot == NetSession.MySlot);
+            return count;
         }
 
         internal static void NetRemove(string key)
@@ -109,7 +126,7 @@ namespace TerraKnight.Items
 
         internal static bool NetSpawn(WorldSync.Action a, int dropper)
         {
-            if (!ItemDb.Has((ItemType)a.Kind) || a.Count <= 0 || string.IsNullOrEmpty(a.Scene)) return false;
+            if (!ItemDb.Has((ItemType)a.Kind) || a.Count <= 0 || string.IsNullOrEmpty(a.Scene) || HallownestRecovery.IsUnique((ItemType)a.Kind)) return false;
             // Do not silently evict an item somebody has already paid for by throwing it.
             var stack = ItemStack.Of((ItemType)a.Kind, a.Count);
             stack.Prefix = a.Prefix;

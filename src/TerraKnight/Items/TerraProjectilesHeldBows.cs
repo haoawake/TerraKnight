@@ -43,11 +43,11 @@ namespace TerraKnight.Items
                 Update = (t, p) => t.StepPhantasmArrow(p), Draw = (t, fx, p, px) => fx.Draw(FxBatch.Whole(p.Spec.Texture), px, new Color(1f - p.Alpha, 1f - p.Alpha, 1f - p.Alpha, 0f), p.TRot, p.Scale),
                 OnKill = (t, p) => KillPhantasmArrow(p),
             };
-            // P:7463, 11377, 14276, 20063: the phoenix, 66 px, AI_001 without gravity, 5 s, through everything (each every 10 ticks,
+            // P:7463, 11377, 14276, 20063: the phoenix, 66 px, AI_001 without gravity, 2 s (P:11081), through everything (each every 10 ticks,
             // losing 5% a hit), Hellfire 8 s; a 10 px box against blocks; it bursts over 96 px.
             specs[ProjKind.Phoenix] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_706", W = 66, H = 66, TileBox = new Vector2(10f, 10f), Time = 300, AlphaStart = 1f, Penetrate = -1, LocalCooldown = 10,
+                Ai = Ai.Custom, Texture = "Projectile_706", W = 66, H = 66, TileBox = new Vector2(10f, 10f), Time = 120, AlphaStart = 1f, Penetrate = -1, LocalCooldown = 10,
                 Frames = 8, TrailLength = 10, Light = new Color(1f, 0.6f, 0.2f), Debuffs = new[] { (EnemyDebuffs.Hellfire, 480, 1) },
                 Update = (t, p) => StepPhoenix(p), Draw = (t, fx, p, px) => DrawPhoenix(fx, p, px), OnHit = (t, p, hm) => p.Damage = (int)(p.Damage * 0.95f),
                 OnKill = (t, p) => t.KillPhoenix(p),

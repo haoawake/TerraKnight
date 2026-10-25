@@ -590,7 +590,7 @@ namespace TerraKnight.Items
             // swing is young a second one 45 degrees behind it.
             float axis = p.Rotation + 2f * Pi / 25f * p.Ai0;
             float lag = Remap(p.LocalAi0, p.Ai1 * 0.3f, p.Ai1 * 0.5f, 1f, 0f);
-            HitCone(p, 94f * p.Scale, axis, Pi / 4f, lag > 0f ? axis - Pi / 4f * p.Ai0 * lag : float.NaN, hero);
+            HitCone(p, 94f * p.Scale, axis, Pi / 4f, lag > 0f ? axis - Pi / 4f * p.Ai0 * lag : float.NaN, hero, ownerSight: true);
             if (t >= 1f) p.Dead = true;
         }
 
@@ -812,7 +812,7 @@ namespace TerraKnight.Items
         // ------------------------------------------------------------------ hitting
 
         /// <summary>Utils.IntersectsConeFastInaccurate on the enemies' boxes; each enemy once per projectile.</summary>
-        void HitCone(Proj p, float radius, float axis, float half, float axis2, HeroController hero, bool lineOfSight = false)
+        void HitCone(Proj p, float radius, float axis, float half, float axis2, HeroController hero, bool lineOfSight = false, bool ownerSight = false)
         {
             if (p.Penetrate == 0 || p.Damage <= 0) return;
             var centerWorld = TerraParticles.ToWorld(p.Center);
@@ -826,6 +826,8 @@ namespace TerraKnight.Items
                 var rect = new Rect(TerraParticles.ToPx(new Vector2(b.min.x, b.max.y)), new Vector2(b.size.x / Px, b.size.y / Px));
                 if (!InCone(p.Center, radius, axis, half, rect) && (float.IsNaN(axis2) || !InCone(p.Center, radius, axis2, half, rect))) continue;
                 if (lineOfSight && Physics2D.Linecast(centerWorld, b.center, 1 << ChunkColliders.TerrainLayer)) continue;
+                // Projectile.ownerHitCheck: only what the player can see (CharmEffects.MeleeReaches; Longnail through walls).
+                if (ownerSight && !CharmEffects.MeleeReaches(col)) continue;
                 Strike(p, col);
             }
         }
@@ -1161,9 +1163,11 @@ namespace TerraKnight.Items
         void DrawAll()
         {
             var top = Fx;
+            bool previousEffect = top != null && top.WeaponEffect;
+            if (top != null) top.WeaponEffect = true;
             if (top != null) top.OnTop = true;
             try { DrawAllOnTop(); }
-            finally { if (top != null) top.OnTop = false; }
+            finally { if (top != null) { top.OnTop = false; top.WeaponEffect = previousEffect; } }
         }
 
         void DrawAllOnTop()

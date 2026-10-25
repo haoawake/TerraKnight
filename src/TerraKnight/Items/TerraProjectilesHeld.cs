@@ -176,9 +176,10 @@ namespace TerraKnight.Items
             }
             float period = p.Ai0 > 120f ? 5f : p.Ai0 > 90f ? 15f : 30f;
             p.Damage = Equipment.Damage(def);
-            bool tick = MagicTick(p);
-            if (tick) p.Ai0++;
-            bool pay = tick && p.Ai0 % period == 0f;
+            // AI_075's prism charges and pays on real ticks even in slow magic.
+            // Its reduced rate of damage is the beam's shared owner immunity.
+            p.Ai0++;
+            bool pay = p.Ai0 % period == 0f;
             var v = TV(p);
             var aim = AimPx() - centre;
             var want = aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(0f, -1f);
@@ -245,6 +246,11 @@ namespace TerraKnight.Items
                 Kill(p);
                 return;
             }
+            // Main.DrawProj reads the caster's slowMagicUse. Carry it in this
+            // kind's unused localAI[0], already included in projectile snapshots,
+            // so a remote beam never reads the viewing player's mana state.
+            p.LocalAi0 = TerraMod.Instance?.SlowMagicUse == true ? 1f : 0f;
+            p.OwnerCooldown = p.LocalAi0 != 0f ? 12 : 5; // Player.GetSlowMagicUseTime(5), truncated.
             float idx = (int)p.Ai0 - 2.5f;
             var pv = TV(prism);
             var dir = pv.sqrMagnitude > 1e-6f ? pv.normalized : new Vector2(0f, -1f);
@@ -338,6 +344,8 @@ namespace TerraKnight.Items
         /// Main.DrawProj for 632: the beam's sheet laid from 10.5 px out to its end in its colour,
         /// added, three quarters strong; a white core half as wide over it.
         /// </summary>
+        internal static Vector4 DevPrismVisual;
+        internal static int DevPrismVisualDamage;
         static void DrawPrismBeam(FxBatch fx, Proj p, Vector2 px)
         {
             var v = TV(p);
@@ -350,6 +358,11 @@ namespace TerraKnight.Items
             var start = new Vector2(Mathf.Floor(px.x), Mathf.Floor(px.y)) + v * p.Scale * 10.5f;
             float len = p.LocalAi1 - p.Scale * 14.5f * p.Scale;
             var scale = new Vector2(p.Scale, p.Scale);
+            // Main.DrawProj (632): low mana changes only the drawn width and
+            // luminance, retaining the beam's length and collision scale.
+            if (p.LocalAi0 != 0f) { scale.x *= 0.7f; opacity *= 0.25f; }
+            DevPrismVisual = new Vector4(scale.x, opacity, p.Scale, len);
+            DevPrismVisualDamage = p.Damage;
             DrawLaser(fx, "Projectile_632", start, start + v * len, scale, colour * 0.75f * opacity);
             DrawLaser(fx, "Projectile_632", start, start + v * len, scale / 2f, FxBatch.C(255, 255, 255, 127) * 0.75f * opacity);
             if (p.Scale > 0.15f) BeamLight(fx, CenterPx(p), v, p.LocalAi1, new Color(colour.r, colour.g, colour.b) * 0.3f);
@@ -648,6 +661,7 @@ namespace TerraKnight.Items
         /// ray, 536, drawn to it) with four stray rays about their mean direction, then glares for
         /// 60 updates (frames 8-11, a hiss as it starts); else it idles (frames 0-7). A gold light.
         /// </summary>
+        internal static int DevMedusaTargetChecks;
         void StepMedusaHead(Proj p)
         {
             var mod = TerraMod.Instance;
@@ -657,10 +671,10 @@ namespace TerraKnight.Items
                 Kill(p);
                 return;
             }
-            const float period = 15f;
+            // Preserve the original integer division: 15 normally, 37 in slow magic.
+            float period = (int)(60f * (mod.SlowMagicUse ? TerraMod.SlowMagic : 1f)) / 4;
             bool glaring = p.Ai0 > 0f;
-            bool tick = MagicTick(p);
-            if (p.Ai0 > 0f && tick) p.Ai0--;
+            if (p.Ai0 > 0f) p.Ai0--;
             if (glaring)
             {
                 if (p.Frame < 8 || p.Frame >= 12) p.Frame = 8;
@@ -687,8 +701,9 @@ namespace TerraKnight.Items
             }
             // Centre = hand + (6, −14) − velocity, and UpdatePosition adds the velocity (facing, 0) back.
             var head = ArmPx(centre, facing, 2) + new Vector2(facing * 6f, -14f);
-            if (tick && (!glaring || p.Ai0 % period == 0f))
+            if (!glaring || p.Ai0 % period == 0f)
             {
+                DevMedusaTargetChecks++;
                 var eye = centre + new Vector2(facing * 4f, 2f);
                 bool any = false;
                 foreach (var hm in EnemiesNear(head, 320f))

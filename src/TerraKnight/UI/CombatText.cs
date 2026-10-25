@@ -70,7 +70,8 @@ namespace TerraKnight.UI
             var cam = GameCameras.instance != null ? GameCameras.instance.mainCamera : null;
             if (cam == null) return;
             float ui = GameView.Scale;
-            if (style == null) style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+            // One line whatever its length (a charm's "护符技还剩 10 秒" kept whole).
+            if (style == null) style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, wordWrap = false, clipping = TextClipping.Overflow };
 
             foreach (var e in entries)
             {

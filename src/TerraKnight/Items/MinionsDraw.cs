@@ -38,14 +38,31 @@ namespace TerraKnight.Items
             DrawGhosts(fx);
         }
 
-        /// <summary>The minions of the list being drawn (the player's own, or another player's ghosts: no petting for those).</summary>
+        /// <summary>
+        /// The minions of the list being drawn (the player's own, or another player's ghosts: no petting for those). Those that
+        /// pass through walls (TileCollide off; the souls and the Stardust Dragon always) over the ground, as Terraria draws
+        /// its projectiles over its tiles, so one inside a wall still shows (the user's, 2026-10-20).
+        /// </summary>
         void DrawMinions(FxBatch fx, bool ghosts)
         {
-            DrawDragon(fx);
+            bool previous = fx.WeaponEffect;
+            fx.WeaponEffect = true;
+            try { DrawMinionsCore(fx, ghosts); }
+            finally { fx.WeaponEffect = previous; }
+        }
+
+        void DrawMinionsCore(FxBatch fx, bool ghosts)
+        {
+            fx.OnTop = true;
+            try { DrawDragon(fx); }
+            finally { fx.OnTop = false; }
             if (!ghosts) DrawPetting(fx);
+            try
+            {
             foreach (var m in live)
             {
                 if (m.Dead) continue;
+                fx.OnTop = !m.TileCollide || m.Kind == Kind.WanderingSoul || m.Kind == Kind.ChoirSoul || m.Kind == Kind.ShadeSoul || m.Kind == Kind.DirgeSoul;
                 switch (m.Kind)
                 {
                     case Kind.BabySlime: DrawGeneric(fx, m, 6, -13); break;
@@ -132,6 +149,10 @@ namespace TerraKnight.Items
                     case Kind.Foxsparks:
                     case Kind.TrustyFoxsparks: DrawFox(fx, m); break;
                     case Kind.ForbiddenRelic: DrawForbidden(fx, m); break;
+                    case Kind.WanderingSoul: DrawSoul(fx, m); break;
+                    case Kind.ChoirSoul: DrawChoir(fx, m); break;
+                    case Kind.ShadeSoul: DrawShade(fx, m); break;
+                    case Kind.DirgeSoul: DrawDirge(fx, m); break;
                     case Kind.TigerGem:
                     case Kind.Tiger1:
                     case Kind.Tiger2:
@@ -144,7 +165,11 @@ namespace TerraKnight.Items
                         fx.Draw(FxBatch.Frame(m.S.Texture, 0, 14 * m.Frame, 24, 14, 12f, 3f), m.Center + new Vector2(0f, m.GfxOffY - 2f), Lit, 0f, 1f, flipX: m.SpriteDir == -1);
                         break;
                 }
+                // Soul Eater's minion mode: a halo round each of the player's own.
+                if (!ghosts && CharmEffects.EaterMinionHalo) CharmEffects.EaterHalo(fx, m.Center + new Vector2(0f, m.GfxOffY), Mathf.Max(m.W, m.H), m.GetHashCode());
             }
+            }
+            finally { fx.OnTop = false; }
         }
 
         /// <summary>The generic multi-frame branch: the frame's last row skipped, offsets num151 (origin y) and num152 (x).</summary>

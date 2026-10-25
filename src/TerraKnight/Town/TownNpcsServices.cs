@@ -60,7 +60,7 @@ namespace TerraKnight.Town
                 if (string.IsNullOrEmpty(o.Given)) continue;
                 text = text.Replace("{" + o.Def.Internal + "}", o.Given);
             }
-            text = text.Replace("{PlayerName}", Lang.T("小骑士")).Replace("{WorldName}", Lang.T("圣巢"));
+            text = text.Replace("{PlayerName}", Lang.T("泰拉人")).Replace("{WorldName}", Lang.T("圣巢"));
             // A name of one not in town: the type's name.
             return System.Text.RegularExpressions.Regex.Replace(text, @"\{([A-Za-z]+)\}", m =>
             {
@@ -99,20 +99,30 @@ namespace TerraKnight.Town
 
         // ------------------------------------------------------------------ the Tax Collector
 
-        /// <summary>The taxes waiting, in copper (Player.taxMoney).</summary>
+        /// <summary>The taxes waiting, in copper (Player.taxMoney), kept with the character.</summary>
         public static long Taxes;
-        static float taxClock;
+        public static float TaxClock;
+        /// <summary>Player.CollectTaxes: 50 copper a townsperson a time, up to 25 gold.</summary>
+        public const long TaxEach = 50, TaxMost = 250000;
 
-        /// <summary>A silver a minute for each resident (housed, not a pet), up to ten gold (Player.taxRate's cap).</summary>
+        /// <summary>
+        /// Main.UpdateTime / Player.CollectTaxes: while the Tax Collector lives in town, every 60 s of play (Player.taxRate,
+        /// 3600 ticks), wherever the player is, 50 copper for each townsperson with a home (not the pets, not the Traveling
+        /// Merchant), up to 25 gold waiting.
+        /// </summary>
         static void CollectTaxTime()
         {
-            if (!npcs.Exists(n => n.Def.Id == 441)) return;
-            taxClock += Time.deltaTime;
-            if (taxClock < 60f) return;
-            taxClock -= 60f;
-            int residents = 0;
-            foreach (var n in npcs) if (n.Def.Kind == NpcKind.Resident || n.Def.Kind == NpcKind.Angler) residents++;
-            Taxes = System.Math.Min(100000L, Taxes + residents * 100L);
+            int stage = Shop.UnlockedStage();
+            var collector = System.Array.Find(All, d => d.Id == 441);
+            if (collector == null || !InTown(collector, stage)) return;
+            TaxClock += Time.deltaTime;
+            if (TaxClock < 60f) return;
+            TaxClock -= 60f;
+            if (Taxes >= TaxMost) return;
+            int housed = 0;
+            foreach (var d in All)
+                if (d.Kind != NpcKind.Visitor && d.Kind != NpcKind.Pet && InTown(d, stage)) housed++;
+            Taxes = System.Math.Min(TaxMost, Taxes + TaxEach * housed);
         }
 
         public static void TaxCollect()

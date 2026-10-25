@@ -368,7 +368,8 @@ namespace TerraKnight.Items
                 foreach (var col in overlaps)
                 {
                     var hm = col.GetComponentInParent<HealthManager>();
-                    if (hm == null && c.Damage > 0) PropHits.Pulse(col, TerraParticles.ToWorld(now), c.Vel.x < 0f ? -1f : 1f, c.Damage);
+                    // A prop, a pot, a geo deposit under the lash: hit as by a slash (MeleeHits.HitProp).
+                    if (hm == null && c.Damage > 0) melee.HitProp(col, c.Damage, c.Vel.x < 0f ? -1f : 1f, TerraParticles.ToWorld(now));
                     if (hm == null || hm.isDead) continue;
                     int id = hm.GetInstanceID();
                     if (c.Hit.Contains(id)) continue;
@@ -843,9 +844,11 @@ namespace TerraKnight.Items
         void Draw()
         {
             var top = FxBatch.Instance;
+            bool previousEffect = top != null && top.WeaponEffect;
+            if (top != null) top.WeaponEffect = true;
             if (top != null) top.OnTop = true;
             try { DrawOnTop(); }
-            finally { if (top != null) top.OnTop = false; }
+            finally { if (top != null) { top.OnTop = false; top.WeaponEffect = previousEffect; } }
         }
 
         void DrawOnTop()
@@ -872,6 +875,8 @@ namespace TerraKnight.Items
                 }
                 if (c.Kind == WhipKind.EelWhip || c.Kind == WhipKind.ConstellationWhip || c.Kind == WhipKind.MoonLordWhip) DrawSegments2(fx, c, over);
                 else DrawSegments(fx, c);
+                // Soul Eater's whip mode: a faint glow along the whole whip.
+                if (CharmEffects.EaterWhipGlow && !c.Clone) CharmEffects.EaterGlowWhip(fx, drawPoints, over);
             }
         }
 

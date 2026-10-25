@@ -51,6 +51,7 @@ namespace TerraKnight.Player
             Vector2 offset = (Vector2)hero.transform.position - (Vector2)b.center;
             Shimmer(b.center);
             hero.transform.position = centre + offset;
+            DelicateFlower.OnTeleport();
             var rb = hero.GetComponent<Rigidbody2D>();
             if (rb != null) rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Min(rb.linearVelocity.y, 0f));
             Shimmer(centre);
@@ -69,6 +70,53 @@ namespace TerraKnight.Player
             }
             PlayerBuffs.Add(ChaosState, 360);
             return true;
+        }
+
+        /// <summary>Where ToPoint tries (world units off the point): the point, then rings round it, up first.</summary>
+        static readonly Vector2[] near = Near();
+
+        static Vector2[] Near()
+        {
+            var list = new System.Collections.Generic.List<Vector2> { Vector2.zero };
+            for (int ring = 1; ring <= 6; ring++)
+            {
+                float d = ring * 0.25f;
+                list.Add(new Vector2(0f, d));
+                list.Add(new Vector2(0f, -d));
+                list.Add(new Vector2(d, 0f));
+                list.Add(new Vector2(-d, 0f));
+                list.Add(new Vector2(d, d));
+                list.Add(new Vector2(-d, d));
+                list.Add(new Vector2(d, -d));
+                list.Add(new Vector2(-d, -d));
+            }
+            return list.ToArray();
+        }
+
+        /// <summary>
+        /// The player's middle to a point (world units), or to the nearest place by it his box fits, within the room (the
+        /// Shade Wraith's right click, to its ghost). Whether he went; nothing shimmers (the caller draws its own).
+        /// </summary>
+        public static bool ToPoint(HeroController hero, Vector2 point)
+        {
+            var box = hero != null ? hero.GetComponent<BoxCollider2D>() : null;
+            var region = TerrainSystem.Current?.Region;
+            if (box == null || region == null) return false;
+            var b = box.bounds;
+            var r = region.CellRect;
+            const float cs = CellGrid.CellSize;
+            foreach (var off in near)
+            {
+                var centre = point + off;
+                if (centre.x - b.extents.x < r.xMin * cs + 1f || centre.x + b.extents.x > r.xMax * cs - 1f || centre.y - b.extents.y < r.yMin * cs + 1f) continue;
+                if (Blocked(centre, b.size)) continue;
+                hero.transform.position = centre + ((Vector2)hero.transform.position - (Vector2)b.center);
+                DelicateFlower.OnTeleport();
+                var rb = hero.GetComponent<Rigidbody2D>();
+                if (rb != null) rb.linearVelocity = Vector2.zero;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>Collision.SolidCollision for the player's box: the grid's rock, or the scene's own solid colliders.</summary>

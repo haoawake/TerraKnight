@@ -13,6 +13,8 @@ namespace TerraKnight
     {
         IEnumerator ManaTest()
         {
+            bool oldNoFallDamage=mod.DevNoFallDamage;
+            mod.DevNoFallDamage=true;
             int ok = 0, all = 0;
             void Check(string what, bool pass, string detail)
             {
@@ -112,6 +114,7 @@ namespace TerraKnight
             inv.Slots[slot] = default;
             mod.DevAim = null;
             stats.Mana = stats.ManaMax;
+            mod.DevNoFallDamage=oldNoFallDamage;
             Plugin.Log.LogInfo($"[AutoTest] 魔力 合计 {ok}/{all} {(ok == all ? "通过" : "不通过")}");
         }
     }

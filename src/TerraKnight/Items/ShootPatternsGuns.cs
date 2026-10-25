@@ -23,6 +23,7 @@ namespace TerraKnight.Items
             Add(ItemType.Sandgun, Sandgun) & Add(ItemType.Flamethrower, Flames) & Add(ItemType.ElfMelter, Flames) &
             Add(ItemType.SapphireStaff, GemStaff) & Add(ItemType.EmeraldStaff, GemStaff) & Add(ItemType.AmberStaff, GemStaff) &
             Add(ItemType.AmethystStaff, GemStaff) & Add(ItemType.TopazStaff, GemStaff) & Add(ItemType.RubyStaff, GemStaff) & Add(ItemType.DiamondStaff, GemStaff) &
+            Add(ItemType.BejeweledStaff, Bejeweled) &
             Add(ItemType.PaintballGun, Paintball);
 
         /// <summary>Pl:49542-49553: the paint jittered and stepped forward (TerraProjectiles.ShootPaintball).</summary>
@@ -46,6 +47,46 @@ namespace TerraKnight.Items
             {
                 var copy = s;
                 tp.Later(s.UseTicks / 2, (from, dir) => { if (TerraProjectiles.Instance != null) FireGem(TerraProjectiles.Instance, copy, fx, from, dir * copy.Speed); });
+            }
+        }
+
+        static readonly ProjKind[] gemBolts =
+        {
+            ProjKind.AmethystBolt, ProjKind.TopazBolt, ProjKind.SapphireBolt, ProjKind.EmeraldBolt, ProjKind.AmberBolt, ProjKind.RubyBolt, ProjKind.DiamondBolt,
+        };
+
+        /// <summary>
+        /// Pl:49779-49790, 49865-49877 (the Bejeweled Staff, AllGems): its own gem's feature (the Diamond's) and the robe's,
+        /// with homing, bouncing, the Topaz's burst and the Emerald's fast-then-slow always; at full damage (none of the
+        /// gems' cuts), three bolts of one gem picked at random each use, the middle one 10% faster, the outer two 4.5° off.
+        /// </summary>
+        static void Bejeweled(in Shot s)
+        {
+            var tp = TerraProjectiles.Instance;
+            if (tp == null) return;
+            var body = TerraMod.Instance != null ? TerraMod.Instance.Inventory.EffectiveArmor[1] : default;
+            var robe = body.IsEmpty ? TerraProjectiles.GemFx.None : TerraProjectiles.RobeGem(body.Type);
+            var fx = TerraProjectiles.GemOf(s.Kind) | robe | TerraProjectiles.GemFx.AllGems
+                | TerraProjectiles.GemFx.Homing | TerraProjectiles.GemFx.Bounce | TerraProjectiles.GemFx.Aoe | TerraProjectiles.GemFx.FastSlow;
+            FireBejeweled(tp, s, fx, s.From, s.Vel);
+            if ((fx & TerraProjectiles.GemFx.ArPen) != 0 && s.UseTicks > 1)
+            {
+                var copy = s;
+                tp.Later(s.UseTicks / 2, (from, dir) => { if (TerraProjectiles.Instance != null) FireBejeweled(TerraProjectiles.Instance, copy, fx, from, dir * copy.Speed); });
+            }
+        }
+
+        static void FireBejeweled(TerraProjectiles tp, in Shot s, TerraProjectiles.GemFx fx, Vector2 from, Vector2 vel)
+        {
+            // FastThenSlow and CanBounce first (Pl:49789-49800): 5 and 1.25 times as fast; the Ruby's spread from a point off.
+            vel *= 5f * 1.25f;
+            if ((fx & TerraProjectiles.GemFx.ArPen) != 0) from += Random.insideUnitCircle.normalized * 12f * TerraParticles.Px;
+            var kind = gemBolts[Random.Range(0, gemBolts.Length)];
+            for (int n = 1; n <= 3; n++)
+            {
+                int off = n - 2;
+                var v = (Vector2)(Quaternion.Euler(0f, 0f, off * 4.5f) * vel) * (off == 0 ? 1.1f : 1f);
+                tp.ShootGem(kind, from, v, s.Damage, s.Knockback, s.Crit, n, fx);
             }
         }
 

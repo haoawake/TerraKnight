@@ -1024,6 +1024,14 @@ namespace TerraKnight.Items
             return x >= lx && x <= hx && y >= ly && y <= hy;
         }
 
+        /// <summary>Chester out within a reach (world units) of a point: a quick stack's currencies go to the bank (World.Chests).</summary>
+        public bool ChesterWithin(Vector2 world, float range)
+        {
+            RefreshOwner();
+            var m = Chester;
+            return hasOwner && m != null && !ownerDead && Vector2.Distance(TerraParticles.ToWorld(m.Center), world) <= range;
+        }
+
         /// <summary>
         /// Main.TryInteractingWithMoneyTrough for Chester: a right click on him in reach shuts the Piggy Bank if it is open
         /// (player.chest == -2), else opens it on him (the player's own bank, Inventory.BankOf(0)), with his own sounds.

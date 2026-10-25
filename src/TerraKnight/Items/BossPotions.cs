@@ -73,7 +73,9 @@ namespace TerraKnight.Items
             EnemyDrops.LootScene = info.Scene;
             bool direct = EnemyDrops.LeavesOnItsOwn(info.Scene);
             DevLastPotion = BossStats.PotionOf(info.Ref);
-            EnemyDrops.Spill(ItemStack.Of(DevLastPotion, Random.Range(2, 6)), at, direct);
+            if(!CraftOnlyLoot.Blocked(DevLastPotion)
+                && (!ProgressionLoot.GodhomeScene(info.Scene) || ProgressionBalance.Unlocked(DevLastPotion)))
+                EnemyDrops.Spill(ItemStack.Of(DevLastPotion, Random.Range(2, 6)), at, direct);
             Hearts(Random.Range(2, 4), at, direct);
         }
 

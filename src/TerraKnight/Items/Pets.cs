@@ -209,6 +209,8 @@ namespace TerraKnight.Items
                     // The game gives the Lumafly Lantern (Sly sells it); no kill or crate does.
                     eggs.Remove(ItemType.HkLumaflyLantern);
                     eggs.Remove(ItemType.HkGrimmchild);
+                    // A boss's own pet (Terraria's: the Eater's Bone, the Seedling, the Suspicious Looking Tentacle...) comes from that boss.
+                    eggs.RemoveAll(BossDropPlan.BossOnly);
                 }
                 return eggs;
             }
@@ -221,7 +223,7 @@ namespace TerraKnight.Items
             var all = Eggs;
             if (Random.value >= KillChance * all.Count) return;
             var picked=all[Random.Range(0, all.Count)];
-            if(!EnemyDrops.IsBoss(record) && CraftOnlyLoot.OnlyCrafted(picked))return;
+            if(CraftOnlyLoot.Blocked(picked))return;
             EnemyDrops.Spill(ItemStack.Of(picked, 1), at, direct);
         }
     }

@@ -55,7 +55,7 @@ namespace TerraKnight.World
         public static bool IsSpikeCell(Vector2Int cell)
         {
             if (TerraWorld.Get(cell.x, cell.y) != CellKind.Empty || TerraWorld.IsDug(cell.x, cell.y) || !TerraWorld.InWorld(cell.x, cell.y)) return false;
-            if (BossRooms.Locked(cell.x, cell.y)) return false;
+            if (BossRooms.ProtectsNativeArea(cell.x, cell.y)) return false;
             return HazardOver(cell);
         }
 
@@ -173,7 +173,7 @@ namespace TerraKnight.World
                     var c = new Vector2Int(x, y);
                     if (TerraWorld.Get(x, y) != CellKind.Empty || TerraWorld.IsDug(x, y)) continue;
                     var r = TerraWorld.RegionAt(x, y);
-                    if (r?.Holes == null || !r.Holes.HasSpikeArt || BossRooms.Locked(x, y)) continue;
+                    if (r?.Holes == null || !r.Holes.HasSpikeArt || BossRooms.ProtectsNativeArea(x, y)) continue;
                     if (!r.Holes.SpikeArtOver(x - r.CellOffset.x, y - r.CellOffset.y) || Over(c) || !NearestCut(c)) continue;
                     r.Grid.CutOpenArt(x - r.CellOffset.x, y - r.CellOffset.y);
                     cut++;

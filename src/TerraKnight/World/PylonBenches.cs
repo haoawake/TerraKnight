@@ -4,6 +4,9 @@ namespace TerraKnight.World
     internal static partial class Pylons
     {
         /// <summary>Every bench on the world map: scene, respawn marker, its place (scene units), the scene's size.</summary>
+        /// <summary>How many pylons the world has (one by each of these benches).</summary>
+        internal static int BenchCount => Benches.Length;
+
         static readonly (string Scene, string Bench, float X, float Y, float W, float H)[] Benches =
         {
             ("Town", "RestBench", 132.38f, 10.7f, 263.0f, 70.0f),

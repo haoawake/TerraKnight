@@ -5,11 +5,12 @@ using UnityEngine;
 namespace TerraKnight.UI
 {
     /// <summary>
-    /// Terraria's health bars over Hallownest's enemies. Every enemy that has lost life gets the
-    /// small bar under it (Main.DrawHealthBar: HealthBar1 filling over HealthBar2, green at full
-    /// through yellow to red), at 1.5 times the size for bosses; the nearest boss also gets the
-    /// big bar at the bottom of the screen (BigProgressBarHelper.DrawFancyBar on UI_BossBar) with its
-    /// life written on it. Life is in Terraria points (<see cref="EnemyStats"/>).
+    /// Terraria's health bars over Hallownest's enemies. Every enemy but a boss that has lost life
+    /// gets the small bar under it (Main.DrawHealthBar: HealthBar1 filling over HealthBar2, green at
+    /// full through yellow to red); a boss has only the big bar at the bottom of the screen
+    /// (BigProgressBarHelper.DrawFancyBar on UI_BossBar) with its life written on it, nothing over it
+    /// that would show where it went when it warps or hides (the user's, 2026-10-23). Life is in
+    /// Terraria points (<see cref="EnemyStats"/>).
     /// </summary>
     internal static class EnemyHealthBars
     {
@@ -55,6 +56,7 @@ namespace TerraKnight.UI
                     // The one being fought comes first: the Mantis Lords' sisters still sitting on
                     // their thrones are nearer than the one in the air.
                     if (d < 45f && Time.time - info.LastHit < 10f && (struck == null || info.LastHit > struck.LastHit)) struck = info;
+                    continue;
                 }
                 if (life >= max && !Always) continue;
                 var bounds = Bounds(hm);
@@ -63,7 +65,7 @@ namespace TerraKnight.UI
                 else lastBounds[hm] = bounds;
                 // Under the NPC: 10 px below its hitbox, centred.
                 var at = new Vector3(bounds.center.x, bounds.min.y - 10f * Px, bounds.center.z);
-                SmallBar(cam, at, life, max, info.Boss ? 1.5f : 1f);
+                SmallBar(cam, at, life, max, 1f);
             }
             Fought = struck ?? boss;
             if (struck != null) BossBar(Hurtable(struck));
@@ -200,14 +202,8 @@ namespace TerraKnight.UI
 
         static void Outlined(Rect r, string s, TextAnchor anchor)
         {
-            float ui = GameView.Scale;
             text.alignment = anchor;
-            text.normal.textColor = Color.black;
-            for (int ox = -1; ox <= 1; ox++)
-                for (int oy = -1; oy <= 1; oy++)
-                    if (ox != 0 || oy != 0) GUI.Label(new Rect(r.x + ox * 1.5f * ui, r.y + oy * 1.5f * ui, r.width, r.height), s, text);
-            text.normal.textColor = Color.white;
-            GUI.Label(r, s, text);
+            BorderText.Draw(r, s, text, Color.black, Color.white, 1.5f * GameView.Scale);
         }
     }
 }

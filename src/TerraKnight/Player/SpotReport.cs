@@ -141,6 +141,17 @@ namespace TerraKnight.Player
             mod?.PlaySound("Menu_Tick", 0.7f);
         }
 
+        /// <summary>What an enemy is doing and whether it knows the player is there: its FSMs' states, its alert ranges and sight, the hit's anger.</summary>
+        static string Mind(HealthManager hm)
+        {
+            var sb = new StringBuilder("\n      状态机");
+            foreach (var f in hm.GetComponents<PlayMakerFSM>()) sb.Append($" {f.FsmName}={f.ActiveStateName}{(f.enabled ? "" : "(关)")}");
+            sb.Append($"；被打后追人 {EnemyAggro.IsAngry(hm)}");
+            foreach (var r in hm.GetComponentsInChildren<AlertRange>(true)) sb.Append($"；{r.gameObject.name} 看到主角 {r.IsHeroInRange}{(r.gameObject.activeInHierarchy ? "" : "(未激活)")}");
+            foreach (var s in hm.GetComponentsInChildren<LineOfSightDetector>(true)) sb.Append($"；视线 {s.gameObject.name} {s.CanSeeHero}");
+            return sb.ToString();
+        }
+
         /// <summary>
         /// The live enemies within 15 units of the hero or the cursor, nearest the cursor first: their body's place, how
         /// much of it is in solid cells, and their body's motion (an enemy said to be stuck in a wall is found by it).
@@ -159,7 +170,7 @@ namespace TerraKnight.Player
                 var rb = hm.GetComponent<Rigidbody2D>();
                 float share = EnemyUnstick.SolidShare(eb);
                 near.Add((dm, $"{hm.name}（{info.Name}）身体 {eb.min.x:F2},{eb.min.y:F2}..{eb.max.x:F2},{eb.max.y:F2}，中心实心 {TerraWorld.IsSolidAt(eb.center)}，压在实心格上 {share:P0}，" +
-                    $"刚体 {(rb != null ? $"{rb.bodyType} 速度 {rb.linearVelocity.x:F1},{rb.linearVelocity.y:F1}" : "无")}，离鼠标 {dm:F1}"));
+                    $"刚体 {(rb != null ? $"{rb.bodyType} 速度 {rb.linearVelocity.x:F1},{rb.linearVelocity.y:F1}" : "无")}，离鼠标 {dm:F1}" + Mind(hm)));
             }
             near.Sort((a, c) => a.d.CompareTo(c.d));
             sb.Append($"\n  附近的敌人（{near.Count} 只，离鼠标近的在前）：");

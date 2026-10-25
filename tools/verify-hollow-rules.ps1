@@ -21,7 +21,7 @@ namespace TerraKnight {public static class HollowRules {
   GameDifficulty.Current=DifficultyLevel.Master;var master=new[]{ChanceScale,AmountBonus,GeoScale,Tier(DifficultyLevel.Master),(float)CloakDamage,(float)HoneyDamage(false),(float)HoneyDamage(true),(float)OpenAccessories};
   GameDifficulty.Current=DifficultyLevel.Hollow;var hollow=new[]{ChanceScale,AmountBonus,GeoScale,Tier(DifficultyLevel.Hollow),(float)CloakDamage,(float)HoneyDamage(false),(float)HoneyDamage(true),(float)OpenAccessories};
   for(int i=0;i<master.Length;i++)Check(master[i]==hollow[i],"Hollow/Master rule mismatch "+i);
-  Check(OpenAccessories==6,"Master extra accessory slot missing");TerraMod.Instance=new TerraMod();TerraMod.Instance.Stats.Boosts.Add(Items.PermanentBoost.DemonHeart);Check(OpenAccessories==7,"Demon Heart slot missing");
+  Check(OpenAccessories==7,"Master extra accessory slot missing");TerraMod.Instance=new TerraMod();TerraMod.Instance.Stats.Boosts.Add(Items.PermanentBoost.DemonHeart);Check(OpenAccessories==8,"Demon Heart slot missing");
   Check(GameDifficulty.MasterRules,"Master relic eligibility missing");Check(GameDifficulty.Current>=DifficultyLevel.Expert,"Expert bag eligibility missing");
   Check(GameDifficulty.Parse((int)GameDifficulty.Current)==DifficultyLevel.Hollow,"save round-trip loses Hollow");
   Check(GameDifficulty.ColorOf(DifficultyLevel.Hollow).g!=GameDifficulty.ColorOf(DifficultyLevel.Master).g,"new difficulty indistinguishable in UI");
@@ -36,12 +36,11 @@ try {
  Add-Type -Path @((Join-Path $root 'src/TerraKnight/World/GameDifficulty.cs'),$temp) -CompilerOptions '/warn:0'
  [TerraKnight.HollowRules]::Run()
 } finally {Remove-Item -LiteralPath $temp -ErrorAction SilentlyContinue}
-$menu=Get-Content (Join-Path $root 'src/TerraKnight/UI/CreativeMenu.cs') -Raw
-if(!$menu.Contains('i <= (int)DifficultyLevel.Hollow') -or ([regex]::Matches($menu,'step==Step.Difficulty \? 640f')).Count -ne 2){throw 'Fifth difficulty card or matching menu geometry missing'}
-if(178+4*74+64 -ge 640-70){throw 'Fifth difficulty overlaps Back button'}
+$menu=Get-Content (Join-Path $root 'src/TerraKnight/UI/TerraMenuWorld.cs') -Raw
+if(!$menu.Contains('DifficultyLevel.Master, DifficultyLevel.Hollow') -or !$menu.Contains('OptionRect(info, top, i, levels.Length')){throw 'Fifth difficulty option missing from current world-creation menu'}
 $drops=Get-Content (Join-Path $root 'src/TerraKnight/Items/EnemyDrops.cs') -Raw
 if(!$drops.Contains('if (d.Master && !World.GameDifficulty.MasterRules)')){throw 'Hollow excluded from Master relics'}
 $save=Get-Content (Join-Path $root 'src/TerraKnight/Save/ModSave.cs') -Raw
 if(!$save.Contains('Difficulty = (int)World.GameDifficulty.Current') -or !$save.Contains('World.GameDifficulty.Parse(file.Difficulty)')){throw 'Save serialization wiring missing'}
-'PASS creation-menu fifth card/spacing, Master relic filter and save serialization wiring; no gameplay test'
+'PASS creation-menu fifth option, Master relic filter and save serialization wiring; no gameplay test'
 

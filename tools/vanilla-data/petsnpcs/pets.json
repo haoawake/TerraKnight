@@ -1,0 +1,6913 @@
+{
+ "meta": {
+  "terraria": "1.4.5 (decompiled)",
+  "src": "D:/ClaudeTemp/claude/e------------github-----projects---/e332c8d1-bad4-4402-a7e3-1d6b4d5e6526/scratchpad/terraria-src",
+  "generated_by": "D:\\ClaudeTemp\\claude\\e------------github-----projects---\\e332c8d1-bad4-4402-a7e3-1d6b4d5e6526\\scratchpad\\petsnpcs\\scripts\\gen_pets.py"
+ },
+ "pet_system": {
+  "flags": {
+   "Main.vanityPet[buff]": "Terraria/Main.cs:9395-9468",
+   "Main.lightPet[buff]": "Terraria/Main.cs:9469-9480",
+   "ProjectileID.Sets.LightPet": "Terraria.ID/ProjectileID.cs:389 = {18,500,72,87,86,211,492,650,702,891,896,895}",
+   "Main.projPet[proj]": "Terraria/Main.cs:8925-9032（同时包含仆从）"
+  },
+  "item_template": "Item.DefaultToVanitypet(projId, buffID) (Item.cs:47937-47951)：damage 0, useStyle 1(挥动), 16x30, UseSound Item2, useAnimation/useTime 20, rare 3, noMelee, value sellPrice(0,2), buffType, shoot。旧物品手写同样字段。",
+  "use": "左键使用物品：添加 buff（Item.buffType, buffTime 默认 3600）；物品不消耗。也可放入宠物/照明宠物栏自动生效。",
+  "preview": "ProjectileID.Sets.CharacterPreviewAnimations (ProjectileID.cs:14-17)：装备栏/角色预览里宠物的循环帧 SimpleLoop(起始帧, 帧数, 每帧tick=4) .WhenNotSelected/.WhenSelected/.WithOffset/.WithSpriteDirection/.WithCode(Float/SlimePet/WormPet…)。可直接当作\"待机动画\"数据用。"
+ },
+ "ai_styles": {
+  "11": {
+   "name": "悬浮跟随光球（暗影珠/仙灵）",
+   "code": "Projectile.AI() 内联, Projectile.cs:24651",
+   "behavior": "无重力、不碰撞图格。目标=玩家中心；距离>800px 瞬移到玩家；>停止半径（暗影珠 70px，仙灵 50px）时以固定速度（暗影珠 3，仙灵 6 px/tick）直线靠近，否则速度清零。暗影珠：按住上/下时目标改到玩家头顶/脚下 40px，停止半径 4。暗影珠 rotation += 0.02；仙灵按水平速度翻转并 rotation=vx*0.1，4 帧每 4 tick 循环，随机撒 dust 56/73/74。"
+  },
+  "26": {
+   "name": "经典宠物 AI_026（地面行走 + 远离时飞回；部分类型为纯飞行变体）",
+   "code": "AI_026(), Projectile.cs:59086（派发 26765）",
+   "behavior": "见 variants。地面型：ai[0]==0 地面模式：重力 0.4/tick，最大下落 10，默认最大水平速度 6.5、加速度 0.08（1.4 新宠物 6 / 0.2，并跟随玩家速度），遇障碍按障碍高度给跳跃速度 -5.1/-7.1/-9.1/-10.1/-11.1（Projectile.cs:63063-63300）；与玩家水平距离超过停止距离 num（默认 85px，见 59097-59165）才走。ai[0]==1 飞行模式：距离>num92（默认 500px，部分 400/300/200）或垂直差>300px 时切入（61260-61345），无碰撞直线飞向玩家（速度 10，1.4 宠物 12 或玩家速度，加速 0.2-0.5），离玩家<num102（默认 200px）且玩家着地并且自身不在实心块里时落回地面模式（61390-61500）。距离>2000px 直接瞬移到玩家。飞行模式与地面模式各自使用不同帧段（每类型帧表在 61620-62470 飞行段、62565-66045 地面段）。松露人(209)/伯尼(956)/虫群咬咬(1027) 不飞：淡出后在玩家脚下重新出现（61346-61389）。"
+  },
+  "67": {
+   "name": "AI_067 跟随型（与海盗仆从共用）：猩红之心/同伴方块/最土的块/巨石宠物",
+   "code": "AI_067_FreakingPirates(), Projectile.cs:50015（派发 30651）",
+   "behavior": "地面跟随+远离时飞回，与 AI_026 类似但锚点：猩红之心在玩家身后 (15+w/2+40)px，同伴方块/最土的块在玩家正中，巨石宠物在身后 15+w/2；猩红之心飞行、自发光、旋转 rotation+=vx/20，帧 0/2 停 12 tick 其余 6 tick；同伴方块落入熔岩 20 tick 会惨叫并消失，在黑暗中会\"刺\"玩家 3 点伤害；巨石宠物 rotation+=vx/16 滚动（50222-50460）。"
+  },
+  "90": {
+   "name": "魔法灯笼",
+   "code": "Projectile.AI() 内联, Projectile.cs:32969",
+   "behavior": "飞到玩家 (40*dir, -40) 处，距离>1000 瞬移；朝向=玩家朝向；每 10 tick 对 17 格半径内的宝藏图格（Main.IsTileSpelunkable）随机撒 dust 204 高亮（类似洞穴探险）。"
+  },
+  "124": {
+   "name": "飞行锚点宠物（克眼/双子/可疑触手/女皇/南瓜王/冰雪女王/咕噜咪）",
+   "code": "Projectile.AI() 内联, Projectile.cs:35619",
+   "behavior": "锚点=player.MountedCenter + (dir*30, -20)（各类型偏移：双子 (30,-50)、女皇 (-36,-50)、南瓜王 (30,-60)、冰后 (-30,-50)、咕噜咪 (-40,-40)，同时存在某些宠物时左右互换，35694-35740）；velocity = (锚点-中心)*0.1，距离<4 时 velocity*=0.25；距离>1000 瞬移；速度>6 时可疑触手按速度方向转向。"
+  },
+  "144": {
+   "name": "AI_144 飞行宠物（撒旦军队三宠/欢快星/仙斧）",
+   "code": "AI_144_DD2Pet(), Projectile.cs:71133（派发 37211）",
+   "behavior": "锚点 player.MountedCenter + (dir*30, -20) 加正弦上下浮动（cos(localAI0*π/60)*2），按类型改帧速/速度（702：帧 10 tick、速度 6；703：帧 4/2、速度 3；1050 仙斧在玩家另一侧（x 取反），离玩家<320px 时朝面向方向找 12 格内可摇动的树(TileID.Sets.IsShakeable)，飞过去做砍树动作：树木粒子+音效，偶尔调用 KillTile_DropItems 掉出该树的掉落物（不破坏树），之后冷却 300 tick（71258-71331））；距离>1000 瞬移；velocity 向锚点插值。"
+  },
+  "174": {
+   "name": "多节蠕虫宠物（吞噬怪/毁灭者/邪教徒龙）",
+   "code": "AI_174_MultisegmentPet(), Projectile.cs:46178（派发 37331）；绘制 Main.DrawMultisegmentPet, Main.cs:37745",
+   "behavior": "速度=clamp(玩家速度, 4, 12)；距离≥120px 时每 tick 最多转 5° 朝向玩家；|vy|<1 时 vy-=0.1；rotation=速度角+π/2；>2000px 瞬移；身体节由 oldPos 拖尾绘制（TrailCacheLength）。"
+  }
+ },
+ "ai26_variants": [
+  {
+   "key": "fly_eater",
+   "projs": [
+    175
+   ],
+   "code": "Projectile.cs:60105-60231",
+   "desc": "吞噬怪宝宝：纯飞行，绕玩家"
+  },
+  {
+   "key": "fly_skeletron",
+   "projs": [
+    197
+   ],
+   "code": "Projectile.cs:60232-60398",
+   "desc": "骷髅王宝宝头：纯飞行，旋转"
+  },
+  {
+   "key": "fly_hover",
+   "projs": [
+    198,
+    380,
+    774,
+    815,
+    817,
+    886,
+    892,
+    894,
+    901,
+    1046
+   ],
+   "code": "Projectile.cs:60399-60774",
+   "desc": "悬停飞行（黄蜂宝宝/西风鱼/鲨鱼宝宝/小鸟妖/蝴蝶/蜂王/猪鲨/月总/双足翼龙/河豚）：加速度 0.4（西风鱼/鲨鱼/河豚 0.3），无碰撞，靠近玩家身侧"
+  },
+  {
+   "key": "fly_wisp",
+   "projs": [
+    211
+   ],
+   "code": "Projectile.cs:60775-60941",
+   "desc": "妖灵：纯飞行，发光"
+  },
+  {
+   "key": "fly_tiki",
+   "projs": [
+    199
+   ],
+   "code": "Projectile.cs:60942-61088",
+   "desc": "提基之灵：纯飞行"
+  },
+  {
+   "key": "fly_skeletronpet",
+   "projs": [
+    885,
+    889
+   ],
+   "code": "Projectile.cs:61089-61255",
+   "desc": "骷髅王/机械骷髅王宠物：纯飞行"
+  }
+ ],
+ "groups_by_ai": {
+  "11": [
+   {
+    "item": 115,
+    "item_zh": "暗影珠",
+    "proj": 18,
+    "proj_internal": "ShadowOrb",
+    "kind": "light",
+    "frames": 1
+   },
+   {
+    "item": 425,
+    "item_zh": "仙灵铃铛",
+    "proj": 72,
+    "proj_internal": "BlueFairy",
+    "kind": "light",
+    "frames": 4
+   },
+   {
+    "item": 425,
+    "item_zh": "仙灵铃铛",
+    "proj": 86,
+    "proj_internal": "PinkFairy",
+    "kind": "light",
+    "frames": 4
+   },
+   {
+    "item": 425,
+    "item_zh": "仙灵铃铛",
+    "proj": 87,
+    "proj_internal": "GreenFairy",
+    "kind": "light",
+    "frames": 4
+   }
+  ],
+  "26:ground": [
+   {
+    "item": 603,
+    "item_zh": "胡萝卜",
+    "proj": 111,
+    "proj_internal": "Bunny",
+    "kind": "vanity",
+    "frames": 8
+   },
+   {
+    "item": 669,
+    "item_zh": "鱼",
+    "proj": 112,
+    "proj_internal": "Penguin",
+    "kind": "vanity",
+    "frames": 6
+   },
+   {
+    "item": 753,
+    "item_zh": "海草",
+    "proj": 127,
+    "proj_internal": "Turtle",
+    "kind": "vanity",
+    "frames": 16
+   },
+   {
+    "item": 1172,
+    "item_zh": "蜥蜴蛋",
+    "proj": 200,
+    "proj_internal": "PetLizard",
+    "kind": "vanity",
+    "frames": 10
+   },
+   {
+    "item": 1180,
+    "item_zh": "鹦鹉饼干",
+    "proj": 208,
+    "proj_internal": "Parrot",
+    "kind": "vanity",
+    "frames": 5
+   },
+   {
+    "item": 1181,
+    "item_zh": "奇异发光蘑菇",
+    "proj": 209,
+    "proj_internal": "Truffle",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 1182,
+    "item_zh": "幼苗",
+    "proj": 210,
+    "proj_internal": "Sapling",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 1242,
+    "item_zh": "蚊子琥珀",
+    "proj": 236,
+    "proj_internal": "BabyDino",
+    "kind": "vanity",
+    "frames": 13
+   },
+   {
+    "item": 1311,
+    "item_zh": "弹簧眼",
+    "proj": 268,
+    "proj_internal": "EyeSpring",
+    "kind": "vanity",
+    "frames": 8
+   },
+   {
+    "item": 1312,
+    "item_zh": "玩具雪橇",
+    "proj": 269,
+    "proj_internal": "BabySnowman",
+    "kind": "vanity",
+    "frames": 7
+   },
+   {
+    "item": 1798,
+    "item_zh": "蜘蛛卵",
+    "proj": 313,
+    "proj_internal": "Spider",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 1799,
+    "item_zh": "魔法南瓜子",
+    "proj": 314,
+    "proj_internal": "Squashling",
+    "kind": "vanity",
+    "frames": 13
+   },
+   {
+    "item": 1810,
+    "item_zh": "霉运纱线",
+    "proj": 319,
+    "proj_internal": "BlackCat",
+    "kind": "vanity",
+    "frames": 11
+   },
+   {
+    "item": 1837,
+    "item_zh": "诅咒树苗",
+    "proj": 324,
+    "proj_internal": "CursedSapling",
+    "kind": "vanity",
+    "frames": 10
+   },
+   {
+    "item": 1927,
+    "item_zh": "狗哨",
+    "proj": 334,
+    "proj_internal": "Puppy",
+    "kind": "vanity",
+    "frames": 11
+   },
+   {
+    "item": 1959,
+    "item_zh": "格林奇宝宝的恶作剧口哨",
+    "proj": 353,
+    "proj_internal": "BabyGrinch",
+    "kind": "vanity",
+    "frames": 14
+   },
+   {
+    "item": 2587,
+    "item_zh": "魅惑里拉琴",
+    "proj": 398,
+    "proj_internal": "MiniMinotaur",
+    "kind": "vanity",
+    "frames": 11
+   },
+   {
+    "item": 3060,
+    "item_zh": "骨头拨浪鼓",
+    "proj": 499,
+    "proj_internal": "BabyFaceMonster",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 4366,
+    "item_zh": "桉树汁",
+    "proj": 765,
+    "proj_internal": "SugarGlider",
+    "kind": "vanity",
+    "frames": 10
+   },
+   {
+    "item": 4550,
+    "item_zh": "竹叶",
+    "proj": 825,
+    "proj_internal": "BabyRedPanda",
+    "kind": "vanity",
+    "frames": 26
+   },
+   {
+    "item": 4551,
+    "item_zh": "地狱蛋糕块",
+    "proj": 821,
+    "proj_internal": "BabyImp",
+    "kind": "vanity",
+    "frames": 23
+   },
+   {
+    "item": 4604,
+    "item_zh": "奇异咀嚼玩具",
+    "proj": 816,
+    "proj_internal": "FennecFox",
+    "kind": "vanity",
+    "frames": 17
+   },
+   {
+    "item": 4701,
+    "item_zh": "泥芽",
+    "proj": 854,
+    "proj_internal": "Plantero",
+    "kind": "vanity",
+    "frames": 19
+   },
+   {
+    "item": 4735,
+    "item_zh": "保险丝球",
+    "proj": 858,
+    "proj_internal": "DynamiteKitten",
+    "kind": "vanity",
+    "frames": 14
+   },
+   {
+    "item": 4736,
+    "item_zh": "满月尖叫玩具",
+    "proj": 859,
+    "proj_internal": "BabyWerewolf",
+    "kind": "vanity",
+    "frames": 24
+   },
+   {
+    "item": 4737,
+    "item_zh": "华丽暗影钥匙",
+    "proj": 860,
+    "proj_internal": "ShadowMimic",
+    "kind": "vanity",
+    "frames": 14
+   },
+   {
+    "item": 4777,
+    "item_zh": "闪电胡萝卜",
+    "proj": 875,
+    "proj_internal": "VoltBunny",
+    "kind": "vanity",
+    "frames": 11
+   },
+   {
+    "item": 4797,
+    "item_zh": "皇家美味",
+    "proj": 881,
+    "proj_internal": "KingSlimePet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 4800,
+    "item_zh": "罐中脑",
+    "proj": 884,
+    "proj_internal": "BrainOfCthulhuPet",
+    "kind": "vanity",
+    "frames": 14
+   },
+   {
+    "item": 4806,
+    "item_zh": "世纪之花幼苗",
+    "proj": 890,
+    "proj_internal": "PlanteraPet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 4807,
+    "item_zh": "石巨人守卫",
+    "proj": 891,
+    "proj_internal": "GolemPet",
+    "kind": "light",
+    "frames": 15
+   },
+   {
+    "item": 4813,
+    "item_zh": "灌木星星",
+    "proj": 897,
+    "proj_internal": "EverscreamPet",
+    "kind": "vanity",
+    "frames": 11
+   },
+   {
+    "item": 4815,
+    "item_zh": "宇宙滑板",
+    "proj": 899,
+    "proj_internal": "MartianPet",
+    "kind": "vanity",
+    "frames": 14
+   },
+   {
+    "item": 4816,
+    "item_zh": "食人魔棍棒",
+    "proj": 900,
+    "proj_internal": "DD2OgrePet",
+    "kind": "vanity",
+    "frames": 14
+   },
+   {
+    "item": 4960,
+    "item_zh": "王室美食",
+    "proj": 934,
+    "proj_internal": "QueenSlimePet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 5088,
+    "item_zh": "伯尼的钮扣",
+    "proj": 956,
+    "proj_internal": "BerniePet",
+    "kind": "vanity",
+    "frames": 11
+   },
+   {
+    "item": 5090,
+    "item_zh": "独眼巨鹿眼球",
+    "proj": 958,
+    "proj_internal": "DeerclopsPet",
+    "kind": "vanity",
+    "frames": 17
+   },
+   {
+    "item": 5091,
+    "item_zh": "怪物肉",
+    "proj": 959,
+    "proj_internal": "PigPet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 5098,
+    "item_zh": "眼骨",
+    "proj": 960,
+    "proj_internal": "ChesterPet",
+    "kind": "vanity",
+    "frames": 20
+   },
+   {
+    "item": 5131,
+    "item_zh": "华美甜点",
+    "proj": 881,
+    "proj_internal": "KingSlimePet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 5131,
+    "item_zh": "华美甜点",
+    "proj": 934,
+    "proj_internal": "QueenSlimePet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 5276,
+    "item_zh": "星之果实",
+    "proj": 994,
+    "proj_internal": "JunimoPet",
+    "kind": "vanity",
+    "frames": 16
+   },
+   {
+    "item": 5297,
+    "item_zh": "蓝鸡蛋",
+    "proj": 998,
+    "proj_internal": "BlueChickenPet",
+    "kind": "vanity",
+    "frames": 10
+   },
+   {
+    "item": 5332,
+    "item_zh": "毛绒Spiffo",
+    "proj": 1003,
+    "proj_internal": "Spiffo",
+    "kind": "vanity",
+    "frames": 16
+   },
+   {
+    "item": 5333,
+    "item_zh": "发光郁金香",
+    "proj": 1004,
+    "proj_internal": "CavelingGardener",
+    "kind": "vanity",
+    "frames": 15
+   },
+   {
+    "item": 5466,
+    "item_zh": "虫群手榴弹",
+    "proj": 1027,
+    "proj_internal": "DeadCellsSwarmBiter",
+    "kind": "vanity",
+    "frames": 5
+   }
+  ],
+  "26:fly_eater": [
+   {
+    "item": 994,
+    "item_zh": "吞噬怪骨头",
+    "proj": 175,
+    "proj_internal": "BabyEater",
+    "kind": "vanity",
+    "frames": 2
+   }
+  ],
+  "26:fly_skeletron": [
+   {
+    "item": 1169,
+    "item_zh": "骨头钥匙",
+    "proj": 197,
+    "proj_internal": "BabySkeletronHead",
+    "kind": "vanity",
+    "frames": 1
+   }
+  ],
+  "26:fly_hover": [
+   {
+    "item": 1170,
+    "item_zh": "花蜜",
+    "proj": 198,
+    "proj_internal": "BabyHornet",
+    "kind": "vanity",
+    "frames": 4
+   },
+   {
+    "item": 2420,
+    "item_zh": "和风鱼",
+    "proj": 380,
+    "proj_internal": "ZephyrFish",
+    "kind": "vanity",
+    "frames": 4
+   },
+   {
+    "item": 4425,
+    "item_zh": "鲨鱼鱼饵",
+    "proj": 774,
+    "proj_internal": "SharkPup",
+    "kind": "vanity",
+    "frames": 8
+   },
+   {
+    "item": 4603,
+    "item_zh": "小鸟拨浪鼓",
+    "proj": 815,
+    "proj_internal": "LilHarpy",
+    "kind": "vanity",
+    "frames": 10
+   },
+   {
+    "item": 4605,
+    "item_zh": "眩晕花蜜",
+    "proj": 817,
+    "proj_internal": "GlitteryButterfly",
+    "kind": "vanity",
+    "frames": 18
+   },
+   {
+    "item": 4802,
+    "item_zh": "闪耀蜂蜜",
+    "proj": 886,
+    "proj_internal": "QueenBeePet",
+    "kind": "vanity",
+    "frames": 8
+   },
+   {
+    "item": 4808,
+    "item_zh": "海猪肉",
+    "proj": 892,
+    "proj_internal": "DukeFishronPet",
+    "kind": "vanity",
+    "frames": 6
+   },
+   {
+    "item": 4810,
+    "item_zh": "月亮乌贼",
+    "proj": 894,
+    "proj_internal": "MoonLordPet",
+    "kind": "vanity",
+    "frames": 8
+   },
+   {
+    "item": 4817,
+    "item_zh": "双足翼龙蛋",
+    "proj": 901,
+    "proj_internal": "DD2BetsyPet",
+    "kind": "vanity",
+    "frames": 12
+   },
+   {
+    "item": 5513,
+    "item_zh": "河豚虾",
+    "proj": 1046,
+    "proj_internal": "Pufferfish",
+    "kind": "vanity",
+    "frames": 12
+   }
+  ],
+  "26:fly_tiki": [
+   {
+    "item": 1171,
+    "item_zh": "提基图腾",
+    "proj": 199,
+    "proj_internal": "TikiSpirit",
+    "kind": "vanity",
+    "frames": 8
+   }
+  ],
+  "26:fly_wisp": [
+   {
+    "item": 1183,
+    "item_zh": "妖灵瓶",
+    "proj": 211,
+    "proj_internal": "Wisp",
+    "kind": "light",
+    "frames": 10
+   }
+  ],
+  "90": [
+   {
+    "item": 3043,
+    "item_zh": "魔法灯笼",
+    "proj": 492,
+    "proj_internal": "MagicLantern",
+    "kind": "light",
+    "frames": 8
+   }
+  ],
+  "67": [
+   {
+    "item": 3062,
+    "item_zh": "猩红之心",
+    "proj": 500,
+    "proj_internal": "CrimsonHeart",
+    "kind": "light",
+    "frames": 4
+   },
+   {
+    "item": 3628,
+    "item_zh": "同伴方块",
+    "proj": 653,
+    "proj_internal": "CompanionCube",
+    "kind": "vanity",
+    "frames": 1
+   },
+   {
+    "item": 5400,
+    "item_zh": "最土的块",
+    "proj": 1018,
+    "proj_internal": "DirtiestBlock",
+    "kind": "vanity",
+    "frames": 1
+   },
+   {
+    "item": 5523,
+    "item_zh": "友好巨石",
+    "proj": 1056,
+    "proj_internal": "BoulderPet",
+    "kind": "vanity",
+    "frames": 1
+   },
+   {
+    "item": 5654,
+    "item_zh": "友好彩虹巨石",
+    "proj": 1090,
+    "proj_internal": "RainbowBoulderPet",
+    "kind": "vanity",
+    "frames": 1
+   }
+  ],
+  "124": [
+   {
+    "item": 3577,
+    "item_zh": "可疑触手",
+    "proj": 650,
+    "proj_internal": "SuspiciousTentacle",
+    "kind": "light",
+    "frames": 4
+   },
+   {
+    "item": 4798,
+    "item_zh": "可疑咧嘴眼球",
+    "proj": 882,
+    "proj_internal": "EyeOfCthulhuPet",
+    "kind": "vanity",
+    "frames": 20
+   },
+   {
+    "item": 4804,
+    "item_zh": "微型双子魔眼",
+    "proj": 888,
+    "proj_internal": "TwinsPet",
+    "kind": "vanity",
+    "frames": 36
+   },
+   {
+    "item": 4811,
+    "item_zh": "光之珠宝",
+    "proj": 895,
+    "proj_internal": "FairyQueenPet",
+    "kind": "light",
+    "frames": 6
+   },
+   {
+    "item": 4812,
+    "item_zh": "南瓜香薰蜡烛",
+    "proj": 896,
+    "proj_internal": "PumpkingPet",
+    "kind": "light",
+    "frames": 16
+   },
+   {
+    "item": 4814,
+    "item_zh": "冰冻王冠",
+    "proj": 898,
+    "proj_internal": "IceQueenPet",
+    "kind": "vanity",
+    "frames": 16
+   },
+   {
+    "item": 5089,
+    "item_zh": "咕噜咪的花",
+    "proj": 957,
+    "proj_internal": "GlommerPet",
+    "kind": "vanity",
+    "frames": 12
+   }
+  ],
+  "144": [
+   {
+    "item": 3855,
+    "item_zh": "Gato蛋",
+    "proj": 703,
+    "proj_internal": "DD2PetGato",
+    "kind": "vanity",
+    "frames": 8
+   },
+   {
+    "item": 3856,
+    "item_zh": "飞眼怪蛋",
+    "proj": 702,
+    "proj_internal": "DD2PetGhost",
+    "kind": "light",
+    "frames": 4
+   },
+   {
+    "item": 3857,
+    "item_zh": "龙蛋",
+    "proj": 701,
+    "proj_internal": "DD2PetDragon",
+    "kind": "vanity",
+    "frames": 3
+   },
+   {
+    "item": 4365,
+    "item_zh": "天界魔棒",
+    "proj": 764,
+    "proj_internal": "UpbeatStar",
+    "kind": "vanity",
+    "frames": 1
+   },
+   {
+    "item": 5517,
+    "item_zh": "仙橡果",
+    "proj": 1050,
+    "proj_internal": "AxeFairyPet",
+    "kind": "vanity",
+    "frames": 16
+   }
+  ],
+  "174": [
+   {
+    "item": 4799,
+    "item_zh": "蠕动残骸",
+    "proj": 883,
+    "proj_internal": "EaterOfWorldsPet",
+    "kind": "vanity",
+    "frames": 3
+   },
+   {
+    "item": 4803,
+    "item_zh": "失效探测器",
+    "proj": 887,
+    "proj_internal": "DestroyerPet",
+    "kind": "vanity",
+    "frames": 3
+   },
+   {
+    "item": 4809,
+    "item_zh": "碑牌碎片",
+    "proj": 893,
+    "proj_internal": "LunaticCultistPet",
+    "kind": "vanity",
+    "frames": 4
+   }
+  ],
+  "26:fly_skeletronpet": [
+   {
+    "item": 4801,
+    "item_zh": "疯狂骷髅头",
+    "proj": 885,
+    "proj_internal": "SkeletronPet",
+    "kind": "vanity",
+    "frames": 10
+   },
+   {
+    "item": 4805,
+    "item_zh": "机器人骷髅头",
+    "proj": 889,
+    "proj_internal": "SkeletronPrimePet",
+    "kind": "vanity",
+    "frames": 11
+   }
+  ]
+ },
+ "pets": [
+  {
+   "item": 115,
+   "internal": "ShadowOrb",
+   "en": "Shadow Orb",
+   "zh": "暗影珠",
+   "item_texture": "Images/Item_115",
+   "item_ref": "Terraria/Item.cs:2758",
+   "rare": 1,
+   "value": "shadowOrbPrice",
+   "buff": 19,
+   "buff_internal": "ShadowOrb",
+   "buff_en": "Shadow Orb",
+   "buff_zh": "暗影珠",
+   "buff_texture": "Images/Buff_19",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9469",
+   "shoot": 18,
+   "spawn_ref": "Terraria/Player.cs:11092",
+   "player_flag": "lightOrb",
+   "projectiles": [
+    {
+     "id": 18,
+     "internal": "ShadowOrb",
+     "en": "Shadow Orb",
+     "zh": "暗影珠",
+     "aiStyle": 11,
+     "width": 32,
+     "height": 32,
+     "scale": 0.8,
+     "hitbox_after_scale": [
+      25,
+      25
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": 0.9,
+     "manualDirectionChange": false,
+     "alpha": 150,
+     "projPet": false,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:995 (type == 18)",
+     "texture": "Images/Projectile_18",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.54,
+       0.09,
+       0.9
+      ],
+      "how": "Projectile.light=0.9（SetDefaults Projectile.cs:995）经 ProjLight 着色：R*0.6 G*0.1 B*1",
+      "refs": [
+       "Terraria/Projectile.cs:16456-16460",
+       "Terraria/Projectile.cs:16756 (Lighting.AddLight 中心点)"
+      ]
+     }
+    }
+   ],
+   "source_zh": "打破腐化之地的暗影珠（CheckOrb 轮换掉落 5 选 1）；腐化匣/污损匣开出",
+   "source_refs": [
+    "Terraria/WorldGen.cs:54767-54768",
+    "Terraria/Player.cs:8658-8665"
+   ]
+  },
+  {
+   "item": 425,
+   "internal": "FairyBell",
+   "en": "Fairy Bell",
+   "zh": "仙灵铃铛",
+   "item_texture": "Images/Item_425",
+   "item_ref": "Terraria/Item.cs:6331",
+   "rare": 5,
+   "value": 250000,
+   "buff": 27,
+   "buff_internal": "FairyBlue",
+   "buff_en": "Fairy",
+   "buff_zh": "仙灵",
+   "buff_texture": "Images/Buff_27",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9471",
+   "shoot": null,
+   "spawn_ref": "Terraria/Player.cs:11355",
+   "player_flag": null,
+   "buff_note": "仙灵铃铛 buffType=27，但放进照明宠物栏时随机给 27/101/102（蓝/粉/绿仙灵），穿全套仙灵套装(head45/body26/legs25)强制蓝仙灵 (Player.cs:17440-17453, 11355-11392)",
+   "alt_buffs": [
+    {
+     "buff": 27,
+     "internal": "FairyBlue",
+     "zh": "仙灵",
+     "proj": 72,
+     "flag_ref": "Terraria/Main.cs:9471"
+    },
+    {
+     "buff": 101,
+     "internal": "FairyRed",
+     "zh": "仙灵",
+     "proj": 86,
+     "flag_ref": "Terraria/Main.cs:9472"
+    },
+    {
+     "buff": 102,
+     "internal": "FairyGreen",
+     "zh": "仙灵",
+     "proj": 87,
+     "flag_ref": "Terraria/Main.cs:9473"
+    }
+   ],
+   "projectiles": [
+    {
+     "id": 72,
+     "internal": "BlueFairy",
+     "en": "Blue Fairy",
+     "zh": "蓝仙灵",
+     "aiStyle": 11,
+     "width": 18,
+     "height": 18,
+     "scale": 0.8,
+     "hitbox_after_scale": [
+      14,
+      14
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8759",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": 0.9,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": false,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:1524 (type == 72)",
+     "texture": "Images/Projectile_72",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.405,
+       0.675,
+       1.0
+      ],
+      "how": "light=0.9：R*0.45 G*0.75 B=1（蓝仙灵）",
+      "refs": [
+       "Terraria/Projectile.cs:16536-16541"
+      ]
+     }
+    },
+    {
+     "id": 86,
+     "internal": "PinkFairy",
+     "en": "Pink Fairy",
+     "zh": "粉仙灵",
+     "aiStyle": 11,
+     "width": 18,
+     "height": 18,
+     "scale": 0.8,
+     "hitbox_after_scale": [
+      14,
+      14
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8760",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": 0.9,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": false,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:1676 (type == 86)",
+     "texture": "Images/Projectile_86",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.9,
+       0.405,
+       0.75
+      ],
+      "how": "light=0.9：R*1 G*0.45 B=0.75（粉仙灵）",
+      "refs": [
+       "Terraria/Projectile.cs:16542-16547"
+      ]
+     }
+    },
+    {
+     "id": 87,
+     "internal": "GreenFairy",
+     "en": "Pink Fairy",
+     "zh": "粉仙灵",
+     "aiStyle": 11,
+     "width": 18,
+     "height": 18,
+     "scale": 0.8,
+     "hitbox_after_scale": [
+      14,
+      14
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8761",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": 0.9,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": false,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:1690 (type == 87)",
+     "texture": "Images/Projectile_87",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.405,
+       1.0,
+       0.675
+      ],
+      "how": "light=0.9：R*0.45 G=1 B*0.75（绿仙灵）",
+      "refs": [
+       "Terraria/Projectile.cs:16548-16553"
+      ]
+     },
+     "name_note": "vanilla loc quirk: ProjectileName.GreenFairy text is \"Pink Fairy\"/\"粉仙灵\""
+    }
+   ],
+   "source_zh": "合成：铃铛 + 25 妖精尘 + 8 光明之魂 + 10 视域之魂 @ 秘银砧/山铜砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12550"
+   ]
+  },
+  {
+   "item": 603,
+   "internal": "Carrot",
+   "en": "Carrot",
+   "zh": "胡萝卜",
+   "item_texture": "Images/Item_603",
+   "item_ref": "Terraria/Item.cs:8400",
+   "rare": 3,
+   "value": 0,
+   "buff": 40,
+   "buff_internal": "PetBunny",
+   "buff_en": "Pet Bunny",
+   "buff_zh": "宠物兔兔",
+   "buff_texture": "Images/Buff_40",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9395",
+   "shoot": 111,
+   "spawn_ref": "Terraria/Player.cs:11394",
+   "player_flag": "bunny",
+   "projectiles": [
+    {
+     "id": 111,
+     "internal": "Bunny",
+     "en": "Bunny",
+     "zh": "兔兔",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 18,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      18
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8763",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:1994 (type == 111)",
+     "texture": "Images/Projectile_111",
+     "preview_anim": "SimpleLoop(0,6).WithOffset(6f,0f).WhenNotSelected(0,0).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "仅典藏版（Collector's Edition）新建角色时赠送；非典藏版放进宠物栏不会召唤",
+   "source_refs": [
+    "Terraria.GameContent.UI.States/UICharacterCreation.cs:1758",
+    "Terraria/Player.cs:17417",
+    "Terraria/Player.cs:52758"
+   ]
+  },
+  {
+   "item": 669,
+   "internal": "Fish",
+   "en": "Fish",
+   "zh": "鱼",
+   "item_texture": "Images/Item_669",
+   "item_ref": "Terraria/Item.cs:9202",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 41,
+   "buff_internal": "BabyPenguin",
+   "buff_en": "Baby Penguin",
+   "buff_zh": "企鹅宝宝",
+   "buff_texture": "Images/Buff_41",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9396",
+   "shoot": 112,
+   "spawn_ref": "Terraria/Player.cs:11442",
+   "player_flag": "penguin",
+   "projectiles": [
+    {
+     "id": 112,
+     "internal": "Penguin",
+     "en": "Penguin",
+     "zh": "企鹅",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 18,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      18
+     ],
+     "frames": 6,
+     "frames_ref": "Terraria/Main.cs:8764",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2004 (type == 112)",
+     "texture": "Images/Projectile_112",
+     "preview_anim": "SimpleLoop(0,3,5).WithOffset(6f,0f).WhenNotSelected(0,0).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "冰雪箱（地下冰雪）1/50",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37787-37789"
+   ]
+  },
+  {
+   "item": 753,
+   "internal": "Seaweed",
+   "en": "Seaweed",
+   "zh": "海草",
+   "item_texture": "Images/Item_753",
+   "item_ref": "Terraria/Item.cs:10165",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 42,
+   "buff_internal": "PetTurtle",
+   "buff_en": "Pet Turtle",
+   "buff_zh": "宠物海龟",
+   "buff_texture": "Images/Buff_42",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9397",
+   "shoot": 127,
+   "spawn_ref": "Terraria/Player.cs:11563",
+   "player_flag": "turtle",
+   "projectiles": [
+    {
+     "id": 127,
+     "internal": "Turtle",
+     "en": "Turtle",
+     "zh": "海龟",
+     "aiStyle": 26,
+     "width": 22,
+     "height": 22,
+     "scale": 1,
+     "hitbox_after_scale": [
+      22,
+      22
+     ],
+     "frames": 16,
+     "frames_ref": "Terraria/Main.cs:8765",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2161 (type == 127)",
+     "texture": "Images/Projectile_127",
+     "preview_anim": "SimpleLoop(0,5).WhenNotSelected(0,0).WithOffset(-6f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "常春藤箱（丛林箱）1/50；丛林匣/荆棘匣 1/20",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37779-37781",
+    "Terraria/Player.cs:9125-9135"
+   ]
+  },
+  {
+   "item": 994,
+   "internal": "EatersBone",
+   "en": "Eater's Bone",
+   "zh": "吞噬怪骨头",
+   "item_texture": "Images/Item_994",
+   "item_ref": "Terraria/Item.cs:12838",
+   "rare": 3,
+   "value": "sellPrice(0, 7, 50)",
+   "buff": 45,
+   "buff_internal": "BabyEater",
+   "buff_en": "Baby Eater",
+   "buff_zh": "吞噬怪宝宝",
+   "buff_texture": "Images/Buff_45",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9398",
+   "shoot": 175,
+   "spawn_ref": "Terraria/Player.cs:11577",
+   "player_flag": "eater",
+   "projectiles": [
+    {
+     "id": 175,
+     "internal": "BabyEater",
+     "en": "Baby Eater",
+     "zh": "吞噬怪宝宝",
+     "aiStyle": 26,
+     "width": 34,
+     "height": 34,
+     "scale": 1,
+     "hitbox_after_scale": [
+      34,
+      34
+     ],
+     "frames": 2,
+     "frames_ref": "Terraria/Main.cs:8766",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2614 (type == 175)",
+     "texture": "Images/Projectile_175",
+     "preview_anim": "SimpleLoop(0,2,8).WhenNotSelected(0,2,10).WithOffset(-4f,-6f).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_eater"
+    }
+   ],
+   "source_zh": "世界吞噬怪 1/20（非专家）；其宝藏袋 1/20",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:518",
+    "Terraria/Player.cs:7291-7293"
+   ]
+  },
+  {
+   "item": 1169,
+   "internal": "BoneKey",
+   "en": "Bone Key",
+   "zh": "骨头钥匙",
+   "item_texture": "Images/Item_1169",
+   "item_ref": "Terraria/Item.cs:14350",
+   "rare": 3,
+   "value": "sellPrice(0, 5)",
+   "buff": 50,
+   "buff_internal": "BabySkeletronHead",
+   "buff_en": "Baby Skeletron Head",
+   "buff_zh": "骷髅王头宝宝",
+   "buff_texture": "Images/Buff_50",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9399",
+   "shoot": 197,
+   "spawn_ref": "Terraria/Player.cs:11591",
+   "player_flag": "skeletron",
+   "projectiles": [
+    {
+     "id": 197,
+     "internal": "BabySkeletronHead",
+     "en": "Baby Skeletron Head",
+     "zh": "骷髅王头宝宝",
+     "aiStyle": 26,
+     "width": 42,
+     "height": 42,
+     "scale": 1,
+     "hitbox_after_scale": [
+      42,
+      42
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2833 (type == 197)",
+     "texture": "Images/Projectile_197",
+     "preview_anim": "SimpleLoop(0,0).WithOffset(-8f,-4f).WithCode(DelegateMethods.CharacterPreview.FloatAndSpinWhenWalking",
+     "ai26_variant": "fly_skeletron"
+    }
+   ],
+   "source_zh": "地牢守卫 100%",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:930"
+   ]
+  },
+  {
+   "item": 1170,
+   "internal": "Nectar",
+   "en": "Nectar",
+   "zh": "花蜜",
+   "item_texture": "Images/Item_1170",
+   "item_ref": "Terraria/Item.cs:14364",
+   "rare": 3,
+   "value": "sellPrice(0, 3)",
+   "buff": 51,
+   "buff_internal": "BabyHornet",
+   "buff_en": "Baby Hornet",
+   "buff_zh": "黄蜂宝宝",
+   "buff_texture": "Images/Buff_51",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9400",
+   "shoot": 198,
+   "spawn_ref": "Terraria/Player.cs:11605",
+   "player_flag": "hornet",
+   "projectiles": [
+    {
+     "id": 198,
+     "internal": "BabyHornet",
+     "en": "Baby Hornet",
+     "zh": "黄蜂宝宝",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8774",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2843 (type == 198)",
+     "texture": "Images/Projectile_198",
+     "preview_anim": "SimpleLoop(0,4).WhenNotSelected(0,4,4).WithOffset(-8f,-20f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover"
+    }
+   ],
+   "source_zh": "蜂王 1/15（非专家）；其宝藏袋 1/9",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:547",
+    "Terraria/Player.cs:7361-7363"
+   ]
+  },
+  {
+   "item": 1171,
+   "internal": "TikiTotem",
+   "en": "Tiki Totem",
+   "zh": "提基图腾",
+   "item_texture": "Images/Item_1171",
+   "item_ref": "Terraria/Item.cs:14378",
+   "rare": 3,
+   "value": "buyPrice(2)",
+   "buff": 52,
+   "buff_internal": "TikiSpirit",
+   "buff_en": "Tiki Spirit",
+   "buff_zh": "提基幽魂",
+   "buff_texture": "Images/Buff_52",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9401",
+   "shoot": 199,
+   "spawn_ref": "Terraria/Player.cs:11619",
+   "player_flag": "tiki",
+   "projectiles": [
+    {
+     "id": 199,
+     "internal": "TikiSpirit",
+     "en": "Tiki Spirit",
+     "zh": "提基幽魂",
+     "aiStyle": 26,
+     "width": 28,
+     "height": 28,
+     "scale": 1,
+     "hitbox_after_scale": [
+      28,
+      28
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8775",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2853 (type == 199)",
+     "texture": "Images/Projectile_199",
+     "preview_anim": "SimpleLoop(0,8,6).WhenNotSelected(0,8,6).WithOffset(-2f,-18f).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_tiki"
+    }
+   ],
+   "source_zh": "巫医商店：困难模式且玩家在丛林",
+   "source_refs": [
+    "Terraria/Chest.cs:2635-2637"
+   ]
+  },
+  {
+   "item": 1172,
+   "internal": "LizardEgg",
+   "en": "Lizard Egg",
+   "zh": "蜥蜴蛋",
+   "item_texture": "Images/Item_1172",
+   "item_ref": "Terraria/Item.cs:14392",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 53,
+   "buff_internal": "PetLizard",
+   "buff_en": "Pet Lizard",
+   "buff_zh": "宠物蜥蜴",
+   "buff_texture": "Images/Buff_53",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9402",
+   "shoot": 200,
+   "spawn_ref": "Terraria/Player.cs:11633",
+   "player_flag": "lizard",
+   "projectiles": [
+    {
+     "id": 200,
+     "internal": "PetLizard",
+     "en": "Pet Lizard",
+     "zh": "宠物蜥蜴",
+     "aiStyle": 26,
+     "width": 28,
+     "height": 28,
+     "scale": 1,
+     "hitbox_after_scale": [
+      28,
+      28
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8776",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2864 (type == 200)",
+     "texture": "Images/Projectile_200",
+     "preview_anim": "SimpleLoop(0,6,5).WhenNotSelected(0,0).WithOffset(-2f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "丛林蜥蜴/丛林蜥蜴（爬行）/飞蛇 1/1000",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:979-980"
+   ]
+  },
+  {
+   "item": 1180,
+   "internal": "ParrotCracker",
+   "en": "Parrot Cracker",
+   "zh": "鹦鹉饼干",
+   "item_texture": "Images/Item_1180",
+   "item_ref": "Terraria/Item.cs:14492",
+   "rare": 3,
+   "value": "sellPrice(0, 75)",
+   "buff": 54,
+   "buff_internal": "PetParrot",
+   "buff_en": "Pet Parrot",
+   "buff_zh": "宠物鹦鹉",
+   "buff_texture": "Images/Buff_54",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9403",
+   "shoot": 208,
+   "spawn_ref": "Terraria/Player.cs:11647",
+   "player_flag": "parrot",
+   "projectiles": [
+    {
+     "id": 208,
+     "internal": "Parrot",
+     "en": "Parrot",
+     "zh": "鹦鹉",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 36,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      36
+     ],
+     "frames": 5,
+     "frames_ref": "Terraria/Main.cs:8778",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2964 (type == 208)",
+     "texture": "Images/Projectile_208",
+     "preview_anim": "SimpleLoop(1,4,5).WhenNotSelected(1,4,7).WithOffset(-2f,-12f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "海盗商店：玩家在海洋",
+   "source_refs": [
+    "Terraria/Chest.cs:2682-2684"
+   ]
+  },
+  {
+   "item": 1181,
+   "internal": "StrangeGlowingMushroom",
+   "en": "Strange Glowing Mushroom",
+   "zh": "奇异发光蘑菇",
+   "item_texture": "Images/Item_1181",
+   "item_ref": "Terraria/Item.cs:14506",
+   "rare": 3,
+   "value": "buyPrice(0, 45)",
+   "buff": 55,
+   "buff_internal": "BabyTruffle",
+   "buff_en": "Baby Truffle",
+   "buff_zh": "松露人宝宝",
+   "buff_texture": "Images/Buff_55",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9404",
+   "shoot": 209,
+   "spawn_ref": "Terraria/Player.cs:11661",
+   "player_flag": "truffle",
+   "projectiles": [
+    {
+     "id": 209,
+     "internal": "Truffle",
+     "en": "Truffle",
+     "zh": "松露人",
+     "aiStyle": 26,
+     "width": 12,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      12,
+      32
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8779",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": 0.5,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2974 (type == 209)",
+     "texture": "Images/Projectile_209",
+     "preview_anim": "SimpleLoop(2,10,5).WhenNotSelected(0,0).WithOffset(6f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground",
+     "light": {
+      "rgb": [
+       0.15,
+       0.2,
+       0.875
+      ],
+      "how": "虽是普通宠物但 light=0.5：ProjLight R*0.3 G*0.4 B*1.75，再乘 (255-alpha)/255",
+      "refs": [
+       "Terraria/Projectile.cs:16711-16720"
+      ]
+     }
+    }
+   ],
+   "source_zh": "松露人商店（常驻）",
+   "source_refs": [
+    "Terraria/Chest.cs:2121"
+   ]
+  },
+  {
+   "item": 1182,
+   "internal": "Seedling",
+   "en": "Seedling",
+   "zh": "幼苗",
+   "item_texture": "Images/Item_1182",
+   "item_ref": "Terraria/Item.cs:14520",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 56,
+   "buff_internal": "PetSapling",
+   "buff_en": "Pet Sapling",
+   "buff_zh": "宠物树苗",
+   "buff_texture": "Images/Buff_56",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9405",
+   "shoot": 210,
+   "spawn_ref": "Terraria/Player.cs:11675",
+   "player_flag": "sapling",
+   "projectiles": [
+    {
+     "id": 210,
+     "internal": "Sapling",
+     "en": "Sapling",
+     "zh": "树苗",
+     "aiStyle": 26,
+     "width": 14,
+     "height": 30,
+     "scale": 1,
+     "hitbox_after_scale": [
+      14,
+      30
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8780",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:2984 (type == 210)",
+     "texture": "Images/Projectile_210",
+     "preview_anim": "SimpleLoop(1,6,6).WhenNotSelected(0,0).WithOffset(4f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "世纪之花 1/20（非专家）；其宝藏袋 1/15",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:421",
+    "Terraria/Player.cs:7463-7465"
+   ]
+  },
+  {
+   "item": 1183,
+   "internal": "WispinaBottle",
+   "en": "Wisp in a Bottle",
+   "zh": "妖灵瓶",
+   "item_texture": "Images/Item_1183",
+   "item_ref": "Terraria/Item.cs:14534",
+   "rare": 8,
+   "value": "sellPrice(0, 5, 50)",
+   "buff": 57,
+   "buff_internal": "Wisp",
+   "buff_en": "Wisp",
+   "buff_zh": "妖灵",
+   "buff_texture": "Images/Buff_57",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9474",
+   "shoot": 211,
+   "spawn_ref": "Terraria/Player.cs:11731",
+   "player_flag": "wisp",
+   "projectiles": [
+    {
+     "id": 211,
+     "internal": "Wisp",
+     "en": "Wisp",
+     "zh": "妖灵",
+     "aiStyle": 26,
+     "width": 24,
+     "height": 24,
+     "scale": 1,
+     "hitbox_after_scale": [
+      24,
+      24
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8781",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": 1.0,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:2994 (type == 211)",
+     "texture": "Images/Projectile_211",
+     "preview_anim": null,
+     "ai26_variant": "fly_wisp",
+     "light": {
+      "rgb": [
+       0.5,
+       0.9,
+       1.0
+      ],
+      "how": "light=1：(0.5,0.9,1)*light；localAI[0]==0 时 light 设为 1.5，否则 1（所以亮度在 1~1.5 倍之间）",
+      "refs": [
+       "Terraria/Projectile.cs:16697-16710"
+      ]
+     }
+    }
+   ],
+   "source_zh": "困难模式地牢敌怪 1/400（专家有重掷）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:271"
+   ]
+  },
+  {
+   "item": 1242,
+   "internal": "AmberMosquito",
+   "en": "Amber Mosquito",
+   "zh": "蚊子琥珀",
+   "item_texture": "Images/Item_1242",
+   "item_ref": "Terraria/Item.cs:15398",
+   "rare": 3,
+   "value": "sellPrice(0, 7, 50)",
+   "buff": 61,
+   "buff_internal": "BabyDinosaur",
+   "buff_en": "Baby Dinosaur",
+   "buff_zh": "恐龙宝宝",
+   "buff_texture": "Images/Buff_61",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9406",
+   "shoot": 236,
+   "spawn_ref": "Terraria/Player.cs:11507",
+   "player_flag": "dino",
+   "projectiles": [
+    {
+     "id": 236,
+     "internal": "BabyDino",
+     "en": "Baby Dino",
+     "zh": "恐龙宝宝",
+     "aiStyle": 26,
+     "width": 34,
+     "height": 34,
+     "scale": 1,
+     "hitbox_after_scale": [
+      34,
+      34
+     ],
+     "frames": 13,
+     "frames_ref": "Terraria/Main.cs:8788",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:3177 (type == 236)",
+     "texture": "Images/Projectile_236",
+     "preview_anim": "SimpleLoop(2,7,5).WhenNotSelected(0,0).WithOffset(-16f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "提炼机提炼泥沙/雪泥/沙漠化石",
+   "source_refs": [
+    "Terraria.GameContent/ExtractinatorHelper.cs:171-173"
+   ]
+  },
+  {
+   "item": 1311,
+   "internal": "EyeSpring",
+   "en": "Eye Spring",
+   "zh": "弹簧眼",
+   "item_texture": "Images/Item_1311",
+   "item_ref": "Terraria/Item.cs:16219",
+   "rare": 6,
+   "value": "sellPrice(0, 3)",
+   "buff": 65,
+   "buff_internal": "EyeballSpring",
+   "buff_en": "Eyeball Spring",
+   "buff_zh": "弹簧眼",
+   "buff_texture": "Images/Buff_65",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9408",
+   "shoot": 268,
+   "spawn_ref": "Terraria/Player.cs:11535",
+   "player_flag": "eyeSpring",
+   "projectiles": [
+    {
+     "id": 268,
+     "internal": "EyeSpring",
+     "en": "Eye Spring",
+     "zh": "弹簧眼",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      32
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8794",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:3540 (type == 268)",
+     "texture": "Images/Projectile_268",
+     "preview_anim": "SimpleLoop(0,6,6).WhenNotSelected(0,0).WithOffset(4f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "日食的眼怪 1/15",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:190"
+   ]
+  },
+  {
+   "item": 1312,
+   "internal": "ToySled",
+   "en": "Toy Sled",
+   "zh": "玩具雪橇",
+   "item_texture": "Images/Item_1312",
+   "item_ref": "Terraria/Item.cs:16233",
+   "rare": 6,
+   "value": "sellPrice(0, 2, 50)",
+   "buff": 66,
+   "buff_internal": "BabySnowman",
+   "buff_en": "Baby Snowman",
+   "buff_zh": "雪人宝宝",
+   "buff_texture": "Images/Buff_66",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9409",
+   "shoot": 269,
+   "spawn_ref": "Terraria/Player.cs:11549",
+   "player_flag": "snowman",
+   "projectiles": [
+    {
+     "id": 269,
+     "internal": "BabySnowman",
+     "en": "Baby Snowman",
+     "zh": "雪人宝宝",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      26
+     ],
+     "frames": 7,
+     "frames_ref": "Terraria/Main.cs:8795",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:3550 (type == 269)",
+     "texture": "Images/Projectile_269",
+     "preview_anim": "SimpleLoop(0,4,6).WhenNotSelected(0,0).WithOffset(0f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "冰雪宝箱怪 1/20",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:235"
+   ]
+  },
+  {
+   "item": 1798,
+   "internal": "SpiderEgg",
+   "en": "Spider Egg",
+   "zh": "蜘蛛卵",
+   "item_texture": "Images/Item_1798",
+   "item_ref": "Terraria/Item.cs:19932",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 81,
+   "buff_internal": "PetSpider",
+   "buff_en": "Pet Spider",
+   "buff_zh": "宠物蜘蛛",
+   "buff_texture": "Images/Buff_81",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9410",
+   "shoot": 313,
+   "spawn_ref": "Terraria/Player.cs:11703",
+   "player_flag": "spider",
+   "projectiles": [
+    {
+     "id": 313,
+     "internal": "Spider",
+     "en": "Spider",
+     "zh": "蜘蛛",
+     "aiStyle": 26,
+     "width": 30,
+     "height": 30,
+     "scale": 1,
+     "hitbox_after_scale": [
+      30,
+      30
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8797",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4059 (type == 313)",
+     "texture": "Images/Projectile_313",
+     "preview_anim": "SimpleLoop(0,4,5).WhenNotSelected(0,0).WithOffset(-6f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "南瓜王（南瓜月）掉落池之一",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:359"
+   ]
+  },
+  {
+   "item": 1799,
+   "internal": "MagicalPumpkinSeed",
+   "en": "Magical Pumpkin Seed",
+   "zh": "魔法南瓜子",
+   "item_texture": "Images/Item_1799",
+   "item_ref": "Terraria/Item.cs:19946",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 82,
+   "buff_internal": "Squashling",
+   "buff_en": "Squashling",
+   "buff_zh": "南瓜娃娃",
+   "buff_texture": "Images/Buff_82",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9411",
+   "shoot": 314,
+   "spawn_ref": "Terraria/Player.cs:11717",
+   "player_flag": "squashling",
+   "projectiles": [
+    {
+     "id": 314,
+     "internal": "Squashling",
+     "en": "Squashling",
+     "zh": "南瓜娃娃",
+     "aiStyle": 26,
+     "width": 24,
+     "height": 40,
+     "scale": 1,
+     "hitbox_after_scale": [
+      24,
+      40
+     ],
+     "frames": 13,
+     "frames_ref": "Terraria/Main.cs:8798",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4069 (type == 314)",
+     "texture": "Images/Projectile_314",
+     "preview_anim": "SimpleLoop(1,6,5).WhenNotSelected(0,0).WithOffset(-4f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "万圣节期间砍下南瓜 1/200",
+   "source_refs": [
+    "Terraria/WorldGen.cs:52858-52860"
+   ]
+  },
+  {
+   "item": 1810,
+   "internal": "UnluckyYarn",
+   "en": "Unlucky Yarn",
+   "zh": "霉运纱线",
+   "item_texture": "Images/Item_1810",
+   "item_ref": "Terraria/Item.cs:20050",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 84,
+   "buff_internal": "BlackCat",
+   "buff_en": "Black Cat",
+   "buff_zh": "黑猫",
+   "buff_texture": "Images/Buff_84",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9412",
+   "shoot": 319,
+   "spawn_ref": "Terraria/Player.cs:11493",
+   "player_flag": "blackCat",
+   "projectiles": [
+    {
+     "id": 319,
+     "internal": "BlackCat",
+     "en": "Black Cat",
+     "zh": "黑猫",
+     "aiStyle": 26,
+     "width": 36,
+     "height": 30,
+     "scale": 1,
+     "hitbox_after_scale": [
+      36,
+      30
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8799",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4122 (type == 319)",
+     "texture": "Images/Projectile_319",
+     "preview_anim": "SimpleLoop(2,4,6).WhenNotSelected(0,0).WithOffset(-14f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "万圣节礼袋 1/150",
+   "source_refs": [
+    "Terraria/Player.cs:9588-9593"
+   ]
+  },
+  {
+   "item": 1837,
+   "internal": "CursedSapling",
+   "en": "Cursed Sapling",
+   "zh": "诅咒树苗",
+   "item_texture": "Images/Item_1837",
+   "item_ref": "Terraria/Item.cs:20348",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 85,
+   "buff_internal": "CursedSapling",
+   "buff_en": "Cursed Sapling",
+   "buff_zh": "诅咒树苗",
+   "buff_texture": "Images/Buff_85",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9413",
+   "shoot": 324,
+   "spawn_ref": "Terraria/Player.cs:11689",
+   "player_flag": "cSapling",
+   "projectiles": [
+    {
+     "id": 324,
+     "internal": "CursedSapling",
+     "en": "Cursed Sapling",
+     "zh": "诅咒树苗",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 38,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      38
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8709",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4174 (type == 324)",
+     "texture": "Images/Projectile_324",
+     "preview_anim": "SimpleLoop(2,4,6).WhenNotSelected(0,0).WithOffset(-4f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground",
+     "light": {
+      "rgb": [
+       0.9,
+       0.6,
+       0.2
+      ],
+      "how": "诅咒树苗飞行模式时 Lighting.AddLight(0.9,0.6,0.2)",
+      "refs": [
+       "Terraria/Projectile.cs:62241"
+      ]
+     }
+    }
+   ],
+   "source_zh": "哀木（南瓜月）掉落池之一",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:349"
+   ]
+  },
+  {
+   "item": 1927,
+   "internal": "DogWhistle",
+   "en": "Dog Whistle",
+   "zh": "狗哨",
+   "item_texture": "Images/Item_1927",
+   "item_ref": "Terraria/Item.cs:20906",
+   "rare": 3,
+   "value": 0,
+   "buff": 91,
+   "buff_internal": "Puppy",
+   "buff_en": "Puppy",
+   "buff_zh": "小狗",
+   "buff_texture": "Images/Buff_91",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9414",
+   "shoot": 334,
+   "spawn_ref": "Terraria/Player.cs:11465",
+   "player_flag": "puppy",
+   "projectiles": [
+    {
+     "id": 334,
+     "internal": "Puppy",
+     "en": "Puppy",
+     "zh": "小狗",
+     "aiStyle": 26,
+     "width": 28,
+     "height": 28,
+     "scale": 1,
+     "hitbox_after_scale": [
+      28,
+      28
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8708",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4270 (type == 334)",
+     "texture": "Images/Projectile_334",
+     "preview_anim": "SimpleLoop(2,5,5).WhenNotSelected(0,0).WithOffset(-10f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "圣诞礼物 1/400",
+   "source_refs": [
+    "Terraria/Player.cs:7035-7048"
+   ]
+  },
+  {
+   "item": 1959,
+   "internal": "BabyGrinchMischiefWhistle",
+   "en": "Baby Grinch's Mischief Whistle",
+   "zh": "格林奇宝宝的恶作剧口哨",
+   "item_texture": "Images/Item_1959",
+   "item_ref": "Terraria/Item.cs:21156",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 92,
+   "buff_internal": "BabyGrinch",
+   "buff_en": "Baby Grinch",
+   "buff_zh": "格林奇宝宝",
+   "buff_texture": "Images/Buff_92",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9415",
+   "shoot": 353,
+   "spawn_ref": "Terraria/Player.cs:11479",
+   "player_flag": "grinch",
+   "projectiles": [
+    {
+     "id": 353,
+     "internal": "BabyGrinch",
+     "en": "Baby Grinch",
+     "zh": "格林奇宝宝",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 28,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      28
+     ],
+     "frames": 14,
+     "frames_ref": "Terraria/Main.cs:8745",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4432 (type == 353)",
+     "texture": "Images/Projectile_353",
+     "preview_anim": "SimpleLoop(2,8,6).WhenNotSelected(0,0).WithOffset(4f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "冰雪女王（霜月）1/15",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:380"
+   ]
+  },
+  {
+   "item": 2420,
+   "internal": "ZephyrFish",
+   "en": "Zephyr Fish",
+   "zh": "和风鱼",
+   "item_texture": "Images/Item_2420",
+   "item_ref": "Terraria/Item.cs:23997",
+   "rare": 3,
+   "value": "sellPrice(0, 3)",
+   "buff": 127,
+   "buff_internal": "ZephyrFish",
+   "buff_en": "Zephyr Fish",
+   "buff_zh": "和风鱼",
+   "buff_texture": "Images/Buff_127",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9416",
+   "shoot": 380,
+   "spawn_ref": "Terraria/Player.cs:11766",
+   "player_flag": "zephyrfish",
+   "projectiles": [
+    {
+     "id": 380,
+     "internal": "ZephyrFish",
+     "en": "Zephyr Fish",
+     "zh": "和风鱼",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8804",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4647 (type == 380)",
+     "texture": "Images/Projectile_380",
+     "preview_anim": "SimpleLoop(0,4,6).WithOffset(-10f,-20f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover"
+    }
+   ],
+   "source_zh": "钓鱼：传奇（Legendary）稀有度",
+   "source_refs": [
+    "Terraria.GameContent.FishDropRules/GameContentFishDropPopulator.cs:200"
+   ]
+  },
+  {
+   "item": 2587,
+   "internal": "TartarSauce",
+   "en": "Beguiling Lyre",
+   "zh": "魅惑里拉琴",
+   "item_texture": "Images/Item_2587",
+   "item_ref": "Terraria/Item.cs:25390",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 136,
+   "buff_internal": "MiniMinotaur",
+   "buff_en": "Faun",
+   "buff_zh": "福恩",
+   "buff_texture": "Images/Buff_136",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9417",
+   "shoot": 398,
+   "spawn_ref": "Terraria/Player.cs:11780",
+   "player_flag": "miniMinotaur",
+   "projectiles": [
+    {
+     "id": 398,
+     "internal": "MiniMinotaur",
+     "en": "Faun",
+     "zh": "福恩",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 40,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      40
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8702",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:4793 (type == 398)",
+     "texture": "Images/Projectile_398",
+     "preview_anim": "SimpleLoop(1,6,6).WhenNotSelected(0,0).WithOffset(6f,0f",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "铁匣/秘银匣 1/20",
+   "source_refs": [
+    "Terraria/Player.cs:8293-8310"
+   ]
+  },
+  {
+   "item": 3043,
+   "internal": "MagicLantern",
+   "en": "Magic Lantern",
+   "zh": "魔法灯笼",
+   "item_texture": "Images/Item_3043",
+   "item_ref": "Terraria/Item.cs:28147",
+   "rare": 3,
+   "value": "buyPrice(0, 10)",
+   "buff": 152,
+   "buff_internal": "MagicLantern",
+   "buff_en": "Magic Lantern",
+   "buff_zh": "魔法灯笼",
+   "buff_texture": "Images/Buff_152",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9476",
+   "shoot": 492,
+   "spawn_ref": "Terraria/Player.cs:11456",
+   "player_flag": "magicLantern",
+   "projectiles": [
+    {
+     "id": 492,
+     "internal": "MagicLantern",
+     "en": "Magic Lantern",
+     "zh": "魔法灯笼",
+     "aiStyle": 90,
+     "width": 18,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      32
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8664",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:5647 (type == 492)",
+     "texture": "Images/Projectile_492",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.35,
+       0.35,
+       0.1
+      ],
+      "how": "AI 中 Lighting.AddLight(position, 0.35,0.35,0.1)；另有 17 格半径宝藏高亮",
+      "refs": [
+       "Terraria/Projectile.cs:32992"
+      ]
+     }
+    }
+   ],
+   "source_zh": "骷髅商人：满月（moonPhase==0）夜晚",
+   "source_refs": [
+    "Terraria/Chest.cs:2947-2949"
+   ]
+  },
+  {
+   "item": 3060,
+   "internal": "BoneRattle",
+   "en": "Bone Rattle",
+   "zh": "骨头拨浪鼓",
+   "item_texture": "Images/Item_3060",
+   "item_ref": "Terraria/Item.cs:28295",
+   "rare": 3,
+   "value": "sellPrice(0, 7, 50)",
+   "buff": 154,
+   "buff_internal": "BabyFaceMonster",
+   "buff_en": "Baby Face Monster",
+   "buff_zh": "脸怪宝宝",
+   "buff_texture": "Images/Buff_154",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9407",
+   "shoot": 499,
+   "spawn_ref": "Terraria/Player.cs:11521",
+   "player_flag": "babyFaceMonster",
+   "projectiles": [
+    {
+     "id": 499,
+     "internal": "BabyFaceMonster",
+     "en": "Baby Face Monster",
+     "zh": "脸怪宝宝",
+     "aiStyle": 26,
+     "width": 34,
+     "height": 34,
+     "scale": 1,
+     "hitbox_after_scale": [
+      34,
+      34
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8666",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:5427 (type == 499)",
+     "texture": "Images/Projectile_499",
+     "preview_anim": "SimpleLoop(2,6,7).WhenNotSelected(0,0).WithOffset(-18f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "克苏鲁之脑 1/20（非专家）；其宝藏袋 1/20",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:500",
+    "Terraria/Player.cs:7329-7331"
+   ]
+  },
+  {
+   "item": 3062,
+   "internal": "CrimsonHeart",
+   "en": "Crimson Heart",
+   "zh": "猩红之心",
+   "item_texture": "Images/Item_3062",
+   "item_ref": "Terraria/Item.cs:28309",
+   "rare": 1,
+   "value": "shadowOrbPrice",
+   "buff": 155,
+   "buff_internal": "CrimsonHeart",
+   "buff_en": "Crimson Heart",
+   "buff_zh": "猩红之心",
+   "buff_texture": "Images/Buff_155",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9470",
+   "shoot": 500,
+   "spawn_ref": "Terraria/Player.cs:11106",
+   "player_flag": "crimsonHeart",
+   "projectiles": [
+    {
+     "id": 500,
+     "internal": "CrimsonHeart",
+     "en": "Crimson Heart",
+     "zh": "猩红之心",
+     "aiStyle": 67,
+     "width": 20,
+     "height": 20,
+     "scale": 0.8,
+     "hitbox_after_scale": [
+      16,
+      16
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8665",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": false,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:5415 (type == 500)",
+     "texture": "Images/Projectile_500",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.9,
+       0.1,
+       0.3
+      ],
+      "how": "AI_067 中 Lighting.AddLight(Center, 0.9,0.1,0.3)",
+      "refs": [
+       "Terraria/Projectile.cs:50356-50358"
+      ]
+     }
+    }
+   ],
+   "source_zh": "打破猩红之地的猩红之心（CheckOrb 轮换掉落）；猩红匣/血匣开出",
+   "source_refs": [
+    "Terraria/WorldGen.cs:54737-54738",
+    "Terraria/Player.cs:8670-8678"
+   ]
+  },
+  {
+   "item": 3577,
+   "internal": "SuspiciousLookingTentacle",
+   "en": "Suspicious Looking Tentacle",
+   "zh": "可疑触手",
+   "item_texture": "Images/Item_3577",
+   "item_ref": "Terraria/Item.cs:32258",
+   "rare": 10,
+   "value": "sellPrice(0, 10)",
+   "buff": 190,
+   "buff_internal": "SuspiciousTentacle",
+   "buff_en": "Suspicious Looking Eye",
+   "buff_zh": "可疑眼球",
+   "buff_texture": "Images/Buff_190",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9475",
+   "shoot": 650,
+   "spawn_ref": "Terraria/Player.cs:11341",
+   "player_flag": "suspiciouslookingTentacle",
+   "projectiles": [
+    {
+     "id": 650,
+     "internal": "SuspiciousTentacle",
+     "en": "Suspicious Looking Tentacle",
+     "zh": "可疑触手",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8681",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": false,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:6979 (type == 650)",
+     "texture": "Images/Projectile_650",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       1.0,
+       1.8,
+       2.0
+      ],
+      "how": "DelegateMethods.v3_1=(0.5,0.9,1)*2，用 Utils.PlotTileLine+CastLightOpen 沿\"自身中心→速度*6\"(宽20)、自身左右、玩家中心→玩家速度*6(宽40)、玩家左右 四条线逐格加光（只照非实心格）",
+      "refs": [
+       "Terraria/Projectile.cs:35657-35665",
+       "Terraria/DelegateMethods.cs:729-741"
+      ]
+     }
+    }
+   ],
+   "source_zh": "月亮领主宝藏袋（专家/大师）",
+   "source_refs": [
+    "Terraria/Player.cs:7737-7754"
+   ]
+  },
+  {
+   "item": 3628,
+   "internal": "CompanionCube",
+   "en": "Companion Cube",
+   "zh": "同伴方块",
+   "item_texture": "Images/Item_3628",
+   "item_ref": "Terraria/Item.cs:32704",
+   "rare": 1,
+   "value": "buyPrice(5)",
+   "buff": 191,
+   "buff_internal": "CompanionCube",
+   "buff_en": "Companion Cube",
+   "buff_zh": "同伴方块",
+   "buff_texture": "Images/Buff_191",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9418",
+   "shoot": 653,
+   "spawn_ref": "Terraria/Player.cs:11120",
+   "player_flag": "companionCube",
+   "projectiles": [
+    {
+     "id": 653,
+     "internal": "CompanionCube",
+     "en": "Companion Cube",
+     "zh": "同伴方块",
+     "aiStyle": 67,
+     "width": 30,
+     "height": 30,
+     "scale": 0.8,
+     "hitbox_after_scale": [
+      24,
+      24
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7014 (type == 653)",
+     "texture": "Images/Projectile_653",
+     "preview_anim": "SimpleLoop(0,0).WithOffset(-2f,0f).WithCode(DelegateMethods.CharacterPreview.CompanionCubePet"
+    }
+   ],
+   "source_zh": "旅商随机商品（稀有度槽 rarity[3]）",
+   "source_refs": [
+    "Terraria/Chest.cs:1052-1054"
+   ]
+  },
+  {
+   "item": 3855,
+   "internal": "DD2PetGato",
+   "en": "Gato Egg",
+   "zh": "Gato蛋",
+   "item_texture": "Images/Item_3855",
+   "item_ref": "Terraria/Item.cs:34022",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 200,
+   "buff_internal": "PetDD2Gato",
+   "buff_en": "Propeller Gato",
+   "buff_zh": "飞翔Gato",
+   "buff_texture": "Images/Buff_200",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9420",
+   "shoot": 703,
+   "spawn_ref": "Terraria/Player.cs:11329",
+   "player_flag": "petFlagDD2Gato",
+   "projectiles": [
+    {
+     "id": 703,
+     "internal": "DD2PetGato",
+     "en": "Propeller Gato",
+     "zh": "飞翔Gato",
+     "aiStyle": 144,
+     "width": 20,
+     "height": 20,
+     "scale": 1.0,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8807",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7435 (type == 703 || type == 701 || type == 702)",
+     "texture": "Images/Projectile_703",
+     "preview_anim": "SimpleLoop(0,4).WhenNotSelected(0,4,4).WithOffset(4f,-10f).WithCode(DelegateMethods.CharacterPreview.Float"
+    }
+   ],
+   "source_zh": "撒旦军队：黑暗魔法师 T1 1/3（专家 1/2，与龙蛋二选一）；T3 1/6",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:770",
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:777"
+   ]
+  },
+  {
+   "item": 3856,
+   "internal": "DD2PetGhost",
+   "en": "Creeper Egg",
+   "zh": "飞眼怪蛋",
+   "item_texture": "Images/Item_3856",
+   "item_ref": "Terraria/Item.cs:34023",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 201,
+   "buff_internal": "PetDD2Ghost",
+   "buff_en": "Flickerwick",
+   "buff_zh": "闪烁灯芯",
+   "buff_texture": "Images/Buff_201",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9477",
+   "shoot": 702,
+   "spawn_ref": "Terraria/Player.cs:11333",
+   "player_flag": "petFlagDD2Ghost",
+   "projectiles": [
+    {
+     "id": 702,
+     "internal": "DD2PetGhost",
+     "en": "Flickerwick",
+     "zh": "闪烁灯芯",
+     "aiStyle": 144,
+     "width": 20,
+     "height": 20,
+     "scale": 1.0,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8809",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:7435 (type == 703 || type == 701 || type == 702)",
+     "texture": "Images/Projectile_702",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       0.3,
+       0.5,
+       1.0
+      ],
+      "how": "v3_1=(0.3,0.5,1)，同上四条 CastLightOpen 线",
+      "refs": [
+       "Terraria/Projectile.cs:71182-71186"
+      ]
+     }
+    }
+   ],
+   "source_zh": "撒旦军队：食人魔 T2 1/5（专家 1/4）；食人魔 T3 1/10",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:756",
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:764"
+   ]
+  },
+  {
+   "item": 3857,
+   "internal": "DD2PetDragon",
+   "en": "Dragon Egg",
+   "zh": "龙蛋",
+   "item_texture": "Images/Item_3857",
+   "item_ref": "Terraria/Item.cs:34024",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 202,
+   "buff_internal": "PetDD2Dragon",
+   "buff_en": "Hoardagron",
+   "buff_zh": "Hoardagron",
+   "buff_texture": "Images/Buff_202",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9419",
+   "shoot": 701,
+   "spawn_ref": "Terraria/Player.cs:11124",
+   "player_flag": "petFlagDD2Dragon",
+   "projectiles": [
+    {
+     "id": 701,
+     "internal": "DD2PetDragon",
+     "en": "Hoardagron",
+     "zh": "Hoardagron",
+     "aiStyle": 144,
+     "width": 20,
+     "height": 20,
+     "scale": 1.0,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 3,
+     "frames_ref": "Terraria/Main.cs:8808",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7435 (type == 703 || type == 701 || type == 702)",
+     "texture": "Images/Projectile_701",
+     "preview_anim": "SimpleLoop(0,3,6).WhenNotSelected(0,3,6).WithOffset(-2f,-18f).WithCode(DelegateMethods.CharacterPreview.Float"
+    }
+   ],
+   "source_zh": "撒旦军队：黑暗魔法师 T1 1/3（专家 1/2，与 Gato 蛋二选一）；T3 1/6",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:770",
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:777"
+   ]
+  },
+  {
+   "item": 4365,
+   "internal": "CelestialWand",
+   "en": "Celestial Wand",
+   "zh": "天界魔棒",
+   "item_texture": "Images/Item_4365",
+   "item_ref": "Terraria/Item.cs:37229",
+   "rare": 5,
+   "value": "buyPrice(1)",
+   "buff": 217,
+   "buff_internal": "UpbeatStar",
+   "buff_en": "Estee",
+   "buff_zh": "埃斯蒂",
+   "buff_texture": "Images/Buff_217",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9423",
+   "shoot": 764,
+   "spawn_ref": "Terraria/Player.cs:11128",
+   "player_flag": "petFlagUpbeatStar",
+   "projectiles": [
+    {
+     "id": 764,
+     "internal": "UpbeatStar",
+     "en": "Estee",
+     "zh": "埃斯蒂",
+     "aiStyle": 144,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7868 (type == 764)",
+     "texture": "Images/Projectile_764",
+     "preview_anim": "SimpleLoop(0,0).WithOffset(2f,-18f).WithCode(DelegateMethods.CharacterPreview.EtsyPet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "旅商：抽到星星公主王冠时同时上架（与公主裙一起）",
+   "source_refs": [
+    "Terraria/Chest.cs:737-742"
+   ]
+  },
+  {
+   "item": 4366,
+   "internal": "EucaluptusSap",
+   "en": "Eucalyptus Sap",
+   "zh": "桉树汁",
+   "item_texture": "Images/Item_4366",
+   "item_ref": "Terraria/Item.cs:37233",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 218,
+   "buff_internal": "SugarGlider",
+   "buff_en": "Sugar Glider",
+   "buff_zh": "蜜袋鼯",
+   "buff_texture": "Images/Buff_218",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9421",
+   "shoot": 765,
+   "spawn_ref": "Terraria/Player.cs:11337",
+   "player_flag": "petFlagSugarGlider",
+   "projectiles": [
+    {
+     "id": 765,
+     "internal": "SugarGlider",
+     "en": "Sugar Glider",
+     "zh": "蜜袋鼯",
+     "aiStyle": 26,
+     "width": 18,
+     "height": 18,
+     "scale": 1,
+     "hitbox_after_scale": [
+      18,
+      18
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8688",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7881 (type == 765)",
+     "texture": "Images/Projectile_765",
+     "preview_anim": "SimpleLoop(2,4,6).WhenNotSelected(0,0).WithOffset(-4f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "摇森林树 1/1000",
+   "source_refs": [
+    "Terraria/WorldGen.cs:63717-63719"
+   ]
+  },
+  {
+   "item": 4425,
+   "internal": "SharkBait",
+   "en": "Shark Bait",
+   "zh": "鲨鱼鱼饵",
+   "item_texture": "Images/Item_4425",
+   "item_ref": "Terraria/Item.cs:37479",
+   "rare": 5,
+   "value": "sellPrice(0, 1)",
+   "buff": 219,
+   "buff_internal": "SharkPup",
+   "buff_en": "Shark Pup",
+   "buff_zh": "小鲨鱼",
+   "buff_texture": "Images/Buff_219",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9422",
+   "shoot": 774,
+   "spawn_ref": "Terraria/Player.cs:11132",
+   "player_flag": "petFlagBabyShark",
+   "projectiles": [
+    {
+     "id": 774,
+     "internal": "SharkPup",
+     "en": "Shark Pup",
+     "zh": "小鲨鱼",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8818",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7913 (type == 774)",
+     "texture": "Images/Projectile_774",
+     "preview_anim": "SimpleLoop(4,4,6).WithOffset(-14f,-24f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover"
+    }
+   ],
+   "source_zh": "水中箱（海洋）；海洋匣/海边匣 1/10",
+   "source_refs": [
+    "Terraria/WorldGen.cs:36904-36908",
+    "Terraria/Player.cs:9018-9038"
+   ]
+  },
+  {
+   "item": 4550,
+   "internal": "BambooLeaf",
+   "en": "Bamboo Leaf",
+   "zh": "竹叶",
+   "item_texture": "Images/Item_4550",
+   "item_ref": "Terraria/Item.cs:38272",
+   "rare": 3,
+   "value": "buyPrice(0, 75)",
+   "buff": 262,
+   "buff_internal": "BabyRedPanda",
+   "buff_en": "Baby Red Panda",
+   "buff_zh": "小熊猫宝宝",
+   "buff_texture": "Images/Buff_262",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9428",
+   "shoot": 825,
+   "spawn_ref": "Terraria/Player.cs:11152",
+   "player_flag": "petFlagBabyRedPanda",
+   "projectiles": [
+    {
+     "id": 825,
+     "internal": "BabyRedPanda",
+     "en": "Baby Red Panda",
+     "zh": "小熊猫宝宝",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      32
+     ],
+     "frames": 26,
+     "frames_ref": "Terraria/Main.cs:8825",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8047 (type == 825)",
+     "texture": "Images/Projectile_825",
+     "preview_anim": "SimpleLoop(14,6,6).WhenNotSelected(0,0).WithOffset(-6f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "旅商随机商品（rarity[3]）",
+   "source_refs": [
+    "Terraria/Chest.cs:1076-1078"
+   ]
+  },
+  {
+   "item": 4551,
+   "internal": "HellCake",
+   "en": "Slice of Hell Cake",
+   "zh": "地狱蛋糕块",
+   "item_texture": "Images/Item_4551",
+   "item_ref": "Terraria/Item.cs:38227",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 261,
+   "buff_internal": "BabyImp",
+   "buff_en": "Baby Imp",
+   "buff_zh": "小鬼宝宝",
+   "buff_texture": "Images/Buff_261",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9427",
+   "shoot": 821,
+   "spawn_ref": "Terraria/Player.cs:11148",
+   "player_flag": "petFlagBabyImp",
+   "projectiles": [
+    {
+     "id": 821,
+     "internal": "BabyImp",
+     "en": "Baby Imp",
+     "zh": "小鬼宝宝",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 36,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      36
+     ],
+     "frames": 23,
+     "frames_ref": "Terraria/Main.cs:8823",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8032 (type == 821)",
+     "texture": "Images/Projectile_821",
+     "preview_anim": "SimpleLoop(13,6,6).WhenNotSelected(0,0).WithOffset(0f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "暗影箱（地狱）1/10；黑曜石匣/狱石匣 1/20",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37574-37576",
+    "Terraria/Player.cs:9300-9302"
+   ]
+  },
+  {
+   "item": 4603,
+   "internal": "BirdieRattle",
+   "en": "Birdie Rattle",
+   "zh": "小鸟拨浪鼓",
+   "item_texture": "Images/Item_4603",
+   "item_ref": "Terraria/Item.cs:37980",
+   "rare": 3,
+   "value": "buyPrice(0, 50)",
+   "buff": 258,
+   "buff_internal": "LilHarpy",
+   "buff_en": "Lil' Harpy",
+   "buff_zh": "小鸟妖",
+   "buff_texture": "Images/Buff_258",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9424",
+   "shoot": 815,
+   "spawn_ref": "Terraria/Player.cs:11136",
+   "player_flag": "petFlagLilHarpy",
+   "projectiles": [
+    {
+     "id": 815,
+     "internal": "LilHarpy",
+     "en": "Lil' Harpy",
+     "zh": "小鸟妖",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8820",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7965 (type == 815)",
+     "texture": "Images/Projectile_815",
+     "preview_anim": "SimpleLoop(0,6,6).WhenNotSelected(0,6,6).WithOffset(-20f,-30f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover"
+    }
+   ],
+   "source_zh": "旅商随机商品（rarity[3]）",
+   "source_refs": [
+    "Terraria/Chest.cs:1060-1062"
+   ]
+  },
+  {
+   "item": 4604,
+   "internal": "ExoticEasternChewToy",
+   "en": "Exotic Chew Toy",
+   "zh": "奇异咀嚼玩具",
+   "item_texture": "Images/Item_4604",
+   "item_ref": "Terraria/Item.cs:37984",
+   "rare": 3,
+   "value": "buyPrice(1)",
+   "buff": 259,
+   "buff_internal": "FennecFox",
+   "buff_en": "Fennec Fox",
+   "buff_zh": "耳廓狐",
+   "buff_texture": "Images/Buff_259",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9425",
+   "shoot": 816,
+   "spawn_ref": "Terraria/Player.cs:11140",
+   "player_flag": "petFlagFennecFox",
+   "projectiles": [
+    {
+     "id": 816,
+     "internal": "FennecFox",
+     "en": "Fennec Fox",
+     "zh": "耳廓狐",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      32
+     ],
+     "frames": 17,
+     "frames_ref": "Terraria/Main.cs:8821",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7975 (type == 816)",
+     "texture": "Images/Projectile_816",
+     "preview_anim": "SimpleLoop(4,7,6).WhenNotSelected(0,0).WithOffset(-10f,0f).WithSpriteDirection(-1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "旅商随机商品（rarity[3]）",
+   "source_refs": [
+    "Terraria/Chest.cs:1064-1066"
+   ]
+  },
+  {
+   "item": 4605,
+   "internal": "BedazzledNectar",
+   "en": "Bedazzled Nectar",
+   "zh": "眩晕花蜜",
+   "item_texture": "Images/Item_4605",
+   "item_ref": "Terraria/Item.cs:37988",
+   "rare": 3,
+   "value": "buyPrice(1)",
+   "buff": 260,
+   "buff_internal": "GlitteryButterfly",
+   "buff_en": "Glittery Butterfly",
+   "buff_zh": "闪光蝴蝶",
+   "buff_texture": "Images/Buff_260",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9426",
+   "shoot": 817,
+   "spawn_ref": "Terraria/Player.cs:11144",
+   "player_flag": "petFlagGlitteryButterfly",
+   "projectiles": [
+    {
+     "id": 817,
+     "internal": "GlitteryButterfly",
+     "en": "Glittery Butterfly",
+     "zh": "闪光蝴蝶",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 18,
+     "frames_ref": "Terraria/Main.cs:8822",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:7985 (type == 817)",
+     "texture": "Images/Projectile_817",
+     "preview_anim": "SimpleLoop(0,3,6,bounceLoop:true).WithSpriteDirection(-1).WithOffset(-6f,-12f).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover"
+    }
+   ],
+   "source_zh": "旅商随机商品（rarity[3]）",
+   "source_refs": [
+    "Terraria/Chest.cs:1072-1074"
+   ]
+  },
+  {
+   "item": 4701,
+   "internal": "MudBud",
+   "en": "Mud Bud",
+   "zh": "泥芽",
+   "item_texture": "Images/Item_4701",
+   "item_ref": "Terraria/Item.cs:38641",
+   "rare": 3,
+   "value": "buyPrice(0, 50)",
+   "buff": 264,
+   "buff_internal": "Plantero",
+   "buff_en": "Plantero",
+   "buff_zh": "微型世纪之花",
+   "buff_texture": "Images/Buff_264",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9429",
+   "shoot": 854,
+   "spawn_ref": "Terraria/Player.cs:11156",
+   "player_flag": "petFlagPlantero",
+   "projectiles": [
+    {
+     "id": 854,
+     "internal": "Plantero",
+     "en": "Plantero",
+     "zh": "微型世纪之花",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      32
+     ],
+     "frames": 19,
+     "frames_ref": "Terraria/Main.cs:8840",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8189 (type == 854)",
+     "texture": "Images/Projectile_854",
+     "preview_anim": "SimpleLoop(0,4,6).WithOffset(6f,0f).WithSpriteDirection(-1).WhenSelected(4,9,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "动物学家商店：击败世纪之花后",
+   "source_refs": [
+    "Terraria/Chest.cs:3344"
+   ]
+  },
+  {
+   "item": 4735,
+   "internal": "BallOfFuseWire",
+   "en": "Ball O' Fuse Wire",
+   "zh": "保险丝球",
+   "item_texture": "Images/Item_4735",
+   "item_ref": "Terraria/Item.cs:38938",
+   "rare": 3,
+   "value": "buyPrice(0, 50)",
+   "buff": 266,
+   "buff_internal": "DynamiteKitten",
+   "buff_en": "Dynamite Kitten",
+   "buff_zh": "雷管小猫",
+   "buff_texture": "Images/Buff_266",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9430",
+   "shoot": 858,
+   "spawn_ref": "Terraria/Player.cs:11160",
+   "player_flag": "petFlagDynamiteKitten",
+   "projectiles": [
+    {
+     "id": 858,
+     "internal": "DynamiteKitten",
+     "en": "Dynamite Kitten",
+     "zh": "雷管小猫",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      20
+     ],
+     "frames": 14,
+     "frames_ref": "Terraria/Main.cs:8842",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8239 (type == 858)",
+     "texture": "Images/Projectile_858",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(-6f,0f).WithSpriteDirection(-1).WhenSelected(2,8,4",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "动物学家商店：图鉴完成度 ≥70%",
+   "source_refs": [
+    "Terraria/Chest.cs:3364"
+   ]
+  },
+  {
+   "item": 4736,
+   "internal": "FullMoonSqueakyToy",
+   "en": "Full Moon Squeaky Toy",
+   "zh": "满月尖叫玩具",
+   "item_texture": "Images/Item_4736",
+   "item_ref": "Terraria/Item.cs:38942",
+   "rare": 3,
+   "value": "buyPrice(0, 30)",
+   "buff": 267,
+   "buff_internal": "BabyWerewolf",
+   "buff_en": "Baby Werewolf",
+   "buff_zh": "狼人宝宝",
+   "buff_texture": "Images/Buff_267",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9431",
+   "shoot": 859,
+   "spawn_ref": "Terraria/Player.cs:11164",
+   "player_flag": "petFlagBabyWerewolf",
+   "projectiles": [
+    {
+     "id": 859,
+     "internal": "BabyWerewolf",
+     "en": "Baby Werewolf",
+     "zh": "狼人宝宝",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      32
+     ],
+     "frames": 24,
+     "frames_ref": "Terraria/Main.cs:8843",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8249 (type == 859)",
+     "texture": "Images/Projectile_859",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(4f,0f).WithSpriteDirection(-1).WhenSelected(5,13,3",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "动物学家商店：困难模式血月",
+   "source_refs": [
+    "Terraria/Chest.cs:3340"
+   ]
+  },
+  {
+   "item": 4737,
+   "internal": "OrnateShadowKey",
+   "en": "Ornate Shadow Key",
+   "zh": "华丽暗影钥匙",
+   "item_texture": "Images/Item_4737",
+   "item_ref": "Terraria/Item.cs:38946",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 268,
+   "buff_internal": "ShadowMimic",
+   "buff_en": "Shadow Mimic",
+   "buff_zh": "暗影宝箱怪",
+   "buff_texture": "Images/Buff_268",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9432",
+   "shoot": 860,
+   "spawn_ref": "Terraria/Player.cs:11168",
+   "player_flag": "petFlagShadowMimic",
+   "projectiles": [
+    {
+     "id": 860,
+     "internal": "ShadowMimic",
+     "en": "Shadow Mimic",
+     "zh": "暗影宝箱怪",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 14,
+     "frames_ref": "Terraria/Main.cs:8844",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8259 (type == 860)",
+     "texture": "Images/Projectile_860",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,0f).WithSpriteDirection(-1).WhenSelected(5,1",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "暗影箱（地狱）1/10；黑曜石匣/狱石匣 1/20",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37569-37571",
+    "Terraria/Player.cs:9295-9297"
+   ]
+  },
+  {
+   "item": 4777,
+   "internal": "LightningCarrot",
+   "en": "Lightning Carrot",
+   "zh": "闪电胡萝卜",
+   "item_texture": "Images/Item_4777",
+   "item_ref": "Terraria/Item.cs:39298",
+   "rare": 3,
+   "value": "buyPrice(0, 50)",
+   "buff": 274,
+   "buff_internal": "VoltBunny",
+   "buff_en": "Volt Bunny",
+   "buff_zh": "伏特兔",
+   "buff_texture": "Images/Buff_274",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9433",
+   "shoot": 875,
+   "spawn_ref": "Terraria/Player.cs:11172",
+   "player_flag": "petFlagVoltBunny",
+   "projectiles": [
+    {
+     "id": 875,
+     "internal": "VoltBunny",
+     "en": "Volt Bunny",
+     "zh": "伏特兔",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8849",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8395 (type == 875)",
+     "texture": "Images/Projectile_875",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(4f,0f).WithSpriteDirection(-1).WhenSelected(0,7,4",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "动物学家商店：图鉴完成度 ≥50%",
+   "source_refs": [
+    "Terraria/Chest.cs:3360"
+   ]
+  },
+  {
+   "item": 4797,
+   "internal": "KingSlimePetItem",
+   "en": "Royal Delight",
+   "zh": "皇家美味",
+   "item_texture": "Images/Item_4797",
+   "item_ref": "Terraria/Item.cs:39417",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 284,
+   "buff_internal": "KingSlimePet",
+   "buff_en": "Slime Prince",
+   "buff_zh": "史莱姆王子",
+   "buff_texture": "Images/Buff_284",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9434",
+   "shoot": 881,
+   "spawn_ref": "Terraria/Player.cs:11176",
+   "player_flag": "petFlagKingSlimePet",
+   "projectiles": [
+    {
+     "id": 881,
+     "internal": "KingSlimePet",
+     "en": "Slime Prince",
+     "zh": "史莱姆王子",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8850",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8453 (type == 881)",
+     "texture": "Images/Projectile_881",
+     "preview_anim": "SimpleLoop(0,1).WhenSelected(1,5,6).WithCode(DelegateMethods.CharacterPreview.SlimePet",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败史莱姆王后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:398"
+   ]
+  },
+  {
+   "item": 4798,
+   "internal": "EyeOfCthulhuPetItem",
+   "en": "Suspicious Grinning Eye",
+   "zh": "可疑咧嘴眼球",
+   "item_texture": "Images/Item_4798",
+   "item_ref": "Terraria/Item.cs:39418",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 285,
+   "buff_internal": "EyeOfCthulhuPet",
+   "buff_en": "Suspicious Eye",
+   "buff_zh": "可疑眼睛",
+   "buff_texture": "Images/Buff_285",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9435",
+   "shoot": 882,
+   "spawn_ref": "Terraria/Player.cs:11180",
+   "player_flag": "petFlagEyeOfCthulhuPet",
+   "projectiles": [
+    {
+     "id": 882,
+     "internal": "EyeOfCthulhuPet",
+     "en": "Suspicious Eye",
+     "zh": "可疑眼睛",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 20,
+     "frames_ref": "Terraria/Main.cs:8851",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8463 (type == 882)",
+     "texture": "Images/Projectile_882",
+     "preview_anim": "SimpleLoop(0,6,5).WithOffset(4f,-16f).WithCode(DelegateMethods.CharacterPreview.Float",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败克苏鲁之眼后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:481"
+   ]
+  },
+  {
+   "item": 4799,
+   "internal": "EaterOfWorldsPetItem",
+   "en": "Writhing Remains",
+   "zh": "蠕动残骸",
+   "item_texture": "Images/Item_4799",
+   "item_ref": "Terraria/Item.cs:39419",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 286,
+   "buff_internal": "EaterOfWorldsPet",
+   "buff_en": "Eater of Worms",
+   "buff_zh": "蠕虫吞噬怪",
+   "buff_texture": "Images/Buff_286",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9436",
+   "shoot": 883,
+   "spawn_ref": "Terraria/Player.cs:11184",
+   "player_flag": "petFlagEaterOfWorldsPet",
+   "projectiles": [
+    {
+     "id": 883,
+     "internal": "EaterOfWorldsPet",
+     "en": "Eater of Worms",
+     "zh": "蠕虫吞噬怪",
+     "aiStyle": 174,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 3,
+     "frames_ref": "Terraria/Main.cs:8852",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8476 (type == 883)",
+     "texture": "Images/Projectile_883",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,-8f).WithCode(DelegateMethods.CharacterPreview.WormPet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败世界吞噬怪后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:516"
+   ]
+  },
+  {
+   "item": 4800,
+   "internal": "BrainOfCthulhuPetItem",
+   "en": "Brain in a Jar",
+   "zh": "罐中脑",
+   "item_texture": "Images/Item_4800",
+   "item_ref": "Terraria/Item.cs:39420",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 287,
+   "buff_internal": "BrainOfCthulhuPet",
+   "buff_en": "Spider Brain",
+   "buff_zh": "蜘蛛脑",
+   "buff_texture": "Images/Buff_287",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9437",
+   "shoot": 884,
+   "spawn_ref": "Terraria/Player.cs:11188",
+   "player_flag": "petFlagBrainOfCthulhuPet",
+   "projectiles": [
+    {
+     "id": 884,
+     "internal": "BrainOfCthulhuPet",
+     "en": "Spider Brain",
+     "zh": "蜘蛛脑",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 14,
+     "frames_ref": "Terraria/Main.cs:8853",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8488 (type >= 884 && type <= 886)",
+     "texture": "Images/Projectile_884",
+     "preview_anim": "SimpleLoop(0,1).WhenSelected(2,7,5",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败克苏鲁之脑后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:497"
+   ]
+  },
+  {
+   "item": 4801,
+   "internal": "SkeletronPetItem",
+   "en": "Possessed Skull",
+   "zh": "疯狂骷髅头",
+   "item_texture": "Images/Item_4801",
+   "item_ref": "Terraria/Item.cs:39421",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 288,
+   "buff_internal": "SkeletronPet",
+   "buff_en": "Skeletron Jr.",
+   "buff_zh": "小骷髅王",
+   "buff_texture": "Images/Buff_288",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9438",
+   "shoot": 885,
+   "spawn_ref": "Terraria/Player.cs:11192",
+   "player_flag": "petFlagSkeletronPet",
+   "projectiles": [
+    {
+     "id": 885,
+     "internal": "SkeletronPet",
+     "en": "Skeletron Jr.",
+     "zh": "小骷髅王",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8854",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8488 (type >= 884 && type <= 886)",
+     "texture": "Images/Projectile_885",
+     "preview_anim": "SimpleLoop(0,5,5).WithOffset(4f,-16f).WithCode(DelegateMethods.CharacterPreview.FloatAndSpinWhenWalking",
+     "ai26_variant": "fly_skeletronpet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败骷髅王后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:562"
+   ]
+  },
+  {
+   "item": 4802,
+   "internal": "QueenBeePetItem",
+   "en": "Sparkling Honey",
+   "zh": "闪耀蜂蜜",
+   "item_texture": "Images/Item_4802",
+   "item_ref": "Terraria/Item.cs:39422",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 289,
+   "buff_internal": "QueenBeePet",
+   "buff_en": "Honey Bee",
+   "buff_zh": "宝贝蜜蜂",
+   "buff_texture": "Images/Buff_289",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9439",
+   "shoot": 886,
+   "spawn_ref": "Terraria/Player.cs:11196",
+   "player_flag": "petFlagQueenBeePet",
+   "projectiles": [
+    {
+     "id": 886,
+     "internal": "QueenBeePet",
+     "en": "Honey Bee",
+     "zh": "宝贝蜜蜂",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8855",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8488 (type >= 884 && type <= 886)",
+     "texture": "Images/Projectile_886",
+     "preview_anim": "SimpleLoop(0,8).WithOffset(4f,-16f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败蜂王后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:543"
+   ]
+  },
+  {
+   "item": 4803,
+   "internal": "DestroyerPetItem",
+   "en": "Deactivated Probe",
+   "zh": "失效探测器",
+   "item_texture": "Images/Item_4803",
+   "item_ref": "Terraria/Item.cs:39423",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 290,
+   "buff_internal": "DestroyerPet",
+   "buff_en": "Destroyer-Lite",
+   "buff_zh": "微型毁灭者",
+   "buff_texture": "Images/Buff_290",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9440",
+   "shoot": 887,
+   "spawn_ref": "Terraria/Player.cs:11200",
+   "player_flag": "petFlagDestroyerPet",
+   "projectiles": [
+    {
+     "id": 887,
+     "internal": "DestroyerPet",
+     "en": "Destroyer-Lite",
+     "zh": "微型毁灭者",
+     "aiStyle": 174,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 3,
+     "frames_ref": "Terraria/Main.cs:8856",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8498 (type == 887)",
+     "texture": "Images/Projectile_887",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,-8f).WithCode(DelegateMethods.CharacterPreview.WormPet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败毁灭者后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:450"
+   ]
+  },
+  {
+   "item": 4804,
+   "internal": "TwinsPetItem",
+   "en": "Pair of Eyeballs",
+   "zh": "微型双子魔眼",
+   "item_texture": "Images/Item_4804",
+   "item_ref": "Terraria/Item.cs:39424",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 291,
+   "buff_internal": "TwinsPet",
+   "buff_en": "Rez and Spaz",
+   "buff_zh": "激光眼和魔焰眼",
+   "buff_texture": "Images/Buff_291",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9441",
+   "shoot": 888,
+   "spawn_ref": "Terraria/Player.cs:11204",
+   "player_flag": "petFlagTwinsPet",
+   "projectiles": [
+    {
+     "id": 888,
+     "internal": "TwinsPet",
+     "en": "Rez and Spaz",
+     "zh": "激光眼和魔焰眼",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 36,
+     "frames_ref": "Terraria/Main.cs:8857",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8510 (type == 888)",
+     "texture": "Images/Projectile_888",
+     "preview_anim": "SimpleLoop(0,6,5).WithOffset(4f,-16f).WithCode(DelegateMethods.CharacterPreview.Float",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败双子魔眼后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:467"
+   ]
+  },
+  {
+   "item": 4805,
+   "internal": "SkeletronPrimePetItem",
+   "en": "Robotic Skull",
+   "zh": "机器人骷髅头",
+   "item_texture": "Images/Item_4805",
+   "item_ref": "Terraria/Item.cs:39425",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 292,
+   "buff_internal": "SkeletronPrimePet",
+   "buff_en": "Mini Prime",
+   "buff_zh": "小机械骷髅王",
+   "buff_texture": "Images/Buff_292",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9442",
+   "shoot": 889,
+   "spawn_ref": "Terraria/Player.cs:11208",
+   "player_flag": "petFlagSkeletronPrimePet",
+   "projectiles": [
+    {
+     "id": 889,
+     "internal": "SkeletronPrimePet",
+     "en": "Mini Prime",
+     "zh": "小机械骷髅王",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8858",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8523 (type >= 889 && type <= 892)",
+     "texture": "Images/Projectile_889",
+     "preview_anim": "SimpleLoop(0,5,5).WithOffset(4f,-16f).WithCode(DelegateMethods.CharacterPreview.FloatAndSpinWhenWalking",
+     "ai26_variant": "fly_skeletronpet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败机械骷髅王后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:437"
+   ]
+  },
+  {
+   "item": 4806,
+   "internal": "PlanteraPetItem",
+   "en": "Plantera Seedling",
+   "zh": "世纪之花幼苗",
+   "item_texture": "Images/Item_4806",
+   "item_ref": "Terraria/Item.cs:39426",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 293,
+   "buff_internal": "PlanteraPet",
+   "buff_en": "Plantera Seedling",
+   "buff_zh": "世纪之花幼苗",
+   "buff_texture": "Images/Buff_293",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9443",
+   "shoot": 890,
+   "spawn_ref": "Terraria/Player.cs:11212",
+   "player_flag": "petFlagPlanteraPet",
+   "projectiles": [
+    {
+     "id": 890,
+     "internal": "PlanteraPet",
+     "en": "Plantera Seedling",
+     "zh": "世纪之花幼苗",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8859",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8523 (type >= 889 && type <= 892)",
+     "texture": "Images/Projectile_890",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,0f).WhenSelected(2,6,5",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败世纪之花后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:414"
+   ]
+  },
+  {
+   "item": 4807,
+   "internal": "GolemPetItem",
+   "en": "Guardian Golem",
+   "zh": "石巨人守卫",
+   "item_texture": "Images/Item_4807",
+   "item_ref": "Terraria/Item.cs:39427",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 294,
+   "buff_internal": "GolemPet",
+   "buff_en": "Toy Golem",
+   "buff_zh": "玩具石巨人",
+   "buff_texture": "Images/Buff_294",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9478",
+   "shoot": 891,
+   "spawn_ref": "Terraria/Player.cs:11216",
+   "player_flag": "petFlagGolemPet",
+   "projectiles": [
+    {
+     "id": 891,
+     "internal": "GolemPet",
+     "en": "Toy Golem",
+     "zh": "玩具石巨人",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 15,
+     "frames_ref": "Terraria/Main.cs:8860",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:8523 (type >= 889 && type <= 892)",
+     "texture": "Images/Projectile_891",
+     "preview_anim": null,
+     "ai26_variant": "ground",
+     "light": {
+      "rgb": [
+       1.5,
+       0.915,
+       0.24
+      ],
+      "how": "v3_1=(1,0.61,0.16)*1.5，仅自身两条线（速度线宽20 + 左右）",
+      "refs": [
+       "Terraria/Projectile.cs:66046-66052"
+      ]
+     },
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败石巨人后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:650"
+   ]
+  },
+  {
+   "item": 4808,
+   "internal": "DukeFishronPetItem",
+   "en": "Pork of the Sea",
+   "zh": "海猪肉",
+   "item_texture": "Images/Item_4808",
+   "item_ref": "Terraria/Item.cs:39428",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 295,
+   "buff_internal": "DukeFishronPet",
+   "buff_en": "Tiny Fishron",
+   "buff_zh": "小猪龙鱼",
+   "buff_texture": "Images/Buff_295",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9444",
+   "shoot": 892,
+   "spawn_ref": "Terraria/Player.cs:11220",
+   "player_flag": "petFlagDukeFishronPet",
+   "projectiles": [
+    {
+     "id": 892,
+     "internal": "DukeFishronPet",
+     "en": "Tiny Fishron",
+     "zh": "小猪龙鱼",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 6,
+     "frames_ref": "Terraria/Main.cs:8861",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8523 (type >= 889 && type <= 892)",
+     "texture": "Images/Projectile_892",
+     "preview_anim": "SimpleLoop(0,6,6).WithOffset(-4f,-12f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败猪龙鱼公爵后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:666"
+   ]
+  },
+  {
+   "item": 4809,
+   "internal": "LunaticCultistPetItem",
+   "en": "Tablet Fragment",
+   "zh": "碑牌碎片",
+   "item_texture": "Images/Item_4809",
+   "item_ref": "Terraria/Item.cs:39429",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 296,
+   "buff_internal": "LunaticCultistPet",
+   "buff_en": "Phantasmal Dragon",
+   "buff_zh": "小幻影龙",
+   "buff_texture": "Images/Buff_296",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9445",
+   "shoot": 893,
+   "spawn_ref": "Terraria/Player.cs:11224",
+   "player_flag": "petFlagLunaticCultistPet",
+   "projectiles": [
+    {
+     "id": 893,
+     "internal": "LunaticCultistPet",
+     "en": "Phantasmal Dragon",
+     "zh": "小幻影龙",
+     "aiStyle": 174,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 4,
+     "frames_ref": "Terraria/Main.cs:8862",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8533 (type == 893)",
+     "texture": "Images/Projectile_893",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(0f,-8f).WithCode(DelegateMethods.CharacterPreview.WormPet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败拜月教邪教徒后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:589"
+   ]
+  },
+  {
+   "item": 4810,
+   "internal": "MoonLordPetItem",
+   "en": "Piece of Moon Squid",
+   "zh": "月亮乌贼",
+   "item_texture": "Images/Item_4810",
+   "item_ref": "Terraria/Item.cs:39430",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 297,
+   "buff_internal": "MoonLordPet",
+   "buff_en": "Moonling",
+   "buff_zh": "月精灵",
+   "buff_texture": "Images/Buff_297",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9446",
+   "shoot": 894,
+   "spawn_ref": "Terraria/Player.cs:11228",
+   "player_flag": "petFlagMoonLordPet",
+   "projectiles": [
+    {
+     "id": 894,
+     "internal": "MoonLordPet",
+     "en": "Moonling",
+     "zh": "月精灵",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 8,
+     "frames_ref": "Terraria/Main.cs:8863",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8545 (type == 894)",
+     "texture": "Images/Projectile_894",
+     "preview_anim": "SimpleLoop(0,8).WithOffset(-2f,-12f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败月亮领主后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:600"
+   ]
+  },
+  {
+   "item": 4811,
+   "internal": "FairyQueenPetItem",
+   "en": "Jewel of Light",
+   "zh": "光之珠宝",
+   "item_texture": "Images/Item_4811",
+   "item_ref": "Terraria/Item.cs:39431",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 298,
+   "buff_internal": "FairyQueenPet",
+   "buff_en": "Fairy Princess",
+   "buff_zh": "仙灵公主",
+   "buff_texture": "Images/Buff_298",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9479",
+   "shoot": 895,
+   "spawn_ref": "Terraria/Player.cs:11232",
+   "player_flag": "petFlagFairyQueenPet",
+   "projectiles": [
+    {
+     "id": 895,
+     "internal": "FairyQueenPet",
+     "en": "Fairy Princess",
+     "zh": "仙灵公主",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 6,
+     "frames_ref": "Terraria/Main.cs:8864",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:8555 (type >= 895 && type <= 896)",
+     "texture": "Images/Projectile_895",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       2.25,
+       1.35,
+       2.25
+      ],
+      "how": "base=(1,0.6,1)*1.5（复古光照模式再*0.8）；自身线用 base*1.5，玩家线用 base*0.75",
+      "refs": [
+       "Terraria/Projectile.cs:35666-35679"
+      ]
+     },
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败光之女皇后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:325"
+   ]
+  },
+  {
+   "item": 4812,
+   "internal": "PumpkingPetItem",
+   "en": "Pumpkin Scented Candle",
+   "zh": "南瓜香薰蜡烛",
+   "item_texture": "Images/Item_4812",
+   "item_ref": "Terraria/Item.cs:39432",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 299,
+   "buff_internal": "PumpkingPet",
+   "buff_en": "Jack 'O Lantern",
+   "buff_zh": "杰克南瓜灯",
+   "buff_texture": "Images/Buff_299",
+   "kind": "light",
+   "flag_ref": "Terraria/Main.cs:9480",
+   "shoot": 896,
+   "spawn_ref": "Terraria/Player.cs:11236",
+   "player_flag": "petFlagPumpkingPet",
+   "projectiles": [
+    {
+     "id": 896,
+     "internal": "PumpkingPet",
+     "en": "Jack 'O Lantern",
+     "zh": "杰克南瓜灯",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 16,
+     "frames_ref": "Terraria/Main.cs:8865",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": true,
+     "setdefaults_ref": "Terraria/Projectile.cs:8555 (type >= 895 && type <= 896)",
+     "texture": "Images/Projectile_896",
+     "preview_anim": null,
+     "light": {
+      "rgb": [
+       2.25,
+       1.575,
+       0.1125
+      ],
+      "how": "base=(1,0.7,0.05)*1.5（复古*0.8）；自身线 base*1.5，玩家线 base*0.75",
+      "refs": [
+       "Terraria/Projectile.cs:35680-35693"
+      ]
+     },
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败南瓜王（南瓜月）后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:362"
+   ]
+  },
+  {
+   "item": 4813,
+   "internal": "EverscreamPetItem",
+   "en": "Shrub Star",
+   "zh": "灌木星星",
+   "item_texture": "Images/Item_4813",
+   "item_ref": "Terraria/Item.cs:39433",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 300,
+   "buff_internal": "EverscreamPet",
+   "buff_en": "Everscream Sapling",
+   "buff_zh": "常绿尖叫怪树苗",
+   "buff_texture": "Images/Buff_300",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9447",
+   "shoot": 897,
+   "spawn_ref": "Terraria/Player.cs:11240",
+   "player_flag": "petFlagEverscreamPet",
+   "projectiles": [
+    {
+     "id": 897,
+     "internal": "EverscreamPet",
+     "en": "Everscream Sapling",
+     "zh": "常绿尖叫怪树苗",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8866",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8568 (type == 897)",
+     "texture": "Images/Projectile_897",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,0f).WhenSelected(2,6,5",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败常绿尖叫怪（霜月）后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:376"
+   ]
+  },
+  {
+   "item": 4814,
+   "internal": "IceQueenPetItem",
+   "en": "Frozen Crown",
+   "zh": "冰冻王冠",
+   "item_texture": "Images/Item_4814",
+   "item_ref": "Terraria/Item.cs:39434",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 301,
+   "buff_internal": "IceQueenPet",
+   "buff_en": "Ice Queen",
+   "buff_zh": "冰雪女王",
+   "buff_texture": "Images/Buff_301",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9448",
+   "shoot": 898,
+   "spawn_ref": "Terraria/Player.cs:11244",
+   "player_flag": "petFlagIceQueenPet",
+   "projectiles": [
+    {
+     "id": 898,
+     "internal": "IceQueenPet",
+     "en": "Ice Queen",
+     "zh": "冰雪女王",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 16,
+     "frames_ref": "Terraria/Main.cs:8867",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8578 (type == 898)",
+     "texture": "Images/Projectile_898",
+     "preview_anim": "SimpleLoop(0,16,5).WithOffset(-2f,-16f",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败冰雪女王（霜月）后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:382"
+   ]
+  },
+  {
+   "item": 4815,
+   "internal": "MartianPetItem",
+   "en": "Cosmic Skateboard",
+   "zh": "宇宙滑板",
+   "item_texture": "Images/Item_4815",
+   "item_ref": "Terraria/Item.cs:39435",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 302,
+   "buff_internal": "MartianPet",
+   "buff_en": "Alien Skater",
+   "buff_zh": "异星滑板小子",
+   "buff_texture": "Images/Buff_302",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9449",
+   "shoot": 899,
+   "spawn_ref": "Terraria/Player.cs:11248",
+   "player_flag": "petFlagMartianPet",
+   "projectiles": [
+    {
+     "id": 899,
+     "internal": "MartianPet",
+     "en": "Alien Skater",
+     "zh": "异星滑板小子",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 14,
+     "frames_ref": "Terraria/Main.cs:8868",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8591 (type >= 899 && type <= 901)",
+     "texture": "Images/Projectile_899",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,0f).WhenSelected(2,7,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败火星飞碟后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:923"
+   ]
+  },
+  {
+   "item": 4816,
+   "internal": "DD2OgrePetItem",
+   "en": "Ogre's Club",
+   "zh": "食人魔棍棒",
+   "item_texture": "Images/Item_4816",
+   "item_ref": "Terraria/Item.cs:39436",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 303,
+   "buff_internal": "DD2OgrePet",
+   "buff_en": "Baby Ogre",
+   "buff_zh": "食人魔宝宝",
+   "buff_texture": "Images/Buff_303",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9450",
+   "shoot": 900,
+   "spawn_ref": "Terraria/Player.cs:11252",
+   "player_flag": "petFlagDD2OgrePet",
+   "projectiles": [
+    {
+     "id": 900,
+     "internal": "DD2OgrePet",
+     "en": "Baby Ogre",
+     "zh": "食人魔宝宝",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 14,
+     "frames_ref": "Terraria/Main.cs:8869",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8591 (type >= 899 && type <= 901)",
+     "texture": "Images/Projectile_900",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(6f,0f).WhenSelected(2,7,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败食人魔 T3（撒旦军队）后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:761"
+   ]
+  },
+  {
+   "item": 4817,
+   "internal": "DD2BetsyPetItem",
+   "en": "Betsy's Egg",
+   "zh": "双足翼龙蛋",
+   "item_texture": "Images/Item_4817",
+   "item_ref": "Terraria/Item.cs:39437",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 304,
+   "buff_internal": "DD2BetsyPet",
+   "buff_en": "Itsy Betsy",
+   "buff_zh": "小双足翼龙",
+   "buff_texture": "Images/Buff_304",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9451",
+   "shoot": 901,
+   "spawn_ref": "Terraria/Player.cs:11256",
+   "player_flag": "petFlagDD2BetsyPet",
+   "projectiles": [
+    {
+     "id": 901,
+     "internal": "DD2BetsyPet",
+     "en": "Itsy Betsy",
+     "zh": "小双足翼龙",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8870",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8591 (type >= 899 && type <= 901)",
+     "texture": "Images/Projectile_901",
+     "preview_anim": "SimpleLoop(0,5).WithOffset(-2f,-12f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败双足翼龙后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:638"
+   ]
+  },
+  {
+   "item": 4960,
+   "internal": "QueenSlimePetItem",
+   "en": "Regal Delicacy",
+   "zh": "王室美食",
+   "item_texture": "Images/Item_4960",
+   "item_ref": "Terraria/Item.cs:40050",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 317,
+   "buff_internal": "QueenSlimePet",
+   "buff_en": "Slime Princess",
+   "buff_zh": "史莱姆公主",
+   "buff_texture": "Images/Buff_317",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9452",
+   "shoot": 934,
+   "spawn_ref": "Terraria/Player.cs:11260",
+   "player_flag": "petFlagQueenSlimePet",
+   "projectiles": [
+    {
+     "id": 934,
+     "internal": "QueenSlimePet",
+     "en": "Slime Princess",
+     "zh": "史莱姆公主",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8874",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8876 (type == 934)",
+     "texture": "Images/Projectile_934",
+     "preview_anim": "SimpleLoop(0,1).WhenSelected(1,5,5).WithCode(DelegateMethods.CharacterPreview.SlimePet",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败史莱姆皇后后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:309"
+   ]
+  },
+  {
+   "item": 5088,
+   "internal": "BerniePetItem",
+   "en": "Bernie's Button",
+   "zh": "伯尼的钮扣",
+   "item_texture": "Images/Item_5088",
+   "item_ref": "Terraria/Item.cs:40787",
+   "rare": 3,
+   "value": "buyPrice(0, 25)",
+   "buff": 327,
+   "buff_internal": "BerniePet",
+   "buff_en": "Bernie",
+   "buff_zh": "伯尼",
+   "buff_texture": "Images/Buff_327",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9454",
+   "shoot": 956,
+   "spawn_ref": "Terraria/Player.cs:11264",
+   "player_flag": "petFlagBerniePet",
+   "projectiles": [
+    {
+     "id": 956,
+     "internal": "BerniePet",
+     "en": "Bernie",
+     "zh": "伯尼",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 28,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      28
+     ],
+     "frames": 11,
+     "frames_ref": "Terraria/Main.cs:8877",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9026 (type == 956)",
+     "texture": "Images/Projectile_956",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(0f,0f).WhenSelected(1,8,4).WithCode(DelegateMethods.CharacterPreview.BerniePet",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "公主商店（常驻）",
+   "source_refs": [
+    "Terraria/Chest.cs:3463"
+   ]
+  },
+  {
+   "item": 5089,
+   "internal": "GlommerPetItem",
+   "en": "Glommer's Flower",
+   "zh": "咕噜咪的花",
+   "item_texture": "Images/Item_5089",
+   "item_ref": "Terraria/Item.cs:40792",
+   "rare": 3,
+   "value": "buyPrice(0, 25)",
+   "buff": 328,
+   "buff_internal": "GlommerPet",
+   "buff_en": "Glommer",
+   "buff_zh": "咕噜咪",
+   "buff_texture": "Images/Buff_328",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9455",
+   "shoot": 957,
+   "spawn_ref": "Terraria/Player.cs:11268",
+   "player_flag": "petFlagGlommerPet",
+   "projectiles": [
+    {
+     "id": 957,
+     "internal": "GlommerPet",
+     "en": "Glommer",
+     "zh": "咕噜咪",
+     "aiStyle": 124,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8878",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9036 (type == 957)",
+     "texture": "Images/Projectile_957",
+     "preview_anim": "SimpleLoop(0,24,3).WithOffset(0f,-14f).WithCode(DelegateMethods.CharacterPreview.Float",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "跳跳兽 1/100（永恒领域种子世界 1/40）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:1172-1173"
+   ]
+  },
+  {
+   "item": 5090,
+   "internal": "DeerclopsPetItem",
+   "en": "Deerclops Eyeball",
+   "zh": "独眼巨鹿眼球",
+   "item_texture": "Images/Item_5090",
+   "item_ref": "Terraria/Item.cs:40797",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 329,
+   "buff_internal": "DeerclopsPet",
+   "buff_en": "Tiny Deerclops",
+   "buff_zh": "小独眼巨鹿",
+   "buff_texture": "Images/Buff_329",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9456",
+   "shoot": 958,
+   "spawn_ref": "Terraria/Player.cs:11272",
+   "player_flag": "petFlagDeerclopsPet",
+   "projectiles": [
+    {
+     "id": 958,
+     "internal": "DeerclopsPet",
+     "en": "Tiny Deerclops",
+     "zh": "小独眼巨鹿",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 17,
+     "frames_ref": "Terraria/Main.cs:8879",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9049 (type == 958)",
+     "texture": "Images/Projectile_958",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(-2f,0f).WhenSelected(5,8,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "大师模式：击败独眼巨鹿后每名玩家必得（MasterModeDropOnAllPlayers）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:528"
+   ]
+  },
+  {
+   "item": 5091,
+   "internal": "PigPetItem",
+   "en": "Monster Meat",
+   "zh": "怪物肉",
+   "item_texture": "Images/Item_5091",
+   "item_ref": "Terraria/Item.cs:40802",
+   "rare": 3,
+   "value": "buyPrice(0, 5)",
+   "buff": 330,
+   "buff_internal": "PigPet",
+   "buff_en": "Pig",
+   "buff_zh": "猪",
+   "buff_texture": "Images/Buff_330",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9457",
+   "shoot": 959,
+   "spawn_ref": "Terraria/Player.cs:11276",
+   "player_flag": "petFlagPigPet",
+   "projectiles": [
+    {
+     "id": 959,
+     "internal": "PigPet",
+     "en": "Pig",
+     "zh": "猪",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8880",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9059 (type == 959)",
+     "texture": "Images/Projectile_959",
+     "preview_anim": "SimpleLoop(0,1).WhenSelected(1,7,4).WithOffset(4f,0f",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "多种地面/地下敌怪 1/1500（永恒领域种子世界 1/500）",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:1132-1133"
+   ]
+  },
+  {
+   "item": 5098,
+   "internal": "ChesterPetItem",
+   "en": "Eye Bone",
+   "zh": "眼骨",
+   "item_texture": "Images/Item_5098",
+   "item_ref": "Terraria/Item.cs:40865",
+   "rare": 3,
+   "value": "buyPrice(0, 10)",
+   "buff": 331,
+   "buff_internal": "ChesterPet",
+   "buff_en": "Chester",
+   "buff_zh": "切斯特",
+   "buff_texture": "Images/Buff_331",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9458",
+   "shoot": 960,
+   "spawn_ref": "Terraria/Player.cs:11280",
+   "player_flag": "petFlagChesterPet",
+   "projectiles": [
+    {
+     "id": 960,
+     "internal": "ChesterPet",
+     "en": "Chester",
+     "zh": "切斯特",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 20,
+     "frames_ref": "Terraria/Main.cs:8881",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9069 (type == 960)",
+     "texture": "Images/Projectile_960",
+     "preview_anim": "SimpleLoop(0,4).WithOffset(4f,0f).WhenSelected(5,7,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "独眼巨鹿 1/3（非专家）；其宝藏袋 1/3",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:530",
+    "Terraria/Player.cs:7709-7711"
+   ]
+  },
+  {
+   "item": 5131,
+   "internal": "ResplendentDessert",
+   "en": "Resplendent Dessert",
+   "zh": "华美甜点",
+   "item_texture": "Images/Item_5131",
+   "item_ref": "Terraria/Item.cs:41083",
+   "rare": -13,
+   "value": "buyPrice(0, 25)",
+   "buff": 341,
+   "buff_internal": "DualSlimePet",
+   "buff_en": "Slime Royals",
+   "buff_zh": "皇家史莱姆",
+   "buff_texture": "Images/Buff_341",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9453",
+   "shoot": 881,
+   "spawn_ref": "Terraria/Player.cs:11284",
+   "player_flag": "petFlagKingSlimePet",
+   "buff_note": "一个 buff(341 DualSlimePet) 同时召唤史莱姆王宠物 881 与史莱姆皇后宠物 934，左右偏移 10px (Player.cs:12330-12340)",
+   "projectiles": [
+    {
+     "id": 881,
+     "internal": "KingSlimePet",
+     "en": "Slime Royals",
+     "zh": "皇家史莱姆",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8850",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8453 (type == 881)",
+     "texture": "Images/Projectile_881",
+     "preview_anim": "SimpleLoop(0,1).WhenSelected(1,5,6).WithCode(DelegateMethods.CharacterPreview.SlimePet",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    },
+    {
+     "id": 934,
+     "internal": "QueenSlimePet",
+     "en": "Slime Royals",
+     "zh": "皇家史莱姆",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8874",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:8876 (type == 934)",
+     "texture": "Images/Projectile_934",
+     "preview_anim": "SimpleLoop(0,1).WhenSelected(1,5,5).WithCode(DelegateMethods.CharacterPreview.SlimePet",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "合成：皇家美味（史莱姆王宠物）+ 王室美食（史莱姆皇后宠物），无需制作站；同时召唤两只",
+   "source_refs": [
+    "Terraria/Recipe.cs:12665-12666",
+    "Terraria/Player.cs:12330-12340"
+   ]
+  },
+  {
+   "item": 5276,
+   "internal": "JunimoPetItem",
+   "en": "Stardrop",
+   "zh": "星之果实",
+   "item_texture": "Images/Item_5276",
+   "item_ref": "Terraria/Item.cs:41868",
+   "rare": 3,
+   "value": "buyPrice(0, 1)",
+   "buff": 345,
+   "buff_internal": "JunimoPet",
+   "buff_en": "Junimo",
+   "buff_zh": "祝尼魔",
+   "buff_texture": "Images/Buff_345",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9459",
+   "shoot": 994,
+   "spawn_ref": "Terraria/Player.cs:11289",
+   "player_flag": "petFlagJunimoPet",
+   "projectiles": [
+    {
+     "id": 994,
+     "internal": "JunimoPet",
+     "en": "Junimo",
+     "zh": "祝尼魔",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 16,
+     "frames_ref": "Terraria/Main.cs:8889",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9438 (type == 994)",
+     "texture": "Images/Projectile_994",
+     "preview_anim": "SimpleLoop(0,4,5).WithOffset(2f,0f).WhenSelected(5,7,5",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "手持 Joja 可乐与树妖对话，点\"给可乐\"，Junimo 动画结束后赠送",
+   "source_refs": [
+    "Terraria.GameContent/NPCInteractions.cs:79-101",
+    "Terraria/Main.cs:41200-41207",
+    "Terraria/Projectile.cs:42385-42387"
+   ]
+  },
+  {
+   "item": 5297,
+   "internal": "BlueEgg",
+   "en": "Blue Chicken Egg",
+   "zh": "蓝鸡蛋",
+   "item_texture": "Images/Item_5297",
+   "item_ref": "Terraria/Item.cs:42152",
+   "rare": 3,
+   "value": "buyPrice(0, 25)",
+   "buff": 349,
+   "buff_internal": "BlueChickenPet",
+   "buff_en": "Blue Chicken",
+   "buff_zh": "蓝鸡",
+   "buff_texture": "Images/Buff_349",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9460",
+   "shoot": 998,
+   "spawn_ref": "Terraria/Player.cs:11293",
+   "player_flag": "petFlagBlueChickenPet",
+   "projectiles": [
+    {
+     "id": 998,
+     "internal": "BlueChickenPet",
+     "en": "Blue Chicken",
+     "zh": "蓝鸡",
+     "aiStyle": 26,
+     "width": 20,
+     "height": 20,
+     "scale": 1,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 10,
+     "frames_ref": "Terraria/Main.cs:8891",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9503 (type == 998)",
+     "texture": "Images/Projectile_998",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(6f,0f).WithSpriteDirection(-1).WhenSelected(0,6,5",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "旅商随机商品（rarity[3]）",
+   "source_refs": [
+    "Terraria/Chest.cs:1068-1070"
+   ]
+  },
+  {
+   "item": 5332,
+   "internal": "SpiffoPlush",
+   "en": "Spiffo Plush",
+   "zh": "毛绒Spiffo",
+   "item_texture": "Images/Item_5332",
+   "item_ref": "Terraria/Item.cs:42293",
+   "rare": 3,
+   "value": "buyPrice(0, 10)",
+   "buff": 351,
+   "buff_internal": "Spiffo",
+   "buff_en": "Spiffo",
+   "buff_zh": "Spiffo",
+   "buff_texture": "Images/Buff_351",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9461",
+   "shoot": 1003,
+   "spawn_ref": "Terraria/Player.cs:11297",
+   "player_flag": "petFlagSpiffo",
+   "projectiles": [
+    {
+     "id": 1003,
+     "internal": "Spiffo",
+     "en": "Spiffo",
+     "zh": "Spiffo",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 16,
+     "frames_ref": "Terraria/Main.cs:8892",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9540 (type == 1003)",
+     "texture": "Images/Projectile_1003",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(2f,0f).WithSpriteDirection(-1).WhenSelected(2,9,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "僵尸类敌怪 1/1500",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:1105"
+   ]
+  },
+  {
+   "item": 5333,
+   "internal": "GlowTulip",
+   "en": "Glow Tulip",
+   "zh": "发光郁金香",
+   "item_texture": "Images/Item_5333",
+   "item_ref": "Terraria/Item.cs:42299",
+   "rare": 3,
+   "value": "buyPrice(0, 10)",
+   "buff": 352,
+   "buff_internal": "CavelingGardener",
+   "buff_en": "Caveling Gardener",
+   "buff_zh": "洞穴园丁",
+   "buff_texture": "Images/Buff_352",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9462",
+   "shoot": 1004,
+   "spawn_ref": "Terraria/Player.cs:11301",
+   "player_flag": "petFlagCaveling",
+   "projectiles": [
+    {
+     "id": 1004,
+     "internal": "CavelingGardener",
+     "en": "Caveling Gardener",
+     "zh": "洞穴园丁",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 15,
+     "frames_ref": "Terraria/Main.cs:8893",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9550 (type == 1004)",
+     "texture": "Images/Projectile_1004",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(-2f,0f).WithSpriteDirection(-1).WhenSelected(2,7,4",
+     "ai26_variant": "ground",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "采集野生发光郁金香图格（TileID 656）",
+   "source_refs": [
+    "Terraria/WorldGen.cs:64976-64977"
+   ]
+  },
+  {
+   "item": 5400,
+   "internal": "DirtiestBlock",
+   "en": "The Dirtiest Block",
+   "zh": "最土的块",
+   "item_texture": "Images/Item_5400",
+   "item_ref": "Terraria/Item.cs:42906",
+   "rare": 1,
+   "value": "buyPrice(0, 0, 10)",
+   "buff": 354,
+   "buff_internal": "DirtiestBlock",
+   "buff_en": "The Dirtiest Block",
+   "buff_zh": "最土的块",
+   "buff_texture": "Images/Buff_354",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9463",
+   "shoot": 1018,
+   "spawn_ref": "Terraria/Player.cs:11305",
+   "player_flag": "petFlagDirtiestBlock",
+   "projectiles": [
+    {
+     "id": 1018,
+     "internal": "DirtiestBlock",
+     "en": "The Dirtiest Block",
+     "zh": "最土的块",
+     "aiStyle": 67,
+     "width": 16,
+     "height": 16,
+     "scale": 1,
+     "hitbox_after_scale": [
+      16,
+      16
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9639 (type == 1018)",
+     "texture": "Images/Projectile_1018",
+     "preview_anim": "SimpleLoop(0,0).WithOffset(8f,0f).WithCode(DelegateMethods.CharacterPreview.CompanionCubePet",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "挖掉稀有的\"最土的块\"图格（TileID 668）",
+   "source_refs": [
+    "Terraria/WorldGen.cs:64513-64514"
+   ]
+  },
+  {
+   "item": 5466,
+   "internal": "DeadCellsSwarmGrenade",
+   "en": "Swarm Grenade",
+   "zh": "虫群手榴弹",
+   "item_texture": "Images/Item_5466",
+   "item_ref": "Terraria/Item.cs:43129",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 356,
+   "buff_internal": "DeadCellsSwarmBiter",
+   "buff_en": "Swarm Biter",
+   "buff_zh": "虫群啃噬者",
+   "buff_texture": "Images/Buff_356",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9466",
+   "shoot": 1027,
+   "spawn_ref": "Terraria/Player.cs:11317",
+   "player_flag": "petFlagDeadCellsSwarmBiter",
+   "projectiles": [
+    {
+     "id": 1027,
+     "internal": "DeadCellsSwarmBiter",
+     "en": "Swarm Worm",
+     "zh": "虫群蠕虫",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 5,
+     "frames_ref": "Terraria/Main.cs:8898",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9727 (type == 1027)",
+     "texture": "Images/Projectile_1027",
+     "preview_anim": "SimpleLoop(0,1).WithOffset(-2f,0f).WithSpriteDirection(-1).WhenSelected(0,4,5",
+     "ai26_variant": "ground"
+    }
+   ],
+   "source_zh": "动物学家商店：派对进行中",
+   "source_refs": [
+    "Terraria/Chest.cs:3372"
+   ]
+  },
+  {
+   "item": 5513,
+   "internal": "PufferfishPet",
+   "en": "Puffer Shrimp",
+   "zh": "河豚虾",
+   "item_texture": "Images/Item_5513",
+   "item_ref": "Terraria/Item.cs:43388",
+   "rare": 2,
+   "value": "sellPrice(0, 1)",
+   "buff": 371,
+   "buff_internal": "Pufferfish",
+   "buff_en": "Pufferfish",
+   "buff_zh": "河豚",
+   "buff_texture": "Images/Buff_371",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9467",
+   "shoot": 1046,
+   "spawn_ref": "Terraria/Player.cs:11321",
+   "player_flag": "petFlagPufferfish",
+   "projectiles": [
+    {
+     "id": 1046,
+     "internal": "Pufferfish",
+     "en": "Pufferfish",
+     "zh": "河豚",
+     "aiStyle": 26,
+     "width": 26,
+     "height": 26,
+     "scale": 1,
+     "hitbox_after_scale": [
+      26,
+      26
+     ],
+     "frames": 12,
+     "frames_ref": "Terraria/Main.cs:8899",
+     "tileCollide": true,
+     "ignoreWater": false,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9910 (type == 1046)",
+     "texture": "Images/Projectile_1046",
+     "preview_anim": "SimpleLoop(6,4,6).WithOffset(-14f,-24f).WithSpriteDirection(-1).WithCode(DelegateMethods.CharacterPreview.Float",
+     "ai26_variant": "fly_hover"
+    }
+   ],
+   "source_zh": "合成：5 河豚 + 10 虾（无需制作站）",
+   "source_refs": [
+    "Terraria/Recipe.cs:12667-12668"
+   ]
+  },
+  {
+   "item": 5517,
+   "internal": "AxeFairyPetItem",
+   "en": "Faecorn",
+   "zh": "仙橡果",
+   "item_texture": "Images/Item_5517",
+   "item_ref": "Terraria/Item.cs:43426",
+   "rare": 3,
+   "value": "sellPrice(0, 2)",
+   "buff": 372,
+   "buff_internal": "AxeFairyPet",
+   "buff_en": "Cenaxe",
+   "buff_zh": "塞纳克斯",
+   "buff_texture": "Images/Buff_372",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9468",
+   "shoot": 1050,
+   "spawn_ref": "Terraria/Player.cs:11325",
+   "player_flag": "petFlagAxeFairyPet",
+   "projectiles": [
+    {
+     "id": 1050,
+     "internal": "AxeFairyPet",
+     "en": "Cenaxe",
+     "zh": "塞纳克斯",
+     "aiStyle": 144,
+     "width": 20,
+     "height": 20,
+     "scale": 1.0,
+     "hitbox_after_scale": [
+      20,
+      20
+     ],
+     "frames": 16,
+     "frames_ref": "Terraria/Main.cs:8900",
+     "tileCollide": false,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": true,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9955 (type == 1050)",
+     "texture": "Images/Projectile_1050",
+     "preview_anim": "SimpleLoop(0,4,5).WhenNotSelected(0,4,5).WithOffset(2f,-14f).WithCode(DelegateMethods.CharacterPreview.Float"
+    }
+   ],
+   "source_zh": "摇森林树 1/1000",
+   "source_refs": [
+    "Terraria/WorldGen.cs:63713-63715"
+   ]
+  },
+  {
+   "item": 5523,
+   "internal": "BoulderPet",
+   "en": "Friendly Boulder",
+   "zh": "友好巨石",
+   "item_texture": "Images/Item_5523",
+   "item_ref": "Terraria/Item.cs:43499",
+   "rare": 1,
+   "value": "buyPrice(0, 0, 10)",
+   "buff": 373,
+   "buff_internal": "BoulderPet",
+   "buff_en": "Friendly Boulder",
+   "buff_zh": "友好巨石",
+   "buff_texture": "Images/Buff_373",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9464",
+   "shoot": 1056,
+   "spawn_ref": "Terraria/Player.cs:11309",
+   "player_flag": "petFlagBoulderPet",
+   "projectiles": [
+    {
+     "id": 1056,
+     "internal": "BoulderPet",
+     "en": "Friendly Boulder",
+     "zh": "友好巨石",
+     "aiStyle": 67,
+     "width": 32,
+     "height": 32,
+     "scale": 1,
+     "hitbox_after_scale": [
+      32,
+      32
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:9989 (type == 1056)",
+     "texture": "Images/Projectile_1056",
+     "preview_anim": "SimpleLoop(0,0).WithOffset(-4f,0f).WithCode(DelegateMethods.CharacterPreview.SpinWhenWalking",
+     "name_note": "no ProjectileName key in loc; using buff name"
+    }
+   ],
+   "source_zh": "击碎世界中特殊巨石图格（TileID 716 BoulderThatSpawnsPet）→ 生成滚动的投射物 1057，其消失时掉落；可与友好彩虹巨石微光互转",
+   "source_refs": [
+    "Terraria/WorldGen.cs:49209-49210",
+    "Terraria/Projectile.cs:76471-76473",
+    "Terraria.ID/ItemID.cs:88"
+   ]
+  },
+  {
+   "item": 5654,
+   "internal": "RainbowBoulderPet",
+   "en": "Friendly Rainbow Boulder",
+   "zh": "友好彩虹巨石",
+   "item_texture": "Images/Item_5654",
+   "item_ref": "Terraria/Item.cs:44409",
+   "rare": 1,
+   "value": "buyPrice(0, 0, 10)",
+   "buff": 382,
+   "buff_internal": "RainbowBoulderPet",
+   "buff_en": "Friendly Rainbow Boulder",
+   "buff_zh": "友好彩虹巨石",
+   "buff_texture": "Images/Buff_382",
+   "kind": "vanity",
+   "flag_ref": "Terraria/Main.cs:9465",
+   "shoot": 1090,
+   "spawn_ref": "Terraria/Player.cs:11313",
+   "player_flag": "petFlagRainbowBoulderPet",
+   "projectiles": [
+    {
+     "id": 1090,
+     "internal": "RainbowBoulderPet",
+     "en": "Rainbow Boulder",
+     "zh": "彩虹巨石",
+     "aiStyle": 67,
+     "width": 32,
+     "height": 32,
+     "scale": 0.5,
+     "hitbox_after_scale": [
+      16,
+      16
+     ],
+     "frames": 1,
+     "frames_ref": "default 1 (Main.cs:8622)",
+     "tileCollide": true,
+     "ignoreWater": true,
+     "light_field": null,
+     "manualDirectionChange": false,
+     "alpha": null,
+     "projPet": true,
+     "LightPetSet": false,
+     "setdefaults_ref": "Terraria/Projectile.cs:10165 (type == 1090)",
+     "texture": "Images/Projectile_1090",
+     "preview_anim": "SimpleLoop(0,0).WithOffset(-4f,0f).WithCode(DelegateMethods.CharacterPreview.SpinWhenWalking"
+    }
+   ],
+   "source_zh": "微光转化友好巨石（5523 ⇄ 5654）",
+   "source_refs": [
+    "Terraria.ID/ItemID.cs:88 (ShimmerTransformToItem)"
+   ]
+  }
+ ],
+ "unused_pet_projectiles": [
+  {
+   "proj": 1095,
+   "internal": "PalworldPetChillet",
+   "zh": null,
+   "note": "projPet=true、aiStyle 26、12 帧（Main.cs:8902），有 player.petFlagChillet/petFlagChilletIgnis 标志（Player.cs:2223-2225），但 1.4.5 代码中没有任何地方生成它；物品 5665/5666（帕鲁 冰电/冰火 Chillet）其实是坐骑 62/63（Item.cs:44510-44533, Mount.cs:2561-2566 SetAsChillet）。",
+   "proj_detail": {
+    "id": 1095,
+    "internal": "PalworldPetChillet",
+    "en": null,
+    "zh": null,
+    "aiStyle": 26,
+    "width": 20,
+    "height": 20,
+    "scale": 1,
+    "hitbox_after_scale": [
+     20,
+     20
+    ],
+    "frames": 12,
+    "frames_ref": "Terraria/Main.cs:8902",
+    "tileCollide": true,
+    "ignoreWater": false,
+    "light_field": null,
+    "manualDirectionChange": false,
+    "alpha": null,
+    "projPet": true,
+    "LightPetSet": false,
+    "setdefaults_ref": "Terraria/Projectile.cs:10224 (type == 1095 || type == 1096)",
+    "texture": "Images/Projectile_1095",
+    "preview_anim": "SimpleLoop(0,1).WhenSelected(1,7,4).WithOffset(4f,0f",
+    "ai26_variant": "ground"
+   }
+  },
+  {
+   "proj": 1096,
+   "internal": "PalworldPetChilletIgnis",
+   "zh": null,
+   "note": "projPet=true、aiStyle 26、12 帧（Main.cs:8902），有 player.petFlagChillet/petFlagChilletIgnis 标志（Player.cs:2223-2225），但 1.4.5 代码中没有任何地方生成它；物品 5665/5666（帕鲁 冰电/冰火 Chillet）其实是坐骑 62/63（Item.cs:44510-44533, Mount.cs:2561-2566 SetAsChillet）。",
+   "proj_detail": {
+    "id": 1096,
+    "internal": "PalworldPetChilletIgnis",
+    "en": null,
+    "zh": null,
+    "aiStyle": 26,
+    "width": 20,
+    "height": 20,
+    "scale": 1,
+    "hitbox_after_scale": [
+     20,
+     20
+    ],
+    "frames": 12,
+    "frames_ref": "Terraria/Main.cs:8903",
+    "tileCollide": true,
+    "ignoreWater": false,
+    "light_field": null,
+    "manualDirectionChange": false,
+    "alpha": null,
+    "projPet": true,
+    "LightPetSet": false,
+    "setdefaults_ref": "Terraria/Projectile.cs:10224 (type == 1095 || type == 1096)",
+    "texture": "Images/Projectile_1096",
+    "preview_anim": "SimpleLoop(0,1).WhenSelected(1,7,4).WithOffset(4f,0f",
+    "ai26_variant": "ground"
+   }
+  }
+ ],
+ "minecarts": [
+  {
+   "item": 2343,
+   "internal": "Minecart",
+   "en": "Minecart",
+   "zh": "矿车",
+   "item_texture": "Images/Item_2343",
+   "item_ref": "Terraria/Item.cs:23553",
+   "rare": 1,
+   "value": "sellPrice(0, 0, 2)",
+   "mount": 6,
+   "mount_internal": "Minecart",
+   "mount_ref": "Terraria/Mount.cs:918",
+   "buff": 118,
+   "buff_internal": "Minecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_118",
+   "mount_texture": "Images/Mount_Minecart",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "手写数据，与 SetAsMinecart 默认值一致",
+   "source_zh": "合成：15 铁锭/铅锭 + 10 任意木材 @ 铁砧/铅砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12560"
+   ]
+  },
+  {
+   "item": 3353,
+   "internal": "MinecartMech",
+   "en": "Mechanical Cart",
+   "zh": "机械矿车",
+   "item_texture": "Images/Item_3353",
+   "item_ref": "Terraria/Item.cs:30666",
+   "rare": 6,
+   "value": "sellPrice(0, 1)",
+   "mount": 11,
+   "mount_internal": "MinecartMech",
+   "mount_ref": "Terraria/Mount.cs:1489",
+   "buff": 166,
+   "buff_internal": "MinecartMech",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_166",
+   "mount_texture": "Images/Mount_MinecartMech + Images/Mount_MinecartMechGlow(发光层)",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 12,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 9,
+    "xOffset": -1,
+    "yOffset": 11,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "粒子 SparksMech；骑乘时 Mount.UpdateEffects case 11 加红色光 (0.4,0.12,0.15)*(1+|vx|/runSpeed*2.5) 到玩家中心/上/下/左/右 (Mount.cs:5072-5090) 并喷火花。激光由\"超级矿车\"系统提供（见 super_cart）。物品带 expert=true (Item.cs:30670)。",
+   "source_zh": "使用矿车升级包（5289）获得，同时永久解锁超级矿车；5289 = 机械车轮零件 + 机械货车零件 + 机械电池零件 @ 秘银砧/山铜砧（零件来自三个机械 Boss）",
+   "source_refs": [
+    "Terraria/Player.cs:45585-45596",
+    "Terraria/Recipe.cs:12644"
+   ]
+  },
+  {
+   "item": 4066,
+   "internal": "DesertMinecart",
+   "en": "Desert Minecart",
+   "zh": "沙漠矿车",
+   "item_texture": "Images/Item_4066",
+   "item_ref": "Terraria/Item.cs:35706",
+   "rare": 1,
+   "value": "sellPrice(0, 0, 50)",
+   "mount": 15,
+   "mount_internal": "DesertMinecart",
+   "mount_ref": "Terraria/Mount.cs:970 (SetAsMinecart Mount.cs:971)",
+   "buff": 208,
+   "buff_internal": "DesertMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_208",
+   "mount_texture": "Images/Mount_MinecartDesert",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "砂岩箱（地下沙漠）1/15",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37204-37213"
+   ]
+  },
+  {
+   "item": 4067,
+   "internal": "FishMinecart",
+   "en": "Minecarp",
+   "zh": "鲤鱼矿车",
+   "item_texture": "Images/Item_4067",
+   "item_ref": "Terraria/Item.cs:35710",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 16,
+   "mount_internal": "FishMinecart",
+   "mount_ref": "Terraria/Mount.cs:1049",
+   "buff": 210,
+   "buff_internal": "FishMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_210",
+   "mount_texture": "Images/Mount_MinecartMineCarp",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "手写数据，与默认值一致",
+   "source_zh": "渔夫任务奖励 1/60（随任务次数提高概率）",
+   "source_refs": [
+    "Terraria/Player.cs:57070-57072"
+   ]
+  },
+  {
+   "item": 4426,
+   "internal": "BeeMinecart",
+   "en": "Bee Minecart",
+   "zh": "蜜蜂矿车",
+   "item_texture": "Images/Item_4426",
+   "item_ref": "Terraria/Item.cs:37483",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 18,
+   "mount_internal": "BeeMinecart",
+   "mount_ref": "Terraria/Mount.cs:973 (SetAsMinecart Mount.cs:974)",
+   "buff": 220,
+   "buff_internal": "BeeMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_220",
+   "mount_texture": "Images/Extra_108",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "常春藤箱（丛林）1/10",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37217-37227"
+   ]
+  },
+  {
+   "item": 4427,
+   "internal": "LadybugMinecart",
+   "en": "Ladybug Minecart",
+   "zh": "瓢虫矿车",
+   "item_texture": "Images/Item_4427",
+   "item_ref": "Terraria/Item.cs:37487",
+   "rare": 1,
+   "value": "sellPrice(0, 0, 50)",
+   "mount": 19,
+   "mount_internal": "LadybugMinecart",
+   "mount_ref": "Terraria/Mount.cs:976 (SetAsMinecart Mount.cs:977)",
+   "buff": 222,
+   "buff_internal": "LadybugMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_222",
+   "mount_texture": "Images/Extra_109",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "生命木箱 1/6（与向日葵矿车二选一）",
+   "source_refs": [
+    "Terraria/WorldGen.cs:36638-36647",
+    "Terraria/WorldGen.cs:36925-36934"
+   ]
+  },
+  {
+   "item": 4428,
+   "internal": "PigronMinecart",
+   "en": "Pigron Minecart",
+   "zh": "猪龙矿车",
+   "item_texture": "Images/Item_4428",
+   "item_ref": "Terraria/Item.cs:37491",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 20,
+   "mount_internal": "PigronMinecart",
+   "mount_ref": "Terraria/Mount.cs:979 (SetAsMinecart Mount.cs:980)",
+   "buff": 224,
+   "buff_internal": "PigronMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_224",
+   "mount_texture": "Images/Extra_110",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "猪龙（三种）1/100",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:969"
+   ]
+  },
+  {
+   "item": 4429,
+   "internal": "SunflowerMinecart",
+   "en": "Sunflower Minecart",
+   "zh": "向日葵矿车",
+   "item_texture": "Images/Item_4429",
+   "item_ref": "Terraria/Item.cs:37495",
+   "rare": 1,
+   "value": "sellPrice(0, 0, 50)",
+   "mount": 21,
+   "mount_internal": "SunflowerMinecart",
+   "mount_ref": "Terraria/Mount.cs:982 (SetAsMinecart Mount.cs:983)",
+   "buff": 226,
+   "buff_internal": "SunflowerMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_226",
+   "mount_texture": "Images/Extra_111",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "生命木箱 1/6（与瓢虫矿车二选一）",
+   "source_refs": [
+    "Terraria/WorldGen.cs:36638-36647",
+    "Terraria/WorldGen.cs:36925-36934"
+   ]
+  },
+  {
+   "item": 4443,
+   "internal": "HellMinecart",
+   "en": "Demonic Hellcart",
+   "zh": "恶魔地狱矿车",
+   "item_texture": "Images/Item_4443",
+   "item_ref": "Terraria/Item.cs:37560",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 22,
+   "mount_internal": "HellMinecart",
+   "mount_ref": "Terraria/Mount.cs:985 (SetAsMinecart Mount.cs:986)",
+   "buff": 228,
+   "buff_internal": "HellMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_228",
+   "mount_texture": "Images/Extra_112",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "暗影箱（地狱）1/10；黑曜石匣/狱石匣 1/20",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37564-37566",
+    "Terraria/Player.cs:9290-9292"
+   ]
+  },
+  {
+   "item": 4450,
+   "internal": "ShroomMinecart",
+   "en": "Shroom Minecart",
+   "zh": "蘑菇矿车",
+   "item_texture": "Images/Item_4450",
+   "item_ref": "Terraria/Item.cs:37628",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 24,
+   "mount_internal": "ShroomMinecart",
+   "mount_ref": "Terraria/Mount.cs:988 (SetAsMinecart Mount.cs:989)",
+   "buff": 231,
+   "buff_internal": "ShroomMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_231",
+   "mount_texture": "Images/Extra_115",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "蘑菇矿车：frontTextureGlow = Extra_116（发光层）(Mount.cs:990)",
+   "source_zh": "蘑菇箱 1/2",
+   "source_refs": [
+    "Terraria/WorldGen.cs:37042-37044",
+    "Terraria/WorldGen.cs:37366-37370"
+   ]
+  },
+  {
+   "item": 4451,
+   "internal": "AmethystMinecart",
+   "en": "Amethyst Minecart",
+   "zh": "紫晶矿车",
+   "item_texture": "Images/Item_4451",
+   "item_ref": "Terraria/Item.cs:37632",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 25,
+   "mount_internal": "AmethystMinecart",
+   "mount_ref": "Terraria/Mount.cs:992 (SetAsMinecart Mount.cs:993)",
+   "buff": 233,
+   "buff_internal": "AmethystMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_233",
+   "mount_texture": "Images/Extra_117",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大紫晶 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12583"
+   ]
+  },
+  {
+   "item": 4452,
+   "internal": "TopazMinecart",
+   "en": "Topaz Minecart",
+   "zh": "黄玉矿车",
+   "item_texture": "Images/Item_4452",
+   "item_ref": "Terraria/Item.cs:37636",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 26,
+   "mount_internal": "TopazMinecart",
+   "mount_ref": "Terraria/Mount.cs:995 (SetAsMinecart Mount.cs:996)",
+   "buff": 235,
+   "buff_internal": "TopazMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_235",
+   "mount_texture": "Images/Extra_118",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大黄玉 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12588"
+   ]
+  },
+  {
+   "item": 4453,
+   "internal": "SapphireMinecart",
+   "en": "Sapphire Minecart",
+   "zh": "蓝玉矿车",
+   "item_texture": "Images/Item_4453",
+   "item_ref": "Terraria/Item.cs:37640",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 27,
+   "mount_internal": "SapphireMinecart",
+   "mount_ref": "Terraria/Mount.cs:998 (SetAsMinecart Mount.cs:999)",
+   "buff": 237,
+   "buff_internal": "SapphireMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_237",
+   "mount_texture": "Images/Extra_119",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大蓝玉 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12593"
+   ]
+  },
+  {
+   "item": 4454,
+   "internal": "EmeraldMinecart",
+   "en": "Emerald Minecart",
+   "zh": "翡翠矿车",
+   "item_texture": "Images/Item_4454",
+   "item_ref": "Terraria/Item.cs:37644",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 28,
+   "mount_internal": "EmeraldMinecart",
+   "mount_ref": "Terraria/Mount.cs:1001 (SetAsMinecart Mount.cs:1002)",
+   "buff": 239,
+   "buff_internal": "EmeraldMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_239",
+   "mount_texture": "Images/Extra_120",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大翡翠 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12598"
+   ]
+  },
+  {
+   "item": 4455,
+   "internal": "RubyMinecart",
+   "en": "Ruby Minecart",
+   "zh": "红玉矿车",
+   "item_texture": "Images/Item_4455",
+   "item_ref": "Terraria/Item.cs:37648",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 29,
+   "mount_internal": "RubyMinecart",
+   "mount_ref": "Terraria/Mount.cs:1004 (SetAsMinecart Mount.cs:1005)",
+   "buff": 241,
+   "buff_internal": "RubyMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_241",
+   "mount_texture": "Images/Extra_121",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大红玉 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12603"
+   ]
+  },
+  {
+   "item": 4456,
+   "internal": "DiamondMinecart",
+   "en": "Diamond Minecart",
+   "zh": "钻石矿车",
+   "item_texture": "Images/Item_4456",
+   "item_ref": "Terraria/Item.cs:37652",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 30,
+   "mount_internal": "DiamondMinecart",
+   "mount_ref": "Terraria/Mount.cs:1007 (SetAsMinecart Mount.cs:1008)",
+   "buff": 243,
+   "buff_internal": "DiamondMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_243",
+   "mount_texture": "Images/Extra_122",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大钻石 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12608"
+   ]
+  },
+  {
+   "item": 4467,
+   "internal": "AmberMinecart",
+   "en": "Amber Minecart",
+   "zh": "琥珀矿车",
+   "item_texture": "Images/Item_4467",
+   "item_ref": "Terraria/Item.cs:37736",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 31,
+   "mount_internal": "AmberMinecart",
+   "mount_ref": "Terraria/Mount.cs:1010 (SetAsMinecart Mount.cs:1011)",
+   "buff": 245,
+   "buff_internal": "AmberMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_245",
+   "mount_texture": "Images/Extra_123",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 大琥珀 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12613"
+   ]
+  },
+  {
+   "item": 4468,
+   "internal": "BeetleMinecart",
+   "en": "Beetle Minecart",
+   "zh": "甲虫矿车",
+   "item_texture": "Images/Item_4468",
+   "item_ref": "Terraria/Item.cs:37754",
+   "rare": 1,
+   "value": "sellPrice(0, 4)",
+   "mount": 32,
+   "mount_internal": "BeetleMinecart",
+   "mount_ref": "Terraria/Mount.cs:1013 (SetAsMinecart Mount.cs:1014)",
+   "buff": 247,
+   "buff_internal": "BeetleMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_247",
+   "mount_texture": "Images/Extra_124",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "合成：矿车 + 8 甲虫外壳 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12577"
+   ]
+  },
+  {
+   "item": 4469,
+   "internal": "MeowmereMinecart",
+   "en": "Meowmere Minecart",
+   "zh": "彩虹猫矿车",
+   "item_texture": "Images/Item_4469",
+   "item_ref": "Terraria/Item.cs:37758",
+   "rare": 10,
+   "value": "sellPrice(0, 10)",
+   "mount": 33,
+   "mount_internal": "MeowmereMinecart",
+   "mount_ref": "Terraria/Mount.cs:1016 (SetAsMinecart Mount.cs:1017)",
+   "buff": 249,
+   "buff_internal": "MeowmereMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_249",
+   "mount_texture": "Images/Extra_125",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "喵喵矿车：粒子 SparksMeow + 喵叫落地/缓冲器音效 (Mount.cs:1018-1020)",
+   "source_zh": "月亮领主 1/10；其宝藏袋 1/10",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:602",
+    "Terraria/Player.cs:7744-7746"
+   ]
+  },
+  {
+   "item": 4470,
+   "internal": "PartyMinecart",
+   "en": "Party Wagon",
+   "zh": "派对矿车",
+   "item_texture": "Images/Item_4470",
+   "item_ref": "Terraria/Item.cs:37762",
+   "rare": 1,
+   "value": "buyPrice(0, 10)",
+   "mount": 34,
+   "mount_internal": "PartyMinecart",
+   "mount_ref": "Terraria/Mount.cs:1022 (SetAsMinecart Mount.cs:1023)",
+   "buff": 251,
+   "buff_internal": "PartyMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_251",
+   "mount_texture": "Images/Extra_126",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "派对女孩商店（常驻）",
+   "source_refs": [
+    "Terraria/Chest.cs:2297"
+   ]
+  },
+  {
+   "item": 4471,
+   "internal": "PirateMinecart",
+   "en": "The Dutchman",
+   "zh": "荷兰人矿车",
+   "item_texture": "Images/Item_4471",
+   "item_ref": "Terraria/Item.cs:37766",
+   "rare": 1,
+   "value": "sellPrice(0, 1)",
+   "mount": 35,
+   "mount_internal": "PirateMinecart",
+   "mount_ref": "Terraria/Mount.cs:1025 (SetAsMinecart Mount.cs:1026)",
+   "buff": 253,
+   "buff_internal": "PirateMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_253",
+   "mount_texture": "Images/Extra_127",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "荷兰飞盗船 1/20",
+   "source_refs": [
+    "Terraria.GameContent.ItemDropRules/ItemDropDatabase.cs:861"
+   ]
+  },
+  {
+   "item": 4472,
+   "internal": "SteampunkMinecart",
+   "en": "Steampunk Minecart",
+   "zh": "蒸汽朋克矿车",
+   "item_texture": "Images/Item_4472",
+   "item_ref": "Terraria/Item.cs:37770",
+   "rare": 1,
+   "value": "buyPrice(0, 10)",
+   "mount": 36,
+   "mount_internal": "SteampunkMinecart",
+   "mount_ref": "Terraria/Mount.cs:1028 (SetAsMinecart Mount.cs:1029)",
+   "buff": 255,
+   "buff_internal": "SteampunkMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_255",
+   "mount_texture": "Images/Extra_128",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": null,
+   "source_zh": "蒸汽朋克人商店：困难模式",
+   "source_refs": [
+    "Terraria/Chest.cs:2229-2232"
+   ]
+  },
+  {
+   "item": 4745,
+   "internal": "CoffinMinecart",
+   "en": "Coffin Minecart",
+   "zh": "棺材矿车",
+   "item_texture": "Images/Item_4745",
+   "item_ref": "Terraria/Item.cs:39011",
+   "rare": 1,
+   "value": "sellPrice(0, 0, 20)",
+   "mount": 38,
+   "mount_internal": "CoffinMinecart",
+   "mount_ref": "Terraria/Mount.cs:1031 (SetAsMinecart Mount.cs:1032)",
+   "buff": 269,
+   "buff_internal": "CoffinMinecart",
+   "buff_zh": "矿车",
+   "buff_texture": "Images/Buff_269",
+   "mount_texture": "Images/Extra_150",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 13,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "棺材矿车：backTexture = frontTexture（前后两层同图）(Mount.cs:1033-1036)",
+   "source_zh": "合成（需墓地环境）：5 铁/铅锭 + 10 木材 + 10 腐肉（或 10 椎骨）@ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12618",
+    "Terraria/Recipe.cs:12631"
+   ]
+  },
+  {
+   "item": 4763,
+   "internal": "DiggingMoleMinecart",
+   "en": "Digging Molecart",
+   "zh": "挖掘鼹鼠矿车",
+   "item_texture": "Images/Item_4763",
+   "item_ref": "Terraria/Item.cs:39186",
+   "rare": 1,
+   "value": "buyPrice(0, 50)",
+   "mount": 39,
+   "mount_internal": "DiggingMoleMinecart",
+   "mount_ref": "Terraria/Mount.cs:1038 (SetAsMinecart Mount.cs:1039)",
+   "buff": 272,
+   "buff_internal": "DiggingMoleMinecart",
+   "buff_zh": "挖掘鼹鼠矿车",
+   "buff_texture": "Images/Buff_272",
+   "mount_texture": "Images/Extra_155",
+   "mount_data": {
+    "runSpeed": 6.0,
+    "dashSpeed": 6.0,
+    "acceleration": 0.02,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 8,
+    "xOffset": 1,
+    "yOffset": 11,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "挖掘鼹鼠矿车：yOffset-2，frontTextureExtra=Extra_165；在地表以下沿行驶方向自动挖 1x5 格并消耗背包里的矿车轨道铺轨 (MinecartDiggerHelper.cs:7-55，调用 Player.cs:20344)",
+   "source_zh": "动物学家商店：图鉴完成度 ≥25%",
+   "source_refs": [
+    "Terraria/Chest.cs:3332"
+   ]
+  },
+  {
+   "item": 5125,
+   "internal": "FartMinecart",
+   "en": "Fart Kart",
+   "zh": "放屁车",
+   "item_texture": "Images/Item_5125",
+   "item_ref": "Terraria/Item.cs:41072",
+   "rare": 2,
+   "value": "sellPrice(0, 0, 50)",
+   "mount": 51,
+   "mount_internal": "FartMinecart",
+   "mount_ref": "Terraria/Mount.cs:1101 (SetAsMinecart Mount.cs:1102)",
+   "buff": 338,
+   "buff_internal": "FartMinecart",
+   "buff_zh": "臭屁卡丁车",
+   "buff_texture": "Images/Buff_338",
+   "mount_texture": "Images/Extra_246",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 10,
+    "xOffset": 1,
+    "yOffset": 3,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "臭屁卡丁车：verticalOffset -10, playerVerticalOffset -8；spawnDust 211；放屁粒子/音效 (Mount.cs:1101-1107)",
+   "source_zh": "合成：矿车 + 放屁垫 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12569"
+   ]
+  },
+  {
+   "item": 5288,
+   "internal": "TerraFartMinecart",
+   "en": "Terra Fart Kart",
+   "zh": "泰拉放屁车",
+   "item_texture": "Images/Item_5288",
+   "item_ref": "Terraria/Item.cs:41983",
+   "rare": 8,
+   "value": "buyPrice(0, 5)",
+   "mount": 53,
+   "mount_internal": "TerraFartMinecart",
+   "mount_ref": "Terraria/Mount.cs:1109 (SetAsMinecart Mount.cs:1110)",
+   "buff": 346,
+   "buff_internal": "TerraFartMinecart",
+   "buff_zh": "泰拉臭屁卡丁车",
+   "buff_texture": "Images/Buff_346",
+   "mount_texture": "Images/Extra_251",
+   "mount_data": {
+    "runSpeed": 13.0,
+    "dashSpeed": 13.0,
+    "acceleration": 0.04,
+    "jumpHeight": 15,
+    "jumpSpeed": 5.15,
+    "heightBoost": 10,
+    "fallDamage": 1.0,
+    "flightTimeMax": 0,
+    "blockExtraJumps": true,
+    "totalFrames": 3,
+    "runningFrameCount": 3,
+    "runningFrameDelay": 12,
+    "standingFrameCount": 1,
+    "spawnDust": 213,
+    "playerYOffsets": 10,
+    "xOffset": 1,
+    "yOffset": 3,
+    "bodyFrame": 3,
+    "playerHeadOffset": 14
+   },
+   "note": "泰拉臭屁卡丁车：同 51，粒子 SparksTerraFart (Mount.cs:1109-1115)",
+   "source_zh": "合成：臭屁卡丁车 + 泰拉马桶 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:12573"
+   ]
+  }
+ ],
+ "tracks": [
+  {
+   "item": 2340,
+   "internal": "MinecartTrack",
+   "en": "Minecart Track",
+   "zh": "矿车轨道",
+   "item_texture": "Images/Item_2340",
+   "item_ref": "Terraria/Item.cs:23503",
+   "createTile": 314,
+   "placeStyle": 0,
+   "tileBoost": 5,
+   "value": null,
+   "cartTrack": true,
+   "desc": "普通轨道",
+   "source_zh": "合成：1 铁/铅锭 + 1 木材 @ 砧 → 50 个；也可拆掉世界生成的废弃矿车轨道获得",
+   "source_refs": [
+    "Terraria/Recipe.cs:6581-6590",
+    "Terraria/Minecart.cs:1514-1523 (GetTrackItem)"
+   ]
+  },
+  {
+   "item": 2492,
+   "internal": "PressureTrack",
+   "en": "Pressure Plate Track",
+   "zh": "压力板轨道",
+   "item_texture": "Images/Item_2492",
+   "item_ref": "Terraria/Item.cs:24198",
+   "createTile": 314,
+   "placeStyle": 1,
+   "tileBoost": 2,
+   "value": "sellPrice(0, 0, 10)",
+   "cartTrack": true,
+   "desc": "压力板轨道（mech=true，经过时触发电路）",
+   "source_zh": "合成：1 矿车轨道 + 1 任意压力板 @ 砧",
+   "source_refs": [
+    "Terraria/Recipe.cs:6591-6598"
+   ]
+  },
+  {
+   "item": 2739,
+   "internal": "BoosterTrack",
+   "en": "Booster Track",
+   "zh": "增速轨道",
+   "item_texture": "Images/Item_2739",
+   "item_ref": "Terraria/Item.cs:26149",
+   "createTile": 314,
+   "placeStyle": 2,
+   "tileBoost": 2,
+   "value": "buyPrice(0, 0, 50)",
+   "cartTrack": true,
+   "desc": "增速轨道（mech=true，BoosterSpeed=4，可用扳手/锤子切换方向）",
+   "source_zh": "机械师商店（常驻）",
+   "source_refs": [
+    "Terraria/Chest.cs:2058"
+   ]
+  }
+ ],
+ "minecart_riding": {
+  "track_tile": {
+   "TileID": 314,
+   "name": "MinecartTrack",
+   "texture": "Images/Tiles_314",
+   "frames": "Minecart.cs 自带 36 种连接帧 + 装饰帧 36-39（左下/右下/弹性缓冲器/普通缓冲器）；每格 8 个 2px 采样点高度表 _tileHeight[frameX][0..7]（Minecart.cs:103 Initialize）",
+   "placement": "Item.cartTrack=true、createTile=314；Minecart.PlaceTrack(tile, style) 设 frameX=-1/首个压力板帧/首个左增速帧/首个右增速帧 (Minecart.cs:1492-1512)，随后 Minecart.FrameTrack 依据左右相邻轨道自动选连接帧 (Minecart.cs:947)。轨道可悬空放置、不需要支撑；用锤子敲可在分叉处切换 (FlipSwitchTrack, Minecart.cs:1302)。拆除时按轨道类型掉 2340/2492/2739 (Minecart.cs:1514)。",
+   "types": {
+    "0": "普通 Type_Normal",
+    "1": "压力板 Type_Pressure（压过触发 HitTrackSwitch/电路, Player.cs:28448）",
+    "2": "增速 Type_Booster（BoosterSpeed=4f, Minecart.cs:60）"
+   }
+  },
+  "how_to_ride": [
+   "右键点击（或智能光标/快捷坐骑键）轨道图格 314：Player.TileInteractionsUse → LaunchMinecartHook 在该格中心生成\"轨道钩\"投射物 403 TrackHook（Player.cs:33520-33540, 33815-33822）。",
+   "快捷坐骑键：若坐骑栏物品不是矿车，先 QuickMinecartSnap 在玩家周围 24px 找轨道，或 QuickMinecart 在可交互范围内找最近的可见轨道并发射钩子 (Player.cs:6070-6170)。",
+   "钩子拉到轨道时（Player.cs:22840-22870）：坐骑类型 = 矿车栏 miscEquips[2] 中的矿车（MountID.Sets.Cart 且非仅专家或专家模式），否则默认 13 木矿车；Minecart.GetOnTrack 把玩家吸附到轨道（用 MagnetOffset(25,26)、MinecartTextureWidth 50 计算），并检查上方 height+heightBoost-20 空间无实心块，然后 mount.SetMount。",
+   "所以：矿车只能在轨道上骑上去；物品本身放在矿车栏（宠物/照明宠物/矿车/坐骑/钩爪 五个杂项栏中的第 3 个）。"
+  ],
+  "physics": [
+   "骑乘时 Player.Update 走 Minecart.TrackCollision(…, followDown=controlDown, followUp=controlUp) 处理沿轨道移动、坡度、跳跃离轨、缓冲器、增速、开关 (Player.cs:28296-28330, Minecart.cs:562)。返回位：0 在轨道、1 弹性缓冲器、2 用了坡道、3 碰开关、4 左增速、5 右增速。",
+   "在轨道上：TrackRotation 计算车身旋转 fullRotation 与 gfxOffY (Minecart.cs:1261)；离开轨道/跳起时播 MinecartJumpingSound。",
+   "不在轨道且着地：fullRotation=0、onWrongGround=true、runSlowdown=0.2，此时按左/右（新按下）就自动下车 mount.TryDismount (Player.cs:26864-26875)。所以矿车离开轨道几乎不能开。",
+   "跳跃：jumpHeight 15 tick、jumpSpeed 5.15，blockExtraJumps=true（禁用二段跳/翅膀），flightTimeMax 0；坠落伤害倍率 1。",
+   "撞击敌怪：速度>4 时车头前方加长判定框伤害 NPC：伤害 25+55*速度比（木矿车 15+30*速度）×1.5(困难)×1.5(专家)，击退 10+40*速度比 (Player.cs:27746-27800, 29471-29510)。"
+  ],
+  "super_cart": {
+   "what": "\"超级矿车\"（1.4.4+ 的矿车升级包机制）：Player.unlockedSuperCart 由使用矿车升级包 5289 永久解锁（旧存档背包有机械矿车 3353 也视为已解锁，Player.cs:56368-56377）；enabledSuperCart 可在装备界面开关（Main.cs:41965-42040）；UsingSuperCart = 两者皆真 (Player.cs:3950-3963)。",
+   "effects": [
+    "对所有 MountID.Sets.Cart 矿车生效（Mount.cs:4851）：runSpeed/dashSpeed 20、acceleration 0.1、jumpHeight 15、jumpSpeed 5.15 (Mount.cs:373-381, 482-508, 2834-2860)",
+    "防御 +2*(1+|vx|/runSpeed*2.5) (Mount.cs:4855-4856)",
+    "CastSuperCartLaser：行驶中（vx≠0）对车头前方 ±45°、300px 内、视线可达的可追踪敌怪各发一道 591 MinecartMechLaser，伤害 60 (Mount.cs:5260-5290)",
+    "撞击伤害改为 50+100*速度 (Player.cs:29510-29513)"
+   ]
+  },
+  "misc_slot": "Player.miscEquips[2] 是矿车栏；miscEquips[0] 宠物、[1] 照明宠物、[3] 坐骑、[4] 钩爪。宠物/照明宠物栏放入后由 Player.UpdatePet / UpdatePetLight 每帧检查，若 buff 不存在且未隐藏就 AddBuff(buff, 3600) 并播放物品 UseSound (Player.cs:17412-17455)；buff 每帧在 Player.UpdateBuffs 中被设回 18000 并在投射物不存在时生成（BuffHandle_SpawnPetIfNeededAndSetTime, Player.cs:12315-12345）；投射物 AI 每帧检查 player 的宠物标志，标志为真就 timeLeft=2（标志随 buff 消失而失效，宠物 2 tick 后消失）。"
+ },
+ "counts": {
+  "pet_items": 84,
+  "vanity": 74,
+  "light": 10,
+  "minecart_items": 26
+ }
+}

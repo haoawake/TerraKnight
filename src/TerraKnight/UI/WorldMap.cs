@@ -654,11 +654,12 @@ namespace TerraKnight.UI
             var hero = HeroController.SilentInstance;
             if (gm == null || hero == null || GameHooks.HeldByTheGame()) return;
             Open = true;
+            openedFrame = Time.frameCount;
             dragging = false;
             // Terraria opens the map centred on the player, on the player's layer.
             pan = HeadCell(out _);
             layerChoice = MapLayer.Current;
-            hero.RelinquishControl();
+            MapHold.Take(hero);
             TerraMod.Instance?.PlaySound("Menu_Open", 0.7f);
         }
 
@@ -667,10 +668,12 @@ namespace TerraKnight.UI
             if (!Open) return;
             Open = false;
             dragging = false;
-            var hero = HeroController.SilentInstance;
-            if (hero != null) hero.RegainControl();
+            MapHold.Give(HeroController.SilentInstance);
             TerraMod.Instance?.PlaySound("Menu_Close", 0.7f);
         }
+
+        /// <summary>The frame the map opened in: the click that opened it (a right click on a pylon) isn't one on the map too.</summary>
+        static int openedFrame = -1;
 
         /// <summary>Input while open; call every frame.</summary>
         public static void Update()
@@ -702,7 +705,8 @@ namespace TerraKnight.UI
                 var after = ToCell(gui);
                 pan += before - after;
             }
-            bool pressed = TerraCursor.LeftPressed(mouse);
+            bool justOpened = Time.frameCount == openedFrame;
+            bool pressed = TerraCursor.LeftPressed(mouse) && !justOpened;
             if (pressed && godhomeTab.Contains(gui) && JumpToGodhome()) return;
             var pylon = pressed ? PylonAt(gui) : null;
             if (pylon != null)
@@ -733,8 +737,8 @@ namespace TerraKnight.UI
             // An arrow at a gate that doesn't meet its partner: the map goes to the other end.
             var gate = pressed ? GateAt(gui) : null;
             if (gate != null && JumpThrough(gate)) return;
-            // A right click flips the layer drawn: the shallow world and the deep rooms.
-            if (mouse.rightButton.wasPressedThisFrame)
+            // A right click flips the layer drawn: the shallow world and the deep rooms (not the one that opened the map).
+            if (mouse.rightButton.wasPressedThisFrame && !justOpened)
             {
                 FlipLayer();
                 return;
@@ -862,6 +866,8 @@ namespace TerraKnight.UI
             if (PlayerDeep == ViewDeep) FullMap.DrawHead(ToScreen(HeadCell(out _)), ui);
             // The other players of a LAN game where they are, their names under them.
             DrawOthers(ToScreen, ui, true, null);
+            // The Wayward Compass worn: the next fight pointed to (WorldMapCompass).
+            DrawCompassRoute(ui);
 
             // What is under the cursor, as Terraria names it.
             string label = hoveredPylon != null ? Lang.T(hoveredPylon.Name) + "（" + Areas.Display(Areas.AreaName(hoveredPylon.Scene)) + "）　" + Lang.T("点击传送")
@@ -922,7 +928,8 @@ namespace TerraKnight.UI
         static void LiveOnTop(List<(Room room, Rect rect)> visible)
         {
             string live = TerraWorld.Live?.SceneName;
-            int i = visible.FindIndex(v => v.room.Name == live);
+            int i = -1;
+            for (int k = 0; k < visible.Count && i < 0; k++) if (visible[k].room.Name == live) i = k;
             if (i < 0 || i == visible.Count - 1) return;
             var top = visible[i];
             visible.RemoveAt(i);
@@ -1003,9 +1010,14 @@ namespace TerraKnight.UI
                 var at = cellToScreen(cell);
                 if (clip.HasValue && !clip.Value.Contains(at)) continue;
                 var s = p.Latest;
-                var look = Player.TerraPlayerSprite.Looks[Mathf.Clamp(p.Look, 0, Player.TerraPlayerSprite.Looks.Length - 1)];
                 bool hair = s.Eq.Head == 0 || s.Eq.HairUnderHead;
-                FullMap.DrawHead(at, scale, s.Eq.Head, hair, look.Skin, look.Hair, look.Eye, p.Team == 0 ? Color.black : (Color)p.TeamColor);
+                var rim = p.Team == 0 ? Color.black : (Color)p.TeamColor;
+                if (p.Appearance != null) FullMap.DrawHead(at, scale, s.Eq.Head, hair, p.Appearance, rim);
+                else
+                {
+                    var look = Player.TerraPlayerSprite.Looks[Mathf.Clamp(p.Look, 0, Player.TerraPlayerSprite.Looks.Length - 1)];
+                    FullMap.DrawHead(at, scale, s.Eq.Head, hair, look.Skin, look.Hair, look.Eye, rim);
+                }
                 if (!names) continue;
                 if (otherStyle == null) otherStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold };
                 otherStyle.fontSize = Mathf.RoundToInt(16 * scale);
@@ -1304,6 +1316,18 @@ namespace TerraKnight.UI
         public static void Refresh(string scene)
         {
             if (scene != null && rooms.TryGetValue(scene, out var room)) room.Dirty = true;
+        }
+
+        /// <summary>The share of the map's rooms the player has seen any of.</summary>
+        internal static float SeenFraction
+        {
+            get
+            {
+                // Over every room of the map's layout (its rooms list holds only those loaded so far).
+                int seen = 0;
+                foreach (var room in rooms.Values) if (room.AnySeen && layout.ContainsKey(room.Name)) seen++;
+                return layout.Count > 0 ? seen / (float)layout.Count : 0f;
+            }
         }
 
         public static string DevReport()

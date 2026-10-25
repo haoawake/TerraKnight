@@ -89,9 +89,12 @@ namespace TerraKnight.Items
         {
             // P:7941-7952: of the liquid grenades only the wet, lava and dry ones hit each enemy once (791 is left off the list).
             bool once = fam == RocketFamily.Grenade && id != 791;
+            // P:11017-11030, 11089 (NewProjectile): a grenade goes off in 3 s, a cluster fragment in 1 s (P:11055-11066); the
+            // rockets and mines keep SetDefaults' 60 s.
+            int time = fam == RocketFamily.Grenade ? 180 : fam == RocketFamily.Fragment ? 60 : 3600;
             return new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_" + id, W = 14, H = 14, Time = 3600, Penetrate = -1, OncePerNpc = once,
+                Ai = Ai.Custom, Texture = "Projectile_" + id, W = 14, H = 14, Time = time, Penetrate = -1, OncePerNpc = once,
                 Scale = fam == RocketFamily.Snowman ? 0.9f : 1f, Frames = fam == RocketFamily.Fragment ? 4 : 1,
                 Update = (t, p) => t.StepRocket(p), Draw = (t, fx, p, px) => DrawRocket(fx, p, px), OnKill = (t, p) => t.KillRocket(p),
                 OnHit = (t, p, hm) =>
@@ -108,6 +111,28 @@ namespace TerraKnight.Items
                     return (dealt, crit);
                 },
             };
+        }
+
+        /// <summary>
+        /// Pl:49968-49971, 47380-47414: with each mine the launcher fires, twenty at most are left lying; past that the
+        /// one with the least time left goes off (a new mine's first update stands for the shot).
+        /// </summary>
+        void CapMines()
+        {
+            while (true)
+            {
+                int n = 0;
+                Proj oldest = null;
+                for (int i = 0; i < live.Count; i++)
+                {
+                    var q = live[i];
+                    if (q.Dead || !rockets.TryGetValue(q.Kind, out var r) || r.Fam != RocketFamily.Mine) continue;
+                    n++;
+                    if (oldest == null || q.TimeLeft < oldest.TimeLeft) oldest = q;
+                }
+                if (n <= 20) return;
+                Kill(oldest);
+            }
         }
 
         /// <summary>The launcher's own projectile for the ammo used (PickAmmo, Pl:54092-54127).</summary>
@@ -141,6 +166,7 @@ namespace TerraKnight.Items
             // P:47974-47990: the cluster ones' fire cyan; the wet, lava and honey ones' two parts in three water (33), lava (35), honey (152).
             int trail = tier == 4 || tier == 5 ? 228 : tier >= 8 && tier <= 10 && Random.Range(0, 3) != 0 ? (tier == 8 ? 33 : tier == 9 ? 35 : 152) : 6;
             p.Ai0++;
+            if (fam == RocketFamily.Mine && p.Ai0 == 1f) CapMines();
             switch (fam)
             {
                 case RocketFamily.Snowman:
@@ -763,7 +789,7 @@ namespace TerraKnight.Items
                 if (lavaTime > 0) lavaTime--;
                 // The Ash Wood set (ashWoodBonus, Pl:27883-27915): the lava's 80 halved, and with the Obsidian Rose none at all.
                 else if (!hero.cState.invulnerable && !Player.Mounts.LavaImmune && !Equipment.Current.LavaImmune && !(Equipment.Current.AshWood && Equipment.Current.LavaRose))
-                    Player.PlayerHooks.HurtPlayer(hero, (Equipment.Current.AshWood ? 40 : 80) - (Equipment.Current.LavaRose ? 45 : 0), hb.center.x >= p.Pos.x ? 1 : -1, gameObject);
+                    Player.PlayerHooks.HurtEnvironment(hero, (Equipment.Current.AshWood ? 40 : 80) - (Equipment.Current.LavaRose ? 45 : 0), hb.center.x >= p.Pos.x ? 1 : -1, gameObject);
             }
             else if (lavaTimeTick != tick && lavaTime < max) lavaTime++;
             if (lavaTime > max) lavaTime = max;

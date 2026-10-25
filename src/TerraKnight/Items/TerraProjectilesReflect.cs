@@ -58,18 +58,27 @@ namespace TerraKnight.Items
         /// <summary>Terraria's projectile types that can be reflected (from Projectile.SetDefaults' aiStyles).</summary>
         static readonly HashSet<int> reflectable = new HashSet<int>
         {
-            1, 2, 3, 4, 5, 14, 15, 20, 21, 27, 36, 41, 48, 51, 54, 55, 69, 70, 77, 81, 82, 83, 84, 88, 89, 90, 91, 93, 94, 95, 96, 98, 100, 103, 104, 110,
+            1, 2, 3, 4, 5, 14, 15, 20, 21, 27, 36, 38, 41, 48, 51, 54, 55, 69, 70, 76, 77, 78, 81, 82, 83, 84, 88, 89, 90, 91, 93, 94, 95, 96, 98, 100, 103, 104, 110,
             117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 128, 129, 158, 159, 160, 161, 162, 166, 172, 174, 176, 177, 178, 180, 184, 195, 207, 225, 240,
             242, 246, 248, 249, 253, 257, 258, 259, 265, 267, 270, 275, 276, 278, 279, 282, 283, 284, 285, 286, 287, 289, 299, 300, 302, 304, 306, 309, 311,
             312, 318, 323, 325, 330, 336, 337, 344, 345, 347, 348, 349, 350, 355, 357, 359, 370, 371, 389, 408, 424, 425, 426, 435, 436, 437, 438, 440, 442,
-            449, 459, 462, 467, 468, 469, 471, 474, 477, 478, 479, 484, 485, 495, 497, 498, 501, 502, 504, 507, 508, 510, 520, 521, 522, 532, 572, 576, 577,
+            449, 459, 462, 467, 468, 469, 471, 472, 474, 477, 478, 479, 484, 485, 495, 497, 498, 501, 502, 504, 507, 508, 510, 520, 521, 522, 532, 572, 576, 577,
             581, 583, 585, 587, 589, 592, 593,
             594, 597, 599, 601, 605, 606, 616, 619, 620, 621, 622, 634, 635, 638, 639, 640, 645, 660, 661, 662, 664, 666, 668, 671, 675, 676, 680, 682, 684, 685,
             686, 706, 709, 710, 711, 712, 719, 728, 731, 763, 772, 811, 814, 819, 837, 861, 868, 869, 876, 909, 920, 921, 926, 936, 937, 954, 955, 962, 967, 968,
             979, 980, 981, 996, 1006, 1012, 1023, 1026, 1073, 1085, 1097, 1099, 1111, 1114, 1120, 1124, 1134,
+            374, 376,
         };
 
-        static readonly Dictionary<ProjKind, bool> canReflect = new Dictionary<ProjKind, bool>();
+        internal static bool ReflectableKind(ProjKind kind) => reflectionTypes.TryGetValue(kind, out int id) && reflectable.Contains(id);
+
+        internal static void DevExportReflectionCatalog(string path)
+        {
+            var rows = new List<object>();
+            foreach(var kv in specs) rows.Add(new { Kind=kv.Key.ToString(), kv.Value.Texture,
+                Reflects=ReflectableKind(kv.Key), Identity=reflectionTypes.TryGetValue(kv.Key,out int id)?id:-1 });
+            System.IO.File.WriteAllText(path,Newtonsoft.Json.JsonConvert.SerializeObject(rows,Newtonsoft.Json.Formatting.Indented));
+        }
 
         public static int DevReflected, DevReflectHits;
         /// <summary>Dev: the last reflected shot's kind, its speed before and after, its damage after, and its last hit on the player.</summary>
@@ -79,15 +88,10 @@ namespace TerraKnight.Items
 
         static GameObject reflectSource;
 
-        /// <summary>Whether a shot can be sent back: its Terraria type (its texture's number) is one Terraria reflects.</summary>
+        /// <summary>Terraria.CanBeReflected: active friendly damaging shots of eligible gameplay types only.</summary>
         static bool CanReflect(Proj p)
         {
-            if (p.Damage <= 0 || p.Hostile) return false;
-            if (canReflect.TryGetValue(p.Kind, out bool yes)) return yes;
-            string tex = p.Spec.Texture;
-            yes = tex != null && tex.StartsWith("Projectile_") && int.TryParse(tex.Substring(11), out int id) && reflectable.Contains(id);
-            canReflect[p.Kind] = yes;
-            return yes;
+            return !p.Dead && p.Damage > 0 && !p.Hostile && ReflectableKind(p.Kind);
         }
 
         /// <summary>NPC.ReflectProjectile, at <see cref="ReflectSpeed"/> of the speed.</summary>

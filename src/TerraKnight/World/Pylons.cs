@@ -6,8 +6,9 @@ using UnityEngine.InputSystem;
 namespace TerraKnight.World
 {
     /// <summary>
-    /// Terraria's teleportation pylons, one beside every bench. A bench's pylon appears the first
-    /// time the player rests on that bench and never before (nor on the map). Right-clicking a
+    /// Terraria's teleportation pylons, one beside every bench. A bench's pylon stands there, half clear and its place
+    /// taken, from the first time its scene is in the world (PylonsDormant), and lights up the first time the player rests
+    /// on that bench (not on the map before). Right-clicking a
     /// pylon opens the fullscreen map, where every pylon found so far is marked; clicking one takes
     /// the player there at once. None of Terraria's conditions apply (no townsfolk needed, no
     /// danger check, from anywhere): the game brings the player there as it does to a bench, but
@@ -31,6 +32,8 @@ namespace TerraKnight.World
             public bool Placed;
             /// <summary>A placed pylon's way in: the scene's bench nearest it (a respawn marker), else a gate's name.</summary>
             public string ArriveBench, Entry;
+            /// <summary>Standing by its bench, not lit yet (PylonsDormant): half clear, not used, not on the map.</summary>
+            public bool Dormant;
             public string Name => StyleNames[Style];
         }
 
@@ -68,6 +71,7 @@ namespace TerraKnight.World
         public static void Clear()
         {
             Unlocked.Clear();
+            Dormant.Clear();
             wasAtBench = false;
         }
 
@@ -123,6 +127,7 @@ namespace TerraKnight.World
                 if (OnRest(gm, pd, hero) || ++restTries > 50) restPending = false;
             }
             wasAtBench = atBench;
+            RecheckDormant();
             HandleUse(hero);
         }
 
@@ -138,6 +143,15 @@ namespace TerraKnight.World
             // Still the old respawn point of this same scene (a death's marker, another bench):
             // the bench the player sits on is the one right beside him.
             if (Vector2.Distance(bench.position, hero.transform.position) > 5f) return false;
+            // Its pylon already standing there, not lit: lit where it stands.
+            if (LightDormant(scene, pd.respawnMarkerName, live))
+            {
+                var lit = Find(scene, pd.respawnMarkerName);
+                Plugin.Log.LogInfo($"[晶塔] 在 {scene} 的 {pd.respawnMarkerName} 旁点亮了{lit?.Name}");
+                TerraMod.Instance?.PlaySound("Item_4", 0.8f);
+                if (lit != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 1.2f, Lang.F("解锁了{0}", Lang.T(lit.Name)), UI.CombatText.Pickup, true);
+                return true;
+            }
             var origin = (Vector2)live.CellOffset * CellGrid.CellSize;
             if (!PlaceBeside(live, bench.position, out var cell, out int looseness))
             {
@@ -215,6 +229,11 @@ namespace TerraKnight.World
 
         static bool Fits(TerrainRegion region, int x0, int y, bool overItems, int head)
         {
+            // Not on a chest, a piece of furniture or another pylon.
+            var box = new Rect(CellGrid.CellCenter(x0, y) - Vector2.one * (CellGrid.CellSize / 2f), new Vector2(WidthCells, HeightCells) * CellGrid.CellSize);
+            if (Stations.Overlaps(box) || Occupies(box)) return false;
+            var inner = new Rect(box.x + 0.02f, box.y + 0.02f, box.width - 0.04f, box.height - 0.04f);
+            foreach (var c in Chests.Boxes()) if (c.Overlaps(inner)) return false;
             for (int x = x0; x < x0 + WidthCells; x++)
             {
                 if (!region.Contains(x, y - 1) || !TerraWorld.IsSolid(x, y - 1)) return false;
@@ -245,6 +264,7 @@ namespace TerraKnight.World
                 }
                 Spawn(p, region);
             }
+            ReadyDormant(region);
         }
 
         static PylonObject Spawn(Pylon p, TerrainRegion region)
@@ -276,6 +296,8 @@ namespace TerraKnight.World
             return null;
         }
 
+        static float dormantSaidAt = -10f;
+
         public static bool HoveringPylon { get; private set; }
         /// <summary>The hovered pylon's item texture (Terraria's cursor item icon).</summary>
         public static string HoverIcon { get; private set; } = "Item_4876";
@@ -290,6 +312,16 @@ namespace TerraKnight.World
             if (!TerraMod.MouseWorld(out var mouse)) return;
             var o = Hovered(hero, mouse);
             if (o == null) return;
+            // Not lit yet: how to light it.
+            if (o.Pylon.Dormant)
+            {
+                if (Mouse.current.rightButton.wasPressedThisFrame && Time.unscaledTime - dormantSaidAt > 1f)
+                {
+                    dormantSaidAt = Time.unscaledTime;
+                    UI.CombatText.Show(o.Bounds.center, Lang.T("在旁边的长椅上坐一下，就能点亮这座晶塔"), UI.CombatText.Notice);
+                }
+                return;
+            }
             HoveringPylon = true;
             HoverIcon = "Item_" + StyleItems[Mathf.Clamp(o.Pylon.Style, 0, StyleItems.Length - 1)];
             if (Mouse.current.rightButton.wasPressedThisFrame) UI.FullMap.OpenForPylons();
@@ -301,10 +333,12 @@ namespace TerraKnight.World
         /// </summary>
         public static void Teleport(Pylon p)
         {
+            if (p == null || string.IsNullOrEmpty(p.Scene)) return;
             var gm = GameManager.UnsafeInstance;
             var pd = PlayerData.instance;
             var hero = HeroController.SilentInstance;
             if (gm == null || pd == null || hero == null || gm.IsInSceneTransition || hero.cState.dead || hero.cState.transitioning) return;
+            Player.DelicateFlower.OnTeleport();
             Plugin.Log.LogInfo($"[晶塔] 传送到 {p.Scene} 的 {p.Name}（{(p.Placed ? (string.IsNullOrEmpty(p.ArriveBench) ? "入口 " + p.Entry : "长椅 " + p.ArriveBench) : p.Bench)}）");
             PylonObject.TeleportEffect(hero, p.Style);
             gm.StartCoroutine(p.Placed && string.IsNullOrEmpty(p.ArriveBench) ? TravelByGate(gm, pd, hero, p) : Travel(gm, pd, hero, p));
@@ -426,6 +460,7 @@ namespace TerraKnight.World
                 Plugin.Log.LogWarning($"[晶塔] {p.Scene} 的长椅 {p.Bench} 现在用不了，复活点留在 {prevRespawnScene} 的 {prevRespawnMarker}");
             }
             DevArrivals++;
+            Achievements.AchievementTracker.PylonArrived();
             var col = hero.GetComponent<BoxCollider2D>();
             Vector2 at = hero.transform.position;
             PylonObject obj = null;
@@ -469,6 +504,7 @@ namespace TerraKnight.World
             var hero = HeroController.SilentInstance;
             if (gm == null || pd == null || hero == null || gm.IsInSceneTransition || hero.cState.dead || hero.cState.transitioning) return false;
             if (string.IsNullOrEmpty(pd.respawnScene) || string.IsNullOrEmpty(pd.respawnMarkerName)) return false;
+            Player.DelicateFlower.OnTeleport();
             Plugin.Log.LogInfo($"[回忆药水] 回到 {pd.respawnScene} 的 {pd.respawnMarkerName}");
             Player.PotionBuffs.Sparkle(hero.GetComponent<BoxCollider2D>().bounds.center);
             DevRecalls++;

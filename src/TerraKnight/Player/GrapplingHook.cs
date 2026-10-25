@@ -101,6 +101,9 @@ namespace TerraKnight.Player
             public Vector2 Pos, Vel;        // world units; velocity in px per update
             public Vector2Int Cell;
             public Collider2D Col;
+            /// <summary>What holds it when it isn't a cell (a lift, a moving platform, a swaying plant), and where on it (its own space).</summary>
+            public Transform Anchor;
+            public Vector2 Local;
             public bool IsCell;
             public int Age;
             public int Frame, FrameCounter;
@@ -109,6 +112,13 @@ namespace TerraKnight.Player
 
         public static GrapplingHook Instance { get; private set; }
         public static bool IsLatched => Instance != null && Instance.hooks.Exists(h => h.State == State.Latched);
+
+        /// <summary>Where the latched hooks hold (world units): the ropes run from the player to these (EnemyAi's hook cutting).</summary>
+        public static void LatchedPoints(List<Vector2> into)
+        {
+            if (Instance == null) return;
+            foreach (var h in Instance.hooks) if (h.State == State.Latched) into.Add(h.Pos);
+        }
 
         readonly List<Hook> hooks = new List<Hook>();
         float tickAccumulator;
@@ -129,8 +139,11 @@ namespace TerraKnight.Player
         static bool Playing(HeroController hero) =>
             hero != null && !hero.cState.dead && TerrainSystem.Current != null && (GameHooks.PlayerHasControl() || HeldForMap(hero));
 
-        /// <summary>The map open (FullMap, WorldMap: they take the Knight's control while up): a hook keeps holding, as Terraria's does.</summary>
-        static bool HeldForMap(HeroController hero) => UI.FullMap.Open && hero.controlReqlinquished && !hero.cState.transitioning;
+        /// <summary>
+        /// The map open (FullMap, WorldMap: they take the Knight's control while up) or a casino machine's window: a hook keeps
+        /// holding, as Terraria's does.
+        /// </summary>
+        static bool HeldForMap(HeroController hero) => (UI.FullMap.Open || Items.Casino.IsOpen) && hero.controlReqlinquished && !hero.cState.transitioning;
 
         /// <summary>Player.QuickGrapple_GetItemToUse: the first hook in the inventory (there is no hook slot here).</summary>
         public static ItemType HookItem(Inventory inv)
@@ -199,6 +212,7 @@ namespace TerraKnight.Player
         void Update()
         {
             var hero = HeroController.SilentInstance;
+            FollowAnchors();
             if (hooks.Count > 0 && Gone(hero))
             {
                 Note("主角死了、被传送或失去控制");
@@ -285,6 +299,28 @@ namespace TerraKnight.Player
         /// <summary>A cell a hook takes hold of: a solid block, or a platform (Main.tileSolidTop, as Projectile.AI_007_GrapplingHooks lets it).</summary>
         static bool Holds(int x, int y) => TerraWorld.IsSolid(x, y) || TerraWorld.IsPlatform(x, y);
 
+        /// <summary>
+        /// The hooks held by moving scenery, where it has taken them (each frame and each physics step); one it carries into
+        /// a wall or out of the room (a Colosseum platform sliding off into the side) lets go rather than drag the player there.
+        /// </summary>
+        void FollowAnchors()
+        {
+            foreach (var k in hooks)
+            {
+                if (k.State != State.Latched || k.IsCell || k.Anchor == null) continue;
+                Vector2 at = k.Anchor.TransformPoint(k.Local);
+                var cell = CellGrid.WorldToCell(at);
+                if (TerraWorld.IsSolid(cell.x, cell.y) || !TerraWorld.InWorld(cell.x, cell.y))
+                {
+                    Note(TerraWorld.InWorld(cell.x, cell.y) ? "钩住的东西缩进了墙里" : "钩住的东西出了房间");
+                    k.State = State.Retracting;
+                    DevCarriedOff++;
+                    continue;
+                }
+                k.Pos = at;
+            }
+        }
+
         /// <summary>A 10 px box round the hook against solid blocks and platforms, then the game's own solid terrain.</summary>
         bool TryLatch(HeroController hero, Hook k)
         {
@@ -296,16 +332,20 @@ namespace TerraKnight.Player
                 {
                     if (!Holds(x, y)) continue;
                     k.IsCell = true;
+                    k.Anchor = null;
                     k.Cell = new Vector2Int(x, y);
                     Latch(hero, k, CellGrid.CellCenter(x, y), TerraWorld.Get(x, y), new Vector2Int(x, y));
                     return true;
                 }
-            // Solid scenery the grid doesn't hold (moving platforms, doors): hold where it touched.
+            // Solid scenery the grid doesn't hold (moving platforms, lifts, doors): hold where it touched, and go where it goes
+            // (FollowAnchors). Not an enemy's own solid part: a hook holds blocks, never NPCs.
             foreach (var col in Physics2D.OverlapBoxAll(k.Pos, new Vector2(half * 2f, half * 2f), 0f, 1 << ChunkColliders.TerrainLayer))
             {
-                if (col.isTrigger || col.GetComponentInParent<TerraOwned>() != null) continue;
+                if (col.isTrigger || col.GetComponentInParent<TerraOwned>() != null || col.GetComponentInParent<HealthManager>() != null) continue;
                 k.IsCell = false;
                 k.Col = col;
+                k.Anchor = col.transform;
+                k.Local = col.transform.InverseTransformPoint(k.Pos);
                 Latch(hero, k, k.Pos, CellKind.Original, CellGrid.WorldToCell(k.Pos));
                 return true;
             }
@@ -342,23 +382,72 @@ namespace TerraKnight.Player
         }
 
         /// <summary>
-        /// Player.DoQueenSlimeHookTeleport (Pl:22922-22936): up to 150 steps of 12 px toward the
-        /// hook, stopped by blocks, and there at once (a puff of gel at both ends).
+        /// Player.DoQueenSlimeHookTeleport (Pl:22922-22936): up to 150 steps of 12 px toward the hook, each as
+        /// Collision.TileCollision moves the player with fallThrough (each axis on its own: one a block stops, the other
+        /// goes on, so the player slides along a floor or a wall; platforms passed through), and there at once (a puff of
+        /// gel at both ends). Cast whole at once, a platform level with the player stopped it at the start and the rope
+        /// pulled the player there instead.
         /// </summary>
         static void QueenSlimeTeleport(HeroController hero, Vector2 target)
         {
             var col = hero.GetComponent<BoxCollider2D>();
             var from = (Vector2)col.bounds.center;
-            var to = target - from;
-            float dist = Mathf.Min(to.magnitude, 150f * 12f * Px);
-            if (dist < 1e-3f) return;
-            var hit = Physics2D.BoxCast(from, col.bounds.size * 0.98f, 0f, to.normalized, dist, 1 << ChunkColliders.TerrainLayer);
-            float go = hit.collider != null ? Mathf.Max(0f, hit.distance - 0.02f) : dist;
+            var size = (Vector2)col.bounds.size * 0.98f;
+            var pos = from;
+            if (DevWholeCast)
+            {
+                // Dev: the old single cast, for the suite's before-and-after.
+                var whole = target - from;
+                float dist = Mathf.Min(whole.magnitude, 150f * 12f * Px);
+                var hit = Physics2D.BoxCast(from, size, 0f, whole.normalized, dist, 1 << ChunkColliders.TerrainLayer);
+                pos = from + whole.normalized * (hit.collider != null ? Mathf.Max(0f, hit.distance - 0.02f) : dist);
+            }
+            else
+            for (int i = 0; i < 150; i++)
+            {
+                var to = target - pos;
+                float d = to.magnitude;
+                if (d < 0.5f * Px) break;
+                var moved = Slide(pos, size, to / d * Mathf.Min(d, 12f * Px));
+                if (moved.sqrMagnitude < 1e-8f) break;
+                pos += moved;
+            }
+            if ((pos - from).sqrMagnitude < 1e-6f) return;
             Puff(from);
-            hero.transform.position += (Vector3)(to.normalized * go);
-            Puff(from + to.normalized * go);
+            hero.transform.position += (Vector3)(pos - from);
+            Puff(pos);
             TerraMod.Instance?.ResetFall();
             DevTeleports++;
+        }
+
+        /// <summary>Dev: the teleport as one cast of the whole way (the way it was), to compare.</summary>
+        public static bool DevWholeCast;
+
+        static readonly RaycastHit2D[] castHits = new RaycastHit2D[16];
+
+        /// <summary>Collision.TileCollision for a box: across, then up or down, each as far as the solid terrain lets it.</summary>
+        static Vector2 Slide(Vector2 pos, Vector2 size, Vector2 step)
+        {
+            float sx = Mathf.Sign(step.x), sy = Mathf.Sign(step.y);
+            float dx = Free(pos, size, new Vector2(sx, 0f), Mathf.Abs(step.x));
+            pos.x += sx * dx;
+            float dy = Free(pos, size, new Vector2(0f, sy), Mathf.Abs(step.y));
+            return new Vector2(sx * dx, sy * dy);
+        }
+
+        /// <summary>How far the box goes that way, up to the distance: the solid terrain stops it; platforms and the game's one-way ground (effectors) don't.</summary>
+        static float Free(Vector2 pos, Vector2 size, Vector2 dir, float dist)
+        {
+            if (dist <= 0f) return 0f;
+            int n = Physics2D.BoxCastNonAlloc(pos, size, 0f, dir, castHits, dist, 1 << ChunkColliders.TerrainLayer);
+            float free = dist;
+            for (int i = 0; i < n; i++)
+            {
+                var c = castHits[i].collider;
+                if (c == null || c.isTrigger || c.usedByEffector) continue;
+                free = Mathf.Min(free, Mathf.Max(0f, castHits[i].distance - 0.01f));
+            }
+            return free;
         }
 
         static void Puff(Vector2 at)
@@ -442,6 +531,7 @@ namespace TerraKnight.Player
         void Pull(HeroController hero, Rigidbody2D rb)
         {
             slow = rb.linearVelocity.magnitude < 2f * TerraMovement.PxT;
+            FollowAnchors();
             Vector2 player = hero.GetComponent<BoxCollider2D>().bounds.center;
             // The force is px a tick: as a speed, 60 ticks a second; never past the spot within one physics step.
             var pp = TerraParticles.ToPx(player);
@@ -616,7 +706,7 @@ namespace TerraKnight.Player
         }
         public int DevOut => hooks.Count;
         public int DevHolding => hooks.FindAll(h => h.State == State.Latched).Count;
-        public static int DevThrown, DevLatches, DevTeleports;
+        public static int DevThrown, DevLatches, DevTeleports, DevCarriedOff;
         public void DevRelease(HeroController hero) => hooks.Clear();
         /// <summary>Player.RemoveAllGrapplingHooks (a pat, a teleport).</summary>
         public void ReleaseAll() => hooks.Clear();

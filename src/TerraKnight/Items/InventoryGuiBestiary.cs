@@ -35,12 +35,48 @@ namespace TerraKnight.Items
 
         static IReadOnlyList<EnemyDrops.Drop> BookDropsIn(string record, string scene)
         {
-            if (bestiaryDropStage < 0) return EnemyDrops.In(record, scene);
+            if (bestiaryDropStage < 0) return WithKillRows(record, scene, EnemyDrops.In(record, scene));
             int stage = BookDropStage;
             // A fixed boss reward belongs to its own stage, even though At promotes it.
             if (ProgressionBalance.FormalBoss(record) && ProgressionBalance.BossRewards.TryGetValue(record, out var boss) && stage < boss.Stage)
                 return System.Array.Empty<EnemyDrops.Drop>();
-            return EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5, scene);
+            return WithKillRows(record, scene, EnemyDrops.At(record, stage, Bestiary.KillsOf(record) == 0, stage >= 4, stage >= 5, scene));
+        }
+
+        /// <summary>
+        /// The drops with what every kill there can bring besides (Fishing.KillRows: the area's bait and moss; a kill with no
+        /// drops of its own brings none), made once for a list.
+        /// </summary>
+        static IReadOnlyList<EnemyDrops.Drop> WithKillRows(string record, string scene, IReadOnlyList<EnemyDrops.Drop> rows)
+        {
+            if (rows.Count == 0 || EnemyDrops.IsBoss(record)) return rows;
+            var key = (rows, scene, BookDropStage);
+            if (killRows.TryGetValue(key, out var done)) return done;
+            var list = new List<EnemyDrops.Drop>(rows);
+            Fishing.KillRows(record, scene, BookDropStage, list);
+            if (killRows.Count > 2000) killRows.Clear();
+            killRows[key] = list;
+            return list;
+        }
+
+        static readonly Dictionary<(IReadOnlyList<EnemyDrops.Drop>, string, int), IReadOnlyList<EnemyDrops.Drop>> killRows =
+            new Dictionary<(IReadOnlyList<EnemyDrops.Drop>, string, int), IReadOnlyList<EnemyDrops.Drop>>();
+
+        static string bossGeoRec, bossGeoScene;
+        static int bossGeoShown, bossGeoStage = -1;
+        static World.DifficultyLevel bossGeoDifficulty;
+
+        /// <summary>The boss's fight geo the page shows, worked out again only for another boss, room, difficulty or stage.</summary>
+        static int BookBossGeo(string rec, string scene)
+        {
+            int stage = Shop.UnlockedStage();
+            var difficulty = World.GameDifficulty.Current;
+            if (rec != bossGeoRec || scene != bossGeoScene || stage != bossGeoStage || difficulty != bossGeoDifficulty)
+            {
+                bossGeoRec = rec; bossGeoScene = scene; bossGeoStage = stage; bossGeoDifficulty = difficulty;
+                bossGeoShown = EnemyDrops.BossGeo(rec, scene);
+            }
+            return bossGeoShown;
         }
 
         static string homeFor, homeSearch;
@@ -79,6 +115,8 @@ namespace TerraKnight.Items
             }
             string listed = BestiaryRoute.AreaOf(rec);
             for (int i = 0; i < homes.Count; i++) if (homes[i].Area == listed) return i;
+            // A boss listed under Godhome's area that has a world fight too: the world's.
+            for (int i = 0; i < homes.Count; i++) if (!World.Areas.GodhomeRoom(homes[i].Scene)) return i;
             return 0;
         }
 
@@ -91,7 +129,8 @@ namespace TerraKnight.Items
         /// <summary>Whether a kill in that scene can drop something the search finds (at the stage shown).</summary>
         static bool HomeMatches(string rec, string scene)
         {
-            string era = bookSearch + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + Lang.Culture;
+            var era = (bookSearch, bestiaryDropStage, BookDropStage, Lang.Culture, World.GameDifficulty.Current,
+                ProgressionBalance.EntryClear, ProgressionBalance.FinalClear, EssentialDrops.ManipulatorGiven, inv, Bestiary.Kills.Count);
             if (era != homeMatchEra) { homeMatchEra = era; homeMatches.Clear(); }
             string key = rec + "|" + scene;
             if (homeMatches.TryGetValue(key, out bool yes)) return yes;
@@ -102,9 +141,11 @@ namespace TerraKnight.Items
         }
 
         static readonly Dictionary<string, bool> homeMatches = new Dictionary<string, bool>();
-        static string homeMatchEra;
+        static (string, int, int, string, World.DifficultyLevel, bool, bool, bool, Inventory, int) homeMatchEra;
         public static int DevBestiaryDropStage => bestiaryDropStage;
         public static IReadOnlyList<EnemyDrops.Drop> DevBestiaryDrops(string record) => BookDrops(record);
+        public static IReadOnlyList<EnemyDrops.Drop> DevBookDropsIn(string record, string scene) => BookDropsIn(record, scene);
+        public static string DevBookHome(string record) => HomeScene(record);
         public static bool DevBestiarySearchMatches(string record) => MatchesSearch(record);
         static int ActiveBookFilter => bestiaryByStage ? bestiaryStageFilter : bestiaryFilter;
         /// <summary>
@@ -118,7 +159,7 @@ namespace TerraKnight.Items
         {
             int stage = Shop.UnlockedStage(), last = World.Areas.MaxLevel;
             return stage >= last ? Lang.F("当前阶段 {0} / {1}（最终阶段）", stage, last)
-                : Lang.F("当前阶段 {0} / {1}，再得到 1 种能力进入下一阶段（通常是{2}）", stage, last, Lang.T(Shop.GateAbility(stage + 1)));
+                : Lang.F("当前阶段 {0} / {1}，再取得任意 1 种未获得的移动能力进入下一阶段", stage, last);
         }
 
         static string BookGroupName(int group) => bestiaryByStage ? Lang.F("阶段 {0}",group) : World.Areas.Display(BestiaryRoute.Areas[group]);
@@ -244,6 +285,19 @@ namespace TerraKnight.Items
         static int CategoryOf(string record) => bookCategory.TryGetValue(record, out int c) ? c : Bestiary.CategoryOf(record);
 
         static Color CategoryColor(int c) => c == 2 ? BossColor : c == 1 ? EliteColor : CommonColor;
+
+        /// <summary>The share of the book's enemies collected (defeated), as its 已收集.</summary>
+        internal static float BookCompletion
+        {
+            get
+            {
+                var all = AllBookRecords();
+                if (all.Count == 0) return 0f;
+                int done = 0;
+                foreach (var r in all) if (Bestiary.IsDefeated(r)) done++;
+                return done / (float)all.Count;
+            }
+        }
 
         /// <summary>Every enemy the book lists: by area in route order, the common ones, then elites, then bosses, each in the order met.</summary>
         static List<string> AllBookRecords()
@@ -473,6 +527,8 @@ namespace TerraKnight.Items
 
         static void DrawBestiary(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string hoveredExtra, ref Kind hoveredKind)
         {
+            using var deferredTextures = TerrariaAssets.DeferMissing();
+            var totalWatch = System.Diagnostics.Stopwatch.StartNew();
             BookStyles(ui);
             var all = AllBookRecords();
             var areas = BestiaryRoute.Areas;
@@ -492,6 +548,7 @@ namespace TerraKnight.Items
             // The window, centred in the view under the hotbar.
             float W = Mathf.Min(1220f * ui, view.width - 40f * ui), H = Mathf.Min(720f * ui, view.height - 130f * ui);
             var panel = new Rect(view.center.x - W / 2f, view.y + Mathf.Max(110f * ui, (view.height - H) / 2f + 30f * ui), W, H);
+            DrawTrackingReturn(panel,ui,mouse);
             if (panel.Contains(mouse))
             {
                 hovered = default;
@@ -623,6 +680,7 @@ namespace TerraKnight.Items
             var detail = new Rect(dx, gridArea.y, panel.xMax - 18f * ui - dx, panel.yMax - gridArea.y - 10f * ui);
             if (bestiaryChosen != null) DrawBookEntry(detail, bestiaryChosen, ui, mouse, ref hovered, ref hoveredKind, ref hoveredExtra);
             DevBookTicks[2] += watch.ElapsedTicks;
+            if(totalWatch.Elapsed.TotalMilliseconds>40)Plugin.Log.LogInfo($"[图鉴长帧] total={totalWatch.Elapsed.TotalMilliseconds:F1} detail={watch.Elapsed.TotalMilliseconds:F1}ms record={bestiaryChosen}");
             if (Event.current.type == EventType.Repaint) DevBookFrames++;
             if (hoverRecord != null && hovered.IsEmpty)
             {
@@ -802,9 +860,10 @@ namespace TerraKnight.Items
             }
             y += 30f * ui;
             // The areas it lives in: a kill's drops are its area's (ores, materials, equipment), shown for the one chosen.
-            // While an item is looked for, the areas whose drops have it are rimmed; areas not yet been to are greyed.
+            // While an item is looked for, the areas whose drops have it are rimmed; areas not yet been to are greyed. A
+            // boss's: its world fight and its Godhome one, which pays the player's stage (the lunar weapons at the last).
             var homes = BestiaryHabitats.Of(rec);
-            if (beaten && homes.Count > 0 && !EnemyDrops.IsBoss(rec))
+            if (beaten && homes.Count > 0 && (!EnemyDrops.IsBoss(rec) || homes.Count > 1))
             {
                 int home = HomeIndex(rec);
                 bool byItem = Searching && !Matches(Bestiary.NameOf(rec));
@@ -824,6 +883,24 @@ namespace TerraKnight.Items
                     hx += w + 4f * ui;
                 }
                 y += 30f * ui;
+            }
+            // Godhome's own bonus, by its challenge (GodhomeRewards), a roll of its own beside these.
+            if (beaten && drops.Count > 0 && World.Areas.GodhomeRoom(HomeScene(rec)))
+            {
+                BookOutlined(new Rect(d.x, y, d.width, 20f * ui), Lang.T("神居另按挑战难度有几率多给一件当前阶段首领的武器或饰品"), bookSmall, new Color(0.75f, 0.8f, 0.95f));
+                y += 24f * ui;
+                BookOutlined(new Rect(d.x,y,d.width,20f*ui),Lang.IsSource ? "月总装备来自阶段5终局首领与五门通关；各门另有通关奖励" : "Moon Lord gear: stage 5 terminal bosses and P5 completion; all pantheons have completion rewards",bookSmall,new Color(0.75f,0.8f,0.95f));
+                y += 24f * ui;
+            }
+            // A boss's own geo for the fight (EnemyDrops.BossGeo), on this difficulty.
+            if (beaten && drops.Count > 0 && EnemyDrops.IsBoss(rec))
+            {
+                int geo = BookBossGeo(rec, HomeScene(rec));
+                if (geo > 0)
+                {
+                    BookOutlined(new Rect(d.x, y, d.width, 20f * ui), Lang.F("另得 {0} 吉欧", geo), bookSmall, Gold);
+                    y += 24f * ui;
+                }
             }
             if (beaten && drops.Count == 0) BookOutlined(new Rect(d.x, y, d.width, 22f * ui),
                 Lang.T(bestiaryDropStage < 0 ? "只掉吉欧" : "该阶段无物品掉落"), bookSmall, new Color(0.75f, 0.75f, 0.8f));
@@ -869,7 +946,7 @@ namespace TerraKnight.Items
                     if (s.Contains(mouse))
                     {
                         int need = dr.LockStage - BookDropStage;
-                        BookHint = Lang.F("再获得 {0} 种能力后解锁（通常是{1}）", need, Lang.T(Shop.GateAbility(dr.LockStage)));
+                        BookHint = Lang.F("再获得 {0} 种不同移动能力后解锁，顺序不限", need);
                     }
                     continue;
                 }
@@ -882,7 +959,8 @@ namespace TerraKnight.Items
                 {
                     hovered = ItemStack.Of(dr.Type);
                     hoveredKind = Kind.BestiaryEntry;
-                    hoveredExtra = null;
+                    hoveredExtra = dr.Type==ItemType.LunarCraftingStation
+                        ? Lang.T("阶段5首领奖励，每个存档仅发放一次；专家及以上从宝藏袋中开出。发放后不再重复掉落。") : null;
                 }
             }
         }
@@ -893,17 +971,19 @@ namespace TerraKnight.Items
         /// Text with Terraria's four-way border (Utils.DrawBorderStringFourWay: the text drawn left, right, above and below
         /// in black, then itself): the book is mostly text, and the inventory's eight-way border cost it twice as much.
         /// </summary>
+        static readonly GUIContent bookContent = new GUIContent();
         static void BookOutlined(Rect r, string text, GUIStyle style, Color color)
         {
             if (Event.current.type != EventType.Repaint || string.IsNullOrEmpty(text)) return;
             float o = 1.5f * GameView.Scale;
+            bookContent.text = text;
             style.normal.textColor = new Color(0f, 0f, 0f, 0.85f * color.a);
-            GUI.Label(new Rect(r.x - o, r.y, r.width, r.height), text, style);
-            GUI.Label(new Rect(r.x + o, r.y, r.width, r.height), text, style);
-            GUI.Label(new Rect(r.x, r.y - o, r.width, r.height), text, style);
-            GUI.Label(new Rect(r.x, r.y + o, r.width, r.height), text, style);
+            style.Draw(new Rect(r.x - o, r.y, r.width, r.height), bookContent, false, false, false, false);
+            style.Draw(new Rect(r.x + o, r.y, r.width, r.height), bookContent, false, false, false, false);
+            style.Draw(new Rect(r.x, r.y - o, r.width, r.height), bookContent, false, false, false, false);
+            style.Draw(new Rect(r.x, r.y + o, r.width, r.height), bookContent, false, false, false, false);
             style.normal.textColor = color;
-            GUI.Label(r, text, style);
+            style.Draw(r, bookContent, false, false, false, false);
         }
 
         /// <summary>A drop's two lines as the book shows them: its name with how many, its chance, its rarity's colour.</summary>
@@ -925,19 +1005,26 @@ namespace TerraKnight.Items
         static List<int> DropView(string rec, IReadOnlyList<EnemyDrops.Drop> drops)
         {
             dropView.Clear();
+            var singles=new HashSet<ItemType>();
             bool byItem = Searching && !Matches(Bestiary.NameOf(rec));
             for (int k = 0; k < drops.Count; k++)
-                if (!byItem || !EnemyDrops.Locked(drops[k], BookDropStage) && Matches(ItemDb.Get(drops[k].Type).Name)) dropView.Add(k);
+                if (!byItem || !EnemyDrops.Locked(drops[k], BookDropStage) && Matches(ItemDb.Get(drops[k].Type).Name)){
+                    if(!EnemyDrops.Locked(drops[k],BookDropStage)&&EnemyDrops.SingleQuantity(ItemDb.Get(drops[k].Type))&&!singles.Add(drops[k].Type))continue;
+                    dropView.Add(k);
+                }
             return dropView;
         }
 
         /// <summary>The chosen entry's drops as text, worked out again only for another entry, language, difficulty or stage.</summary>
         static List<DropText> DropTexts(string rec, IReadOnlyList<EnemyDrops.Drop> drops)
         {
-            string key = rec + "|" + HomeScene(rec) + "|" + Lang.Culture + "|" + World.GameDifficulty.Current + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + drops.Count;
+            var timing = System.Diagnostics.Stopwatch.StartNew();
+            string key = rec + "|" + HomeScene(rec) + "|" + Lang.Culture + "|" + World.GameDifficulty.Current + "|" + bestiaryDropStage + "|" + BookDropStage + "|" + drops.Count
+                + "|" + EssentialDrops.ManipulatorGiven + "|" + Net.BossLifeRewards.Eligible(rec) + "|" + ProgressionBalance.EntryClear + "|" + ProgressionBalance.FinalClear;
             if (key == dropTextKey) return dropTexts;
             dropTextKey = key;
             dropTexts.Clear();
+            var summary = new EnemyDrops.ChanceSummary(drops, BookDropStage);
             foreach (var dr in drops)
             {
                 // On the save's difficulty (EnemyDrops.EffectiveChance / EffectiveMax).
@@ -947,12 +1034,18 @@ namespace TerraKnight.Items
                 float eff = EnemyDrops.EffectiveChance(dr);
                 string chance = eff >= 1f ? Lang.T("必定掉落") : $"{eff * 100f:0.##}%";
                 // One of a sure pick: one of the group's unlocked drops comes, at the group's chance.
-                int of = EnemyDrops.GroupSize(drops, dr.Group, BookDropStage);
-                if (of > 0) chance = (EnemyDrops.MarginalChance(drops, dr, BookDropStage) * 100f).ToString("0.##") + "%";
+                int of = dr.Group>0&&summary.Groups.TryGetValue(dr.Group,out var group) ? group.Count : 0;
+                if (of > 0) chance = (summary.Marginal(dr) * 100f).ToString("0.##") + "%";
+                if(EnemyDrops.SingleQuantity(ItemDb.Get(dr.Type))){
+                    float any=summary.Items.TryGetValue(dr.Type,out float value)?value:0;
+                    chance=any>=1f?Lang.T("必定掉落"):(any*100f).ToString("0.##")+"%";
+                }
                 if (dr.Master) chance = Lang.T("大师模式必掉");
+                if(dr.Type==ItemType.LunarCraftingStation)chance=Lang.T("必掉 · 每存档仅一次");
                 var def = ItemDb.Get(dr.Type);
                 dropTexts.Add(new DropText { Name = def.Name + count, Chance = chance, Color = ItemDb.RarityColor(def.Rare) });
             }
+            if(timing.Elapsed.TotalMilliseconds>20)Plugin.Log.LogInfo($"[图鉴掉率] {rec} rows={drops.Count} {timing.Elapsed.TotalMilliseconds:F1}ms");
             return dropTexts;
         }
 
@@ -961,6 +1054,11 @@ namespace TerraKnight.Items
         public static int DevBookFrames, DevBookRebuilds;
 
         static string bookKey;
+        static string pendingBookKey;
+        static int pendingBookAt, pendingBookFrame = -1;
+        static readonly List<string> pendingBookRows = new List<string>();
+        static bool BookSearching => pendingBookKey != null;
+        internal static bool DevSearchPending => BookSearching;
         static int bookSeen, bookDone;
         static int[] groupTotal = new int[0], groupSeen = new int[0];
 
@@ -970,13 +1068,38 @@ namespace TerraKnight.Items
         /// </summary>
         static void RefreshBook(List<string> all, int groups)
         {
+            if (groupTotal.Length != groups + 1) { groupTotal = new int[groups + 1]; groupSeen = new int[groups + 1]; }
             string key = ActiveBookFilter + "|" + bestiaryByStage + "|" + bookSearch + "|" + Bestiary.Stats.Count + "|" + Bestiary.Kills.Count
-                + "|" + Lang.Culture + "|" + Bestiary.AllUnlocked + "|" + groups + "|" + all.Count + "|" + Shop.UnlockedStage() + "|" + bestiaryDropStage;
+                + "|" + Lang.Culture + "|" + Bestiary.AllUnlocked + "|" + groups + "|" + all.Count + "|" + Shop.UnlockedStage() + "|" + bestiaryDropStage
+                + "|" + World.GameDifficulty.Current + "|" + ProgressionBalance.EntryClear + "|" + ProgressionBalance.FinalClear + "|" + EssentialDrops.ManipulatorGiven + "|" + inv.GetHashCode();
             if (key == bookKey) return;
+            List<string> found = all;
+            if (Searching)
+            {
+                if (key != pendingBookKey)
+                {
+                    bookKey = null;
+                    pendingBookKey = key; pendingBookAt = 0; pendingBookRows.Clear();
+                    bestiaryRows.Clear(); bookLines.Clear(); bestiaryChosen = null;
+                    System.Array.Clear(groupTotal,0,groupTotal.Length);
+                    System.Array.Clear(groupSeen,0,groupSeen.Length);
+                }
+                // IMGUI can run several times in one frame. Spend the search budget once.
+                if (pendingBookFrame == Time.frameCount) return;
+                pendingBookFrame = Time.frameCount;
+                var budget = System.Diagnostics.Stopwatch.StartNew();
+                while(pendingBookAt < all.Count) {
+                    if (MatchesSearch(all[pendingBookAt])) pendingBookRows.Add(all[pendingBookAt]);
+                    pendingBookAt++;
+                    if(budget.Elapsed.TotalMilliseconds >= 2)break;
+                }
+                if (pendingBookAt < all.Count) return;
+                found = pendingBookRows;
+            }
+            pendingBookKey = null;
             bookKey = key;
             DevBookRebuilds++;
             // Searching: only what it finds, in the grid and in the list down the left (a group it finds nothing in goes).
-            var found = Searching ? all.FindAll(MatchesSearch) : all;
             BuildBookLines(found);
             if (Searching && bestiaryRows.Count > 0 && !bestiaryRows.Contains(bestiaryChosen)) bestiaryChosen = bestiaryRows[0];
             bookSeen = bookDone = 0;
@@ -1031,7 +1154,9 @@ namespace TerraKnight.Items
         static int bookTypingEnded = -10;
 
         /// <summary>Something is searched for.</summary>
-        static bool Searching => bookSearch.Trim().Length > 0;
+        static bool Searching => SearchQuery.Length > 0;
+        static string trimmedSearchFor, trimmedSearch = "";
+        static string SearchQuery { get { if(trimmedSearchFor != bookSearch) { trimmedSearchFor=bookSearch; trimmedSearch=bookSearch.Trim(); } return trimmedSearch; } }
 
         /// <summary>The search box is being typed into (or was this frame or the last): the keys are the text's.</summary>
         internal static bool BookTyping => bookTyping || Time.frameCount - bookTypingEnded <= 1;
@@ -1064,7 +1189,7 @@ namespace TerraKnight.Items
         /// <summary>Dev: start or end typing into the search, as a click on the box and Enter do.</summary>
         public static void DevBookType(bool on) { if (on) StartBookSearch(); else EndBookSearch(); }
 
-        static bool Matches(string text) => text != null && text.IndexOf(bookSearch.Trim(), System.StringComparison.OrdinalIgnoreCase) >= 0;
+        static bool Matches(string text) => text != null && text.IndexOf(SearchQuery, System.StringComparison.OrdinalIgnoreCase) >= 0;
 
         /// <summary>An enemy the search finds: a seen one by its name, a defeated one by a drop the book shows (not a locked one).</summary>
         static bool MatchesSearch(string rec)
@@ -1080,7 +1205,6 @@ namespace TerraKnight.Items
         static void StartBookSearch()
         {
             EndRename(false);
-            ResetBookSearchFilters();
             bookTyping = true;
             bookInput.Begin();
             Sound("Menu_Tick");
@@ -1151,7 +1275,7 @@ namespace TerraKnight.Items
             // How many it found, under the box.
             if (Searching)
                 BookOutlined(new Rect(box.x, box.yMax + 2f * ui, box.width, 18f * ui),
-                    bestiaryRows.Count > 0 ? Lang.F("找到 {0} 种", bestiaryRows.Count) : Lang.T("没有找到"), bookCount, new Color(0.8f, 0.85f, 1f));
+                    BookSearching ? Lang.T("搜索中…") : bestiaryRows.Count > 0 ? Lang.F("找到 {0} 种", bestiaryRows.Count) : Lang.T("没有找到"), bookCount, new Color(0.8f, 0.85f, 1f));
         }
 
         /// <summary>A Stat_* panel at any width: its left third (the icon) at the panel's height, the rest of its fill stretched.</summary>

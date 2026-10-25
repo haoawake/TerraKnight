@@ -3,6 +3,7 @@ import json
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+from table_data import expand_tables
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'artifacts/wiki-preview'
@@ -28,7 +29,7 @@ def static_check():
     pages = {}
     for path in (OUT / 'terraknight-wiki').glob('*.html'):
         parser = Links()
-        parser.feed(path.read_text(encoding='utf-8'))
+        parser.feed(expand_tables(path.read_text(encoding='utf-8'), OUT/'terraknight-wiki'))
         pages[path.resolve()] = parser
     checked = 0
     for path, parser in pages.items():
@@ -49,6 +50,9 @@ def static_check():
             checked += 1
     index = json.loads((OUT / 'terraknight-wiki/search-index.json').read_text(encoding='utf-8'))
     import sys
+    import os
+    meta=json.loads((OUT/'terraknight-wiki/build-info.json').read_text('utf-8'))
+    os.environ['TK_WIKI_SOURCE_ROOT']=str(ROOT/meta['release']['snapshot'])
     sys.path.insert(0, str(ROOT / 'tools'))
     from generate_encyclopedia import build
     items, enemies = build(assets_only=True)
@@ -91,7 +95,7 @@ def browser_check(origin='http://127.0.0.1:8098'):
         assert page.locator('.empty').is_visible()
         page.goto(origin + BASE + 'enemy-falseknight.html', wait_until='networkidle')
         assert page.locator('article table').first.locator('tbody tr').count() > 0
-        assert '血池合计' in page.locator('article').inner_text()
+        assert '整场总血量' in page.locator('article').inner_text()
         page.screenshot(path=str(ROOT / 'artifacts/wiki-health.png'), full_page=True)
         assert '互斥' in page.locator('article').inner_text()
         assert '玩家解锁阶段' in page.locator('article').inner_text()

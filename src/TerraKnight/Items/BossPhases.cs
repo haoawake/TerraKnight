@@ -11,7 +11,8 @@ namespace TerraKnight.Items
     /// <list type="bullet">
     /// <item>The False Knight (the Failed Champion): a round is his armour broken (Check Health refills it each time) and
     /// his head beaten (Health Check); FalseyControl's Stunned Amount counts the heads beaten. Three rounds, and in the
-    /// world and the dream a last head with the floor gone (Opened 2). The armour 10/13 of a round, the head 3/13.</item>
+    /// world and the dream a last head with the floor gone (Opened 2). Base shares are armour 10/13, head 3/13;
+    /// only the waking False Knight's armour has an additional 1.5 multiplier.</item>
     /// <item>The Soul Master (the Soul Tyrant): Mage Lord, then Mage Lord Phase2 once the first's corpse breaks the floor.</item>
     /// <item>The Mantis Lords: Mantis Lord alone, then S1 and S2 together (the Sisters of Battle: S1 to S3).</item>
     /// <item>The Watcher Knights (Battle Control: the next wakes as one falls): Black Knight 1 alone, then two at a time,
@@ -28,6 +29,9 @@ namespace TerraKnight.Items
         /// <summary>The first phase's life over the stand-in's: half (a whole one each was too much, 2026-10-16).</summary>
         public const float Share = 0.5f;
         const float Armour = 10f / 13f, Head = 3f / 13f;
+        /// <summary>Only the False Knight's armour; the Failed Champion and exposed heads keep their existing life.</summary>
+        public const float FalseKnightArmourLife = 1.5f;
+        static float ArmourLife(string scene) => EnemyDrops.VariantLevel(scene) == 5 ? 1f : FalseKnightArmourLife;
 
         public static float Mult(int phase) => Share * (1f + Step * phase);
 
@@ -44,7 +48,7 @@ namespace TerraKnight.Items
                 case "FalseKnight":
                     // The plate he blocks with (Tinger) takes nothing.
                     phase = Mathf.Clamp(HeadsBeaten(hm), 0, 3);
-                    share = n == "Head" ? Head : Armour;
+                    share = n == "Head" ? Head : Armour * ArmourLife(info.Scene);
                     return true;
                 case "MageLord":
                     phase = n.Contains("Phase2") ? 1 : 0;
@@ -76,13 +80,19 @@ namespace TerraKnight.Items
         public static float PhaseFactor(EnemyStats.Info info) => Of(info, out int phase, out _) ? Mult(phase) : 1f;
 
         /// <summary>The whole fight over the stand-in's life: every phase's measure added up.</summary>
+        public static float BudgetFactor(string record, string scene) => record == "FalseKnight"
+            ? Mult(0) + Mult(1) + Mult(2) + (scene != null && scene.StartsWith("GG_") ? 0f : Head * Mult(3))
+            : WholeFactor(record, scene);
+
+        /// <summary>Actual whole-fight life, including independent part adjustments after the base budget is allocated.</summary>
         public static float WholeFactor(string record, string scene)
         {
             switch (record)
             {
                 case "FalseKnight":
                     // Godhome's third round ends with his head (Opened 2); the world's and the dream's have a fourth head.
-                    return Mult(0) + Mult(1) + Mult(2) + (scene != null && scene.StartsWith("GG_") ? 0f : Head * Mult(3));
+                    return (Mult(0) + Mult(1) + Mult(2)) * (Armour * ArmourLife(scene) + Head)
+                        + (scene != null && scene.StartsWith("GG_") ? 0f : Head * Mult(3));
                 case "MageLord":
                 case "MantisLord":
                 case "NailBros":

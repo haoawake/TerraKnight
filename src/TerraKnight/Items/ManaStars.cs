@@ -12,9 +12,10 @@ namespace TerraKnight.Items
 
     /// <summary>
     /// NPC.NPCLoot_DropCommonLifeAndMana: every enemy that can hurt the player (damage &gt; 0, lifeMax &gt; 1) may leave
-    /// stars when it dies, for the nearest player while his mana is short of full: one roll in 6 (RollLuck) gives a
-    /// star half the time, and a second roll in 2 (RollLuck) gives another. The hearts of that roll are in the enemies'
-    /// drop tables. A kill in a scene the game leaves by itself (a dream, Godhome) gives the mana straight away.
+    /// stars and a heart when it dies, for the nearest player: one roll in 6 (RollLuck) gives a star half the time while
+    /// his mana is short of full, else a heart half the time while his life is (1 in 12 kills when the mana is full, 1 in
+    /// 24 when it isn't), and a second roll in 2 (RollLuck) gives another star while the mana is short. A kill in a scene
+    /// the game leaves by itself (a dream, Godhome) gives the mana and the life straight away.
     /// </summary>
     [HarmonyLib.HarmonyPatch]
     internal static class ManaStars
@@ -55,24 +56,35 @@ namespace TerraKnight.Items
             if (kind == "non_enemy" || kind == "invulnerable") return;
             var info = EnemyStats.Of(__instance);
             if (info == null || EnemyStats.LifeMax(info) <= 1 || !CanHurt(__instance)) return;
-            int stars = Roll(mod.Stats);
-            if (stars == 0) return;
+            int stars = Roll(mod.Stats, out bool heart);
+            if (stars == 0 && !heart) return;
             var col = __instance.GetComponent<Collider2D>();
             Vector2 at = col != null ? (Vector2)col.bounds.center : (Vector2)__instance.transform.position;
             if (EnemyDrops.LeavesOnItsOwn(__instance.gameObject.scene.name))
             {
                 Give(stars);
+                if (heart) WorldItems.TakeAtOnce(ItemStack.Of(ItemType.Heart, 1), HeroController.SilentInstance.transform.position);
                 return;
             }
             for (int i = 0; i < stars; i++) WorldItems.Drop(ItemStack.Of(ItemType.Star, 1), at);
+            if (heart) WorldItems.Drop(ItemStack.Of(ItemType.Heart, 1), at);
             DevDropped += stars;
+            if (heart) DevHearts++;
         }
 
-        /// <summary>The stars one kill leaves (0 to 2).</summary>
-        static int Roll(Player.TerraStats stats)
+        /// <summary>Dev: hearts dropped so far.</summary>
+        public static int DevHearts;
+
+        /// <summary>The stars one kill leaves (0 to 2), and whether it leaves a heart.</summary>
+        static int Roll(Player.TerraStats stats, out bool heart)
         {
             int stars = 0;
-            if (RollLuck(6) == 0 && Random.Range(0, 2) == 0 && stats.Mana < stats.ManaMax) stars++;
+            heart = false;
+            if (RollLuck(6) == 0)
+            {
+                if (Random.Range(0, 2) == 0 && stats.Mana < stats.ManaMax) stars++;
+                else if (Random.Range(0, 2) == 0 && stats.Life < stats.LifeMax) heart = true;
+            }
             if (RollLuck(2) == 0 && stats.Mana < stats.ManaMax) stars++;
             return stars;
         }
@@ -81,7 +93,7 @@ namespace TerraKnight.Items
         public static int DevRoll(int kills)
         {
             int n = 0;
-            for (int i = 0; i < kills; i++) n += Roll(TerraMod.Instance.Stats);
+            for (int i = 0; i < kills; i++) n += Roll(TerraMod.Instance.Stats, out _);
             return n;
         }
 

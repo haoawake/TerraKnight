@@ -69,14 +69,25 @@ namespace TerraKnight.World
             return Rect.MinMaxRect(Mathf.Max(z.xMin, room.xMin), Mathf.Max(z.yMin, room.yMin), Mathf.Min(z.xMax, room.xMax), Mathf.Min(z.yMax, room.yMax));
         }
 
-        /// <summary>Round a boss up (a ghost dreamt up, a boss come in, one out of its arena): the view of the smallest lock it is in, else a view round it.</summary>
-        public static Rect Around(Scene scene, Rect room, Vector2 at)
+        /// <summary>
+        /// Round a boss up (a ghost dreamt up, a boss come in, one out of its arena): the view of the smallest lock it is in,
+        /// of the locks on now first (the fight's: an intro's lock switched off at its end is no part of it; Godhome's
+        /// Nailmasters' "CamLock Intro" holds the camera on one spot, its view 3.6 units short of the arena's left wall and
+        /// 3 into its right), else of all; with none, a view round it.
+        /// </summary>
+        public static Rect Around(Scene scene, Rect room, Vector2 at, Scene? mainScene = null)
         {
             // The smallest lock it is in (the arena's own, not one over the whole room).
-            Rect? zone = null;
-            foreach (var view in LockViews(scene, room))
-                if (view.Contains(at) && (zone == null || view.width * view.height < zone.Value.width * zone.Value.height)) zone = view;
-            return Grow(zone ?? new Rect(at.x - HalfW, at.y - HalfH, 2f * HalfW, 2f * HalfH), Margin);
+            foreach (bool on in new[] { true, false })
+            {
+                Rect? zone = null;
+                var views = LockViews(scene, room, on);
+                if (mainScene.HasValue) views.AddRange(LockViews(mainScene.Value, room, on));
+                foreach (var view in views)
+                    if (view.Contains(at) && (zone == null || view.width * view.height < zone.Value.width * zone.Value.height)) zone = view;
+                if (zone != null) return Grow(zone.Value, Margin);
+            }
+            return Grow(new Rect(at.x - HalfW, at.y - HalfH, 2f * HalfW, 2f * HalfH), Margin);
         }
 
         /// <summary>The bosses of the scene, up or still waiting (inactive), by the monster book's kinds.</summary>
@@ -93,13 +104,13 @@ namespace TerraKnight.World
             return list;
         }
 
-        /// <summary>What the camera shows under each of the scene's lock areas.</summary>
-        static List<Rect> LockViews(Scene scene, Rect room)
+        /// <summary>What the camera shows under each of the scene's lock areas (only those on now: <paramref name="onOnly"/>).</summary>
+        static List<Rect> LockViews(Scene scene, Rect room, bool onOnly = false)
         {
             var list = new List<Rect>();
             foreach (var la in Object.FindObjectsByType<CameraLockArea>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                if (la == null || la.gameObject.scene != scene) continue;
+                if (la == null || la.gameObject.scene != scene || onOnly && !la.isActiveAndEnabled) continue;
                 float xMin = la.cameraXMin == -1f ? room.xMin + HalfW : la.cameraXMin, xMax = la.cameraXMax == -1f ? room.xMax - HalfW : la.cameraXMax;
                 float yMin = la.cameraYMin == -1f ? room.yMin + HalfH : la.cameraYMin, yMax = la.cameraYMax == -1f ? room.yMax - HalfH : la.cameraYMax;
                 if (xMin == 0f && xMax == 0f && yMin == 0f && yMax == 0f)

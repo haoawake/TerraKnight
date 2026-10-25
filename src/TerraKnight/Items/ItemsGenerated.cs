@@ -433,6 +433,7 @@ namespace TerraKnight.Items
             (ItemType.CrystalVileShard, 4, ItemSource.Drop, 400000),
             (ItemType.MagnetSphere, 5, ItemSource.Drop, 500000),
             (ItemType.RainbowRod, 4, ItemSource.Craft, 200000),
+            (ItemType.BejeweledStaff, 4, ItemSource.Craft, 50000),
             (ItemType.NimbusRod, 4, ItemSource.Drop, 175000),
             (ItemType.MagicalHarp, 4, ItemSource.Craft, 200000),
             (ItemType.ClingerStaff, 4, ItemSource.Drop, 400000),

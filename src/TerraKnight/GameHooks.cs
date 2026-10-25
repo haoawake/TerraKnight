@@ -85,6 +85,8 @@ namespace TerraKnight
                 World.GameDifficulty.Current = UI.CreativeMenu.TakeDifficulty();
                 Items.BossGuide.NewGame(UI.CreativeMenu.TakeGuide());
             });
+            // The enemy AI, the character's look and the names chosen on the start menu's creation screens.
+            Safely("世界与人物", UI.TerraMenu.ApplyNewGame);
             // A creative save starts with the showcase kit: every class's best, worn and in the bag.
             if (TerraMod.Instance != null && TerraMod.Instance.Creative) Safely("创造模式开局装备", () => Items.ShowcaseKit.Give(TerraMod.Instance));
             // A new game's map starts empty (the last save's mustn't stay); a creative one shows everything.
@@ -118,6 +120,15 @@ namespace TerraKnight
             }
         }
 
+        /// <summary>GameManager.IsGameplayScene, once a frame: it reads the active scene's name, a new string each time.</summary>
+        internal static bool GameplayScene(GameManager gm)
+        {
+            if (Time.frameCount == gameplayFrame && ReferenceEquals(gm, gameplayOf)) return gameplayScene;
+            gameplayFrame = Time.frameCount;
+            gameplayOf = gm;
+            return gameplayScene = gm.IsGameplayScene();
+        }
+
         /// <summary>Gameplay scenes carry the game's per-scene SceneManager with sceneType GAMEPLAY.</summary>
         static bool IsGameplaySceneObject(GameObject go)
         {
@@ -140,9 +151,13 @@ namespace TerraKnight
             if (TerraMod.Instance != null && TerraMod.Instance.WantsCursor) isEnabled = true;
         }
 
+        static int gameplayFrame = -1;
+        static GameManager gameplayOf;
+        static bool gameplayScene;
+
         public static bool IsGameplay(GameManager gm) =>
             gm != null
-            && gm.IsGameplayScene()
+            && GameplayScene(gm)
             && gm.gameState != GameState.MAIN_MENU
             && gm.sceneName != "Quit_To_Menu"
             && HeroController.SilentInstance != null;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.Items;
 using TerraKnight.World;
@@ -174,6 +174,7 @@ namespace TerraKnight.Town
         static bool TryHouse(NpcDef def, Vector2 world)
         {
             DevSaid.Clear();
+            if (RefusePlacement(def)) return false;
             var t = Housing.TileOf(world);
             var said = new List<string>();
             bool ok = Housing.MoveTownNPC(t.x, t.y, def.Id, Category(def), TypeName(def), Occupants(), said);
@@ -205,6 +206,7 @@ namespace TerraKnight.Town
                 npcs.Add(n);
             }
             PutHome(n, region, h);
+            Achievements.AchievementTracker.Housed();
             placing = null;
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
             Plugin.Log.LogInfo($"[房屋] {n.Name} 住进 {region.SceneName} 的房屋：家 ({Housing.BestX},{Housing.BestY})，得分 {Housing.HiScore}，房间 {Housing.NumRoomTiles} 格，走动 {left}..{right}");

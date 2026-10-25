@@ -18,7 +18,7 @@ namespace TerraKnight.Items
     /// over a chance of one more). A breakable drops once for good: the ones the game keeps broken (PersistentBoolItem)
     /// come back broken, and every other is remembered (by scene, name and place in its scene) in the mod's save, so
     /// one that comes back whole with the room gives nothing again. Breaking one far from the player (a scene loading
-    /// beside him), the mod's own objects and creative saves give nothing.
+    /// beside him), the mod's own objects and the autotests' endless inventory give nothing (a creative save's breakables pay).
     /// </summary>
     [HarmonyPatch]
     internal static class BreakableDrops
@@ -115,7 +115,7 @@ namespace TerraKnight.Items
                 var mod = TerraMod.Instance;
                 var hero = HeroController.SilentInstance;
                 if (mod == null || hero == null || go == null) return;
-                // The mod's own things, things kept between scenes, creative saves.
+                // The mod's own things, things kept between scenes, the autotests' endless inventory (Inventory.Infinite).
                 if (go.GetComponentInParent<TerraOwned>() != null || !go.scene.IsValid() || go.scene.name == "DontDestroyOnLoad" || mod.Inventory.Infinite)
                 {
                     DevSkipped++;

@@ -39,11 +39,14 @@ namespace TerraKnight.Player
             var fsm = __instance.Fsm;
             if (TerraMod.Instance == null || fsm == null || fsm.Name != "Msg Control" || __instance.stringVariable == null) return true;
             string item = __instance.stringVariable.Value;
-            if (!IsGone(item) || !(fsm.Owner is PlayMakerFSM msg)) return true;
+            // The journal's names the game's inventory key: told in the chat instead (TutorialNotes), as the abilities' keys are.
+            bool told = TutorialNotes.For(item) != null;
+            if ((!IsGone(item) && !told) || !(fsm.Owner is PlayMakerFSM msg)) return true;
             foreach (var r in msg.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
             DevSkipped++;
             DevLast = item;
-            Plugin.Log.LogInfo($"[提示] 不弹已经没用的能力提示：{item}");
+            Plugin.Log.LogInfo($"[提示] 不弹原版的物品提示：{item}");
+            TutorialNotes.Note(item);
             TerraMod.Instance.StartCoroutine(End(msg));
             return false;
         }

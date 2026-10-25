@@ -18,13 +18,16 @@ namespace TerraKnight.Items
         WaterSponge,
         /// <summary>Soaks up any amount of acid (Lava Absorbant Sponge).</summary>
         AcidSponge,
+        /// <summary>Pours shimmer without end (Bottomless Shimmer Bucket).</summary>
+        BottomlessShimmer,
     }
 
     internal static partial class ItemDb
     {
         /// <summary>
         /// Terraria's buckets and sponges, acid in the place of lava: the Water and Acid Buckets (206, 207), their
-        /// bottomless kinds (3031, 4820), the Super Absorbant Sponge (3032) and the acid one (4872). The Empty Bucket (205,
+        /// bottomless kinds (3031, 4820), the Bottomless Shimmer Bucket (5364), the Super Absorbant Sponge (3032) and the acid
+        /// one (4872). The Empty Bucket (205,
         /// worn as a helmet too) scoops; Obsidian (what water and acid make) is placed as a block.
         /// </summary>
         static void AddBuckets(List<ItemDef> list)
@@ -39,6 +42,7 @@ namespace TerraKnight.Items
             list.Add(B(ItemType.AcidBucket, "酸水桶", 207, BucketUse.Acid, 9999, 0, 0, 0, ItemSource.Craft, "包含少量酸水\n可被倒出"));
             list.Add(B(ItemType.BottomlessWaterBucket, "无底水桶", 3031, BucketUse.BottomlessWater, 1, 7, 500000, 0, ItemSource.Craft, "包含无穷无尽的水\n可被倒出"));
             list.Add(B(ItemType.BottomlessAcidBucket, "无底酸水桶", 4820, BucketUse.BottomlessAcid, 1, 7, 500000, 0, ItemSource.Craft, "包含无穷无尽的酸水\n可被倒出"));
+            list.Add(B(ItemType.BottomlessShimmerBucket, "无底微光桶", 5364, BucketUse.BottomlessShimmer, 1, 10, 500000, 0, ItemSource.Craft, "包含无穷无尽的微光\n可被倒出"));
             list.Add(B(ItemType.SuperAbsorbantSponge, "超级吸水棉", 3032, BucketUse.WaterSponge, 1, 7, 500000, 2, ItemSource.Drop, "能吸收无穷无尽的水"));
             list.Add(B(ItemType.AcidAbsorbantSponge, "酸水吸收棉", 4872, BucketUse.AcidSponge, 1, 7, 500000, 1, ItemSource.Drop, "能吸收无穷无尽的酸水"));
             foreach (var d in list)
@@ -68,17 +72,19 @@ namespace TerraKnight.Items
     /// bucketful where the 3×3 around holds more than 100 of one liquid (the cell's all and the rest from its neighbours, up
     /// to 255) and turns into a Water or Acid Bucket; a sponge does the same without the 100, its own liquid only, and
     /// stays; a full bucket pours 255 into a cell open to it (none of the other liquid, under 200) and gives the Empty
-    /// Bucket back, the bottomless ones keep pouring. Hollow Knight's own pools fill an Empty Bucket too.
+    /// Bucket back, the bottomless ones keep pouring. Hollow Knight's own pools fill an Empty Bucket too. The shimmer is
+    /// never scooped (Terraria's Empty Bucket leaves it be); the Bottomless Shimmer Bucket pours it.
     /// </summary>
     internal static class Buckets
     {
         public static int DevScooped, DevPoured;
 
-        /// <summary>The Bottomless Buckets made from an Empty Bucket by water and by acid (the game's pools or poured liquid).</summary>
+        /// <summary>The Bottomless Buckets made from an Empty Bucket by water, by acid (the game's pools or poured liquid) and by the shimmer.</summary>
         public static IEnumerable<Recipe> Recipes()
         {
             yield return new Recipe(ItemType.BottomlessWaterBucket, 1, "徒手", 0, (ItemType.EmptyBucket, 1)) { Environment = CraftEnvironment.Water };
             yield return new Recipe(ItemType.BottomlessAcidBucket, 1, "徒手", 0, (ItemType.EmptyBucket, 1)) { Environment = CraftEnvironment.Lava };
+            yield return new Recipe(ItemType.BottomlessShimmerBucket, 1, "徒手", 0, (ItemType.EmptyBucket, 1)) { Environment = CraftEnvironment.Shimmer };
         }
 
         public static void Use(ItemDef def, Inventory inv, HeroController hero, Vector2 mouse)
@@ -89,6 +95,7 @@ namespace TerraKnight.Items
             if (!TerraMod.InReach(bounds, def, cell)) return;
             var region = TerraWorld.RegionAt(cell.x, cell.y);
             if (region == null || BossRooms.Locked(cell.x, cell.y)) return;
+            if (def.Bucket != BucketUse.Empty && def.Bucket != BucketUse.WaterSponge && def.Bucket != BucketUse.AcidSponge) BossRooms.TellChanged(cell.x, cell.y, "倒液体");
             int x = cell.x - region.CellOffset.x, y = cell.y - region.CellOffset.y;
             switch (def.Bucket)
             {
@@ -119,6 +126,7 @@ namespace TerraKnight.Items
                 return;
             }
             var kind = g.GetLiquidKind(x, y);
+            if (kind == LiquidKind.Shimmer) return;
             if (def.Bucket == BucketUse.WaterSponge && kind != LiquidKind.Water) return;
             if (def.Bucket == BucketUse.AcidSponge && kind != LiquidKind.Acid) return;
             int around = 0;
@@ -152,7 +160,8 @@ namespace TerraKnight.Items
         {
             var g = region.Grid;
             if (!g.InClip(x, y) || Cells.Blocks(g.Get(x, y)) || g.GetLiquid(x, y) >= 200) return;
-            var kind = def.Bucket == BucketUse.Acid || def.Bucket == BucketUse.BottomlessAcid ? LiquidKind.Acid : LiquidKind.Water;
+            var kind = def.Bucket == BucketUse.Acid || def.Bucket == BucketUse.BottomlessAcid ? LiquidKind.Acid
+                : def.Bucket == BucketUse.BottomlessShimmer ? LiquidKind.Shimmer : LiquidKind.Water;
             if (g.GetLiquid(x, y) > 0 && g.GetLiquidKind(x, y) != kind) return;
             // Hollow Knight's own pool already fills the place.
             if (Fishing.NativeLiquidAt(mouse, out _)) return;
@@ -160,6 +169,7 @@ namespace TerraKnight.Items
             TerraMod.Instance?.PlaySound("Splash_1");
             if (def.Bucket == BucketUse.Water || def.Bucket == BucketUse.Acid) Swap(inv, hero, ItemType.EmptyBucket);
             DevPoured++;
+            if (def.Bucket == BucketUse.BottomlessWater || def.Bucket == BucketUse.BottomlessAcid || def.Bucket == BucketUse.BottomlessShimmer) Achievements.AchievementTracker.BottomlessPour();
         }
 
         /// <summary>Player.PutItemInInventoryFromItemUsage: one of the held item spent, the new one into its slot if that emptied, else the bag, else the ground.</summary>

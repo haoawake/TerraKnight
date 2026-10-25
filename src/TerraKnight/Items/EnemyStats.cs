@@ -30,8 +30,8 @@ namespace TerraKnight.Items
             public string Record;
             /// <summary>Terraria damage dealt that didn't make a whole point of the enemy's own health yet.</summary>
             public float Carry;
-            /// <summary>A boss that can be broken off: Terraria damage dealt towards its next stagger (<see cref="BossBalance.StunCounts"/>).</summary>
-            public float StunCarry;
+            /// <summary>When a hit last counted towards the boss's stagger (<see cref="BossBalance.StunCounts"/>).</summary>
+            public float LastStunCount = -9f;
             /// <summary>Time of the last Terraria hit it took.</summary>
             public float LastHit = -100f;
             /// <summary>A boss's Terraria stand-in (<see cref="BossStats"/>), or null.</summary>
@@ -47,6 +47,8 @@ namespace TerraKnight.Items
             /// difficulty, progress or player count when it first saw the enemy.
             /// </summary>
             public bool Net;
+            /// <summary>Dirtmouth's Target Dummy (World.TargetDummy): no defense, no knockback.</summary>
+            public bool Dummy;
             public int NetLife, NetLifeMax, NetDefense;
             /// <summary>
             /// Terraria life per point of the enemy's own health: a boss's, its stand-in's life over its
@@ -56,13 +58,22 @@ namespace TerraKnight.Items
                 ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossPhases.Factor(this) / (float)Mathf.Max(1, MaxHp)
                 : Boss ? World.Areas.HealthScale * World.Areas.LevelHealth(Level, true) : World.Areas.LifeScale(Level)) * Players;
             /// <summary>Terraria defense: a boss's stand-in's (<see cref="BossDefense"/>), else the level's.</summary>
-            public int Defense => Net ? NetDefense : Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
+            public int Defense => Dummy ? DevDummyDefense : Net ? NetDefense : Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }
 
+        /// <summary>Dev: the Target Dummy's defense (0 in play), the stage's for the classdps suite.</summary>
+        public static int DevDummyDefense;
+
         // By instance id: destroyed Unity objects compare equal to each other.
         static readonly Dictionary<int, Info> known = new Dictionary<int, Info>();
+
+        /// <summary>An enemy measured afresh at its next look (its health set anew from outside: KillableObstacles).</summary>
+        public static void Forget(HealthManager hm)
+        {
+            if (hm != null) known.Remove(hm.GetInstanceID());
+        }
         static readonly System.Reflection.FieldInfo hpScaleField = AccessTools.Field(typeof(HealthManager), "hpScale");
         static System.Reflection.FieldInfo level1Field;
 
@@ -95,8 +106,15 @@ namespace TerraKnight.Items
         /// kind with 300+ health of its own. Never one of the journal's mini-bosses, which the
         /// roster also marks as bosses: they are the elites.
         /// </summary>
+        /// <summary>
+        /// Minibosses in the game's records that drop a relic and are fought as bosses (the user's, 2026-10-20): the Vengefly
+        /// King and the Soul Warrior, with bosses' life, defense and damage (BossStats, BossHealthBudgets), Godhome's too.
+        /// </summary>
+        internal static readonly HashSet<string> RelicBosses = new HashSet<string> { "BigBuzzer", "MageKnight" };
+
         public static bool IsBossKind(string record, int firstSeenHp)
         {
+            if (record != null && RelicBosses.Contains(record)) return true;
             string kind = EnemyDrops.KindOf(record);
             if (kind == "miniboss") return false;
             if (EnemyDrops.IsBoss(record) || (kind != null && bossKinds.Contains(kind))) return true;
@@ -111,7 +129,7 @@ namespace TerraKnight.Items
                 info = new Info
                 {
                     Hm = hm,
-                    Level = World.Areas.LevelOf(hm.gameObject.scene.name),
+                    Level = World.Areas.FightLevel(hm.gameObject.scene.name),
                     MaxHp = Mathf.Max(1, hm.hp),
                     Name = DisplayName(hm.gameObject.name),
                 };
@@ -126,14 +144,17 @@ namespace TerraKnight.Items
                     { owner = parent; record = "FalseKnight"; }
                 }
                 info.Record = record;
+                info.Dummy = World.TargetDummy.Is(hm);
                 string kind = EnemyDrops.KindOf(record);
-                info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp);
+                info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp) || RelicBosses.Contains(record ?? "");
                 info.Elite = !info.Boss && EliteKind(record, info.MaxHp);
                 if (info.Boss)
                 {
                     info.Players = PlayerBalance();
                     info.Scene = hm.gameObject.scene.name;
                     info.Ref = BossStats.Of(record, EnemyDrops.VariantLevel(info.Scene));
+                    if(!BossStats.InGodhome(info.Scene) && info.Ref!=null
+                        && VanillaBossProgression.All.TryGetValue(info.Ref.Key??record,out var progression))info.Level=progression.Band;
                     info.GodhomeTier = GodhomeTier(hm, info.MaxHp);
                     if (owner != null) info.GodhomeTier = Of(owner).GodhomeTier;
                 }
@@ -193,13 +214,13 @@ namespace TerraKnight.Items
         /// or a Fungoon hanging in the air, which the game never moves either.
         /// </summary>
         public static bool NoKnockback(Info info) =>
-            info != null && (fixedInPlace.Contains(info.Record) || Unstoppable(info) && !pushedElites.Contains(info.Record));
+            info != null && (info.Dummy || fixedInPlace.Contains(info.Record) || Unstoppable(info) && !pushedElites.Contains(info.Record));
 
         static readonly HashSet<string> fixedInPlace = new HashSet<string> { "EggSac", "FungusFlyer" };
         static readonly HashSet<string> pushedElites = new HashSet<string> { "GorgeousHusk" };
 
         /// <summary>How much harder than the area's common enemies this one hits.</summary>
-        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage * (info.Ref != null ? info.Tune.Damage * GodhomeBalance.Damage(info.Scene) : 1f) : info.Elite ? World.Areas.EliteDamage : 1f;
+        public static float DamageFactor(Info info) => info == null ? 1f : info.Boss ? World.Areas.BossDamage * (info.Ref != null ? ( !BossStats.InGodhome(info.Scene) && VanillaBossProgression.Combat.TryGetValue(info.Ref.Key ?? info.Record,out var combat) ? combat.Damage : info.Tune.Damage * GodhomeBalance.Damage(info.Scene)) : 1f) : info.Elite ? World.Areas.EliteDamage : 1f;
 
         /// <summary>Godhome gives its bosses (and only them) health per difficulty.</summary>
         static bool HasBossScale(HealthManager hm)
@@ -245,11 +266,21 @@ namespace TerraKnight.Items
             : LifeMax(info);
 
         /// <summary>
-        /// A boss's Terraria defense: half its stand-in's (the user's: Hallownest's bosses are met with less than the gear
+        /// A boss's Terraria defense, never under the common enemies' of its stage: half its stand-in's (the user's: Hallownest's bosses are met with less than the gear
         /// Terraria has by then, and fast weapons were left at a point a hit), its own measure only ever lowering it.
         /// </summary>
-        public static int BossDefense(BossStats.Ref r, BossBalance.Tune t,string scene=null) =>
-            GodhomeBalance.Defense(Mathf.RoundToInt(BossStats.DefenseOf(r) * Mathf.Min(1f, t.Defense) * 0.5f),scene);
+        public static int BossDefense(BossStats.Ref r, BossBalance.Tune t,string scene=null)
+        {
+            bool godhome = World.Areas.GodhomeRoom(scene);
+            if(!godhome && VanillaBossProgression.Combat.TryGetValue(r.Key??r.Record,out var combat))return combat.Defense;
+            int stage = godhome ? World.Areas.FightLevel(scene)
+                : ProgressionBalance.BossRewards.TryGetValue(r.Key ?? r.Record, out var reward) ? reward.Stage : r.Stage;
+            int own = Mathf.RoundToInt((godhome ? BossStats.StageDefense(stage) : BossStats.DefenseOf(r)) * Mathf.Min(1f, t.Defense) * 0.5f);
+            // Never under the common enemies' of its stage (the user's, 2026-10-20: 26 of the 34 world bosses were), and an
+            // armoured one (a tune over 1: the False Knight, the White Defender) that much harder than that.
+            int floor = Mathf.Max(own, World.Areas.Defense(Mathf.Clamp(stage, 0, World.Areas.MaxLevel)));
+            return GodhomeBalance.Defense(Mathf.RoundToInt(floor * Mathf.Max(1f, t.Defense)), scene);
+        }
 
         /// <summary>
         /// NPC.GetStatScalingFactors for the players in the game now (the local one and every remote one), on Expert and
@@ -274,13 +305,14 @@ namespace TerraKnight.Items
         /// NPC.StrikeNPC: the defense takes half its value off the hit (Main.CalculateDamageNPCsTake),
         /// a crit doubles what's left, and a hit always does at least 1.
         /// </summary>
-        public static int Strike(Info info, int damage, bool crit, int armorPen = 0)
+        public static int Strike(Info info, int damage, bool crit, int armorPen = 0, float critDamage = 0f)
         {
             int defense = info.Defense;
             // Armour penetration (the Shark Tooth Necklace's 5, Ichor's 15): half of it, at most half the defense, back.
             float d = damage + EnemyDebuffs.ArmorBonus(info.Hm, defense, armorPen) - defense * 0.5f;
-            if (crit) d *= 2f;
-            return Mathf.Max(1, Mathf.RoundToInt(d));
+            // A crit doubles it, more for a forged ranged weapon's shot (Forging.RangedCritDamage).
+            if (crit) d *= 2f + critDamage;
+            return PlayerChallenges.Outgoing(Mathf.Max(1, Mathf.RoundToInt(d)));
         }
 
         /// <summary>Turns Terraria damage into the enemy's own health points, carrying the remainder.</summary>

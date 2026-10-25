@@ -1,6 +1,6 @@
 ## 卸载
 
-删除空洞骑士目录下的 `BepInEx/plugins/TerraKnight`。不想要 BepInEx 的话，再删掉 `BepInEx`、`winhttp.dll`、`doorstop_config.ini`、`.doorstop_version`、`changelog.txt`。mod 自己的存档是空洞骑士存档目录里的 `TerraKnight_slot*.json`。
+删除空洞骑士目录下的 `BepInEx/plugins/TerraKnight`、`BepInEx/TerraKnight` 和 `空洞泰拉.bat`，以及桌面上的“空洞泰拉”快捷方式。不想要 BepInEx 的话，再删掉 `BepInEx`、`winhttp.dll`、`doorstop_config.ini`、`.doorstop_version`、`changelog.txt`。mod 自己的存档是空洞骑士存档目录里的 `TerraKnight_slot*.json`。
 
 ## 第三方代码
 

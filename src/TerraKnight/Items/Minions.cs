@@ -34,6 +34,10 @@ namespace TerraKnight.Items
             Flameburst1, Flameburst2, Flameburst3, Ballista1, Ballista2, Ballista3, Trap1, Trap2, Trap3, TrapBlast1, TrapBlast2, TrapBlast3, Aura1, Aura2, Aura3,
             SpiderHiver, SpiderEgg, BabySpider, FrostHydra, Houndius, LunarPortal, PortalLaser, RainbowCrystal, CrystalBlast, Barnacle,
             MushroomBoi, Cattiva, TrustyCattiva, Foxsparks, TrustyFoxsparks, ClayPot, ForbiddenRelic,
+            WanderingSoul,
+            ChoirSoul,
+            ShadeSoul,
+            DirgeSoul,
         }
 
         /// <summary>A minion type's SetDefaults: size, slots, its buff, texture and frames, NPC immunity.</summary>
@@ -129,6 +133,11 @@ namespace TerraKnight.Items
             [Kind.TrustyFoxsparks] = new KindSpec { Id = 1113, W = 18, H = 18, Slots = 1, Buff = PlayerBuffs.TrustyFoxsparksMinion, Texture = "Projectile_1113", Frames = 54 },
             [Kind.ClayPot] = new KindSpec { Id = 1118, W = 14, H = 22, Slots = 1, Buff = PlayerBuffs.ClayPotMinion, Texture = "Projectile_1118", Frames = 20, LocalCooldown = 30 },
             [Kind.ForbiddenRelic] = new KindSpec { Id = 1119, W = 14, H = 22, Slots = 1, Buff = PlayerBuffs.ForbiddenMinion, Texture = "Projectile_1119", Frames = 9, LocalCooldown = 30 },
+            // The Wandering Soul Staff's little soul (Items/MinionsSoulWave.cs): the pack's frames, no Terraria projectile of its own.
+            [Kind.WanderingSoul] = new KindSpec { Id = 0, W = 24, H = 24, Slots = 1, Buff = PlayerBuffs.WanderingSoul, Texture = SoulWave.Tex("minion"), Frames = 8, LocalCooldown = 20 },
+            [Kind.ChoirSoul] = new KindSpec { Id = 0, W = 26, H = 26, Slots = 1, Buff = PlayerBuffs.ChoirSoul, Texture = Howl.Tex("choir"), Frames = 8, LocalCooldown = 20 },
+            [Kind.ShadeSoul] = new KindSpec { Id = 0, W = 24, H = 24, Slots = 1, Buff = PlayerBuffs.ShadeSoul, Texture = Shade.Tex("minion"), Frames = 8, LocalCooldown = 20 },
+            [Kind.DirgeSoul] = new KindSpec { Id = 0, W = 26, H = 26, Slots = 1, Buff = PlayerBuffs.DirgeSoul, Texture = Abyss.Tex("dirge"), Frames = 8, LocalCooldown = 20 },
         };
 
         /// <summary>One minion (a Terraria Projectile with its AI state), in Terraria px, y down.</summary>
@@ -207,6 +216,8 @@ namespace TerraKnight.Items
         int serial;
         /// <summary>Player.numMinions / slotsMinions, counted again each tick.</summary>
         int numMinions;
+        /// <summary>How many minions the player has out (the dragon's head and tail not counted).</summary>
+        internal int MinionCount => numMinions;
         float slotsMinions;
         int nextSpider;
 
@@ -376,7 +387,7 @@ namespace TerraKnight.Items
                 }
                 // Projectile.Update (once a tick): summon damage follows the gear, and minionPos and
                 // the slot cap are counted (the dragon's head and tail aside); past the cap it dies.
-                if (m.S.Minion || m.S.Sentry) m.Damage = (int)(m.OriginalDamage * (1f + Equipment.Current.MinionDamage) + 5e-6f);
+                if (m.S.Minion || m.S.Sentry) m.Damage = (int)(m.OriginalDamage * (1f + Equipment.Current.MinionDamage) * CharmEffects.MinionScale + 5e-6f);
                 if (m.S.Minion)
                 {
                     if (m.Kind != Kind.DragonHead && m.Kind != Kind.DragonTail)
@@ -462,12 +473,23 @@ namespace TerraKnight.Items
             return false;
         }
 
-        /// <summary>A new room: the minions come along, set down on the player; the sentries stay where they stood (gone).</summary>
+        /// <summary>The room the minions were last set down in (OnSceneReady).</summary>
+        string readyScene;
+        public static int DevSameRoomReady;
+
+        /// <summary>
+        /// A new room: the minions come along, set down on the player; the sentries stay where they stood (gone). The game
+        /// says it has finished entering the scene again after a hazard's respawn (spikes, acid, a pit) and a respawn in
+        /// the same room: nothing is taken away then, the sentries stand and the minions fly on.
+        /// </summary>
         public void OnSceneReady()
         {
             RefreshOwner();
             Target = null;
             if (!hasOwner) return;
+            string scene = GameManager.UnsafeInstance != null ? GameManager.UnsafeInstance.sceneName : null;
+            if (scene != null && scene == readyScene) { DevSameRoomReady++; return; }
+            readyScene = scene;
             for (int i = live.Count - 1; i >= 0; i--)
             {
                 var m = live[i];
@@ -495,6 +517,7 @@ namespace TerraKnight.Items
 
         public void Clear()
         {
+            readyScene = null;
             live.Clear();
             typeImmune.Clear();
             respawn.Clear();
@@ -650,6 +673,18 @@ namespace TerraKnight.Items
                     break;
                 case Kind.ForbiddenRelic:
                     AI206(m);
+                    break;
+                case Kind.WanderingSoul:
+                    AISoul(m);
+                    break;
+                case Kind.ChoirSoul:
+                    AIChoir(m);
+                    break;
+                case Kind.ShadeSoul:
+                    AIShade(m);
+                    break;
+                case Kind.DirgeSoul:
+                    AIDirge(m);
                     break;
             }
             if (m.Dead) return;
@@ -899,6 +934,41 @@ namespace TerraKnight.Items
                     relic.TileCollide = false;
                     break;
                 }
+                case MinionKind.WanderingSoul:
+                {
+                    var soul = Spawn(Kind.WanderingSoul, staff, at, dmg, kb);
+                    soul.TileCollide = false;
+                    SoulAppears(soul);
+                    break;
+                }
+                case MinionKind.ChoirSoul:
+                {
+                    var choir = Spawn(Kind.ChoirSoul, staff, at, dmg, kb);
+                    choir.TileCollide = false;
+                    // Several take turns: each one's first rest a little longer than the one before.
+                    choir.Ai1 = 15f * DevCount(Kind.ChoirSoul);
+                    ChoirAppears(choir);
+                    break;
+                }
+                case MinionKind.ShadeSoul:
+                {
+                    var shade = Spawn(Kind.ShadeSoul, staff, at, dmg, kb);
+                    shade.TileCollide = false;
+                    shade.TargetId = 0;
+                    // Several take turns: each one's first rest a little longer than the one before.
+                    shade.Ai1 = 12f * DevCount(Kind.ShadeSoul);
+                    ShadeAppears(shade);
+                    break;
+                }
+                case MinionKind.DirgeSoul:
+                {
+                    var dirge = Spawn(Kind.DirgeSoul, staff, at, dmg, kb);
+                    dirge.TileCollide = false;
+                    // Several take turns: each one's first rest a little longer than the one before.
+                    dirge.Ai1 = 18f * DevCount(Kind.DirgeSoul);
+                    DirgeAppears(dirge);
+                    break;
+                }
             }
         }
 
@@ -915,7 +985,7 @@ namespace TerraKnight.Items
             m.Center = centerPx;
             m.OldPos = m.Pos;
             for (int k = 0; k < m.OldPosRing.Length; k++) m.OldPosRing[k] = m.Pos;
-            m.Damage = (int)(damage * (1f + Equipment.Current.MinionDamage) + 5e-6f);
+            m.Damage = (int)(damage * (1f + Equipment.Current.MinionDamage) * CharmEffects.MinionScale + 5e-6f);
             if (s.Sentry) m.TimeLeft = 36000;
             live.Add(m);
             return m;
@@ -1456,11 +1526,14 @@ namespace TerraKnight.Items
                 int id = hm.GetInstanceID();
                 if (!hitNow.Add(id)) continue;
                 if (m.Kind == Kind.FireBlast && id == m.TargetId) continue;
+                // The little shade (Items/MinionsShade.cs): its wave's one strike for its own enemy, half a blow for others on its way.
+                if (m.Kind == Kind.ShadeSoul && !ShadeMayHit(m, id)) continue;
                 if (immune.ContainsKey(id)) continue;
                 if (m.S.TypeCooldown > 0 && typeImmune.ContainsKey((m.Kind, id))) continue;
                 // Abigail stops once she holds immunity on as many enemies as she may hit at once.
                 if (immune.Count >= abigailCap) break;
                 int num7 = GrowthDamage(m);
+                if (m.Kind == Kind.ShadeSoul && id != m.TargetId) num7 = Mathf.Max(1, Mathf.RoundToInt(num7 * Shade.PathShare));
                 // P:14619: a hot sphere (two bounces close together) hits for half.
                 if (m.Kind == Kind.DeadlySphere && m.LocalAi2 >= 40f) num7 = (int)(num7 * 0.5f);
                 // The dragon hits harder the longer it is: by its scale, (scale − 1)·100 capped at 50.
@@ -1497,6 +1570,9 @@ namespace TerraKnight.Items
                 }
                 // P:13647: a raven that hits turns away for a while.
                 if (m.Kind == Kind.Raven) m.Ai1 = -1f;
+                // The little soul's pounce that strikes pulls up (Items/MinionsSoulWave.cs).
+                if (m.Kind == Kind.WanderingSoul) SoulStruck(m);
+                if (m.Kind == Kind.ShadeSoul && id == m.TargetId) ShadeStruck(m);
                 // P:14131: a dagger that hits is knocked off its dart.
                 if (m.Kind == Kind.BladeStaff && m.Ai0 > 0f)
                 {

@@ -81,7 +81,7 @@ namespace TerraKnight.Items
             list.Add(P2(ItemType.ObsidianSkinPotion, "黑曜石皮药水", 288, 1, 21600, 0, 0, 1, 1000, false, "对熔岩免疫"));
             list.Add(P2(ItemType.RegenerationPotion, "再生药水", 289, 2, 28800, 0, 0, 1, 1000, false, "提供生命再生"));
             list.Add(P2(ItemType.SwiftnessPotion, "敏捷药水", 290, 3, 28800, 0, 0, 1, 1000, false, "移动速度提高25%"));
-            list.Add(P2(ItemType.GillsPotion, "鱼鳃药水", 291, 4, 14400, 0, 0, 1, 1000, false, "允许你在液体中呼吸"));
+            list.Add(P2(ItemType.GillsPotion, "鱼鳃药水", 291, 4, 14400, 0, 0, 1, 1000, false, "当前世界无需水下呼吸，此药水暂无额外作用，使用不会消耗"));
             list.Add(P2(ItemType.IronskinPotion, "铁皮药水", 292, 5, 28800, 0, 0, 1, 1000, false, "防御力增加8"));
             list.Add(P2(ItemType.ManaRegenerationPotion, "魔力再生药水", 293, 6, 28800, 0, 0, 1, 1000, false, "提高魔力再生速度"));
             list.Add(P2(ItemType.MagicPowerPotion, "魔能药水", 294, 7, 14400, 0, 0, 1, 1000, false, "魔法伤害提高20%"));
@@ -125,7 +125,7 @@ namespace TerraKnight.Items
             list.Add(P2(ItemType.FishingPotion, "钓鱼药水", 2354, 121, 28800, 0, 0, 1, 1000, false, "渔力增加15"));
             list.Add(P2(ItemType.SonarPotion, "声呐药水", 2355, 122, 28800, 0, 0, 1, 1000, false, "查明上钩的鱼"));
             list.Add(P2(ItemType.CratePotion, "宝匣药水", 2356, 123, 14400, 0, 0, 1, 1000, false, "提高获得宝匣的几率"));
-            list.Add(P2(ItemType.WarmthPotion, "保暖药水", 2359, 124, 54000, 0, 0, 1, 1000, false, "减轻寒冷源造成的影响"));
+            list.Add(P2(ItemType.WarmthPotion, "保暖药水", 2359, 124, 54000, 0, 0, 1, 1000, false, "当前世界暂无寒冷伤害来源，此药水暂无额外减伤，使用不会消耗"));
             list.Add(P2(ItemType.RecallPotion, "回忆药水", 2350, 0, 0, 0, 0, 1, 1000, false, "将你传送回家（最后休息过的长椅）"));
             list.Add(P2(ItemType.TeleportationPotion, "传送药水", 2351, 0, 0, 0, 0, 1, 1000, false, "将你传送至随机位置"));
             list.Add(P2(ItemType.StrangeBrew, "诡药", 3001, 0, 0, 70, 0, 1, 500, true, "副作用可能包括：\n-不可预测的治疗\n-不确定的耐药性\n-短暂且莫名其妙的伤害免疫\n“难看且难闻”"));
@@ -133,7 +133,7 @@ namespace TerraKnight.Items
             list.Add(P2(ItemType.LuckPotionLesser, "弱效幸运药水", 4477, 257, 18000, 0, 0, 0, 50000, false, "提高使用者的运气"));
             list.Add(P2(ItemType.LuckPotion, "幸运药水", 4478, 257, 36000, 0, 0, 0, 250000, false, "提高使用者的运气"));
             list.Add(P2(ItemType.LuckPotionGreater, "强效幸运药水", 4479, 257, 54000, 0, 0, 0, 1250000, false, "提高使用者的运气"));
-            list.Add(P2(ItemType.BiomeSightPotion, "生物群系视觉药水", 5211, 343, 18000, 0, 0, 0, 1000, false, "显示感染物块的位置"));
+            list.Add(P2(ItemType.BiomeSightPotion, "生物群系视觉药水", 5211, 343, 18000, 0, 0, 0, 1000, false, "当前世界没有腐化、猩红或神圣感染物块，此药水暂无显示目标，使用不会消耗"));
             list.Add(P2(ItemType.LifeFruitHealingPotion, "丛林果汁", 5496, 0, 0, 180, 0, 0, 105000, true, "“一种带有生命果和肉豆蔻香气的热带混合饮品”"));
 
             // --- The chest (I:48): bought from the Merchant, set down on the ground to keep 40 stacks in.

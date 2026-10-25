@@ -176,14 +176,9 @@ namespace TerraKnight.Net
                 Lang.T("和局域网里的朋友一起玩：一人开服，其他人用他的 IP 地址加入。每个人带着自己选的存档进入，在同一个场景里能看到彼此、并肩作战。"), CreativeMenu.text, new Color(0.9f, 0.9f, 0.9f));
             float x = p.x + 70f * ui, rw = p.width - 140f * ui;
             nameField = Field(new Rect(x, p.y + 150f * ui, rw, 48f * ui), TT("LegacyMenu.45", "输入人物名称：").TrimEnd(':', '：'), nameField, "tk_name", 20, ui);
-            // The look: Terraria's default character, or one of the other colourings.
+            // The look is the save's own (made on the character creation screen) and goes to the others with it.
             var lookRow = new Rect(x, p.y + 212f * ui, rw, 48f * ui);
-            CreativeMenu.Shadowed(new Rect(lookRow.x, lookRow.y, 230f * ui, lookRow.height), Lang.T("外观"), label, new Color(0.88f, 0.88f, 0.92f));
-            int look = Mathf.Clamp(NetSettings.Look.Value, 0, Player.TerraPlayerSprite.Looks.Length - 1);
-            if (CreativeMenu.Button(new Rect(lookRow.x + 230f * ui, lookRow.y, 48f * ui, 48f * ui), "<", ui)) look = (look + Player.TerraPlayerSprite.Looks.Length - 1) % Player.TerraPlayerSprite.Looks.Length;
-            DrawSwatch(new Rect(lookRow.x + 290f * ui, lookRow.y, rw - 360f * ui, 48f * ui), Player.TerraPlayerSprite.Looks[look], look, ui);
-            if (CreativeMenu.Button(new Rect(lookRow.xMax - 58f * ui, lookRow.y, 48f * ui, 48f * ui), ">", ui)) look = (look + 1) % Player.TerraPlayerSprite.Looks.Length;
-            if (look != NetSettings.Look.Value) NetSettings.Look.Value = look;
+            CreativeMenu.Shadowed(lookRow, Lang.T("外观跟随所选存档的人物（在创建人物时设定，也可以找发型师或用梳妆台修改）。"), CreativeMenu.text, new Color(0.8f, 0.8f, 0.86f));
             float bw = 300f * ui, by = p.y + 290f * ui;
             if (CreativeMenu.Button(new Rect(p.center.x - bw - 10f * ui, by, bw, 56f * ui), TT("LegacyMenu.88", "开服并开始游戏"), ui))
             {

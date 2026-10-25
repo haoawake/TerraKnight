@@ -148,12 +148,12 @@ namespace TerraKnight.Items
             }
         }
 
-        /// <summary>Takes a heal out of Player.lifeSteal (vampireHeal, P:12111-12120): false when it rounds to nothing or the budget is spent.</summary>
-        public static bool TakeLifeSteal(float heal)
+        /// <summary>Takes a heal out of Player.lifeSteal (vampireHeal, P:12111-12120): returns the amount actually reserved, never more than the remaining budget.</summary>
+        public static int TakeLifeSteal(float heal)
         {
-            if ((int)heal == 0 || lifeSteal <= 0f) return false;
-            lifeSteal -= heal;
-            return true;
+            int amount = Mathf.Min(Mathf.Max(0, (int)heal), Mathf.Max(0, (int)lifeSteal));
+            lifeSteal -= amount;
+            return amount;
         }
 
         /// <summary>ghostHeal (P:12077-12110): a share of the damage (less for each later hit of a piercing shot) out of the life-steal budget, carried back by a spirit.</summary>
@@ -416,6 +416,9 @@ namespace TerraKnight.Items
         static float ShroomiteShare => Mathf.Clamp01((1f - Stealth) / 0.25f);
 
         /// <summary>The armor key (double-tapping down, Pl:57438-57461): the Vortex stealth toggle; the Forbidden storm at the cursor.</summary>
+        /// <summary>The worn set does something on a double tap down (the Vortex's stealth, the Forbidden storm).</summary>
+        public static bool DownTapAbility => Set == ArmorSet.Vortex || Set == ArmorSet.Forbidden;
+
         public static void KeyDoubleTapDown()
         {
             if (Set == ArmorSet.Vortex)
@@ -657,6 +660,14 @@ namespace TerraKnight.Items
         /// frame of three with five fading copies trailing back, over everything.
         /// </summary>
         public static void Draw(FxBatch fx, Vector2 centrePx, int dir, float opacity)
+        {
+            if (fx == null) return;
+            bool previous=fx.WeaponEffect; fx.WeaponEffect=true;
+            try { DrawEffects(fx,centrePx,dir,opacity); }
+            finally { fx.WeaponEffect=previous; }
+        }
+
+        static void DrawEffects(FxBatch fx, Vector2 centrePx, int dir, float opacity)
         {
             if (fx == null || opacity <= 0f) return;
             if (SolarShields > 0)

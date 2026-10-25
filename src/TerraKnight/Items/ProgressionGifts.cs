@@ -9,16 +9,16 @@ namespace TerraKnight.Items
         internal static void TickGifts(HeroController hero)
         {
             var mod=TerraMod.Instance;
-            if(mod==null || hero==null || mod.Inventory.Infinite || !GameHooks.PlayerHasControl() || Time.unscaledTime<nextGiftCheck) return;
+            if(mod==null || hero==null || mod.Inventory.FreeMaking || !GameHooks.PlayerHasControl() || Time.unscaledTime<nextGiftCheck) return;
             nextGiftCheck=Time.unscaledTime+1;
             var granted=mod.GrantedAbilities;
             if(!granted.Contains("loot.starter.v1") && Shop.Available(hero))
             {
                 granted.Add("loot.starter.v1");
                 var at=(Vector2)hero.transform.position;
-                EnemyDrops.Spill(ItemStack.Of(Core[0][UnityEngine.Random.Range(0,4)][0]),at,true);
+                EnemyDrops.Spill(ItemStack.Of(ItemType.CopperOre,20),at,true);
                 foreach(var t in new[] {ItemType.WoodenArrow,ItemType.Seed,ItemType.MusketBall}) EnemyDrops.Spill(ItemStack.Of(t,100),at,true);
-                EnemyDrops.Spill(ItemStack.Of(ItemType.ManaCrystal,1),at,true);
+                EnemyDrops.Spill(ItemStack.Of(ItemType.FallenStar,5),at,true);
                 EnemyDrops.Spill(ItemStack.Of(ItemType.LesserManaPotion,5),at,true);
                 EnemyDrops.Spill(ItemStack.Of(ItemType.Wood,20),at,true);
                 EnemyDrops.Spill(ItemStack.Of(ItemType.Gel,12),at,true);
@@ -37,7 +37,22 @@ namespace TerraKnight.Items
             if(start==null) {granted.Add(prefix+total);return;}
             if(!int.TryParse(start.Substring(prefix.Length),out int before) || total-before<20) return;
             granted.Add(done);
-            EnemyDrops.Spill(ItemStack.Of(Core[stage][UnityEngine.Random.Range(0,4)][1]),hero.transform.position,true);
+            EnemyDrops.Spill(ExplorationMaterialGift(stage),hero.transform.position,true);
+        }
+
+        internal static ItemStack ExplorationMaterialGift(int stage)
+        {
+            // A reward for exploring funds crafting instead of supplying the finished weapon.
+            // Luminite remains a terminal-fight reward, even once stage 5 is unlocked.
+            var candidates=new System.Collections.Generic.List<ItemType>();
+            int tier=Math.Min(4,Math.Max(0,stage));
+            int best=-1;
+            foreach(var d in ItemDb.All)
+                if(ItemDb.IsOre(d.Type) && d.Stage<=tier && d.Stage>=best && d.Type!=ItemType.LunarOre
+                    && VanillaBossProgression.Allowed(d.Type) && !CraftOnlyLoot.OnlyCrafted(d.Type))
+                {if(d.Stage>best){best=d.Stage;candidates.Clear();}candidates.Add(d.Type);}
+            var material=candidates.Count>0 ? candidates[UnityEngine.Random.Range(0,candidates.Count)] : ItemType.Wood;
+            return ItemStack.Of(material,20+5*Math.Max(0,stage));
         }
     }
 }

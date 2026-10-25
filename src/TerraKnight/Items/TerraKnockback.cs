@@ -286,14 +286,34 @@ namespace TerraKnight.Items
     internal sealed class KnockFlight : MonoBehaviour
     {
         const float PxT = 60f / 32f;
+        /// <summary>
+        /// Terraria's path, gone through this many times as fast. A Hallownest enemy has no picture for being thrown: it is
+        /// carried in whatever it was doing (standing, winding up a lunge), and at Terraria's own pace a Spear's push slid a
+        /// husk back for a third of a second, barely off the ground, a glide (the user's, 10-25). The game's own recoil
+        /// throws it about as far in a tenth.
+        /// </summary>
+        const float Pace = 2f;
+        const float Step = PxT * Pace;
         Rigidbody2D body;
         Collider2D col;
         Vector2 v, before;
+        Vector2 nativeVelocity;
+        bool nativeX, nativeY;
         float gravity;
+        CollisionDetectionMode2D detection;
         bool flying, grounded, active, first;
         float age;
 
         public bool Active => active;
+
+        // Native FSMs can enter a stationary state while our launch owns the body. Keep
+        // that new instruction for handoff instead of reviving an obsolete jump velocity.
+        internal void RememberNativeVelocity(Vector2 velocity, bool x, bool y)
+        {
+            if (!active) return;
+            if (x) { before.x = velocity.x; nativeVelocity.x = velocity.x; nativeX = true; }
+            if (y) { nativeVelocity.y = velocity.y; nativeY = true; }
+        }
 
         /// <summary>The body's own gravity scale, kept while the launch has it off.</summary>
         public float OwnGravity => gravity;
@@ -309,11 +329,15 @@ namespace TerraKnight.Items
             {
                 before = rb.linearVelocity;
                 gravity = rb.gravityScale;
+                detection = rb.collisionDetectionMode;
+                nativeX = nativeY = false;
             }
             // Terraria's gravity alone carries it: the body's own would pull it down a second time each step.
             rb.gravityScale = 0f;
+            // Twice Terraria's pace: a strong push covers half a unit a physics step, through a thin wall without this.
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             // The speed it has now (Terraria's px a tick, up positive): its own, or the last launch's.
-            var cur = active ? v : rb.linearVelocity / PxT;
+            var cur = active ? v : rb.linearVelocity / Step;
             float lift = speed * (fly ? 0.5f : 0.75f);
             if (bigHit)
             {
@@ -352,6 +376,9 @@ namespace TerraKnight.Items
         public static float DevPeak, DevBack;
         public static int DevAir;
 
+        /// <summary>A speed slowed ×r a tick for n ticks, each tick's slowing before its move: the mean of those ticks' speeds, per the first.</summary>
+        static float Mean(float r, float n) => r * (1f - Mathf.Pow(r, n)) / ((1f - r) * n);
+
         void FixedUpdate()
         {
             if (!active) return;
@@ -360,7 +387,7 @@ namespace TerraKnight.Items
                 active = false;
                 return;
             }
-            float ticks = Time.fixedDeltaTime * 60f;
+            float ticks = Time.fixedDeltaTime * 60f * Pace;
             age += Time.fixedDeltaTime;
             if (first) startPos = body.position;
             else
@@ -378,10 +405,14 @@ namespace TerraKnight.Items
                 if (!grounded) DevAir = ++airTicks;
             }
             first = false;
+            // Terraria's ticks one by one, each one's slowing or gravity before its move: over this step the body goes at
+            // the mean of those ticks' speeds, Terraria's path at any pace.
+            Vector2 go;
             if (flying)
             {
+                go = v * Mean(0.92f, ticks);
                 v *= Mathf.Pow(0.92f, ticks);
-                if (v.magnitude < 0.5f || age > 0.9f)
+                if (v.magnitude < 0.5f || age > 0.9f / Pace)
                 {
                     Finish(false);
                     return;
@@ -389,6 +420,7 @@ namespace TerraKnight.Items
             }
             else if (!grounded)
             {
+                go = new Vector2(v.x, Mathf.Max(v.y - 0.15f * (ticks + 1f), -10f));
                 v.y = Mathf.Max(v.y - 0.3f * ticks, -10f);
                 if (age > 2f)
                 {
@@ -398,7 +430,8 @@ namespace TerraKnight.Items
             }
             else
             {
-                v.y = Mathf.Min(0f, body.linearVelocity.y / PxT);
+                v.y = Mathf.Min(0f, body.linearVelocity.y / Step);
+                go = new Vector2(v.x * Mean(0.8f, ticks), v.y);
                 v.x *= Mathf.Pow(0.8f, ticks);
                 if (Mathf.Abs(v.x) < 0.4f || age > 2f)
                 {
@@ -406,14 +439,18 @@ namespace TerraKnight.Items
                     return;
                 }
             }
-            body.linearVelocity = v * PxT;
+            body.linearVelocity = go * Step;
             lastCmd = body.linearVelocity;
             lastPos = body.position;
         }
 
         void OnDisable()
         {
-            if (active && body != null) body.gravityScale = gravity;
+            if (active && body != null)
+            {
+                body.gravityScale = gravity;
+                body.collisionDetectionMode = detection;
+            }
             active = false;
         }
 
@@ -422,8 +459,40 @@ namespace TerraKnight.Items
             active = false;
             if (body == null) return;
             body.gravityScale = gravity;
-            // A walker goes on as it went (the crawlid only sets its pace when it starts or turns).
-            body.linearVelocity = walker ? new Vector2(before.x, body.linearVelocity.y) : body.linearVelocity * 0.3f;
+            body.collisionDetectionMode = detection;
+            // Resume the latest native instruction; with none, a crawler (a crawlid, which issues no other command during the
+            // push) its pace from before, anything else stands. The pace from before handed to anything else slid its
+            // frictionless body on in an idle pose: by then it is stale (a husk's walk turned since, the new AI's lunge over;
+            // a Spear's jabs kept one push going for seconds).
+            if (walker) body.linearVelocity = new Vector2(nativeX ? nativeVelocity.x : body.GetComponent<Crawler>() != null ? before.x : 0f, body.linearVelocity.y);
+            else
+            {
+                var residual = body.linearVelocity * 0.3f;
+                if (nativeX) residual.x = nativeVelocity.x;
+                if (nativeY) residual.y = nativeVelocity.y;
+                body.linearVelocity = residual;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.SetVelocity2d), "DoSetVelocity")]
+    internal static class KnockFlightNativeVelocity
+    {
+        [HarmonyPostfix]
+        static void Remember(HutongGames.PlayMaker.Actions.SetVelocity2d __instance, bool __runOriginal)
+        {
+            // A vertical-only command preserves x; it mustn't remember our knockback as
+            // the enemy's intended walking speed.
+            if (!__runOriginal) return;
+            bool x = !__instance.x.IsNone || !__instance.vector.IsNone;
+            bool y = !__instance.y.IsNone || !__instance.vector.IsNone;
+            if (!x && !y) return;
+            var go = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
+            if (go == null) return;
+            var flight = go.GetComponent<KnockFlight>();
+            if (flight == null || !flight.Active) return;
+            var rb = go.GetComponent<Rigidbody2D>();
+            if (rb != null) flight.RememberNativeVelocity(rb.linearVelocity, x, y);
         }
     }
 

@@ -183,6 +183,7 @@ namespace TerraKnight.Items
                 }
                 else Stations.PlaceIn(kind, f.Scene, f.Bottom - f.Root);
                 DevStood++;
+                Achievements.AchievementTracker.TombstoneStood();
                 DevLast = $"{kind} 立在 {f.Scene} {f.Bottom:F1}（滚了 {f.Path.Count} 帧）";
             }
             else

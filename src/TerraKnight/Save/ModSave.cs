@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
@@ -16,12 +16,23 @@ namespace TerraKnight.Save
     {
         sealed class SaveFile
         {
-            public int Version = 7;
+            public int Version = 8;
+            public List<string> HallownestObtained;
+            public Dictionary<string, int> HallownestTradeOffsets;
+            public Dictionary<string, int> HallownestNativeCounts;
             /// <summary>A creative-mode save (UI.CreativeMenu): items never run out, anything can be made.</summary>
             public bool Creative;
             /// <summary>World.DifficultyLevel (1 Normal to 5 Hollow); 0, from before the choice, is Master.</summary>
             public int Difficulty;
+            /// <summary>World.EnemyAiKind: 0 Hollow Knight's own (every save from before the choice), 1 the new one.</summary>
+            public int EnemyAi;
+            /// <summary>The world's and the character's names (UI.TerraMenu); none in a save from before.</summary>
+            public string WorldName, PlayerName;
+            /// <summary>The character's look (UI.CharacterCreation); none in a save from before: Terraria's default character.</summary>
+            public Player.Appearance Look;
             public List<SlotItem> Inventory = new List<SlotItem>();
+            /// <summary>Direct dream/ending rewards waiting for space or a safe room.</summary>
+            public List<SlotItem> PendingEnemyLoot;
             /// <summary>The worn set (the current loadout's).</summary>
             public List<SlotItem> Accessories = new List<SlotItem>();
             public List<SlotItem> Armor = new List<SlotItem>();
@@ -64,6 +75,7 @@ namespace TerraKnight.Save
             public List<string> Granted = new List<string>();
             /// <summary>Version 5: copper beyond whole geo, the monster book (kills by record, first-kill order) and the townsfolk's names and arrivals.</summary>
             public int SpareCopper;
+            public Casino.Saved Casino;
             public Dictionary<string, int> Kills;
             public List<string> KillOrder;
             /// <summary>The monster book's sightings: records in the order first seen, and the stats seen of each.</summary>
@@ -71,6 +83,9 @@ namespace TerraKnight.Save
             public Dictionary<string, Bestiary.Seen> Seen;
             public Dictionary<string, string> NpcNames;
             public List<string> NpcArrived;
+            /// <summary>The Tax Collector's taxes waiting (copper) and the seconds toward the next.</summary>
+            public long Taxes;
+            public float TaxClock;
             /// <summary>Townsfolk the player sent away with a right click in the panel: they stay away.</summary>
             public List<string> NpcDismissed;
             /// <summary>Townsfolk the player put down themselves: their internal name and the street x they were put at.</summary>
@@ -85,6 +100,8 @@ namespace TerraKnight.Save
             public int AnglerDay = -1;
             public bool AnglerDone;
             public int AnglerQuests;
+            public int? AnglerPending;
+            public List<string> CollectedItems;
             /// <summary>A meteorite coming at midnight (World.Meteorites.Pending), and how many have come down.</summary>
             public bool MeteorPending;
             public int MeteorsLanded;
@@ -122,6 +139,8 @@ namespace TerraKnight.Save
             /// <summary>Set down by the player (World.PylonsMove), and its way in.</summary>
             public bool Placed;
             public string ArriveBench, Entry;
+            /// <summary>Standing by its bench, not lit yet (World.PylonsDormant): its place kept.</summary>
+            public bool Dormant;
         }
 
         sealed class DroppedSave
@@ -204,6 +223,9 @@ namespace TerraKnight.Save
             return stack;
         }
 
+        /// <summary>The save's world and character names (chosen when it was created; empty in a save from before).</summary>
+        public static string WorldName = "", PlayerName = "";
+
         /// <summary>Whether a slot's save is a creative one.</summary>
         public static bool IsCreative(int slot) => ModeOf(slot).Creative;
 
@@ -213,23 +235,97 @@ namespace TerraKnight.Save
         /// </summary>
         public static (bool Known, bool Creative, World.DifficultyLevel Difficulty) ModeOf(int slot)
         {
-            string path = PathFor(slot);
-            if (slot < 1 || !File.Exists(path)) return (false, false, World.DifficultyLevel.Master);
-            var stamp = File.GetLastWriteTimeUtc(path);
-            if (modeCache.TryGetValue(slot, out var c) && c.Stamp == stamp) return c.Mode;
-            var mode = (true, false, World.DifficultyLevel.Master);
-            try
-            {
-                string text = File.ReadAllText(path);
-                var m = System.Text.RegularExpressions.Regex.Match(text, "\"Difficulty\":(\\d+)");
-                mode = (true, text.Contains("\"Creative\":true"), World.GameDifficulty.Parse(m.Success ? int.Parse(m.Groups[1].Value) : 0));
-            }
-            catch (Exception) { }
-            modeCache[slot] = (stamp, mode);
-            return mode;
+            var h = HeaderOf(slot);
+            return h == null ? (false, false, World.DifficultyLevel.Master) : (true, h.Creative, h.Difficulty);
         }
 
-        static readonly Dictionary<int, (DateTime Stamp, (bool, bool, World.DifficultyLevel) Mode)> modeCache = new Dictionary<int, (DateTime, (bool, bool, World.DifficultyLevel))>();
+        /// <summary>What the start menu's world list shows of a save (its mod save's first fields).</summary>
+        internal sealed class Header
+        {
+            public bool Creative;
+            public World.DifficultyLevel Difficulty = World.DifficultyLevel.Master;
+            public World.EnemyAiKind EnemyAi;
+            public string WorldName, PlayerName;
+            public Player.Appearance Look;
+        }
+
+        /// <summary>
+        /// A slot's header (null: no mod save there): read from the start of its file up to the bag, which every field the
+        /// menu wants comes before, and kept while the file is unchanged.
+        /// </summary>
+        public static Header HeaderOf(int slot)
+        {
+            string path = PathFor(slot);
+            if (slot < 1 || !File.Exists(path)) return null;
+            var stamp = File.GetLastWriteTimeUtc(path);
+            if (headerCache.TryGetValue(slot, out var c) && c.Stamp == stamp) return c.Head;
+            var head = new Header();
+            try
+            {
+                using (var reader = new JsonTextReader(new StreamReader(path)))
+                {
+                    var serializer = new JsonSerializer();
+                    if (reader.Read() && reader.TokenType == JsonToken.StartObject)
+                        while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+                        {
+                            string name = (string)reader.Value;
+                            if (name == nameof(SaveFile.Inventory)) break;
+                            reader.Read();
+                            switch (name)
+                            {
+                                case nameof(SaveFile.Creative): head.Creative = reader.TokenType == JsonToken.Boolean && (bool)reader.Value; break;
+                                case nameof(SaveFile.Difficulty): head.Difficulty = World.GameDifficulty.Parse(reader.TokenType == JsonToken.Integer ? Convert.ToInt32(reader.Value) : 0); break;
+                                case nameof(SaveFile.EnemyAi): head.EnemyAi = World.EnemyAiMode.Parse(reader.TokenType == JsonToken.Integer ? Convert.ToInt32(reader.Value) : 0); break;
+                                case nameof(SaveFile.WorldName): head.WorldName = reader.Value as string; break;
+                                case nameof(SaveFile.PlayerName): head.PlayerName = reader.Value as string; break;
+                                case nameof(SaveFile.Look): head.Look = reader.TokenType == JsonToken.StartObject ? serializer.Deserialize<Player.Appearance>(reader) : null; break;
+                                default: reader.Skip(); break;
+                            }
+                        }
+                }
+            }
+            catch (Exception e) { Plugin.Log.LogWarning($"[存档] 读存档 {slot} 的列表信息失败：{e.Message}"); }
+            headerCache[slot] = (stamp, head);
+            return head;
+        }
+
+        static readonly Dictionary<int, (DateTime Stamp, Header Head)> headerCache = new Dictionary<int, (DateTime, Header)>();
+
+        /// <summary>
+        /// A save's world renamed from the start menu: the name changed in its mod save (written whole beside it, then
+        /// swapped in, as a save is). False when the slot has no mod save or it couldn't be written.
+        /// </summary>
+        public static bool Rename(int slot, string name)
+        {
+            string path = PathFor(slot);
+            if (slot < 1 || !File.Exists(path)) return false;
+            try
+            {
+                var root = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(path));
+                var prop = root.Property(nameof(SaveFile.WorldName));
+                if (prop != null) prop.Value = name ?? "";
+                else
+                {
+                    // Ahead of the bag, where the list's reader stops (a save from before has no name yet).
+                    var named = new Newtonsoft.Json.Linq.JProperty(nameof(SaveFile.WorldName), name ?? "");
+                    var bag = root.Property(nameof(SaveFile.Inventory));
+                    if (bag != null) bag.AddBeforeSelf(named);
+                    else root.Add(named);
+                }
+                string json = root.ToString(Formatting.None);
+                File.WriteAllText(path + ".new", json);
+                File.Replace(path + ".new", path, path + ".bak", true);
+                headerCache.Remove(slot);
+                if (stateOf == slot) WorldName = name ?? "";
+                Plugin.Log.LogInfo($"[存档] 存档 {slot} 的世界改名为“{name}”");
+                return true;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogError($"[存档] 存档 {slot} 改名失败：{e.Message}");
+                return false;
+            }
+        }
 
         /// <summary>The mod's save of a slot gone (the slot is being started over).</summary>
         public static void Delete(int slot)
@@ -238,7 +334,7 @@ namespace TerraKnight.Save
             try
             {
                 if (File.Exists(path)) File.Delete(path);
-                modeCache.Remove(slot);
+                headerCache.Remove(slot);
                 UI.WorldMap.Delete(slot);
             }
             catch (Exception e) { Plugin.Log.LogWarning($"删除 mod 存档失败：{e.Message}"); }
@@ -258,8 +354,11 @@ namespace TerraKnight.Save
         /// <summary>A new game begins in a slot: the mod's fresh state is that slot's.</summary>
         public static void BeganNewGame(int slot) => stateOf = slot;
 
+        public static bool LastWriteSucceeded { get; private set; }
+        internal static bool CommitCasino(){if(stateOf<0||TerraMod.Instance==null)return false;Write(stateOf,TerraMod.Instance);return LastWriteSucceeded;}
         public static void Write(int slot, TerraMod mod)
         {
+            LastWriteSucceeded=false;
             if (slot < 0) return;
             if (slot != stateOf)
             {
@@ -271,7 +370,18 @@ namespace TerraKnight.Save
             // The Guide's slot too: an item shown to him belongs to the bag.
             Town.TownNpcs.ReturnGuideItem();
             Town.TownNpcs.ReturnReforgeItem();
-            var file = new SaveFile { Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
+            var file = new SaveFile { Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, EnemyAi = (int)World.EnemyAiMode.Current,
+                WorldName = WorldName, PlayerName = PlayerName, Look = Player.Appearance.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
+            HallownestRecovery.Observe(inv);
+            inv.ObserveCollections();
+            file.CollectedItems = new List<string>();
+            foreach (var t in inv.CollectedItems) file.CollectedItems.Add(t.ToString());
+            file.HallownestObtained = new List<string>();
+            foreach (var t in inv.HallownestObtained) file.HallownestObtained.Add(t.ToString());
+            file.HallownestTradeOffsets = new Dictionary<string, int>();
+            foreach (var kv in inv.HallownestTradeOffsets) file.HallownestTradeOffsets[kv.Key.ToString()] = kv.Value;
+            file.HallownestNativeCounts = new Dictionary<string, int>();
+            foreach (var kv in inv.HallownestNativeCounts) file.HallownestNativeCounts[kv.Key.ToString()] = kv.Value;
             foreach (var s in inv.Slots) file.Inventory.Add(Pack(s));
             foreach (var s in inv.Accessories) file.Accessories.Add(Pack(s));
             foreach (var s in inv.Armor) file.Armor.Add(Pack(s));
@@ -317,12 +427,15 @@ namespace TerraKnight.Save
             }
             file.ShareHintSeen = InventoryGui.ShareHintSeen;
             file.SpareCopper = Shop.SpareCopper;
+            file.Casino = Items.Casino.Snapshot();
             file.Kills = new Dictionary<string, int>(Bestiary.Kills);
             file.KillOrder = new List<string>(Bestiary.Order);
             file.SeenOrder = new List<string>(Bestiary.SeenOrder);
             file.Seen = new Dictionary<string, Bestiary.Seen>(Bestiary.Stats);
             file.NpcNames = new Dictionary<string, string>(Town.TownNpcs.Names);
             file.NpcArrived = new List<string>(Town.TownNpcs.Arrived);
+            file.Taxes = Town.TownNpcs.Taxes;
+            file.TaxClock = Town.TownNpcs.TaxClock;
             file.NpcDismissed = new List<string>(Town.TownNpcs.Dismissed);
             file.NpcHomes = new Dictionary<string, float>(Town.TownNpcs.Homes);
             file.NpcHomeY = new Dictionary<string, float>(Town.TownNpcs.HomeY);
@@ -332,14 +445,19 @@ namespace TerraKnight.Save
             file.AnglerDay = Town.Angler.QuestDay;
             file.AnglerDone = Town.Angler.QuestDone;
             file.AnglerQuests = Town.Angler.QuestsDone;
+            file.AnglerPending = Town.Angler.Pending;
             file.MeteorPending = World.Meteorites.Pending;
             file.MeteorsLanded = World.Meteorites.Landed;
             file.Trash = Pack(inv.Trash);
             file.Granted.AddRange(mod.GrantedAbilities);
+            file.PendingEnemyLoot = new List<SlotItem>();
+            foreach(var item in EnemyDrops.PendingLoot()) file.PendingEnemyLoot.Add(Pack(item));
             // Creative's pylons not yet placed by their bench are made again when the save is read.
             foreach (var p in World.Pylons.Unlocked)
                 if (!p.Provisional) file.Pylons.Add(new PylonSave { Scene = p.Scene, Bench = p.Bench, X = p.Local.x, Y = p.Local.y, W = p.SceneSize.x, H = p.SceneSize.y, Style = p.Style,
                     Placed = p.Placed, ArriveBench = p.ArriveBench, Entry = p.Entry });
+            foreach (var p in World.Pylons.Dormant)
+                file.Pylons.Add(new PylonSave { Scene = p.Scene, Bench = p.Bench, X = p.Local.x, Y = p.Local.y, W = p.SceneSize.x, H = p.SceneSize.y, Style = p.Style, Dormant = true });
             file.LifeFruits = mod.Stats.LifeFruits;
             file.Boosts = new List<string>();
             foreach (var b in mod.Stats.Boosts) file.Boosts.Add(b.ToString());
@@ -408,6 +526,7 @@ namespace TerraKnight.Save
                 if (File.ReadAllText(path + ".new").Length != json.Length) throw new IOException("写入后读回的长度不对");
                 if (File.Exists(path)) File.Replace(path + ".new", path, path + ".bak", true);
                 else File.Move(path + ".new", path);
+                LastWriteSucceeded=true;
                 UI.WorldMap.Save(slot);
                 Plugin.Log.LogInfo($"已保存 mod 存档：{path}（{file.Scenes.Count} 个场景有改动），调用：{Caller()}");
             }
@@ -451,6 +570,15 @@ namespace TerraKnight.Save
             return null;
         }
 
+        /// <summary>The save's enemy AI, look and names as read (a save from before them: Hollow Knight's AI, Terraria's default character, no names).</summary>
+        static void SetIdentity(SaveFile file)
+        {
+            World.EnemyAiMode.Current = World.EnemyAiMode.Parse(file?.EnemyAi ?? 0);
+            Player.Appearance.Current = file?.Look != null ? file.Look.Clone() : Player.Appearance.Default();
+            WorldName = file?.WorldName ?? "";
+            PlayerName = file?.PlayerName ?? "";
+        }
+
         public static void Read(int slot, TerraMod mod)
         {
             World.WorldEdits.Clear();
@@ -473,6 +601,7 @@ namespace TerraKnight.Save
                 if (any) Plugin.Log.LogError($"[存档] 存档 {slot} 的 mod 存档全都读不了，按新档开始（原文件留在 .broken-* 里）");
                 mod.ApplyCreative(false);
                 World.GameDifficulty.Current = World.DifficultyLevel.Master;
+                SetIdentity(null);
                 return;
             }
             try
@@ -481,6 +610,7 @@ namespace TerraKnight.Save
                 inv.Clear();
                 mod.ApplyCreative(file.Creative);
                 World.GameDifficulty.Current = World.GameDifficulty.Parse(file.Difficulty);
+                SetIdentity(file);
                 // The boosters first: the Demon Heart's slot decides what is worn.
                 mod.Stats.LifeFruits = Mathf.Clamp(file.LifeFruits, 0, Player.TerraStats.MaxLifeFruits);
                 if (file.Boosts != null)
@@ -554,6 +684,7 @@ namespace TerraKnight.Save
                 }
                 inv.RefreshEffective();
                 Shop.SpareCopper = Mathf.Clamp(file.SpareCopper, 0, 99);
+                Items.Casino.Load(file.Casino);
                 if (file.Kills != null) foreach (var kv in file.Kills) Bestiary.Kills[kv.Key] = kv.Value;
                 if (file.KillOrder != null) foreach (var r in file.KillOrder) if (Bestiary.Kills.ContainsKey(r) && !Bestiary.Order.Contains(r)) Bestiary.Order.Add(r);
                 if (file.Seen != null) foreach (var kv in file.Seen) if (kv.Value != null) Bestiary.Stats[kv.Key] = kv.Value;
@@ -562,6 +693,8 @@ namespace TerraKnight.Save
                 foreach (var r in Bestiary.Order) if (!Bestiary.SeenOrder.Contains(r)) Bestiary.SeenOrder.Add(r);
                 if (file.NpcNames != null) foreach (var kv in file.NpcNames) Town.TownNpcs.Names[kv.Key] = kv.Value;
                 if (file.NpcArrived != null) Town.TownNpcs.Arrived.UnionWith(file.NpcArrived);
+                Town.TownNpcs.Taxes = System.Math.Max(0, System.Math.Min(Town.TownNpcs.TaxMost, file.Taxes));
+                Town.TownNpcs.TaxClock = Mathf.Clamp(file.TaxClock, 0f, 60f);
                 if (file.NpcDismissed != null) Town.TownNpcs.Dismissed.UnionWith(file.NpcDismissed);
                 if (file.NpcHomes != null) foreach (var kv in file.NpcHomes) Town.TownNpcs.Homes[kv.Key] = kv.Value;
                 if (file.NpcHomeY != null) foreach (var kv in file.NpcHomeY) Town.TownNpcs.HomeY[kv.Key] = kv.Value;
@@ -571,9 +704,24 @@ namespace TerraKnight.Save
                 Town.Angler.QuestDay = file.AnglerDay;
                 Town.Angler.QuestDone = file.AnglerDone;
                 Town.Angler.QuestsDone = file.AnglerQuests;
+                Town.Angler.Pending = Mathf.Clamp(file.AnglerPending ?? (file.AnglerDone ? 0 : file.AnglerQuest != null ? 1 : 0), 0, 3);
+                if (file.CollectedItems != null)
+                    foreach (var name in file.CollectedItems)
+                        if (Enum.TryParse(name, out ItemType collected)) inv.RecordCollection(collected);
+                inv.ObserveCollections();
                 World.Meteorites.Pending = file.MeteorPending;
                 World.Meteorites.Landed = file.MeteorsLanded;
                 inv.Trash = Unpack(file.Trash);
+                if (file.HallownestObtained != null)
+                    foreach (var name in file.HallownestObtained)
+                        if (Enum.TryParse(name, out ItemType t)) HallownestRecovery.Record(inv, t);
+                if (file.HallownestTradeOffsets != null)
+                    foreach (var kv in file.HallownestTradeOffsets)
+                        if (Enum.TryParse(kv.Key, out ItemType t) && HallownestRecovery.IsUnique(t)) inv.HallownestTradeOffsets[t] = kv.Value;
+                if (file.HallownestNativeCounts != null)
+                    foreach (var kv in file.HallownestNativeCounts)
+                        if (Enum.TryParse(kv.Key, out ItemType t) && HkItems.Is(t)) inv.HallownestNativeCounts[t] = kv.Value;
+                HallownestRecovery.Observe(inv);
                 inv.Selected = Mathf.Clamp(file.Selected, 0, Inventory.HotbarSize - 1);
                 // Older files kept only the maximums; every 20 above the start was a crystal.
                 mod.Stats.LifeCrystals = file.LifeCrystals >= 0 ? file.LifeCrystals : Mathf.Clamp((file.LifeMax - 100) / 20, 0, Player.TerraStats.MaxLifeCrystals);
@@ -582,11 +730,19 @@ namespace TerraKnight.Save
                 mod.Stats.FullHeal();
                 mod.GrantedAbilities.Clear();
                 if (file.Granted != null) mod.GrantedAbilities.UnionWith(file.Granted);
+                var pendingLoot = new List<ItemStack>();
+                if(file.PendingEnemyLoot!=null)foreach(var item in file.PendingEnemyLoot)pendingLoot.Add(Unpack(item));
+                EnemyDrops.RestorePendingLoot(pendingLoot);
+                // Before acquisition history existed, these flags were committed only after delivery.
+                foreach (var reward in Player.PlayerHooks.AbilityItems)
+                    if (mod.GrantedAbilities.Contains(reward.flag)) HallownestRecovery.Record(inv, reward.item);
+                if (mod.GrantedAbilities.Contains("quakeLevel.dark.v1")) HallownestRecovery.Record(inv, ItemType.DescendingDarkRune);
                 Net.BossLifeRewards.InitializeClaims(mod);
+                VanillaBossProgression.Initialize();
                 if (file.Pylons != null)
                     foreach (var p in file.Pylons)
-                        World.Pylons.Unlocked.Add(new World.Pylons.Pylon { Scene = p.Scene, Bench = p.Bench, Local = new Vector2(p.X, p.Y), SceneSize = new Vector2(p.W, p.H), Style = p.Style,
-                            Placed = p.Placed, ArriveBench = p.ArriveBench, Entry = p.Entry });
+                        (p.Dormant ? World.Pylons.Dormant : World.Pylons.Unlocked).Add(new World.Pylons.Pylon { Scene = p.Scene, Bench = p.Bench, Local = new Vector2(p.X, p.Y), SceneSize = new Vector2(p.W, p.H), Style = p.Style,
+                            Placed = p.Placed, ArriveBench = p.ArriveBench, Entry = p.Entry, Dormant = p.Dormant });
                 // Items a save from before 2.1.1 kept lying in the world are let go (see Write).
                 if (file.Dropped != null && file.Dropped.Count > 0) Plugin.Log.LogInfo($"[存档] 地上的 {file.Dropped.Count} 堆掉落物不再读回（退出游戏就清掉）");
                 if (file.Stations != null)
@@ -610,6 +766,8 @@ namespace TerraKnight.Save
                     {
                         var items = new ItemStack[World.Chests.Capacity];
                         if (c.Items != null) Load(c.Items, items);
+                        // Legacy saves have no collection history: seed stored items once.
+                        if (file.CollectedItems == null) foreach (var item in items) if (!item.IsEmpty) inv.RecordCollection(item.Type);
                         chests.Add(new World.Chests.Saved { Scene = c.Scene, Local = new Vector2(c.X, c.Y), Items = items, Name = c.Name, Style = c.Style });
                     }
                     World.Chests.Load(chests);

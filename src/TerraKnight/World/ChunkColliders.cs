@@ -25,6 +25,10 @@ namespace TerraKnight.World
             public CompositeCollider2D Platforms;
             public readonly List<BoxCollider2D> PlatformBoxes = new List<BoxCollider2D>();
             public float SuspendedUntil;
+            public GameObject BuiltGo;
+            public CompositeCollider2D Built;
+            public readonly List<BoxCollider2D> BuiltBoxes = new List<BoxCollider2D>();
+            public readonly List<PolygonCollider2D> BuiltShapes = new List<PolygonCollider2D>();
         }
 
         readonly CellGrid grid;
@@ -100,7 +104,15 @@ namespace TerraKnight.World
         /// <summary>Cells the grid leaves to the game's own colliders (a boss's arena, TerrainRegion.SetOwnZone).</summary>
         public System.Func<int, int, bool> Skip;
 
-        bool Blocks(int x, int y) => grid.InClip(x, y) && grid.IsFullSolid(x, y) && (Skip == null || !Skip(x, y));
+        /// <summary>
+        /// The player's own cells in a boss room (TerrainRegion): a composite of their own beside the room's, so the new
+        /// AI's bosses go through what the player built and still stand on the room (EnemyAi.Bosses).
+        /// </summary>
+        public System.Func<int, int, bool> Built;
+
+        bool Solid(int x, int y) => grid.InClip(x, y) && grid.IsFullSolid(x, y) && (Skip == null || !Skip(x, y));
+        bool Blocks(int x, int y) => Solid(x, y) && (Built == null || !Built(x, y));
+        bool BlocksBuilt(int x, int y) => Built != null && Solid(x, y) && Built(x, y);
 
         // Only flat platforms collide here; a stair is walked by StairCollision instead.
         bool IsPlatform(int x, int y) => grid.InClip(x, y) && TerraKnight.World.Cells.IsPlatform(grid.Get(x, y)) && (grid.GetSlope(x, y) == 0 || grid.GetSlope(x, y) == CellGrid.HalfBrick) && (Skip == null || !Skip(x, y));
@@ -110,7 +122,7 @@ namespace TerraKnight.World
             int x0 = cx * ChunkCells, y0 = cy * ChunkCells;
             int x1 = Mathf.Min(x0 + ChunkCells, grid.Width), y1 = Mathf.Min(y0 + ChunkCells, grid.Height);
             var chunk = chunks[cy * cols + cx];
-            int boxes = 0, platforms = 0, shapes = 0;
+            int boxes = 0, platforms = 0, shapes = 0, builtBoxes = 0, builtShapes = 0;
             const float c = CellGrid.CellSize;
 
             greedy.Run(x0, y0, x1, y1, Blocks, (x, y, w, h) =>
@@ -122,6 +134,17 @@ namespace TerraKnight.World
                 box.enabled = true;
                 boxes++;
             });
+            if (Built != null)
+                greedy.Run(x0, y0, x1, y1, BlocksBuilt, (x, y, w, h) =>
+                {
+                    if (chunk == null) chunk = CreateChunk(cx, cy);
+                    if (chunk.BuiltGo == null) CreateBuilt(chunk);
+                    var box = builtBoxes < chunk.BuiltBoxes.Count ? chunk.BuiltBoxes[builtBoxes] : AddBox(chunk.BuiltGo, chunk.BuiltBoxes);
+                    box.size = new Vector2(w * c, h * c);
+                    box.offset = new Vector2((x - x0 + w * 0.5f) * c, (y - y0 + h * 0.5f) * c);
+                    box.enabled = true;
+                    builtBoxes++;
+                });
             // Shaped solids keep their solid side and underside. Top slopes sit a pixel below
             // the walking surface; StairCollision supplies the horizontal ledge HK stands on.
             for (int y = y0; y < y1; y++)
@@ -131,18 +154,27 @@ namespace TerraKnight.World
                 int s = grid.GetSlope(x, y);
                 if (s == 0) continue;
                 if (chunk == null) chunk = CreateChunk(cx, cy);
+                bool built = Built != null && Built(x, y);
+                if (built && chunk.BuiltGo == null) CreateBuilt(chunk);
                 float l = (x - x0) * c, b = (y - y0) * c;
                 if (s == CellGrid.HalfBrick)
                 {
-                    var half = boxes < chunk.Boxes.Count ? chunk.Boxes[boxes] : AddBox(chunk.Go, chunk.Boxes);
+                    BoxCollider2D half;
+                    if (built) half = builtBoxes < chunk.BuiltBoxes.Count ? chunk.BuiltBoxes[builtBoxes] : AddBox(chunk.BuiltGo, chunk.BuiltBoxes);
+                    else half = boxes < chunk.Boxes.Count ? chunk.Boxes[boxes] : AddBox(chunk.Go, chunk.Boxes);
                     half.size = new Vector2(c, c / 2);
                     half.offset = new Vector2(l + c / 2, b + c / 4);
                     half.enabled = true;
-                    boxes++;
+                    if (built) builtBoxes++;
+                    else boxes++;
                     continue;
                 }
-                var poly = shapes < chunk.Shapes.Count ? chunk.Shapes[shapes] : chunk.Go.AddComponent<PolygonCollider2D>();
-                if (shapes == chunk.Shapes.Count) chunk.Shapes.Add(poly);
+                var shapeList = built ? chunk.BuiltShapes : chunk.Shapes;
+                int used = built ? builtShapes : shapes;
+                var poly = used < shapeList.Count ? shapeList[used] : (built ? chunk.BuiltGo : chunk.Go).AddComponent<PolygonCollider2D>();
+                if (used == shapeList.Count) shapeList.Add(poly);
+                if (built) builtShapes++;
+                else shapes++;
                 poly.compositeOperation = Collider2D.CompositeOperation.Merge;
                 float t = b + c, r = l + c, inset = 1f / 32f;
                 poly.points = s == 1 ? new[] { new Vector2(l,b), new Vector2(l,t-inset), new Vector2(r-inset,b) } :
@@ -150,7 +182,6 @@ namespace TerraKnight.World
                     s == 3 ? new[] { new Vector2(l,b), new Vector2(l,t), new Vector2(r,t) } :
                     new[] { new Vector2(l,t), new Vector2(r,t), new Vector2(r,b) };
                 poly.enabled = true;
-                shapes++;
             }
             // Only the top four pixels of a platform have a collider, including half platforms.
             for (int y = y0; y < y1; y++)
@@ -176,6 +207,12 @@ namespace TerraKnight.World
             for (int i = boxes; i < chunk.Boxes.Count; i++) chunk.Boxes[i].enabled = false;
             for (int i = shapes; i < chunk.Shapes.Count; i++) chunk.Shapes[i].enabled = false;
             chunk.Composite.GenerateGeometry();
+            if (chunk.Built != null)
+            {
+                for (int i = builtBoxes; i < chunk.BuiltBoxes.Count; i++) chunk.BuiltBoxes[i].enabled = false;
+                for (int i = builtShapes; i < chunk.BuiltShapes.Count; i++) chunk.BuiltShapes[i].enabled = false;
+                chunk.Built.GenerateGeometry();
+            }
             if (chunk.Platforms != null)
             {
                 for (int i = platforms; i < chunk.PlatformBoxes.Count; i++) chunk.PlatformBoxes[i].enabled = false;
@@ -206,6 +243,39 @@ namespace TerraKnight.World
         /// <summary>Every platform composite built, in every scene (for the bosses that go through them, BossPlatforms).</summary>
         internal static readonly List<CompositeCollider2D> AllPlatforms = new List<CompositeCollider2D>();
 
+        /// <summary>Every composite of the player's own cells in a boss room (<see cref="Built"/>), in every scene.</summary>
+        internal static readonly List<CompositeCollider2D> AllBuilt = new List<CompositeCollider2D>();
+
+        static readonly HashSet<Collider2D> builtOrPlatform = new HashSet<Collider2D>();
+
+        /// <summary>Whether a collider is one of the player's own cells in a boss room, or a platform built.</summary>
+        internal static bool IsBuilt(Collider2D c) => c != null && builtOrPlatform.Contains(c);
+
+        static void Owned(Collider2D c)
+        {
+            if (builtOrPlatform.Count > 4096) builtOrPlatform.RemoveWhere(m => m == null);
+            builtOrPlatform.Add(c);
+        }
+
+        const string BuiltName = "Terra Built";
+
+        void CreateBuilt(Chunk chunk)
+        {
+            var go = new GameObject(BuiltName) { layer = TerrainLayer };
+            go.transform.SetParent(chunk.Go.transform, false);
+            var rb = go.AddComponent<Rigidbody2D>();
+            rb.bodyType = RigidbodyType2D.Static;
+            var composite = go.AddComponent<CompositeCollider2D>();
+            composite.geometryType = CompositeCollider2D.GeometryType.Outlines;
+            composite.generationType = CompositeCollider2D.GenerationType.Manual;
+            composite.sharedMaterial = material;
+            chunk.BuiltGo = go;
+            chunk.Built = composite;
+            AllBuilt.Add(composite);
+            Owned(composite);
+            Mirror(composite);
+        }
+
         /// <summary>The colliders that are the grid itself (its blocks and platforms), for what reads the grid and the game's other colliders apart (WorldItems).</summary>
         internal static readonly HashSet<Collider2D> Mirrors = new HashSet<Collider2D>();
 
@@ -234,6 +304,7 @@ namespace TerraKnight.World
             chunk.PlatformGo = go;
             chunk.Platforms = composite;
             AllPlatforms.Add(composite);
+            Owned(composite);
             Mirror(composite);
         }
 

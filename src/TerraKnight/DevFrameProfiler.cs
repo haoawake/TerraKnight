@@ -15,6 +15,13 @@ namespace TerraKnight
     internal static class DevFrameProfiler
     {
         public static bool Recording;
+        /// <summary>Each method's managed allocation counted too (the heap's growth across the call, what it calls included).</summary>
+        public static bool Allocations;
+        static readonly Dictionary<string, long> allocated = new Dictionary<string, long>();
+        /// <summary>What each method allocated itself, the timed methods it called taken off.</summary>
+        static readonly Dictionary<string, long> allocatedOwn = new Dictionary<string, long>();
+        /// <summary>The timed calls under way, each one's callees' growth so far.</summary>
+        static readonly List<long> childGrowth = new List<long>();
         static readonly Dictionary<string, (long ticks, int calls, long worst)> totals = new Dictionary<string, (long, int, long)>();
         static readonly Dictionary<MethodBase, string> keys = new Dictionary<MethodBase, string>();
         /// <summary>Sounds started while recording: clip, the object that played it, where.</summary>
@@ -26,8 +33,15 @@ namespace TerraKnight
             "Flush", "Build", "UpdateAll", "DrawAll", "TickAll", "Simulate", "Light", "Recompute", "Sync", "Pump",
         };
 
-        public static void Install(Harmony harmony)
+        /// <summary>
+        /// With <paramref name="everyMethod"/> (the "buildlag" suite), every method of the mod outside the World namespace
+        /// is timed too (bar the very short ones), so that an allocation is pinned to the method making it.
+        /// </summary>
+        public static bool Installed;
+
+        public static void Install(Harmony harmony, bool everyMethod = false)
         {
+            Installed = true;
             var sw = Stopwatch.StartNew();
             var prefix = new HarmonyMethod(typeof(DevFrameProfiler).GetMethod(nameof(Before), BindingFlags.Static | BindingFlags.NonPublic));
             var postfix = new HarmonyMethod(typeof(DevFrameProfiler).GetMethod(nameof(After), BindingFlags.Static | BindingFlags.NonPublic));
@@ -51,7 +65,26 @@ namespace TerraKnight
                         if (m.IsAbstract || m.IsGenericMethodDefinition || m.ContainsGenericParameters || m.GetMethodBody() == null) continue;
                         bool callback = mono && !m.IsStatic && m.GetParameters().Length == 0 && (m.Name == "Update" || m.Name == "LateUpdate" || m.Name == "FixedUpdate" || m.Name == "OnGUI");
                         bool modTick = ours && modNames.Contains(m.Name);
-                        if (!callback && !modTick) continue;
+                        bool every = everyMethod && ours && !m.IsConstructor && !(t.Namespace ?? "").StartsWith("TerraKnight.World")
+                            && t != typeof(PerfProbe) && m.GetMethodBody().GetILAsByteArray().Length >= 24;
+                        if (!callback && !modTick && !every) continue;
+                        try
+                        {
+                            harmony.Patch(m, prefix, postfix);
+                            var owner = t.IsNested && t.Name.StartsWith("<") ? t.DeclaringType : t;
+                            keys[m] = $"{owner.Name}.{m.Name}";
+                            patched++;
+                        }
+                        catch { }
+                    }
+                }
+            }
+            if (everyMethod)
+                foreach (var t in new[] { typeof(GUI), typeof(GUIStyle) })
+                    foreach (var m in t.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                    {
+                        if (m.Name != "Label" && m.Name != "DrawTexture" && m.Name != "DrawTextureWithTexCoords" && m.Name != "Box" && m.Name != "CalcSize" && m.Name != "CalcHeight") continue;
+                        if (m.IsGenericMethodDefinition || m.GetMethodBody() == null) continue;
                         try
                         {
                             harmony.Patch(m, prefix, postfix);
@@ -60,8 +93,6 @@ namespace TerraKnight
                         }
                         catch { }
                     }
-                }
-            }
             // Sounds: the plain ways a sound starts.
             var sound = new HarmonyMethod(typeof(DevFrameProfiler).GetMethod(nameof(SoundStarted), BindingFlags.Static | BindingFlags.NonPublic));
             int sounds = 0;
@@ -76,17 +107,52 @@ namespace TerraKnight
 
         public static int Calls;
 
-        static void Before(out long __state) => __state = Recording ? Stopwatch.GetTimestamp() : 0;
-
-        static void After(long __state, MethodBase __originalMethod, object __instance)
+        static void Before(out (long at, long heap, int depth) __state)
         {
+            if (!Recording)
+            {
+                __state = (0, 0, 0);
+                return;
+            }
+            long heap = 0;
+            int depth = 0;
+            if (Allocations)
+            {
+                depth = childGrowth.Count;
+                childGrowth.Add(0);
+                heap = GC.GetTotalMemory(false);
+            }
+            __state = (Stopwatch.GetTimestamp(), heap, depth);
+        }
+
+        static void After((long at, long heap, int depth) __state, MethodBase __originalMethod, object __instance)
+        {
+            long now = __state.heap != 0 ? GC.GetTotalMemory(false) : 0;
             Calls++;
-            if (__state == 0 || !Recording) return;
-            long dt = Stopwatch.GetTimestamp() - __state;
+            if (__state.at == 0 || !Recording) return;
+            long dt = Stopwatch.GetTimestamp() - __state.at;
             if (!keys.TryGetValue(__originalMethod, out var key)) key = __originalMethod.Name;
             if (__instance is PlayMakerFSM fsm && fsm != null) key = $"FSM {Base(fsm.gameObject.name)}/{fsm.FsmName}";
             totals.TryGetValue(key, out var v);
             totals[key] = (v.ticks + dt, v.calls + 1, Math.Max(v.worst, dt));
+            if (__state.heap != 0)
+            {
+                long grew = now - __state.heap, children = 0;
+                int d = __state.depth;
+                // A call that threw left its entries: they go with it.
+                if (childGrowth.Count > d)
+                {
+                    children = childGrowth[d];
+                    childGrowth.RemoveRange(d, childGrowth.Count - d);
+                }
+                // A collection in between makes it negative: left out.
+                if (grew > 0)
+                {
+                    allocated[key] = (allocated.TryGetValue(key, out long a) ? a : 0) + grew;
+                    allocatedOwn[key] = (allocatedOwn.TryGetValue(key, out long o) ? o : 0) + Math.Max(0, grew - children);
+                    if (d > 0 && d - 1 < childGrowth.Count) childGrowth[d - 1] += grew;
+                }
+            }
         }
 
         static void SoundStarted(AudioSource __instance, object[] __args)
@@ -113,6 +179,9 @@ namespace TerraKnight
         public static void Begin()
         {
             totals.Clear();
+            allocated.Clear();
+            allocatedOwn.Clear();
+            childGrowth.Clear();
             Sounds.Clear();
             Recording = true;
         }
@@ -140,7 +209,21 @@ namespace TerraKnight
             sounds.Sort((a, b) => b.Value.CompareTo(a.Value));
             var ss = new System.Text.StringBuilder();
             for (int i = 0; i < sounds.Count && i < 12; i++) ss.Append($"\n    {sounds[i].Key} ×{sounds[i].Value}");
-            return $"[剖析] {label}（{frames} 帧，计时回调 {Calls} 次）：{sb}\n  放音 {Sounds.Count} 次：{ss}";
+            var al = new System.Text.StringBuilder();
+            if (Allocations)
+            {
+                var byBytes = new List<KeyValuePair<string, long>>(allocated);
+                byBytes.Sort((a, b) => b.Value.CompareTo(a.Value));
+                al.Append("\n  分配最多（连带调用的）：");
+                for (int i = 0; i < byBytes.Count && i < 15; i++)
+                    al.Append($"\n    {byBytes[i].Key} 共 {byBytes[i].Value / 1024f:F0} KB（每帧 {byBytes[i].Value / 1024f / Math.Max(1, frames):F1} KB）");
+                var byOwn = new List<KeyValuePair<string, long>>(allocatedOwn);
+                byOwn.Sort((a, b) => b.Value.CompareTo(a.Value));
+                al.Append("\n  自己分配最多：");
+                for (int i = 0; i < byOwn.Count && i < 40; i++)
+                    al.Append($"\n    {byOwn[i].Key} 共 {byOwn[i].Value / 1024f:F0} KB（每帧 {byOwn[i].Value / 1024f / Math.Max(1, frames):F2} KB）");
+            }
+            return $"[剖析] {label}（{frames} 帧，计时回调 {Calls} 次）：{sb}\n  放音 {Sounds.Count} 次：{ss}{al}";
         }
     }
 }

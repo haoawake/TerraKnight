@@ -40,6 +40,7 @@ namespace TerraKnight.Items
             public float Since;
             public int GoneFrames;
             public bool Burst;
+            public bool Puppet;
             public float BurstAt;
             public float StableSince;
             public string StateKey;
@@ -149,7 +150,8 @@ namespace TerraKnight.Items
                 Record = record, Scene = hm.gameObject.scene.name, Name = hm.gameObject.name, FirstKill = firstKill, Body = hm.gameObject,
                 Effects = hm.GetComponent<EnemyDeathEffects>(), Corpse = BossCorpseTracking.Of(hm.GetComponent<EnemyDeathEffects>()), Since = Time.time, StableSince = Time.time,
                 LifeReward = Net.BossLifeRewards.Begin(record, hm.gameObject.scene.name),
-                At = at ?? (col != null ? (Vector2)col.bounds.center : (Vector2)hm.transform.position),
+                Puppet = Net.Enemies.IsPuppet(hm),
+                At = Net.Enemies.IsPuppet(hm) ? (Vector2)hm.transform.position : at ?? (col != null ? (Vector2)col.bounds.center : (Vector2)hm.transform.position),
             });
             DevDeferred++;
         }
@@ -217,9 +219,18 @@ namespace TerraKnight.Items
                     Fire(p, true, "离开了房间");
                     continue;
                 }
-                var corpse = Corpse(p);
-                FindRelatedCorpses(p);
-                bool seen = Seen(p.Body, ref p.At) | Seen(corpse, ref p.At);
+                // A replica's local death effects are not authoritative. Its spawned
+                // corpse can fall through local geometry while the owner's body is
+                // correctly synchronized. Never place a personal bag at that corpse.
+                var corpse = p.Puppet ? null : Corpse(p);
+                if (!p.Puppet) FindRelatedCorpses(p);
+                bool seen;
+                if (p.Puppet)
+                {
+                    seen = Active(p.Body);
+                    if (seen) p.At = p.Body.transform.position;
+                }
+                else seen = Seen(p.Body, ref p.At) | Seen(corpse, ref p.At);
                 bool present = Active(p.Body) | Active(corpse);
                 bool animating = Animating(p.Body) | Animating(corpse);
                 bool deathFlow = DeathFlow(p.Body) | DeathFlow(corpse);

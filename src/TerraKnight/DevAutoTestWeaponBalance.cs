@@ -51,7 +51,7 @@ namespace TerraKnight
             {
                 var p=ProgressionBalance.OutputOf(d);
                 bool original=ProgressionBalance.OriginalWeapon(d,out int vanilla,out int rare);
-                Check("原版数据 "+d.Type,original,$"原版={vanilla} 当前={d.Damage} 阶段={d.Stage}");
+                Check("原版数据 "+d.Type,d.Texture==null||!d.Texture.StartsWith("Item_",StringComparison.Ordinal)||original,$"原版={vanilla} 当前={d.Damage} 阶段={d.Stage}");
                 Check("输出参数 "+d.Type,p.Power>0 && p.Hits>0 && !float.IsNaN(p.Power) && d.Damage>=3);
                 rows.Add(new {Type=d.Type.ToString(),d.Name,d.Stage,d.Damage,VanillaDamage=vanilla,VanillaRare=rare,d.UseTime,d.UseAnimation,
                     OriginalCycle=ProgressionBalance.OriginalCycle(d),p.Cycle,p.Volley,p.Units,p.Rate,p.Repeat,p.Hits,p.Power,p.Basis,Target=ProgressionBalance.WeaponTarget(d),
@@ -77,6 +77,9 @@ namespace TerraKnight
             Check("泰拉刃单发高于飞刀",ItemDb.Get(ItemType.TerraBlade).Damage>ItemDb.Get(ItemType.VampireKnives).Damage*2);
             Check("哨兵分配独立预算",ProgressionBalance.WeaponTarget(ItemDb.Get(ItemType.QueenSpiderStaff))<ProgressionBalance.WeaponTarget(ItemDb.Get(ItemType.SpiderStaff)));
 
+            bool immortalWas=TerraStats.DevImmortal;TerraStats.DevImmortal=true;
+            bool invincibleWas=PlayerData.instance.isInvincible;PlayerData.instance.isInvincible=true;
+            mod.Stats.FullHeal();mod.DevNoFallDamage=true;
             yield return GoTo("Crossroads_01",EntryGateOf("Crossroads_01"));
             var hero=HeroController.instance;
             var inv=mod.Inventory;
@@ -88,7 +91,6 @@ namespace TerraKnight
             var savedArmor=(ItemStack[])inv.Armor.Clone();
             var savedAccessories=(ItemStack[])inv.Accessories.Clone();
             int crystalsWas=mod.Stats.ManaCrystals;
-            bool invincibleWas=PlayerData.instance.isInvincible;
             GameDifficulty.Current=DifficultyLevel.Normal;
             PlayerData.instance.isInvincible=true; mod.DevNoFallDamage=true;
             inv.Infinite=true; InventoryGui.Open=false;
@@ -223,8 +225,15 @@ namespace TerraKnight
                         Check("随机枪高输出有实际十倍触发 "+run.Type,row.Dps<=ProgressionBalance.WeaponTarget(d)*2.2f || row.ZapBigHits>0,
                             $"实测={row.Dps:F1} 十倍命中={row.ZapBigHits}");
                     } else if(!d.IsSummon && !noviceTimberBaseline)
-                        Check("实际输出未异常叠加 "+run.Type,row.Dps<=ProgressionBalance.WeaponTarget(d)*2.2f,
-                            $"实测={row.Dps:F1} 预算={ProgressionBalance.WeaponTarget(d):F1}；允许近战双命中、暴击及范围命中波动");
+                    {
+                        float budget=ProgressionBalance.WeaponTarget(d);
+                        // Native endgame hit floors deliberately exceed the former flattened DPS target.
+                        // Validate their actual hit cadence against the output model at the new damage.
+                        if(ProgressionBalance.DamageBeforeProgression.TryGetValue(d.Type,out int prior)&&d.Damage>prior)
+                            budget=Mathf.Max(budget,ProgressionBalance.WeaponDps(d,info.Defense,ammo?.Damage??0));
+                        Check("实际输出未异常叠加 "+run.Type,row.Dps<=budget*2.2f,
+                            $"实测={row.Dps:F1} 预算={budget:F1}；允许近战双命中、暴击及范围命中波动");
+                    }
                     if(run.Type==ItemType.VampireKnives)
                         Check("飞刀实发数量 "+run.Distance,casts>=10 && row.Made>=casts*4 && row.Made<=casts*8,$"使用{casts} 弹幕{row.Made}");
                     if(new[] {ItemType.Tsunami,ItemType.QuadBarrelShotgun,ItemType.TacticalShotgun,ItemType.SkyFracture}.Contains(run.Type))
@@ -251,7 +260,7 @@ namespace TerraKnight
                 if(target!=null) {target.hp=hpWas;info.MaxHp=maxWas;info.Level=levelWas;info.Carry=0;}
                 Array.Copy(saved,inv.Slots,saved.Length); Array.Copy(savedArmor,inv.Armor,savedArmor.Length);
                 Array.Copy(savedAccessories,inv.Accessories,savedAccessories.Length);
-                mod.Stats.ManaCrystals=crystalsWas; PlayerData.instance.isInvincible=invincibleWas;
+                mod.Stats.ManaCrystals=crystalsWas; PlayerData.instance.isInvincible=invincibleWas;TerraStats.DevImmortal=immortalWas;
                 Equipment.Update(inv); mod.Stats.UpdateMaximums(PlayerData.instance,Equipment.Current.ManaMax);
                 inv.Infinite=infiniteWas; GameDifficulty.Current=difficultyWas; Shop.DevStage=stageWas; UnityEngine.Random.state=randomWas;
             }

@@ -25,6 +25,14 @@ namespace TerraKnight.World
 
         static float next;
         static readonly Dictionary<int, float> inGroundSince = new Dictionary<int, float>();
+        /// <summary>
+        /// Bodies with no room found near them, left until then: mostly what the game parks out of the map until it is
+        /// wanted (the Gruz Mother's young under her room, the Flukemarm's fly spawners far off it), which would be searched
+        /// for a place and reported every second for the whole visit; each is reported once.
+        /// </summary>
+        static readonly Dictionary<int, float> noRoomUntil = new Dictionary<int, float>();
+        static readonly HashSet<int> reportedNoRoom = new HashSet<int>();
+        const float NoRoomWait = 15f;
         public static int DevFreed, DevNoRoom;
 
         public static void Tick()
@@ -34,9 +42,11 @@ namespace TerraKnight.World
             foreach (var info in Items.EnemyStats.All)
             {
                 var hm = info.Hm;
-                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || info.Boss) continue;
+                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || info.Boss || Net.Enemies.IsPuppet(hm)) continue;
+                if (hm.GetComponent<EnemyAi.BodyRecovery>() is EnemyAi.BodyRecovery recovering && recovering.Running) continue;
                 if (info.Record != null && livesInGround.Contains(info.Record)) continue;
                 int id = hm.GetInstanceID();
+                if (noRoomUntil.TryGetValue(id, out float wait) && Time.time < wait) continue;
                 var body = Body(hm, out var rb);
                 if (body == null || !InGround(body.bounds))
                 {
@@ -55,15 +65,19 @@ namespace TerraKnight.World
                 string scene = hm.gameObject.scene.name;
                 if (FindClear(b, scene, out var delta))
                 {
-                    hm.transform.position += (Vector3)delta;
-                    rb.linearVelocity = Vector2.zero;
+                    var recovery = hm.GetComponent<EnemyAi.BodyRecovery>() ?? hm.gameObject.AddComponent<EnemyAi.BodyRecovery>();
+                    recovery.Begin(hm, null, body, rb, null, (Vector2)b.center + delta);
                     DevFreed++;
-                    Plugin.Log.LogInfo($"[卡墙] {hm.name}（{scene}）卡在地形里 {(Vector2)b.center:F1}，挪到 {(Vector2)b.center + delta:F1}");
+                    Plugin.Log.LogInfo($"[卡墙] {hm.name}（{scene}）卡在地形里 {(Vector2)b.center:F1}，连续脱困至 {(Vector2)b.center + delta:F1}");
                 }
                 else
                 {
                     DevNoRoom++;
-                    Plugin.Log.LogWarning($"[卡墙] {hm.name}（{scene}）卡在地形里 {(Vector2)b.center:F1}，{Reach} 格内没有能放下它的空位");
+                    if (noRoomUntil.Count > 512) noRoomUntil.Clear();
+                    noRoomUntil[id] = Time.time + NoRoomWait;
+                    if (reportedNoRoom.Count > 512) reportedNoRoom.Clear();
+                    if (reportedNoRoom.Add(id))
+                        Plugin.Log.LogWarning($"[卡墙] {hm.name}（{scene}）卡在地形里 {(Vector2)b.center:F1}，{Reach} 格内没有能放下它的空位（{NoRoomWait:F0} 秒后再看）");
                 }
             }
         }

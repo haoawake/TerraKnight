@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using HutongGames.PlayMaker.Actions;
 using UnityEngine;
 using USM = UnityEngine.SceneManagement.SceneManager;
@@ -47,7 +47,7 @@ namespace TerraKnight
             var unload = USM.UnloadSceneAsync("Fungus1_04");
             while (unload != null && !unload.isDone) yield return null;
 
-            // The nailmasters and the nailsmith: their talks no longer lead to an offer.
+            // Inspect services without changing their native teaching or upgrading offers.
             foreach (var room in new[] { "Room_nailmaster", "Room_nailmaster_02", "Room_nailmaster_03", "Room_nailsmith" })
             {
                 var l = USM.LoadSceneAsync(room, UnityEngine.SceneManagement.LoadSceneMode.Additive);
@@ -59,9 +59,9 @@ namespace TerraKnight
                         if (f.FsmName != "Conversation Control") continue;
                         string n = f.gameObject.name;
                         if (n == "Nailsmith")
-                            Plugin.Log.LogInfo($"[AutoTest] 提示 {room} 骨钉匠：初见第三段 -> {Player.NailServices.DevTarget(f, "Meet 3", "CONVO_FINISH")}，问候 -> {Player.NailServices.DevTarget(f, "Greet", "CONVO_FINISH")}（都应为 Talk Finish 2，不再到 Offer Type）");
+                            Plugin.Log.LogInfo($"[AutoTest] 提示 {room} 骨钉匠：初见第三段 -> {Player.NailServices.DevTarget(f, "Meet 3", "CONVO_FINISH")}，问候 -> {Player.NailServices.DevTarget(f, "Greet", "CONVO_FINISH")}（保留原版升级提议）");
                         else if (n.StartsWith("NM ") && !n.Contains("Modeller"))
-                            Plugin.Log.LogInfo($"[AutoTest] 提示 {room} {n}：初见 -> {Player.NailServices.DevTarget(f, "Meet", "CONVO_FINISH")}，再提议 -> {Player.NailServices.DevTarget(f, "Reoffer", "CONVO_FINISH")}，没学过时 -> {Player.NailServices.DevTarget(f, "Convo Choice", "REOFFER")}（应为 Talk End / Talk End / Greet）");
+                            Plugin.Log.LogInfo($"[AutoTest] 提示 {room} {n}：初见 -> {Player.NailServices.DevTarget(f, "Meet", "CONVO_FINISH")}，再提议 -> {Player.NailServices.DevTarget(f, "Reoffer", "CONVO_FINISH")}，没学过时 -> {Player.NailServices.DevTarget(f, "Convo Choice", "REOFFER")}（应为 Box Down2 / Box Down2 / Reoffer，保留授课）");
                     }
                 var u = USM.UnloadSceneAsync(room);
                 while (u != null && !u.isDone) yield return null;

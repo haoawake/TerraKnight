@@ -71,6 +71,7 @@ namespace TerraKnight.Items
         static readonly Boss WallOfFlesh = T("血肉墙", 12, (8000, 0.7f, M));
         static readonly Boss QueenSlime = T("史莱姆皇后", 26, (18000, 0.8f, M));
         static readonly Boss Destroyer = T("毁灭者", 30, (80000, 0.75f, M)).Of(0.5f, "一半");
+        static readonly Boss SkeletronPrime = T("机械骷髅王", 24, (28000, 0.75f, M));
         static readonly Boss Twins = T("双子魔眼", 10, (20000 + 23000, 0.75f, M));
         static readonly Boss Plantera = T("世纪之花", 14, (30000, 0.7f, M));
         static readonly Boss Pumpking = T("南瓜王", 40, (26000, 0.65f, M));
@@ -108,6 +109,8 @@ namespace TerraKnight.Items
             ["FalseKnight"] = R(0, KingSlime),
             ["BigFly"] = R(0, KingSlime.Of(0.8f, "八成")),
             ["Mawlek"] = R(0, KingSlime),
+            // The Vengefly King (Greenpath's, its relic dropped): a boss, King Slime's seven tenths.
+            ["BigBuzzer"] = R(0, KingSlime.Of(0.7f, "七成")),
             // Stage 1: Greenpath, the Eye of Cthulhu.
             ["Hornet"] = R(1, EyeOfCthulhu),
             ["MegaMossCharger"] = R(1, EyeOfCthulhu.Of(0.8f, "八成")),
@@ -115,40 +118,42 @@ namespace TerraKnight.Items
             ["GhostNoEyes"] = R(1, EyeOfCthulhu.Of(0.6f, "六成")),
             // Stage 2: the Eater of Worlds or the Brain of Cthulhu, Skeletron.
             ["DungDefender"] = R(2, EaterOfWorlds),
-            ["TraitorLord"] = R(2, EaterOfWorlds),
+            ["TraitorLord"] = R(5, Plantera),
             ["MantisLord"] = R(2, Skeletron),
-            ["MageLord"] = R(2, BrainOfCthulhu),
-            ["MegaJellyfish"] = R(2, BrainOfCthulhu),
+            ["MageLord"] = R(2, Skeletron),
+            ["MegaJellyfish"] = R(2, Skeletron),
             ["FlukeMother"] = R(2, BrainOfCthulhu.Of(0.8f, "八成")),
             ["MegaBeamMiner"] = R(2, Deerclops.Of(0.8f, "八成")),
-            ["GhostHu"] = R(2, BrainOfCthulhu.Of(0.6f, "六成")),
-            ["GhostMarmu"] = R(2, BrainOfCthulhu.Of(0.6f, "六成")),
+            ["GhostHu"] = R(2, QueenBee),
+            ["GhostMarmu"] = R(3, QueenSlime),
+            // The Soul Warrior (the Soul Sanctum's, its relic dropped): a boss, the Brain of Cthulhu's seven tenths.
+            ["MageKnight"] = R(2, BrainOfCthulhu.Of(0.7f, "七成")),
             // Stage 3: the Queen Bee, the underworld, the Wall of Flesh.
             ["BlackKnight"] = R(3, WallOfFlesh),
             ["HiveKnight"] = R(4, QueenSlime.Of(0.6f, "蜂巢阶段4")),
             ["JarCollector"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
             ["MimicSpider"] = R(3, WallOfFlesh.Of(0.8f, "八成")),
             ["GhostGalien"] = R(3, WallOfFlesh.Of(0.5f, "一半")),
-            ["GhostXero"] = R(3, WallOfFlesh.Of(0.5f, "一半")),
+            ["GhostXero"] = R(2, Skeletron),
             // The three dream bosses come with the Dream Nail, long before the end: each a step past its waking self
             // (the Failed Champion with Skeletron, the Soul Tyrant with the Wall of Flesh, the Lost Kin with the
             // Destroyer), in their dreams and in Godhome alike. (Their old stand-ins' spoils went to Godhome's gods.)
             ["FalseKnight@5"] = R(2, Skeletron),
             ["MageLord@5"] = R(3, WallOfFlesh),
-            ["InfectedKnight@5"] = R(4, Destroyer),
+            ["InfectedKnight@5"] = R(4, SkeletronPrime),
             // Stage 4: hardmode, the Queen Slime (the Colosseum, in Kingdom's Edge), the mechanical bosses, Plantera.
             ["Oblobble"] = R(4, QueenSlime.Of(0.5f, "两只分")),
-            ["LobsterLancer"] = R(4, QueenSlime.Of(0.6f, "六成")),
+            ["LobsterLancer"] = R(5, Golem),
             ["Zote"] = R(4, QueenSlime.Of(0.2f, "两成")),
             ["Hornet@4"] = R(4, Destroyer),
             ["GhostMarkoth"] = R(4, Twins),
-            ["InfectedKnight"] = R(4, Plantera),
+            ["InfectedKnight"] = R(3, WallOfFlesh),
             // Stage 5: after Plantera: the moons, the eclipse, the Martians, Golem, the Old One's Army, Duke Fishron, the Empress.
             ["Grimm"] = R(5, Pumpking),
-            ["WhiteDefender"] = R(5, IceQueen),
-            ["GreyPrince"] = R(5, Mothron),
-            ["NightmareGrimm"] = R(5, DukeFishron),
-            ["HollowKnight"] = R(5, Golem),
+            ["WhiteDefender"] = R(5, DukeFishron),
+            ["GreyPrince"] = R(5, IceQueen),
+            ["NightmareGrimm"] = R(5, EmpressOfLight),
+            ["HollowKnight"] = R(5, LunaticCultist),
 
             // Godhome's gods, one class of the Moon Lord's spoils each, and the Radiance: the Moon Lord.
             ["Nailsage"] = R(5, MoonLord),
@@ -201,13 +206,16 @@ namespace TerraKnight.Items
 
         internal static int GodhomeLifeOf(Ref r,string scene,DifficultyLevel d,GodhomeBalance.Profile profile)
         {
+            // The rematch budgets are endgame fights: at the player's stage, that stage's share of them.
+            int stage=World.Areas.FightLevel(scene);
+            float share = BossHealthBudgets.StageShare(stage) * BossHealthBudgets.GodhomeProgressShare(stage);
             if (BossHealthBudgets.TryTotal(r, scene, d, out float budget))
-                return BossHealthBudgets.UnitLife(r, scene, budget * profile.Life);
+                return BossHealthBudgets.UnitLife(r, scene, budget * share * profile.Life);
             // Budget the whole fight, not a full floor for each native phase. Late bosses
             // retain their stronger stand-in; early and formerly fragile bosses get a floor.
             float world=r.Boss.LifeAt(Tier(d))*CombatLifeShare(r.Stage);
-            float total=Mathf.Max(world*1.5f,GodhomeRematch.LifeAt(Tier(d))*1.5f)*profile.Life;
-            float phases=BossPhases.WholeFactor(r.Record,scene);
+            float total=Mathf.Max(world*1.5f,GodhomeRematch.LifeAt(Tier(d))*1.5f)*share*profile.Life;
+            float phases=BossPhases.BudgetFactor(r.Record,scene);
             return Mathf.Max(1,Mathf.RoundToInt(total/Mathf.Max(.01f,phases)));
         }
 
@@ -233,6 +241,26 @@ namespace TerraKnight.Items
 
         /// <summary>The boss's Terraria defense (Master leaves it as it is).</summary>
         public static int DefenseOf(Ref r) => r.Boss.Defense;
+
+        static float[] stageDefense;
+
+        /// <summary>A stage's bosses' Terraria defense, on average (Godhome's at the player's stage).</summary>
+        public static int StageDefense(int stage)
+        {
+            if (stageDefense == null)
+            {
+                stageDefense = new float[6];
+                var n = new int[6];
+                foreach (var pair in table)
+                {
+                    int s = Mathf.Clamp(pair.Value.Stage, 0, 5);
+                    stageDefense[s] += pair.Value.Boss.Defense;
+                    n[s]++;
+                }
+                for (int s = 0; s < 6; s++) stageDefense[s] = n[s] > 0 ? stageDefense[s] / n[s] : 0f;
+            }
+            return Mathf.RoundToInt(stageDefense[Mathf.Clamp(stage, 0, 5)]);
+        }
 
         /// <summary>Dev: every entry, for the balance report.</summary>
         public static IEnumerable<KeyValuePair<string, Ref>> DevAll => table;

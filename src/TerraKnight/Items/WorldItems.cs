@@ -54,6 +54,7 @@ namespace TerraKnight.Items
             public float Belt;
             /// <summary>WorldItem.shimmerTime (0-1: how long it has lain in the shimmer) and shimmered (it came out of the shimmer: it floats).</summary>
             public float ShimmerTime;
+            public float ShimmerRequestAt = -10f;
             public bool Shimmered;
             /// <summary>Ticks left of the pop it gives as the shimmer changes it.</summary>
             public int Pop;
@@ -152,7 +153,7 @@ namespace TerraKnight.Items
         /// <summary>Player.DropSelectedItem: from the middle of the player, forward and up, out of his reach for 100 ticks.</summary>
         public static void Throw(ItemStack stack, HeroController hero)
         {
-            if (stack.IsEmpty || hero == null) return;
+            if (stack.IsEmpty || hero == null || stack.Def.CannotDiscard) return;
             var body = hero.GetComponent<BoxCollider2D>().bounds;
             float dir = hero.cState.facingRight ? 1f : -1f;
             float heroVx = hero.GetComponent<Rigidbody2D>().linearVelocity.x / Player.TerraMovement.PxT;
@@ -165,6 +166,9 @@ namespace TerraKnight.Items
             var vel = new Vector2(Random.Range(-30, 31) * 0.1f, Random.Range(16, 41) * 0.1f);
             Spawn(stack, centre, vel, 0, fromSky, personal);
         }
+
+        /// <summary>Whether an item dropped there would lie somewhere (a scene to lie in).</summary>
+        public static bool CanDrop(Vector2 centre) => (RegionAt(centre) ?? TerrainSystem.Current?.Region) != null;
 
         /// <summary>An item into a scene by its own coordinates, loaded or not: it lies there once the scene comes in.</summary>
         public static void DropIn(ItemStack stack, string scene, Vector2 local)
@@ -179,6 +183,7 @@ namespace TerraKnight.Items
         {
             var region = RegionAt(centre) ?? TerrainSystem.Current?.Region;
             if (region == null) return null;
+            personal |= !stack.IsEmpty && HallownestRecovery.IsUnique(stack.Type);
             if (Net.NetSession.Active && !personal && (Net.NetSession.Hosting || Net.WorldSync.CanInteract))
             {
                 var local = centre - (Vector2)region.Root.position;
@@ -191,10 +196,10 @@ namespace TerraKnight.Items
             stack.Favorite = false;
             if (items.Count >= MaxItems)
             {
-                // The oldest makes way (Item.PickAnItemSlotToSpawnItemOn).
+                // The oldest makes way (Item.PickAnItemSlotToSpawnItemOn); never a spell's weapon (SpellRewards).
                 int oldest = -1;
                 for (int i = 0; i < items.Count; i++)
-                    if (items[i].NetId == null && (oldest < 0 || items[i].Age > items[oldest].Age)) oldest = i;
+                    if (items[i].NetId == null && !SpellRewards.Is(items[i].Stack.Type) && (oldest < 0 || items[i].Age > items[oldest].Age)) oldest = i;
                 if (oldest >= 0) Remove(oldest);
             }
             var made = new Item
@@ -306,7 +311,8 @@ namespace TerraKnight.Items
             if (left > 0) left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, left);
             // The Void Bag carried: what the bag had no room for goes into the Void Vault (Player.GetItem's void bag).
             if (left > 0 && World.Chests.VoidBagCarried(inv)) left = World.Chests.StoreInVoid(inv, it.Stack, left);
-            if (left == count) return;
+            if (left == count) { Achievements.AchievementTracker.BagFull(it); return; }
+            if (it.Stack.Type == ItemType.FallenStar) Achievements.AchievementTracker.StarsPicked(count - left);
             UI.PopupText.Show(it.Stack.Def, count - left, at);
             TerraMod.Instance.PlaySound("Grab", 0.7f);
             it.Stack.Count = left;
@@ -776,14 +782,70 @@ namespace TerraKnight.Items
                 // An animated sheet's frame of the moment (the Fallen Star twinkles, souls pulse).
                 it.Renderer.sprite = SpriteOf(it.Stack.Type, ItemFrames.FrameNow(ItemDb.Get(it.Stack.Type).Texture));
                 it.Renderer.enabled = true;
+                GlowOver(it.Renderer, ItemDb.Get(it.Stack.Type));
                 var s = it.Renderer.sprite;
-                float h = s != null ? s.rect.height * Px : 0f;
+                float fit = Fit(it.Stack.Type, s);
+                float h = s != null ? s.rect.height * Px * fit : 0f;
                 var t = it.Renderer.transform;
                 t.localPosition = new Vector3(it.Local.x, it.Local.y - Half + h / 2f, Z - it.Region.Root.position.z);
                 t.localRotation = Quaternion.Euler(0f, 0f, -it.Vel.x * 0.2f * Mathf.Rad2Deg);
                 float pop = it.Pop / (float)PopTicks;
-                t.localScale = Vector3.one * (1f + 0.7f * pop * pop);
+                t.localScale = Vector3.one * (fit * (1f + 0.7f * pop * pop));
             }
+        }
+
+        static readonly Dictionary<ItemType, Sprite> glowSprites = new Dictionary<ItemType, Sprite>();
+
+        /// <summary>Main.DrawItem's glowmask over an item lying on the ground (the rainbow blades' are their blades), in its colour.</summary>
+        static void GlowOver(SpriteRenderer item, ItemDef def)
+        {
+            var t = item.transform.Find("Glow");
+            if (def.Glow == null) { if (t != null) t.gameObject.SetActive(false); return; }
+            if (!glowSprites.TryGetValue(def.Type, out var s))
+            {
+                try
+                {
+                    var tex = Terraria.TerrariaAssets.Texture(def.Glow);
+                    s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 1f / Px, 0, SpriteMeshType.FullRect);
+                }
+                catch (System.Exception) { s = null; }
+                glowSprites[def.Type] = s;
+            }
+            if (s == null) return;
+            SpriteRenderer g;
+            if (t == null)
+            {
+                g = new GameObject("Glow").AddComponent<SpriteRenderer>();
+                g.transform.SetParent(item.transform, false);
+                g.transform.localPosition = new Vector3(0f, 0f, -0.0001f);
+            }
+            else g = t.GetComponent<SpriteRenderer>();
+            g.gameObject.SetActive(true);
+            g.sprite = s;
+            g.sortingLayerID = item.sortingLayerID;
+            g.sortingOrder = item.sortingOrder + 1;
+            g.color = ItemGlows.Tint(def);
+        }
+
+        static readonly Dictionary<ItemType, float> fits = new Dictionary<ItemType, float>();
+
+        /// <summary>
+        /// The size an item lies on the ground at. Terraria's own item pictures (Item_N) at theirs, as Main.DrawItem draws
+        /// them; any other picture an item has (a prefab house's whole house, a tile or armor sheet, a townsperson's, Hallownest's
+        /// key items, relics, charms, the bosses' seals, the areas' chests and furniture) is made for something else: fitted
+        /// to the size Terraria's own items lie at, at most 40 px across, and no less than 16 (one a few pixels wide would be lost).
+        /// </summary>
+        static float Fit(ItemType type, Sprite s)
+        {
+            if (s == null) return 1f;
+            if (fits.TryGetValue(type, out float f)) return f;
+            string name = ItemDb.Get(type)?.Texture ?? "";
+            float big = Mathf.Max(s.rect.width, s.rect.height);
+            f = 1f;
+            if (!name.StartsWith("Item_", System.StringComparison.Ordinal) && big > 0f)
+                f = big > 40f ? 40f / big : big < 10f ? 16f / big : 1f;
+            fits[type] = f;
+            return f;
         }
 
         static Sprite SpriteOf(ItemType type, int frame = 0)
@@ -806,7 +868,8 @@ namespace TerraKnight.Items
                 var s = it.Renderer.sprite;
                 if (s == null) continue;
                 var c = it.World;
-                float w = s.rect.width * Px, h = s.rect.height * Px;
+                float fit = Fit(it.Stack.Type, s);
+                float w = s.rect.width * Px * fit, h = s.rect.height * Px * fit;
                 if (world.x < c.x - w / 2f || world.x > c.x + w / 2f || world.y < c.y - Half || world.y > c.y - Half + h) continue;
                 stack = it.Stack;
                 return true;

@@ -368,11 +368,14 @@ namespace TerraKnight.Items
                 Kill(p);
                 return;
             }
-            bool tick = MagicTick(p);
-            if (tick) p.Ai0++;
+            // Spin-up is real time; only the shot clock, animation and sound
+            // use Player.GetSlowMagicUseRate/Scalar (AI_075, 439).
+            float slow = mod.SlowMagicUse ? TerraMod.SlowMagic : 1f;
+            float rate = 1f / slow;
+            p.Ai0++;
             int stage = (p.Ai0 >= 40f ? 1 : 0) + (p.Ai0 >= 80f ? 1 : 0) + (p.Ai0 >= 120f ? 1 : 0);
             int every = 24 - 6 * stage;
-            if (tick) p.Ai1++;
+            p.Ai1 += rate;
             bool shoot = false;
             if (p.Ai1 >= every)
             {
@@ -380,18 +383,18 @@ namespace TerraKnight.Items
                 shoot = true;
             }
             p.FrameCounter += 1 + stage;
-            if (p.FrameCounter >= 4)
+            if (p.FrameCounter >= 4f * slow)
             {
                 p.FrameCounter = 0;
                 if (++p.Frame >= 6) p.Frame = 0;
             }
             if (--p.SoundDelay <= 0)
             {
-                p.SoundDelay = every;
+                p.SoundDelay = (int)(every * slow);
                 if (p.Ai0 != 1f) Sound("Item_91");
             }
             var v = TV(p);
-            if (p.Ai1 == 1f && p.Ai0 != 1f)
+            if (p.Ai1 == rate && p.Ai0 != 1f)
             {
                 var muzzle = centre + v + (v.sqrMagnitude > 1e-6f ? v.normalized : Vector2.right) * 24f;
                 for (int k = 0; k < 2; k++)

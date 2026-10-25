@@ -20,6 +20,8 @@ namespace TerraKnight.Items
             public ItemType Item;
             public int Tex;
             public float Life, Range, Speed, Scale = 1f;
+            /// <summary>The mod's own picture (the Abyss Yoyo's), instead of Terraria's projectile Tex.</summary>
+            public string TexName;
             /// <summary>GetAlpha's colour (unlit); default: lit.</summary>
             public Color? Look;
         }
@@ -47,6 +49,8 @@ namespace TerraKnight.Items
             [ProjKind.EyeYoyo] = new YoyoInfo { Item = ItemType.TheEyeOfCthulhu, Tex = 555, Life = 0, Range = 360, Speed = 16.5f, Scale = 1.15f },
             [ProjKind.KrakenYoyo] = new YoyoInfo { Item = ItemType.Kraken, Tex = 554, Life = 0, Range = 380, Speed = 22, Scale = 1.2f, Look = FxBatch.C(200, 200, 200, 200) },
             [ProjKind.TerrarianYoyo] = new YoyoInfo { Item = ItemType.Terrarian, Tex = 603, Life = 0, Range = 400, Speed = 17.5f, Scale = 1.15f, Look = FxBatch.C(255, 255, 255, 200) },
+            // The Abyss Shriek's (Items/Abyss.cs, the user's numbers): 18 tiles, 12 seconds, the pack's 32 px picture drawn smaller.
+            [ProjKind.AbyssYoyo] = new YoyoInfo { Item = ItemType.AbyssYoyo, TexName = Abyss.Tex("yoyo"), Life = Abyss.YoyoLife, Range = Abyss.YoyoRangePx, Speed = 16f, Scale = 0.75f },
         };
 
         static readonly ProjKind[] counterweights =
@@ -63,8 +67,10 @@ namespace TerraKnight.Items
                 var y = kv.Value;
                 specs[kv.Key] = new Spec
                 {
-                    Ai = Ai.Custom, Texture = "Projectile_" + y.Tex, W = 16, H = 16, Scale = y.Scale, Time = 6, Penetrate = -1, PushFromPlayer = true, Held = true, TrailLength = 10,
+                    Ai = Ai.Custom, Texture = y.TexName ?? "Projectile_" + y.Tex, W = 16, H = 16, Scale = y.Scale, Time = 6, Penetrate = -1, PushFromPlayer = true, Held = true, TrailLength = 10,
                     TypeCooldown = kv.Key == ProjKind.TerrarianYoyo ? 10 : 0,
+                    // The Abyss Yoyo: an enemy struck by it once in 0.2 s (the user's), its own clock for each.
+                    LocalCooldown = kv.Key == ProjKind.AbyssYoyo ? Abyss.YoyoHitCooldown : 0,
                     HoldsWhile = p => p.Ai0 != -2f, CanDamage = p => p.Ai0 != -3f,
                     Update = (t, p) => t.StepYoyo(p), Draw = (t, fx, p, px) => t.DrawYoyo(fx, p, px), OnKill = (t, p) => { },
                     TileHit = (t, p, x, yy, v) => YoyoTile(t, p, x, yy, v), ModifyHit = (t, p, hm, d, c) => t.YoyoBeforeHit(p, hm, d, c), OnHit = (t, p, hm) => t.YoyoAfterHit(p, hm),
@@ -379,9 +385,10 @@ namespace TerraKnight.Items
                 {
                     var bounce = Norm(c - e) * (p.Kind == ProjKind.KrakenYoyo ? 4f : 16f);
                     p.Vel = Flip(v * -0.5f + bounce);
-                    p.LocalAi0 += 20f;
+                    // The Abyss Yoyo keeps its whole 12 seconds (the user's: its two halves go by them).
+                    if (p.Kind != ProjKind.AbyssYoyo) p.LocalAi0 += 20f;
                     // No line back to the player: 40 ticks more off its time, a quarter off the damage.
-                    if (Holder(out var owner) && !TerraWorld.LineClearPx(c, owner))
+                    if (p.Kind != ProjKind.AbyssYoyo && Holder(out var owner) && !TerraWorld.LineClearPx(c, owner))
                     {
                         p.LocalAi0 += 40f;
                         dmg = (int)(dmg * 0.75f);
@@ -453,6 +460,7 @@ namespace TerraKnight.Items
                 typeImmune[(ProjKind.ChikCrystal, hm.GetInstanceID())] = 20;
             }
             if (p.Kind == ProjKind.EyeYoyo && EverySomeYoyoHits(7, true)) EyeLunge(p, hm);
+            if (p.Kind == ProjKind.AbyssYoyo) AbyssYoyoHit(p, hm);
             SpawnClass = keep;
         }
 
@@ -964,6 +972,7 @@ namespace TerraKnight.Items
                     fx.Draw(spr, (at + prev) * 0.5f, hue, p.TRot, p.Scale, overPlayer: held);
                 }
             }
+            if (p.Kind == ProjKind.AbyssYoyo) DrawAbyssYoyoGlow(fx, p, px, held);
             fx.Draw(spr, px, col * (1f - p.Alpha), p.TRot, p.Scale, flipX: flip && p.Kind == ProjKind.KrakenYoyo, overPlayer: held);
             if (p.Kind == ProjKind.KrakenYoyo || p.Kind == ProjKind.TerrarianYoyo || p.Kind == ProjKind.HelFireYoyo)
             {

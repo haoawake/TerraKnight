@@ -41,6 +41,8 @@ namespace TerraKnight
                 return made && inv.Mouse.Type == r.Result && inv.Mouse.Count == r.Count && r.Ingredients.All(g => Recipes.Count(inv, g.Type) == 0);
             }
             var added = Recipes.SupplementRecipes();
+            // The recipes themselves: their stations counted as standing by (where they may be made is suite craftrule's).
+            InventoryGui.DevAnyStation = true;
             foreach (var r in added.Where(r => r.Environment == CraftEnvironment.None))
                 Check("制作 " + r.Result + " " + r.Station, Craft(r), "实际制作入口、产出和材料扣除");
             foreach (var r in added.Where(r => r.Environment != CraftEnvironment.None))
@@ -48,10 +50,12 @@ namespace TerraKnight
                 Fill(r);
                 Check("环境限制 " + r.Result, !InventoryGui.DevCraft(r.Result) && r.Ingredients.All(g => Recipes.Count(inv, g.Type) == g.Count), "Town 无墓地/蜂蜜时不制作、不扣材料");
             }
+            InventoryGui.DevAnyStation = false;
             foreach (var stock in Town.CraftingSupplementShops.All)
             {
                 int count = Town.TownNpcs.DevStockAt(stock.Npc, 5, stock.Type, out bool has);
-                Check("商店 " + stock.Type, has && count <= 40, stock.Npc + " 货品 " + count);
+                // Four rows of ten, and a fifth once the stock on sale passes forty (TownNpcs.ShopItems).
+                Check("商店 " + stock.Type, has && count <= Town.TownNpcs.ShopItems.Length, stock.Npc + " 货品 " + count);
             }
             var shop = new HashSet<ItemType>(Town.CraftingSupplementShops.All.Select(s => s.Type));
             var drops = new HashSet<ItemType>();
@@ -70,17 +74,23 @@ namespace TerraKnight
                 if (!visited.Add(t)) return false;
                 return Recipes.All.Where(r => r.Result == t).Any(r => r.Ingredients.All(g => Sourced(g.Type, new HashSet<ItemType>(visited))));
             }
+            // Every boss beaten: whether a material can be had at all, not whether this test save has fought for it yet.
+            var clearsWas = VanillaBossProgression.DevClears;
+            VanillaBossProgression.DevClears = new HashSet<string>(VanillaBossProgression.All.Keys);
+            drops.Clear();
+            foreach (var key in EnemyDrops.DevRecords) foreach (var drop in EnemyDrops.Of(key)) drops.Add(drop.Type);
             foreach (var t in added.SelectMany(r => r.Ingredients).Select(g => g.Type).Distinct())
                 Check("材料来源 " + t, Sourced(t, new HashSet<ItemType>()), "递归检查配方、掉落和实际新增商店货品");
+            VanillaBossProgression.DevClears = clearsWas;
 
             Wear(ItemType.HandOfCreation); Equipment.Update(inv);
-            Check("创造之手装备加成", Equipment.Current.BlockSpeed >= .5f && Equipment.Current.WallSpeed >= .5f && Equipment.Current.BlockRange >= 3
+            Check("创造之手装备加成", Equipment.Current.BlockSpeed >= .5f && Equipment.Current.WallSpeed >= .5f && Equipment.Current.TileRangeAcc
                 && Equipment.Current.PickSpeed >= .25f && Equipment.Current.TreasureMagnet && Equipment.Current.PortableStool);
             Wear(ItemType.LavaproofTackleBag, ItemType.FishingBobberGlowingRainbow); Equipment.Update(inv);
             Check("渔具袋和浮标", Equipment.Current.FishingLine && Equipment.Current.TackleBox && Equipment.Current.AcidFishing
                 && Equipment.Current.FishingSkill == 10 && Equipment.Current.BobberKind == 8);
             Check("墙不再作为基础商品", !Shop.Basics.Any(d => d.PlacesWall > 0));
-            Check("骑枪前冲加伤", TerraProjectiles.LanceMultiplier(Vector2.right * 12, Vector2.right) > 1 && TerraProjectiles.LanceMultiplier(Vector2.left * 12, Vector2.right) == 1);
+            Check("骑枪伤害随速度", Mathf.Approximately(TerraProjectiles.LanceMultiplier(Vector2.zero), 0.1f) && TerraProjectiles.LanceMultiplier(Vector2.right * 14f) > 1f && Mathf.Approximately(TerraProjectiles.LanceMultiplier(Vector2.left * 12f), TerraProjectiles.LanceMultiplier(Vector2.right * 12f)));
 
             // The Flymeal special acts on the custom town residents drawn without a HealthManager.
             var resident = Town.TownNpcs.DevPos("Merchant");
@@ -109,6 +119,7 @@ namespace TerraKnight
             int catches = Fishing.Catches;
             // The fixture is a sliver of water: counted as a pond of 1000 tiles (Terraria wants 75 at least, 300 for full power).
             Fishing.DevPondTiles = 1000;
+            Fishing.DevRescan();
             Check("钓竿抛竿", Fishing.Use(hero, aim, inv.Current.Def) && Fishing.Active && !Fishing.Biting, "实际场景液面检测");
             float until = Time.time + 30;
             while (!Fishing.Biting && Fishing.Active && Time.time < until) yield return null;
@@ -117,12 +128,14 @@ namespace TerraKnight
             Check("收线获得鱼", reeled && Fishing.Catches == catches + 1 && !Fishing.Active, "背包有防断线装备，实际等待后收鱼");
             Fishing.Cancel();
             var acidCheck = water.AddComponent<PlayMakerFSM>(); acidCheck.Fsm.Name = "Acid Armour Check"; acidCheck.enabled = false;
+            Fishing.DevRescan();
             Wear(); Equipment.Update(inv);
             Check("酸液拒绝普通钓竿", !Fishing.Use(hero, aim, inv.Current.Def));
             Wear(ItemType.LavaFishingHook); Equipment.Update(inv);
             Check("酸液钓钩允许抛竿", Fishing.Use(hero, aim, inv.Current.Def));
             Fishing.Cancel(); Object.Destroy(water);
             Fishing.DevPondTiles = 0;
+            Fishing.DevRescan();
 
             // Cast through the actual item use path and check mana, projectile hits and lance lifetime.
             InventoryGui.Open = false;
@@ -156,7 +169,8 @@ namespace TerraKnight
             yield return new WaitForSeconds(.6f);
             Check("骑枪按住维持", TerraProjectiles.Instance.DevCount(ProjKind.HallowLance) == 1);
             mod.DevHold = false;
-            yield return new WaitForSeconds(.15f);
+            // Let go, it draws back over the last third of the use (8 ticks) before it's gone.
+            yield return new WaitForSeconds(.3f);
             Check("骑枪松开回收", TerraProjectiles.Instance.DevCount(ProjKind.HallowLance) == 0);
             mod.DevAim = null; mod.DevHold = null;
             inv.Mouse = default;

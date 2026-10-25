@@ -20,7 +20,7 @@ namespace TerraKnight.Items
         public const int Poisoned = 20, OnFire = 24, Confused = 31, CursedInferno = 39, Frostburn = 44, Ichor = 69, Venom = 70,
             Midas = 72, Slimed = 137, Celled = 183, Shadowflame = 153, ScytheMark = 310, Hellfire = 323, Frostbite = 324, PotentAcid = 395,
             EelMark = 362, AcceleratePoisons = 398, TentacleSpiked = 337, BloodButchered = 344, Bleeding = 30, Daybroken = 189, Javelined = 169,
-            SoulDrain = 151, BetsysCurse = 203, Oiled = 204;
+            SoulDrain = 151, BetsysCurse = 203, Oiled = 204, RedLightning = 400;
 
         /// <summary>
         /// Enemies soul-drained within 1100 px of the player while the Soul Drain is in use, counted
@@ -52,10 +52,15 @@ namespace TerraKnight.Items
         static readonly List<int> gone = new List<int>();
         static readonly List<int> buffKeys = new List<int>();
 
-        /// <summary>NPC.AddBuff: only lengthens what is left.</summary>
+        /// <summary>NPC.AddBuff: only lengthens what is left. Not on a boss out of reach (ArenaGuard: the Knight outside its arena) or asleep.</summary>
         public static void Add(HealthManager hm, int buff, int ticks)
         {
-            if (hm == null || hm.isDead || ticks <= 0) return;
+            if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || ticks <= 0) return;
+            if (OutOfReach(hm))
+            {
+                DevRefused++;
+                return;
+            }
             if (!states.TryGetValue(hm.GetInstanceID(), out var s)) states[hm.GetInstanceID()] = s = new State { Hm = hm };
             s.Buffs[buff] = s.Buffs.TryGetValue(buff, out int left) ? Mathf.Max(left, ticks) : ticks;
         }
@@ -104,7 +109,9 @@ namespace TerraKnight.Items
             {
                 var s = kv.Value;
                 var hm = s.Hm;
-                if (hm == null || hm.isDead || s.Buffs.Count == 0)
+                // A pooled enemy is no longer the live target that received these debuffs.
+                // Never keep damaging or emitting particles from an inactive pool entry.
+                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || s.Buffs.Count == 0)
                 {
                     gone.Add(kv.Key);
                     continue;
@@ -190,12 +197,31 @@ namespace TerraKnight.Items
             foreach (int k in gone) states.Remove(k);
         }
 
+        /// <summary>
+        /// A boss the Knight's blows can't reach yet (World.ArenaGuard.Refuse's: he is outside its arena, or it is off the
+        /// map) or still asleep (BossWake): no debuff takes on it, and none it carries burns it, so a burning arrow from
+        /// outside the Gruz Mother's room neither wakes nor hurts her. The waking blow itself is the arena's.
+        /// </summary>
+        static bool OutOfReach(HealthManager hm) => World.ArenaGuard.OffMap(hm) || World.ArenaGuard.Outside(hm) || BossWake.Asleep(hm);
+
+        public static int DevRefused, DevHeldOff;
+
         static bool Flamable(int b) => b == OnFire || b == Hellfire || b == CursedInferno || b == Frostburn || b == Frostbite || b == Shadowflame;
 
         /// <summary>NPC.GetHurtByDebuff: off its Terraria life (so its own health), the kill through the game's own hit.</summary>
         static void Damage(HealthManager hm, int amount)
         {
-            if (hm.isDead || BossWake.DreamWindow(hm) || BossWake.Hit(hm) != BossWake.Result.Normal) return;
+            if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy) return;
+            // Out of reach, or invincible all round (burrowed, shut in): nothing off it, and never a waking blow (BossWake.Hit below
+            // only holds an awake boss's intro off).
+            if (OutOfReach(hm) || EnemyStats.Untouchable(hm))
+            {
+                DevHeldOff++;
+                return;
+            }
+            if (BossWake.DreamWindow(hm) || BossWake.Hit(hm) != BossWake.Result.Normal) return;
+            amount = PlayerChallenges.Outgoing(amount);
+            if (World.TargetDummy.Is(hm)) World.TargetDummy.Record(hm, amount);
             var info = EnemyStats.Of(hm);
             int dealt = EnemyStats.ToGameDamage(info, amount);
             var col = hm.GetComponent<Collider2D>();
@@ -226,7 +252,10 @@ namespace TerraKnight.Items
         {
             var col = s.Hm.GetComponent<Collider2D>();
             var p = TerraParticles.Instance;
-            if (col == null || p == null) return;
+            // Dirtcarvers remain active underground, but their native FSM hides the renderer.
+            // Keep the buff timer and invulnerability rules, without drawing fire from underground.
+            var renderer = s.Hm.GetComponent<Renderer>();
+            if (col == null || !col.enabled || p == null || renderer != null && !renderer.enabled) return;
             var b = col.bounds;
             var topLeft = TerraParticles.ToPx(new Vector2(b.min.x, b.max.y));
             int w = Mathf.RoundToInt(b.size.x / TerraParticles.Px), h = Mathf.RoundToInt(b.size.y / TerraParticles.Px);
@@ -327,6 +356,11 @@ namespace TerraKnight.Items
                                 p[i].Velocity = p[i].Velocity * 0.2f + new Vector2(0f, 0.2f);
                             }
                         }
+                        break;
+                    case RedLightning:
+                        // N:92286-92294: the Arc Surge's mark, a red spark somewhere on it one tick in ten (no harm of its own).
+                        if (Random.Range(0, 10) == 0)
+                            FxParticles.RedLightningSmall(topLeft + new Vector2(Random.value * w, Random.value * h), Random.insideUnitCircle);
                         break;
                     case EelMark:
                         // N:92270: a small blue spark somewhere on it one tick in ten.

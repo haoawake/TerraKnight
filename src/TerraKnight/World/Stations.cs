@@ -47,7 +47,10 @@ namespace TerraKnight.World
         /// </summary>
         Door, DoorOpenRight, DoorOpenLeft, Table,
         Dresser, Sofa, Bathtub, Toilet, Sink, Clock, Piano, Candle, Candelabra, Chandelier, Lantern, Lamp, Platform,
+        /// <summary>Terraria's Target Dummy (tile 378, ItemID 3202): struck, never dying, its damage a second shown (World.TargetDummy).</summary>
+        TargetDummy,
         RegionalFirst = 1000, RegionalLast = 1503,
+        CasinoSlots=1504, CasinoPinball=1505, CasinoRoulette=1506,
     }
 
     /// <summary>
@@ -100,6 +103,17 @@ namespace TerraKnight.World
             /// </summary>
             public bool Faces;
             public int RightX;
+            /// <summary>
+            /// Main.AnimateTiles: its tile steps through Frames pictures, FrameTicks ticks each, every one of the kind in
+            /// step, each FrameStep px further down the sheet (TileDrawing.GetTileDrawData's addFrY); 1, a still picture
+            /// (StationsAnimated).
+            /// </summary>
+            public int Frames = 1, FrameTicks = 1, FrameStep;
+            /// <summary>TileDrawing.DrawSingleTile_Flames: a sheet laid out as the tile's (the campfire's Flame_15), its frame drawn over it, added at this strength.</summary>
+            public string Flame;
+            public float FlameStrength;
+            /// <summary>GetTileDrawData's addFrX: standing in the world it is drawn this far across its sheet (the Void Vault's pedestal, its lens drawn apart); the placing ghost keeps the whole picture.</summary>
+            public int PlacedX;
         }
 
         /// <summary>The relics: three-cell pedestals with floating sculptures, occupying 3x4 cells.</summary>
@@ -114,6 +128,8 @@ namespace TerraKnight.World
             }
             AddHousingSpecs();
             AddRegionalSpecs();
+            AddCasinoSpecs();
+            AddAnimations();
         }
 
         static Spec Grave(int style, ItemType item) =>
@@ -143,8 +159,12 @@ namespace TerraKnight.World
             [StationKind.VoidVault] = new Spec { Texture = "Tiles_491", W = 3, H = 3, Heights = new[] { 16, 16, 16 }, DrawY = 2, Item = ItemType.VoidVault, Counts = new string[0] },
             // Tile 79: Direction PlaceLeft, its PlaceRight alternate the next 72 px across (StyleMultiplier 2, StyleWrapLimit 2).
             [StationKind.Bed] = new Spec { Texture = "Tiles_79", W = 4, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.Bed, Counts = new string[0], Faces = true, RightX = 72 },
-            [StationKind.Campfire] = new Spec { Texture = "Tiles_215", W = 3, H = 2, Heights = new[] { 16, 16 }, Item = ItemType.Campfire, Counts = new[] { "篝火" } },
-            [StationKind.DyeVat] = new Spec { Texture = "Tiles_228", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.DyeVat, Counts = new[] { "染缸" } },
+            // Tile 215: Style3x2 drawn 2 px down (DrawYOffset; GetTileDrawData's tileTop for TileID.Sets.Campfires).
+            [StationKind.Campfire] = new Spec { Texture = "Tiles_215", W = 3, H = 2, Heights = new[] { 16, 16 }, DrawY = 2, Item = ItemType.Campfire, Counts = new[] { "篝火" } },
+            // Tile 378 (TileID.TargetDummy): Style2xX, three high.
+            [StationKind.TargetDummy] = new Spec { Texture = "Tiles_378", W = 2, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.TargetDummy, Counts = new string[0] },
+            // Tile 228: Style3x3 drawn 2 px down (its frames 54 px apart down Tiles_228).
+            [StationKind.DyeVat] = new Spec { Texture = "Tiles_228", W = 3, H = 3, Heights = new[] { 16, 16, 18 }, Item = ItemType.DyeVat, Counts = new[] { "染缸" } },
             // TileObjectData: Style2x1 with CoordinateHeights {18} (tiles 18, 16), Style3x2 {16, 18} (17, 114).
             [StationKind.WorkBench] = new Spec { Texture = "Tiles_18", W = 2, H = 1, Heights = new[] { 18 }, Item = ItemType.WorkBench, Counts = new[] { "工作台" }, SolidTop = true },
             // Tile 15 (TileID.Chairs): Style1x2, CoordinateHeights {16, 18}; Direction PlaceLeft (frameX 0, the seat to the
@@ -195,9 +215,10 @@ namespace TerraKnight.World
             [StationKind.SharpeningStation] = new Spec { Texture = "Tiles_377", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.SharpeningStation, Counts = new string[0], Buff = 159, BuffTicks = 36000 },
             [StationKind.WarTable] = new Spec { Texture = "Tiles_464", W = 5, H = 4, Heights = new[] { 16, 16, 16, 18 }, Item = ItemType.WarTable, Counts = new string[0], Buff = 348, BuffTicks = 36000 },
             [StationKind.SliceOfCake] = new Spec { Texture = "Tiles_621", W = 2, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.SliceOfCake, Counts = new string[0], Buff = 192, BuffTicks = 7200 },
-            // The altars (tile 26: Demon Altar style 0, Crimson Altar style 1), fixed in the world, never knocked down.
-            [StationKind.DemonAltar] = new Spec { Texture = "Tiles_26", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.None, Counts = new[] { "恶魔祭坛 / 猩红祭坛" } },
-            [StationKind.CrimsonAltar] = new Spec { Texture = "Tiles_26", W = 3, H = 2, StyleX = 54, Heights = new[] { 16, 18 }, Item = ItemType.None, Counts = new[] { "恶魔祭坛 / 猩红祭坛" } },
+            // The altars (tile 26: Demon Altar style 0, Crimson Altar style 1): Dirtmouth's two (FixedStations) and the
+            // ones set down from their items; a hammer of 80 or more knocks one off (TrySmashAltar), no pickaxe does.
+            [StationKind.DemonAltar] = new Spec { Texture = "Tiles_26", W = 3, H = 2, Heights = new[] { 16, 18 }, Item = ItemType.DemonAltar, Counts = new[] { "恶魔祭坛 / 猩红祭坛" } },
+            [StationKind.CrimsonAltar] = new Spec { Texture = "Tiles_26", W = 3, H = 2, StyleX = 54, Heights = new[] { 16, 18 }, Item = ItemType.CrimsonAltar, Counts = new[] { "恶魔祭坛 / 猩红祭坛" } },
         };
 
         sealed class Station
@@ -212,6 +233,10 @@ namespace TerraKnight.World
             /// <summary>Placed facing right (Spec.Faces: the player faced right as it went down).</summary>
             public bool Right;
             public SpriteRenderer Renderer;
+            /// <summary>The smart interact highlight over it (StationsSmart).</summary>
+            public SpriteRenderer Outline;
+            /// <summary>What Terraria draws over its tile as it animates (StationsAnimated): its flame sheet, a glow, the Void Vault's lens.</summary>
+            public SpriteRenderer[] Fx;
             public RelicDisplay Relic;
             /// <summary>Its top, a one-way platform on the terrain layer (the solid-top ones).</summary>
             public GameObject Top;
@@ -242,7 +267,8 @@ namespace TerraKnight.World
 
         public static Stations Instance { get; private set; }
         static readonly List<Station> stations = new List<Station>();
-        static readonly Dictionary<StationKind, Sprite> sprites = new Dictionary<StationKind, Sprite>(), rightSprites = new Dictionary<StationKind, Sprite>();
+        /// <summary>The pictures a station kind is drawn with, frame by frame (SpriteOf: kind &lt;&lt; 2, 1 facing right, 2 as set down).</summary>
+        static readonly Dictionary<int, Sprite[]> sprites = new Dictionary<int, Sprite[]>();
         float ticks;
 
         public static Stations Create(Transform parent)
@@ -254,7 +280,7 @@ namespace TerraKnight.World
         }
 
         public static int Count => stations.Count;
-        public static int DevPlaced, DevBroken;
+        public static int DevPlaced, DevBroken, DevSmashed, DevAltarHurts;
 
         /// <summary>The item a station kind drops when knocked down.</summary>
         public static ItemType ItemOf(StationKind k) => specs.TryGetValue(k, out var s) ? s.Item : ItemType.None;
@@ -275,6 +301,16 @@ namespace TerraKnight.World
         }
 
         /// <summary>The recipe stations standing within reach now, for the crafting panel's note.</summary>
+        /// <summary>The station names in reach added to <paramref name="into"/> (the crafting column asks every frame).</summary>
+        public static void NearNames(HeroController hero, ICollection<string> into)
+        {
+            if (hero == null) return;
+            var reach = Reach(hero);
+            foreach (var s in stations)
+                if (s.Region != null && reach.Overlaps(s.Box))
+                    foreach (var c in s.Spec.Counts) if (!into.Contains(c)) into.Add(c);
+        }
+
         public static List<string> NearNames(HeroController hero)
         {
             var names = new List<string>();
@@ -312,7 +348,6 @@ namespace TerraKnight.World
             if (!Net.WorldSync.CanInteract) return false;
             if (hero == null || !specs.ContainsKey(kind)) return false;
             if (!FindSpot(kind, hero, aim, out var bottom)) return false;
-            if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) { BossRooms.Notice(bottom); return false; }
             var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
             var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
@@ -331,14 +366,13 @@ namespace TerraKnight.World
 
         /// <summary>
         /// A station the world sets down where something came to rest (a tombstone rolled to a stop, a flower grown): even
-        /// ground under it and room for it, as for the player's, but no reach; not in a boss's room. The player's own once
+        /// ground under it and room for it, as for the player's, but no reach. The player's own once
         /// set: saved, knocked down with a pickaxe. True when it stands.
         /// </summary>
         public static bool TryPlaceNatural(StationKind kind, Vector2 aim, out Vector2 bottom)
         {
             bottom = default;
             if (!specs.ContainsKey(kind) || !FindSpot(kind, null, aim, out bottom)) return false;
-            if (BossRooms.Locked(bottom + new Vector2(0f, 0.1f))) return false;
             var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
             var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
             if (region == null) return false;
@@ -356,6 +390,14 @@ namespace TerraKnight.World
         public static void PlaceIn(StationKind kind, string scene, Vector2 local)
         {
             if (specs.ContainsKey(kind) && !string.IsNullOrEmpty(scene)) stations.Add(new Station { Kind = kind, Scene = scene, Local = local });
+        }
+
+        /// <summary>The stations of a kind standing in the loaded scenes, into a list (cleared first; nothing made each frame): their boxes (world units) and pictures.</summary>
+        public static void StandingOf(StationKind kind, List<(Rect Box, SpriteRenderer Renderer)> into)
+        {
+            into.Clear();
+            foreach (var s in stations)
+                if (s.Region != null && s.Kind == kind) into.Add((s.Box, s.Renderer));
         }
 
         /// <summary>The boxes of the stations of some kinds standing in the loaded scenes (world units).</summary>
@@ -451,6 +493,7 @@ namespace TerraKnight.World
             // beside it used to slip through the point test while the two pictures overlapped.
             foreach (var c in Chests.Boxes())
                 if (c.Overlaps(inner)) { DevWhy = "和箱子重叠"; return false; }
+            if (Pylons.Occupies(box)) { DevWhy = "和晶塔重叠"; return false; }
             if (hero != null && !Reach(hero).Overlaps(box)) { DevWhy = "够不着"; return false; }
             // A door goes between a floor and a ceiling (StationsHousing).
             if (!DoorFits(kind, box)) { DevWhy = "门要装在地面和天花板之间"; return false; }
@@ -472,6 +515,16 @@ namespace TerraKnight.World
             foreach (var s in stations)
             {
                 if (s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
+                if (Use(s, hero)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A right click on a station (Player.TileInteractionsUse): what it does; false for one a click does nothing to.</summary>
+        static bool Use(Station s, HeroController hero)
+        {
+            if (Casino.IsMachine(s.Kind)) return Casino.OpenFor(s.Kind,s.Box);
+            {
                 // A door opens or shuts (StationsHousing: WorldGen.OpenDoor / CloseDoor).
                 if (IsDoor(s.Kind))
                 {
@@ -572,6 +625,24 @@ namespace TerraKnight.World
         // ------------------------------------------------------------------ breaking
 
         /// <summary>A pickaxe swung at a station in reach: pick power until 100 knocks it down, its item where it stood. True when the swing was at one.</summary>
+        /// <summary>
+        /// The smart cursor's Step_ForceCursorToAnyMinableThing: a station at this point in reach that the tool in hand
+        /// can knock down (WorldGen.CanKillTile: nothing standing on it, not one the mod set; an altar, Main.tileHammer,
+        /// only by a hammer, the rest only by a pickaxe).
+        /// </summary>
+        public static bool MinableAt(Vector2 p, ItemDef tool, HeroController hero)
+        {
+            if (tool == null || hero == null) return false;
+            var reach = Reach(hero);
+            foreach (var s in stations)
+            {
+                if (s.Region == null || !s.Box.Contains(p) || !reach.Overlaps(s.Box)) continue;
+                if (Chests.RestsOn(s.Box) || s.Fixed) return false;
+                return IsAltar(s.Kind) ? tool.HammerPower > 0 : tool.PickPower > 0;
+            }
+            return false;
+        }
+
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
             if (!Net.WorldSync.CanInteract) return false;
@@ -581,8 +652,8 @@ namespace TerraKnight.World
             {
                 var s = stations[i];
                 if (s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
-                // WorldGen.CanKillTile: nothing under a chest goes; the world's own altars stay.
-                if (Chests.RestsOn(s.Box) || s.Fixed) return true;
+                // WorldGen.CanKillTile: nothing under a chest goes; an altar takes a hammer (TrySmashAltar).
+                if (Chests.RestsOn(s.Box) || s.Fixed || IsAltar(s.Kind)) return true;
                 if (Net.WorldSync.Guest)
                 {
                     Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "mineStation", Key = Net.WorldSync.Key("s", s.Scene, s.Local), Power = pick.PickPower });
@@ -604,6 +675,137 @@ namespace TerraKnight.World
                 return true;
             }
             return false;
+        }
+
+        // ------------------------------------------------------------------ the altars
+
+        /// <summary>The hammer power an altar takes (Player.ItemCheck_UseMiningTools_TryHittingWall: tile 26 wants 80, the Pwnhammer's).</summary>
+        public const int AltarHammer = 80;
+
+        public static bool IsAltar(StationKind k) => k == StationKind.DemonAltar || k == StationKind.CrimsonAltar;
+
+        /// <summary>An altar covers this cell (the smart cursor's hammer passes its walls by: Step_Hammers' tile 26).</summary>
+        public static bool AltarCovers(Vector2Int cell)
+        {
+            var p = CellGrid.CellCenter(cell.x, cell.y);
+            foreach (var s in stations) if (s.Region != null && IsAltar(s.Kind) && s.Box.Contains(p)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// A hammer swung at an altar in reach (Terraria's tileHammer branch for tile 26): its power added each blow, at 100
+        /// the altar comes off as its item (Items/AltarItems.cs), to be set down anywhere; one of Dirtmouth's is gone from
+        /// it for good in this save (FixedStations.MarkTaken). A hammer under 80 does nothing to it and hurts the one
+        /// swinging it, half their life (Hurt(ByOther(4), statLife / 2, -direction): defense and immunity as for any hit).
+        /// True when the swing was at an altar.
+        /// </summary>
+        public static bool TrySmashAltar(ItemDef hammer, Vector2 mouse, HeroController hero)
+        {
+            if (!Net.WorldSync.CanInteract) return false;
+            if (hammer == null || hammer.HammerPower <= 0 || hero == null) return false;
+            var reach = Reach(hero);
+            for (int i = 0; i < stations.Count; i++)
+            {
+                var s = stations[i];
+                if (!IsAltar(s.Kind) || s.Region == null || !s.Box.Contains(mouse) || !reach.Overlaps(s.Box)) continue;
+                if (hammer.HammerPower < AltarHammer)
+                {
+                    AltarHit(s, false);
+                    var mod = TerraMod.Instance;
+                    if (mod != null && mod.Stats.Life > 0)
+                    {
+                        Player.PlayerHooks.HurtEnvironment(hero, Mathf.Max(1, mod.Stats.Life / 2), hero.transform.position.x >= s.Box.center.x ? 1 : -1, null);
+                        DevAltarHurts++;
+                    }
+                    return true;
+                }
+                bool breaks = s.Damage + hammer.HammerPower >= 100;
+                AltarHit(s, breaks);
+                if (Net.WorldSync.Guest)
+                {
+                    s.Damage += hammer.HammerPower;
+                    Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "smashAltar", Key = AltarKey(s), Kind = (int)s.Kind, Power = hammer.HammerPower, Scene = s.Scene, X = s.Local.x, Y = s.Local.y });
+                    if (breaks) Remove(i);
+                    return true;
+                }
+                Smash(i, hammer.HammerPower, false);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>A LAN key for an altar: Dirtmouth's by its kind (each game places them where the other does), a set-down one as any station.</summary>
+        static string AltarKey(Station s) => s.Fixed ? "altar:" + s.Kind : Net.WorldSync.Key("s", s.Scene, s.Local);
+
+        /// <summary>A blow on the altar at i: the power added; at 100 its item where it stood (NetDrop for a guest's blow), the altar gone.</summary>
+        static void Smash(int i, int power, bool remote)
+        {
+            var s = stations[i];
+            s.Damage += power;
+            if (s.Damage < 100) return;
+            var item = ItemStack.Of(s.Spec.Item);
+            if (remote) WorldItems.NetDrop(item, s.Scene, s.Local + Vector2.up * (s.Spec.H * 8f * Px));
+            else WorldItems.Drop(item, s.Box.center);
+            if (s.Fixed) FixedStations.MarkTaken(s.Kind);
+            Remove(i);
+            DevSmashed++;
+            Plugin.Log.LogInfo($"[祭坛] {ItemDb.Get(s.Spec.Item)?.Name} 被敲下（{s.Scene} {s.Local:F1}{(s.Fixed ? "，德特茅斯原有的" : "")}）");
+        }
+
+        /// <summary>The host takes a guest's blow on an altar: on the one it names (Dirtmouth's by kind, even before the host has been there), or none.</summary>
+        internal static bool NetSmash(Net.WorldSync.Action a)
+        {
+            var kind = (StationKind)a.Kind;
+            if (!IsAltar(kind) || a.Power < AltarHammer) return false;
+            for (int i = 0; i < stations.Count; i++)
+            {
+                var s = stations[i];
+                if (s.Kind != kind || AltarKey(s) != a.Key) continue;
+                Smash(i, Mathf.Clamp(a.Power, 0, 1000), true);
+                return true;
+            }
+            // Dirtmouth's, not placed in the host's game yet: kept as a count of blows until it comes off.
+            if (a.Key != "altar:" + kind || FixedStations.Taken(kind) || string.IsNullOrEmpty(a.Scene)) return false;
+            unplacedBlows[kind] = (unplacedBlows.TryGetValue(kind, out int had) ? had : 0) + Mathf.Clamp(a.Power, 0, 1000);
+            if (unplacedBlows[kind] < 100) return true;
+            unplacedBlows.Remove(kind);
+            WorldItems.NetDrop(ItemStack.Of(specs[kind].Item), a.Scene, new Vector2(a.X, a.Y) + Vector2.up * (specs[kind].H * 8f * Px));
+            FixedStations.MarkTaken(kind);
+            DevSmashed++;
+            return true;
+        }
+
+        static readonly Dictionary<StationKind, int> unplacedBlows = new Dictionary<StationKind, int>();
+
+        /// <summary>
+        /// A blow's look and sound (WorldGen.KillTile_MakeTileDust and KillTile_PlaySounds for tile 26): the Crimson Altar
+        /// bleeds (dust 5) and cries out (an NPC's death, 4), the Demon Altar sheds stone and ebonstone (1, 14) and digs.
+        /// </summary>
+        static void AltarHit(Station s, bool broke)
+        {
+            bool crimson = s.Kind == StationKind.CrimsonAltar;
+            var p = Effects.TerraParticles.Instance;
+            if (p != null)
+            {
+                var px = Effects.TerraParticles.ToPx(s.Box.center);
+                float hw = s.Spec.W * 8f, hh = s.Spec.H * 8f;
+                for (int k = 0; k < (broke ? 10 : 3); k++)
+                    p.NewDust(px - new Vector2(hw, hh), (int)(hw * 2f), (int)(hh * 2f), crimson ? 5 : Random.Range(0, 2) == 0 ? 1 : 14);
+            }
+            TerraMod.Instance?.PlaySound(crimson ? "NPC_Killed_1" : "Dig_" + Random.Range(0, 3));
+        }
+
+        /// <summary>Dev: Dirtmouth's altars taken away (to be set again, as at a load).</summary>
+        public static void DevRemoveFixed()
+        {
+            for (int i = stations.Count - 1; i >= 0; i--) if (stations[i].Fixed) Remove(i);
+        }
+
+        /// <summary>Dev: an altar's box (world units) in a scene, Dirtmouth's or set down; null when there is none.</summary>
+        public static Rect? DevAltarBox(StationKind kind, bool fixedOne)
+        {
+            foreach (var s in stations) if (s.Kind == kind && s.Fixed == fixedOne && s.Region != null) return s.Box;
+            return null;
         }
 
         static void Dust(Vector2 px, Station s, int n)
@@ -667,6 +869,7 @@ namespace TerraKnight.World
             while (ticks >= 1f)
             {
                 ticks -= 1f;
+                animTicks++;
                 foreach (var s in stations)
                     if (s.Damage > 0 && Random.Range(0, 60) == 0) s.Damage = 0;
             }
@@ -696,6 +899,9 @@ namespace TerraKnight.World
                 s.Supported = now;
                 s.SupportedIn = s.Region;
             }
+            // The tiles drawn again (TileDrawing's render target, every fourth tick): their dust thrown off then (StationsAnimated).
+            bool redraw = animTicks / RedrawTicks != drawnTick / RedrawTicks;
+            drawnTick = animTicks;
             foreach (var s in stations)
             {
                 if (s.Region == null)
@@ -722,13 +928,15 @@ namespace TerraKnight.World
                     s.Relic.SetVisible(true);
                     s.Relic.Face(s.Right);
                 }
-                s.Renderer.sprite = SpriteOf(s.Kind, s.Right);
+                // An animated one steps on to the frame its kind is at while it is on screen; off screen it holds (StationsAnimated).
+                if (s.Spec.Frames <= 1 || s.Renderer.sprite == null || s.Renderer.isVisible) s.Renderer.sprite = SpriteOf(s.Kind, s.Right, FrameOf(s.Spec), true);
                 s.Renderer.flipX = s.Spec.Native != null && s.Spec.Faces && s.Right;
                 UpdateRegionalLight(s);
                 // A bottom row 18 px tall sinks its last 2 px into the ground; DrawYOffset lowers it more.
                 var spec = s.Spec;
                 float sink = (spec.Heights[spec.Heights.Length - 1] - 16) + spec.DrawY;
                 s.Renderer.transform.localPosition = new Vector3(s.Local.x, s.Local.y - sink * Px, Z - s.Region.Root.position.z);
+                Animate(s, sink, redraw);
                 if (s.Spec.SolidTop)
                 {
                     if (s.Top == null) s.Top = MakeTop(s);
@@ -739,54 +947,37 @@ namespace TerraKnight.World
                     if (s.Top.activeSelf != on) s.Top.SetActive(on);
                 }
                 if (IsDoor(s.Kind)) DoorBody(s);
+                SmartOutline(s, HeroController.SilentInstance);
             }
         }
 
         /// <summary>
         /// A station's look, put together from its tiles in the sheet (18 px apart across; down by each row's height and
-        /// 2), the right-facing alternate's columns (Spec.RightX on) for one placed facing right.
+        /// 2), the right-facing alternate's columns (Spec.RightX on) for one placed facing right; an animated one's frame
+        /// (StationsAnimated), and as set down, the part of its sheet Terraria draws in the world (Spec.PlacedX).
         /// </summary>
-        static Sprite SpriteOf(StationKind kind, bool right = false)
+        static Sprite SpriteOf(StationKind kind, bool right = false, int frame = 0, bool placed = false)
         {
+            if(Casino.IsMachine(kind))return CasinoArt.Sprite(kind);
             var spec = specs[kind];
             if (spec.Native != null) return RegionalFurniture.Sprite(kind);
             right &= spec.RightX > 0 && spec.Custom == null;
-            var cache = right ? rightSprites : sprites;
-            if (cache.TryGetValue(kind, out var sp) && sp != null) return sp;
+            placed &= spec.PlacedX != 0;
+            int key = (int)kind << 2 | (right ? 1 : 0) | (placed ? 2 : 0);
+            if (sprites.TryGetValue(key, out var frames) && frames[0] != null) return frames[frame % frames.Length];
             if (spec.Custom != null)
             {
                 bool native = Items.Relics.NativeArt(spec.Custom);
                 var pic = native ? Items.Relics.NativePedestal : Items.Relics.Texture(spec.Custom);
                 // Only the pedestal stays fixed. RelicDisplay draws and animates the sculpture above it.
-                sp = Sprite.Create(pic, new Rect(0, 0, pic.width, 16), new Vector2(0.5f, 0f), pic.width / (spec.W * 16f * Px), 0, SpriteMeshType.FullRect);
-                sprites[kind] = sp;
+                var sp = Sprite.Create(pic, new Rect(0, 0, pic.width, 16), new Vector2(0.5f, 0f), pic.width / (spec.W * 16f * Px), 0, SpriteMeshType.FullRect);
+                sprites[key] = new[] { sp };
                 return sp;
             }
-            var src = TerrariaAssets.Pixels(spec.Texture, out int sw, out int sh);
-            int x0 = spec.StyleX + (right ? spec.RightX : 0);
-            int w = spec.W * 16, h = 0;
-            foreach (var th in spec.Heights) h += th;
-            var dst = new Color32[w * h];
-            int sy0 = 0, dy0 = 0;
-            for (int r = 0; r < spec.H; r++)
-            {
-                int th = spec.Heights[Mathf.Min(r, spec.Heights.Length - 1)];
-                for (int col = 0; col < spec.W; col++)
-                    for (int y = 0; y < th; y++)
-                        for (int x = 0; x < 16; x++)
-                        {
-                            int sx = x0 + col * 18 + x, sy = sy0 + y;
-                            int dx = col * 16 + x, dy = dy0 + y;
-                            if (sx >= sw || sy >= sh) continue;
-                            dst[(h - 1 - dy) * w + dx] = src[(sh - 1 - sy) * sw + sx];
-                        }
-                sy0 += th + 2;
-                dy0 += th;
-            }
-            var tex = TerrariaAssets.Make(spec.Texture + "#station" + x0, dst, w, h);
-            sp = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0f), 1f / Px, 0, SpriteMeshType.FullRect);
-            cache[kind] = sp;
-            return sp;
+            int x0 = spec.StyleX + (right ? spec.RightX : 0) + (placed ? spec.PlacedX : 0);
+            frames = FrameSprites(spec.Texture, spec, x0, spec.Frames, spec.FrameStep, "#station" + x0);
+            sprites[key] = frames;
+            return frames[frame % frames.Length];
         }
 
         public static int DevFell;

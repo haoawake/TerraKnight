@@ -118,7 +118,8 @@ namespace TerraKnight.Items
             if (f == null)
             {
                 // A roar or a scene with the Knight held: the fight hasn't begun for him.
-                if (!GameHooks.PlayerHasControl()) { DevHeld++; return Result.Held; }
+                // A nail art takes the Knight's control while it plays (NailArts.Striking): that isn't a scene, its hits count.
+                if (!GameHooks.PlayerHasControl() && !NailArts.Striking) { DevHeld++; return Result.Held; }
                 return Result.Normal;
             }
             string from = f.ActiveStateName;

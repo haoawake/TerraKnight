@@ -1,4 +1,4 @@
-param([string]$Suite = 'dreamnail', [int]$TimeoutSec = 600, [string]$BuildDir = 'artifacts\resume-build')
+param([string]$Suite = 'dreamnail', [int]$TimeoutSec = 600, [string]$BuildDir = 'artifacts\resume-build', [switch]$ShowGame)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $testBuild = if ([IO.Path]::IsPathRooted($BuildDir)) { $BuildDir } else { Join-Path $root $BuildDir }
@@ -38,7 +38,7 @@ try {
     $env:SteamAppId = '367520'
     $env:SteamGameId = '367520'
     [IO.File]::WriteAllText($appid, '367520')
-    $proc = Start-Process -FilePath (Join-Path $hk 'hollow_knight.exe') -WorkingDirectory $hk -ArgumentList $argsList -WindowStyle Hidden -PassThru
+    $proc = Start-Process -FilePath (Join-Path $hk 'hollow_knight.exe') -WorkingDirectory $hk -ArgumentList $argsList -WindowStyle $(if ($ShowGame) { 'Normal' } else { 'Hidden' }) -PassThru
     if (-not $proc.WaitForExit($TimeoutSec * 1000)) { $timedOut = $true; $proc.Kill(); $proc.WaitForExit() }
 } finally {
     if ($proc -and -not $proc.HasExited) { $proc.Kill(); $proc.WaitForExit() }

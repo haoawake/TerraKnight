@@ -47,8 +47,8 @@ namespace TerraKnight.World
         /// <summary>
         /// Twice a second each tiktik's place and turn: one that has stayed in a <see cref="LoopBox"/> square for
         /// <see cref="Window"/> seconds while turning through three sides (round a single cell, a nub of the grid, the
-        /// empty air) is set on the nearest run of ground at least <see cref="MinRun"/> cells long in its room, and walks
-        /// on from there as it would from its start.
+        /// empty air) lets go and hops (or drops) onto the nearest run of ground at least <see cref="MinRun"/> cells long in
+        /// its room, righting itself on the way, and walks on from there as it would from its start.
         /// </summary>
         public static void Tick()
         {
@@ -99,14 +99,44 @@ namespace TerraKnight.World
                 return;
             }
             climber.StopAllCoroutines();
-            hm.transform.SetRotation2D(0f);
-            hm.transform.position = new Vector3(top.x, top.y + 0.5f, hm.transform.position.z);
+            climber.StartCoroutine(Hop(climber, hm, top));
+            DevReset++;
+            Plugin.Log.LogInfo($"[提克提克] {hm.name}（{scene}）在 {from:F1} 绕着小圈打转，跳到 {top:F1} 的地面上重新爬");
+        }
+
+        /// <summary>
+        /// The way there, seen all along: an arc from where it clung to where it lands (higher for a climb up, little more
+        /// than a fall for a drop), turning upright in its first third, landing just where Climber.Start's own stick to
+        /// the ground would put it, so it walks on without a jump.
+        /// </summary>
+        static System.Collections.IEnumerator Hop(Climber climber, HealthManager hm, Vector2 top)
+        {
+            var t = hm.transform;
             var rb = hm.GetComponent<Rigidbody2D>();
             if (rb != null) rb.linearVelocity = Vector2.zero;
-            // Climber.Start: down onto the ground, its way round from its facing, walking.
+            Vector3 from = t.position;
+            float turn = t.eulerAngles.z;
+            var land = Surface(top + Vector2.up * 0.5f, Vector2.down, 2f);
+            Vector3 to = new Vector3(top.x, land.collider != null ? land.point.y : top.y, from.z);
+            float rise = to.y - from.y;
+            float arc = 0.5f + Mathf.Max(0f, rise) * 0.5f;
+            float time = Mathf.Clamp(0.3f + Vector2.Distance(from, to) * 0.06f, 0.35f, 0.9f);
+            for (float e = 0f; e < time; e += Time.deltaTime)
+            {
+                if (hm == null || hm.isDead) yield break;
+                float k = e / time;
+                var p = Vector3.Lerp(from, to, k);
+                p.y += arc * 4f * k * (1f - k);
+                t.position = p;
+                t.SetRotation2D(Mathf.LerpAngle(turn, 0f, Mathf.Clamp01(k * 3f)));
+                if (rb != null) rb.linearVelocity = Vector2.zero;
+                yield return null;
+            }
+            if (hm == null || hm.isDead) yield break;
+            t.SetRotation2D(0f);
+            t.position = to;
+            // Climber.Start: onto the ground (where it already is), its way round from its facing, walking.
             start?.Invoke(climber, null);
-            DevReset++;
-            Plugin.Log.LogInfo($"[提克提克] {hm.name}（{scene}）在 {from:F1} 绕着小圈打转，放到 {top:F1} 的地面上重新爬");
         }
 
         /// <summary>The top of the nearest run of solid cells with open cells over them, at least <see cref="MinRun"/> long, in the room.</summary>

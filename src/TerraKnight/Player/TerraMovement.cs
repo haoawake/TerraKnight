@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using TerraKnight.Effects;
@@ -100,16 +100,70 @@ namespace TerraKnight.Player
         public static int ShadowCount => DownDashing || (dashing != 2 && IsDashing) ? 3 : Mathf.Min(3, (int)(EocDash / 4f));
         public static bool IsDashing => DashDelay < 0f || hkDashLeft > 0f;
 
-        static float hkDashLeft, hkDashSpeed, hkDashGravity, hkDashEndsAt;
+        static float hkDashLeft, hkDashSpeed, hkDashGravity, hkDashEndsAt, hkDashEndsAt0 = -1f;
+        /// <summary>The shadow dash's way (level, or Dashmaster's any way).</summary>
+        static Vector2 hkDashVec = Vector2.right;
+        /// <summary>Dashmaster: the way the next Terraria dash asked for goes (zero: level), and the one running: its way, speed (px/tick), time left.</summary>
+        static Vector2 requestedAim, aimedDir;
+        static float aimedLeft, aimedSpeed, aimedGravity = float.NaN;
+        const float AimedTime = 0.2f;
+
+        /// <summary>The way the dash running goes (world, unit): Dashmaster's, or level.</summary>
+        public static Vector2 DashAim => aimedLeft > 0f ? aimedDir : hkDashLeft > 0f ? hkDashVec : new Vector2(dashDirNow, 0f);
+        static float dashDirNow = 1f;
 
         /// <summary>Each physics step: a shadow dash the movement step didn't see through (no Move called) ends by its time, its gravity given back.</summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HeroController), "FixedUpdate")]
-        static void HkDashGuard(Rigidbody2D ___rb2d)
+        static void HkDashGuard(HeroController __instance, Rigidbody2D ___rb2d)
         {
+            if (SequenceOwnsMovement(__instance)) { ForgetSequenceDashes(); return; }
+            if (aimedLeft > 0f && Time.time > aimedEndsAt + 0.1f) EndAimed(___rb2d);
             if (hkDashLeft <= 0f || Time.time < hkDashEndsAt + 0.1f) return;
             hkDashLeft = 0f;
-            if (___rb2d != null) ___rb2d.gravityScale = hkDashGravity;
+            if (___rb2d != null) ___rb2d.gravityScale = GravityBack(hkDashGravity);
+        }
+
+        static bool SequenceOwnsMovement(HeroController hero) =>
+            hero != null && (!hero.acceptingInput || hero.controlReqlinquished || CutsceneAttack.KnightHidden());
+
+        // Once native staging has begun its gravity and velocity belong to that sequence.
+        // Expired dash cleanup must not restore gravity over Radiance's suspended Knight.
+        static void ForgetSequenceDashes()
+        {
+            hkDashLeft = aimedLeft = 0f;
+            aimedGravity = float.NaN;
+            requestedDash = forcedKind = 0;
+            requestedAim = Vector2.zero;
+            DashDelay = Mathf.Max(0f, DashDelay);
+            EocDash = 0f;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RelinquishControl))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RelinquishControlNotVelocity))]
+        static void BeforeSequenceControl(HeroController __instance, Rigidbody2D ___rb2d, bool __runOriginal)
+        {
+            if (!__runOriginal || !Active || __instance.controlReqlinquished) return;
+            // Give back only gravity suppressed by our active move, before the game's
+            // control-taking method and its following actions choose their own physics.
+            if (hkDashLeft > 0f && ___rb2d != null) ___rb2d.gravityScale = GravityBack(hkDashGravity);
+            if (aimedLeft > 0f) EndAimed(___rb2d);
+            ForgetSequenceDashes();
+        }
+
+        /// <summary>
+        /// The gravity a dash gives back as it ends: what it found, or, when the gravity was off already as it started (a
+        /// dash still going, Dashmaster's, the game's own), the game's own gravity the way it points (the Gravity Globe), never
+        /// none left on for good.
+        /// </summary>
+        static float GravityBack(float saved)
+        {
+            if (Mathf.Abs(saved) > 0.01f || DevRawGravity) return saved;
+            var h = HeroController.SilentInstance;
+            float g = h != null && h.DEFAULT_GRAVITY > 0.01f ? h.DEFAULT_GRAVITY : 0.79f;
+            return GravityGlobe.Flipped ? -g : g;
         }
         static int hkDashDir;
 
@@ -128,8 +182,9 @@ namespace TerraKnight.Player
         public static void HkShadowDash(HeroController hero, int direction)
         {
             hkDashDir = direction < 0 ? -1 : 1;
+            hkDashVec = new Vector2(hkDashDir, 0f);
             hkDashLeft = hero.DASH_TIME > 0f ? hero.DASH_TIME : 0.25f;
-            hkDashSpeed = hero.DASH_SPEED > 0f ? hero.DASH_SPEED : 20f;
+            hkDashSpeed = hero.DASH_SPEED > 0f ? Items.CharmEffects.ShadowDashSpeed(hero) : 20f;
             DevHkDashSpeed = hkDashSpeed;
             DevHkDashTime = hkDashLeft;
             hkDashStartY = hero.transform.position.y;
@@ -139,7 +194,13 @@ namespace TerraKnight.Player
 
             // No gravity on it while it lasts (HeroDash: AffectedByGravity(false)); given back as it was after.
 
-            if (hkDashLeft > 0f && body != null) { hkDashGravity = body.gravityScale; body.gravityScale = 0f; }
+            // A shadow dash over one still going keeps the gravity the first found.
+            if (hkDashLeft > 0f && body != null)
+            {
+                if (DevRawGravity || !(Time.time < hkDashEndsAt0 && Mathf.Abs(body.gravityScale) <= 0.01f)) hkDashGravity = body.gravityScale;
+                body.gravityScale = 0f;
+            }
+            hkDashEndsAt0 = hkDashEndsAt;
             if (hkDashDir > 0 && !hero.cState.facingRight) hero.FaceRight();
             else if (hkDashDir < 0 && hero.cState.facingRight) hero.FaceLeft();
             requestedDash = 0;
@@ -180,6 +241,38 @@ namespace TerraKnight.Player
         /// <summary>A double tap of a direction (Terraria's dash input); acted on in the next physics step.</summary>
         public static void RequestDash(int direction) => requestedDash = direction;
 
+        /// <summary>Dashmaster: a dash asked for any way (nearly level goes as a level one).</summary>
+        public static void RequestDashToward(Vector2 aim)
+        {
+            if (aim.sqrMagnitude < 1e-4f) return;
+            aim.Normalize();
+            requestedDash = aim.x >= 0f ? 1 : -1;
+            requestedAim = Mathf.Abs(aim.y) < 0.08f ? Vector2.zero : aim;
+        }
+
+        /// <summary>Dashmaster: the shadow dash any way (HkShadowDash's, then turned).</summary>
+        public static void HkShadowDashToward(HeroController hero, Vector2 aim)
+        {
+            if (aim.sqrMagnitude < 1e-4f) aim = hero.cState.facingRight ? Vector2.right : Vector2.left;
+            aim.Normalize();
+            HkShadowDash(hero, aim.x > 0.01f ? 1 : aim.x < -0.01f ? -1 : (hero.cState.facingRight ? 1 : -1));
+            if (Mathf.Abs(aim.y) >= 0.08f)
+            {
+                hkDashVec = aim;
+                Items.CharmEffects.OnAimedDash(hero, aim);
+            }
+        }
+
+        static float aimedEndsAt;
+
+        static void EndAimed(Rigidbody2D rb)
+        {
+            aimedLeft = 0f;
+            var h = HeroController.SilentInstance;
+            if (rb != null && !float.IsNaN(aimedGravity)) rb.gravityScale = GravityBack(aimedGravity);
+            aimedGravity = float.NaN;
+        }
+
         static int forcedKind;
 
         /// <summary>A dash now whatever the last one's cooldown (the Shade Cloak's shadow dash): the worn kind, the Shield's without one.</summary>
@@ -192,6 +285,9 @@ namespace TerraKnight.Player
 
         /// <summary>Dev: a held direction (-1/1) and jump button for the autotest, which has no keyboard.</summary>
         public static int DevMove;
+
+        /// <summary>Dev: a dash gives back whatever gravity it found, none included (the autotest's way of showing what GravityBack mends).</summary>
+        public static bool DevRawGravity;
 
         static readonly HarmonyLib.AccessTools.FieldRef<HeroController, bool> slidingL = HarmonyLib.AccessTools.FieldRefAccess<HeroController, bool>("wallSlidingL");
         static readonly HarmonyLib.AccessTools.FieldRef<HeroController, bool> slidingR = HarmonyLib.AccessTools.FieldRefAccess<HeroController, bool>("wallSlidingR");
@@ -212,6 +308,8 @@ namespace TerraKnight.Player
             EocDash = 0f;
             eocHit = false;
             requestedDash = 0;
+            requestedAim = Vector2.zero;
+            aimedLeft = 0f;
             cloudTicks = 0f;
             activeJump = Extra.None;
             wingTime = 0f;
@@ -273,14 +371,16 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), "Move")]
         static void AfterMove(HeroController __instance, float move_direction, Rigidbody2D ___rb2d, float __state)
         {
+            if (SequenceOwnsMovement(__instance)) { ForgetSequenceDashes(); return; }
             // A shadow dash cut short (control taken, a death, a scene change): its gravity given back.
             if (hkDashLeft > 0f && (!Active || !__instance.acceptingInput || __instance.cState.dead || __instance.cState.transitioning))
             {
                 hkDashLeft = 0f;
-                if (___rb2d != null) ___rb2d.gravityScale = hkDashGravity;
+                if (___rb2d != null) ___rb2d.gravityScale = GravityBack(hkDashGravity);
             }
             if (!Active || !__instance.acceptingInput) return;
-            if (Mounts.Move(__instance, ___rb2d, DevMove != 0 ? DevMove : move_direction)) return;
+            // On a mount a worn dash asked for is dropped, not kept for the moment he gets off.
+            if (Mounts.Move(__instance, ___rb2d, DevMove != 0 ? DevMove : move_direction)) { requestedDash = 0; requestedAim = Vector2.zero; return; }
             float ticks = Time.fixedDeltaTime * 60f;
             var cs = __instance.cState;
             float vx = __state / PxT;
@@ -297,6 +397,27 @@ namespace TerraKnight.Player
             bool left = move_direction < -0.1f, right = move_direction > 0.1f;
             if (!cs.wallSliding) vx = Horizontal(__instance, vx, left, right, cs.onGround, ticks);
             vx = Dash(__instance, ___rb2d, vx, left, right, ticks);
+            if (aimedLeft > 0f)
+            {
+                aimedLeft -= Time.fixedDeltaTime;
+                // A bonk: back off the way it came.
+                if (eocHit)
+                {
+                    EndAimed(___rb2d);
+                    ___rb2d.linearVelocity = (-aimedDir * 9f + Vector2.up * 4f) * PxT;
+                    return;
+                }
+                if (aimedLeft > 0f)
+                {
+                    ___rb2d.gravityScale = 0f;
+                    ___rb2d.linearVelocity = aimedDir * aimedSpeed * PxT;
+                    return;
+                }
+                EndAimed(___rb2d);
+                float run = Mathf.Max(AccRunSpeed, MaxRunSpeed * MoveSpeed);
+                vx = aimedDir.x * Mathf.Min(aimedSpeed, run);
+                ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x, aimedDir.y * Mathf.Min(aimedSpeed, 6f) * PxT);
+            }
             if (hkDashLeft > 0f)
             {
                 // The shadow dash: straight across, the fall held off every step until it ends.
@@ -304,15 +425,17 @@ namespace TerraKnight.Player
                 if (hkDashLeft > 0f)
                 {
                     ___rb2d.gravityScale = 0f;
-                    ___rb2d.linearVelocity = new Vector2(hkDashDir * hkDashSpeed, 0f);
+                    ___rb2d.linearVelocity = hkDashVec * hkDashSpeed;
                     DevHkDashDrop = __instance.transform.position.y - hkDashStartY;
                     return;
                 }
                 hkDashLeft = 0f;
-                ___rb2d.gravityScale = hkDashGravity;
+                ___rb2d.gravityScale = GravityBack(hkDashGravity);
                 float run = Mathf.Max(AccRunSpeed, MaxRunSpeed * MoveSpeed);
-                vx = hkDashDir * Mathf.Min(Mathf.Abs(vx), run);
+                vx = hkDashDir * Mathf.Min(Mathf.Abs(vx), run) * Mathf.Abs(hkDashVec.x);
                 if ((hkDashDir > 0 && right) || (hkDashDir < 0 && left)) vx = hkDashDir * run;
+                // Dashmaster's shadow dash up or down: some of its speed kept that way.
+                if (hkDashVec.y != 0f) ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x, hkDashVec.y * hkDashSpeed * 0.35f);
             }
             if (cs.onGround && (left || right)) StepUp(__instance, ___rb2d, left ? -1 : 1);
             // In the air beside a wall, holding towards it: slip into a gap in it. Not only while
@@ -469,12 +592,17 @@ namespace TerraKnight.Player
         /// <summary>Player.HorizontalMovement: accelerate to maxRunSpeed, then (boots) slowly on to accRunSpeed.</summary>
         static float Horizontal(HeroController hero, float vx, bool left, bool right, bool grounded, float t)
         {
+            float start = vx;
             // Player.cs:26202: moveSpeed multiplies maxRunSpeed and runAcceleration, not the boots' accRunSpeed. The Vortex
             // stealth slows both run speeds ×0.3 before that (Pl:26022-26091).
             float stealthSlow = Items.ArmorEffects.RunSpeedMult;
             // The raised shield's move speed debuff (a third, Pl:26153-26156) is a moveSpeed.
-            float moveSpeed = MoveSpeed * Items.MeleeSpecials.MoveSpeedMult;
-            float maxRun = MaxRunSpeed * stealthSlow * moveSpeed, accel = RunAcceleration * moveSpeed;
+            // The Void Sniper's aim (Items.Abyss): half the run, the boots' too.
+            // Slow and Chilled from an enemy (strongestMoveSpeedDebuff, Pl:26202-26208): run speed and acceleration, the boots' too.
+            float debuff = EnemyAi.PlayerDebuffs.MoveSpeedMult;
+            float moveSpeed = MoveSpeed * Items.MeleeSpecials.MoveSpeedMult * Items.Abyss.MoveSpeedMult * Items.CharmEffects.MoveSpeedMult * debuff;
+            // Joni's Blessing halves both run speeds (Items.CharmEffects.RunSpeedMult), the boots' too.
+            float maxRun = MaxRunSpeed * stealthSlow * moveSpeed * Items.CharmEffects.RunSpeedMult, accel = RunAcceleration * moveSpeed;
             // The Sand Boots on sand (desertBoots, Pl:26740-26747): run speeds and acceleration ×1.75.
             if (Mounts.Riding && Mounts.Current.Skates) { maxRun+=1f; accel+=.1f; }
             float slowdown = RunSlowdown;
@@ -491,7 +619,7 @@ namespace TerraKnight.Player
             }
             // WingAirLogicTweaks (Pl:29534-29558): wings in the air allow their own top speed and acceleration; hovering down
             // with the hover wings, their hover speed (assigned) and acceleration.
-            float accRun = AccRunSpeed * stealthSlow + (Mounts.Riding && Mounts.Current.Skates ? 1f : 0f);
+            float accRun = AccRunSpeed * stealthSlow * Items.Abyss.MoveSpeedMult * Items.CharmEffects.RunSpeedMult * debuff + (Mounts.Riding && Mounts.Current.Skates ? 1f : 0f);
             // The Psycho Knife hidden (Pl:26816-26821): maxRunSpeed less half of it as hidden, and the boots' speed only that.
             float psycho = Items.MeleeSpecials.PsychoSlow;
             if (psycho > 0f)
@@ -582,6 +710,22 @@ namespace TerraKnight.Player
                 float slow = grounded ? slowdown : slowdown * 0.5f;
                 if (!grounded && HasWings && Wing.Slot == 45) slow *= 6f;
                 vx = Mathf.MoveTowards(vx, 0f, slow * t);
+            }
+            // Steady Body (CharmEffects.NoInertia): no inertia: stopped or turned at once, the run speeding up as it would. A
+            // hit's knockback, a dash and a bonk keep theirs.
+            if (Items.CharmEffects.NoInertia && !Mounts.OwnMovement && DashDelay >= 0f && EocDash <= 0f && Time.time - TerraHurt.LastHurtAt > 0.2f)
+            {
+                // A turn goes on at the speed it had before it (the boots' run, what a dash left), only its way changes; let
+                // go, the speed is kept half a second for the next key (CharmEffects.SteadyVelocity).
+                vx = Items.CharmEffects.SteadyVelocity(start, vx, left ? -1 : right ? 1 : 0);
+                Items.CharmEffects.SteadyStep(hero, start, vx, grounded);
+            }
+            // Sprintmaster: running boots on the ground at their top speed at once (nothing without boots).
+            if (Items.CharmEffects.InstantSprint && grounded && AccRunSpeed > MaxRunSpeed + 0.01f && accRun > maxRun && !Mounts.Riding && DashDelay >= 0f && EocDash <= 0f
+                && Time.time - TerraHurt.LastHurtAt > 0.2f && (left || right) && !(left && right))
+            {
+                vx = left ? Mathf.Min(vx, -accRun) : Mathf.Max(vx, accRun);
+                FastRunParticles(hero, vx, t);
             }
             return vx;
         }
@@ -703,9 +847,12 @@ namespace TerraKnight.Player
         {
             int request = requestedDash;
             requestedDash = 0;
+            var aim = requestedAim;
+            requestedAim = Vector2.zero;
 
             // A shadow dash (the Shade Cloak) goes through what it meets: no bonk, and none of a bonk's slowing.
-            if (EocDash > 0f && !eocHit) { if (!Items.AbilityAccessories.ShadowDashing) Bash(hero, rb, ref vx); }
+            // No bonk through a shadow dash, or a dash the Steady Body's skill carries through the enemies.
+            if (EocDash > 0f && !eocHit) { if (!Items.AbilityAccessories.ShadowDashing && !Items.CharmEffects.DashPassActive) Bash(hero, rb, ref vx); }
             else if (EocDash > 0f && !(left && vx < 0f) && !(right && vx > 0f)) vx *= Mathf.Pow(0.95f, t);
 
             // Pl:21427: the current maxRunSpeed, moveSpeed and all.
@@ -743,6 +890,17 @@ namespace TerraKnight.Player
                 dashing = DashKind != 0 ? DashKind : forcedKind;
                 forcedKind = 0;
                 vx = (dashing == 3 ? SolarDashSpeed : dashing == 2 ? ShieldDashSpeed : NinjaDashSpeed) * request;
+                dashDirNow = request < 0 ? -1f : 1f;
+                // Dashmaster: this one any way, straight at the dash's speed a moment, no fall (AfterMove).
+                if (aim != Vector2.zero)
+                {
+                    aimedDir = aim;
+                    aimedSpeed = Mathf.Abs(vx);
+                    aimedLeft = AimedTime;
+                    aimedEndsAt = Time.time + AimedTime;
+                    if (float.IsNaN(aimedGravity)) aimedGravity = rb.gravityScale;
+                    Items.CharmEffects.OnAimedDash(hero, aim);
+                }
                 // Half speed when starting the dash into a wall.
                 var col = hero.GetComponent<BoxCollider2D>().bounds;
                 float ahead = col.center.x + request * (Width / 2f + 2f) * Px;
@@ -1041,6 +1199,11 @@ namespace TerraKnight.Player
         static bool Passing(Collision2D collision) =>
             Active && collision != null && !collision.enabled && collision.collider != null && collision.collider.usedByEffector;
 
+        static float shakenOffUntil = -1f;
+
+        /// <summary>Shaken off the platforms (a boss's slam, EnemyAi.Bosses): he falls through them as with Down held, for a while.</summary>
+        internal static void ShakeOffPlatforms(float seconds) => shakenOffUntil = Mathf.Max(shakenOffUntil, Time.time + seconds);
+
         /// <summary>The platform composites the hero's collider is passing through (Down held, or still inside one since).</summary>
         static readonly List<Collider2D> passedPlatforms = new List<Collider2D>();
         static readonly HashSet<Collider2D> passedSet = new HashSet<Collider2D>();
@@ -1112,7 +1275,7 @@ namespace TerraKnight.Player
 
             // Dropping through: Terraria's fallThrough is controlDown, so every platform lets him by while Down is held and
             // the next one catches him once it is let go. Only his own collider passes; whatever else stands on them stays.
-            bool drop = DownHeld && !OnRope;
+            bool drop = DownHeld && !OnRope || Time.time < shakenOffUntil;
             PassPlatforms(__instance.GetComponent<BoxCollider2D>(), drop);
             if (drop && (cs.onGround || ___rb2d.linearVelocity.y <= 0.01f))
             {
@@ -1746,6 +1909,8 @@ namespace TerraKnight.Player
         /// <summary>isPerformingJump_DownDash.</summary>
         public static bool DownDashing { get; private set; }
         static float downDashTime;
+        static int downDiveLevel;
+        internal static int DownDamage(int normal, int level) => level >= 2 ? normal * 2 : normal;
         static bool downDashRequest;
         static readonly Dictionary<int, float> stompImmune = new Dictionary<int, float>();
         static readonly List<int> stompKeys = new List<int>();
@@ -1780,6 +1945,7 @@ namespace TerraKnight.Player
                 {
                     DownDashing = true;
                     downDashTime = 0f;
+                    downDiveLevel = Items.Equipment.Current.DiveLevel;
                     stompImmune.Clear();
                     cs.jumping = false;
                     cs.doubleJumping = false;
@@ -1831,7 +1997,7 @@ namespace TerraKnight.Player
                 if (hm == null || hm.isDead || stompImmune.ContainsKey(hm.GetInstanceID())) continue;
                 float vx = rb.linearVelocity.x;
                 float dir = vx < 0f ? -1f : vx > 0f ? 1f : hero.cState.facingRight ? 1f : -1f;
-                melee.HitWith(col, (int)(40f * (1f + Items.Equipment.Current.MinionDamage)), 5f, 0f, dir, centre);
+                melee.HitWith(col, (int)(DownDamage(40, downDiveLevel) * (1f + Items.Equipment.Current.MinionDamage)), 5f, 0f, dir, centre);
                 stompImmune[hm.GetInstanceID()] = 10f;
                 TerraHurt.Invulnerable(hero, 6);
                 DevStomps++;
@@ -1849,6 +2015,7 @@ namespace TerraKnight.Player
             var b = hero.GetComponent<BoxCollider2D>().bounds;
             // The floor it lands on gives way where the Knight's dive would break it.
             World.DiveFloors.Pound(b);
+            if (downDiveLevel >= 2) TerraHurt.Invulnerable(hero, 24);
             Vector2 c = b.center;
             var at = TerraParticles.ToPx(new Vector2(c.x, b.min.y)) + new Vector2(0f, -4f);
             TerraMod.Instance.PlaySound("Custom/dd2_monk_staff_ground_impact_" + UnityEngine.Random.Range(0, 3));
@@ -1863,7 +2030,7 @@ namespace TerraKnight.Player
                     if (d < 0) continue;
                     p[d].Position = at + new Vector2(UnityEngine.Random.Range(-10f, 10f), 0f);
                     p[d].Velocity = v;
-                    p[d].Color = Effects.FxParticles.HslToRgb(strong ? 0.01f : 0.55f, 1f, 0.5f);
+                    p[d].Color = downDiveLevel >= 2 ? new Color(0.04f, 0.03f, 0.08f) : Effects.FxParticles.HslToRgb(strong ? 0.01f : 0.55f, 1f, 0.5f);
                     p[d].Scale = 1.9f + 0.8f * UnityEngine.Random.value;
                     int w = p.Clone(d);
                     if (w < 0) continue;
@@ -1878,7 +2045,7 @@ namespace TerraKnight.Player
                     if (col == null) continue;
                     var e = (Vector2)col.bounds.center;
                     if (Vector2.Distance(e, c) / Px > radius) continue;
-                    melee.HitWith(col, 30, kb, strong ? 100f : 0f, e.x > c.x ? 1f : -1f, c);
+                    melee.HitWith(col, DownDamage(30, downDiveLevel), kb, strong ? 100f : 0f, e.x > c.x ? 1f : -1f, c);
                 }
             DevPounds++;
         }

@@ -35,6 +35,7 @@
   applyTheme();
   const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let illustrations = null;
+  let illustrationRequest = null;
   function picture(id, label, size) {
     const image = illustrations?.[id];
     if (!image) return '';
@@ -43,7 +44,21 @@
     return `<span class="wiki-picture ${image.kind}" role="img" aria-label="${escape(label)}" data-illustration="${escape(id)}" style="${style}"></span>`;
   }
   function decorate(root = document) {
-    if (!illustrations) return;
+    if (!illustrations) {
+      if (!illustrationRequest && (root.querySelector('a[href*="/item-"],a[href*="/enemy-"]') || /\/(item-|enemy-)/.test(location.pathname))) {
+        illustrationRequest = fetch(base + 'assets/illustrations/manifest-lite.json' + version).then(response => {
+          if (!response.ok) throw new Error('illustrations'); return response.json();
+        }).then(groups => {
+          illustrations = {};
+          for (const [kind, group] of Object.entries(groups)) {
+            const {entries,...sheet} = group;
+            for (const [id,x,y] of entries) illustrations[id] = {...sheet,kind,x,y};
+          }
+          decorate();
+        }).catch(() => { illustrationRequest = null; });
+      }
+      return;
+    }
     root.querySelectorAll('a[href]').forEach(link => {
       if (link.querySelector('.wiki-picture')) return;
       const path = link.getAttribute('href').split('?')[0];
@@ -59,10 +74,7 @@
       heading.classList.add('illustrated-title');
     }
   }
-  fetch(base + 'assets/illustrations/manifest.json' + version).then(response => {
-    if (!response.ok) throw new Error('illustrations');
-    return response.json();
-  }).then(data => { illustrations = data; decorate(); }).catch(() => {});
+  decorate();
   function saved() { try { return JSON.parse(localStorage.getItem('terraknight-wiki-saved') || '[]'); } catch { return []; } }
   const bookmark = document.querySelector('.bookmark');
   if (bookmark) {
@@ -114,6 +126,35 @@
   }
   document.querySelectorAll('.prose .table-scroll').forEach(root => {
     if (root.closest('[data-recipes]')) return;
+    if (root.dataset.chunkTable) {
+      const total = Number(root.dataset.total), pages = Math.ceil(total / 24);
+      const body = root.querySelector('tbody'), cache = new Map([[0, [...body.children].map(r => r.outerHTML)]]);
+      const summary = document.createElement('p'); summary.className = 'muted'; summary.setAttribute('aria-live', 'polite'); root.before(summary);
+      const param = 'table-' + root.dataset.chunkTable;
+      let revision = 0;
+      const update = pagination(root, draw);
+      async function draw(page) {
+        page = Math.max(0, Math.min(page, pages - 1));
+        const current = ++revision; update(page, pages, true); body.setAttribute('aria-busy', 'true');
+        try {
+          let rows = cache.get(page);
+          if (!rows) {
+            const response = await fetch(`${base}data/tables/${root.dataset.chunkTable}/${page}.json${version}`);
+            if (!response.ok) throw new Error('table page'); rows = await response.json(); cache.set(page, rows);
+            if (cache.size > 5) cache.delete(cache.keys().next().value);
+          }
+          if (current !== revision) return;
+          body.innerHTML = rows.join(''); decorate(body);
+          summary.textContent = `共 ${total} 条 · 第 ${page + 1} / ${pages} 页 · 每页 24 条`;
+          const state = new URLSearchParams(location.search);
+          if (page) state.set(param, String(page + 1)); else state.delete(param);
+          history.replaceState(null, '', location.pathname + (state.size ? '?' + state : '') + location.hash);
+        } catch { if (current === revision) summary.textContent = '表格加载失败，请重试翻页。'; }
+        finally { if (current === revision) { update(page, pages); body.removeAttribute('aria-busy'); } }
+      }
+      draw(pageNumber(new URLSearchParams(location.search).get(param)));
+      return;
+    }
     const rows = [...root.querySelectorAll('tbody > tr')];
     if (rows.length <= 24) return;
     const size = 24, pages = Math.ceil(rows.length / size);
@@ -232,10 +273,28 @@
     updatePages(page, pages);
     decorate(results);
   }
-  function filter(reset = true) {
+  let searchWorker = null, searchRevision = 0;
+  function filter(reset = true, workerRows = null) {
     if (reset) page = 0;
     const query = input.value.trim().toLocaleLowerCase();
-    if (query && !fullLoaded) {
+    if (query && workerRows === null && typeof Worker !== 'undefined') {
+      const revision = ++searchRevision;
+      if (!searchWorker) {
+        searchWorker = new Worker(base + 'assets/search-worker.js' + version);
+        searchWorker.onmessage = ({data}) => {
+          if (data.revision !== searchRevision) return;
+          if (data.error) { count.textContent = '搜索内容加载失败，请重新输入重试。'; return; }
+          filter(false, data.rows);
+        };
+        searchWorker.onerror = () => { count.textContent = '搜索线程加载失败，请刷新重试。'; };
+      }
+      count.textContent = '正在检索全部文字…';
+      searchWorker.postMessage({revision, query, url:location.origin + base + (catalogIndex ? `data/${catalogIndex}-index.json` : 'search-index.json') + version,
+        kind:kind?.value || (browser.dataset.browser !== 'all' ? browser.dataset.browser : ''), stage:stage?.value || '', category:category?.value || '', onlySaved:onlySaved?.checked || false, saved:saved()});
+      return;
+    }
+    if (!query) ++searchRevision;
+    if (query && workerRows === null && !fullLoaded) {
       count.textContent = '正在载入搜索内容…';
       if (!fullRequest) fullRequest = fetch(base + (catalogIndex ? `data/${catalogIndex}-index.json` : 'search-index.json') + version)
         .then(r => { if (!r.ok) throw new Error('search'); return r.json(); })
@@ -246,7 +305,7 @@
     }
     const tokens = query.split(/\s+/).filter(Boolean);
     const favorites = new Set(saved());
-    filtered = records.filter(record => {
+    filtered = workerRows || records.filter(record => {
       if (browser.dataset.browser !== 'all' && record.kind !== browser.dataset.browser) return false;
       if (stage && stage.value && record.stage !== stage.value) return false;
       if (category && category.value && record.category !== category.value) return false;

@@ -37,7 +37,8 @@ namespace TerraKnight.Items
             for (int i = 0; i < inv.HkBag.Length; i++) One(ref inv.HkBag[i]);
             foreach (var l in inv.Loadouts)
                 for (int i = 0; i < l.Bag.Length; i++) One(ref l.Bag[i]);
-            for (int i = 0; i < inv.Bank.Length; i++) One(ref inv.Bank[i]);
+            foreach (var bank in new[] { inv.Bank, inv.Safe, inv.Forge, inv.Void })
+                for (int i = 0; i < bank.Length; i++) One(ref bank[i]);
             One(ref inv.Trash);
             One(ref Town.TownNpcs.ReforgeItem);
             if (Net.NetSession.Active) found |= World.Chests.Holds(type);

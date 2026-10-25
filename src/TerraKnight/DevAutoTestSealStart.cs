@@ -85,9 +85,19 @@ namespace TerraKnight
                         for (float t = Time.realtimeSinceStartup + 8f; !BossSummonStart.DevLast.StartsWith(s.Key) && Time.realtimeSinceStartup < t;) yield return null;
                     if (!dreamOrGod)
                         Check(s.Key, BossSummonStart.DevStarted == started + 1, $"立刻开战（用后 {Time.realtimeSinceStartup - t0:F1} 秒）：{BossSummonStart.DevLast}");
-                    for (float hold = Time.realtimeSinceStartup + 2f; Time.realtimeSinceStartup < hold;) { mod.Stats.FullHeal(); yield return null; }
+                    // A report: the one who used the seal stuck in a wall. Frames of the start in terrain, and where.
+                    int walled = 0, frames = 0;
+                    string wallWhat = null;
+                    void Wall()
+                    {
+                        frames++;
+                        if (HeroController.instance != null && NbInWall(HeroController.instance, out string w)) { walled++; wallWhat ??= $"{w} @{(Vector2)HeroController.instance.transform.position:F1}"; }
+                    }
+                    for (float hold = Time.realtimeSinceStartup + 2f; Time.realtimeSinceStartup < hold;) { mod.Stats.FullHeal(); Wall(); yield return null; }
                     // A roar or a warrior's title holds the player a moment.
-                    for (float ctl = Time.realtimeSinceStartup + 8f; !GameHooks.PlayerHasControl() && Time.realtimeSinceStartup < ctl;) { mod.Stats.FullHeal(); yield return null; }
+                    for (float ctl = Time.realtimeSinceStartup + 8f; !GameHooks.PlayerHasControl() && Time.realtimeSinceStartup < ctl;) { mod.Stats.FullHeal(); Wall(); yield return null; }
+                    for (float more = Time.realtimeSinceStartup + 1f; Time.realtimeSinceStartup < more;) { mod.Stats.FullHeal(); Wall(); yield return null; }
+                    Check(s.Key, walled == 0, $"没卡在墙里：{walled}/{frames} 帧在地形里{(wallWhat != null ? "，" + wallWhat : "")}");
                     var sb = new StringBuilder();
                     string record = s.Key.Split('@')[0];
                     foreach (var hm in Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None))
