@@ -1,9 +1,10 @@
 {
-  "kind": "workspace-snapshot",
-  "version": "4.4.2",
+  "kind": "release",
+  "version": "5.0.0",
   "date": "2026-10-25",
   "source_hashes": "tools/encyclopedia_runtime.json",
   "snapshot": "artifacts/wiki-current-20261025-r1/source",
   "source_tree_hash": "ab27545e8f3cb1a600929d562ac232f4de82a18cb583f4b770ed362d0237eed2",
-  "build_hash": "6ed338baae1782d4497d4eb41ae155aa33c9659b3ba92d4553fa0be8f39156fe"
+  "build_hash": "6ed338baae1782d4497d4eb41ae155aa33c9659b3ba92d4553fa0be8f39156fe",
+  "tag": "v5.0.0"
 }

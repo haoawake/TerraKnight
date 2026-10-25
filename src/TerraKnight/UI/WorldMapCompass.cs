@@ -81,14 +81,7 @@ namespace TerraKnight.UI
 
         static string GreyPrinceDestination(out string hint)
         {
-            var pd = PlayerData.instance;
-            if (pd == null) { hint = null; return "Room_Bretta_Basement"; }
-            if (pd.zoteDead) { hint = Lang.T("左特已死亡，本存档无法开启灰色王子左特的原生梦境路线。"); return "Town"; }
-            if (!pd.zoteRescuedBuzzer) { hint = Lang.T("先到苍绿之径，从复仇蝇之王手中救下左特。"); return "Fungus1_20_v02"; }
-            if (!pd.zoteRescuedDeepnest) { hint = Lang.T("先到深邃巢穴救出被蛛网困住的左特，再完成他的对话。"); return "Deepnest_33"; }
-            if (!pd.brettaRescued) { hint = Lang.T("先在真菌荒地救出布蕾塔，让她返回德特茅斯。"); return "Fungus2_23"; }
-            if (!pd.zoteDefeated) { hint = Lang.T("前往愚人斗兽场，完成勇士的试炼并击败左特，再回德特茅斯。"); return "Room_Colosseum_01"; }
-            hint = Lang.T("进入布蕾塔家的地下室，用梦之钉攻击左特雕像，进入灰色王子左特的梦境；屋外的左特不是挑战入口。");
+            hint = Lang.T("目标是布蕾塔家地下室的左特雕像，用梦之钉攻击雕像入梦。若入口未开放，请确认已两次救下左特、救出布蕾塔，并在勇士的试炼击败左特。");
             return "Room_Bretta_Basement";
         }
 
@@ -242,10 +235,8 @@ namespace TerraKnight.UI
             ItemType? pick = null;
             string room = null;
             float best = float.MaxValue, kept = float.MaxValue;
-            bool blockedZote = false;
             foreach (var f in BossGuide.NextFights(TerraMod.Instance))
             {
-                if (f == ItemType.RelicGreyPrince && PlayerData.instance != null && PlayerData.instance.zoteDead) { blockedZote = true; continue; }
                 string r = CompassRoomOf(f, scene);
                 if (!layout.ContainsKey(r)) continue;
                 float cost = StartCost(WayTo(r), scene, at, out _);
@@ -261,7 +252,6 @@ namespace TerraKnight.UI
             compassCost = best;
             compassHint = null;
             if (pick == ItemType.RelicGreyPrince) GreyPrinceDestination(out compassHint);
-            else if (!pick.HasValue && blockedZote) GreyPrinceDestination(out compassHint);
             if (pick == compassFight && room == compassRoom) return;
             compassFight = pick;
             compassRoom = room;

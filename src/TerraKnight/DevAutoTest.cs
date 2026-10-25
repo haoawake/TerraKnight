@@ -1447,6 +1447,11 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "charmspikegravity")
+            {
+                yield return CharmSpikeGravityTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "roarprobe")
             {
                 yield return RoarProbeTest();

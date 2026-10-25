@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TerraKnight.Items;
 using UnityEngine;
@@ -54,17 +54,17 @@ namespace TerraKnight
             try
             {
                 pd.zoteDead = pd.zoteRescuedBuzzer = pd.zoteRescuedDeepnest = pd.brettaRescued = pd.zoteDefeated = false;
-                Check("灰王前置先救苍绿左特", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Fungus1_20_v02", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
+                Check("苍绿救援记录缺失也固定指向雕像", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Bretta_Basement", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
                 pd.zoteRescuedBuzzer = true;
-                Check("灰王前置再救深巢左特", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Deepnest_33", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
+                Check("深巢救援记录缺失也固定指向雕像", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Bretta_Basement", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
                 pd.zoteRescuedDeepnest = true;
-                Check("灰王前置救布蕾塔", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Fungus2_23", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
+                Check("布蕾塔救援记录缺失也固定指向雕像", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Bretta_Basement", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
                 pd.brettaRescued = true;
-                Check("灰王前置竞技场击败左特", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Colosseum_01", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
+                Check("竞技场记录缺失也固定指向雕像", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Bretta_Basement", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
                 pd.zoteDefeated = true;
                 Check("灰王入口精确到地下室雕像", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Bretta_Basement" && UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince).Contains("雕像"), UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
                 pd.zoteDead = true;
-                Check("左特死亡明确提示路线不可开启", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince).Contains("无法开启"), UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
+                Check("左特死亡记录不替换导航终点", UI.WorldMap.DevCompassRoomOf(ItemType.RelicGreyPrince, "Town") == "Room_Bretta_Basement", UI.WorldMap.DevCompassHintOf(ItemType.RelicGreyPrince));
             }
             finally { pd.zoteDead = oldDead; pd.zoteRescuedBuzzer = oldBuzzer; pd.zoteRescuedDeepnest = oldDeepnest; pd.brettaRescued = oldBretta; pd.zoteDefeated = oldDefeated; }
 
@@ -174,7 +174,7 @@ namespace TerraKnight
                     pd.zoteDead = true;
                     UI.WorldMap.DevCompassForget();
                     string blocked = UI.WorldMap.DevCompass();
-                    Check("不可开启的灰王不生成误导路线", !UI.WorldMap.DevCompassFight.HasValue && UI.WorldMap.DevCompassPoints == 0, blocked);
+                    Check("剧情记录变化不跳转深巢或真菌荒地", UI.WorldMap.DevCompassFight == ItemType.RelicGreyPrince && UI.WorldMap.DevCompassRoom == "Room_Bretta_Basement", blocked);
                     UI.FullMap.DevSetOpen(false);
                 }
                 finally { pd.zoteDead = oldDead; pd.zoteRescuedBuzzer = oldBuzzer; pd.zoteRescuedDeepnest = oldDeepnest; pd.brettaRescued = oldBretta; pd.zoteDefeated = oldDefeated; }
