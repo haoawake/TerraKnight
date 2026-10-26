@@ -360,6 +360,10 @@ namespace TerraKnight.Items
             float starRange = range + (Equipment.Current.ManaMagnet ? 300f * Px : 0f);
             var starReach = new Bounds(body.center, body.size + Vector3.one * (starRange * 2f));
             bool starsCome = Equipment.Current.ManaMagnet || stats.Mana < stats.ManaMax || inv.Current.Def?.Class == DamageClass.Magic;
+            // Geo and Dream Essence come as the game's own geo does (AccessoryEffects.PullGeo): from the base range, the Gold
+            // Ring's or the Treasure Magnet's, straight to the player.
+            float moneyRange = AccessoryEffects.GeoGrabRange(Equipment.Current.GoldRing, Equipment.Current.TreasureMagnet);
+            var moneyReach = new Bounds(body.center, body.size + Vector3.one * (moneyRange * 2f));
             Vector2 heroVel = hero.GetComponent<Rigidbody2D>().linearVelocity / Player.TerraMovement.PxT;
             for (int i = 0; i < items.Count; i++)
             {
@@ -369,13 +373,14 @@ namespace TerraKnight.Items
                 var box = new Bounds(new Vector3(c.x, c.y, body.center.z), new Vector3(Half * 2f, Half * 2f, 1f));
                 bool heart = it.Stack.Type == ItemType.Heart;
                 bool star = it.Stack.Type == ItemType.Star;
+                bool money = Currencies.Is(it.Stack.Type);
                 if (box.Intersects(body))
                 {
                     TakeTouching(it, inv, body.center);
                     continue;
                 }
                 if (star && !starsCome) continue;
-                if (!box.Intersects(heart ? heartReach : star ? starReach : reach) || (!heart && !star && inv.Room(it.Stack.Type) <= 0
+                if (!box.Intersects(heart ? heartReach : star ? starReach : money ? moneyReach : reach) || (!heart && !star && inv.Room(it.Stack.Type) <= 0
                     && !Containers.Sells(inv, it.Stack.Type) && !(World.Chests.VoidBagCarried(inv) && World.Chests.VoidHasRoom(inv, it.Stack.Type)) && !Containers.HasRoom(inv, it.Stack.Type))) continue;
                 if (it.NetId != null && Net.WorldSync.Guest)
                 {
@@ -386,6 +391,14 @@ namespace TerraKnight.Items
                         it.ClaimPending = true;
                         Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "claim", Key = it.NetId, Count = ClaimCount(inv, it.Stack) });
                     }
+                    continue;
+                }
+                // Money: PullItem_Pickup (12 px a tick, a fifth of the way there each tick), as a Gold Ring pulls coins.
+                if (money)
+                {
+                    var to = ((Vector2)body.center - c).normalized * 12f;
+                    it.Vel = (it.Vel * 4f + to) / 5f;
+                    it.Grabbed = true;
                     continue;
                 }
                 // PullItem_Common: towards the player's middle on each axis on its own.

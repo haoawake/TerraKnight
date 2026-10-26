@@ -102,6 +102,7 @@
 - **Area torches are brighter** (1.3 times again in their own area), and the smart cursor places the current area's torch first; **more area chests** (10 in the largest areas, at least 2 elsewhere), each holding a piece of local equipment.
 - **Boss summons work from their boss's own stage**: Zote stage 2, Marmu and the Broken Vessel stage 3, the Hive Knight stage 4.
 - **Rare drops from common enemies**: a common enemy drops a weapon or armor piece about 10% of the time.
+- **The Nail knocks back as a broadsword does** (Terraria's average), throwing common enemies back; its knockback prefix, the Titan Glove and the Titan Potion count for it too.
 
 ### Improvements
 
@@ -131,6 +132,14 @@
 - The Nailmasters teach as in the game.
 - Poured water and acid don't drown enemies.
 - Kneeling on getting a charm or picking up an item, and the game's tips when sitting on a bench, end on their own.
+- Geo within the grab range flies straight in and is picked up: the game's own geo, like the geo piles on the ground, comes from the base grab range with no accessory, and the Gold Ring and the Treasure Magnet widen it (the larger of the two); reaching the player, it is taken at once.
+- Iron Bars, Lead Bars and the other materials their fences turn back into, and the weapons, tools and armor made from them, sell as they should.
+- A struck Moss Charger is thrown up, lands, gets up and digs back in as in the game; a stream of hits no longer leaves it floating backwards or sinking through the ground.
+- A minion's blow on a Moss Knight's shield isn't blocked and answered; it blocks only your own blows.
+- The Vengefly King hanging from the roof wakes and fights when a minion strikes it; the waking blow takes at most 1 point, and nothing comes off while it makes its entrance.
+- Enemies that stop whatever they are doing when struck (the Elder Baldur, the Crystallised Husk, the Fat Fly, the Flip Hopper) are stopped by a hit at most once in 3 seconds each, so they still attack under a stream of hits.
+- Bosses go on to their next phases when only minions strike them: the Hollow Knight, the Radiance, the Collector, the Broken Vessel and Lost Kin, the Hive Knight, the Dung Defender's and White Defender's rage, and the Warrior Dreams such as Markoth, Xero, Galien and No Eyes.
+- A Moss Walker gone back into its bush stays where it is, at the edge of a ledge too.
 
 ## 4.4.1 — The Angler and Geo
 

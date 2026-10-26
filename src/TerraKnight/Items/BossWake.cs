@@ -10,7 +10,7 @@ namespace TerraKnight.Items
     /// and nothing it takes counts until its waking is over (its wake and roar played out, the
     /// Knight free again, its shield down): a wake-up isn't a free opening.
     /// A boss asleep is one whose own FSM (on its HealthManager's object) waits in a sleeping state
-    /// for what a player's coming or blow does: a state named for sleep, or one shielded until the
+    /// for what a player's coming or blow does: a state named for sleep (or the Vengefly King's Hanging), or one shielded until the
     /// Knight comes near (the Gruz Mother's "Invincible", out of its HERO ENTER), with a way out on
     /// HERO ENTER, TAKE DAMAGE or BLOCKED HIT. Bosses a battle wakes in its own order (the Watcher
     /// Knights' WAKE) are left to it. While the Knight has no control (a roar, a scene) no Terraria
@@ -74,7 +74,9 @@ namespace TerraKnight.Items
                 var st = f.Fsm != null ? f.Fsm.ActiveState : null;
                 if (st == null) continue;
                 string n = st.Name ?? "";
-                bool asleep = n.Contains("Sleep") || n.Contains("Dormant") || (hm.IsInvincible && Has(st, "HERO ENTER"));
+                // The Vengefly King hangs from the roof until struck (Big Buzzer's Hanging): a minion's quiet blow, telling it
+                // nothing, chipped it to death up there.
+                bool asleep = n.Contains("Sleep") || n.Contains("Dormant") || n == "Hanging" || (hm.IsInvincible && Has(st, "HERO ENTER"));
                 if (!asleep) continue;
                 foreach (var ev in wakeEvents) if (Has(st, ev)) return f;
             }

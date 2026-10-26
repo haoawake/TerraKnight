@@ -120,6 +120,11 @@ namespace TerraKnight.Items
             // Dirtcarver uses its own surface-following FSM rather than Climber. Launching
             // it away from that surface leaves its crawl/burrow movement without a valid track.
             if (UI.EnemyHover.RecordOf(hm) == "BabyCentipede") return true;
+            // The Moss Charger rides weightless inside the grass line and answers a hit with its own throw up and away (Mossy
+            // Control's Burst), then lands, gets up and digs in. Launched by Terraria's push instead it floated off backwards
+            // for good (taken for a flyer), or was braked to a stop half in the ground and fell through it once its weight
+            // came back (the user's, 10-25).
+            if (UI.EnemyHover.RecordOf(hm) == "MossCharger") return true;
             // A part of another enemy goes where its owner puts it: the False Knight's head, pushed on its own
             // while he lay stunned, stayed where the blows left it, and the game brought it out from there the
             // next times, beyond the arena's gates, away from the head drawn on his body.
@@ -143,7 +148,7 @@ namespace TerraKnight.Items
             var recoil = recoilOf(hm) ?? hm.GetComponent<Recoil>();
             var body = hm.GetComponent<Rigidbody2D>();
             string how = body == null ? "无刚体" : body.bodyType + (body.gravityScale == 0f ? "无重力" : "");
-            string why = hm.GetComponent<Climber>() != null || UI.EnemyHover.RecordOf(hm) == "BabyCentipede" ? "绕地形爬" : hm.transform.parent != null && hm.transform.parent.GetComponentInParent<HealthManager>() != null ? "别的敌人的部件"
+            string why = hm.GetComponent<Climber>() != null || UI.EnemyHover.RecordOf(hm) == "BabyCentipede" ? "绕地形爬" : UI.EnemyHover.RecordOf(hm) == "MossCharger" ? "自己会被打飞" : hm.transform.parent != null && hm.transform.parent.GetComponentInParent<HealthManager>() != null ? "别的敌人的部件"
                 : recoil == null ? "无Recoil" : speedBase(recoil) <= 0f ? "Recoil速度0" : body != null && body.bodyType == RigidbodyType2D.Static ? "静态刚体"
                 : recoil.freezeInPlace && body != null && body.gravityScale == 0f ? "受击定住" : null;
             return (why != null ? "免疫(" + why + ")" : "可击退") + " " + how + (recoil != null ? $" recoil {speedBase(recoil):F1}" : "");
@@ -315,6 +320,23 @@ namespace TerraKnight.Items
             if (y) { nativeVelocity.y = velocity.y; nativeY = true; }
         }
 
+        /// <summary>
+        /// The enemy's own machine setting its gravity while the launch has it off: kept to hand back, the body left
+        /// weightless meanwhile (Terraria's gravity carries it). One given weight mid-launch comes down as a walker does: a
+        /// Moss Charger, weightless while it charges and so launched as a flyer, is thrown out of its charge with weight
+        /// and waits in the air to land, and handed back its old none it floated off for good.
+        /// </summary>
+        internal void RememberNativeGravity(float scale)
+        {
+            if (!active || body == null) return;
+            gravity = scale;
+            body.gravityScale = 0f;
+            if (flying && scale > 0.01f) flying = false;
+            DevGravityKept++;
+        }
+
+        public static int DevGravityKept;
+
         /// <summary>The body's own gravity scale, kept while the launch has it off.</summary>
         public float OwnGravity => gravity;
 
@@ -385,6 +407,12 @@ namespace TerraKnight.Items
             if (body == null || col == null)
             {
                 active = false;
+                return;
+            }
+            // Its own machine took its body out of the world (a Moss Charger digging in): the game moves it from here.
+            if (!col.enabled)
+            {
+                Finish(!flying);
                 return;
             }
             float ticks = Time.fixedDeltaTime * 60f * Pace;
@@ -493,6 +521,19 @@ namespace TerraKnight.Items
             if (flight == null || !flight.Active) return;
             var rb = go.GetComponent<Rigidbody2D>();
             if (rb != null) flight.RememberNativeVelocity(rb.linearVelocity, x, y);
+        }
+    }
+
+    [HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.SetGravity2dScale), "DoSetGravityScale")]
+    internal static class KnockFlightNativeGravity
+    {
+        [HarmonyPostfix]
+        static void Remember(HutongGames.PlayMaker.Actions.SetGravity2dScale __instance)
+        {
+            var go = __instance.Fsm.GetOwnerDefaultTarget(__instance.gameObject);
+            var flight = go != null ? go.GetComponent<KnockFlight>() : null;
+            if (flight == null || !flight.Active) return;
+            flight.RememberNativeGravity(__instance.gravityScale.Value);
         }
     }
 

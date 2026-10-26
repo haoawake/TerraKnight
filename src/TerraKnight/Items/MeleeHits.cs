@@ -521,6 +521,8 @@ namespace TerraKnight.Items
             var mod = TerraMod.Instance;
             if (hm == null) return rolled;
             int dealt = hpBefore - Mathf.Max(0, hm.hp);
+            // A minion's blow told the boss nothing: its health checks are told what passing them needs (MinionQuiet).
+            if (quiet && dealt > 0 && !puppet) MinionQuiet.PhaseChecks(hm);
             // The False Knight's raging armor at its last point takes the blow without going lower: not a block.
             if ((blocked || (dealtHk > 0 && !SpecialDeaths.Raging(hm))) && dealt <= 0 && !hm.isDead && !puppet)
             {

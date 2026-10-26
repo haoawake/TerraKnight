@@ -42,7 +42,9 @@ namespace TerraKnight.Items
 
         public static ItemDef Def() => new ItemDef
         {
-            Type = ItemType.KnightNail, Name = "骨钉", Texture = Icon, Class = DamageClass.Melee, Damage = 5, Knockback = 2f,
+            // Knockback as a broadsword's (Terraria's average): at 2 the area's resistance left a push that barely moved anything,
+            // where the game's nail throws every common enemy back.
+            Type = ItemType.KnightNail, Name = "骨钉", Texture = Icon, Class = DamageClass.Melee, Damage = 5, Knockback = 5f,
             UseAnimation = 1f, UseTime = 1f, MaxStack = 1, Rare = -11, Value = 0, Stage = 0, Source = ItemSource.Basic,
             NoMelee = true, NoUseGraphic = true, UseSound = null, Permanent = true, GameTool = true,
             Tooltip = "拿在手上时，左键就是空洞骑士的骨钉：按住连续挥砍，按住 W / S 上劈 / 下劈\n能格挡（比如安息之地的瑞维克），下劈能在尖刺和敌人身上弹起\n伤害随阶段提升，骨钉匠的每次升级再提高 25%\n不能出售、丢弃，也不能扔进垃圾桶",
@@ -180,7 +182,8 @@ namespace TerraKnight.Items
             MeleeHits.HitDirection = hitInstance.GetActualDirection(__instance.transform);
             bool landed;
             Achievements.AchievementTracker.NailSwing = art ?? "";
-            try { landed = mod.Melee.HitWith(col, damage, def.Knockback * CharmEffects.ArtKnockback(art), Equipment.Crit(def), facing, from); }
+            // Its knockback as every melee weapon's (Equipment.Knockback): its prefix, the Titan Glove's and the potion's.
+            try { landed = mod.Melee.HitWith(col, damage, Equipment.Knockback(def) * CharmEffects.ArtKnockback(art), Equipment.Crit(def), facing, from); }
             finally { MeleeHits.HitDirection = float.NaN; Achievements.AchievementTracker.NailSwing = null; }
             if (landed)
             {

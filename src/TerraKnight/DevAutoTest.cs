@@ -1447,6 +1447,26 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "nailknock")
+            {
+                yield return NailKnockTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "minionphase")
+            {
+                yield return MinionPhaseTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "mossidle")
+            {
+                yield return MossIdleTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "fix501")
+            {
+                yield return Fix501Test();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "charmspikegravity")
             {
                 yield return CharmSpikeGravityTest();

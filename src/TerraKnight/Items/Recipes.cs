@@ -135,14 +135,20 @@ namespace TerraKnight.Items
         /// <summary>
         /// Worth nothing when sold: no value of its own, or made of nothing but such things (wood
         /// into a Work Bench, the Work Bench's wood into a Loom...), up through every recipe, so
-        /// free materials can't be crafted into money.
+        /// free materials can't be crafted into money. Free to begin with is what has no value and is
+        /// had without crafting it; one with no value that is only ever crafted (an Iron Fence, four
+        /// from an Iron Bar) costs what it is made of, and its recipe back (four fences into a bar)
+        /// doesn't make the bar free.
         /// </summary>
         public static bool Worthless(ItemType t)
         {
             if (worthless == null)
             {
                 worthless = new HashSet<ItemType>();
-                foreach (var d in ItemDb.All) if (d != null && d.Type != ItemType.None && d.Value <= 0) worthless.Add(d.Type);
+                var crafted = new HashSet<ItemType>();
+                foreach (var r in Every) if (!r.IsBought) crafted.Add(r.Result);
+                foreach (var d in ItemDb.All)
+                    if (d != null && d.Type != ItemType.None && d.Value <= 0 && !(d.Source == ItemSource.Craft && crafted.Contains(d.Type))) worthless.Add(d.Type);
                 for (bool more = true; more;)
                 {
                     more = false;

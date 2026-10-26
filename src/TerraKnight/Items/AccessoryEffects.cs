@@ -87,8 +87,9 @@ namespace TerraKnight.Items
             // The Shiny Stone's motes (Pl:19387-19401): drawn in to the player while it heals him standing still.
             if (mod.Stats.ShinyStill && (Random.Range(0, 30000) < mod.Stats.SinceHitTicks || Random.Range(0, 30) == 0)) ShinyMote(centre);
 
-            // The Gold Ring (Pl:35409-35415, 35305-35316): geo within 42 + 350 px pulled in fast.
-            if (b.GoldRing || b.TreasureMagnet) PullGeo(hero, box);
+            // Geo within the grab range pulled in fast, as the Gold Ring pulls coins (Pl:35409-35415, 35305-35316): the base
+            // range for everyone, the Gold Ring's 350 px or the Treasure Magnet's 150 further.
+            PullGeo(hero, box);
 
             // The Discount Card is worn or not as a shop opens (Pl:25831-25834).
             if (!Town.TownNpcs.ShopOpen) Town.TownNpcs.DiscountLatched = b.Discount;
@@ -327,14 +328,19 @@ namespace TerraKnight.Items
             return heroBox;
         }
 
+        /// <summary>Two 2D colliders' boxes overlapping in x and y: their bounds have no depth, and a geo piece lies at its own z
+        /// (0.001-0.002, GeoControl.OnEnable), never the hero's, so Bounds.Intersects never saw it on him.</summary>
+        static bool Overlap(Bounds a, Bounds b) => a.min.x <= b.max.x && a.max.x >= b.min.x && a.min.y <= b.max.y && a.max.y >= b.min.y;
+
         internal static float GeoGrabRange(bool goldRing, bool treasureMagnet) =>
             (WorldItems.BaseGrabPx + (goldRing ? 350f : treasureMagnet ? 150f : 0f)) * Px;
 
         /// <summary>
-        /// Money pickup accessories attract native geo too; overlapping ranges use the larger bonus. Drawn in, a piece
-        /// flies through the walls as Terraria's coins do (a trigger with no gravity, the game's own Gatherer pull from
-        /// then on), and one already on the player once it can be picked up (a quarter second after it drops, after its
-        /// trigger's touch has come and gone) is picked up there.
+        /// Native geo within the grab range (<see cref="GeoGrabRange"/>: the base, or the larger of the Gold Ring's and the
+        /// Treasure Magnet's reach) is drawn in. Drawn in, a piece flies through the walls as Terraria's coins do (a trigger
+        /// with no gravity, the game's own Gatherer pull from then on), and one already on the player once it can be picked
+        /// up (a quarter second after it drops, after its trigger's touch has come and gone) is picked up there: touching his
+        /// HeroBox or his body.
         /// </summary>
         static void PullGeo(HeroController hero, Bounds body)
         {
@@ -355,7 +361,7 @@ namespace TerraKnight.Items
                     if (geoTaken(gc)) continue;
                     var box = geoBox(gc);
                     var touch = HeroBox(hero);
-                    if (box != null && touch != null && Time.time >= geoPickupAt(gc) && box.bounds.Intersects(touch.bounds))
+                    if (box != null && touch != null && Time.time >= geoPickupAt(gc) && (Overlap(box.bounds, touch.bounds) || Overlap(box.bounds, body)))
                     {
                         DevGeoTouched++;
                         geoTouched(gc, touch);
