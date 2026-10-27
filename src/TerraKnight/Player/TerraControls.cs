@@ -51,7 +51,8 @@ namespace TerraKnight.Player
             // Resting state stands the player up on the game's attack (ListenForAttack → GET UP).
             bool seated = PlayerData.instance != null && PlayerData.instance.atBench;
             a.attack.Enabled = !typing && Items.NailArts.Ready && !Items.InventoryGui.MouseOverUi && !seated;
-            a.cast.Enabled = false;
+            // The cast stays off in play; a menu of the game's out in the world shows it as its cancel (UI.HkMenus).
+            a.cast.Enabled = !typing && UI.HkMenus.Open;
             a.quickCast.Enabled = false;
             a.superDash.Enabled = false;
             a.dreamNail.Enabled = false;

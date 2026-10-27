@@ -30,11 +30,18 @@ namespace TerraKnight
             float seconds = float.TryParse(Environment.GetEnvironmentVariable("TK_REACH_SECONDS"), out var s) ? s : 20f;
             var places = new[] { "地面", "低空", "高空", "贴墙" };
             int none = 0, measured = 0;
-            foreach (string key in keys.Where(k => !string.IsNullOrWhiteSpace(k)))
+            // TK_REACH_GG=1: each in its Godhome hall (BestiaryHabitats' rooms); "key#scene" names a hall of its own (the
+            // Hornet Sentinel's GG_Hornet_2, the Winged Nosk's GG_Nosk_Hornet).
+            bool godhome = Environment.GetEnvironmentVariable("TK_REACH_GG") == "1";
+            var halls = (Dictionary<string, string>)HarmonyLib.AccessTools.Field(typeof(BestiaryHabitats), "GodhomeRooms").GetValue(null);
+            foreach (string entry in keys.Where(k => !string.IsNullOrWhiteSpace(k)))
             {
+                string key = entry.Split('#')[0];
+                string hall = entry.Contains("#") ? entry.Split('#')[1] : godhome && halls.TryGetValue(key, out var h0) ? h0 : null;
                 string record = key.Split('@')[0];
                 PlayerData.instance.isInvincible = false;
-                if (BossArena.Has(key)) BossArena.Fight(key, true);
+                if (hall != null) yield return GoTo(hall, "door_dreamEnter");
+                else if (BossArena.Has(key)) BossArena.Fight(key, true);
                 else
                 {
                     string scene = EnemyDrops.SceneOf(record);
@@ -110,6 +117,8 @@ namespace TerraKnight
                     var missStates = new Dictionary<string, int>();
                     var states = new HashSet<string>();
                     string nearState = null;
+                    // The player's blows from here: the frames they would count, and those the boss hid (ArenaGuard).
+                    int frames = 0, struckable = 0, hidden = 0;
                     for (float t0 = Time.time; Time.time - t0 < seconds;)
                     {
                         var other = KitOf(record);
@@ -146,12 +155,16 @@ namespace TerraKnight
                             nearSince = -1f;
                         }
                         if (mod.Stats.Life < mod.Stats.LifeMax / 2) mod.Stats.FullHeal();
+                        frames++;
+                        if (frames == 60) Plugin.Log.LogInfo($"[BOSS_REACH] {key} {places[p]} 场地判定：{World.ArenaGuard.DevArena(kit.Hm)}，首领 {(Vector2)(kit.Hm.GetComponent<Collider2D>()?.bounds.center ?? kit.Hm.transform.position):F1}；同名本体 {string.Join("、", UnityEngine.Object.FindObjectsByType<HealthManager>(FindObjectsSortMode.None).Where(h => h != null && UI.EnemyHover.RecordOf(h) == record).Select(h => $"{h.name}（{(h.isDead ? "死" : h.gameObject.activeInHierarchy ? "在" : "关")} {World.ArenaGuard.DevWhy(h)}）"))}");
+                        if (!World.ArenaGuard.Outside(kit.Hm)) struckable++;
+                        if (World.ArenaGuard.Hidden(kit.Hm)) hidden++;
                         yield return null;
                     }
                     if (hits == 0) zeroPlaces++;
                     line.Add($"{places[p]} 中 {hits}（{string.Join("、", sources.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + "×" + kv.Value))}）擦身未中 {misses}" +
                         (missStates.Count > 0 ? "［" + string.Join("、", missStates.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "×" + kv.Value)) + "］" : "") +
-                        $" 状态 {states.Count}");
+                        $" 状态 {states.Count} 可被打 {(frames > 0 ? 100 * struckable / frames : 0)}%（藏起 {(frames > 0 ? 100 * hidden / frames : 0)}%）");
                 }
                 measured++;
                 if (zeroPlaces > 0) none++;

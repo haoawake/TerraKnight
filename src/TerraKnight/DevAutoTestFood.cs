@@ -59,7 +59,7 @@ namespace TerraKnight
             yield return Eat(ItemType.CookedFish);
             Check("再吃熟鱼：低一档的也换上", PlayerBuffs.Has(PotionBuffs.WellFed) && !PlayerBuffs.Has(PotionBuffs.ExquisitelyStuffed), Fed());
             yield return Eat(ItemType.ShuckedOyster);
-            Check("去壳牡蛎能吃", PlayerBuffs.Has(PotionBuffs.WellFed) && PlayerBuffs.TimeLeft(PotionBuffs.WellFed) > 9 * 3600, $"剩 {PlayerBuffs.TimeLeft(PotionBuffs.WellFed) / 60} 秒");
+            Check("去壳牡蛎能吃", PlayerBuffs.Has(PotionBuffs.WellFed) && PlayerBuffs.TimeLeft(PotionBuffs.WellFed) > 9 * 3600, $"剩 {PlayerBuffs.TimeLeft(PotionBuffs.ExquisitelyStuffed) / 60} 秒");
             var before = PotionBuffs.Bonuses();
             yield return Eat(ItemType.Ale);
             var tipsy = PotionBuffs.Bonuses();

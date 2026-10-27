@@ -9,11 +9,11 @@ namespace TerraKnight.Items
     {
         static readonly HashSet<ItemType> reserved=new HashSet<ItemType>();
         static bool built;
-        /// <summary>Terraria's developer items, which its hardmode treasure bags give one of 1 time in 20: a hardmode boss's here.</summary>
-        internal static readonly ItemType[] DeveloperItems={ItemType.RedsWings,ItemType.DTownsWings,ItemType.WillsWings,ItemType.CrownosWings,
-            ItemType.CenxsWings,ItemType.BejeweledValkyrieWing,ItemType.Yoraiz0rWings,ItemType.JimsWings,ItemType.SkiphsWings,ItemType.LokisWings,
-            ItemType.ArkhalisWings,ItemType.LeinforsWings,ItemType.GhostarsWings,ItemType.SafemanWings,ItemType.FoodBarbarianWings,
-            ItemType.GroxTheGreatWings,ItemType.ChickenBonesWings,ItemType.KazzymodusWings,ItemType.LunasWings,ItemType.RedsYoyo,ItemType.ValkyrieYoyo};
+        /// <summary>
+        /// Terraria's developer sets, which its hardmode treasure bags give one of 1 time in 20: a hardmode boss's here, one piece
+        /// of each of the 21 rolled, the rest of its set paid with it (VanityDrops.Mates).
+        /// </summary>
+        internal static readonly ItemType[] DeveloperItems=VanityDrops.DeveloperReps;
         const int DeveloperGroup=105;
         internal static bool NaturalEquipment(ItemType t)
         {
@@ -30,7 +30,7 @@ namespace TerraKnight.Items
                 if(p.Signature!=ItemType.None)reserved.Add(p.Signature);
             }
             foreach(var extras in VanillaBossProgression.Extras.Values)foreach(var x in extras)reserved.Add(x.Type);
-            foreach(var t in DeveloperItems)reserved.Add(t);
+            foreach(var t in DeveloperItems){reserved.Add(t);foreach(var m in VanityDrops.Mates(t))reserved.Add(m);}
             built=true;
         }
         internal static ItemType[] Weapons(string key,int stage)
@@ -48,7 +48,7 @@ namespace TerraKnight.Items
         /// </summary>
         internal static bool BossGear(ItemType type){Build();return reserved.Contains(type);}
         /// <summary>An item only bosses give (BossGear, or one of the bosses' expert items): never a crate's, a chest's or a reward's.</summary>
-        internal static bool BossOnly(ItemType type)=>BossGear(type)||ProgressionBalance.ExclusiveBossItems.Contains(type);
+        internal static bool BossOnly(ItemType type)=>BossGear(type)||ProgressionBalance.ExclusiveBossItems.Contains(type)||BossPets.Is(type);
         static bool Available(ItemType t,int stage){var d=ItemDb.Get(t);return d!=null&&!d.Placeholder&&!CraftOnlyLoot.Blocked(t)&&d.Stage<=stage;}
         static EnemyDrops.Drop Row(ItemType t,int min=1,int max=1,int group=0,float chance=1f)
             =>new EnemyDrops.Drop{Type=t,Min=min,Max=max,Num=Mathf.RoundToInt(chance*100000),Den=100000,Group=group,LockStage=0,Weight=1};

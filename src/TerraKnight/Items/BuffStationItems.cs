@@ -14,6 +14,8 @@ namespace TerraKnight.Items
         static readonly HashSet<int> held = new HashSet<int>();
 
         public static int DevHeld => held.Count;
+        public static int DevTicks, DevStations;
+        public static bool DevDead;
 
         /// <summary>The buff is held by a station carried or banked (no timer shown).</summary>
         public static bool Holds(int buff) => held.Contains(buff);
@@ -30,8 +32,11 @@ namespace TerraKnight.Items
         public static void Tick(Inventory inv, bool dead)
         {
             held.Clear();
+            DevTicks++;
+            DevDead = dead;
             if (inv == null || dead) return;
             if (stations == null) stations = new List<(ItemType, int)>(World.Stations.BuffItems());
+            DevStations = stations.Count;
             foreach (var (item, buff) in stations)
             {
                 if (!Carried(inv, item)) continue;

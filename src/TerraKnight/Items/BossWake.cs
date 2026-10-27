@@ -83,11 +83,27 @@ namespace TerraKnight.Items
             return null;
         }
 
+        /// <summary>
+        /// A boss this game runs. Another player's (a LAN game's puppet: its machines frozen where they stood when it was
+        /// taken over, often asleep or in its intro) wakes in its owner's game: blows on it go there as they are, and the
+        /// owner's BossWake decides (players' 10-26 "其中一个人打不了": every blow a guest landed was its 'one point' or held).
+        /// </summary>
         static bool IsBoss(HealthManager hm)
         {
             var info = EnemyStats.Of(hm);
-            return info != null && info.Boss && !hm.isDead && !EnemyStats.Defeated(hm);
+            return info != null && info.Boss && !hm.isDead && !EnemyStats.Defeated(hm) && (DevOldNet || !Net.Enemies.IsPuppet(hm));
         }
+
+        /// <summary>Dev (suites nbhit_*, TK_NH_BEFORE=1): puppets and teammates' blows as before 10-26.</summary>
+        internal static bool DevOldNet;
+
+        /// <summary>
+        /// A teammate's blow being dealt here (MeleeHits.ApplyNetHit): the boss's state decides, not whether this game's
+        /// Knight is in control (dead and waiting to rise, in a cutscene, on a bench), which held every blow of theirs.
+        /// </summary>
+        internal static bool ForOther;
+
+        static bool InControl => (ForOther && !DevOldNet) || GameHooks.PlayerHasControl();
 
         /// <summary>A boss asleep, waiting to be woken by a blow: fair game for minions and homing shots although shielded.</summary>
         public static bool Asleep(HealthManager hm) => hm != null && IsBoss(hm) && Sleeper(hm) != null;
@@ -121,7 +137,7 @@ namespace TerraKnight.Items
             {
                 // A roar or a scene with the Knight held: the fight hasn't begun for him.
                 // A nail art takes the Knight's control while it plays (NailArts.Striking): that isn't a scene, its hits count.
-                if (!GameHooks.PlayerHasControl() && !NailArts.Striking) { DevHeld++; return Result.Held; }
+                if (!InControl && !NailArts.Striking) { DevHeld++; return Result.Held; }
                 return Result.Normal;
             }
             string from = f.ActiveStateName;
@@ -188,7 +204,7 @@ namespace TerraKnight.Items
             float t = Time.time - since;
             if (t > 20f && IntroOf(hm) == null) return false;
             if (Sleeper(hm) != null) return false;
-            if (t < 0.5f || !GameHooks.PlayerHasControl() || hm.IsInvincible) return true;
+            if (t < 0.5f || !InControl || hm.IsInvincible) return true;
             if (introOwners.TryGetValue(hm.GetInstanceID(), out var owner) && owner != null && Intro(owner.ActiveStateName)) return true;
             return false;
         }

@@ -33,6 +33,7 @@ namespace TerraKnight.Items
 
         public static List<Row> Capture(int tab)
         {
+            if (tab == 4) return PlayerCollectionReport.Capture();
             var rows = new List<Row>();
             var mod = TerraMod.Instance;
             if (mod == null) return rows;
@@ -112,7 +113,7 @@ namespace TerraKnight.Items
                 for (int i = 0; i < inv.EffectiveAccessories.Length; i++)
                 {
                     var stack = inv.EffectiveAccessories[i];
-                    Add("生效饰品 " + (i + 1), stack.IsEmpty ? "未装备" : stack.Def.Name + (PlayerChallenges.AccessoriesLocked ? "（饰品锁：仅保留冲刺）" : ""));
+                    Add("生效饰品 " + (i + 1), stack.IsEmpty ? "未装备" : stack.Def.Name + (PlayerChallenges.AccessoriesLocked ? "（饰品锁：仅保留冲刺和多段跳）" : ""));
                 }
                 Add("套装奖励", Equipment.SetBonusText(Equipment.FullSet) ?? "无完整套装奖励");
                 Add("装备范围", "当前配装及共享生效装备；时装不计入属性");

@@ -375,7 +375,7 @@ namespace TerraKnight.Items
                     if (leftPress) ToggleStats();
                     return;
                 case Kind.StatsTab:
-                    if (leftPress) { statsTab = hit.Index; statsScroll = 0; Sound("Menu_Tick"); }
+                    if (leftPress) { if (!statsOpen) ToggleStats(); statsTab = hit.Index; statsScroll = 0; Sound("Menu_Tick"); }
                     return;
                 case Kind.StatsScroll:
                     if (leftPress) statsScroll = Mathf.Max(0, statsScroll + hit.Index);
@@ -1900,6 +1900,7 @@ namespace TerraKnight.Items
             if (def.Defense > 0) lines.Add(Lang.F("{0} 防御", def.Defense));
             if (def.IsArmor) lines.Add(Lang.T(def.Armor == ArmorSlot.Head ? "头部装备" : def.Armor == ArmorSlot.Body ? "身体装备" : "腿部装备"));
             if (def.IsAccessory) lines.Add(Lang.T("可装备"));
+            if (def.Vanity) lines.Add(Lang.T("时装物品"));
             if (HallownestRecovery.IsUnique(def.Type)) lines.Add(Lang.T("不可丢弃；获得过后可在哥布林处补购"));
             if (def.Places != World.CellKind.Empty || def.PlacesStation != World.StationKind.None || def.PlacesChest) lines.Add(Lang.T("可放置"));
             if (def.Consumable && !def.IsAmmo) lines.Add(Lang.T("消耗品"));
@@ -2135,6 +2136,22 @@ namespace TerraKnight.Items
         /// <summary>Dev: takes one of an item from the crafting column onto the cursor, as a click on it would.</summary>
         /// <summary>Dev: every recipe's station counts as within reach (suites checking recipes, not where they're made).</summary>
         public static bool DevAnyStation;
+
+        /// <summary>Dev: this very recipe, if the crafting column offers it, clicked once: null when made, else what stopped it.</summary>
+        public static string DevCraftRecipe(Recipe r)
+        {
+            RefreshRecipes();
+            int i = recipes.IndexOf(r);
+            if (i < 0) return $"制作栏里没有（列表 {recipes.Count} 条，免费 {Shop.Free}，随便做 {inv.FreeMaking}，向导 {Town.TownNpcs.GuideCraftOpen}，同名 {System.Linq.Enumerable.Count(recipes, x => x.Result == r.Result)}）";
+            focus = i;
+            focusY = 0f;
+            stackSplit = 0;
+            preventCraft = false;
+            craftingNow = -1;
+            int before = inv.Mouse.Type == r.Result ? inv.Mouse.Count : 0;
+            ClickRecipe(i, true, true);
+            return inv.Mouse.Type == r.Result && inv.Mouse.Count > before ? null : "点了没做出来";
+        }
 
         public static bool DevCraft(ItemType type)
         {

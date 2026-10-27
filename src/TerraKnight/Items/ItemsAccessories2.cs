@@ -93,7 +93,7 @@ namespace TerraKnight.Items
             list.Add(Acc2(ItemType.BoneHelm, "骸骨头盔", 5100, -12, "召唤暗影之手来攻击敌人\n“看到它我就头疼。”", bonus: new Bonuses { BoneHelm = true }));
             list.Add(Acc2(ItemType.HandWarmer, "暖手宝", 1921, 2, "对冷冻和冰冻效果免疫", bonus: new Bonuses { DebuffImmune = DebuffImmunity.Chilled | DebuffImmunity.Frozen }));
             list.Add(Acc2(ItemType.StressBall, "解压球", 5543, 1, "不移动时连续使用某些物品\n物品栏打开时不起作用", bonus: new Bonuses { StressBall = true }));
-            list.Add(Acc2(ItemType.DeadCellsRamRune, "重锤符文", 5465, 2, "按住下并跳跃即可向下猛击\n猛击地面会对附近的敌人造成伤害\n猛击能砸开需要下砸的地板\n“像古代的英雄一样猛击地面”", bonus: new Bonuses { DownDash = true, DiveLevel = 1 }));
+            list.Add(Acc2(ItemType.DeadCellsRamRune, "重锤符文", 5465, 2, "空中连按两下下键即可向下猛击\n猛击地面会对附近的敌人造成伤害\n猛击能砸开需要下砸的地板\n“像古代的英雄一样猛击地面”", bonus: new Bonuses { DownDash = true, DiveLevel = 1 }));
 
             // --- Water: Hallownest's only liquid is acid; there is no drowning and no ice. ---
             list.Add(Acc2(ItemType.DivingGear, "潜水装备", 394, 4, "给予游泳能力\n大大延长水下呼吸时间", bonus: new Bonuses { Swim = true, DivingHelm = true }));

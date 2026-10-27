@@ -26,8 +26,15 @@ namespace TerraKnight.Items
                 if (a.IsEmpty) continue;
                 if (PlayerChallenges.AccessoriesLocked)
                 {
-                    // Preserve only the dash itself, not this accessory's defense, prefix, stats or other effects.
-                    if (a.Def.Bonus.DashKind != 0) b.DashKind = a.Def.Bonus.DashKind;
+                    // Preserve only the dash and the extra jumps themselves (wings stay off), not this accessory's
+                    // defense, prefix, stats or other effects.
+                    var kept = a.Def.Bonus;
+                    if (kept.DashKind != 0) b.DashKind = kept.DashKind;
+                    b.JumpCloud |= kept.JumpCloud || a.Def.Accessory == AccessoryEffect.CloudInABottle;
+                    b.JumpSandstorm |= kept.JumpSandstorm;
+                    b.JumpBlizzard |= kept.JumpBlizzard;
+                    b.JumpFart |= kept.JumpFart;
+                    b.JumpSail |= kept.JumpSail;
                     continue;
                 }
                 b.Defense += a.Def.Defense;

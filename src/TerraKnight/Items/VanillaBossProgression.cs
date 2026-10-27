@@ -136,7 +136,8 @@ namespace TerraKnight.Items
         }
         internal static bool AllowedEquipment(ItemType t,ItemDef d)
         {
-            if(!(d.IsWeapon||d.IsArmor||d.IsAccessory||d.IsMount)||SpellRewards.Is(t))return true;
+            // Vanity is for the look alone: its stage holds it back, no boss's fight.
+            if(!(d.IsWeapon||d.IsArmor||d.IsAccessory||d.IsMount)||SpellRewards.Is(t)||d.Vanity)return true;
             foreach(var pair in All)
                 if(pair.Value.Signature==t || Array.IndexOf(pair.Value.Gear,t)>=0)return Has(pair.Key);
             return d.Stage<3 || Current>=(d.Stage>=5?Step.Plantera:Step.Hardmode);

@@ -22,5 +22,12 @@ foreach($item in Get-ChildItem -LiteralPath $Source){
   finally{if($originalPrefs){$originalPrefs.Close()};$privatePrefs.Close()}
   @{Company=$company;Product=$product;OriginalHash=(Get-FileHash -LiteralPath $item.FullName).Hash;PrivateHash=(Get-FileHash -LiteralPath $target).Hash} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path (Split-Path $Destination -Parent) 'unity-private-settings.json')
  }elseif($item.PSIsContainer){New-Item -ItemType Junction -Path $target -Target $item.FullName | Out-Null}
- else{New-Item -ItemType SymbolicLink -Path $target -Target $item.FullName | Out-Null}
+ else{
+  # Hard links need no symlink privilege and share the immutable data on this volume.
+  try{New-Item -ItemType HardLink -Path $target -Target $item.FullName -ErrorAction Stop | Out-Null}
+  catch{
+   try{New-Item -ItemType SymbolicLink -Path $target -Target $item.FullName -ErrorAction Stop | Out-Null}
+   catch{throw ('Cannot share immutable Unity data without copying: '+$item.Name+'. Use a template on the same volume. '+$_.Exception.Message)}
+  }
+ }
 }

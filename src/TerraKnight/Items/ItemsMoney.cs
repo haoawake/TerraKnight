@@ -26,7 +26,7 @@ namespace TerraKnight.Items
             list.Add(new ItemDef
             {
                 Type = ItemType.PiggyBank, Name = "猪猪存钱罐", Texture = "Item_87", PlacesStation = World.StationKind.PiggyBank, Consumable = true,
-                MaxStack = 9999, UseAnimation = 15 * Tick, UseTime = 10 * Tick, Tooltip = "存储物品的私人仓库\n放进去的增益站（水晶球、施法桌、利器站、弹药箱、战争桌、蛋糕块）照样有增益",
+                MaxStack = 9999, UseAnimation = 15 * Tick, UseTime = 10 * Tick, Tooltip = "存储物品的私人仓库\n放进去的增益站（水晶球、施法桌、利器站、弹药箱、战争桌、蛋糕块）和增益家具（篝火、红心灯笼、星星瓶、巴斯特雕像、向日葵、花园侏儒）照样有增益",
             });
         }
 

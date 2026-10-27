@@ -40,6 +40,11 @@ namespace TerraKnight.Player
         static float tickAccumulator;
         static bool wasDead;
         static float slainAt = -1f;
+        /// <summary>The kill for a spent life being sent again (Tick); since when the life has been spent with the hero standing.</summary>
+        static bool finishing;
+        static float spentAt = -1f;
+        /// <summary>Dev: deaths the resent kill brought about.</summary>
+        public static int DevFinished;
 
         /// <summary>
         /// Terraria checks the Shield of Cthulhu's bonk before an enemy's touch can hurt (and the
@@ -50,7 +55,8 @@ namespace TerraKnight.Player
         [HarmonyPatch(typeof(HeroController), nameof(HeroController.TakeDamage))]
         static bool BeforeTakeDamage(HeroController __instance, GameObject go, int damageAmount, int hazardType)
         {
-            if (!Active) return true;
+            // The kill sent again for a life already spent (Tick): no dodge, parry or guard turns it.
+            if (!Active || finishing) return true;
             if (damageAmount > 0) Achievements.AchievementTracker.Touched(go, hazardType);
             // Spore Shroom's cloud: nothing touches the player (a pit still puts him back, unharmed: CharmEffects.Sheltered).
             if (hazardType != 5 && Items.CharmEffects.Untouchable) return false;
@@ -353,6 +359,29 @@ namespace TerraKnight.Player
         /// <summary>Every frame: notices the hero dying, and keeps the Knight's own death show hidden.</summary>
         public static void Tick(HeroController hero, TerraPlayerSprite sprite)
         {
+            // Out of life but still standing: the one hit a fall, poison or a rod sends to let the game kill the hero was refused
+            // (invulnerable a moment, recoiling, the game's damage off, a transition), so it is sent again each frame the game
+            // would take it (the user's 10-26 "扣了480血但我没死…也不回血"). Respawning clears dead and refills life in one frame.
+            // Still standing two seconds on with control in hand, what holds the hit off is let go (the game's own
+            // invincibility, the debug one, is kept).
+            var mod = TerraMod.Instance;
+            bool spent = Active && mod != null && mod.Stats.IsDead && !hero.cState.dead && !hero.cState.hazardRespawning;
+            if (!spent) spentAt = -1f;
+            else if (spentAt < 0f) spentAt = Time.time;
+            if (spent && Time.time - spentAt > 2f && GameHooks.PlayerHasControl() && !PlayerData.instance.isInvincible)
+            {
+                hero.cState.invulnerable = false;
+                hero.cState.recoiling = false;
+                hero.parryInvulnTimer = 0f;
+                if (hero.damageMode != GlobalEnums.DamageMode.FULL_DAMAGE) hero.SetDamageMode(GlobalEnums.DamageMode.FULL_DAMAGE);
+            }
+            if (spent && canTakeDamage(hero))
+            {
+                finishing = true;
+                try { hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1); }
+                finally { finishing = false; }
+                if (hero.cState.dead) DevFinished++;
+            }
             bool dead = hero.cState.dead;
             if (dead && !wasDead && Active) Die(hero, sprite);
             wasDead = dead;

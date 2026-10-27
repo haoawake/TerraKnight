@@ -337,7 +337,11 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(HealthManager), "Start")]
         static void AfterStart(HealthManager __instance)
         {
-            if (TerraMod.Instance != null) Of(__instance);
+            if (TerraMod.Instance == null) return;
+            // A body's second HealthManager (the Mantis Lords' in the game's own scene): never struck, it would keep a full
+            // bar over the bowing lord and the fight "not over" for whatever waits on every body.
+            if (__instance != null && __instance.GetComponent<HealthManager>() != __instance) { MarkDefeated(__instance); return; }
+            Of(__instance);
         }
 
         /// <summary>Drops enemies that are gone (scene unloaded).</summary>

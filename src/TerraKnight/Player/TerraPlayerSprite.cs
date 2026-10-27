@@ -26,7 +26,7 @@ namespace TerraKnight.Player
         static readonly Color ShoeColor = C(160, 105, 60);
 
         /// <summary>HairTop: a long style's front, its top 26 rows (the rest hangs behind, PlayerDrawSet.hairFrontFrame).</summary>
-        enum Sheet { Vertical, Composite, Hair, Eyelid, Shield, Wing, Balloon, FrontBack, FrontFront, IceBarrier, HairTop }
+        enum Sheet { Vertical, Composite, Hair, Eyelid, Shield, Wing, Balloon, FrontBack, FrontFront, IceBarrier, HairTop, Hat }
 
         /// <summary>Which of the character's colours a layer takes (none: drawn white).</summary>
         enum Part { None, Hair, Skin, Eye, Shirt, UnderShirt, Pants, Shoe }
@@ -58,9 +58,14 @@ namespace TerraKnight.Player
             P(C(150, 40, 40), C(170, 110, 80), C(180, 140, 40), C(240, 140, 40), C(90, 60, 40), C(110, 80, 60), C(70, 50, 40)),
         };
 
+        Palette shownPalette = Looks[0];
+        Color SkinTint() => shownPalette.Skin;
+        Color HairTint() => shownPalette.Hair;
+
         /// <summary>Dresses the character in a look (its layers' colours).</summary>
         public void SetPalette(Palette p)
         {
+            shownPalette = p;
             void Apply(Layer l)
             {
                 if (l.Part != Part.None) l.Tint = p.Of((int)l.Part);
@@ -112,6 +117,8 @@ namespace TerraKnight.Player
             public SpriteRenderer[] Strips;
             /// <summary>Rows down the sheet its frames start (a lunar body's glow, the composite sheet's lower half: 4).</summary>
             public int RowOffset;
+            /// <summary>A Hat sheet's frames, one above the other over its whole height (the Rabbit Order's 27, the Badger's hat's 6).</summary>
+            public int Frames = 1;
         }
 
         /// <summary>SetArmorEffectVisuals' copies (LPR:286-460): afterimages, ghostly outlines, a shimmer.</summary>
@@ -140,6 +147,8 @@ namespace TerraKnight.Player
             public int Shoe, Waist, Balloon, Shield, Neck, Back, HandOn, HandOff;
             /// <summary>Armor sheet numbers (Armor_Head_N, Armor/Armor_N, Armor_Legs_N); 0 for none.</summary>
             public int Head, Body, Legs;
+            /// <summary>An area's costume worn there (ItemDef.Region, 0 none): its sheets in the area's colours (RegionVanity); the body's for its capes and coat tails.</summary>
+            public byte HeadRegion, BodyRegion, LegsRegion;
             /// <summary>The helmet leaves the hair showing (hats, the mining helmet).</summary>
             public bool HairUnderHead;
             /// <summary>faceSlot (Acc_Face_N) and frontSlot (Acc_Front_N, the cape's front).</summary>
@@ -156,10 +165,40 @@ namespace TerraKnight.Player
             /// <summary>The stealth (Player.stealth, 1 seen) and whose tint: 1 Shroomite, 2 Vortex; 0 none.</summary>
             public float Stealth;
             public byte StealthKind;
-            /// <summary>The lunar glowmasks: head and legs (Glow_N), the body's composite sheet (its +224 rows), with the arms or not.</summary>
+            /// <summary>The glowmasks: head and legs (Glow_N), the body's composite sheet (its +224 rows), with the arms or not.</summary>
             public string HeadGlow, LegsGlow;
             public int BodyGlow;
             public bool BodyGlowArms;
+            /// <summary>Their colours (PlayerDrawSet's headGlowColor...: alpha 0 adds, more covers).</summary>
+            public Color32 HeadGlowColor, BodyGlowColor, ArmGlowColor, LegsGlowColor;
+            /// <summary>The undershirt's colour (the Arkhalis set's glow takes it).</summary>
+            public Color32 UnderShirt;
+            /// <summary>The body's own legs drawn for the worn ones (Player.wearsRobe).</summary>
+            public bool Robe;
+            /// <summary>Back sheets drawn as a backpack (behind the wings) and as a tail (Back.Sets).</summary>
+            public int Backpack, Tail;
+            /// <summary>The face accessories' other layers: over the head's skin (faceHead), the flowers, the masks (over or under the head piece).</summary>
+            public int FaceHead, FaceFlower, FaceMask;
+            public bool FaceMaskUnder;
+            /// <summary>A face accessory took the head piece's place (Face.Sets.OverrideHelmet).</summary>
+            public bool HelmetHidden;
+            /// <summary>Acc_Beard_N, in the hair's colour or as drawn.</summary>
+            public int Beard;
+            public bool BeardHair;
+            /// <summary>A hood's part behind the body (Head.Sets.FrontToBackID).</summary>
+            public int BackHead;
+            /// <summary>The head piece in the skin's colour; the head's skin not drawn; the torso's or the legs' skin not drawn.</summary>
+            public bool HeadSkin, HideHeadSkin, HideTopSkin, HideBottomSkin;
+            /// <summary>A long coat's tails over the legs (GetMatchingBodyExtension: an Armor_Legs sheet).</summary>
+            public int BodyExt;
+            /// <summary>A coat worn over the body (Player.coat, the Chicken Bones robe's 251), its tails in front and behind.</summary>
+            public int Coat, CoatExt, CoatBack;
+            /// <summary>The composite shoulders not drawn (a coat, a front piece that covers them).</summary>
+            public bool HideShoulders;
+            /// <summary>A balloon held in front of the back arm (the Royal Scepter's), on the body's frames.</summary>
+            public int BalloonFront;
+            /// <summary>The Angel Halo, the Fake Unicorn Horn, Yoraiz0r's scowl (no slot of their own: PlayerDrawSet's flags).</summary>
+            public bool Halo, Horn, Scowl;
         }
 
         /// <summary>How the held item is used this frame.</summary>
@@ -212,12 +251,17 @@ namespace TerraKnight.Player
         Layer handsOff, accShoes, waist, shield, handsOn, back, balloon, neck;
         // The backpack (behind the wings), the face accessories under the hair and over the head, the cape's front halves, the ice barrier.
         Layer backpack, faceUnder, faceOver, frontBack, frontFront, iceBarrier;
+        // Terraria's vanity layers (VanityLooks): a hood's back, a tail, a balloon before the back arm, the coat's and the long
+        // coats' tails, the face's flowers and masks, a beard, the special hats, the halo, the horn, the scowl.
+        Layer backHead, tail, balloonFront, coatBack, bodyExt, coatExt, coatBackArm, coatTorso, coatFrontArm;
+        Layer faceFlower, faceMaskUnder, faceMaskOver, beard, specialHat, horn, halo, scowl;
         // The lunar sets' glowmasks, added over their pieces (PDS:500-810).
         Layer headGlow, legsGlow, torsoGlow, backShoulderGlow, backArmGlow, frontArmGlow, frontShoulderGlow;
         readonly List<Layer> backArm = new List<Layer>(), backShoulder = new List<Layer>(), torso = new List<Layer>();
         // Armor: drawn in place of the clothes they cover.
         Layer armorLegs, armorBackArm, armorBackShoulder, armorTorso, armorHead, armorFrontArm, armorFrontShoulder;
         int shownHead = -1, shownBody = -1, shownLegs = -1;
+        byte shownHeadRegion, shownBodyRegion, shownLegsRegion;
         float legCounter;
         int legFrame;
         int blinkTicks;
@@ -322,7 +366,9 @@ namespace TerraKnight.Player
             // with the accessory layers where Terraria draws them: the cape, balloons behind it all (the wings
             // are drawn behind the player by TerraWings, through the effect batch).
             backHair = Add(backLayers, "Player_Hair_1", Sheet.Hair, HairColor);
+            backHead = Add(backLayers, "Armor_Head_1", Sheet.Vertical, Color.white);
             backpack = Add(backLayers, "Acc_Back_9", Sheet.Vertical, Color.white);
+            tail = Add(backLayers, "Acc_Back_25", Sheet.Vertical, Color.white);
             back = Add(backLayers, "Acc_Back_2", Sheet.Vertical, Color.white);
             balloon = Add(backLayers, "Acc_Balloon_8", Sheet.Balloon, Color.white);
             torsoSkin = Add(backLayers, "Player_0_3", Sheet.Composite, SkinColor);
@@ -332,14 +378,19 @@ namespace TerraKnight.Player
             backArm.Add(Add(backLayers, "Player_0_8", Sheet.Composite, UnderShirtColor));
             backArm.Add(Add(backLayers, "Player_0_13", Sheet.Composite, ShirtColor));
             armorBackArm = Add(backLayers, "Armor/Armor_1", Sheet.Composite, Color.white);
+            coatBackArm = Add(backLayers, "Armor/Armor_251", Sheet.Composite, Color.white);
             backArmGlow = Glow(Add(backLayers, "Armor/Armor_175", Sheet.Composite, GlowTint), 4);
+            balloonFront = Add(backLayers, "Acc_Balloon_18", Sheet.Vertical, Color.white);
             handsOff = Add(backLayers, "Accessories/Acc_HandsOff_6", Sheet.Composite, Color.white);   // Climbing Claws, back hand
             pants = Add(backLayers, "Player_0_11", Sheet.Vertical, PantsColor);
             shoes = Add(backLayers, "Player_0_12", Sheet.Vertical, ShoeColor);
+            coatBack = Add(backLayers, "Armor_Legs_239", Sheet.Vertical, Color.white);
             armorLegs = Add(backLayers, "Armor_Legs_1", Sheet.Vertical, Color.white);
             legsGlow = Glow(Add(backLayers, "Glow_199", Sheet.Vertical, GlowTint), 0);
             accShoes = Add(backLayers, "Acc_Shoes_6", Sheet.Vertical, Color.white);                   // Hermes Boots
             coat = Add(backLayers, "Player_3_14", Sheet.Vertical, ShirtColor);
+            bodyExt = Add(backLayers, "Armor_Legs_149", Sheet.Vertical, Color.white);
+            coatExt = Add(backLayers, "Armor_Legs_238", Sheet.Vertical, Color.white);
             backShoulder.Add(Add(backLayers, "Player_0_4", Sheet.Composite, UnderShirtColor));
             backShoulder.Add(Add(backLayers, "Player_0_6", Sheet.Composite, ShirtColor));
             armorBackShoulder = Add(backLayers, "Armor/Armor_1", Sheet.Composite, Color.white);
@@ -347,6 +398,7 @@ namespace TerraKnight.Player
             torso.Add(Add(backLayers, "Player_0_4", Sheet.Composite, UnderShirtColor));
             torso.Add(Add(backLayers, "Player_0_6", Sheet.Composite, ShirtColor));
             armorTorso = Add(backLayers, "Armor/Armor_1", Sheet.Composite, Color.white);
+            coatTorso = Add(backLayers, "Armor/Armor_251", Sheet.Composite, Color.white);
             torsoGlow = Glow(Add(backLayers, "Armor/Armor_175", Sheet.Composite, GlowTint), 4);
             waist = Add(backLayers, "Acc_Waist_1", Sheet.Vertical, Color.white);                      // Cloud in a Bottle
             neck = Add(backLayers, "Acc_Neck_2", Sheet.Vertical, Color.white);
@@ -354,12 +406,20 @@ namespace TerraKnight.Player
             eyeWhites = Add(backLayers, "Player_0_1", Sheet.Vertical, Color.white);
             eyes = Add(backLayers, "Player_0_2", Sheet.Vertical, EyeColor);
             eyelid = Add(backLayers, "Player_0_15", Sheet.Eyelid, SkinColor);
+            scowl = Add(backLayers, "Extra_67", Sheet.Vertical, Color.white);
             faceUnder = Add(backLayers, "Acc_Face_5", Sheet.Vertical, Color.white);
             hair = Add(backLayers, "Player_Hair_1", Sheet.Hair, HairColor);
+            faceMaskUnder = Add(backLayers, "Acc_Face_22", Sheet.Vertical, Color.white);
             armorHead = Add(backLayers, "Armor_Head_1", Sheet.Vertical, Color.white);
+            specialHat = Add(backLayers, "Armor_Head_259", Sheet.Hat, Color.white);
             hairOver = Add(backLayers, "Player_Hair_1", Sheet.Hair, HairColor);
+            beard = Add(backLayers, "Acc_Beard_1", Sheet.Vertical, Color.white);
             headGlow = Glow(Add(backLayers, "Glow_15", Sheet.Vertical, GlowTint), 0);
             faceOver = Add(backLayers, "Acc_Face_9", Sheet.Vertical, Color.white);
+            faceFlower = Add(backLayers, "Acc_Face_1", Sheet.Vertical, Color.white);
+            faceMaskOver = Add(backLayers, "Acc_Face_22", Sheet.Vertical, Color.white);
+            horn = Add(backLayers, "Extra_143", Sheet.Vertical, Color.white);
+            halo = Add(backLayers, "Acc_Face_7", Sheet.Vertical, new Color(200f / 255f, 200f / 255f, 200f / 255f, 150f / 255f));
             frontBack = Add(backLayers, "Acc_Front_5", Sheet.FrontBack, Color.white);
             shield = Add(backLayers, "Acc_Shield_5", Sheet.Shield, Color.white);                      // Shield of Cthulhu
 
@@ -386,6 +446,7 @@ namespace TerraKnight.Player
             }
             armorFrontArm = MakeLayer(frontGroup, "Armor/Armor_1", Sheet.Composite, Color.white);
             armorFrontShoulder = MakeLayer(frontGroup, "Armor/Armor_1", Sheet.Composite, Color.white);
+            coatFrontArm = MakeLayer(frontGroup, "Armor/Armor_251", Sheet.Composite, Color.white);
             frontArmGlow = Glow(MakeLayer(frontGroup, "Armor/Armor_176", Sheet.Composite, GlowTint), 4);
             frontShoulderGlow = Glow(MakeLayer(frontGroup, "Armor/Armor_176", Sheet.Composite, GlowTint), 4);
             handsOn = MakeLayer(frontGroup, "Accessories/Acc_HandsOn_11", Sheet.Composite, Color.white); // Climbing Claws, front hand
@@ -394,10 +455,12 @@ namespace TerraKnight.Player
 
             for (int i = 0; i < backLayers.Count; i++) SetZ(backLayers[i].Renderer, i);
             // Made before the shadow and outline copies, so theirs line up with these.
-            foreach (var leg in new[] { legSkin, pants, shoes, armorLegs, legsGlow, accShoes, coat }) AddStrips(leg);
+            foreach (var leg in new[] { legSkin, pants, shoes, armorLegs, legsGlow, accShoes, coat, coatBack, bodyExt, coatExt }) AddStrips(leg);
             backHair.Renderer.gameObject.SetActive(false);
             hairOver.Renderer.gameObject.SetActive(false);
             coat.Renderer.gameObject.SetActive(false);
+            foreach (var l in new[] { backHead, tail, balloonFront, coatBack, bodyExt, coatExt, coatBackArm, coatTorso, coatFrontArm, faceFlower,
+                faceMaskUnder, faceMaskOver, beard, specialHat, horn, halo, scowl }) l.Renderer.gameObject.SetActive(false);
             SetAppearance(Appearance.Default());
 
             liveTransforms = GetComponentsInChildren<Transform>(true);
@@ -681,6 +744,8 @@ namespace TerraKnight.Player
                 Set(frontShoulderGlow, frontShoulderCell, bobY);
             }
 
+            PoseVanity(equips, bodyFrame, legFrame, seated, bobY, torsoCell, backShoulderCell, frontShoulderCell, arm, backArmCell);
+
             // Accessories, each from its own sheet: shoes and the waist follow the legs, the neck, cape
             // and shield the body, the gloves the composite hands; wings and balloons hang behind.
             accShoes.Renderer.gameObject.SetActive(equips.Shoe > 0);
@@ -691,14 +756,16 @@ namespace TerraKnight.Player
             }
             Show(waist, UseSheet(waist, "Acc_Waist_", equips.Waist), legFrame);
             Show(neck, UseSheet(neck, "Acc_Neck_", equips.Neck), bodyFrame);
-            // Back.Sets.DrawInBackpackLayer (quivers, the Hive Pack): behind the wings, not over the body.
-            bool pack = System.Array.IndexOf(backpackSheets, equips.Back) >= 0;
-            Show(back, !pack && !equips.HideCapes && UseSheet(back, "Acc_Back_", equips.Back), bodyFrame);
-            Show(backpack, pack && UseSheet(backpack, "Acc_Back_", equips.Back), bodyFrame);
+            // Back.Sets.DrawInBackpackLayer (quivers, the Hive Pack): behind the wings, not over the body (VanityLooks sorts
+            // the back sheets into capes, backpacks and tails; an older game's look sends a backpack as its Back).
+            int packSheet = equips.Backpack > 0 ? equips.Backpack : System.Array.IndexOf(backpackSheets, equips.Back) >= 0 ? equips.Back : 0;
+            bool pack = packSheet > 0;
+            Show(back, equips.Back != packSheet && !equips.HideCapes && UseSheet(back, "Acc_Back_", equips.Back, equips.BodyRegion), bodyFrame);
+            Show(backpack, pack && UseSheet(backpack, "Acc_Back_", packSheet), bodyFrame);
             // The cape's front (DrawPlayer_32_FrontAcc): its right half behind the arm and shield, its left half in front of the arm.
             bool front = !equips.HideCapes && equips.Front > 0;
-            Show(frontBack, front && UseSheet(frontBack, "Acc_Front_", equips.Front), bodyFrame);
-            frontFront.Renderer.gameObject.SetActive(front && UseSheet(frontFront, "Acc_Front_", equips.Front));
+            Show(frontBack, front && UseSheet(frontBack, "Acc_Front_", equips.Front, equips.BodyRegion), bodyFrame);
+            frontFront.Renderer.gameObject.SetActive(front && UseSheet(frontFront, "Acc_Front_", equips.Front, equips.BodyRegion));
             if (front) Set(frontFront, bodyFrame);
             // DrawPlayer_25_Shield: raised, 4 px up.
             bool shieldOn = UseSheet(shield, "Acc_Shield_", equips.Shield);
@@ -722,7 +789,7 @@ namespace TerraKnight.Player
             }
 
             // Front shoulder and arm: whichever goes on top depends on the frame.
-            bool shoulderOver = shoulderOverFrontArm[bodyFrame];
+            bool shoulderOver = shoulderOverFrontArm[bodyFrame] && !VanityLooks.ShouldersBehind(shownBody);
             int baseOrder = backLayers.Count + 1;
             int group = frontArmLayers.Count + 1; // the clothes, then the armor over them
             for (int i = 0; i < frontArmLayers.Count; i++)
@@ -734,6 +801,8 @@ namespace TerraKnight.Player
             }
             SetZ(armorFrontArm.Renderer, baseOrder + (shoulderOver ? 0 : group) + frontArmLayers.Count);
             SetZ(armorFrontShoulder.Renderer, baseOrder + (shoulderOver ? group : 0) + frontArmLayers.Count);
+            SetZ(coatFrontArm.Renderer, baseOrder + (shoulderOver ? 0 : group) + frontArmLayers.Count);
+            coatFrontArm.Renderer.transform.localPosition += new Vector3(0f, 0f, -0.000005f);
             SetZ(frontArmGlow.Renderer, baseOrder + (shoulderOver ? 0 : group) + frontArmLayers.Count);
             SetZ(frontShoulderGlow.Renderer, baseOrder + (shoulderOver ? group : 0) + frontArmLayers.Count);
             frontArmGlow.Renderer.transform.localPosition += new Vector3(0f, 0f, -0.00001f);
@@ -746,6 +815,13 @@ namespace TerraKnight.Player
 
             float alpha = opacity;
             foreach (var l in backLayers) Tint(l, alpha);
+            // The Angel Halo's own see-through white (200, 200, 200, 150).
+            if (halo.Renderer.gameObject.activeSelf)
+            {
+                var hc = halo.Renderer.color;
+                hc.a *= 150f / 255f;
+                halo.Renderer.color = hc;
+            }
             foreach (var l in frontArmLayers) Tint(l, alpha);
             foreach (var l in frontShoulderLayers) Tint(l, alpha);
             Tint(handsOn, alpha);
@@ -753,6 +829,7 @@ namespace TerraKnight.Player
             Tint(iceBarrier, 1f);
             Tint(armorFrontArm, alpha);
             Tint(armorFrontShoulder, alpha);
+            Tint(coatFrontArm, alpha);
             Tint(frontArmGlow, alpha);
             Tint(frontShoulderGlow, alpha);
             if (heldItem.gameObject.activeSelf) heldItem.color = new Color(1f, 1f, 1f, alpha);
@@ -765,6 +842,109 @@ namespace TerraKnight.Player
             shownOpacity = alpha;
             PoseOutline();
             PoseGold();
+        }
+
+        /// <summary>
+        /// Terraria's vanity layers this frame (VanityLooks.Dress has sorted what shows): a hood's back, a tail, a balloon
+        /// in front of the back arm, the coats' tails and the Chicken Bones robe, the face's flowers and masks, a beard,
+        /// the special hats, the halo, the horn and the scowl; the glowmasks' colours; the shoulders a body or a coat keeps
+        /// out of sight.
+        /// </summary>
+        void PoseVanity(Equips e, int bodyFrame, int legFrame, bool seated, float bobY, Vector2Int torsoCell, Vector2Int backShoulderCell,
+            Vector2Int frontShoulderCell, Vector2Int arm, Vector2Int backArmCell)
+        {
+            void Frame(Layer l, bool on, int frame, float y = 0f)
+            {
+                l.Renderer.gameObject.SetActive(on);
+                if (on) Set(l, frame, y);
+            }
+            void Legs(Layer l, string prefix, int sheet, int region = 0)
+            {
+                bool on = sheet > 0 && UseSheet(l, prefix, sheet, region);
+                l.Renderer.gameObject.SetActive(on);
+                if (on) Leg(l, legFrame, seated);
+            }
+            Frame(backHead, e.BackHead > 0 && UseSheet(backHead, "Armor_Head_", e.BackHead), bodyFrame);
+            // DrawPlayer_08_1_Tails: on the body's frames, a woman's 2 px further back.
+            Frame(tail, e.Tail > 0 && UseSheet(tail, "Acc_Back_", e.Tail), bodyFrame);
+            if (e.Tail > 0 && female) Place(tail, -2f, 0f);
+            Frame(balloonFront, e.BalloonFront > 0 && UseSheet(balloonFront, "Acc_Balloon_", e.BalloonFront), bodyFrame, bobY);
+            Legs(coatBack, "Armor_Legs_", e.CoatBack);
+            Legs(bodyExt, "Armor_Legs_", shownBody > 0 ? e.BodyExt : 0, e.BodyRegion);
+            Legs(coatExt, "Armor_Legs_", e.CoatExt);
+            bool coatOn = e.Coat > 0;
+            foreach (var l in new[] { coatBackArm, coatTorso, coatFrontArm })
+            {
+                l.Renderer.gameObject.SetActive(coatOn);
+                if (coatOn) UseSheet(l, "Armor/Armor_", e.Coat);
+            }
+            if (coatOn)
+            {
+                Set(coatBackArm, backArmCell, bobY);
+                Set(coatTorso, torsoCell, bobY);
+                Set(coatFrontArm, arm, bobY);
+            }
+            Frame(faceFlower, e.FaceFlower > 0 && UseSheet(faceFlower, "Acc_Face_", e.FaceFlower), bodyFrame);
+            Frame(faceMaskUnder, e.FaceMask > 0 && e.FaceMaskUnder && UseSheet(faceMaskUnder, "Acc_Face_", e.FaceMask), bodyFrame);
+            Frame(faceMaskOver, e.FaceMask > 0 && !e.FaceMaskUnder && UseSheet(faceMaskOver, "Acc_Face_", e.FaceMask), bodyFrame);
+            // A beard in the hair's colour or as drawn, moved for some helmets (GetBeardOffsetAddonFromHelmet).
+            Frame(beard, e.Beard > 0 && UseSheet(beard, "Acc_Beard_", e.Beard), bodyFrame);
+            if (e.Beard > 0)
+            {
+                beard.Tint = e.BeardHair ? HairTint() : Color.white;
+                Place(beard, VanityLooks.BeardShift(e.Head), 0f);
+            }
+            // The Rabbit Order (27 frames) and the Badger's hat (6) stand on the head (GetSpecialHatDrawPosition: (1, -26) and
+            // (0, -9) from its middle, the head's bob with them), their first frame.
+            bool hat = e.Head == 259 || e.Head == 265;
+            specialHat.Renderer.gameObject.SetActive(hat);
+            if (hat)
+            {
+                specialHat.Texture = SheetName("Armor_Head_", e.Head);
+                specialHat.Frames = e.Head == 259 ? 27 : 6;
+                Set(specialHat, 0);
+                // From the frame's middle: the head's (headVect, 22.4 down the frame) and the hat's offset over it.
+                Place(specialHat, e.Head == 259 ? 1f : 0f, (e.Head == 259 ? 26f : 9f) + 5.6f + bobY * Ppu);
+            }
+            // The Deadcells head (282): its own nine frames on the clock, four ticks each, its glow the first frame's.
+            if (e.Head == 282 && shownHead > 0)
+            {
+                Set(armorHead, (int)(Time.time * 15f) % 9, bobY);
+                if (headGlow.Renderer.gameObject.activeSelf) Set(headGlow, 0, bobY);
+            }
+            Frame(horn, e.Horn, bodyFrame);
+            Frame(halo, e.Halo, bodyFrame);
+            Frame(scowl, e.Scowl && !e.HideHeadSkin, bodyFrame);
+            if (e.Scowl) scowl.Tint = SkinTint();
+            // The glowmasks' colours (added; a colour with alpha draws more of its own).
+            static Color Lit(Color32 c) => new Color(c.r / 255f, c.g / 255f, c.b / 255f, 1f) * (1f + c.a / 255f * 0.5f);
+            if (e.HeadGlow != null) headGlow.Tint = Lit(e.HeadGlowColor);
+            if (e.LegsGlow != null) legsGlow.Tint = Lit(e.LegsGlowColor);
+            if (e.BodyGlow > 0)
+            {
+                torsoGlow.Tint = Lit(e.BodyGlowColor);
+                foreach (var l in new[] { backShoulderGlow, backArmGlow, frontArmGlow, frontShoulderGlow }) l.Tint = Lit(e.ArmGlowColor);
+            }
+            // PlayerDrawSet.CreateCompositeData: the shoulders not drawn on the jump frame unless the body shows them there,
+            // nor under a coat or a front piece that covers them.
+            bool shoulders = !e.HideShoulders && (bodyFrame != 5 || VanityLooks.ShouldersOnJump(shownBody));
+            foreach (var l in backShoulder) l.Renderer.enabled = shoulders;
+            for (int i = 1; i < frontShoulderLayers.Count; i++) frontShoulderLayers[i].Renderer.enabled = shoulders;
+            armorBackShoulder.Renderer.enabled = shoulders;
+            armorFrontShoulder.Renderer.enabled = shoulders;
+            backShoulderGlow.Renderer.enabled = shoulders;
+            frontShoulderGlow.Renderer.enabled = shoulders;
+        }
+
+        /// <summary>Dev: the layers shown now with no picture (a sheet missing, a frame past its edge), by their texture.</summary>
+        internal string DevMissing()
+        {
+            var list = new List<string>();
+            foreach (var l in backLayers) if (l.Renderer.gameObject.activeInHierarchy && l.Renderer.enabled && l.Renderer.sprite == null) list.Add(l.Texture);
+            foreach (var l in frontArmLayers) if (l.Renderer.gameObject.activeInHierarchy && l.Renderer.enabled && l.Renderer.sprite == null) list.Add(l.Texture);
+            foreach (var l in new[] { armorFrontArm, armorFrontShoulder, coatFrontArm, handsOn, frontFront })
+                if (l.Renderer.gameObject.activeInHierarchy && l.Renderer.enabled && l.Renderer.sprite == null) list.Add(l.Texture);
+            return string.Join(",", list);
         }
 
         float Gold => Own ? GoldTint : 0f;
@@ -822,7 +1002,8 @@ namespace TerraKnight.Player
         /// </summary>
         void StealthTint(Equips e)
         {
-            var armor = new HashSet<Layer> { armorHead, armorTorso, armorBackShoulder, armorBackArm, armorFrontArm, armorFrontShoulder, armorLegs };
+            var armor = new HashSet<Layer> { armorHead, armorTorso, armorBackShoulder, armorBackArm, armorFrontArm, armorFrontShoulder, armorLegs,
+                backHead, coatBack, bodyExt, coatExt, coatBackArm, coatTorso, coatFrontArm, specialHat };
             var glows = new HashSet<Layer> { headGlow, legsGlow, torsoGlow, backShoulderGlow, backArmGlow, frontArmGlow, frontShoulderGlow };
             var body = new HashSet<Layer> { torsoSkin, legSkin, pants, shoes, head, eyeWhites, eyes, eyelid, hair, backHair, hairOver, coat };
             foreach (var l in torso) body.Add(l);
@@ -842,6 +1023,7 @@ namespace TerraKnight.Player
             all.AddRange(frontShoulderLayers);
             all.Add(armorFrontArm);
             all.Add(armorFrontShoulder);
+            all.Add(coatFrontArm);
             all.Add(frontArmGlow);
             all.Add(frontShoulderGlow);
             foreach (var l in all)
@@ -881,6 +1063,7 @@ namespace TerraKnight.Player
             DashTint(handsOn, glow, shade, gold);
             DashTint(frontFront, glow, shade, gold);
             DashTint(armorFrontArm, glow, shade, gold);
+            DashTint(coatFrontArm, glow, shade, gold);
             DashTint(armorFrontShoulder, glow, shade, gold);
             DashTint(frontArmGlow, glow, shade, gold);
             DashTint(frontShoulderGlow, glow, shade, gold);
@@ -955,30 +1138,47 @@ namespace TerraKnight.Player
         /// </summary>
         void UpdateArmor(Equips e)
         {
-            if (e.Head != shownHead)
+            if (e.Head != shownHead || e.HeadRegion != shownHeadRegion)
             {
                 shownHead = e.Head;
-                if (e.Head > 0) armorHead.Texture = "Armor_Head_" + e.Head;
+                shownHeadRegion = e.HeadRegion;
+                if (e.Head > 0) armorHead.Texture = RegionVanity.Sheet(e.HeadRegion, SheetName("Armor_Head_", e.Head));
                 armorHead.Renderer.gameObject.SetActive(e.Head > 0);
             }
-            // The face accessories (Pl:36252-36270, PDL:2585-2867): the blindfold under the hair and the skulls inside the
-            // head; the rest over the head, hidden by a helmet but for the flowers; the diving gears hide the helmet and
-            // the hair, the Bone Helm the hair.
-            bool under = e.Face == 5 || (e.Face >= 10 && e.Face <= 13);
-            bool flower = e.Face == 1 || e.Face == 6 || e.Face == 8 || e.Face == 9;
-            bool overHelmet = e.Face >= 2 && e.Face <= 4;
-            bool noHair = overHelmet || e.Face == 19;
-            armorHead.Renderer.gameObject.SetActive(shownHead > 0 && !overHelmet);
-            UpdateHair(e.Head > 0 && !overHelmet ? e.Head : 0, e.HairUnderHead, noHair);
-            faceUnder.Renderer.gameObject.SetActive(under && UseSheet(faceUnder, "Acc_Face_", e.Face));
-            faceOver.Renderer.gameObject.SetActive(e.Face > 0 && !under && (flower || overHelmet || e.Head <= 0) && UseSheet(faceOver, "Acc_Face_", e.Face));
-            if (e.Body != shownBody)
+            // The face accessories (Pl:36252-36270, PDL:2585-2867), sorted and hidden by VanityLooks.Dress: the blindfold
+            // under the hair, the skulls inside the head (faceHead), the rest over the head; the diving gears and the Bone
+            // Helm have the helmet's place (Head 0 then) and take the hair. A face from an older game's look still keeps
+            // its old sorting (no face layers sent): 10-13 under the hair, 1, 6, 8, 9 flowers.
+            bool under = VanityLooks.UnderHair(e.Face);
+            int faceHeadSheet = e.FaceHead > 0 ? e.FaceHead : e.Face >= 10 && e.Face <= 13 ? e.Face : 0;
+            bool noHair = e.Face > 0 && VanityLooks.TakesHair(e.Face);
+            bool special = e.Head == 259 || e.Head == 265;
+            armorHead.Renderer.gameObject.SetActive(shownHead > 0 && !special);
+            UpdateHair(e.Head > 0 ? e.Head : 0, false, noHair);
+            faceUnder.Renderer.gameObject.SetActive((under || faceHeadSheet > 0) && UseSheet(faceUnder, "Acc_Face_", under ? e.Face : faceHeadSheet));
+            faceOver.Renderer.gameObject.SetActive(e.Face > 0 && !under && e.Face != faceHeadSheet && UseSheet(faceOver, "Acc_Face_", e.Face));
+            // The head's own skin and eyes under a head piece that hides them; the torso's and the legs' skin under a body
+            // or legs that hide them (PlayerDrawSet.hidesTopSkin / hidesBottomSkin).
+            // A face-head piece (the skulls) is a whole head of its own, drawn for the skin's (PDL:2592).
+            foreach (var l in new[] { head, eyeWhites, eyes, eyelid }) l.Renderer.gameObject.SetActive(!e.HideHeadSkin && faceHeadSheet == 0);
+            torsoSkin.Renderer.gameObject.SetActive(!e.HideTopSkin);
+            for (int i = 0; i < 2 && i < backArm.Count; i++) backArm[i].Renderer.gameObject.SetActive(!e.HideTopSkin);
+            if (frontArmLayers.Count > 0)
+            {
+                frontArmLayers[0].Renderer.gameObject.SetActive(!e.HideTopSkin);
+                frontShoulderLayers[0].Renderer.gameObject.SetActive(!e.HideTopSkin);
+            }
+            legSkin.Renderer.gameObject.SetActive(!e.HideBottomSkin);
+            // Head.Sets.UseSkinColor: the head piece (an elf's or a goblin's ears) in the skin's colour.
+            armorHead.Tint = e.HeadSkin ? SkinTint() : Color.white;
+            if (e.Body != shownBody || e.BodyRegion != shownBodyRegion)
             {
                 shownBody = e.Body;
+                shownBodyRegion = e.BodyRegion;
                 bool on = e.Body > 0;
                 foreach (var l in new[] { armorTorso, armorBackShoulder, armorBackArm, armorFrontArm, armorFrontShoulder })
                 {
-                    if (on) l.Texture = "Armor/Armor_" + e.Body;
+                    if (on) l.Texture = RegionVanity.Sheet(e.BodyRegion, SheetName("Armor/Armor_", e.Body));
                     l.Renderer.gameObject.SetActive(on);
                 }
                 // Clothes under the armor: the shirt layers of torso, shoulders and arms.
@@ -991,10 +1191,11 @@ namespace TerraKnight.Player
                     frontShoulderLayers[i].Renderer.gameObject.SetActive(!on);
                 }
             }
-            if (e.Legs != shownLegs)
+            if (e.Legs != shownLegs || e.LegsRegion != shownLegsRegion)
             {
                 shownLegs = e.Legs;
-                if (e.Legs > 0) armorLegs.Texture = "Armor_Legs_" + e.Legs;
+                shownLegsRegion = e.LegsRegion;
+                if (e.Legs > 0) armorLegs.Texture = RegionVanity.Sheet(e.LegsRegion, SheetName("Armor_Legs_", e.Legs));
                 armorLegs.Renderer.gameObject.SetActive(e.Legs > 0);
                 pants.Renderer.gameObject.SetActive(e.Legs <= 0);
                 shoes.Renderer.gameObject.SetActive(e.Legs <= 0);
@@ -1006,7 +1207,7 @@ namespace TerraKnight.Player
         /// <summary>
         /// Player.GetHairSettings and PlayerDrawLayers' hair (DrawPlayer_01_BackHair, DrawPlayer_21_Head): bare-headed the
         /// whole style; under a helmet that leaves the hair (fullHair) the style drawn over it; under a hat (hatHair) its
-        /// short cut, Player_HairAlt; the mod's own few kept hats (HairUnderHead) the whole style under them. A long style
+        /// short cut, Player_HairAlt; under any other head piece none. A long style
         /// draws its lower half behind the body and only its top 26 rows over the head.
         /// </summary>
         void UpdateHair(int helmet, bool keptUnder, bool hidden)
@@ -1223,10 +1424,10 @@ namespace TerraKnight.Player
         }
 
         /// <summary>Points a layer at sheet N of a kind; false (shown nowhere) for 0.</summary>
-        static bool UseSheet(Layer layer, string prefix, int n)
+        static bool UseSheet(Layer layer, string prefix, int n, int region = 0)
         {
             if (n <= 0) return false;
-            layer.Texture = SheetName(prefix, n);
+            layer.Texture = region > 0 ? RegionVanity.Sheet(region, SheetName(prefix, n)) : SheetName(prefix, n);
             return true;
         }
 
@@ -1355,6 +1556,7 @@ namespace TerraKnight.Player
             if ((progress < 0f && !idle) || item == null)
             {
                 heldItem.gameObject.SetActive(false);
+                if (heldGlow != null) heldGlow.gameObject.SetActive(false);
                 return;
             }
             Vector2 thrustLoc = default;
@@ -1488,10 +1690,25 @@ namespace TerraKnight.Player
                 sprites[key] = s;
                 return s;
             }
+            if (layer.Kind == Sheet.Hat)
+            {
+                // One of a special hat's frames over the sheet's whole width, pivoted on its middle (Texture2D.Frame(1, n)).
+                key = (layer.Texture + "#hat" + layer.Frames, col, row, 0);
+                if (sprites.TryGetValue(key, out s)) return s;
+                var ht = TerrariaAssets.Texture(layer.Texture);
+                int frames = Mathf.Max(1, layer.Frames), hh = ht != null ? ht.height / frames : 0;
+                var hr = ht != null ? new Rect(0, ht.height - (row + 1) * hh, ht.width, hh) : default;
+                s = Fits(ht, hr) ? Sprite.Create(ht, hr, new Vector2(0.5f, 0.5f), Ppu, 0, SpriteMeshType.FullRect) : null;
+                sprites[key] = s;
+                return s;
+            }
             if (sprites.TryGetValue(key, out s)) return s;
             var tex = TerrariaAssets.Texture(layer.Texture);
             // Shields are 44 px wide, the extra pixels in front; the body centre stays at x = 20.
             int w = layer.Kind == Sheet.Shield ? tex.width : fw;
+            // A few old sheets are 38 px wide (Tam O'Shanter's, the Nurse's hat, Chippy's headband): their frames still sit
+            // on the 40 x 56 grid, the last two columns cut off.
+            if (col == 0 && w > tex.width) w = tex.width;
             int x = col * w, yTop = row * fh;
             // Some sheets are a couple of pixels short on the last frame.
             int h = Mathf.Min(height, tex.height - yTop);

@@ -54,6 +54,7 @@ namespace TerraKnight.Player
                 case "Dash": return DashLine(Lang.T("冲刺（装备克苏鲁护盾后）"));
                 case "REMINDER SUPERDASH":
                 case "Super Dash":
+                    if (Items.AbilityAccessories.SuperKeyApart) return Lang.F("装备水晶之心后，按住 {0} 蓄力，松开超级冲刺", K(TerraKeys.Action.SuperDash));
                     return Bound(TerraKeys.Action.Dash)
                         ? Lang.F("装备水晶之心后，长按 {0} 蓄力超级冲刺", K(TerraKeys.Action.Dash))
                         : Lang.T("装备水晶之心后，长按冲刺键蓄力超级冲刺；冲刺键还没有绑定，在“泰拉瑞亚设置”的按键里绑定冲刺");

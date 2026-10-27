@@ -96,7 +96,10 @@ namespace TerraKnight.UI
             readFrame = Time.frameCount;
             try
             {
-                if (keyboard == null || compositionEventFrame != Time.frameCount)
+                // The old input's composition only until the keyboard has sent one of its own: after that the keyboard's
+                // (cleared when a word is committed) is the one, and an old one left over can't hold the typing as
+                // "still composing", Backspace and Enter with it.
+                if (keyboard == null || compositionEventFrame < 0)
                     SetComposition(Input.compositionString);
                 // Keyboard text events are primary. Legacy text is only a fallback when
                 // that device is absent, never a second stream of the same committed word.
@@ -137,6 +140,54 @@ namespace TerraKnight.UI
             if (legacyAvailable)
                 try { Input.imeCompositionMode = oldMode; }
                 catch (InvalidOperationException) { }
+        }
+
+        float nextRepeat = -1f;
+        int guiBacks;
+
+        /// <summary>
+        /// Each IMGUI event (TerraMod.OnGUI): the window's own Backspace key messages for the entry being typed in, its
+        /// repeats too, for when the Input System never sees the key (an input method holding it: the user's 10-25 "起名…
+        /// 不能删字").
+        /// </summary>
+        public static void GuiEvent(Event e)
+        {
+            var o = owner;
+            if (o == null || !o.Active || e == null || e.type != EventType.KeyDown || e.keyCode != KeyCode.Backspace) return;
+            o.guiBacks++;
+            e.Use();
+        }
+
+        /// <summary>
+        /// Once a frame: how many characters Backspace takes off (Main.GetInputText: one a press; held, after a moment
+        /// one every few ticks). The Input System's key; failing that, the window's key messages and the old input's.
+        /// </summary>
+        public int Backspaces()
+        {
+            if (!Active) return 0;
+            var kb = keyboard ?? Keyboard.current;
+            bool held = kb != null && kb.backspaceKey.isPressed;
+            float now = Time.unscaledTime;
+            int n = 0;
+            if (kb != null && kb.backspaceKey.wasPressedThisFrame) { n = 1; nextRepeat = now + 0.45f; }
+            else if (held && nextRepeat >= 0f && now >= nextRepeat) { n = 1; nextRepeat = now + 0.05f; }
+            if (!held && n == 0)
+            {
+                nextRepeat = -1f;
+                n = guiBacks;
+                if (n == 0 && legacyAvailable)
+                    try { if (Input.GetKeyDown(KeyCode.Backspace)) n = 1; }
+                    catch (InvalidOperationException) { legacyAvailable = false; }
+            }
+            guiBacks = 0;
+            return n;
+        }
+
+        /// <summary>The text with <see cref="Backspaces"/> characters taken off its end.</summary>
+        public string TakeBackspaces(string text)
+        {
+            for (int n = Backspaces(); n > 0 && !string.IsNullOrEmpty(text); n--) text = Backspace(text);
+            return text;
         }
 
         public static string Backspace(string text)

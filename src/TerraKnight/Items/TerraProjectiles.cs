@@ -421,6 +421,21 @@ namespace TerraKnight.Items
             return list;
         }
 
+        /// <summary>Read-only development trace for single-projectile lifetime/retarget audits.</summary>
+        internal List<(int Id, ProjKind Kind, GemFx Gem, int Age, int TimeLeft, Vector2 Position, Vector2 Velocity)> DevGemTrace()
+        {
+            var result = new List<(int, ProjKind, GemFx, int, int, Vector2, Vector2)>();
+            foreach (var p in live) if (!p.Dead && p.Gem != GemFx.None)
+                result.Add((p.GetHashCode(), p.Kind, p.Gem, p.Ticks, p.TimeLeft, p.Pos, p.Vel));
+            return result;
+        }
+
+        /// <summary>Only lifetime fixtures call this, to isolate ageing from unknown/outside-map terrain.</summary>
+        internal void DevGemIgnoreTerrainForAudit()
+        {
+            foreach (var p in live) if (!p.Dead && p.Gem != GemFx.None) p.Collide = false;
+        }
+
         public int DevCount(ProjKind kind)
         {
             int n = 0;
@@ -974,6 +989,8 @@ namespace TerraKnight.Items
         }
 
         /// <summary>AI_029 (1.4.5): gem dust, and the amethyst bolt's homing.</summary>
+        static bool EarlyGem(Proj p) => p.Spec.Ai == Ai.GemBolt && p.Gem != GemFx.None && (p.Gem & GemFx.AllGems) == 0;
+
         void StepGem(Proj p)
         {
             // The Forbidden relic's gem sheds its sand every update (P:38527-38540).
@@ -990,7 +1007,8 @@ namespace TerraKnight.Items
                 // turning less from 30 to 40.
                 bool fast = (p.Gem & GemFx.FastSlow) != 0;
                 float range = (p.Gem & (GemFx.FastSlow | GemFx.Bounce)) != 0 ? 1000f : 500f, top = fast ? 16f : 8f;
-                var target = NearestEnemy(p.Pos, range * Px);
+                var gemTarget = EarlyGem(p) ? Nearest(p, range) : null;
+                var target = EarlyGem(p) ? (gemTarget != null ? (Vector2?)Centre(gemTarget) : null) : NearestEnemy(p.Pos, range * Px);
                 if (target.HasValue)
                 {
                     float speed = p.Vel.magnitude;
@@ -1051,7 +1069,8 @@ namespace TerraKnight.Items
                 // Homing too: off the wall straight at the nearest enemy in sight within 2400 px (P:18126-18142).
                 if ((p.Gem & GemFx.Homing) != 0)
                 {
-                    var target = NearestEnemy(p.Pos, 2400f * Px);
+                    var gemTarget = EarlyGem(p) ? Nearest(p, 2400f) : null;
+                    var target = EarlyGem(p) ? (gemTarget != null ? (Vector2?)Centre(gemTarget) : null) : NearestEnemy(p.Pos, 2400f * Px);
                     if (target.HasValue && (target.Value - p.Pos).sqrMagnitude > 0f) p.Vel = (target.Value - p.Pos).normalized * oldVel.magnitude * 0.8f;
                 }
                 if (--p.Penetrate > 0)
@@ -1454,7 +1473,8 @@ namespace TerraKnight.Items
                 // Immunity (Projectile.Damage): the shot's own cooldown, or the enemy's 10 ticks after
                 // any such hit. A shot that hits once and dies ignores both and leaves none behind.
                 int localCooldown = p.Cooldown > 0 ? p.Cooldown : s.LocalCooldown;
-                bool local = localCooldown > 0 || s.OncePerNpc, typed = s.TypeCooldown > 0;
+                bool oncePerNpc = s.OncePerNpc || EarlyGem(p);
+                bool local = localCooldown > 0 || oncePerNpc, typed = s.TypeCooldown > 0;
                 bool single = p.MaxPenetrate == 1 && !local && !typed && s.OwnerImmune == 0;
                 var typeKey = (s.TypeGroup != ProjKind.None ? s.TypeGroup : p.Kind, id);
                 if (p.Immune.ContainsKey(id)) continue;
@@ -1526,7 +1546,7 @@ namespace TerraKnight.Items
                     Minions.DevMaxHit = Mathf.Max(Minions.DevMaxHit, dealt);
                 }
                 p.LastHit = id;
-                if (s.OncePerNpc) p.Immune[id] = int.MaxValue;
+                if (oncePerNpc) p.Immune[id] = int.MaxValue;
                 else if (localCooldown > 0) p.Immune[id] = localCooldown;
                 else if (typed) typeImmune[typeKey] = s.TypeCooldown;
                 else if (!single && !s.NoImmunity)

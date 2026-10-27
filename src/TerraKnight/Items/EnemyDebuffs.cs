@@ -224,6 +224,7 @@ namespace TerraKnight.Items
             if (World.TargetDummy.Is(hm)) World.TargetDummy.Record(hm, amount);
             var info = EnemyStats.Of(hm);
             int dealt = EnemyStats.ToGameDamage(info, amount);
+            MeleeHits.DevAcceptedDamage?.Invoke(hm, amount);
             var col = hm.GetComponent<Collider2D>();
             var top = col != null ? col.bounds.center + Vector3.up * col.bounds.extents.y : hm.transform.position;
             UI.CombatText.Show(top, amount.ToString(), new Color(1f, 140 / 255f, 40 / 255f));

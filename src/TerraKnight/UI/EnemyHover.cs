@@ -77,6 +77,13 @@ namespace TerraKnight.UI
                 m = new Vector2(s.x, Screen.height - s.y);
             }
             else m = Event.current.mousePosition;
+            MouseText(text, tint, m);
+        }
+
+        /// <summary>Main.MouseText's line: beside the cursor's hot spot, outlined, pulsing as Terraria's mouseTextColor.</summary>
+        public static void MouseText(string text, Color tint, Vector2 m)
+        {
+            float ui = GameView.Scale;
             if (style == null) style = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperLeft, wordWrap = false };
             style.fontSize = Mathf.RoundToInt(18 * ui);
             var size = style.CalcSize(new GUIContent(text));
@@ -230,6 +237,9 @@ namespace TerraKnight.UI
         public static string RecordOf(HealthManager hm)
         {
             if (hm == null) return null;
+            // A body's second HealthManager (the Mantis Lords carry two in the game's own scene, the second never struck,
+            // full and alive by the bowing lord after the fight): not an enemy of its own.
+            if (hm.GetComponent<HealthManager>() != hm) return null;
             // Some objects carry a wrong record (the White Palace's wingmoulds and the Zotelings use
             // the Crawlid's no-op one, Grimm the Hornet's): by name first (spec-hkenemies 1.3).
             string obj = hm.gameObject.name;
@@ -255,6 +265,8 @@ namespace TerraKnight.UI
             // and Enraged Guardians, the Absolute Radiance.
             ("Dream Mage Lord", "MageLord"), ("Shade Sibling", "Sibling"), ("Corpse Garden Zombie", "GardenZombie"),
             ("Mega Zombie Beam Miner", "MegaBeamMiner"), ("Zombie Beam Miner Rematch", "MegaBeamMiner"), ("Absolute Radiance", "FinalBoss"),
+            // Godhome's Winged Nosk: its name starts with the Hornet's record, but it is Nosk (its relic is too).
+            ("Hornet Nosk", "MimicSpider"),
         };
 
         /// <summary>A kill record's Hunter's Journal name in the game's language, or null when the journal has none.</summary>

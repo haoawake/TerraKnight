@@ -125,7 +125,15 @@ namespace TerraKnight
             if (suite.StartsWith("netboss_host") || suite == "netboss_client") yield return NetBossBoot();
             if (suite.StartsWith("netslide_")) yield return NetBossBoot();
             if (suite.StartsWith("netwalk_host") || suite == "netwalk_client") yield return NetWalkBoot();
+            if (suite.StartsWith("nbhit_host") || suite == "nbhit_client") yield return NbHitBoot();
             if (suite == "slots") yield return SlotsBoot();
+            if (suite == "namebs")
+            {
+                yield return NameBackspaceTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "menuflow")
             {
                 yield return MenuFlowTest();
@@ -369,6 +377,13 @@ namespace TerraKnight
             if (suite == "crystalair")
             {
                 yield return CrystalAirTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
+            if (suite == "foodcarry")
+            {
+                yield return FoodCarryTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
@@ -778,6 +793,23 @@ namespace TerraKnight
             if (suite == "bestiarysync")
             {
                 yield return BestiarySyncTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "magevisibility") { yield return MageVisibilityTest(); Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break; }
+            if (suite == "lootstage") { yield return LootStageTest(); Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break; }
+            if (suite == "bestiaryjournal")
+            {
+                yield return BestiaryJournalTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "progressionnotice")
+            {
+                yield return ProgressionNoticeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "bestiarysearchaudit")
+            {
+                yield return BestiarySearchAudit();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
             if (suite == "bestiarydrops")
@@ -1334,6 +1366,13 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "earlymagicrelease" || suite == "earlymagicbalance" || suite == "earlymagicbalanceencounters" || suite == "earlymagic" || suite == "earlymagicsmoke" || suite == "earlymagicboss" || suite == "earlymagicfocus" || suite == "earlymagicencounters" || suite == "earlymagictracking" || suite == "earlymagicencounterslate" || suite == "earlymagicrepair" || suite == "earlymagiccontrols" || suite == "earlymagicencountercity")
+            {
+                yield return EarlyMagicAudit();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "blockswap")
             {
                 yield return BlockSwapTest();
@@ -1446,6 +1485,171 @@ namespace TerraKnight
                 Plugin.Log.LogInfo("[AutoTest] 完成");
                 Finish();
                 yield break;
+            }
+            if (suite == "hatprobe")
+            {
+                yield return HatProbeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "starpets")
+            {
+                yield return StarPetsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "recipegroups")
+            {
+                yield return RecipeGroupsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "vanity")
+            {
+                yield return VanityTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "bossguard")
+            {
+                yield return BossGuardTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "ggfkprobe")
+            {
+                yield return GgFkProbe();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "mossledge")
+            {
+                yield return MossLedgeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "bosspets")
+            {
+                yield return BossPetsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "divenail")
+            {
+                yield return DiveNailTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "snagwatch")
+            {
+                yield return SnagWatchTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "stuckprobe")
+            {
+                yield return StuckProbeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "nailfsm")
+            {
+                yield return NailFsmTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "ggstatue")
+            {
+                yield return GgStatueTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "savereset")
+            {
+                yield return SaveResetTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "bossmoves")
+            {
+                yield return BossMovesTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "spentlife")
+            {
+                yield return SpentLifeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "hkfont")
+            {
+                yield return HkFontTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "blastlook")
+            {
+                yield return BlastLookTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "blastlag")
+            {
+                yield return BlastLagTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "lockjumps")
+            {
+                yield return LockJumpsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "dashgate")
+            {
+                yield return DashGateTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "steadydash")
+            {
+                yield return SteadyDashTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "superkey")
+            {
+                yield return SuperKeyTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "featherdown")
+            {
+                yield return FeatherDownTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "hudhover")
+            {
+                yield return HudHoverTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "fkroom")
+            {
+                yield return FkRoomProbe();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite.StartsWith("bossdup"))
+            {
+                yield return BossDupTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "fkhidden")
+            {
+                yield return FkHiddenTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "candle")
+            {
+                yield return CandleTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "facing")
+            {
+                yield return FacingTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "wakehit")
+            {
+                yield return WakeHitTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "platdig")
+            {
+                yield return PlatDigTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "nailrecoil")
+            {
+                yield return NailRecoilTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
             if (suite == "nailknock")
             {
@@ -1864,6 +2068,13 @@ namespace TerraKnight
                 Finish();
                 yield break;
             }
+            if (suite == "spellupgradeprobe" || suite == "spellupgrade")
+            {
+                yield return SpellUpgradeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成");
+                Finish();
+                yield break;
+            }
             if (suite == "heroanimcheck")
             {
                 yield return GuardedHeroCheck();
@@ -1917,6 +2128,14 @@ namespace TerraKnight
             if (suite == "netreleasehost" || suite == "netreleaseclient")
             {
                 yield return NetReleaseTest(suite == "netreleasehost", scene, hero);
+                Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
+                Finish();
+                yield break;
+            }
+            if (suite.StartsWith("nbhit_host") || suite == "nbhit_client")
+            {
+                if (suite == "nbhit_client") yield return NbHitClient(scene, hero);
+                else yield return NbHitHost(scene, hero);
                 Plugin.Log.LogInfo("[AutoTest] 完成 [NET_DONE]");
                 Finish();
                 yield break;

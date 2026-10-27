@@ -218,13 +218,13 @@ namespace TerraKnight.UI
             bool enter = kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame, esc = kb.escapeKey.wasPressedThisFrame;
             if (renaming != 0)
             {
-                if (kb.backspaceKey.wasPressedThisFrame && renameDraft.Length > 0) renameDraft = ImeTextEntry.Backspace(renameDraft);
+                renameDraft = input.TakeBackspaces(renameDraft);
                 if (enter) EndRename(true);
                 else if (esc) EndRename(false);
             }
             else
             {
-                if (kb.backspaceKey.wasPressedThisFrame && worldName.Length > 0) worldName = ImeTextEntry.Backspace(worldName);
+                worldName = input.TakeBackspaces(worldName);
                 if (enter || esc) EndNameTyping();
             }
         }

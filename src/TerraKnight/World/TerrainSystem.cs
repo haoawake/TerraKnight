@@ -175,6 +175,20 @@ namespace TerraKnight.World
 
         static bool Overlaps(Bounds b, Rect r) => b.max.x > r.xMin && b.min.x < r.xMax && b.max.y > r.yMin && b.min.y < r.yMax;
 
+        /// <summary>The share of a world rectangle's cells the grid has open (not the room's rock), looked at every half unit.</summary>
+        static float OpenShare(CellGrid grid, Vector2Int offset, Rect r)
+        {
+            int open = 0, all = 0;
+            for (float x = r.xMin + 0.25f; x < r.xMax; x += 0.5f)
+                for (float y = r.yMin + 0.25f; y < r.yMax; y += 0.5f)
+                {
+                    var c = CellGrid.WorldToCell(new Vector2(x, y)) - offset;
+                    all++;
+                    if (grid.InBounds(c.x, c.y) && grid.Get(c.x, c.y) != CellKind.Original) open++;
+                }
+            return all > 0 ? open / (float)all : 1f;
+        }
+
         /// <summary>
         /// How far outside a boss room's zone a hand-placed collider still stays whole: the walls that close the fight in
         /// stand just past its camera lock (the Pure Vessel's left Enemy Wall ends 1.3 short of it). Made cells instead, a
@@ -353,6 +367,18 @@ namespace TerraKnight.World
                 {
                     how += "，占房间八成以上：整间保留";
                     zone = null;
+                }
+                // A zone that is nearly all rock is no fight's: a lock taken for it stands off where the fight is (Godhome's
+                // False Knight hall: a view of the rock under its floor, while the knight crashes in through the roof over
+                // it, which the grid then held solid: the user's 10-25 "假骑士卡在屋顶下不来"). The whole room stays.
+                if (zone != null)
+                {
+                    float open = OpenShare(grid, CellOffsetOf(map), zone.Value);
+                    if (open < 0.25f)
+                    {
+                        how += $"，其中空处只有 {open:P0}：整间保留";
+                        zone = null;
+                    }
                 }
                 // The ground under the arena is the boss's too: where it waits out of sight and burrows (the Dung Defender
                 // starts under its floor, below the camera lock, and its burrow's dirt takes its height from where it is then;

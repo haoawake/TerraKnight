@@ -67,6 +67,8 @@ namespace TerraKnight.Items
         /// </summary>
         public static void Tick(HeroController hero)
         {
+            var input = GameHooks.Input;
+            if (DevUpDown || (input != null && (input.inputActions.up.IsPressed || input.inputActions.down.IsPressed))) upDownAt = Time.time;
             // The 360° setting: the Great Slash and the Dash Slash at the cursor (NailAim).
             NailAim.TickArts(hero);
             // The charge: 1 s (the user's; the game's 1.35), the Nailmaster's Glory's 0.75 as ever.
@@ -115,6 +117,38 @@ namespace TerraKnight.Items
                 });
             }
             DevSpinState = $"{artsFsm.ActiveStateName} 碰到 {spinHits.Count}";
+        }
+
+        /// <summary>When up or down was last held (the Cyclone Slash's keys), for a charge let go just before or after one.</summary>
+        static float upDownAt = -10f;
+        const float UpDownGrace = 0.25f;
+        public static int DevCycloneGrace;
+        public static string DevGraceWhy = "没进选招";
+        internal static bool DevUpDown;
+
+        /// <summary>
+        /// The Nail Arts FSM choosing its art (Move Choice: its ListenForUp / ListenForDown): up or down held now or in the last
+        /// UpDownGrace seconds is the Cyclone Slash whatever else is held (the user's 10-26: "按住三个键也能释放"); the
+        /// listeners see it as held.
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ListenForUp), "CheckForInput")]
+        static bool UpChoice(HutongGames.PlayMaker.Actions.ListenForUp __instance) => !CycloneGrace(__instance, __instance.isPressed);
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HutongGames.PlayMaker.Actions.ListenForDown), "CheckForInput")]
+        static bool DownChoice(HutongGames.PlayMaker.Actions.ListenForDown __instance) => !CycloneGrace(__instance, __instance.isPressed);
+
+        static bool CycloneGrace(HutongGames.PlayMaker.FsmStateAction action, HutongGames.PlayMaker.FsmEvent pressed)
+        {
+            var st = action.State;
+            if (st == null || st.Name != "Move Choice" || action.Fsm == null || action.Fsm.Name != "Nail Arts" || pressed == null) return false;
+            var pd = PlayerData.instance;
+            DevGraceWhy = $"选招：剑技就绪 {Ready}，学了旋风 {pd != null && pd.hasCyclone}，距上次按上下 {Time.time - upDownAt:F2} 秒";
+            if (!Ready || pd == null || !pd.hasCyclone || Time.time - upDownAt > UpDownGrace) return false;
+            DevCycloneGrace++;
+            action.Fsm.Event(pressed);
+            return true;
         }
 
         static int frontFor;
@@ -268,8 +302,11 @@ namespace TerraKnight.Items
         static void TerrariaDash(HeroController __instance, string stateName, ref bool __result)
         {
             // Both Terraria shield dashes and the adapted Shade Cloak dash are driven by
-            // TerraMovement, so neither sets the native hero's dashing flag by itself.
-            if (__result || stateName != "dashing" || !Ready || !Player.TerraMovement.IsDashing) return;
+            // TerraMovement, so neither sets the native hero's dashing flag by itself. Only with the Dash Slash learned: the
+            // FSM's dash branch cancels the art without it, and a let-go charge while running on a dash did nothing (the
+            // user's 10-26 "旋风斩…必须松开方向键").
+            var pd = PlayerData.instance;
+            if (__result || stateName != "dashing" || !Ready || !Player.TerraMovement.IsDashing || pd == null || !pd.hasUpwardSlash) return;
             __result = true;
             DevDashSlashes++;
             TerraMod.Instance?.StartCoroutine(EndDash(__instance));

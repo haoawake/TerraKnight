@@ -23,13 +23,13 @@ namespace TerraKnight.Items
             list.Add(new ItemDef
             {
                 Type = ItemType.CrystalHeart, Name = "水晶之心", Texture = HkItems.TexturePrefix + ItemType.CrystalHeart, Accessory = AccessoryEffect.Passive, Rare = 5, NoDiscard = true,
-                Tooltip = "长按冲刺键：蓄力后松开，像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n轻点冲刺键仍是普通冲刺",
+                Tooltip = "按住超级冲刺键蓄力，松开像原版那样超级冲刺\n在空中也能用，蓄力时停在原处\n超级冲刺键默认就是冲刺键：长按超级冲刺，轻点仍是普通冲刺",
             });
             list.Add(new ItemDef {
                 Type = ItemType.DescendingDarkRune, Name = "暗渊符文",
                 Texture = Relics.TexturePrefix + "ability_descending_dark", Accessory = AccessoryEffect.Passive,
                 Rare = 8, NoDiscard = true, Bonus = new Bonuses { DownDash = true, DiveLevel = 2 },
-                Tooltip = "空中按住下并跳跃：黑砸，猛击伤害为普通下砸的两倍\n落地短暂无敌，并砸开脆弱地板",
+                Tooltip = "空中连按两下下键：黑砸，猛击伤害为普通下砸的两倍\n落地短暂无敌，并砸开脆弱地板；冷却 2 秒",
             });
             foreach (var shield in AbilityShields.All)
                 list.Add(new ItemDef {
@@ -269,6 +269,37 @@ namespace TerraKnight.Items
         /// <summary>The Dash key held (the real one, or a test's).</summary>
         public static bool DashKeyHeld => DevDashKey ?? (TerraKeys.Held(TerraKeys.Action.Dash) && !Net.NetChat.Typing);
 
+        /// <summary>
+        /// The Super Dash on a key of its own (TerraKeys' Super Dash bound to another key than Dash, the user's 10-26): the
+        /// Dash key dashes the moment it goes down, the Super Dash key held charges at once. On the same key (or on none) a
+        /// long press of the Dash key is the Super Dash and a short one a dash.
+        /// </summary>
+        public static bool SuperKeyApart
+        {
+            get
+            {
+                if (DevSuperApart.HasValue) return DevSuperApart.Value;
+                var s = TerraKeys.Get(TerraKeys.Action.SuperDash);
+                return s != UnityEngine.InputSystem.Key.None && s != TerraKeys.Get(TerraKeys.Action.Dash);
+            }
+        }
+
+        /// <summary>The Super Dash key held (the real one, or a test's).</summary>
+        public static bool SuperKeyHeld => DevSuperKey ?? (TerraKeys.Held(TerraKeys.Action.SuperDash) && !Net.NetChat.Typing);
+
+        /// <summary>Dev: the Super Dash key held, and the keys taken as apart or not, for a test (null: as bound).</summary>
+        public static bool? DevSuperKey, DevSuperApart;
+
+        /// <summary>The Super Dash charging or flying: no dash on the Dash key meanwhile.</summary>
+        public static bool SuperBusy
+        {
+            get
+            {
+                var hero = HeroController.SilentInstance;
+                return hero != null && (hero.cState.superDashing || Charging(hero));
+            }
+        }
+
         /// <summary>TerraMovement starting a dash: a shadow one when one was asked for.</summary>
         public static void OnDashStart(HeroController hero, int direction)
         {
@@ -397,7 +428,7 @@ namespace TerraKnight.Items
 
         static float superReady;
         static int computedFrame = -1;
-        static bool keyWasHeld, deferring, superHeld, superPrev, tapReleased;
+        static bool keyWasHeld, deferring, superHeld, superPrev, tapReleased, apart;
         static float holdTime;
         static bool wasSuperDashing;
         /// <summary>The frame the Dash key went down.</summary>
@@ -418,7 +449,9 @@ namespace TerraKnight.Items
             if (computedFrame == Time.frameCount) return;
             computedFrame = Time.frameCount;
             var hero = HeroController.SilentInstance;
-            bool key = DashKeyHeld;
+            // The key the Super Dash goes by: its own, or the Dash key's long press.
+            apart = SuperKeyApart;
+            bool key = apart ? SuperKeyHeld : DashKeyHeld;
             if (key && !keyWasHeld)
             {
                 pressedFrame = Time.frameCount;
@@ -429,10 +462,10 @@ namespace TerraKnight.Items
                 DevPress = $"按下：等长按 {deferring}（戴着 {CrystalWorn}，冷却剩 {SuperCooldownLeft:F1}，冲刺中 {TerraMovement.IsDashing}，地上 {hero?.cState.onGround}，墙上 {hero?.cState.wallSliding}，控制 {GameHooks.PlayerHasControl()}：输入 {hero?.acceptingInput} 放手 {hero?.controlReqlinquished} 暂停 {GameManager.UnsafeInstance?.isPaused} {GameManager.UnsafeInstance?.gameState} 切换 {GameManager.UnsafeInstance?.IsInSceneTransition} 时速 {Time.timeScale} 场景 {GameManager.UnsafeInstance?.sceneName}）";
             }
             if (key) holdTime += Time.deltaTime;
-            tapReleased = !key && keyWasHeld && deferring && holdTime < HoldTime;
+            tapReleased = !apart && !key && keyWasHeld && deferring && holdTime < HoldTime;
             if (!key && keyWasHeld) DevPress += $"；松开：按了 {holdTime:F2} 秒，算轻点 {tapReleased}";
             superPrev = superHeld;
-            superHeld = key && deferring && holdTime >= HoldTime;
+            superHeld = key && deferring && (apart || holdTime >= HoldTime);
             if (!key) deferring = false;
             keyWasHeld = key;
         }
@@ -440,7 +473,7 @@ namespace TerraKnight.Items
         /// <summary>The Dash key is being held for the Crystal Heart: no dash on it now (a short press dashes on its release).</summary>
         public static bool HoldsDashKey
         {
-            get { Compute(); return deferring; }
+            get { Compute(); return deferring && !apart; }
         }
 
         /// <summary>A short press held back for the Crystal Heart was let go this frame: its dash now.</summary>

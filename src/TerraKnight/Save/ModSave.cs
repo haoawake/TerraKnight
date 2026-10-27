@@ -26,6 +26,7 @@ namespace TerraKnight.Save
             public int Difficulty;
             /// <summary>World.EnemyAiKind: 0 Hollow Knight's own (every save from before the choice), 1 the new one.</summary>
             public int EnemyAi;
+            public int LootStageSelection = -1;
             /// <summary>The world's and the character's names (UI.TerraMenu); none in a save from before.</summary>
             public string WorldName, PlayerName;
             /// <summary>The character's look (UI.CharacterCreation); none in a save from before: Terraria's default character.</summary>
@@ -370,7 +371,7 @@ namespace TerraKnight.Save
             // The Guide's slot too: an item shown to him belongs to the bag.
             Town.TownNpcs.ReturnGuideItem();
             Town.TownNpcs.ReturnReforgeItem();
-            var file = new SaveFile { Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, EnemyAi = (int)World.EnemyAiMode.Current,
+            var file = new SaveFile { LootStageSelection = LootStage.Selection, Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, EnemyAi = (int)World.EnemyAiMode.Current,
                 WorldName = WorldName, PlayerName = PlayerName, Look = Player.Appearance.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
             HallownestRecovery.Observe(inv);
             inv.ObserveCollections();
@@ -581,11 +582,8 @@ namespace TerraKnight.Save
 
         public static void Read(int slot, TerraMod mod)
         {
-            World.WorldEdits.Clear();
-            World.WorldWalls.Clear();
-            World.RegionalTorches.Clear();
-            World.WorldLiquids.Clear();
-            BreakableDrops.Load(null);
+            // The last world's building and changes all gone before this save's are read (World.WorldReset).
+            World.WorldReset.All();
             mod.ResetPlayer();
             stateOf = slot;
             string path = PathFor(slot);
@@ -611,6 +609,7 @@ namespace TerraKnight.Save
                 mod.ApplyCreative(file.Creative);
                 World.GameDifficulty.Current = World.GameDifficulty.Parse(file.Difficulty);
                 SetIdentity(file);
+                LootStage.Load(file.LootStageSelection);
                 // The boosters first: the Demon Heart's slot decides what is worn.
                 mod.Stats.LifeFruits = Mathf.Clamp(file.LifeFruits, 0, Player.TerraStats.MaxLifeFruits);
                 if (file.Boosts != null)

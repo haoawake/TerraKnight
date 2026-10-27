@@ -358,8 +358,11 @@ namespace TerraKnight.EnemyAi.Bosses
         /// <summary>What the fight's camera shows (World.BossArenaZone), the boss's reach.</summary>
         public Rect Arena { get; private set; }
 
-        void ArenaFrom(Vector2 at)
+        void ArenaFrom(Vector2 at) => Arena = ArenaAt(at);
+
+        Rect ArenaAt(Vector2 at)
         {
+            Rect arena;
             var region = World.TerrainSystem.Find(Scene);
             UnityEngine.SceneManagement.Scene? mainScene = null;
             if (Scene != null && Scene.EndsWith("_boss", System.StringComparison.OrdinalIgnoreCase))
@@ -372,10 +375,33 @@ namespace TerraKnight.EnemyAi.Bosses
             if (region != null && region.Root != null)
             {
                 var room = new Rect(region.Root.position, new Vector2(region.Grid.Width, region.Grid.Height) * World.CellGrid.CellSize);
-                Arena = World.BossArenaZone.Around(sceneRef, room, at, mainScene);
+                arena = World.BossArenaZone.Around(sceneRef, room, at, mainScene);
             }
-            else Arena = new Rect(at.x - 20f, at.y - 10f, 40f, 24f);
-            Arena = UpToCeiling(Arena);
+            else arena = new Rect(at.x - 20f, at.y - 10f, 40f, 24f);
+            return DownToFloor(UpToCeiling(arena));
+        }
+
+        /// <summary>
+        /// The view's bottom down to the room's own floor under it when that floor is lower (at most 12): a lock's view can
+        /// stand well over the floor the boss fights on (Godhome's False Knight hall: the view from 31.8, the floor at 26),
+        /// and a boss on its own floor was then "out of the arena" to the watchdog, which put it back up in the roof (the
+        /// user's 10-25). The middle of five looks down across it, from points in the open.
+        /// </summary>
+        static Rect DownToFloor(Rect a)
+        {
+            var floors = new List<float>(5);
+            for (int i = 1; i <= 5; i++)
+            {
+                var from = new Vector2(Mathf.Lerp(a.xMin, a.xMax, i / 6f), a.center.y);
+                if (Hostiles.NativeSolidAt(from) || RoomRockAt(from)) continue;
+                var hit = Hostiles.NativeRay(from, Vector2.down, 40f);
+                if (hit.collider != null) floors.Add(hit.point.y);
+            }
+            if (floors.Count == 0) return a;
+            floors.Sort();
+            float floor = floors[floors.Count / 2];
+            if (floor >= a.yMin) return a;
+            return Rect.MinMaxRect(a.xMin, Mathf.Max(floor - 1f, a.yMin - 12f), a.xMax, a.yMax);
         }
 
         /// <summary>
@@ -390,7 +416,7 @@ namespace TerraKnight.EnemyAi.Bosses
             for (int i = 1; i <= 5; i++)
             {
                 var from = new Vector2(Mathf.Lerp(a.xMin, a.xMax, i / 6f), a.center.y);
-                if (Hostiles.NativeSolidAt(from)) continue;
+                if (Hostiles.NativeSolidAt(from) || RoomRockAt(from)) continue;
                 var hit = Hostiles.NativeRay(from, Vector2.up, 40f);
                 if (hit.collider != null) tops.Add(hit.point.y);
             }
@@ -707,7 +733,7 @@ namespace TerraKnight.EnemyAi.Bosses
 
         // ------------------------------------------------------------------ stuck (§1.5)
 
-        float inGroundSince = -1f, outOfArenaSince = -1f, nextLook, lastUnstick = -100f, sunkSince = -1f;
+        float inGroundSince = -1f, outOfArenaSince = -1f, inRockSince = -1f, nextLook, lastUnstick = -100f, sunkSince = -1f;
         Vector2 lastGood;
         bool haveGood;
 
@@ -806,8 +832,16 @@ namespace TerraKnight.EnemyAi.Bosses
             // Buried: its middle and its upper half both in the room's own rock (a body lying on the floor, stunned or
             // fallen, has its upper half clear). Rock of its own is not the room's: the False Knight's shell, stunned,
             // puts up a block of ground to stand on round him.
-            bool inGround = !InGroundNow && Hostiles.NativeSolidAt(b.center, transform) && Hostiles.NativeSolidAt(new Vector2(b.center.x, b.center.y + b.extents.y * 0.5f), transform);
+            var upper = new Vector2(b.center.x, b.center.y + b.extents.y * 0.5f);
+            bool inGround = !InGroundNow && Hostiles.NativeSolidAt(b.center, transform) && Hostiles.NativeSolidAt(upper, transform);
             inGroundSince = inGround ? (inGroundSince < 0f ? now : inGroundSince) : -1f;
+            // Inside the room's rock by its grid: a boss room's ground is hollow outlines, which no point inside answers, and
+            // a body through one stands on its inside (the Godhome False Knight under the roof, 10-25). A boss its script
+            // holds up there (the Hive Knight, Nosk: no gravity, or not moved by physics) is at a move of its own; one
+            // falling as ever, three seconds in rock, is stuck.
+            bool falls = rb != null && rb.bodyType == RigidbodyType2D.Dynamic && rb.simulated && rb.gravityScale > 0f;
+            bool inRock = falls && !InGroundNow && !inGround && RoomRockAt(b.center) && RoomRockAt(upper);
+            inRockSince = inRock ? (inRockSince < 0f ? now : inRockSince) : -1f;
             // Out of the arena: well past its sides or floor, or far over it (its jumps and its entrance fall go above the view).
             // A burrower tunnels deep under its floor (the White Defender's dream arena): that far down is still in it.
             float below = InGroundNow ? 10f : 3f;
@@ -821,19 +855,34 @@ namespace TerraKnight.EnemyAi.Bosses
                 lastGood = b.center;
                 haveGood = true;
             }
-            if (inGroundSince >= 0f && now - inGroundSince >= 0.75f || outOfArenaSince >= 0f && now - outOfArenaSince >= 2f)
+            // Out of an arena taken where it waited off-stage (the God Tamer's, past the room's end, 10-25): the arena where
+            // the player fights it; in that, it is in the fight, and that is its arena now.
+            if (outOfArenaSince >= 0f && now - outOfArenaSince >= 2f && HasTarget)
             {
-                inGroundSince = outOfArenaSince = -1f;
+                var there = ArenaAt(TargetCenter);
+                var outerThere = new Rect(there.xMin - 3f, there.yMin - below, there.width + 6f, there.height + 10f + below);
+                if (there != Arena && outerThere.Contains(b.center))
+                {
+                    Plugin.Log.LogInfo($"[首领AI] {Record} 场地改为玩家所在的 {there.xMin:F1}~{there.xMax:F1} × {there.yMin:F1}~{there.yMax:F1}（原 {Arena.xMin:F1}~{Arena.xMax:F1}）");
+                    Arena = there;
+                    outOfArenaSince = -1f;
+                }
+            }
+            if (inGroundSince >= 0f && now - inGroundSince >= 0.75f || outOfArenaSince >= 0f && now - outOfArenaSince >= 2f
+                || inRockSince >= 0f && now - inRockSince >= 3f)
+            {
+                inGroundSince = outOfArenaSince = inRockSince = -1f;
                 // Rate-limit recovery without permanently abandoning a boss that gets trapped again.
                 if (now - lastUnstick < 5f) return;
                 lastUnstick = now;
-                Unstick(inGround ? "卡在地形里" : "出了场地");
+                Unstick(inGround ? "卡在地形里" : inRock ? "卡在岩壁里" : "出了场地");
             }
         }
 
         /// <summary>
-        /// Put where it can stand: where it last stood well in the arena; with none known, the nearest free place over it
-        /// in the arena, else the arena's middle on its ground.
+        /// Put where it can stand, clear of the room's rock by its colliders and its grid (a boss room's ground is hollow
+        /// outlines: inside one is no free place): where it last stood well in the arena; with none known, the nearest clear
+        /// place to it in the arena, down or up, brought down onto the ground under it; else the arena's middle on its ground.
         /// </summary>
         public void Unstick(string why)
         {
@@ -842,30 +891,29 @@ namespace TerraKnight.EnemyAi.Bosses
             Vector2 from = ClampToArena(b.center, b.extents.x + 0.5f);
             Vector2 to = Vector2.zero;
             bool found = false;
-            if (haveGood && Free(lastGood, b.extents)) { to = lastGood; found = true; }
-            for (float dy = 0f; dy <= 12f && !found; dy += 0.5f)
-                for (int side = 0; side < 5 && !found; side++)
-                {
-                    float dx = side == 0 ? 0f : (side % 2 == 1 ? 1f : -1f) * (side + 1) / 2 * 1.5f;
-                    var p = ClampToArena(from + new Vector2(dx, dy), b.extents.x + 0.5f);
-                    if (Free(p, b.extents)) { to = p; found = true; }
-                }
+            if (haveGood && ClearOfRock(lastGood, b.extents)) { to = lastGood; found = true; }
+            for (float d = 0f; d <= 12f && !found; d += 0.5f)
+                for (int way = 0; way < 2 && !found; way++)
+                    for (int side = 0; side < 5 && !found; side++)
+                    {
+                        float dx = side == 0 ? 0f : (side % 2 == 1 ? 1f : -1f) * (side + 1) / 2 * 1.5f;
+                        var p = ClampToArena(from + new Vector2(dx, way == 0 ? -d : d), b.extents.x + 0.5f);
+                        if (!ClearOfRock(p, b.extents)) continue;
+                        to = p;
+                        found = true;
+                        if (Roams) continue;
+                        var stand = OnGround(p) + Vector2.up * (b.extents.y + 0.1f);
+                        if (stand.y < p.y && ClearOfRock(stand, b.extents)) to = stand;
+                    }
             if (!found)
             {
                 to = OnGround(Arena.center) + Vector2.up * (b.extents.y + 0.1f);
-                if (!Free(to, b.extents)) return;
+                if (!ClearOfRock(to, b.extents)) return;
             }
             var recovery = GetComponent<BodyRecovery>() ?? gameObject.AddComponent<BodyRecovery>();
             recovery.Begin(this, body, rb, Control, to);
             BossAi.DevUnstuck++;
-            Plugin.Log.LogInfo($"[首领AI] {Record} {why}，连续脱困至 {to:F1}");
-        }
-
-        bool Free(Vector2 c, Vector2 ext)
-        {
-            foreach (var o in new[] { Vector2.zero, new Vector2(-ext.x, -ext.y), new Vector2(ext.x, -ext.y), new Vector2(-ext.x, ext.y), new Vector2(ext.x, ext.y) })
-                if (Hostiles.NativeSolidAt(c + o * 0.9f, transform)) return false;
-            return true;
+            Plugin.Log.LogInfo($"[首领AI] {Record} {why}（{StateNow}，在 {(Vector2)b.center:F1}，场地 {Arena.xMin:F1}~{Arena.xMax:F1} × {Arena.yMin:F1}~{Arena.yMax:F1}），连续脱困至 {to:F1}");
         }
 
         // ------------------------------------------------------------------ each frame

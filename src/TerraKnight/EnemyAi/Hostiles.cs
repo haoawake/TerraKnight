@@ -197,6 +197,10 @@ namespace TerraKnight.EnemyAi
         internal static RaycastHit2D NativeCircle(Vector2 from, float radius, Vector2 dir, float distance) =>
             Nearest(Physics2D.CircleCastNonAlloc(from, radius, dir, hits, distance, TerrainMask));
 
+        /// <summary>A box cast against the room's own ground only.</summary>
+        internal static RaycastHit2D NativeBox(Vector2 from, Vector2 size, Vector2 dir, float distance) =>
+            Nearest(Physics2D.BoxCastNonAlloc(from, size, 0f, dir, hits, distance, TerrainMask));
+
         static readonly Collider2D[] overlaps = new Collider2D[16];
 
         /// <summary>Whether a point is inside the room's own ground (not counting ground of something's own: <paramref name="except"/> and what it carries).</summary>

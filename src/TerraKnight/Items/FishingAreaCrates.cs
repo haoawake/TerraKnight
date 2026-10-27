@@ -177,7 +177,7 @@ namespace TerraKnight.Items
                 foreach (var d in EnemyDrops.At(record, stage, false, entry, final))
                 {
                     var def = ItemDb.Get(d.Type);
-                    if (def == null || def.HkItem || d.Master) continue;
+                    if (def == null || def.HkItem || def.Vanity || d.Master) continue;
                     if (def.MaxStack == 1 && (def.IsWeapon && !def.IsAmmo && !def.GameTool || def.IsAccessory || def.IsArmor)) gear.Add(d.Type);
                     else if (def.MaxStack > 1 && Recipes.IsMaterial(d.Type) && !def.IsWeapon && !def.IsAmmo && def.BaitPower == 0 && def.HealLife == 0 && def.HealMana == 0
                              && !def.LifeCrystal && !def.ManaCrystal && def.Boost == PermanentBoost.None && d.Type != ItemType.Geo && d.Type != ItemType.Heart && !crateMetals.Contains(d.Type))

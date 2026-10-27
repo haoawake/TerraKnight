@@ -42,6 +42,9 @@ namespace TerraKnight.Items
                 // The Ale (Ale Tosser ammo too): Tipsy for 2 minutes.
                 else if (d.Type == ItemType.Ale) Feed(d, 25, 7200, true);
             }
+            foreach (var d in list)
+                if (Player.PotionBuffs.FoodRank(d.BuffType) > 0)
+                    d.Tooltip += "\n同种食物在背包与储蓄罐合计满20份，常驻其原有增益；多种达标食物只取最高档";
         }
 
         static void Feed(ItemDef d, int buff, int ticks, bool drink)

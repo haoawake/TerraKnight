@@ -153,6 +153,37 @@ namespace TerraKnight.Player
             ForgetSequenceDashes();
         }
 
+        /// <summary>Dev (suite dashgate, TK_DG_BEFORE=1): a dash out through a gate leaves the gravity as before 10-26.</summary>
+        public static bool DevOldGate;
+
+        /// <summary>
+        /// Out through a gate mid-dash: the gravity the dash holds off given back before the game's LeaveScene, so the next
+        /// scene's EnterScene keeps the real one aside (AffectedByGravity) and hands it back as the Knight walks in.
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.LeaveScene))]
+        static void BeforeLeaveScene(Rigidbody2D ___rb2d)
+        {
+            if (DevOldGate || !Active || ___rb2d == null) return;
+            if (hkDashLeft > 0f) ___rb2d.gravityScale = GravityBack(hkDashGravity);
+            if (aimedLeft > 0f || !float.IsNaN(aimedGravity)) EndAimed(___rb2d);
+            ForgetSequenceDashes();
+        }
+
+        /// <summary>
+        /// Into a scene: the game hands back the gravity it last kept aside, none when nothing was (a hold of ours cut off by
+        /// the gate, the input taken before LeaveScene): then its own default, never a Knight left with no fall.
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.EnterScene))]
+        [HarmonyPatch(typeof(HeroController), "DoEnterSceneDreamGate")]
+        static void BeforeEnterScene(HeroController __instance, Rigidbody2D ___rb2d, ref float ___prevGravityScale)
+        {
+            if (DevOldGate || !Active || ___rb2d == null) return;
+            if (Mathf.Abs(___rb2d.gravityScale) <= Mathf.Epsilon && ___prevGravityScale <= Mathf.Epsilon)
+                ___prevGravityScale = __instance.DEFAULT_GRAVITY > 0.01f ? __instance.DEFAULT_GRAVITY : 0.79f;
+        }
+
         /// <summary>
         /// The gravity a dash gives back as it ends: what it found, or, when the gravity was off already as it started (a
         /// dash still going, Dashmaster's, the game's own), the game's own gravity the way it points (the Gravity Globe), never
@@ -1919,12 +1950,33 @@ namespace TerraKnight.Player
         public static int DevDownDashes, DevPounds, DevStomps;
         public static bool DevDownDash;
 
-        /// <summary>Each frame: Down held and a fresh jump press in the air ask for the dash.</summary>
+        /// <summary>When Down was last pressed, for the double tap.</summary>
+        static float downTapAt = -10f;
+        const float DownTapWindow = 0.3f;
+
+        /// <summary>The dark dive (Descending Dark: double damage, a moment unhurt on landing) waits this long after the last (the user's 10-26: 2 s).</summary>
+        public const float DarkDiveCooldown = 2f;
+        static float darkDiveReady;
+        public static int DevDarkHeld;
+        /// <summary>Dev: a Down press this frame.</summary>
+        public static bool DevDownTap;
+
+        /// <summary>
+        /// Each frame: Down pressed twice in quick succession in the air asks for the dash (the user's 10-26: Down held with a
+        /// jump press was the wings' hover too). The dark dive not ready again yet, nothing.
+        /// </summary>
         public static void PollDownDash(HeroController hero)
         {
-            bool press = DevDownDash || (GameHooks.Input != null && GameHooks.Input.inputActions.jump.WasPressed);
+            bool press = DevDownDash;
             DevDownDash = false;
-            if (!press || !DownDash || DownDashing || hero.cState.onGround || !DownHeld) return;
+            if (DevDownTap || (GameHooks.Input != null && GameHooks.Input.inputActions.down.WasPressed))
+            {
+                DevDownTap = false;
+                if (Time.unscaledTime - downTapAt <= DownTapWindow) { press = true; downTapAt = -10f; }
+                else downTapAt = Time.unscaledTime;
+            }
+            if (!press || !DownDash || DownDashing || hero.cState.onGround) return;
+            if (Items.Equipment.Current.DiveLevel >= 2 && Time.time < darkDiveReady) { DevDarkHeld++; return; }
             downDashRequest = true;
         }
 
@@ -1946,6 +1998,7 @@ namespace TerraKnight.Player
                     DownDashing = true;
                     downDashTime = 0f;
                     downDiveLevel = Items.Equipment.Current.DiveLevel;
+                    if (downDiveLevel >= 2) darkDiveReady = Time.time + DarkDiveCooldown;
                     stompImmune.Clear();
                     cs.jumping = false;
                     cs.doubleJumping = false;

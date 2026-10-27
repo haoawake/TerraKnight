@@ -39,6 +39,8 @@ namespace TerraKnight.Items
                     done++;
                     continue;
                 }
+                // An area's costume: Hollow Knight's own name for the area, Terraria's for the piece it recolours.
+                if (d.Region > 0) { RegionVanityName(d, c); done++; continue; }
                 int id = TerrariaId(d);
                 if (Lang.IsSource || id <= 0)
                 {
@@ -99,6 +101,19 @@ namespace TerraKnight.Items
         public static readonly System.Collections.Generic.HashSet<string> DevMissingLines = new System.Collections.Generic.HashSet<string>();
 
         /// <summary>The Terraria item an item is (its texture Item_&lt;id&gt;), or 0.</summary>
+        /// <summary>An area's costume piece named in a language: "国王山道·永恒旅人兜帽", "King's Pass Timeless Traveler's Hood".</summary>
+        static void RegionVanityName(ItemDef d, string c)
+        {
+            if (Lang.IsSource) { d.Name = d.ZhName; d.Tooltip = d.ZhTooltip; return; }
+            var a = World.AreaBlocks.All[d.Region - 1];
+            int cut = d.Texture.LastIndexOf("_Item_", System.StringComparison.Ordinal);
+            int id = cut >= 0 && int.TryParse(d.Texture.Substring(cut + 6), out int v) ? v : 0;
+            string area = World.Areas.Display(a.Name);
+            string piece = (id > 0 ? TerrariaText.ItemName(c, id) : null) ?? d.ZhName;
+            d.Name = c.StartsWith("zh") ? area + "·" + piece : area + " " + piece;
+            d.Tooltip = Lang.F("用{0}缝制的{1}时装", Lang.T(a.Block), area);
+        }
+
         static int TerrariaId(ItemDef d)
         {
             var t = d.Texture;

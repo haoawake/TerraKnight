@@ -43,6 +43,8 @@ namespace TerraKnight.World
         {
             /// <summary>The cut (a mask), the ink line, the inner shadow, the black fill left standing; null where there is none.</summary>
             public Sprite Mask, Rim, Shadow, Fill;
+            /// <summary>The cut's alpha, Res×Res from the bottom row (HoleCutter draws it into its block's mask); null with no cut.</summary>
+            public byte[] MaskAlpha;
             public bool AnyOpen, AnyShut;
         }
 
@@ -126,14 +128,31 @@ namespace TerraKnight.World
                         }
                     }
                 }
+            byte[] alpha = null;
+            if (anyOpen && anyShut)
+            {
+                alpha = new byte[Res * Res];
+                for (int i = 0; i < alpha.Length; i++) alpha[i] = mask[i].a;
+            }
             return new Shape
             {
                 AnyOpen = anyOpen, AnyShut = anyShut,
                 Mask = anyOpen ? (anyShut ? Make("hole mask", mask) : FullMask()) : null,
+                MaskAlpha = anyOpen ? alpha ?? FullAlpha : null,
                 Rim = anyRim ? Make("hole ink", rim) : null,
                 Shadow = anyShadow ? Make("hole shadow", shadow) : null,
                 Fill = anyFill && anyOpen ? Make("hole fill", black) : null,
             };
+        }
+
+        /// <summary>A whole cell cut.</summary>
+        public static readonly byte[] FullAlpha = Filled();
+
+        static byte[] Filled()
+        {
+            var a = new byte[Res * Res];
+            for (int i = 0; i < a.Length; i++) a[i] = 255;
+            return a;
         }
 
         static Sprite fullMask;

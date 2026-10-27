@@ -27,7 +27,7 @@ namespace TerraKnight.Net
             get
             {
                 // A second copy of the game for a LAN test plays under its own name.
-                if (DevCopy.Name != null) return Clip("Test " + DevCopy.Name);
+                if (DevCopy.Name != null) return Clip("Test " + (DevCopy.Name.StartsWith("single-") ? DevCopy.Name.Substring(7) : DevCopy.Name));
                 string n = Name?.Value?.Trim();
                 if (!string.IsNullOrEmpty(n)) return Clip(n);
                 n = SteamName();

@@ -178,6 +178,10 @@ namespace TerraKnight.Items
         /// <summary>The organ: its first roar now (its round already paid by the use), the other two from its burst (TerraProjectiles.StepOrganBurst).</summary>
         static void PipeOrgan(in Shot s) => TerraProjectiles.Instance?.StartOrganBurst(s.Hero, s.Mouse, s.Damage, s.Knockback, s.Crit);
 
-        static void WraithsFocus(in Shot s) => TerraProjectiles.Instance?.CallWraiths(s.Hero, s.Mouse, s.Damage, s.Knockback, s.Crit);
+        static void WraithsFocus(in Shot s)
+        {
+            if (Player.SpellAltars.TryShriek(s.Hero)) return;
+            TerraProjectiles.Instance?.CallWraiths(s.Hero, s.Mouse, s.Damage, s.Knockback, s.Crit);
+        }
     }
 }

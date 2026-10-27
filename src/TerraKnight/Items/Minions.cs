@@ -1117,6 +1117,8 @@ namespace TerraKnight.Items
                 if (npcById.ContainsKey(id)) continue;
                 var info = EnemyStats.Of(hm);
                 if (info == null || EnemyStats.LifeMax(info) <= 5) continue;
+                // A boss waits for the player's own first blow on it (MinionEngage.BossFought).
+                if (info.Boss && !MinionEngage.BossFought) continue;
                 // CanBeChasedBy (dontTakeDamage): not while nothing can hurt it (burrowed, asleep in the moss); a
                 // shell only spells get through (a curled-up Elder Baldur) is fair game, Terraria's hits get through it.
                 if ((EnemyStats.Untouchable(hm) && !BossWake.Asleep(hm))) continue;
@@ -1435,6 +1437,9 @@ namespace TerraKnight.Items
                     return false;
                 // P:12463: not while flung.
                 case Kind.MushroomBoi: return m.Ai2 <= 0f;
+                // Cattiva damage belongs to its active punch, never to idle body contact.
+                case Kind.Cattiva:
+                case Kind.TrustyCattiva: return m.Friendly && m.Ai0 == 2f && m.Ai1 > 0f;
                 case Kind.Pygmy1:
                 case Kind.Pygmy2:
                 case Kind.Pygmy3:
@@ -1492,6 +1497,8 @@ namespace TerraKnight.Items
             // The Pals' and the Clay Bud's punch: a 20 px box 8 px before them (P:15845-15866).
             if ((m.Kind == Kind.Cattiva || m.Kind == Kind.TrustyCattiva || m.Kind == Kind.ClayPot) && m.Ai0 == 2f)
             {
+                // Terraria replaces the body with the punch hitbox; it does not add body contact to it.
+                if (m.Kind == Kind.Cattiva || m.Kind == Kind.TrustyCattiva) overlaps.Clear();
                 extra.Clear();
                 Physics2D.OverlapBox(TerraParticles.ToWorld(m.Center + new Vector2(m.SpriteDir * 8f, 0f)), new Vector2(20f, 20f) * Px, 0f, filter, extra);
                 foreach (var c in extra) if (!overlaps.Contains(c)) overlaps.Add(c);

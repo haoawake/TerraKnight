@@ -58,8 +58,9 @@ namespace TerraKnight.Items
             return def != null && def.Type == ItemType.KnightNail;
         }
 
-        /// <summary>Dev: the button held for a test (null: the real mouse).</summary>
+        /// <summary>Dev: the button held for a test (null: the real mouse), and pressed this frame.</summary>
         public static bool? DevHold;
+        public static bool DevPress;
         public static int DevSwings;
         /// <summary>Dev: how long the last swing held the Knight (HeroController's attackDuration).</summary>
         public static float DevLastDuration;
@@ -70,9 +71,6 @@ namespace TerraKnight.Items
         static readonly AccessTools.FieldRef<HeroController, float> attackDuration = AccessTools.FieldRefAccess<HeroController, float>("attackDuration");
         static float nextCheck;
         static bool suppressed;
-        /// <summary>When the press being held began (-1: none): a click is let go within TapTime, a hold charges.</summary>
-        static float tapAt = -1f;
-        const float TapTime = 0.2f;
 
         /// <summary>Each frame in play: the swing while the button is held, and the nail given back if it went missing, kept to one (<see cref="UniqueItems"/>).</summary>
         public static void Tick(TerraMod mod, HeroController hero)
@@ -90,20 +88,18 @@ namespace TerraKnight.Items
             if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem) && Player.TerraKeys.IsMouse(Player.TerraKeys.Get(Player.TerraKeys.Action.UseItem))
                 && (InventoryGui.MouseOverUi || UI.IngameOptions.MouseOver || Town.TownNpcs.Querying || Town.TownNpcs.Placing)) suppressed = true;
             // The inventory open, it swings as Terraria's held item does; an item on the cursor is the one used instead. With a
-            // nail art learned (NailArts), a click swings, as it is let go within TapTime, and a press held on only charges,
-            // no swing first (the user's).
+            // nail art learned (NailArts), it swings as the button goes down, as the game's nail does, and held on charges (the
+            // user's 10-26: a swing waiting for the button to be let go came late); no swing again while it is held.
             bool arts = NailArts.Ready;
             bool fire;
             if (!arts)
             {
                 fire = raw;
-                tapAt = -1f;
             }
             else
             {
-                if (raw && !suppressed && Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem)) tapAt = Time.unscaledTime;
-                fire = !raw && tapAt >= 0f && Time.unscaledTime - tapAt <= TapTime;
-                if (!raw) tapAt = -1f;
+                fire = raw && !suppressed && (Player.TerraKeys.Pressed(Player.TerraKeys.Action.UseItem) || DevPress);
+                DevPress = false;
             }
             NailArts.Manual = true;
             bool can;

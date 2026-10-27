@@ -25,8 +25,8 @@ namespace TerraKnight.Net
         public const int MaxSlots = 16;
         /// <summary>What a client must say in its Hello (Terraria: "Terraria" + curRelease).</summary>
         public static string Protocol => "TerraKnight" + Plugin.Version + "/net" + NetVersion;
-        // Regional house kit IDs and the atomic prefabHouse placement action.
-        const int NetVersion = 14;
+        // The look's area costumes (TerraPlayerSprite.Equips' head, body and legs regions).
+        const int NetVersion = 15;
         /// <summary>RemoteClient's timeout: two minutes without a word (a scene loading on the other end can stall it for seconds).</summary>
         const double TimeoutSeconds = 120;
 

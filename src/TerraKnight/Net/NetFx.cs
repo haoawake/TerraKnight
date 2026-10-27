@@ -12,7 +12,7 @@ namespace TerraKnight.Net
     /// rocket boots, a sword's sparks, the blood of a hit). Each sent as it is made, in its scene's own frame, to whoever
     /// has that scene loaded; there it is made again as it was and goes on the same way.
     /// </summary>
-    internal static class NetFx
+    internal static partial class NetFx
     {
         const byte KText = 1, KDust = 2, KGore = 3;
         /// <summary>A player's Knight's own spawns (SceneMirror.SendMine): no scene first, each entry carries its own.</summary>
@@ -159,7 +159,9 @@ namespace TerraKnight.Net
             Applying = true;
             try
             {
-                if (kind == KText)
+                if (kind == KSound) ReceiveSound(r, scene, here, shift);
+                else if (kind == KMusic) ReceiveMusic(r, scene);
+                else if (kind == KText)
                 {
                     var at = new Vector2(r.ReadSingle(), r.ReadSingle()) + shift;
                     string text = r.ReadString();

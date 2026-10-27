@@ -10,7 +10,7 @@
     "Reason": "authored"
   },
   "Hornet/HORNET_FOUNTAIN_2": {
-    "Zh": "若了解真相之后，你仍愿意帮助圣巢，就去寻找灰烬中的坟墓。<page>那里留下的标记能打开旧王的道路，却不会让你成为他的子嗣。",
+    "Zh": "若了解真相之后，你仍愿意帮助圣巢，就去寻找灰烬中的坟墓。<page>那里留下的标记能打开旧王的道路，却不会让你成为他的后代。",
     "En": "If you still wish to help Hallownest after learning its truth, seek the grave in ash.<page>The mark left there opens the old king's roads. It will not make you his child.",
     "Reason": "authored"
   },
@@ -30,7 +30,7 @@
     "Reason": "authored"
   },
   "Hornet/HORNET_DOOR_UNOPENED": {
-    "Zh": "你走得很远，泰拉旅人。守梦者的封印已不能拦住你。<page>接下来面对的不是你失落的身世，而是圣巢留下的难题。弄清自己的选择，再打开最后的大门。",
+    "Zh": "你走得很远，泰拉旅人。守梦者的封印已不能挡住你。<page>接下来面对的不是你失落的身世，而是圣巢留下的难题。弄清自己的选择，再打开最后的大门。",
     "En": "You have come far, Terrarian. The Dreamers' seals can no longer bar your way.<page>What awaits is not your forgotten origin, but Hallownest's unresolved tragedy. Understand your choice before opening the final door.",
     "Reason": "authored"
   },
@@ -130,7 +130,7 @@
     "Reason": "authored"
   },
   "Lore Tablets/TUT_TAB_03": {
-    "Zh": "一段写给古代生灵的训诫。<br><br>旧王命令自己的造物显露真形，以威严统御虫群。<br>这是圣巢曾经的信条，并不是对泰拉旅人血统的宣告。",
+    "Zh": "一段写给古代生灵的训示。<br><br>旧王命令自己的造物显露真形，以威严统御虫群。<br>这是圣巢曾经的信条，并不是对泰拉旅人血统的宣告。",
     "En": "An admonition addressed to ancient beings.<br><br>The old king ordered his creations to reveal their true forms and command the bugs' awe.<br>This was Hallownest's creed, not a declaration of a Terrarian traveller's ancestry.",
     "Reason": "authored"
   },
@@ -145,7 +145,7 @@
     "Reason": "authored"
   },
   "Lore Tablets/SENSE_TAB_01": {
-    "Zh": "这是留给被封印容器的记录：<br><br>“即使身受束缚，也应知晓外界的状况。圣巢终将再次完整。”<page>泰拉旅人，碑文所称的容器并不是你。那是一项早已许下、尚未兑现的承诺。",
+    "Zh": "这是留给被封印容器的记录：<br><br>“即使身受束缚，也应知晓外界的状况。圣巢终将再次完整。”<page>泰拉旅人，碑文所称的容器并不是你。那是一项早已许下、尚未实现的承诺。",
     "En": "A record left for the bound Vessel:<br><br>\"Though bound, you should know the state of the world. Hallownest shall be whole again.\"<page>Terrarian, the Vessel addressed here is not you. This is an old promise still unfulfilled.",
     "Reason": "authored"
   },
@@ -190,7 +190,7 @@
     "Reason": "authored"
   },
   "Lore Tablets/WP_WORKSHOP_01": {
-    "Zh": "旧王工坊的研究记录：<br>虚空拥有与光相反的力量，也许能抵抗岁月。<br>研究者试图驾驭它。石碑没有写出失败的代价。",
+    "Zh": "旧王工房的研究记录：<br>虚空拥有与光相反的力量，也许能抵抗岁月。<br>研究者试图驾驭它。石碑没有写出失败的代价。",
     "En": "A research record from the king's workshop:<br>Void opposes light, and may resist time itself.<br>The researcher sought to command it. The stone does not state the price of failure.",
     "Reason": "authored"
   },
@@ -230,12 +230,12 @@
     "Reason": "authored"
   },
   "Lore Tablets/FUNG_TAB_04": {
-    "Zh": "边界的警告：<br>另一侧的生灵，有过尊贵的父亲，也有被封印的母亲。<br>部族拒绝与它们共处。<page>这是圣巢各族留下的隔阂，不是你在泰拉的家族史。",
+    "Zh": "边界的警告：<br>另一侧的生灵，有过尊贵的父亲，也有被封印的母亲。<br>部族拒绝与它们共处。<page>这是圣巢各族留下的裂痕，不是你在泰拉的家族史。",
     "En": "A warning at the border:<br>The creatures beyond had a noble father and a sealed mother.<br>The tribe refuses to share its home with them.<page>This records Hallownest's old divisions, not your family history in Terraria.",
     "Reason": "authored"
   },
   "Lore Tablets/GREEN_TABLET_01": {
-    "Zh": "苔藓部族的刻文：<br>生命从苔藓与叶片中萌发。只要绿意仍在道路上生长，族群便不会枯萎。",
+    "Zh": "苔藓部族的刻文：<br>生命从苔藓与叶片中生长出来。只要绿意仍在道路上生长，族群便不会枯萎。",
     "En": "A mosskin inscription:<br>Life springs from moss and leaf. While green growth covers the paths, the tribe shall not wither.",
     "Reason": "authored"
   },
@@ -345,7 +345,7 @@
     "Reason": "authored"
   },
   "Minor NPC/QUEEN_TALK_01": {
-    "Zh": "我的根须能感觉到，被封印的容器正在衰弱。若任其崩溃，感染会再次夺走虫群的意志。<page>过去我们只想寻找替代者，重复那项残酷的计划。可你是有血肉、有思想的泰拉人，不能被当作空壳使用。<page>若你愿意帮助我们，就去探寻封印与感染的真相。请不要因为我的请求，就把自己当成注定的祭品。",
+    "Zh": "我的根须能感觉到，被封印的容器正在衰弱。若任其崩坏，感染会再次夺走虫群的意志。<page>过去我们只想寻找替代者，重复那项残酷的计划。可你是有血肉、有思想的泰拉人，不能被当作空壳使用。<page>若你愿意帮助我们，就去探寻封印与感染的真相。请不要因为我的请求，就把自己当成注定的祭品。",
     "En": "My roots sense the sealed Vessel weakening. If it fails, infection will claim the bugs' wills again.<page>Once we sought only a replacement for that cruel plan. But you are a Terrarian of flesh and thought, not an empty shell to be used.<page>If you wish to help, seek the truth of seal and infection. Do not take my plea as a sentence of sacrifice.",
     "Reason": "authored"
   },
@@ -370,12 +370,12 @@
     "Reason": "authored"
   },
   "CP2/QUEEN_GRIMMCHILD": {
-    "Zh": "你身旁跟着一只梦魇之火的孩子。泰拉旅人，你似乎已经参与了猩红剧团的仪式。<page>它会依赖你，也会带你继续那场循环。但你不是供他们随意使用的容器。<page>帮助谁、走多远，都应由你自己选择。",
+    "Zh": "你身旁跟着一只梦魇之火的孩子。泰拉旅人，你似乎已经参与了猩红剧团的仪式。<page>它会依赖你，也会带你继续那场仪式。但你不是供他们随意使用的容器。<page>帮助谁、走多远，都应由你自己选择。",
     "En": "A child of nightmare flame follows you. Terrarian, it seems you have joined the scarlet troupe's ritual.<page>It will depend on you and draw you into that cycle. But you are no Vessel for them to use.<page>Who to help, and how far to go, must be your choice.",
     "Reason": "authored"
   },
   "CP2/QUEEN_GRIMMCHILD_FULL": {
-    "Zh": "你的伙伴眼中燃起了熟悉的火焰。猩红之心借助一位泰拉旅人，完成了自己的循环。<page>我认识那火焰，但它不是我的孩子，你也不是我的造物。愿你分清陪伴与支配，不要让仪式替你决定今后的道路。",
+    "Zh": "你的伙伴眼中燃起了熟悉的火焰。猩红之心借助一位泰拉旅人，完成了自己的仪式。<page>我认识那火焰，但它不是我的孩子，你也不是我的造物。愿你分清陪伴与支配，不要让仪式替你决定今后的道路。",
     "En": "A familiar flame burns in your companion's eyes. The scarlet heart completed its cycle with a Terrarian's help.<page>I know that flame. It is not my child, and you are not my creation. Know the difference between companionship and control. Do not let a ritual decide your road.",
     "Reason": "authored"
   },
@@ -385,7 +385,7 @@
     "Reason": "authored"
   },
   "CP2/DIVINE_CONVO_1": {
-    "Zh": "泥土、金属、药剂……还有一种我没闻过的故乡气味。泰拉来的客人，真有趣……",
+    "Zh": "泥土、金属、药水……还有一种我没闻过的故乡气味。泰拉来的客人，真有趣……",
     "En": "Soil, metal, potions... and the scent of a homeland I have never known. A visitor from Terraria. How interesting...",
     "Reason": "authored"
   },
@@ -420,7 +420,7 @@
     "Reason": "authored"
   },
   "Minor NPC/MASK_MAKER_REPEAT3": {
-    "Zh": "面具，脸孔，自我……它们在你的故乡，也会彼此混淆吗？",
+    "Zh": "面具，脸孔，自我……它们在你的故乡，也会互相混淆吗？",
     "En": "Masks, faces, identity... Do they become confused in your homeland too?",
     "Reason": "authored"
   },
@@ -430,7 +430,7 @@
     "Reason": "authored"
   },
   "Minor NPC/MASK_MAKER_UNMASK4": {
-    "Zh": "泰拉人也带来了旧王的标记？一枚印记能开门，却不该把旧王的责任强加给你。<page>圣巢的废墟，正提醒着那些妄图统御一切的人：疆域越广，代价越重。",
+    "Zh": "泰拉人也带来了旧王的标记？一枚印记能开门，却不该把旧王的责任强加给你。<page>圣巢的废墟，正提醒着那些妄图统御一切的人：领土越广，代价越重。",
     "En": "Even a Terrarian carries the old king's mark? A mark can open doors. It should not force his burden upon you.<page>Hallownest's ruins remind those who would rule everything: the greater the realm, the greater its cost.",
     "Reason": "authored"
   },
@@ -475,12 +475,12 @@
     "Reason": "authored"
   },
   "Minor NPC/BRETTA_DIARY_4": {
-    "Zh": "灰色王子的故事<br>井边又出现一位自称英雄的旅者，讲述自己如何战胜强敌。<page>他贬低那位泰拉来的救主，把每一件功劳都揽到自己身上。少女听着故事，再一次把想象当成了了解。<page>而那位异乡旅人早已继续自己的冒险，并不属于谁预先写好的爱情故事。",
+    "Zh": "灰色王子的故事<br>井边又出现一位自称英雄的旅者，讲述自己如何战胜强敌。<page>他嘲笑那位泰拉来的救主，把每一件功劳都算到自己头上。少女听着故事，再一次把想象当成了了解。<page>而那位异乡旅人早已继续自己的冒险，并不属于谁预先写好的爱情故事。",
     "En": "The Grey Prince's Story<br>Another traveller appeared by the well, calling himself a hero and boasting of conquered foes.<page>He belittled the Terrarian rescuer and claimed every triumph. Listening, the maiden again mistook imagination for understanding.<page>The foreign traveller had already continued their adventure, belonging to no love story written for them.",
     "Reason": "authored"
   },
   "CP2/BRETTA_DIARY_LEAVE": {
-    "Zh": "少女的追求之旅<br>灰色王子的故事开始重复。少女终于明白，自己爱上的许多东西，其实出自自己的想象。<page>来自泰拉的旅人有自己的道路，也不该被她留在梦里。<page>若想认识真正的人，就不能永远坐着等待。于是她收拾行装，走向自己的旅程。",
+    "Zh": "少女的追求之旅<br>灰色王子的故事开始重复。少女终于明白，自己爱上的许多东西，其实出自自己的想象。<page>来自泰拉的旅人有自己的道路，也不该被她留在梦里。<page>若想认识真正的人，就不能永远坐着等待。于是她整理行装，走向自己的旅程。",
     "En": "The Maiden's Journey<br>The Grey Prince's stories began to repeat. The maiden finally saw how much she loved had come from her own imagination.<page>The traveller from Terraria had a road of their own, and should not be kept inside her dream.<page>To meet someone real, she could not sit and wait forever. She packed, and began her own journey.",
     "Reason": "authored"
   },
@@ -540,7 +540,7 @@
     "Reason": "authored"
   },
   "Ghosts/HIVEQUEEN_TALK": {
-    "Zh": "来自泰拉的旅人，我知道你不属于这个蜂巢。<page>若你在追查容器的起源，应去询问那苍白的存在。那是她与旧王留下的往事，不是你的血脉。<page>我们虽在圣巢之中，却从未加入他们追求永恒的计划。",
+    "Zh": "来自泰拉的旅人，我知道你不属于这个蜂巢。<page>若你在追查容器的起源，应去问问那苍白的存在。那是她与旧王留下的往事，不是你的血脉。<page>我们虽在圣巢之中，却从未加入他们追求永恒的计划。",
     "En": "Traveller from Terraria, I know you are no kin of this hive.<page>If you seek the Vessels' origins, ask the pale being. That is her history with the old king, not your ancestry.<page>Our hive stood within Hallownest, but never joined their design for eternity.",
     "Reason": "authored"
   },
@@ -580,7 +580,7 @@
     "Reason": "authored"
   },
   "Shaman/SHAMAN_RETURN": {
-    "Zh": "哦吼，我的泰拉朋友回来了！又发现了什么？别光惦记挖矿，也来看看灵魂能玩出多少花样！",
+    "Zh": "哦吼，我的泰拉朋友回来了！又发现了什么？别光想着挖矿，也来看看灵魂能玩出多少花样！",
     "En": "Oho, my Terrarian friend returns! What have you found? Mining is not everything. See what wonders Soul can offer!",
     "Reason": "authored"
   },
@@ -620,7 +620,7 @@
     "Reason": "authored"
   },
   "Sly/SLY_BASEMENT_2": {
-    "Zh": "收下这份礼物，泰拉战士。作为店主，免费送东西实在让我心疼。<page>但作为骨钉贤者，我承认你的技艺。出身异乡，也不妨碍你获得这枚勋章。",
+    "Zh": "收下这份礼物，泰拉战士。作为店主，免费送东西实在让我心疼。<page>但作为骨钉贤者，我承认你的技艺。出身异乡，也不影响你获得这枚勋章。",
     "En": "Take this gift, Terrarian warrior. As a shopkeeper, giving anything away pains me.<page>As the Nail Sage, I recognise your skill. A foreign birth does not deny you this medal.",
     "Reason": "authored"
   },
@@ -630,7 +630,7 @@
     "Reason": "authored"
   },
   "Iselda/ISELDA_MEET": {
-    "Zh": "泰拉来的客人，是来买地图的吗？本来该我丈夫招呼你，他却又钻进地下了。<page>他负责探路，我守着店。看看吧，总有些用品能让你少走冤枉路。",
+    "Zh": "泰拉来的客人，是来买地图的吗？本来该我丈夫招呼你，他却又钻进地下了。<page>他负责探路，我守着店。看看吧，总有些用品能让你少走弯路。",
     "En": "A customer from Terraria. Here for maps? My husband should be serving you, but he has gone underground again.<page>He explores; I mind the shop. Have a look. These supplies may save you a wrong turn.",
     "Reason": "authored"
   },
@@ -765,7 +765,7 @@
     "Reason": "authored"
   },
   "Minor NPC/CLOTH_GHOST": {
-    "Zh": "这才是我一直盼望的战斗，激烈、痛快，没有再躲起来！<page>谢谢你，泰拉朋友。不同的故乡没有妨碍我们并肩作战。我会记得你的勇气。",
+    "Zh": "这才是我一直盼望的战斗，激烈、痛快，没有再躲起来！<page>谢谢你，泰拉朋友。不同的故乡没有阻止我们并肩作战。我会记得你的勇气。",
     "En": "The battle I always hoped for! Fierce, glorious, and I did not hide!<page>Thank you, Terrarian friend. Different homelands did not stop us fighting side by side. I will remember your courage.",
     "Reason": "authored"
   },
@@ -825,7 +825,7 @@
     "Reason": "authored"
   },
   "Ghosts/KARINA_REPEAT": {
-    "Zh": "你身上没有我们族群区分高低的印记。泰拉人，是用什么认识彼此的呢？",
+    "Zh": "你身上没有我们族群区分高低的印记。泰拉人，是用什么互相认识的呢？",
     "En": "You bear none of the markings our kind uses for rank. How do Terrarians recognise one another?",
     "Reason": "authored"
   },
@@ -855,7 +855,7 @@
     "Reason": "authored"
   },
   "CP3/AMELITIA_FLOWER": {
-    "Zh": "哈，泰拉人带来了一株异乡的花？确实罕见，却也比不上旧王的光辉。<page>拿走吧。我有自己的植物要照料，它们可比你的更合我心意。",
+    "Zh": "哈，泰拉人带来了一朵异乡的花？确实罕见，却也比不上旧王的光辉。<page>拿走吧。我有自己的植物要照料，它们可比你的更合我心意。",
     "En": "Ha, a Terrarian brings a foreign flower? Rare indeed, but hardly a match for the old king's radiance.<page>Take it away. I have plants of my own, far more to my taste.",
     "Reason": "authored"
   },
@@ -865,12 +865,12 @@
     "Reason": "authored"
   },
   "Lore Tablets/RANDOM_POEM_STUFF": {
-    "Zh": "莫诺蒙的《圣巢挽歌》残篇。<page>诗中向苍白之王致辞，追忆他如何使虫群获得心智，又如何以永恒的许诺酿成灾难。<page>最后的字句提到“完美的空虚”，像是为创造容器辩护。<page>泰拉旅人，你读到的是一个文明写给旧王的悼词，不是对你的颂扬或命令。",
+    "Zh": "莫诺蒙的《圣巢挽歌》残篇。<page>诗中向苍白之王致辞，追忆他如何使虫群获得心智，又如何以永恒的许诺酿成灾难。<page>最后的字句提到“完美的空虚”，像是为创造容器找的理由。<page>泰拉旅人，你读到的是一个文明写给旧王的悼词，不是对你的赞美或命令。",
     "En": "Fragments of Monomon's Elegy for Hallownest.<page>The poem addresses the Pale King, recalling the minds he granted the bugs and the disaster born of his promise of eternity.<page>Its final words invoke \"perfect emptiness\", as though justifying the creation of the Vessels.<page>Terrarian, this is a civilisation's elegy for its king, not praise or an order addressed to you.",
     "Reason": "authored"
   },
   "CP3/GODSEEKER_ENGINE_PRIME": {
-    "Zh": "敬畏吧，泰拉来的挑战者！前方是被选中的纯粹容器，在此梦中重现的强大神明。<page>汝与它没有共同的血脉，武器与身躯也截然不同，竟仍敢挑战它？<page>吾等要看清：异乡的意志，是否真能胜过这座王国穷尽一切塑造的力量！",
+    "Zh": "敬畏吧，泰拉来的挑战者！前方是被选中的纯粹容器，在此梦中重现的强大神明。<page>汝与它没有共同的血脉，武器与身躯也完全不同，竟仍敢挑战它？<page>吾等要看清：异乡的意志，是否真能胜过这座王国穷尽一切塑造的力量！",
     "En": "Be awed, challenger from Terraria! Ahead stands the chosen Pure Vessel, a mighty god restored within this dream.<page>You share no blood with it. Your weapons and body are unlike its own. Still you dare challenge it?<page>We shall see whether a foreign will can overcome the power this kingdom spent everything to create!",
     "Reason": "authored"
   },
@@ -935,7 +935,7 @@
     "Reason": "authored"
   },
   "Backer Messages/BELIEVE_TAB_20": {
-    "Zh": "盖姆<br><br>泰拉旅人，过去的阴影不该遮住眼前的可能。继续走吧，不要让昨日夺走你的梦想。",
+    "Zh": "盖姆<br><br>泰拉旅人，过去的阴影不该遮住眼前的可能。继续走吧，不要让过去夺走你的梦想。",
     "En": "Gaim<br><br>Terrarian, a dark past need not hide the promise of the present. Keep going. Do not let yesterday steal your dreams.",
     "Reason": "authored"
   },
@@ -1215,7 +1215,7 @@
     "Reason": "reviewed player address"
   },
   "Minor NPC/BRETTA_DIARY_ZOTE": {
-    "Zh": "灰色王子的故事<br>井边又出现一位自称英雄的旅者，讲述自己如何战胜强敌。<page>他贬低那位泰拉来的救主，把每一件功劳都揽到自己身上。少女听着故事，再一次把想象当成了了解。<page>而那位异乡旅人早已继续自己的冒险，并不属于谁预先写好的爱情故事。",
+    "Zh": "灰色王子的故事<br>井边又出现一位自称英雄的旅者，讲述自己如何战胜强敌。<page>他嘲笑那位泰拉来的救主，把每一件功劳都算到自己头上。少女听着故事，再一次把想象当成了了解。<page>而那位异乡旅人早已继续自己的冒险，并不属于谁预先写好的爱情故事。",
     "En": "The Grey Prince's Story<br>Another traveller appeared by the well, calling himself a hero and boasting of conquered foes.<page>He belittled the Terrarian rescuer and claimed every triumph. Listening, the maiden again mistook imagination for understanding.<page>The foreign traveller had already continued their adventure, belonging to no love story written for them.",
     "Reason": "authored diary variant"
   },

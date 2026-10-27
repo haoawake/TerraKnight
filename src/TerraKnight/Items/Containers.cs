@@ -303,6 +303,28 @@ namespace TerraKnight.Items
         public static bool Holds(int buff) => held.ContainsKey(buff);
         public static int HeldCount => held.Count;
 
+        /// <summary>The highest original food tier whose own type totals twenty in the bag and Piggy Bank.</summary>
+        internal static int HeldFoodBuff(Inventory inv)
+        {
+            if (inv == null) return 0;
+            var counts = new Dictionary<ItemType, int>();
+            void Count(ItemStack[] slots) {
+                foreach (var stack in slots) {
+                    if (stack.IsEmpty || Player.PotionBuffs.FoodRank(stack.Def.BuffType) == 0) continue;
+                    counts.TryGetValue(stack.Type, out int have);
+                    counts[stack.Type] = have + stack.Count;
+                }
+            }
+            Count(inv.Slots); Count(inv.Bank);
+            int best = 0;
+            foreach (var pair in counts)
+                if (pair.Value >= FavoriteAt) {
+                    int buff = ItemDb.Get(pair.Key).BuffType;
+                    if (Player.PotionBuffs.FoodRank(buff) > Player.PotionBuffs.FoodRank(best)) best = buff;
+                }
+            return best;
+        }
+
         /// <summary>
         /// Each frame: the buffs of the Potion Box's favourited stacks of 20 or more kept on (the box carried); one let go
         /// goes, but for what a drink of it still had left. The Lucky buff is held at its potion's own time, the luck it gives
@@ -314,6 +336,13 @@ namespace TerraKnight.Items
             if (inv == null) return;
             now.Clear();
             order.Clear();
+            int foodBuff = HeldFoodBuff(inv);
+            if (foodBuff > 0) {
+                now[foodBuff] = HoldTicks;
+                order.Add(foodBuff);
+                // Keep any normally eaten food's timer. PotionBuffs.Bonuses takes only the highest
+                // active fed tier; removing the held stack must not erase a still-timed meal.
+            }
             int imbue = 0;
             if (InEffect(inv, ItemType.PotionBox))
                 foreach (var page in inv.PotionBox)

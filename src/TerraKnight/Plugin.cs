@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "5.0.0";
+        public const string Version = "5.1.0";
 
         internal static ManualLogSource Log;
 
@@ -125,8 +125,10 @@ namespace TerraKnight
             var lighting = Config.Bind("Gameplay", "TerrariaLighting", true,
                 "泰拉瑞亚式光照：按格子计算光，火把、头灯、子弹和法术的光从光源一格一格柔和地照亮四周，穿过方块衰减得很快；挖开的隧道、放下的方块和黑暗区域里光照不到的地方是暗的。关闭时使用简单的光晕。\nTerraria lighting: light is worked out per tile; torches, the Mining Helmet, bullets and spells light their surroundings softly, tile by tile, fading fast through blocks; dug tunnels, placed blocks and dark areas are dark where no light reaches. Off: a simple glow around lights.");
             World.LightMap.Enabled = lighting.Value;
-            var frameRate = Config.Bind("Video", "TargetFrameRate", 144,
-                "游玩时锁定的帧率（会关闭游戏自己的垂直同步）。0 = 使用游戏自己的设置。\nFrame rate cap while playing (switches off the game's own vsync). 0 = the game's own setting.");
+            // A key of its own: the old TargetFrameRate (144 in every existing file) held the cap over the game's video
+            // options; the game's own vertical sync and frame cap are what a player sets (10-25).
+            var frameRate = Config.Bind("Video", "FrameRateCap", 0,
+                "游玩时另行锁定的帧率（会关闭游戏自己的垂直同步）。0 = 按游戏视频设置里的垂直同步和帧率上限。\nA frame rate cap of its own while playing (switches off the game's own vsync). 0 = the game's video options (vsync, frame cap).");
 
             string terrariaDir = string.IsNullOrWhiteSpace(terrariaDirSetting.Value)
                 // 同一个 Steam 库：...\steamapps\common\Hollow Knight -> ...\steamapps\common\Terraria
@@ -157,7 +159,7 @@ namespace TerraKnight
             World.EnemyBlockers.Init();
             UI.TerraCursor.Install(host, harmony);
             if (mod.AutoTest != null && testSuite.Value == "profile") DevLoadProfiler.Install(harmony);
-            bool lagSuite = mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag" || suite == "buildlag");
+            bool lagSuite = mod.AutoTest != null && (suite == "lag" || suite.StartsWith("lag_") || suite == "sentryscan" || suite == "v251diag" || suite == "buildlag" || suite == "blastlag");
             // "buildgc": the same building without the profiler, for the heap's own growth.
             // A player's slow room looked into: every script's per-frame time, written out with each slow stretch (PerfProbe).
             var frameProfiler = Config.Bind("Debug", "FrameProfiler", false,

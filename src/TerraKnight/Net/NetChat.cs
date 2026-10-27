@@ -103,7 +103,8 @@ namespace TerraKnight.Net
                 return;
             }
             if (Typing) return;
-            if (Items.InventoryGui.TypingName || Items.Casino.IsOpen) return;
+            // A statue's challenge or a Pantheon door's bindings: Enter is its confirm (UI.HkMenus).
+            if (Items.InventoryGui.TypingName || Items.Casino.IsOpen || UI.HkMenus.Open) return;
             if (!NetSession.Active && !GameHooks.PlayerHasControl() && !Items.InventoryGui.Open) return;
             var kb = Keyboard.current;
             if (kb == null || Time.frameCount - closedFrame <= 1) return;

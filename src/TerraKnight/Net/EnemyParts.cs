@@ -27,7 +27,7 @@ namespace TerraKnight.Net
             foreach (var tr in hm.GetComponentsInChildren<Transform>(true))
             {
                 if (tr == hm.transform || tr.GetComponentInParent<HealthManager>() != hm || SceneMirror.IsSpawned(tr)) continue;
-                if (tr.GetComponent<Renderer>() == null && tr.GetComponent<DamageHero>() == null) continue;
+                if (!IsPart(tr)) continue;
                 var path = new List<string>();
                 for (var p = tr; p != hm.transform; p = p.parent) path.Add(p.GetSiblingIndex().ToString());
                 path.Reverse();
@@ -36,6 +36,9 @@ namespace TerraKnight.Net
             partLists[hm] = (Time.unscaledTime, parts);
             return parts;
         }
+
+        /// <summary>A child sent as a part: drawn or hurting.</summary>
+        static bool IsPart(Transform tr) => tr.GetComponent<Renderer>() != null || tr.GetComponent<DamageHero>() != null;
 
         // Child sprites and attack objects are often enabled only by the boss's FSM.
         // A frozen replica must receive those states as well as the root's pose.
@@ -74,9 +77,12 @@ namespace TerraKnight.Net
                 }
                 // Not the same object here (the children differ): left alone rather than another one made to look like it.
                 if (tr == null || Looks.Hash(tr.name) != p.Name || tr.GetComponentInParent<HealthManager>() != puppet.Hm) continue;
+                // A container switched on by the boss's FSM: on with its part. One that is a part itself has its own state
+                // (the corpse waiting under a boss, off, its sprites on inside it: switched on, its FSM's first state would
+                // play the death cry again each time round).
                 if (p.Look.On)
                     for (var parent = tr.parent; parent != null && parent != puppet.Hm.transform; parent = parent.parent)
-                        if (!parent.gameObject.activeSelf) parent.gameObject.SetActive(true);
+                        if (!parent.gameObject.activeSelf && !IsPart(parent)) parent.gameObject.SetActive(true);
                 Looks.Apply(tr, p.Look, true, true, false);
             }
         }

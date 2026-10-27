@@ -116,6 +116,17 @@ namespace TerraKnight
             yield return HoldKey(TerraKeys.Action.Jump, 0.15f);
             Check("跳离绳子", !TerraMovement.OnRope && rb.linearVelocity.y > 0f, $"OnRope={TerraMovement.OnRope} 速度={rb.linearVelocity:F2}");
             KeysDown();
+            // Under a platform (the common anchor: a platform is solid), and a rope above it clicked goes on at the bottom of the
+            // line under it (PlaceThing_Tiles_CheckRopeUsability, through up to five platforms).
+            int px = x - 3, plat = bottom + 10;
+            TerraWorld.Set(px, plat, CellKind.Platform);
+            int platBefore = inv.Slots[0].Count;
+            yield return PlaceAt(px, plat - 1);
+            Check("挂在平台下方", TerraWorld.Get(px, plat - 1) == CellKind.Rope && inv.Slots[0].Count == platBefore - 1, $"格子={TerraWorld.Get(px, plat - 1)} 数量={inv.Slots[0].Count}/{platBefore - 1}");
+            yield return PlaceAt(px, plat + 1);
+            yield return PlaceAt(px, plat + 1);
+            Check("点平台上方的绳子 隔着平台接到下面那条的末端", TerraWorld.Get(px, plat + 1) == CellKind.Rope && TerraWorld.Get(px, plat - 2) == CellKind.Rope,
+                $"上方={TerraWorld.Get(px, plat + 1)} 平台={TerraWorld.Get(px, plat)} 下面第二节={TerraWorld.Get(px, plat - 2)}");
             // Persist exactly the placed rope cells across a scene unload and a real save reload.
             yield return GoTo("Town", EntryGateOf("Town"));
             yield return GoTo(room, EntryGateOf(room));

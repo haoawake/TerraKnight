@@ -314,6 +314,18 @@ namespace TerraKnight
             mod.Inventory.Infinite = false;
         }
 
+        /// <summary>TK_NB_IDLE: seconds of each fight left to the boss before the blows.</summary>
+        static float NbIdle() => float.TryParse(System.Environment.GetEnvironmentVariable("TK_NB_IDLE"), out float s) ? s : 0f;
+
+        IEnumerator NbAudioTick(System.Func<bool> over)
+        {
+            while (!over() && DevAudioWatch.On)
+            {
+                DevAudioWatch.Tick();
+                yield return null;
+            }
+        }
+
         IEnumerator NetBossHost(string scene, HeroController hero)
         {
             bool done = false;
@@ -361,7 +373,22 @@ namespace TerraKnight
                     NetCheck(arrived, $"{s.Key} 主机进竞技场 {GameManager.instance.sceneName}");
                     bool fightOver = false;
                     mod.StartCoroutine(NbSampling(s.Key, "host", () => fightOver));
+                    DevAudioWatch.Begin();
+                    mod.StartCoroutine(NbAudioTick(() => fightOver));
                     if (!suite.Contains("_late_")) yield return WaitChat($"nb:in {s.Key}|", 40f);
+                    // TK_NB_IDLE seconds of the fight left to the boss before the blows (its sounds counted on both sides).
+                    if (NbIdle() > 0f)
+                    {
+                        float nextTap = 0f;
+                        for (float until = Time.time + NbIdle(); Time.time < until;)
+                        {
+                            if (!GameHooks.PlayerHasControl() && Time.time >= nextTap) { nextTap = Time.time + 1.5f; yield return Tap(UnityEngine.InputSystem.Key.Space); }
+                            yield return null;
+                        }
+                        NetChat.Say($"nb:idle {s.Key}|");
+                        Plugin.Log.LogInfo($"[AutoTest] 音效 {s.Key} 主机 空等：{DevAudioWatch.Report()}");
+                        DevAudioWatch.Begin();
+                    }
                     // Strike every part a weapon could touch until the game counts it beaten (no part of it left standing).
                     float t0 = Time.time, nextHit = 0f, lastChange = Time.time;
                     int lastHp = -1;
@@ -411,6 +438,8 @@ namespace TerraKnight
                     // The death's own scene, the loot, the gates.
                     for (float tail = Time.realtimeSinceStartup + 14f; Time.realtimeSinceStartup < tail;) yield return null;
                     fightOver = true;
+                    Plugin.Log.LogInfo($"[AutoTest] 音效 {s.Key} 主机 开打：{DevAudioWatch.Report()}");
+                    DevAudioWatch.On = false;
                     yield return NbCollectPersonalBag(s.Key, "host");
                     NbSummary(s.Key, "host", kills0, errors.Count);
                     if (errors.Count > 0) Plugin.Log.LogInfo($"[AutoTest] 联机首领 主机 {s.Key} 报错：{string.Join(" | ", errors.GetRange(0, Mathf.Min(5, errors.Count)))}");
@@ -469,6 +498,9 @@ namespace TerraKnight
                     NetCheck(BossArena.Arrived(s.Key), $"{s.Key} 客户端被带进竞技场（跟随 {BossSummons.DevFollowed - followed0}，{GameManager.instance.sceneName}）");
                     bool over = false;
                     mod.StartCoroutine(NbSampling(s.Key, "client", () => over));
+                    DevAudioWatch.Begin();
+                    mod.StartCoroutine(NbAudioTick(() => over));
+                    bool idling = NbIdle() > 0f;
                     for (float ctl = Time.realtimeSinceStartup + 10f; !GameHooks.PlayerHasControl() && Time.realtimeSinceStartup < ctl;) yield return null;
                     NetChat.Say($"nb:in {s.Key}|");
                     // In the fight: a blow now and then on a part of the boss (a puppet's goes to its owner).
@@ -476,12 +508,18 @@ namespace TerraKnight
                     while (!NetChat.DevHas($"nb:end {s.Key}|"))
                     {
                         NbApproachSecondPhase(s.Key);
+                        if (idling && NetChat.DevHas($"nb:idle {s.Key}|"))
+                        {
+                            idling = false;
+                            Plugin.Log.LogInfo($"[AutoTest] 音效 {s.Key} 客户端 空等：{DevAudioWatch.Report()}");
+                            DevAudioWatch.Begin();
+                        }
                         if (!GameHooks.PlayerHasControl() && Time.time >= nextTalk)
                         {
                             nextTalk = Time.time + 1.5f;
                             yield return Tap(UnityEngine.InputSystem.Key.Space);
                         }
-                        if (Time.time >= nextHit && GameHooks.PlayerHasControl())
+                        if (!idling && Time.time >= nextHit && GameHooks.PlayerHasControl())
                         {
                             nextHit = Time.time + 1.2f;
                             var h = HeroController.instance;
@@ -491,6 +529,8 @@ namespace TerraKnight
                         }
                         yield return null;
                     }
+                    Plugin.Log.LogInfo($"[AutoTest] 音效 {s.Key} 客户端 开打：{DevAudioWatch.Report()}");
+                    DevAudioWatch.On = false;
                     over = true;
                     yield return NbCollectPersonalBag(s.Key, "client");
                     NbSummary(s.Key, "client", kills0, errors.Count);

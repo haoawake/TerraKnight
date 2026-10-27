@@ -150,6 +150,7 @@ namespace TerraKnight.Terraria
             if (name != null && name.StartsWith(Items.HkItems.TexturePrefix, System.StringComparison.Ordinal)) return Items.HkItems.Texture(name);
             if (name == LanternBuffName) return Items.HkItems.Texture(LanternPicture);
             if (name == GrimmBuffName) return Items.HkItems.Texture(GrimmPicture);
+            if (NumberAfter(name, "Buff_", out int bossPetBuff) && Items.BossPets.IsBuff(bossPetBuff)) return Items.BossPets.BuffIcon(bossPetBuff);
             if (name == OverchargeBuffName) return Items.Charms.OverchargeIcon;
             if (Items.CharmSkills.IsCooldownBuff(name)) return Items.CharmSkills.CooldownIcon(name) ?? Items.Charms.OverchargeIcon;
             if (textures.TryGetValue(name, out var tex)) return tex;

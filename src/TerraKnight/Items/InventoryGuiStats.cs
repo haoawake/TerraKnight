@@ -9,7 +9,9 @@ namespace TerraKnight.Items
         static int statsTab, statsScroll;
         internal static bool DevStatsOpen => statsOpen;
         internal static void DevStatsTab(int tab) { statsTab = tab; statsScroll = 0; }
-        static readonly string[] statsTabs = { "综合属性", "手持武器", "生效装备", "更多属性与效果" };
+        internal static void DevCollectionClick() => Act(new Hit { Kind = Kind.StatsTab, Index = 4 }, true, false, false, false);
+        internal static void DevCollectionScroll(int offset) => Act(new Hit { Kind = Kind.StatsScroll, Index = offset }, true, false, false, false);
+        static readonly string[] statsTabs = { "综合属性", "手持武器", "生效装备", "更多属性与效果", "收集进度" };
 
         static void ToggleStats()
         {

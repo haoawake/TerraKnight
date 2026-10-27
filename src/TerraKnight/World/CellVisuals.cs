@@ -98,6 +98,7 @@ namespace TerraKnight.World
             if (dirty.Count == 0) return;
             foreach (int i in dirty) Refresh(i % grid.Width, i / grid.Width);
             dirty.Clear();
+            holes.Flush();
         }
 
         void Refresh(int x, int y)
@@ -122,7 +123,7 @@ namespace TerraKnight.World
             // A spike's or thorn's art mined out of open air is cut square, just that cell: no terrain was dug there to shape a hole.
             bool openArt = grid.IsDug(x, y) && !grid.IsDugGround(x, y);
             var shape = HoleShapes.Hollow && !openArt ? ShapeAt(x, y) : null;
-            if (shape != null) holes.SetShape(i, x, y, shape.Mask, cut);
+            if (shape != null) holes.SetShape(i, x, y, shape.MaskAlpha, cut);
             else holes.SetCut(i, x, y, cut);
             if (grid.IsDugGround(x, y)) holes.DropDecor(x, y);
 

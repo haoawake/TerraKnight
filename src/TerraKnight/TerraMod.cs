@@ -171,6 +171,8 @@ namespace TerraKnight
         /// </summary>
         public void ResetPlayer()
         {
+            UI.ProgressionNotice.Reset();
+            LootStage.Reset();
             Mounts.Dismount();
             BossSummons.Reset();
             Inventory.Clear();
@@ -277,8 +279,10 @@ namespace TerraKnight
             var hero = HeroController.SilentInstance;
             bool gameplay = hero != null && GameHooks.IsGameplay(gm);
             if(!gameplay||gm.isPaused)PrefabHouses.Preview(null,null,Vector2.zero,true);
+            UI.HkMenus.Tick();
             if (gm != null) TerraControls.Apply(GameHooks.Input, gameplay && !gm.isPaused && TerrainSystem.Current != null);
             Net.NetChat.Tick(gameplay && !gm.isPaused);
+            UI.ProgressionNotice.Tick(gameplay && !gm.isPaused && !gm.IsInSceneTransition && TerrainSystem.Current != null);
             Mounts.Tick(gameplay,hero);
             // A new game's summoning out of the portal (no fall down King's Pass).
             if (hero != null && gm != null && !gm.isPaused) OpeningPortal.Tick(hero);
@@ -362,6 +366,7 @@ namespace TerraKnight
                 SoulWave.Tick(dt);
                 Howl.Tick(dt);
                 DreamNailItem.Tick(this, HeroController.SilentInstance);
+                Player.SpellAltars.Tick(HeroController.SilentInstance);
                 NailItem.Tick(this, HeroController.SilentInstance);
                 GeoWallet.Tick(this);
                 Chests.AutoBankTick(this, hero);
@@ -561,6 +566,8 @@ namespace TerraKnight
         {
             var kb = Keyboard.current;
             if (kb == null || !TerraKeys.Pressed(TerraKeys.Action.Inventory) || Time.frameCount - lastPausedFrame <= 2) return;
+            // A menu of the game's out in the world (a statue's challenge): Esc is its cancel, no inventory over it.
+            if (UI.HkMenus.Open) return;
             if(Casino.IsOpen){Casino.Escape();return;}
             // Talking (not shopping): Esc ends the conversation.
             if (Town.TownNpcs.ChatOpen)
@@ -617,7 +624,7 @@ namespace TerraKnight
                     if (Mounts.Dashing) dashKeyArmed = false;
                     else Mounts.RequestDash(dir);
                 }
-                else if (TerraMovement.IsDashing) dashKeyArmed = false;
+                else if (TerraMovement.IsDashing || AbilityAccessories.SuperBusy) dashKeyArmed = false;
                 else if (TerraMovement.DashKind != 0)
                 {
                     var dh = HeroController.SilentInstance;
@@ -928,6 +935,7 @@ namespace TerraKnight
             cell = CellGrid.WorldToCell(mouse);
             smart = false;
             aim = null;
+            if (RopeEnd(bounds, def, ref cell)) return CanPlace(cell, CellKind.Rope);
             // A platform line keeps its direction only while the button is held with smart cursor on.
             bool platforms = TerraKnight.World.Cells.IsPlatform(def.Places);
             if (!SmartCursor || !platforms || !TerraKeys.Held(TerraKeys.Action.UseItem)) PlatformStairs.Unlock();
@@ -1832,9 +1840,9 @@ namespace TerraKnight
                           || TerraWorld.IsSolid(x - 1, y) || TerraWorld.IsSolid(x + 1, y) || TerraWorld.HasWall(x, y))) return false;
                     return true; // nothing collides with a torch
                 case CellKind.Rope:
-                    return TerraWorld.IsSolid(x, y + 1) || TerraWorld.IsSolid(x, y - 1)
-                        || TerraWorld.Get(x, y + 1) == CellKind.Rope || TerraWorld.Get(x, y - 1) == CellKind.Rope
-                        || TerraWorld.HasWall(x, y);
+                    // The common blocks' anchor (Player.PlaceThing_Tiles): a side that is solid (a platform is, tileSolid), rope,
+                    // or has a wall behind it, or a wall behind its own cell. Under a platform too.
+                    return RopeHolds(x, y + 1) || RopeHolds(x, y - 1) || RopeHolds(x - 1, y) || RopeHolds(x + 1, y) || TerraWorld.HasWall(x, y);
             }
             // A chest or a piece of furniture beside it holds it too (they are tiles in Terraria): a platform on a chest's top.
             bool Furniture(int fx, int fy) => Chests.Covers(new Vector2Int(fx, fy)) || Stations.Covers(new Vector2Int(fx, fy));
@@ -1856,6 +1864,31 @@ namespace TerraKnight
             var center = CellGrid.CellCenter(x, y);
             var size = Vector2.one * (CellGrid.CellSize * 0.9f);
             return Physics2D.OverlapBox(center, size, 0f, (1 << 9) | (1 << 11)) == null;
+        }
+
+        static bool RopeHolds(int x, int y) =>
+            TerraWorld.IsSolid(x, y) || TerraWorld.IsPlatform(x, y) || TerraWorld.Get(x, y) == CellKind.Rope || TerraWorld.HasWall(x, y);
+
+        /// <summary>
+        /// Player.PlaceThing_Tiles_CheckRopeUsability: rope aimed at a rope in reach goes on at the bottom of that line, down
+        /// through the rope and through up to five platforms in a row (a rope hung on through a floor), onto the first free
+        /// cell under it, however far down that is.
+        /// </summary>
+        static bool RopeEnd(Bounds hitbox, ItemDef def, ref Vector2Int cell)
+        {
+            if (def.Places != CellKind.Rope || TerraWorld.Get(cell.x, cell.y) != CellKind.Rope || !InReach(hitbox, def, cell)) return false;
+            int y = cell.y, platforms = 0;
+            while (TerraWorld.InWorld(cell.x, y))
+            {
+                var k = TerraWorld.Get(cell.x, y);
+                if (k == CellKind.Rope) platforms = 0;
+                else if (TerraKnight.World.Cells.IsPlatform(k)) { if (++platforms > 5) break; }
+                else break;
+                y--;
+            }
+            if (!TerraWorld.InWorld(cell.x, y) || TerraWorld.Get(cell.x, y) != CellKind.Empty) return false;
+            cell = new Vector2Int(cell.x, y);
+            return true;
         }
 
         /// <summary>
@@ -2168,7 +2201,6 @@ namespace TerraKnight
             }
         }
 
-        /// <summary>Holds the configured frame rate; the game resets vsync and its cap from its own settings.</summary>
         internal bool GrantDarkDiveReward(PlayerData pd)
         {
             const string key = "quakeLevel.dark.v1";
@@ -2180,6 +2212,7 @@ namespace TerraKnight
             return true;
         }
 
+        /// <summary>A cap of the mod's own config over the game's video options (0, the default: the game's own stand).</summary>
         void HoldFrameRate()
         {
             if (TargetFrameRate <= 0) return;
@@ -2563,50 +2596,49 @@ namespace TerraKnight
             // piece over its worn one (Player.armor[10-12] take the head, body and legs looks first).
             var armor = lookArmor;
             for (int i = 0; i < armor.Length; i++) armor[i] = Inventory.VanityArmor[i].IsEmpty ? Inventory.EffectiveArmor[i] : Inventory.VanityArmor[i];
+            var look = Player.Appearance.Current;
             var equips = new TerraPlayerSprite.Equips
             {
                 Head = armor[0].IsEmpty ? 0 : armor[0].Def.ArmorSheet,
                 Body = armor[1].IsEmpty ? 0 : armor[1].Def.ArmorSheet,
-                // A robe (the Flinx Fur Coat, the gem robes...): its own legs are drawn instead of the worn ones (SetMatch, wearsRobe).
-                Legs = !armor[1].IsEmpty && Equipment.RobeLegs(armor[1].Def.ArmorSheet) > 0 ? Equipment.RobeLegs(armor[1].Def.ArmorSheet)
-                     : armor[2].IsEmpty ? 0 : armor[2].Def.ArmorSheet,
-                // GetHairSettings (Pl:16902-17043): of the hardmode heads only the Cobalt Hat (hatHair) and the Hallowed Headgear (fullHair).
-                HairUnderHead = !armor[0].IsEmpty && (armor[0].Type == ItemType.MiningHelmet || armor[0].Type == ItemType.JungleHat
-                                                     || armor[0].Type == ItemType.CobaltHat || armor[0].Type == ItemType.HallowedHeadgear),
+                Legs = armor[2].IsEmpty ? 0 : armor[2].Def.ArmorSheet,
+                HeadRegion = (byte)(armor[0].IsEmpty ? 0 : armor[0].Def.Region),
+                BodyRegion = (byte)(armor[1].IsEmpty ? 0 : armor[1].Def.Region),
+                LegsRegion = (byte)(armor[2].IsEmpty ? 0 : armor[2].Def.Region),
                 IceBarrier = Equipment.IceBarrierNow,
                 BrainCounter = TerraHurt.BrainDodgeTicks,
+                UnderShirt = look != null ? (Color32)look.ToPalette().UnderShirt : new Color32(160, 180, 215, 255),
             };
-            ArmorLook(ref equips);
-            // The werewolf at night and the merfolk in acid wear their own head, body and legs, without capes (Pl:36175-36210).
-            if (Equipment.WerewolfNow || Equipment.MerfolkNow)
-            {
-                bool wolf = Equipment.WerewolfNow;
-                equips.Head = wolf ? 38 : 39;
-                equips.Body = wolf ? 21 : 22;
-                equips.Legs = wolf ? 20 : 21;
-                equips.HairUnderHead = false;
-                equips.HideCapes = true;
-            }
             // Player.UpdateVisibleAccessories: each worn accessory's sheets, a later slot over an earlier one, then
-            // the social column's over them.
+            // the social column's over them; the back sheets and the face sheets into their layers.
             int wornAcc = Inventory.EffectiveAccessories.Length, lookAcc = wornAcc + Items.Inventory.OpenAccessories;
             for (int k = 0; k < lookAcc; k++)
             {
                 var a = k < wornAcc ? Inventory.EffectiveAccessories[k] : Inventory.VanityAccessories[k - wornAcc];
                 if (a.IsEmpty) continue;
                 var d = a.Def;
-                if (d.Shoe > 0) equips.Shoe = d.Shoe;
-                if (d.Waist > 0) equips.Waist = d.Waist;
-                if (d.Balloon > 0) equips.Balloon = d.Balloon;
-
-                if (d.Shield > 0) equips.Shield = d.Shield;
-                if (d.Neck > 0) equips.Neck = d.Neck;
-                if (d.Back > 0) equips.Back = d.Back;
                 if (d.HandOn > 0) equips.HandOn = d.HandOn;
                 if (d.HandOff > 0) equips.HandOff = d.HandOff;
-                if (d.Face > 0) equips.Face = d.Face;
+                Player.VanityLooks.WearBack(ref equips, d.Back);
                 if (d.Front > 0) equips.Front = d.Front;
+                if (d.Shoe > 0) equips.Shoe = d.Shoe;
+                if (d.Waist > 0) equips.Waist = d.Waist;
+                if (d.Shield > 0) equips.Shield = d.Shield;
+                if (d.Neck > 0) equips.Neck = d.Neck;
+                Player.VanityLooks.WearFace(ref equips, d.Face);
+                // Balloon.Sets.DrawInFrontOfBackArmLayer: the Royal Scepter in the back hand.
+                if (d.Balloon == 18) equips.BalloonFront = d.Balloon;
+                else if (d.Balloon > 0) equips.Balloon = d.Balloon;
+                if (d.Beard > 0) equips.Beard = d.Beard;
+                if (d.Type == ItemType.AngelHalo) equips.Halo = true;
+                if (d.Type == ItemType.UnicornHornHat) equips.Horn = true;
+                if (d.Type == ItemType.Yoraiz0rDarkness) equips.Scowl = true;
+                if (d.Type == ItemType.ChickenBonesRobe) equips.Coat = 251;
             }
+            // Player.PlayerFrame's dressing (SetMatch, the body's own capes, what takes what off, the face's layers, the
+            // werewolf at night and the merfolk in acid in their own head, body and legs) and the glowmasks.
+            Player.VanityLooks.Dress(ref equips, look == null || Player.Appearance.IsMale(look.Variant), Equipment.WerewolfNow && !Equipment.MerfolkNow, Equipment.MerfolkNow);
+            ArmorLook(ref equips);
             // Pl:37087-37091: the Sergeant United Shield in hand and not out is worn as shield 9.
             if (MeleeSpecials.BouncingShieldInHand) equips.Shield = 9;
             var hold = new TerraPlayerSprite.Hold();
@@ -2706,14 +2738,13 @@ namespace TerraKnight
             }
         }
 
-        /// <summary>
-        /// The armor sets' look (SetArmorEffectVisuals, Pl:37285-37456; PDS:500-810): the set's
-        /// copies, Holy Protection, the Spectre ghost, the stealth, and the lunar glowmasks by the
-        /// worn sheets.
-        /// </summary>
         /// <summary>The head, body and legs drawn (a social piece, else the one in effect).</summary>
         static readonly ItemStack[] lookArmor = new ItemStack[Items.Inventory.ArmorSlots];
 
+        /// <summary>
+        /// The armor sets' look (SetArmorEffectVisuals, Pl:37285-37456): the set's copies, Holy Protection, the Spectre
+        /// ghost, the stealth (the glowmasks are VanityLooks.Dress's).
+        /// </summary>
         static void ArmorLook(ref TerraPlayerSprite.Equips e)
         {
             var set = Equipment.FamilyOf(Equipment.FullSet);
@@ -2742,10 +2773,6 @@ namespace TerraKnight
                 e.StealthKind = 1;
                 e.Stealth = MeleeSpecials.Stealth;
             }
-            e.HeadGlow = e.Head == 169 ? "Glow_15" : e.Head == 170 ? "Glow_16" : e.Head == 189 ? "Glow_184" : null;
-            e.LegsGlow = e.Legs == 110 ? "Glow_199" : e.Legs == 111 ? "Glow_17" : e.Legs == 130 ? "Glow_187" : null;
-            e.BodyGlow = e.Body == 175 || e.Body == 176 || e.Body == 190 ? e.Body : 0;
-            e.BodyGlowArms = e.Body == 176 || e.Body == 190;
         }
 
         /// <summary>
@@ -2822,7 +2849,9 @@ namespace TerraKnight
                     if (Stats.IsDead) hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1);
                 }
             }
-            if (grounded || vy > 0f) fallPeak = feetY;
+            // Featherfall's slowFall starts the fall again every tick, down held or not, on the ground or not (Pl:25574): with
+            // it there is never a fall to hurt (the user's 10-26 "羽落药剂按下键的时候居然会摔死").
+            if (grounded || vy > 0f || Equipment.Current.SlowFall) fallPeak = feetY;
             if (grounded) entryFall = false;
             wasGrounded = grounded;
         }
@@ -2981,6 +3010,7 @@ namespace TerraKnight
         void OnGUI()
         {
             if (DevNoInterface) return;
+            UI.ImeTextEntry.GuiEvent(Event.current);
             long began = PerfProbe.Begin();
             try
             {

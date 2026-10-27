@@ -85,6 +85,8 @@ namespace TerraKnight.World
         /// <summary>Dev: captured, extra copies placed, respawned so far; and why the last scene's enemies were left alone.</summary>
         public static int DevCaptured, DevDoubled, DevRespawned, DevOffScreen, DevNoRoom, DevMoved, DevLost;
         public static Vector2 DevLastSpawn;
+        /// <summary>Dev: each extra copy's distance at its placing from the nearest of its original and the copies before it.</summary>
+        public static readonly List<float> DevGaps = new List<float>();
         public static Rect DevView => ViewRect();
         public static readonly Dictionary<string, int> DevRejected = new Dictionary<string, int>();
         /// <summary>Dev: the copies' FSMs left off as the originals have them (enemy/FSM).</summary>
@@ -145,15 +147,20 @@ namespace TerraKnight.World
             var found = new List<HealthManager>();
             foreach (var root in scene.GetRootGameObjects())
                 found.AddRange(root.GetComponentsInChildren<HealthManager>(true));
+            var eligible = new List<HealthManager>();
             foreach (var hm in found)
             {
-                if (count >= MaxSlotsPerScene) break;
+                if (eligible.Count >= MaxSlotsPerScene) break;
                 string why = Eligible(hm);
-                if (why != null)
-                {
-                    Reject(why);
-                    continue;
-                }
+                if (why != null) Reject(why);
+                else eligible.Add(hm);
+            }
+            // The copies shared out evenly under the cap (a full room with the Water Candle: each enemy a few, not the
+            // first ones all theirs and the rest none).
+            int share = eligible.Count > 0 ? Mathf.Max(1, MaxSlotsPerScene / eligible.Count) : 1;
+            foreach (var hm in eligible)
+            {
+                if (count >= MaxSlotsPerScene) break;
                 if (holder == null)
                 {
                     holder = new GameObject("TK Enemy Templates");
@@ -194,10 +201,12 @@ namespace TerraKnight.World
                 // The Water Candle in the hotbar (Items.CarriedFurniture) sets how many times over. The White Palace's
                 // come back one for one: more only with the candle.
                 int copies = (Single(name) || singleKinds.Contains(UI.EnemyHover.RecordOf(hm) ?? "") ? 1 : Multiplier) * Items.CarriedFurniture.CandleFactor;
+                copies = Mathf.Min(copies, share);
+                var taken = new List<Vector3>();
                 for (int k = 1; k < copies && count < MaxSlotsPerScene; k++)
                 {
                     var shift = Vector3.zero;
-                    if (gridReady && !Beside(slot, k, out shift))
+                    if (gridReady && !Beside(slot, k, out shift, taken))
                     {
                         Reject("旁边放不下第二只");
                         continue;
@@ -209,6 +218,7 @@ namespace TerraKnight.World
                         Size = size, Offset = offset, BesideOf = gridReady ? null : slot, Nth = k, Delay = delay,
                     };
                     slots.Add(extra);
+                    taken.Add(shift);
                     count++;
                     if (gridReady && ParentActive(extra))
                     {
@@ -275,7 +285,7 @@ namespace TerraKnight.World
         /// it; for a tiktik or a crawlid the game's ground within the reach it feels for it
         /// (<see cref="Crawls"/>). None where there isn't one (a moss creeper pressed into a corner): never in a wall.
         /// </summary>
-        static bool Beside(Slot origin, int k, out Vector3 local)
+        static bool Beside(Slot origin, int k, out Vector3 local, List<Vector3> taken = null)
         {
             Vector2 pos = SpawnPoint(origin);
             var rot = origin.HadParent && origin.Parent != null ? origin.Parent.rotation * origin.LocalRot : origin.LocalRot;
@@ -285,20 +295,46 @@ namespace TerraKnight.World
             var size = origin.Size;
             var offset = origin.Offset;
             float? floor0 = upright ? FloorBelow(pos + offset, size.y * 0.5f + 1.5f) : null;
-            float step = Mathf.Max(1.2f, size.x + 0.3f) * ((k + 1) / 2);
+            // Well apart (the user's 10-25 "不要聚在一起"): a couple of bodies between them, a little uneven, the same
+            // each time for this copy; a flyer's also a little above or below.
+            float jitter = 0.85f + 0.3f * Mathf.Repeat(k * 0.618f + Mathf.Abs(pos.x) * 0.37f + Mathf.Abs(pos.y) * 0.11f, 1f);
+            float step = Mathf.Max(2.4f, size.x * 1.6f + 0.8f) * ((k + 1) / 2) * jitter;
             float first = k % 2 == 1 ? 1f : -1f;
             bool crawls = Crawls(origin, out var toGround, out float reach);
+            bool flies = upright && !floor0.HasValue && !crawls;
+            float lift = flies ? (k % 3 - 1) * Mathf.Max(0.8f, size.y * 0.6f) : 0f;
+            float apart = Mathf.Max(1f, Mathf.Max(size.x, size.y) * 0.9f);
             foreach (float side in new[] { first, -first })
-                foreach (float scale in new[] { 1f, 1.6f, 0.6f })
-                {
-                    var p = pos + along * (side * step * scale);
-                    if (!Fits(p, size, offset, upright, floor0, down)) continue;
-                    if (crawls && !Felt(p + offset, toGround, reach)) continue;
-                    Vector3 world = p - pos;
-                    local = origin.HadParent && origin.Parent != null ? origin.Parent.InverseTransformVector(world) : world;
-                    return true;
-                }
+                foreach (float scale in new[] { 1f, 0.7f, 1.4f, 0.45f, 1.9f })
+                    foreach (float up in lift != 0f ? new[] { lift, 0f } : new[] { 0f })
+                    {
+                        var p = pos + along * (side * step * scale) - down * up;
+                        Vector3 world = p - pos;
+                        if (Near(world, taken, origin, apart)) continue;
+                        if (!Fits(p, size, offset, upright, floor0, down)) continue;
+                        if (crawls && !Felt(p + offset, toGround, reach)) continue;
+                        local = origin.HadParent && origin.Parent != null ? origin.Parent.InverseTransformVector(world) : world;
+                        float gap = ((Vector2)world).magnitude;
+                        if (taken != null)
+                            foreach (var tk in taken)
+                                gap = Mathf.Min(gap, ((Vector2)((origin.HadParent && origin.Parent != null ? origin.Parent.TransformVector(tk) : tk) - world)).magnitude);
+                        if (DevGaps.Count < 2000) DevGaps.Add(gap);
+                        return true;
+                    }
             local = default;
+            return false;
+        }
+
+        /// <summary>A place within a body of the original or of another copy of it (their shifts, in the parent's space).</summary>
+        static bool Near(Vector3 world, List<Vector3> taken, Slot origin, float apart)
+        {
+            if (((Vector2)world).sqrMagnitude < apart * apart) return true;
+            if (taken == null) return false;
+            foreach (var t in taken)
+            {
+                Vector3 w = origin.HadParent && origin.Parent != null ? origin.Parent.TransformVector(t) : t;
+                if (((Vector2)(w - world)).sqrMagnitude < apart * apart) return true;
+            }
             return false;
         }
 
@@ -407,7 +443,9 @@ namespace TerraKnight.World
             "Abyss_17", "Waterways_09", "Waterways_13",
             // Boss rooms that are ordinary scenes.
             "Fungus1_20_v02", "Fungus1_29", "Deepnest_32", "Hive_05", "Abyss_19", "Mines_32", "Ruins_House_02", "Deepnest_40", "Fungus1_35", "Fungus2_32",
-            "Deepnest_East_10", "Deepnest_East_16", "Crossroads_11_alt", "Crossroads_ShamanTemple", "Fungus1_28", "Crossroads_45",
+            "Deepnest_East_10", "Deepnest_East_16", "Crossroads_11_alt", "Fungus1_28", "Crossroads_45",
+            // (The Ancestral Mound, Crossroads_ShamanTemple, isn't one: its Elder Baldur is left alone by its kind, its
+            // Baldurs and Vengeflies are ordinary enemies.)
         };
 
         /// <summary>A scene whose enemies come back but don't come in twos: the White Palace (the King's dream).</summary>
@@ -582,7 +620,11 @@ namespace TerraKnight.World
                 {
                     var at = CellGrid.WorldToCell(SpawnPoint(s.BesideOf));
                     if (TerraWorld.RegionAt(at.x, at.y) == null) { s.Why = "地形还没建好"; return; }
-                    if (!Beside(s.BesideOf, s.Nth, out var shift))
+                    var taken = new List<Vector3>();
+                    foreach (var o in slots)
+                        if (o != s && o.Template == s.BesideOf.Template && o != s.BesideOf && o.BesideOf == null && o.Nth > 0 && !o.NoRoom)
+                            taken.Add(o.LocalPos - s.BesideOf.LocalPos);
+                    if (!Beside(s.BesideOf, s.Nth, out var shift, taken))
                     {
                         s.NoRoom = true;
                         DevNoRoom++;

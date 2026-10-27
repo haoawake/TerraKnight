@@ -304,7 +304,7 @@ namespace TerraKnight.UI
             nameInput.Tick();
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null || nameInput.EditingComposition) return;
-            if (kb.backspaceKey.wasPressedThisFrame && nameDraft.Length > 0) nameDraft = ImeTextEntry.Backspace(nameDraft);
+            nameDraft = nameInput.TakeBackspaces(nameDraft);
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)
             {
                 bool create = createAfterName && nameDraft.Trim().Length > 0;

@@ -285,8 +285,14 @@ namespace TerraKnight.Net
         /// styles of a scene edited since, and of one more scene each time round (so every scene is looked at again). A record
         /// is written out only when its signature changed. A player joining gets the whole world first.
         /// </summary>
+        static int lastLootStage = -2;
         static void HostTick()
         {
+            if (lastLootStage != LootStage.Current)
+            {
+                lastLootStage = LootStage.Current;
+                SendState(255, 4, "loot-stage", lastLootStage.ToString(CultureInfo.InvariantCulture));
+            }
             nextSnapshot = Time.unscaledTime + 0.1f;
             if (waiting.Count > 0)
             {
@@ -307,6 +313,7 @@ namespace TerraKnight.Net
                     SendState(slot, 0, "", "");
                     foreach (var kv in published) SendState(slot, 1, kv.Key, kv.Value);
                     SendState(slot, 3, "", "");
+                    SendState(slot, 4, "loot-stage", LootStage.Current.ToString(CultureInfo.InvariantCulture));
                 }
                 waiting.Clear();
                 return;
@@ -355,6 +362,11 @@ namespace TerraKnight.Net
             byte op = r.ReadByte();
             string key = r.ReadString(), json = r.ReadString();
             if (NetSession.Hosting || (target != 255 && target != NetSession.MySlot)) return;
+            if (op == 4 && key == "loot-stage")
+            {
+                if (int.TryParse(json, NumberStyles.Integer, CultureInfo.InvariantCulture, out int stage)) LootStage.ReceiveHost(stage);
+                return;
+            }
             if (op == 0) { incoming.Clear(); receiving = true; Ready = false; return; }
             if (op == 3)
             {
@@ -740,8 +752,13 @@ namespace TerraKnight.Net
             highestRequest.Remove(slot);
         }
 
+        /// <summary>The player's own world set aside while a guest, forgotten (a new game or another save takes the world's place: World.WorldReset).</summary>
+        public static void DropPersonal() => personal = null;
+
         public static void Reset()
         {
+            lastLootStage = -2;
+            LootStage.ClearHost();
             bool wasGuestWorld = personal != null;
             // A quick stack the host never answered: the stacks back to the player.
             foreach (var a in pending.Values) if (a.Op == "stack") Restack(a, null);

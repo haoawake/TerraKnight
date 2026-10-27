@@ -200,6 +200,9 @@ namespace TerraKnight.EnemyAi
             if (!EnemyAiMode.New || hm == null || TerraMod.Instance == null || hm.isDead) return;
             if (hm.GetComponent<Brain>() != null) return;
             if (TargetDummy.Is(hm) || Net.Enemies.IsPuppet(hm)) return;
+            // A body's second HealthManager (the Mantis Lords carry two): its first decides; in a LAN game the first is
+            // the puppet, and a kit put on by the second would fight the owner's moves there.
+            if (hm.GetComponent<HealthManager>() != hm) return;
             var info = Items.EnemyStats.Of(hm);
             if (info == null || info.Dummy) return;
             // A boss of the new AI: its kit (EnemyAi.Bosses), nothing of the common enemies'.

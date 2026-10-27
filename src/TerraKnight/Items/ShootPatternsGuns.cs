@@ -92,7 +92,7 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// One use's bolts: FastThenSlow five times as fast, CanBounce 25% faster, ArPenSpread from a point 12 px off; the
-        /// damage at the least of SwirlTwins' 60%, CanBounce's 80% and ArPenSpread's 50%; RepeatsGem 4 more damage and 1 more
+        /// damage scales by SwirlTwins' 60%, CanBounce's 80% and ArPenSpread's 50% together; RepeatsGem 4 more damage and 1 more
         /// knockback; SwirlTwins a twin.
         /// </summary>
         static void FireGem(TerraProjectiles tp, in Shot s, TerraProjectiles.GemFx fx, Vector2 from, Vector2 vel)
@@ -102,9 +102,10 @@ namespace TerraKnight.Items
             if (Has(TerraProjectiles.GemFx.Bounce)) vel *= 1.25f;
             if (Has(TerraProjectiles.GemFx.ArPen)) from += Random.insideUnitCircle.normalized * 12f * TerraParticles.Px;
             float mult = 1f;
-            if (Has(TerraProjectiles.GemFx.Swirl)) mult = Mathf.Min(mult, 0.6f);
-            if (Has(TerraProjectiles.GemFx.Bounce)) mult = Mathf.Min(mult, 0.8f);
-            if (Has(TerraProjectiles.GemFx.ArPen)) mult = Mathf.Min(mult, 0.5f);
+            // A second volley must also pay the twin/bounce discount when those features combine.
+            if (Has(TerraProjectiles.GemFx.Swirl)) mult *= 0.6f;
+            if (Has(TerraProjectiles.GemFx.Bounce)) mult *= 0.8f;
+            if (Has(TerraProjectiles.GemFx.ArPen)) mult *= 0.5f;
             int damage = (int)(s.Damage * mult);
             float kb = s.Knockback;
             if (Has(TerraProjectiles.GemFx.Repeats))

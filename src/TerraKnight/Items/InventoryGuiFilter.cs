@@ -37,7 +37,7 @@ namespace TerraKnight.Items
             new Filter { Key = "CreativePowers.TabMisc", Zh = "杂项", Frame = 5, Fits = IsMisc },               // the fallback: what no other entry takes
             new Filter { Key = "CreativePowers.TabTools", Zh = "工具", Frame = 6, Fits = IsTool },
             new Filter { Key = "CreativePowers.TabFurniture", Zh = "家具", Frame = 7, Fits = d => d.PlacesStation != World.StationKind.None || d.PlacesChest },
-            new Filter { Key = "CreativePowers.TabVanity", Zh = "时装", Frame = 8, Fits = d => false },        // no vanity in Hallownest
+            new Filter { Key = "CreativePowers.TabVanity", Zh = "时装", Frame = 8, Fits = d => d.Vanity },
             new Filter { Key = "CreativePowers.TabAccessoriesMisc", Zh = "其他装备", Frame = 9, Fits = d => GrapplingHook.Hooks.ContainsKey(d.Type) },
             new Filter { Key = "CreativePowers.TabMaterials", Zh = "材料", Frame = 10, Fits = d => d.Material },
         };

@@ -84,11 +84,16 @@ namespace TerraKnight.EnemyAi.Bosses
             if (inRange != null && !inRange.Value && InRoom()) inRange.Value = true;
         }
 
-        /// <summary>Where the swoop bottoms out: where the player will be once it gets there, kept off the floor and ceiling.</summary>
+        /// <summary>
+        /// Where the swoop bottoms out: where the player will be once it gets there, kept off the floor and ceiling. The
+        /// game's swoop moves his transform there by iTween, through whatever is in the way: his body's bottom and top (from
+        /// his transform) are kept clear of them, not his middle (Godhome's hall: he sank into the floor at each swoop).
+        /// </summary>
         void AimSwoop()
         {
             var p = Lead(0.45f + SwoopTime);
-            float floor = GroundBelow(p + Vector2.up * 0.5f) + 1.2f, roof = CeilingAbove(p) - 1.5f;
+            float under = body != null ? transform.position.y - body.bounds.min.y : 1.2f, over = body != null ? body.bounds.max.y - transform.position.y : 1.5f;
+            float floor = GroundBelow(p + Vector2.up * 0.5f) + Mathf.Max(1.2f, under + 0.3f), roof = CeilingAbove(p) - Mathf.Max(1.5f, over + 0.3f);
             p.y = Mathf.Clamp(p.y, floor, Mathf.Max(floor, roof));
             aim = p;
             aimed = true;

@@ -40,9 +40,9 @@ namespace TerraKnight.Items
         public static string Tip(Def d)
         {
             string t = "点按冲刺键：盾冲并撞击敌人";
-            if ((d.Mask & Crystal) != 0) t += "\n长按冲刺键蓄力，松开超级冲刺（空中也可使用）";
+            if ((d.Mask & Crystal) != 0) t += "\n按住超级冲刺键（默认是长按冲刺键）蓄力，松开超级冲刺（空中也可使用）";
             if ((d.Mask & Shade) != 0) t += "\n按暗影冲刺键或双击方向键：暗影冲刺，穿过敌人、攻击和暗影之门（冷却中双击是盾冲）";
-            if (d.Level > 0) t += d.Level == 2 ? "\n空中按住下并跳跃：黑砸，双倍猛击伤害，落地短暂无敌" : "\n空中按住下并跳跃：普通下砸，砸开脆弱地板";
+            if (d.Level > 0) t += d.Level == 2 ? "\n空中连按两下下键：黑砸，双倍猛击伤害，落地短暂无敌，冷却 2 秒" : "\n空中连按两下下键：普通下砸，砸开脆弱地板";
             return t;
         }
         public static IEnumerable<Recipe> Recipes()

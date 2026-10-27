@@ -311,6 +311,7 @@ namespace TerraKnight.World
             Grid.CellChanged -= OnCellChanged;
             Grid.WallChanged -= OnWallChanged;
             fill.DestroyMeshes();
+            Holes?.DestroyMasks();
             if (Root != null) Object.Destroy(Root.gameObject);
         }
     }

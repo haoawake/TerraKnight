@@ -119,6 +119,7 @@ namespace TerraKnight.Items
             m.OldPos = m.Pos;
             if (m.TileCollide) TileCollision(m, m.FallThrough);
             else m.Pos += m.Vel;
+            if (p.BossPet) BossPetFrames(m, p);
             // Projectile.light / Lighting.AddLight each tick (the Cursed Sapling's only while it flies: FlyFrames026).
             if (p.Id != 324 && p.Light.r + p.Light.g + p.Light.b > 0.01f) FxBatch.Instance?.Light(m.Center, p.Light, 5f);
         }
@@ -141,6 +142,8 @@ namespace TerraKnight.Items
 
         void PetFlyFrames(M m, PetProj p)
         {
+            // A boss pet by the shoulder: its float and its gesture (BossPetFrames, after the move).
+            if (p.BossPet && p.Boss == BossPets.Kind.Anchor) return;
             if (p.FlyFixed >= 0)
             {
                 m.Frame = p.FlyFixed;
@@ -270,6 +273,8 @@ namespace TerraKnight.Items
                 ox = texW / 2 + p.OriginX;
                 oy = m.H / 2 + p.OriginY;
             }
+            // Estee is the Fallen Star turning under her face, with a starry trail: Projectile_764 alone is the face.
+            if (p.Id == 764) DrawEsteeStar(fx, m, pos, scale);
             spr = FxBatch.Frame(name, sx, sy, texW, sh, ox, oy);
             fx.Draw(spr, pos, c, m.Rot, scale, flipX: m.SpriteDir == -1);
             // The glow masks over the frame: Everscream's and the Martian's (279, 281) white, the Toy Golem's (277) pulsing,
@@ -297,6 +302,48 @@ namespace TerraKnight.Items
             if (p.Id == 885) DrawSkeletronHands(fx, m, name, texW, frameH, c, scale);
             if (p.Id == 889) DrawPrimeArms(fx, m, name, texW, frameH, c, scale);
             if (p.Id == 650) DrawEyePupil(fx, m, c, pos);
+        }
+
+        /// <summary>
+        /// Main.DrawProjWithStarryTrail for Estee (764): three faint blue streaks of Extra_91 spinning round her and two white
+        /// ones pulsing behind, once she flies faster than 3 px a tick (all at full from 5), then the Fallen Star's first
+        /// frame (Item_75) turned by her rotation and localAI[1], white at her opacity. Her face is drawn over it after.
+        /// </summary>
+        void DrawEsteeStar(FxBatch fx, M m, Vector2 center, float scale)
+        {
+            var v = m.Vel;
+            float strength = Mathf.InverseLerp(3f, 5f, v.magnitude);
+            var streak = TerrariaAssets.Texture("Extra_91");
+            if (streak != null && strength > 0f)
+            {
+                float t = GlobalTime;
+                var head = center + v;
+                float angle = Mathf.Atan2(v.y, v.x) + Mathf.PI / 2f;
+                var spr = FxBatch.Frame("Extra_91", 0, 0, streak.width, streak.height, streak.width / 2f, 10f);
+                // Color.Blue * 0.1 with its alpha taken off: added.
+                var blue = new Color(0f, 0f, 0.1f * strength, 0f);
+                var front = head + v * 0.5f;
+                float[] turn = { 0f, Mathf.PI * 2f / 3f, 4.1887903f }, size = { 1.5f, 1.1f, 1.3f };
+                for (int k = 0; k < 3; k++)
+                {
+                    float a = Mathf.PI * 2f * t + turn[k];
+                    // (0, -4) turned by a: Terraria's y down.
+                    var spin = new Vector2(4f * Mathf.Sin(a), -4f * Mathf.Cos(a));
+                    fx.Draw(spr, front + spin, blue, angle, size[k]);
+                }
+                var back = head - v * 0.5f;
+                for (float half = 0f; half < 1f; half += 0.5f)
+                {
+                    float f = (t % 0.5f / 0.5f + half) % 1f;
+                    float w = f * 2f > 1f ? 2f - f * 2f : f * 2f;
+                    float white = 0.5f * strength * w;
+                    fx.Draw(spr, back, new Color(white, white, white, 0f), angle, 0.3f + f * 0.5f);
+                }
+            }
+            var star = TerrariaAssets.Texture("Item_75");
+            if (star == null) return;
+            int h = star.height / 8;
+            fx.Draw(FxBatch.Frame("Item_75", 0, 0, star.width, h, star.width / 2f, h / 2f), center, new Color(1f, 1f, 1f, 1f - m.Alpha), m.Rot + m.LocalAi1, scale);
         }
 
         /// <summary>Main.cs:34391-34426: Skeletron's two hands (frames 7-9 by localAI[0], 7 while it spins) 30 px either side, swaying.</summary>

@@ -501,6 +501,84 @@ namespace TerraKnight.Items
         HkQuestFish25, HkQuestFish26, HkQuestFish27, HkQuestFish28, HkQuestFish29, HkQuestFish30,
         HkQuestFish31, HkQuestFish32, HkQuestFish33, HkQuestFish34, HkQuestFish35, HkQuestFish36,
         BejeweledStaff,
+        // Append-only: Terraria's vanity items (Items/ItemsVanity.cs, tools/vanity/gen_vanity.py, 2026-10-25).
+        JungleRose, Sunglasses, TopHat, TuxedoShirt, TuxedoPants, SummerHat, BunnyHood, PlumbersHat, PlumbersShirt,
+        PlumbersPants, HerosHat, HerosShirt, HerosPants, FishBowl, ArchaeologistsHat, ArchaeologistsJacket, ArchaeologistsPants,
+        RedHat, RobotHat, GoldCrown, FamiliarShirt, FamiliarPants, FamiliarWig, MimeMask, TheDoctorsShirt, TheDoctorsPants,
+        ClownHat, ClownShirt, ClownPants, SantaHat, SantaShirt, SantaPants, RedsHelmet, RedsBreastplate, RedsLeggings,
+        PlatinumCrown, RuneHat, RuneRobe, SteampunkHat, SteampunkShirt, SteampunkPants, BeeHat, BeeShirt, BeePants, PharaohsMask,
+        Tiara, PrincessDress, PharaohsRobe, MushroomCap, TamOShanter, MummyMask, MummyShirt, MummyPants, CowboyHat, CowboyJacket,
+        CowboyPants, PirateHat, PirateShirt, PiratePants, UmbrellaHat, Skull, BallaHat, GangstaHat, SailorHat, EyePatch,
+        SailorShirt, SailorPants, SkeletronMask, WhiteTuxedoShirt, WhiteTuxedoPants, Beanie, SWATHelmet, CenxsTiara,
+        CenxsBreastplate, CenxsLeggings, CrownosMask, CrownosBreastplate, CrownosLeggings, WillsHelmet, WillsBreastplate,
+        WillsLeggings, JimsHelmet, JimsBreastplate, JimsLeggings, AaronsHelmet, AaronsBreastplate, AaronsLeggings, DTownsHelmet,
+        DTownsBreastplate, DTownsLeggings, CenxsDress, CenxsDressPants, NurseHat, NurseShirt, NursePants, WizardsHat,
+        GuyFawkesMask, DyeTraderRobe, SteampunkGoggles, CyborgHelmet, CyborgShirt, CyborgPants, CreeperMask, CreeperShirt,
+        CreeperPants, CatMask, CatShirt, CatPants, GhostMask, GhostShirt, PumpkinMask, PumpkinShirt, PumpkinPants, RobotMask,
+        RobotShirt, RobotPants, UnicornMask, UnicornShirt, UnicornPants, VampireMask, VampireShirt, VampirePants, WitchHat,
+        LeprechaunHat, LeprechaunShirt, LeprechaunPants, PixieShirt, PixiePants, PrincessHat, PrincessDressNew, WitchDress,
+        WitchBoots, BrideofFrankensteinMask, BrideofFrankensteinDress, KarateTortoiseMask, KarateTortoiseShirt,
+        KarateTortoisePants, ScarecrowHat, ScarecrowShirt, ScarecrowPants, ReaperHood, ReaperRobe, FoxMask, FoxShirt, FoxPants,
+        CatEars, SpaceCreatureMask, SpaceCreatureShirt, SpaceCreaturePants, WolfMask, WolfShirt, WolfPants, TreasureHunterShirt,
+        TreasureHunterPants, DryadCoverings, DryadLoincloth, JackOLanternMask, GiantBow, ReindeerAntlers, MrsClauseHat,
+        MrsClauseShirt, MrsClauseHeels, ParkaHood, ParkaCoat, ParkaPants, SnowHat, UglySweater, TreeMask, TreeShirt, TreeTrunks,
+        ElfHat, ElfShirt, ElfPants, AngelHalo, Fez, BrainMask, FleshMask, TwinMask, SkeletronPrimeMask, BeeMask, PlanteraMask,
+        GolemMask, EaterMask, EyeMask, DestroyerMask, PeddlersHat, DiamondRing, Kimono, CrimsonCloak, MysteriousCape, RedCape,
+        WinterCape, SeashellHairpin, MermaidAdornment, MermaidTail, KingSlimeMask, FishCostumeMask, FishCostumeShirt,
+        FishCostumeFinskirt, GingerBeard, DukeFishronMask, MoonMask, SunMask, MartianCostumeMask, MartianCostumeShirt,
+        MartianCostumePants, MartianUniformHelmet, MartianUniformTorso, MartianUniformPants, WhiteLunaticHood, BlueLunaticHood,
+        WhiteLunaticRobe, BlueLunaticRobe, HiTekSunglasses, BejeweledValkyrieHead, BejeweledValkyrieBody, TaxCollectorHat,
+        TaxCollectorSuit, TaxCollectorPants, ClothierJacket, ClothierPants, DyeTraderTurban, BuccaneerBandana, BuccaneerShirt,
+        BuccaneerPants, FallenTuxedoShirt, FallenTuxedoPants, BossMaskCultist, BossMaskMoonlord, TheBrideHat, TheBrideDress,
+        Yoraiz0rShirt, Yoraiz0rPants, Yoraiz0rDarkness, Yoraiz0rHead, SkiphsHelm, SkiphsShirt, SkiphsPants, LokisHelm,
+        LokisShirt, LokisPants, EngineeringHelmet, PartyBundleOfBalloonsAccessory, PartyBalloonAnimal, PartyHat, FlowerBoyHat,
+        FlowerBoyShirt, FlowerBoyPants, PedguinHat, PedguinShirt, PedguinPants, AviatorSunglasses, AncientArmorHat,
+        AncientArmorShirt, AncientArmorPants, LamiaPants, LamiaShirt, LamiaHat, BossMaskBetsy, BossMaskDarkMage, BossMaskOgre,
+        ArkhalisHat, ArkhalisShirt, ArkhalisPants, LeinforsHat, LeinforsShirt, LeinforsPants, LeinforsAccessory, MaidHead,
+        MaidShirt, MaidPants, MaidHead2, MaidShirt2, MaidPants2, GolfHat, GolfShirt, GolfPants, GolfVisor, GoldGoldfishBowl,
+        GameMasterShirt, GameMasterPants, StarPrincessCrown, StarPrincessDress, DemonHorns, ChefHat, ChefShirt, ChefPants,
+        StarHairpin, HeartHairpin, BunnyEars, DevilHorns, Fedora, UnicornHornHat, SuperHeroMask, SuperHeroCostume,
+        SuperHeroTights, PrettyPinkDressSkirt, PrettyPinkDressPants, PrettyPinkRibbon, UndertakerHat, UndertakerCoat, FuneralHat,
+        FuneralCoat, FuneralPants, VictorianGothHat, VictorianGothDress, GhostarSkullPin, GhostarShirt, GhostarPants,
+        DrManFlyMask, DrManFlyLabCoat, ButcherMask, ButcherApron, ButcherPants, HunterCloak, SafemanSunHair, SafemanSunDress,
+        SafemanDressLeggings, FoodBarbarianHelm, FoodBarbarianArmor, FoodBarbarianGreaves, GroxTheGreatHelm, GroxTheGreatArmor,
+        GroxTheGreatGreaves, RockGolemHead, DogEars, DogTail, FoxEars, FoxTail, LizardEars, LizardTail, PandaEars, BunnyTail,
+        MushroomHat, MushroomVest, MushroomPants, FairyQueenMask, RabbitOrder, QueenSlimeMask, GraduationCapBlue,
+        GraduationCapMaroon, GraduationCapBlack, GraduationGownBlue, GraduationGownMaroon, GraduationGownBlack, BadgersHat,
+        PlaguebringerHelmet, PlaguebringerChestplate, PlaguebringerGreaves, RoninHat, RoninShirt, RoninPants,
+        TimelessTravelerHood, TimelessTravelerRobe, TimelessTravelerBottom, FloretProtectorHelmet, FloretProtectorChestplate,
+        FloretProtectorLegs, CapricornMask, CapricornChestplate, CapricornLegs, CapricornTail, TVHeadMask, TVHeadSuit,
+        TVHeadPants, RoyalTiara, RoyalDressTop, RoyalDressBottom, RoyalScepter, GlassSlipper, PrinceUniform, PrincePants,
+        PrinceCape, GarlandHat, Eyebrella, WilsonShirt, WilsonPants, WilsonBeardShort, WilsonBeardLong, WilsonBeardMagnificent,
+        DeerclopsMask, WillowShirt, WillowSkirt, VulkelfEar, JimsCap, GoblorcEar, DizzyHat, LincolnsHoodie, LincolnsPants,
+        LincolnsHood, DeadCellsBeheadedHead, DeadCellsBeheadedBody, DeadCellsBeheadedLegs, MoonLordBody, ChickenBonesHead,
+        ChickenBonesBody, ChickenBonesLegs, ChickenBonesRobe, WeldingMask, ChippysHead, ChippysBody, ChippysLegs,
+        ChippysHeadband, BlueBikiniBody, BlueBikiniLegs, RedSwimsuit, GreenSwimshorts, GraySwimshorts, HeroicisHead,
+        HeroicisBody, HeroicisLegs, HallowedCrown, LilacDuskHead, LilacDuskBody, LilacDuskLegs, KazzymodusHood,
+        KazzymodusChestpiece, KazzymodusLeggings, PalworldPalMetalArmorBody, PalworldPalMetalArmorLegs, LunasHead, LunasBody,
+        LunasLegs, LunasCloak,
+        // Append-only: the 24 areas' costumes (Items/RegionVanity.cs, tools/vanity/import_regional_vanity.py, 2026-10-25).
+        RegionVanityKingsPassHead, RegionVanityKingsPassBody, RegionVanityKingsPassLegs, RegionVanityDirtmouthHead, RegionVanityDirtmouthBody, RegionVanityDirtmouthLegs,
+        RegionVanityHowlingCliffsHead, RegionVanityHowlingCliffsBody, RegionVanityHowlingCliffsLegs, RegionVanityCrossroadsHead, RegionVanityCrossroadsBody, RegionVanityCrossroadsLegs,
+        RegionVanityGreenpathHead, RegionVanityGreenpathBody, RegionVanityGreenpathLegs, RegionVanityFungalWastesHead, RegionVanityFungalWastesBody, RegionVanityFungalWastesLegs,
+        RegionVanityFogCanyonHead, RegionVanityFogCanyonBody, RegionVanityFogCanyonLegs, RegionVanityQueensGardensHead, RegionVanityQueensGardensBody, RegionVanityQueensGardensLegs,
+        RegionVanityCityOfTearsHead, RegionVanityCityOfTearsBody, RegionVanityCityOfTearsLegs, RegionVanityRoyalWaterwaysHead, RegionVanityRoyalWaterwaysBody, RegionVanityRoyalWaterwaysLegs,
+        RegionVanityCrystalPeakHead, RegionVanityCrystalPeakBody, RegionVanityCrystalPeakLegs, RegionVanityRestingGroundsHead, RegionVanityRestingGroundsBody, RegionVanityRestingGroundsLegs,
+        RegionVanityDeepnestHead, RegionVanityDeepnestBody, RegionVanityDeepnestLegs, RegionVanityBeastsDenHead, RegionVanityBeastsDenBody, RegionVanityBeastsDenLegs,
+        RegionVanityKingdomsEdgeHead, RegionVanityKingdomsEdgeBody, RegionVanityKingdomsEdgeLegs, RegionVanityHiveHead, RegionVanityHiveBody, RegionVanityHiveLegs,
+        RegionVanityAncientBasinHead, RegionVanityAncientBasinBody, RegionVanityAncientBasinLegs, RegionVanityAbyssHead, RegionVanityAbyssBody, RegionVanityAbyssLegs,
+        RegionVanityWhitePalaceHead, RegionVanityWhitePalaceBody, RegionVanityWhitePalaceLegs, RegionVanityBlackEggTempleHead, RegionVanityBlackEggTempleBody, RegionVanityBlackEggTempleLegs,
+        RegionVanityColosseumHead, RegionVanityColosseumBody, RegionVanityColosseumLegs, RegionVanityGrimmTroupeHead, RegionVanityGrimmTroupeBody, RegionVanityGrimmTroupeLegs,
+        RegionVanityDreamHead, RegionVanityDreamBody, RegionVanityDreamLegs, RegionVanityGodhomeHead, RegionVanityGodhomeBody, RegionVanityGodhomeLegs,
+        // Append-only: the bosses' own pets (Items/BossPets.cs, tools/bosspets/import_boss_pets.py, 2026-10-26).
+        BossPetFalseKnight, BossPetFalseKnight5, BossPetHornet, BossPetHornet4, BossPetMawlek, BossPetMegaMossCharger,
+        BossPetBigFly, BossPetBigBuzzer, BossPetMageKnight, BossPetMageLord, BossPetMageLord5, BossPetDungDefender,
+        BossPetWhiteDefender, BossPetBlackKnight, BossPetJarCollector, BossPetFlukeMother, BossPetMantisLord, BossPetSistersOfBattle,
+        BossPetTraitorLord, BossPetMimicSpider, BossPetWingedNosk, BossPetInfectedKnight, BossPetInfectedKnight5, BossPetHiveKnight,
+        BossPetGhostXero, BossPetGhostAladar, BossPetGhostMarmu, BossPetGhostNoEyes, BossPetGhostMarkoth, BossPetGhostHu,
+        BossPetGhostGalien, BossPetMegaJellyfish, BossPetLobsterLancer, BossPetOblobble, BossPetZote, BossPetGreyPrince,
+        BossPetNailBros, BossPetPaintmaster, BossPetNailsage, BossPetPaleLurker, BossPetMegaBeamMiner, BossPetEnragedGuardian,
+        BossPetGrimm, BossPetNightmareGrimm, BossPetHollowKnight, BossPetHollowKnightPrime, BossPetFinalBoss, BossPetAbsoluteRadiance,
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -1354,6 +1432,12 @@ namespace TerraKnight.Items
         public int Shoe, Waist, Balloon, Wing, Shield, Neck, Back, HandOn, HandOff;
         /// <summary>faceSlot (Acc_Face_N, on the head) and frontSlot (Acc_Front_N, the cape's front halves).</summary>
         public int Face, Front;
+        /// <summary>beardSlot (Acc_Beard_N, on the face, in the hair's colour for some).</summary>
+        public int Beard;
+        /// <summary>Item.vanity: a piece of Terraria's vanity, for the look alone (the bag's "时装" filter, its tooltip line).</summary>
+        public bool Vanity;
+        /// <summary>An area's costume (1 + World.AreaBlocks.All's index; 0 none): its vanilla piece's sheets in that area's colours (Player.RegionVanity).</summary>
+        public int Region;
         /// <summary>The class it serves (<see cref="Items.Kit"/>).</summary>
         public Kit Kit;
         /// <summary>A summon staff: the minion it calls and the buff (Buff_N) that keeps its minions.</summary>
@@ -1819,6 +1903,9 @@ namespace TerraKnight.Items
             AddBatch1021(list);
             AddContainers(list);
             AddArmor2(list);
+            AddVanity(list);
+            AddRegionVanity(list);
+            AddBossPets(list);
             AddHeart(list);
             AddUltimatePotion(list);
             if (Relics.Enabled) AddRelics(list);
@@ -1860,7 +1947,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1", Placeholder = true };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Batch1021Sources()), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(AbilityAccessorySources(), System.Linq.Enumerable.Concat(SoulWaveSources(), System.Linq.Enumerable.Concat(AltarSources(), System.Linq.Enumerable.Concat(HowlSources(), System.Linq.Enumerable.Concat(ShadeSources(), AbyssSources()))))), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Batch1021Sources()), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(AbilityAccessorySources(), System.Linq.Enumerable.Concat(SoulWaveSources(), System.Linq.Enumerable.Concat(AltarSources(), System.Linq.Enumerable.Concat(HowlSources(), System.Linq.Enumerable.Concat(ShadeSources(), AbyssSources()))))), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(VanitySources(), System.Linq.Enumerable.Concat(RegionVanitySources(), BossPetSources()))), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -2021,6 +2108,8 @@ namespace TerraKnight.Items
             Show(ItemType.ShimmerCloak, back: 36, front: 12);
             Show(ItemType.Magiluminescence, neck: 11);
             Show(ItemType.YoYoGlove, handOn: 18, handOff: 11);
+            // Terraria's vanity the mod had before its vanity items came (Item.vanity): the Robe, the Whoopie Cushion, the Flame Waker Boots.
+            foreach (var t in new[] { ItemType.Robe, ItemType.WhoopieCushion, ItemType.FlameWakerBoots }) arr[(int)t].Vanity = true;
             // Every pair of wings: its slot (one pair at a time; they're drawn by TerraWings).
             foreach (var w in arr)
                 if (w.Bonus.WingSlot > 0 && w.Wing == 0) w.Wing = w.Bonus.WingSlot;

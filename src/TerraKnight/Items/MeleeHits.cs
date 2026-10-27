@@ -278,8 +278,11 @@ namespace TerraKnight.Items
             if (hm == null && !autonomous) StrikeGeo(col);
             GameObject target = hm != null ? hm.gameObject : FindResponder(col);
             if (target == null || (hm != null && hm.isDead)) return false;
-            if (World.ArenaGuard.Refuse(hm)) return false;
+            if (World.ArenaGuard.Refuse(hm, autonomous)) return false;
             if (autonomous && BossWake.DreamWindow(hm)) return false;
+            // A boss is the minions' only once the player's own blow has landed on one in the room (MinionEngage.BossFought).
+            if (hm != null && autonomous && !MinionEngage.BossFought && EnemyStats.Of(hm)?.Boss == true) return false;
+            if (hm != null && !autonomous) MinionEngage.StruckBoss(hm);
             var wake = BossWake.Hit(hm);
             if (wake == BossWake.Result.Held) return false;
             if (wake == BossWake.Result.Woke)
@@ -375,6 +378,8 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: hits a shield or shell stopped.</summary>
         public static int DevBlocked;
+        /// <summary>Development measurement only: an accepted hit's post-defense Terraria damage.</summary>
+        internal static System.Action<HealthManager, int> DevAcceptedDamage;
 
         /// <summary>Terraria's magic against a shield only the Knight's spells get past ("Spell Vulnerable"): dealt as a spell.</summary>
         static bool IsSpellOn(HealthManager hm, DamageClass cls) => hm != null && cls == DamageClass.Magic && EnemyStats.ShellOnlySpells(hm);
@@ -542,6 +547,7 @@ namespace TerraKnight.Items
                 bool bigHit = damage * scale > EnemyStats.LifeMax(info);
                 TerraKnockback.Push(hm, pushSpeed, facing, bigHit, World.Areas.KnockbackTaken(info.Level));
             }
+            DevAcceptedDamage?.Invoke(hm, damage);
             info.LastHit = Time.time;
             var top = col.bounds.center + Vector3.up * col.bounds.extents.y;
             CombatText.Show(top, damage.ToString(), crit ? CombatText.EnemyCrit : CombatText.EnemyHurt, crit);
@@ -591,6 +597,14 @@ namespace TerraKnight.Items
         /// knockback, the number, the blood and the sound.
         /// </summary>
         public static void ApplyNetHit(HealthManager hm, int dealtHk, float direction, AttackTypes type, float push, int terra, bool crit, bool bigHit, bool dot, Vector2 from)
+        {
+            // The teammate's blow: the boss's waking decides, not this game's Knight being held (BossWake.ForOther).
+            BossWake.ForOther = true;
+            try { ApplyNetHitNow(hm, dealtHk, direction, type, push, terra, crit, bigHit, dot, from); }
+            finally { BossWake.ForOther = false; }
+        }
+
+        static void ApplyNetHitNow(HealthManager hm, int dealtHk, float direction, AttackTypes type, float push, int terra, bool crit, bool bigHit, bool dot, Vector2 from)
         {
             if (hm == null || hm.isDead || BossWake.Hit(hm) != BossWake.Result.Normal || (dot && BossWake.DreamWindow(hm))) return;
             var info = EnemyStats.Of(hm);

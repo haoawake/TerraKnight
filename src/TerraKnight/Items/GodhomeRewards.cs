@@ -115,9 +115,9 @@ namespace TerraKnight.Items
         {
             if (b == null || Random.value >= b.Reward) return ItemType.None;
             if(record==null || !VanillaBossProgression.All.TryGetValue(record,out var profile)
-                || profile.Step>VanillaBossProgression.Current || profile.Band>Shop.UnlockedStage()
+                || profile.Step>VanillaBossProgression.Current || profile.Band>LootStage.Current
                 || !VanillaBossProgression.Cleared(record))return ItemType.None;
-            int stage = Mathf.Clamp(Shop.UnlockedStage(), 0, 5);
+            int stage = LootStage.Current;
             var pool = new List<ItemType>();
             foreach(var t in profile.Gear)Add(pool,t,stage);
             if (pool.Count == 0) return ItemType.None;

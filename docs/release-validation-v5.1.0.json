@@ -1,0 +1,100 @@
+{
+  "gate_passed": true,
+  "dll_sha256": "807adeaf01efa39c922c6d47cb3c42c2b23937987ba3eb0ad985bee50409259a",
+  "production_parity": {
+    "FinalBuildHash": "807ADEAF01EFA39C922C6D47CB3C42C2B23937987BA3EB0AD985BEE50409259A",
+    "PreviousBuildHash": "31B9672DCABE801FEB59F1439097EFFF425E8F42E11ED82552E021D2FC4FF528",
+    "ProductionAndResourcesIdentical": true,
+    "Excluded": "Development test harness types only; the final Mage visibility fixture uses the native wake event before checking visibility.",
+    "ProductionFingerprint": "869e7746076089cbacc46ff8cc6270586b3be7f3598511a11cb213bb1a5130cb"
+  },
+  "source_manifest_sha256": "e0b31a10fc21701659543da34ad528570c05f0a30f96dfb4d9afcbdde72e58fd",
+  "suites": [
+    {
+      "suite": "lootstage",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "magevisibility",
+      "runtime_build_sha256": "807adeaf01efa39c922c6d47cb3c42c2b23937987ba3eb0ad985bee50409259a"
+    },
+    {
+      "suite": "earlymagicrelease",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "bestiaryjournal_zh",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "vanity",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "bosspets",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "savereset",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "foodcarry",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "spentlife",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "featherdown",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "divenail",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "spellupgrade",
+      "runtime_build_sha256": "807adeaf01efa39c922c6d47cb3c42c2b23937987ba3eb0ad985bee50409259a"
+    },
+    {
+      "suite": "lockjumps",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "steadydash",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "superkey",
+      "runtime_build_sha256": "31b9672dcabe801feb59f1439097efff425e8f42e11ed82552e021d2fc4ff528"
+    },
+    {
+      "suite": "bossguard",
+      "runtime_build_sha256": "807adeaf01efa39c922c6d47cb3c42c2b23937987ba3eb0ad985bee50409259a"
+    },
+    {
+      "suite": "namebs",
+      "runtime_build_sha256": "807adeaf01efa39c922c6d47cb3c42c2b23937987ba3eb0ad985bee50409259a"
+    }
+  ],
+  "assets": [
+    {
+      "name": "TerraKnight-v5.1.0.zip",
+      "bytes": 11333501,
+      "sha256": "d382af61863ddd20938b8887bc48bd28f0275bc471daef14ef757b9aa06facc1"
+    },
+    {
+      "name": "TerraKnight-v5.1.0-Setup.exe",
+      "bytes": 11356160,
+      "sha256": "80c3644b975ace771b5bfa42f8ae3e77e2d93183fc8911059ad81cdb454473a2"
+    }
+  ],
+  "coverage": {
+    "loot_stage": "35 checks; six stages, 1536 real rolls, synthetic click, unchanged stats, save/reload, old-save default, host packet parsing",
+    "soul_twister": "39 checks; 14 enemies across Ruins1_25 and Ruins1_30, vanilla/new AI and clones, using native Sleep wake events",
+    "boss_guard": "World entrances Crossroads_04 and Fungus1_20_v02. Godhome entrance-outside assertions are inapplicable because the entrance is inside the arena.",
+    "networking_limit": "No new two-client end-to-end run for loot-stage host synchronization."
+  }
+}

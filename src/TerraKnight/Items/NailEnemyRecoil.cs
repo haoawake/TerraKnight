@@ -15,6 +15,8 @@ namespace TerraKnight.Items
         static readonly AccessTools.FieldRef<NailSlash, float> slashAngle = AccessTools.FieldRefAccess<NailSlash, float>("slashAngle");
         static bool blocking;
         public static int DevStopped;
+        /// <summary>Dev: the last thing on the enemies' layer a slash was let recoil off.</summary>
+        public static string DevLetThrough;
 
         /// <summary>NailSlash.OnTriggerEnter2D (and Stay, which calls it): a side or up slash's recoil off an enemy's body skipped.</summary>
         [HarmonyPrefix]
@@ -23,7 +25,11 @@ namespace TerraKnight.Items
         {
             if (otherCollider == null || __instance == null || slashAngle(__instance) == 270f) return true;
             var go = otherCollider.gameObject;
-            if (go.layer != 11 || go.GetComponent<BounceShroom>() != null || go.GetComponentInParent<HealthManager>() == null) return true;
+            if (go.layer != 11 || go.GetComponent<BounceShroom>() != null || go.GetComponentInParent<HealthManager>() == null)
+            {
+                if (go.layer == 11) DevLetThrough = $"{go.name}（上级 {(go.transform.parent != null ? go.transform.parent.name : "-")}，触发 {otherCollider.isTrigger}，组件 {string.Join("/", System.Array.ConvertAll(go.GetComponents<Component>(), c => c.GetType().Name))}）";
+                return true;
+            }
             DevStopped++;
             return false;
         }
@@ -44,6 +50,31 @@ namespace TerraKnight.Items
         [HarmonyFinalizer]
         [HarmonyPatch(typeof(TinkEffect), "OnTriggerEnter2D")]
         static void Tinked() => blocking = false;
+
+        /// <summary>Dev: when on, who called each of the Knight's recoils (the calling methods, nearest first).</summary>
+        public static bool DevTrace;
+        public static string DevLastCaller;
+
+        [HarmonyPrefix, HarmonyPriority(Priority.First)]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilLeft))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilRight))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilLeftLong))]
+        [HarmonyPatch(typeof(HeroController), nameof(HeroController.RecoilRightLong))]
+        static void Trace(System.Reflection.MethodBase __originalMethod)
+        {
+            if (!DevTrace) return;
+            var frames = new System.Diagnostics.StackTrace(2, false).GetFrames();
+            var names = new System.Collections.Generic.List<string>();
+            if (frames != null)
+                foreach (var f in frames)
+                {
+                    var m = f.GetMethod();
+                    if (m == null) continue;
+                    names.Add((m.DeclaringType != null ? m.DeclaringType.Name + "." : "") + m.Name);
+                    if (names.Count >= 5) break;
+                }
+            DevLastCaller = __originalMethod.Name + " ← " + string.Join(" ← ", names);
+        }
 
         /// <summary>An enemy's shield or shell struck by the nail: its clank and hit-stop as ever, no recoil.</summary>
         [HarmonyPrefix]

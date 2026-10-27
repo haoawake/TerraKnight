@@ -25,6 +25,60 @@ namespace TerraKnight.World
             public HealthManager Hm;
             public float Until;
             public AlertRange[] Ranges;
+            public SightRange[] Sights;
+        }
+
+        /// <summary>
+        /// A range of the kind made of a trigger and a sight line (the "alert_range" FSM: the Hive's bees, their guardians):
+        /// while the Knight is in its trigger it writes whether it sees him into a bool of its enemy's machine ("Hero in
+        /// range"), which the machine reads to wake. Struck, that bool is held on as the ranges are (the user's 10-25
+        /// "新版敌人被攻击不进入战斗": a Hive Guardian shot from past its trigger never turned).
+        /// </summary>
+        sealed class SightRange
+        {
+            public PlayMakerFSM Range;
+            public HutongGames.PlayMaker.FsmBool Sees;
+        }
+
+        /// <summary>
+        /// A waking trigger of the plain kind (the "Detect Hit" FSM, named for waking: "Wake Range", "Alert Range"): it tells
+        /// its enemy its Enter Event (WAKE, ALERT...) when the Knight comes into it. Struck from past it, the enemy is told
+        /// it once, as if he had.
+        /// </summary>
+        static void WakeByTriggers(HealthManager hm)
+        {
+            foreach (var f in hm.GetComponentsInChildren<PlayMakerFSM>(true))
+            {
+                if (f == null || f.FsmName != "Detect Hit" || f.gameObject == hm.gameObject || !Wakes(f.gameObject.name)) continue;
+                string ev = f.FsmVariables.FindFsmString("Enter Event")?.Value;
+                var owner = f.transform.parent;
+                if (string.IsNullOrEmpty(ev) || owner == null) continue;
+                FSMUtility.SendEventToGameObject(owner.gameObject, ev, false);
+                DevWoken++;
+            }
+        }
+
+        /// <summary>Dev: waking events sent for struck enemies' triggers.</summary>
+        public static int DevWoken;
+
+        static SightRange[] SightRanges(HealthManager hm)
+        {
+            var list = new List<SightRange>();
+            foreach (var f in hm.GetComponentsInChildren<PlayMakerFSM>(true))
+            {
+                if (f == null || f.FsmName != "alert_range" || f.gameObject == hm.gameObject) continue;
+                string fsmName = f.FsmVariables.FindFsmString("FSM Name")?.Value, boolName = f.FsmVariables.FindFsmString("Bool Name")?.Value;
+                if (string.IsNullOrEmpty(fsmName) || string.IsNullOrEmpty(boolName) || boolName.ToLowerInvariant().Contains("unalert")) continue;
+                var owner = f.transform.parent;
+                if (owner == null) continue;
+                foreach (var target in owner.GetComponents<PlayMakerFSM>())
+                {
+                    if (target.FsmName != fsmName) continue;
+                    var b = target.FsmVariables.FindFsmBool(boolName);
+                    if (b != null) list.Add(new SightRange { Range = f, Sees = b });
+                }
+            }
+            return list.ToArray();
         }
 
         static readonly Dictionary<int, Angry> angry = new Dictionary<int, Angry>();
@@ -51,7 +105,8 @@ namespace TerraKnight.World
                 var ranges = new List<AlertRange>();
                 foreach (var r in hm.GetComponentsInChildren<AlertRange>(true))
                     if (r != null && Wakes(r.gameObject.name)) ranges.Add(r);
-                angry[id] = a = new Angry { Hm = hm, Ranges = ranges.ToArray() };
+                angry[id] = a = new Angry { Hm = hm, Ranges = ranges.ToArray(), Sights = SightRanges(hm) };
+                WakeByTriggers(hm);
                 DevStruck++;
             }
             a.Until = Time.time + AggroTime;
@@ -77,6 +132,13 @@ namespace TerraKnight.World
                     if (r == null) continue;
                     if (!over) { inRange(r) = true; DevHeld++; }
                     else inRange(r) = heroBox != null && Touching(r, heroBox);
+                }
+                foreach (var s in a.Sights)
+                {
+                    if (s.Range == null) continue;
+                    if (!over) { s.Sees.Value = true; DevHeld++; }
+                    // Its own sight line writes it again while the Knight is in its trigger.
+                    else if (s.Range.ActiveStateName != "Raycast") s.Sees.Value = false;
                 }
                 if (over) gone.Add(kv.Key);
             }

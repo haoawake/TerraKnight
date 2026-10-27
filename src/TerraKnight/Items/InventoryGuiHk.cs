@@ -40,6 +40,11 @@ namespace TerraKnight.Items
             int rows = (HkItems.BagSlots + HkColumns - 1) / HkColumns;
             var panel = new Rect(x0 - 4f * ui, y0 - 4f * ui, HkColumns * step + 8f * ui, rows * step + 8f * ui);
             panels.Add(panel);
+            var progress = new Rect(panel.x, panel.yMax + 4f * ui, panel.width, 28f * ui);
+            Fill(progress, new Color(.14f, .10f, .21f));
+            panels.Add(progress);
+            Outlined(progress, Lang.T("收集进度"), labelStyle, progress.Contains(mouse) ? new Color(1f, .85f, .3f) : Color.white);
+            Add(progress, Kind.StatsTab, 4);
             for (int i = 0; i < HkItems.BagSlots; i++)
             {
                 var rect = new Rect(x0 + (i % HkColumns) * step, y0 + (i / HkColumns) * step, slot, slot);

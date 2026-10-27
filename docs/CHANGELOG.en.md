@@ -1,5 +1,70 @@
 # Changelog
 
+## 5.1.0 — Vanity, boss pets and boss fight fixes
+
+### New
+
+- **Terraria's vanity**: Terraria's 427 vanity items drop from Hallownest's enemies, big and small. Each costume belongs to one kind of enemy and drops as a whole set; boss masks drop from their bosses (1 in 7); hardmode-stage bosses can drop a whole developer set. Vanity appears at the stage of the enemy that drops it and stays out of chests and fishing crates. Worn vanity is drawn by Terraria's rules: whether a hat shows the hair, robes, capes, belts, long coat tails, glowing parts, beards and the male and female bodies all match the original. The bag's filter has a "Vanity" tab, and vanity items say "Vanity item" in their tooltip.
+- **Regional costumes**: each of the 24 areas has its own costume (head, shirt, pants), sewn at a Loom from that area's block: 15 for the head, 25 for the shirt, 20 for the pants. Each is a Terraria vanity set in the area's colours, its capes, coat tails and women's pants included, and wears exactly like that set.
+- **Boss pets**: each of the 48 boss fights (the dream and Godhome variants included) has its own pet, a pixel pet in the manner of Terraria's Master Mode boss pets, which that boss drops at a 1% chance. Walkers run and jump behind you and fly over when left behind; flyers fly beside you; some float by your shoulder and now and then make a little gesture. The Radiance's and the Absolute Radiance's pets are light pets.
+
+### Balance
+
+- A boss can be struck only from inside its arena, and minions attack a boss only after your own blow has landed on it. A boss that hasn't come on stage yet (such as the False Knight waiting in the roof) can't be hit.
+- The Ancestral Mound's enemies come back and come in pairs like everywhere else, and more with the Water Candle.
+- Enemies that appear together stand two or three bodies apart, flyers also above and below each other; in a crowded room every enemy gets its share of copies.
+- Godhome's accessory lock bans wings only: dash accessories and multi-jumps such as the Cloud in a Bottle still work.
+
+### Improvements
+
+- The Super Dash has a key of its own (in the keys of "Terraria Settings"), the Dash key at first: a long press of Dash is the Super Dash, a tap a dash. Bound to another key, the Dash key dashes the moment it goes down, and the Super Dash key held charges, let go it flies, pressed again it stops.
+- The Campfire, Heart Lantern, Star in a Bottle, Bast Statue, Sunflower and Garden Gnome give their buffs from the Piggy Bank too.
+- Estee is drawn as in Terraria, with the star turning under her face and a starry trail.
+- With the cursor over the hearts or the mana stars, the current life or mana and its maximum show beside it.
+- The frame rate cap in the game's settings takes effect.
+- The Descending Dark rune and the shields that dive: press Down twice in the air to dive; a single press is left to hovering and falling faster. The Descending Dark rune's dark dive has a 2-second cooldown.
+- With the Nail arts learned, the Nail swings the moment attack is pressed and charges while held; a full charge let go with Up or Down held, or pressed just before, is the Cyclone Slash, with Left or Right held as well.
+
+### Fixes
+
+- Fixed Soul Twisters remaining invisible in Sleep while casting with the new AI. Their native wake target is retained, and extra attacks wait until the body is visible.
+
+- Each save's world is its own: starting a new save or loading another never brings over the blocks, walls, liquids or torches placed in the last world.
+- Life at zero always ends in death, even when a fall or the like lands during a moment of invulnerability; the player is never left standing at 0 life without regenerating.
+- With the new AI, Hornet goes on through her dashes, jumps, thread storms, counters and needle throws after a counter or a thread storm, to the end of the fight at Kingdom's Edge too.
+- An enemy struck from afar wakes and fights (with both the original and the new AI), including those that wake by their sensing range, such as the Hive Guardian.
+- The Husk Guard faces the player when it charges and slams, and chases without running backwards or standing stuck; the Aluba faces the right way.
+- Godhome's False Knight lands in the arena instead of under the roof.
+- The Massive Moss Charger leaps back into the arena from the platforms at its sides.
+- The Vengefly King's dives stay above Godhome's floor.
+- The God Tamer fights in the arena the player is in.
+- A boss caught in rock gets itself out.
+- Godhome's Hornet (the Kingdom's Edge fight) and the Winged Nosk drop their own loot.
+- Backspace deletes text in character creation, save and chest renaming and the bestiary search, with an input method too.
+- With the Featherfall potion, holding Down to fall faster never causes fall damage.
+- With Steady Body worn, the speed after a dash (the shadow dash too) falls back to the run's.
+- Any dash out through a room's exit (the shadow dash and the Dashmaster's aimed dashes included) leaves gravity as it was in the next room: no floating.
+- In a multiplayer boss fight every player's blows deal damage, also while one of the players is down or held.
+- In a multiplayer game the other players in the room hear the bosses' and enemies' attacks and the boss music too.
+- In a multiplayer boss fight a living boss shows no corpse and gives no death cries in the other players' games.
+- In a multiplayer Mantis Lords fight every player sees the lords move the same way, with the new AI too.
+- In Godhome's Hall of Gods the statues' and the Pantheon doors' challenge menus take mouse clicks on "Challenge" and the bindings, and close with U, a right click or Esc.
+- Caught on a seam in the ground while walking or landing, the Knight steps over it and walks on.
+- A full Nail charge let go during a dash does the other arts when the Dash Slash isn't learned.
+- However many holes the ground has, the frame rate stays as with none: blasting the ground again and again with dynamite and bombs stays smooth.
+- Every character of Hallownest's lines rewritten for the Terrarian (tablets, diaries and talk) shows in the game's font, none as an empty box.
+
+### Journal and damage fixes
+
+- **Actual loot-stage selection**: choose current or an earlier unlocked stage in the journal. Drop tables change while character and enemy stats, abilities, shops and boss records stay unchanged. Saved per world; Current follows progression. In multiplayer the host controls and synchronizes the choice.
+
+- Animated hunter journal with native Terraria frames, available-now and all-records modes, exact progression requirements and boss-aware drop cache refresh.
+- Separate exploration and boss progress, with localized notifications in the lower left.
+- Early gem bolts hit each enemy once; combined twin, bounce and repeated-volley damage discounts multiply correctly.
+- Cattiva and Trusty Cattiva use their forward punch hitbox only while punching. Idle body contact does no damage; the native nine-tick per-enemy cooldown is preserved.
+
+Weapon combos, right-click arts and casting animations are deferred to a later release.
+
 ## 5.0.0 — The new enemy AI, the Charm Bag and achievements
 
 ### New
@@ -122,6 +187,8 @@
 - The Zenith's flying swords, the Xeno Staff's UFO lasers and other effects look as in Terraria.
 
 ### Fixes
+
+- Fixed Soul Twisters remaining invisible in Sleep while casting with the new AI. Their native wake target is retained, and extra attacks wait until the body is visible.
 
 - Winning the Radiance challenge from the bestiary wakes you where the challenge began, as the dream wakes in the game, and the climbing platforms stay where they are.
 - Back from a bestiary challenge in Godhome, the player shows as usual and can switch weapons and attack.

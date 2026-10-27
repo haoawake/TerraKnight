@@ -247,6 +247,12 @@ namespace TerraKnight
         /// </summary>
         IEnumerator BuffStations17()
         {
+            // Back on his feet first (the test save's Knight can die to the first crawlid here), then kept alive.
+            var hero = HeroController.instance;
+            for (float until = Time.realtimeSinceStartup + 40f; Time.realtimeSinceStartup < until && (hero.cState.dead || !hero.acceptingInput);)
+                yield return null;
+            Plugin.Log.LogInfo($"[AutoTest] 增益站 开测：死亡标记 {hero.cState.dead}，可操作 {hero.acceptingInput}，状态 {GameManager.instance.gameState}");
+            Player.TerraStats.DevImmortal = true;
             var inv = mod.Inventory;
             var saved = (ItemStack[])inv.Slots.Clone();
             var bank = (ItemStack[])inv.BankOf(0).Clone();
@@ -255,6 +261,11 @@ namespace TerraKnight
             Player.PlayerBuffs.Clear();
             int free = System.Array.FindIndex(inv.Slots, s => s.IsEmpty);
             inv.Slots[free] = ItemStack.Of(ItemType.CrystalBall);
+            for (int f = 0; f < 6; f++)
+            {
+                yield return null;
+                Plugin.Log.LogInfo($"[AutoTest] 增益站探针 帧{f} 带着 {BuffStationItems.Carried(inv, ItemType.CrystalBall)} 计数 {BuffStationItems.DevHeld} 调用 {BuffStationItems.DevTicks} 站 {BuffStationItems.DevStations} 死 {BuffStationItems.DevDead} 有 {Player.PlayerBuffs.Has(29)} 剩 {Player.PlayerBuffs.TimeLeft(29)} dt {Time.deltaTime:F3} 帧率 {1f / Mathf.Max(0.001f, Time.smoothDeltaTime):F0}");
+            }
             yield return new WaitForSeconds(0.3f);
             bool ball = Player.PlayerBuffs.Has(29) && Player.PlayerBuffs.NoTime(29);
             inv.Slots[free] = default;
@@ -270,6 +281,33 @@ namespace TerraKnight
             yield return new WaitForSeconds(0.4f);
             bool sharpGone = !Player.PlayerBuffs.Has(159);
             FxCheck("利器站放猪猪存钱罐：有锋利增益，拿出来后消失", sharp && sharpGone, $"有 {sharp}，拿出后消失 {sharpGone}，计数 {BuffStationItems.DevHeld}");
+            // Each of the six in the Piggy Bank: its buff on, and its numbers in the player's (Equipment.Current).
+            foreach (var (station, buff, name, stat) in new (ItemType, int, string, System.Func<Bonuses, float>)[]
+            {
+                (ItemType.CrystalBall, 29, "水晶球 魔力上限", b => b.ManaMax), (ItemType.AmmoBox, 93, "弹药箱 省弹药", b => b.AmmoSave),
+                (ItemType.BewitchingTable, 150, "施法桌 仆从上限", b => b.MaxMinions), (ItemType.SharpeningStation, 159, "利器站 穿甲", b => b.ArmorPen),
+                (ItemType.WarTable, 348, "战争桌 哨兵上限", b => b.MaxTurrets), (ItemType.SliceOfCake, 192, "蛋糕块 移速", b => b.MoveSpeed),
+            })
+            {
+                float before = stat(Equipment.Current);
+                piggy[slot] = ItemStack.Of(station);
+                yield return new WaitForSeconds(0.3f);
+                bool on = Player.PlayerBuffs.Has(buff);
+                float after = stat(Equipment.Current);
+                piggy[slot] = default;
+                yield return new WaitForSeconds(0.3f);
+                FxCheck($"{name}：放存钱罐有增益、属性变了", on && after > before + 0.001f, $"增益 {on}，{before:0.###} → {after:0.###}");
+            }
+            // The buff furniture carried (CarriedFurniture) counts from the Piggy Bank as well.
+            foreach (var (furniture, buff, name) in new[] { (ItemType.HeartLantern, Player.PlayerBuffs.HeartLamp, "红心灯笼"), (ItemType.CatBast, Player.PlayerBuffs.BastDefense, "巴斯特雕像") })
+            {
+                piggy[slot] = ItemStack.Of(furniture);
+                yield return new WaitForSeconds(0.5f);
+                bool on = Player.PlayerBuffs.Has(buff);
+                piggy[slot] = default;
+                yield return new WaitForSeconds(0.5f);
+                FxCheck($"{name}放存钱罐有增益，拿出后消失", on && !Player.PlayerBuffs.Has(buff), $"有 {on}，拿出后还在 {Player.PlayerBuffs.Has(buff)}");
+            }
             System.Array.Copy(saved, inv.Slots, saved.Length);
             System.Array.Copy(bank, inv.BankOf(0), bank.Length);
             inv.Infinite = infinite;

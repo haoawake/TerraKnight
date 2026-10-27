@@ -184,7 +184,7 @@ namespace TerraKnight.Items
             yield return Got("dive", pd => pd.quakeLevel >= 1,
                 L("灵魂大师留下的那团魂，重得像一块铁。", "从高处往下一砸，连地板都裂开了……这下面，原来还有路。"),
                 L("The soul the Soul Master left behind is as heavy as iron.", "Slamming down from above, I cracked the floor itself... and there's a way through underneath."),
-                pd => WearZh("荒芜俯冲", "重锤符文", "在空中按住下再按跳跃，就会猛地砸向地面，还能砸开脆弱的地板。"),
+                pd => WearZh("荒芜俯冲", "重锤符文", "在空中连按两下下键，就会猛地砸向地面，还能砸开脆弱的地板。"),
                 pd => WearEn("Desolate Dive", "Ram Rune", "in mid-air hold Down and press Jump to slam into the ground, breaking fragile floors."));
             yield return Got("descdark", pd => pd.quakeLevel >= 2,
                 L("水晶山峰深处的那团黑暗，比灵魂大师的魂还要沉。", "往下砸的时候，四周好像都跟着暗了一下。"),
@@ -206,8 +206,12 @@ namespace TerraKnight.Items
             yield return Got("superdash", pd => pd.hasSuperDash,
                 L("矿工们留下的机器核心里，嵌着一颗还在发光的水晶之心。", "攥紧它，能感到一股劲在胸口越积越满——松手的那一刻，大概就会被它射出去吧。"),
                 L("In the core of a machine the miners left behind sits a Crystal Heart, still glowing.", "Gripping it, I feel power gathering in my chest. The moment I let go, it'll probably fling me forward."),
-                pd => "水晶之心放进了圣巢背包。把它拖进饰品栏装上，长按冲刺键蓄力、松开就是超级冲刺，空中也能用；轻点冲刺键仍是普通冲刺。",
-                pd => "The Crystal Heart is in your Hallownest Bag. Drag it into an accessory slot, then hold Dash to charge and let go for a Super Dash, even in the air; a tap of Dash is still an ordinary dash.");
+                pd => AbilityAccessories.SuperKeyApart
+                    ? $"水晶之心放进了圣巢背包。把它拖进饰品栏装上，按住 {Key(Player.TerraKeys.Action.SuperDash)} 蓄力、松开就是超级冲刺，空中也能用。"
+                    : "水晶之心放进了圣巢背包。把它拖进饰品栏装上，长按冲刺键蓄力、松开就是超级冲刺，空中也能用；轻点冲刺键仍是普通冲刺。",
+                pd => AbilityAccessories.SuperKeyApart
+                    ? $"The Crystal Heart is in your Hallownest Bag. Drag it into an accessory slot, then hold {Key(Player.TerraKeys.Action.SuperDash)} to charge and let go for a Super Dash, even in the air."
+                    : "The Crystal Heart is in your Hallownest Bag. Drag it into an accessory slot, then hold Dash to charge and let go for a Super Dash, even in the air; a tap of Dash is still an ordinary dash.");
             yield return Got("doublejump", pd => pd.hasDoubleJump,
                 L("那个破碎的容器倒下了，留下一对淡金色的翅膀。", "跳到最高处时再一振翅——原来天空没有那么远。"),
                 L("The Broken Vessel has fallen, leaving a pair of pale golden wings.", "At the top of a jump, one more beat of the wings... The sky isn't so far away after all."),

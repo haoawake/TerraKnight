@@ -168,6 +168,23 @@ namespace TerraKnight.Net
             w.Write(e.StealthKind);
             w.Write(e.HeadGlow ?? "");
             w.Write(e.LegsGlow ?? "");
+            // The vanity look (VanityLooks.Dress): its other layers, its flags, its glows' colours.
+            foreach (int v in new[] { e.Backpack, e.Tail, e.FaceHead, e.FaceFlower, e.FaceMask, e.Beard, e.BackHead, e.BodyExt, e.Coat, e.CoatExt, e.CoatBack, e.BalloonFront })
+                w.Write((short)v);
+            int vf = (e.Robe ? 1 : 0) | (e.FaceMaskUnder ? 2 : 0) | (e.HelmetHidden ? 4 : 0) | (e.BeardHair ? 8 : 0) | (e.HeadSkin ? 16 : 0)
+                | (e.HideHeadSkin ? 32 : 0) | (e.HideTopSkin ? 64 : 0) | (e.HideBottomSkin ? 128 : 0) | (e.HideShoulders ? 256 : 0) | (e.Halo ? 512 : 0)
+                | (e.Horn ? 1024 : 0) | (e.Scowl ? 2048 : 0);
+            w.Write((ushort)vf);
+            w.Write(e.HeadRegion);
+            w.Write(e.BodyRegion);
+            w.Write(e.LegsRegion);
+            foreach (var c in new[] { e.HeadGlowColor, e.BodyGlowColor, e.ArmGlowColor, e.LegsGlowColor, e.UnderShirt })
+            {
+                w.Write(c.r);
+                w.Write(c.g);
+                w.Write(c.b);
+                w.Write(c.a);
+            }
             w.Write((short)Life);
             w.Write((short)LifeMax);
             w.Write((short)Mathf.Clamp(Aggro, short.MinValue, short.MaxValue));
@@ -230,6 +247,16 @@ namespace TerraKnight.Net
             string hg = r.ReadString(), lg = r.ReadString();
             e.HeadGlow = hg.Length > 0 ? hg : null;
             e.LegsGlow = lg.Length > 0 ? lg : null;
+            e.Backpack = r.ReadInt16(); e.Tail = r.ReadInt16(); e.FaceHead = r.ReadInt16(); e.FaceFlower = r.ReadInt16(); e.FaceMask = r.ReadInt16();
+            e.Beard = r.ReadInt16(); e.BackHead = r.ReadInt16(); e.BodyExt = r.ReadInt16(); e.Coat = r.ReadInt16(); e.CoatExt = r.ReadInt16();
+            e.CoatBack = r.ReadInt16(); e.BalloonFront = r.ReadInt16();
+            int vf = r.ReadUInt16();
+            e.Robe = (vf & 1) != 0; e.FaceMaskUnder = (vf & 2) != 0; e.HelmetHidden = (vf & 4) != 0; e.BeardHair = (vf & 8) != 0;
+            e.HeadSkin = (vf & 16) != 0; e.HideHeadSkin = (vf & 32) != 0; e.HideTopSkin = (vf & 64) != 0; e.HideBottomSkin = (vf & 128) != 0;
+            e.HideShoulders = (vf & 256) != 0; e.Halo = (vf & 512) != 0; e.Horn = (vf & 1024) != 0; e.Scowl = (vf & 2048) != 0;
+            e.HeadRegion = r.ReadByte(); e.BodyRegion = r.ReadByte(); e.LegsRegion = r.ReadByte();
+            Color32 C32() => new Color32(r.ReadByte(), r.ReadByte(), r.ReadByte(), r.ReadByte());
+            e.HeadGlowColor = C32(); e.BodyGlowColor = C32(); e.ArmGlowColor = C32(); e.LegsGlowColor = C32(); e.UnderShirt = C32();
             s.Eq = e;
             s.Life = r.ReadInt16();
             s.LifeMax = r.ReadInt16();

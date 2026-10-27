@@ -5,16 +5,35 @@ namespace TerraKnight.World
 {
     /// <summary>
     /// Hollow Knight paints its terrain in front of the gameplay plane (z &lt; 0.004), so anything
-    /// inside a dug hole would be hidden behind it. Every cut cell gets a SpriteMask, and the scene's
-    /// foreground terrain art is set to draw only outside the masks, which opens the art exactly
-    /// where the grid was dug.
+    /// inside a dug hole would be hidden behind it. Every cut cell's cut is drawn into the mask of its
+    /// block of cells (one SpriteMask over 16×16 cells), and the scene's foreground terrain art is set
+    /// to draw only outside the masks, which opens the art exactly where the grid was dug.
     /// </summary>
     internal sealed class HoleCutter
     {
         readonly Transform root;
         readonly List<SpriteRenderer> art = new List<SpriteRenderer>();
-        readonly Dictionary<int, GameObject> masks = new Dictionary<int, GameObject>();
         static Sprite maskSprite;
+
+        /// <summary>
+        /// Cells a block's mask covers along each side. Every SpriteMask costs each frame it is in view, whatever its size: one
+        /// per cell let a few dozen dynamite blasts (1700 masks) take a frame from 8 ms to 43 ms (the user's 10-26 "用雷管炸地图越炸越卡").
+        /// </summary>
+        const int Block = 16;
+        const int BlockPx = Block * HoleShapes.Res;
+
+        sealed class MaskBlock
+        {
+            public GameObject Go;
+            public Texture2D Tex;
+            public byte[] Px;
+            public int Cells;
+        }
+
+        readonly Dictionary<(int, int), MaskBlock> blocks = new Dictionary<(int, int), MaskBlock>();
+        readonly HashSet<MaskBlock> dirtyBlocks = new HashSet<MaskBlock>();
+        /// <summary>Each cut cell's cut (HoleShapes' alpha, Res×Res), by cell index.</summary>
+        readonly Dictionary<int, byte[]> cellCuts = new Dictionary<int, byte[]>();
 
         readonly List<SpriteRenderer> cover = new List<SpriteRenderer>();
 
@@ -195,7 +214,9 @@ namespace TerraKnight.World
                 if (interactionOn && !exemptSet.Contains(sr)) sr.maskInteraction = SpriteMaskInteraction.VisibleOutsideMask;
             }
         }
-        public int MaskCount => masks.Count;
+        /// <summary>Cells cut by a mask; the block masks drawing them.</summary>
+        public int MaskCount => cellCuts.Count;
+        public int MaskBlocks => blocks.Count;
         /// <summary>The cell's art is cut away (dug, or its overhang): Hollow Knight's smooth holes also mask a corner of standing terrain, which doesn't count.</summary>
         public bool HasMask(int index) => cutCells.Contains(index);
         readonly HashSet<int> cutCells = new HashSet<int>();
@@ -344,7 +365,7 @@ namespace TerraKnight.World
                 list.Add(go);
             }
             if (list.Count == 0) return;
-            if (masks.Count == 0) ApplyMaskInteraction();
+            if (!interactionOn) ApplyMaskInteraction();
             openings[key] = list;
         }
 
@@ -381,34 +402,82 @@ namespace TerraKnight.World
 
         public IEnumerable<string> ExemptKeys => exempt.Keys;
 
-        public void SetCut(int index, int x, int y, bool cut) => SetShape(index, x, y, cut ? MaskSprite() : null, cut);
+        public void SetCut(int index, int x, int y, bool cut) => SetShape(index, x, y, cut ? HoleShapes.FullAlpha : null, cut);
 
         /// <summary>
-        /// The cell's mask: the whole cell, a shape of it (World.HoleShapes: a smooth hole's outline through it), or none;
-        /// whether the cell counts as cut (<see cref="HasMask"/>) apart from what its mask covers.
+        /// The cell's mask: the whole cell (HoleShapes.FullAlpha), a shape of it (World.HoleShapes: a smooth hole's outline
+        /// through it), or none (null); whether the cell counts as cut (<see cref="HasMask"/>) apart from what its mask
+        /// covers. Drawn into its block's mask at the next <see cref="Flush"/>.
         /// </summary>
-        public void SetShape(int index, int x, int y, Sprite shape, bool cut)
+        public void SetShape(int index, int x, int y, byte[] alpha, bool cut)
         {
             if (cut) cutCells.Add(index); else cutCells.Remove(index);
-            if (shape == null)
+            cellCuts.TryGetValue(index, out var had);
+            if (had == alpha) return;
+            if (alpha == null) cellCuts.Remove(index);
+            else
             {
-                if (masks.TryGetValue(index, out var old)) { Object.Destroy(old); masks.Remove(index); }
-                return;
+                cellCuts[index] = alpha;
+                if (!interactionOn) ApplyMaskInteraction();
             }
-            if (!masks.TryGetValue(index, out var go))
+            var key = (x / Block, y / Block);
+            if (!blocks.TryGetValue(key, out var b))
             {
-                if (masks.Count == 0) ApplyMaskInteraction();
-                go = new GameObject("Terra Hole");
-                go.transform.SetParent(root, false);
-                var c = CellGrid.CellCenter(x, y);
-                go.transform.localPosition = new Vector3(c.x, c.y, 0f);
-                go.AddComponent<SpriteMask>();
-                masks[index] = go;
+                if (alpha == null) return;
+                blocks[key] = b = new MaskBlock { Px = new byte[BlockPx * BlockPx] };
             }
-            var mask = go.GetComponent<SpriteMask>();
-            if (mask.sprite != shape) mask.sprite = shape;
-            mask.alphaCutoff = 0.5f;
+            b.Cells += (alpha != null ? 1 : 0) - (had != null ? 1 : 0);
+            int res = HoleShapes.Res, x0 = x % Block * res, y0 = y % Block * res;
+            for (int r = 0; r < res; r++)
+            {
+                int to = (y0 + r) * BlockPx + x0;
+                if (alpha != null) System.Buffer.BlockCopy(alpha, r * res, b.Px, to, res);
+                else System.Array.Clear(b.Px, to, res);
+            }
+            dirtyBlocks.Add(b);
         }
+
+        /// <summary>The region gone: its blocks' mask pictures with it.</summary>
+        public void DestroyMasks()
+        {
+            foreach (var b in blocks.Values)
+                if (b.Tex != null) Object.Destroy(b.Tex);
+            blocks.Clear();
+            dirtyBlocks.Clear();
+        }
+
+        /// <summary>The blocks' masks whose cells changed, drawn again (after a pass of the cells' pictures).</summary>
+        public void Flush()
+        {
+            if (dirtyBlocks.Count == 0) return;
+            foreach (var kv in new List<KeyValuePair<(int, int), MaskBlock>>(blocks))
+            {
+                var b = kv.Value;
+                if (!dirtyBlocks.Contains(b)) continue;
+                if (b.Cells <= 0)
+                {
+                    if (b.Go != null) Object.Destroy(b.Go);
+                    if (b.Tex != null) Object.Destroy(b.Tex);
+                    blocks.Remove(kv.Key);
+                    continue;
+                }
+                if (b.Go == null)
+                {
+                    b.Tex = new Texture2D(BlockPx, BlockPx, TextureFormat.Alpha8, false)
+                        { name = "TerraKnight/hole masks", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                    b.Go = new GameObject("Terra Holes");
+                    b.Go.transform.SetParent(root, false);
+                    b.Go.transform.localPosition = new Vector3(kv.Key.Item1 * Block * CellGrid.CellSize, kv.Key.Item2 * Block * CellGrid.CellSize, 0f);
+                    var mask = b.Go.AddComponent<SpriteMask>();
+                    mask.sprite = Sprite.Create(b.Tex, new Rect(0, 0, BlockPx, BlockPx), Vector2.zero, HoleShapes.PixelsPerUnit, 0, SpriteMeshType.FullRect);
+                    mask.alphaCutoff = 0.5f;
+                }
+                b.Tex.LoadRawTextureData(b.Px);
+                b.Tex.Apply(false, false);
+            }
+            dirtyBlocks.Clear();
+        }
+
 
         /// <summary>The highest sorting order of the cuttable art over a point (for what is drawn on its edge), 0 with none.</summary>
         public int ArtOrderAt(Vector2 world)

@@ -88,10 +88,13 @@ namespace TerraKnight.Items
                 nextLook = Time.unscaledTime + 0.25f;
                 Campfire = HeartLantern = StarInBottle = Bast = Sunflower = GardenGnome = WaterCandle = false;
                 var slots = mod.Inventory.Slots;
-                for (int i = 0; i < slots.Length; i++)
+                var piggy = mod.Inventory.BankOf(0);
+                // The bag and the Piggy Bank (as the buff stations, Items.BuffStationItems); the Water Candle the hotbar alone.
+                for (int i = 0; i < slots.Length + piggy.Length; i++)
                 {
-                    if (slots[i].IsEmpty) continue;
-                    switch (slots[i].Type)
+                    var s = i < slots.Length ? slots[i] : piggy[i - slots.Length];
+                    if (s.IsEmpty) continue;
+                    switch (s.Type)
                     {
                         case ItemType.Campfire: Campfire = true; break;
                         case ItemType.HeartLantern: HeartLantern = true; break;

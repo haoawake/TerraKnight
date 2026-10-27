@@ -93,6 +93,16 @@ namespace TerraKnight.EnemyAi.Bosses
                 float x = Mathf.Clamp(t.x, Arena.xMin + 2f, Arena.xMax - 2f);
                 float y = Mathf.Min(t.y - half * 0.3f, ceil - half - 0.2f);
                 var end = new Vector2(x, y);
+                // His whole body along the way, short of the room's rock: the roof over the player isn't always the one over
+                // his path (lower at his sides; the player up on the roof), and the room's ground is thin outlines a body
+                // driven into gets through, to stand on their inside (the Godhome False Knight under the roof, 10-25).
+                if (body != null)
+                {
+                    var from = Me + Vector2.up * 0.05f;
+                    var path = end - from;
+                    var hit = Hostiles.NativeBox(from, (Vector2)body.bounds.size * 0.95f, path.normalized, path.magnitude);
+                    if (hit.collider != null) end = from + path.normalized * Mathf.Max(0f, hit.distance - 0.2f);
+                }
                 bool right = x > Me.x;
                 var sc = go.transform.localScale;
                 // Facing as his Turn R and Turn L leave him (a positive x scale faces right).
@@ -106,13 +116,21 @@ namespace TerraKnight.EnemyAi.Bosses
                 const float speed = 40f;
                 float time = Vector2.Distance(Me, end) / speed;
                 escort = Batch2.Escort(this, go.transform, -pivot, 4f, time + 0.4f, Look.Rock);
-                // Driven on his body's own position (its transform lags a fixed step behind when interpolated).
+                // Driven on his body's own position (its transform lags a fixed step behind when interpolated), a physics step
+                // at a time; stopped where something holds him (pressed on, he would be through it).
+                Vector2 was = mover != null ? mover.position : Vector2.zero;
+                int held = 0;
                 for (float until = Time.time + time + 0.25f; mover != null && Time.time < until;)
                 {
                     var d = end + pivot - mover.position;
                     if (d.sqrMagnitude < 0.04f) break;
-                    mover.linearVelocity = d.normalized * Mathf.Min(speed, d.magnitude / Mathf.Max(Time.deltaTime, 0.01f));
-                    yield return null;
+                    float step = Mathf.Min(speed, d.magnitude / Time.fixedDeltaTime);
+                    mover.linearVelocity = d.normalized * step;
+                    yield return new WaitForFixedUpdate();
+                    if (mover == null) break;
+                    if ((mover.position - was).magnitude < step * Time.fixedDeltaTime * 0.2f) { if (++held >= 2) break; }
+                    else held = 0;
+                    was = mover.position;
                 }
                 if (mover != null) mover.linearVelocity = Vector2.zero;
                 yield return new WaitForSeconds(0.12f);

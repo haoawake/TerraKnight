@@ -62,7 +62,7 @@ namespace TerraKnight.Items
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null) return;
             if (nameInput.EditingComposition) return;
-            if (kb.backspaceKey.wasPressedThisFrame && nameDraft.Length > 0) nameDraft = UI.ImeTextEntry.Backspace(nameDraft);
+            nameDraft = nameInput.TakeBackspaces(nameDraft);
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) EndRename(true);
             else if (kb.escapeKey.wasPressedThisFrame) EndRename(false);
         }

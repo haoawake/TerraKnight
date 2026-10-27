@@ -101,6 +101,7 @@ namespace TerraKnight.Items
             result.AddRange(SupplementRecipes());
             result.AddRange(WallRecipes());
             result.AddRange(World.AreaBlocks.Recipes());
+            result.AddRange(ItemDb.RegionVanityRecipes());
             result.AddRange(Buckets.Recipes());
             result.AddRange(World.RegionalFurniture.Recipes());
             result.AddRange(World.RegionalChests.Recipes());

@@ -141,7 +141,7 @@ namespace TerraKnight.Items
         {
             static void Postfix(PlayerData __instance)
             {
-                if (Charms.Enabled) __instance.healthBlue = 0;
+                if (Charms.Enabled) __instance.healthBlue = Player.Lifeblood.OnNativeRefresh(__instance);
             }
         }
     }

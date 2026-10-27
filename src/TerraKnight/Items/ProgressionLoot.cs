@@ -95,6 +95,8 @@ namespace TerraKnight.Items
                 }
                 var mounted = new List<EnemyDrops.Drop>(result);
                 Player.Mounts.AddDrops(mounted,key,stage,entry,final,e.Scene);
+                VanityDrops.AddDrops(mounted,key,stage,entry,final,e.Scene);
+                BossPets.AddDrops(mounted,key,e.Scene);
                 result=mounted.ToArray();
                 NormalizeGroupChances(result);
                 cache[id]=result;
@@ -547,7 +549,8 @@ namespace TerraKnight.Items
         internal static bool Droppable(ItemType t)
         {
             var d=ItemDb.Get(t);
-            return d!=null && !d.Placeholder && !d.HkItem && !CraftOnlyLoot.Blocked(t) && !BossDropPlan.BossOnly(t)
+            // Vanity comes from its own enemies only (VanityDrops), never an equipment pool's pick.
+            return d!=null && !d.Placeholder && !d.HkItem && !d.Vanity && !CraftOnlyLoot.Blocked(t) && !BossDropPlan.BossOnly(t)
                 && !ProgressionBalance.ShopOnlyWeapons.Contains(t) && !GodhomeRewards.LunarEquipment(t) && !SpellRewards.Is(t)
                 && !Fishing.FishOnly(t);
         }

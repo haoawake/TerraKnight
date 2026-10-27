@@ -63,14 +63,8 @@ namespace TerraKnight
         {
             // Each step on its own: one that fails is logged and the rest go on, and the game's new
             // game is never stopped by it (a failure here used to leave the player on the menu).
-            Safely("清空世界", () =>
-            {
-                World.LiveWorld.Instance?.ClearAll();
-                World.WorldEdits.Clear();
-                World.RegionalTorches.Clear();
-                World.WorldLiquids.Clear();
-                Items.BreakableDrops.Load(null);
-            });
+            // Everything the last world had built or changed goes, its walls too (World.WorldReset).
+            Safely("清空世界", World.WorldReset.All);
             Safely("重置角色", () => TerraMod.Instance?.ResetPlayer());
             // Creative if the creative mode button asked for this slot, else an ordinary game; at
             // the difficulty chosen for it (Master when none was, as for the autotests' games).

@@ -29,7 +29,7 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override Look Theme => Look.Spike;
 
         bool sentinel, aimedNext, aimedThrow, afterSphere, afterGDash, afterCounter, dashAtAir;
-        int antiAir;
+        int antiAir, followUp;
         float throwAngle;
         PlayMakerFSM needle;
         Wait needleOut;
@@ -69,10 +69,16 @@ namespace TerraKnight.EnemyAi.Bosses
             OnEnter("Sphere", () => afterSphere = true);
             OnEnter("G Dash", () => afterGDash = true);
             if (sentinel) OnEnter("CA 1", () => afterCounter = true);
-            // Escalation, every move's end: a follow-up (the branches run before the flags are cleared).
-            OnEnter("Escalation", () => afterSphere = afterGDash = afterCounter = false);
-            Branch("Escalation", "Throw Antic", FollowThrow);
-            Branch("Escalation", "Set ADash", () => afterGDash && Rank >= 2 && Random.value < 0.5f);
+            // Escalation, every move's end: a follow-up, decided and the flags spent before either branch (a branch taken leaves
+            // the state at once, the rest of its actions unrun: a counter's flag left standing made every move after it a throw,
+            // the user's 10-26 "国王边境那一场，打到二阶段的时候就只用飞针了").
+            Branch("Escalation", "Throw Antic", () => followUp == 1);
+            Branch("Escalation", "Set ADash", () => followUp == 2);
+            OnEnter("Escalation", () =>
+            {
+                followUp = afterGDash && Rank >= 2 && Random.value < 0.5f ? 2 : FollowThrow() ? 1 : 0;
+                afterSphere = afterGDash = afterCounter = false;
+            });
             // Against the air, in her choice: the Sentinel's after her barbs have had their turn (Barb? before Can Throw?).
             string choice = sentinel && Batch2.Has(Control, "Can Throw?") ? "Can Throw?" : "G Sphere?";
             if (sentinel && AddState("TK Rise", Rise, "Sphere Antic A") != null) Branch(choice, "TK Rise", () => antiAir == 1);

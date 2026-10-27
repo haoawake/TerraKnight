@@ -26,6 +26,8 @@ namespace TerraKnight.Items
         const float SteadyKeepTime = 0.5f;
         static float keepSpeed, keepUntil;
         public static float DevKeptSpeed => keepSpeed;
+        /// <summary>Dev (suite steadydash): the kept speed held on while a way is held, as before 10-26.</summary>
+        public static bool DevOldKeep;
 
         /// <summary>
         /// The no-inertia run (px a tick): start is the speed before this tick's run, vx after it. A way held speeds up as it
@@ -37,7 +39,10 @@ namespace TerraKnight.Items
             if (way != 0)
             {
                 float speed = start * way < 0f ? Mathf.Abs(start) : Mathf.Abs(vx);
-                if (Time.time < keepUntil) speed = Mathf.Max(speed, keepSpeed);
+                // Pressed again within half a second of a let-go: the speed of then. Held on, the run as it goes (a dash's
+                // speed falls back to the run's as in Terraria: kept, a shadow dash ran on at its speed, the user's 10-26).
+                bool resumed = DevOldKeep ? Time.time < keepUntil : !float.IsPositiveInfinity(keepUntil) && Time.time < keepUntil;
+                if (resumed) speed = Mathf.Max(speed, keepSpeed);
                 keepSpeed = speed;
                 keepUntil = float.PositiveInfinity;
                 return way * speed;

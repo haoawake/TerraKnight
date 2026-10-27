@@ -172,6 +172,11 @@ namespace TerraKnight.EnemyAi
             var walker = h.GetComponent<Walker>();
             if (walker != null && walkerRight != null) facesRight = (float)walkerRight.GetValue(walker) > 0f;
             else if (SpriteFacesRight(fsms) is bool own) facesRight = own;
+            else if (!DevOldFacing && ScaleFacesRight(controls) is bool turns) facesRight = turns;
+            var fb = new List<FsmBool>();
+            foreach (var f in controls)
+                if (f != null && f.FsmVariables.FindFsmBool("Facing Right") is FsmBool b) fb.Add(b);
+            facingRight = fb.ToArray();
             // The Elder Baldur's own spit aimed at the player, its wave of that goop (BlockerSpit).
             if (p.GoopSpit)
             {
@@ -494,7 +499,9 @@ namespace TerraKnight.EnemyAi
                 LeadOffset = hit.collider != null ? lead.normalized * Mathf.Max(0f, hit.distance - 0.3f) : lead;
                 Leading = true;
             }
-            if (NetSync)
+            // Soul Twister's Sleep/teleport controller also uses its Hero reference to wake and show its body.
+            // A collider-less lead proxy cannot be that actor. Keep its native target; new shots still use LeadOffset.
+            if (NetSync || info.Record == "Mage")
             {
                 RestoreAim();
                 return;
@@ -553,6 +560,9 @@ namespace TerraKnight.EnemyAi
                 if (f == null || !f.enabled) continue;
                 string s = f.ActiveStateName;
                 if (string.IsNullOrEmpty(s)) continue;
+                // Its native states are named "Tele Line", "Tele Out" and "Tele In", not "Teleport".
+                if (info.Record == "Mage" && s.StartsWith("Tele", System.StringComparison.OrdinalIgnoreCase))
+                { busyState = s; return true; }
                 if (!busyStates.TryGetValue(s, out bool busy))
                 {
                     busy = false;
@@ -601,8 +611,19 @@ namespace TerraKnight.EnemyAi
             return v.x > -0.05f && v.x < 1.05f && v.y > -0.05f && v.y < 1.05f;
         }
 
+        bool VisibleMage()
+        {
+            if (info.Record != "Mage") return true;
+            var sprite = hm.GetComponent<tk2dBaseSprite>();
+            var renderer = hm.GetComponent<Renderer>();
+            return (renderer == null || renderer.enabled) && (sprite == null || sprite.color.a > .05f)
+                && Mathf.Abs(transform.lossyScale.x) > .05f && Mathf.Abs(transform.lossyScale.y) > .05f;
+        }
+
         bool Allowed(Move m, int i, float now, float d, bool struck, bool postDash)
         {
+            // A sleeping or vanished Twister must finish its own appearance before any new attack, including shots.
+            if (!VisibleMage()) return No(i, "hidden");
             if ((int)m.Tier > (int)EnemyAi.TierNow) return No(i, "tier");
             if (Drawn(m)) return No(i, "drawn");
             if (now < readyAt[i]) return No(i, "cooldown");
@@ -2020,6 +2041,43 @@ namespace TerraKnight.EnemyAi
             return right + left == 0 ? (bool?)null : right > left;
         }
 
+        /// <summary>
+        /// Which way its picture faces, as its own turns say where it has no FaceObject (a Husk Guard's Turn Right: scale x
+        /// +1 and its Facing Right true, so drawn facing right): most of their votes.
+        /// </summary>
+        static bool? ScaleFacesRight(PlayMakerFSM[] fsms)
+        {
+            int right = 0, left = 0;
+            foreach (var f in fsms)
+            {
+                if (f == null || f.FsmStates == null) continue;
+                foreach (var st in f.FsmStates)
+                {
+                    float x = 0f;
+                    bool? says = null;
+                    foreach (var a in st.Actions)
+                    {
+                        if (a is HutongGames.PlayMaker.Actions.SetScale ss && ss.gameObject != null && ss.gameObject.OwnerOption == OwnerDefaultOption.UseOwner
+                            && ss.x != null && !ss.x.IsNone && !ss.x.UseVariable && ss.vector != null && ss.vector.IsNone)
+                            x = ss.x.Value;
+                        else if (a is HutongGames.PlayMaker.Actions.SetBoolValue sb && sb.boolVariable != null && sb.boolVariable.Name == "Facing Right"
+                            && sb.boolValue != null && !sb.boolValue.UseVariable)
+                            says = sb.boolValue.Value;
+                    }
+                    if (says == null || x == 0f) continue;
+                    if (says.Value == x > 0f) right++;
+                    else left++;
+                }
+            }
+            return right + left == 0 ? (bool?)null : right > left;
+        }
+
+        /// <summary>Its own script's Facing Right (a Husk Guard's): its walk, turns and slam read it, kept to the way it faces.</summary>
+        FsmBool[] facingRight;
+
+        /// <summary>Dev (suite facing): the picture's way from FaceObject alone and Facing Right left alone, as before 10-25.</summary>
+        internal static bool DevOldFacing;
+
         void Face(float dx)
         {
             if (Mathf.Abs(dx) < 0.01f || climber != null) return;
@@ -2027,6 +2085,7 @@ namespace TerraKnight.EnemyAi
             bool right = dx > 0f;
             float sign = right != facesRight ? -1f : 1f;
             if (Mathf.Sign(s.x) != sign) transform.localScale = new Vector3(Mathf.Abs(s.x) * sign, s.y, s.z);
+            if (facingRight != null && !DevOldFacing) foreach (var b in facingRight) b.Value = right;
         }
     }
 }

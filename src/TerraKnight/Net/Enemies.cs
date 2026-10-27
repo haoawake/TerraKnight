@@ -175,8 +175,10 @@ namespace TerraKnight.Net
             foreach (var root in s.GetRootGameObjects())
             {
                 if (root.name == TemplateHolder) continue;
+                // One per body: the Mantis Lords carry a second HealthManager in the game's own scene, never struck (a blow
+                // finds the first); sent too, it was a lord the others' games had no puppet for, left running there.
                 foreach (var hm in root.GetComponentsInChildren<HealthManager>(true))
-                    if (!UnderTemplates(hm.transform)) list.Add(hm);
+                    if (!UnderTemplates(hm.transform) && hm.GetComponent<HealthManager>() == hm) list.Add(hm);
             }
             if (adopted.TryGetValue(scene, out var more))
             {

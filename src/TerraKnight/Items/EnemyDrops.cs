@@ -89,14 +89,14 @@ namespace TerraKnight.Items
         }
 
         public static IReadOnlyList<Drop> Of(string record) => record != null && table.TryGetValue(record, out var e)
-            ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,e,Shop.UnlockedStage(),Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear)) : none;
+            ? EssentialDrops.With(record, LootStage.Current, ProgressionLoot.Of(record,e,LootStage.Current,Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear)) : none;
 
         internal static IReadOnlyList<Drop> At(string record,int stage,bool first,bool entry,bool final) =>
             record != null && table.TryGetValue(record,out var e) ? EssentialDrops.With(record, stage, ProgressionLoot.Of(record,e,stage,first,entry,final)) : none;
 
         /// <summary>A kill's drops in that scene (its area's), as Roll makes them there: now, or at a stage.</summary>
         public static IReadOnlyList<Drop> In(string record, string scene) => record != null && table.TryGetValue(record, out var e)
-            ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,e,Shop.UnlockedStage(),Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene)) : none;
+            ? EssentialDrops.With(record, LootStage.Current, ProgressionLoot.Of(record,e,LootStage.Current,Bestiary.KillsOf(record)==0,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene)) : none;
 
         internal static IReadOnlyList<Drop> At(string record,int stage,bool first,bool entry,bool final,string scene) =>
             record != null && table.TryGetValue(record,out var e) ? EssentialDrops.With(record, stage, ProgressionLoot.Of(record,e,stage,first,entry,final,scene)) : none;
@@ -114,7 +114,15 @@ namespace TerraKnight.Items
         static readonly HashSet<string> wakingRematches = new HashSet<string> { "GG_False_Knight", "GG_Soul_Master", "GG_Broken_Vessel" };
 
         /// <summary>The level whose own table a kill in this scene uses (<see cref="KeyFor"/>): the scene's, but a waking boss's Godhome rematch none (its usual table).</summary>
-        public static int VariantLevel(string scene) => wakingRematches.Contains(scene) ? -1 : dreamBosses.Contains(scene) ? 5 : World.Areas.LevelOf(scene);
+        public static int VariantLevel(string scene) => wakingRematches.Contains(scene) ? -1 : dreamBosses.Contains(scene) ? 5
+            : godhomeVariants.TryGetValue(scene ?? "", out int level) ? level : World.Areas.LevelOf(scene);
+
+        /// <summary>
+        /// Godhome's halls of a world boss's later fight with a table of its own (record@level): that fight's, not the first
+        /// one's (every Godhome room is level 5, which those records have no table of: the Hornet Sentinel paid the
+        /// Protector's Greenpath loot, the user's 10-25).
+        /// </summary>
+        static readonly Dictionary<string, int> godhomeVariants = new Dictionary<string, int> { ["GG_Hornet_2"] = 4 };
 
         /// <summary>The dream bosses' rooms: fought at their own stage (World.Areas.LevelOf), their tables still "record@5".</summary>
         static readonly HashSet<string> dreamBosses = new HashSet<string>
@@ -131,7 +139,7 @@ namespace TerraKnight.Items
         public static bool IsEliteRecord(string record) => record != null && table.TryGetValue(record, out var e) && !IsBoss(record) && (e.Kind == "miniboss" || e.Hp >= 70);
 
         /// <summary>A drop of a stage the player hasn't unlocked yet: it doesn't drop, and the book hides it.</summary>
-        public static bool Locked(Drop d) => d.LockStage > Shop.UnlockedStage();
+        public static bool Locked(Drop d) => d.LockStage > LootStage.Current;
         internal static bool Locked(Drop d, int stage) => d.LockStage > stage;
 
         /// <summary>The geo a record's kill drops on the current difficulty (-1: the game's own).</summary>
@@ -254,7 +262,7 @@ namespace TerraKnight.Items
         public static float EffectiveChance(Drop d) => d.Chance >= 1f ? 1f : Mathf.Min(1f, d.Chance * ChanceScale);
 
         /// <summary>How many of a drop's group are unlocked now (the book's "one of N"); 0 for a drop in no group.</summary>
-        public static int GroupSize(IReadOnlyList<Drop> drops, int group) => GroupSize(drops, group, Shop.UnlockedStage());
+        public static int GroupSize(IReadOnlyList<Drop> drops, int group) => GroupSize(drops, group, LootStage.Current);
         internal static int GroupSize(IReadOnlyList<Drop> drops, int group, int stage)
         {
             if (group <= 0) return 0;
@@ -300,7 +308,7 @@ namespace TerraKnight.Items
             if(!fromBag && record!=null)VanillaBossProgression.Credit(record,LootScene);
             bool first = firstKill ?? Bestiary.KillsOf(record)==0;
             var drops = record != null && table.TryGetValue(record,out var entry)
-                ? EssentialDrops.With(record, Shop.UnlockedStage(), ProgressionLoot.Of(record,entry,Shop.UnlockedStage(),first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene ?? (fromBag ? null : Relics.ContextScene))) : none;
+                ? EssentialDrops.With(record, LootStage.Current, ProgressionLoot.Of(record,entry,LootStage.Current,first,ProgressionBalance.EntryClear,ProgressionBalance.FinalClear,scene ?? (fromBag ? null : Relics.ContextScene))) : none;
             if (drops.Count == 0) return;
             // Terraria's boss bags (Expert, Master): the loot goes into one bag left at the boss, rolled when it is opened
             // (fromBag); the relic, the hearts, the potions and the crystals drop beside it as ever.
@@ -323,6 +331,9 @@ namespace TerraKnight.Items
                     if(!paidSingles.Add(drop.Type)) return;
                 }
                 Put(drop,at,direct);
+                // A costume's first piece brings the rest of its set (VanityDrops), a developer item its whole set.
+                foreach (var mate in VanityDrops.Mates(drop.Type))
+                    if (ItemDb.Has(mate)) Put(new Drop { Type = mate, Num = 1, Den = 1, Min = 1, Max = 1, LockStage = 0 }, at, direct);
             }
             foreach (var d in drops)
             {
@@ -467,7 +478,7 @@ namespace TerraKnight.Items
             return System.Math.Max(live,reserved);
         }
 
-        public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d) => MarginalChance(drops, d, Shop.UnlockedStage());
+        public static float MarginalChance(IReadOnlyList<Drop> drops,Drop d) => MarginalChance(drops, d, LootStage.Current);
         /// <summary>At least one copy: choices in one group are exclusive; different rolls are independent.</summary>
         internal static float ItemChance(IReadOnlyList<Drop> drops,ItemType type,int stage)
         {

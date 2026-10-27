@@ -48,6 +48,9 @@ namespace TerraKnight.Items
         public bool FacesRight;
         /// <summary>Main.DrawProj's centred branch (the frame's middle on the hitbox's; drawOffsetX unused); the whole sheet as its one frame.</summary>
         public bool Centered, Whole;
+        /// <summary>A boss's own pet (Items.BossPets): its frames picked by its sheet's kind (Minions.BossPetFrames).</summary>
+        public bool BossPet;
+        public BossPets.Kind Boss;
         /// <summary>A worm's segments, the head among them, and how far apart (Main.DrawMultisegmentPet).</summary>
         public int Segments = 1;
         public float Spacing = 16f;
@@ -105,9 +108,11 @@ namespace TerraKnight.Items
         static readonly bool[] hidden = new bool[2];
         static bool buffsDefined;
 
-        public static bool Is(ItemType t) => defs.ContainsKey(t);
-        public static PetDef Of(ItemType t) => defs.TryGetValue(t, out var d) ? d : null;
-        public static IEnumerable<ItemType> All => defs.Keys;
+        public static bool Is(ItemType t) => defs.ContainsKey(t) || BossPets.Is(t);
+        public static PetDef Of(ItemType t) => defs.TryGetValue(t, out var d) ? d : BossPets.Def(t);
+        public static IEnumerable<ItemType> All => System.Linq.Enumerable.Concat(defs.Keys, BossPets.Items);
+        /// <summary>Every pet's def, the bosses' own too.</summary>
+        static IEnumerable<PetDef> Defs => System.Linq.Enumerable.Concat(defs.Values, BossPets.Defs);
 
         /// <summary>The pet out now of a kind (vanity, light): its item, None for none.</summary>
         public static ItemType Current(bool light) => current[light ? 1 : 0];
@@ -117,7 +122,7 @@ namespace TerraKnight.Items
         {
             if (buffsDefined) return;
             buffsDefined = true;
-            foreach (var d in defs.Values) PlayerBuffs.Define(d.Buff, d.BuffName, d.BuffDesc, noTime: true);
+            foreach (var d in Defs) PlayerBuffs.Define(d.Buff, d.BuffName, d.BuffDesc, noTime: true);
         }
 
         /// <summary>Using a pet item: its pet comes (the other of its kind goes), or goes if it is out.</summary>
@@ -138,9 +143,9 @@ namespace TerraKnight.Items
         /// <summary>Player.AddBuff for a pet: the other buffs of its kind are cleared first.</summary>
         static void Call(ItemType t)
         {
-            var d = defs[t];
+            var d = Of(t);
             int k = d.Light ? 1 : 0;
-            foreach (var o in defs.Values)
+            foreach (var o in Defs)
                 if (o.Light == d.Light && o.Buff != d.Buff) PlayerBuffs.Remove(o.Buff);
             PlayerBuffs.Add(d.Buff, 18000);
             current[k] = t;
@@ -167,13 +172,13 @@ namespace TerraKnight.Items
                     hidden[k] = false;
                     if ((was == ItemType.HkLumaflyLantern || was == ItemType.HkGrimmchild) && current[k] == was)
                     {
-                        PlayerBuffs.Remove(defs[was].Buff);
+                        PlayerBuffs.Remove(Of(was).Buff);
                         current[k] = ItemType.None;
                     }
                     if (want != ItemType.None && !dead) Call(want);
                 }
                 var cur = current[k];
-                if (cur != ItemType.None && !PlayerBuffs.Has(defs[cur].Buff))
+                if (cur != ItemType.None && !PlayerBuffs.Has(Of(cur).Buff))
                 {
                     // Right-clicked off while worn: it stays away until the slot changes. Death clears it for a while only.
                     if (cur == want && !dead) hidden[k] = true;
@@ -181,7 +186,7 @@ namespace TerraKnight.Items
                 }
                 if (dead) continue;
                 if (current[k] == ItemType.None && want != ItemType.None && !hidden[k]) Call(want);
-                if (current[k] != ItemType.None) PlayerBuffs.Add(defs[current[k]].Buff, 18000);
+                if (current[k] != ItemType.None) PlayerBuffs.Add(Of(current[k]).Buff, 18000);
             }
         }
 

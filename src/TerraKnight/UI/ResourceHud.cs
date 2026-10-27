@@ -133,7 +133,23 @@ namespace TerraKnight.UI
                 GUI.DrawTexture(new Rect(mx - w / 2f, cy - h / 2f, w, h), temp ? Pale(star) : star);
                 GUI.color = prev;
             }
+            // The cursor over the hearts or the stars: their life or mana as numbers beside it (ClassicPlayerResourcesDisplaySet's
+            // MouseTextHackZoom, "statLife/statLifeMax2", "statMana/statManaMax2").
+            var mouse = DevMouse ?? Event.current.mousePosition;
+            int heartRows = Mathf.Max(1, (heartCount + HeartsPerRow - 1) / HeartsPerRow);
+            var heartArea = new Rect(right - Mathf.Min(heartCount, HeartsPerRow) * HeartStep * ui, top + 40f * ui - HeartStep * ui * 0.5f,
+                Mathf.Min(heartCount, HeartsPerRow) * HeartStep * ui, heartRows * HeartStep * ui);
+            var starArea = new Rect(mx - StarStep * ui * 0.5f, top + 40f * ui - StarStep * ui * 0.5f, StarStep * ui, Mathf.Max(1, stars) * StarStep * ui);
+            DevHover = heartArea.Contains(mouse) ? stats.Life + "/" + stats.LifeMax : starArea.Contains(mouse) ? stats.Mana + "/" + stats.ManaMax : null;
+            if (DevHover != null) EnemyHover.MouseText(DevHover, Color.white, mouse);
+            DevStarCenter = starArea.center;
+            DevHeartCenter = heartArea.center;
         }
+
+        /// <summary>Dev: the cursor taken as here (GUI coordinates); what its hover showed; the areas' centres last drawn.</summary>
+        public static Vector2? DevMouse;
+        public static string DevHover;
+        public static Vector2 DevStarCenter, DevHeartCenter;
 
         static Texture2D cyanHeart;
         static Texture2D cyanFrom;

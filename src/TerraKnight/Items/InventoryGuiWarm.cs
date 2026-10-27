@@ -28,6 +28,7 @@ namespace TerraKnight.Items
         /// <summary>Called each frame in play while warming up: decodes the next slice of the sprites.</summary>
         public static void WarmIcons()
         {
+            WarmJournalFrames();
             if (iconsWarm) return;
             if (iconStep == 0) CollectIcons();
             for (int n = 0; n < IconsPerFrame && iconStep < warmIcons.Count; n++, iconStep++)

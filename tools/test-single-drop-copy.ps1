@@ -15,7 +15,7 @@ New-Item -ItemType Directory -Path $storage | Out-Null
 $game=Join-Path $env:TEMP ($TempPrefix+[Guid]::NewGuid().ToString('N').Substring(0,10))
 New-Item -ItemType Junction -Path $game -Target $storage | Out-Null
 foreach($file in @('hollow_knight.exe','UnityPlayer.dll','winhttp.dll','doorstop_config.ini','steam_appid.txt')){Copy-Item -LiteralPath (Join-Path $template $file) -Destination $game}
-& (Join-Path $PSScriptRoot 'new-private-unity-data.ps1') -Source (Join-Path $template 'hollow_knight_Data') -Destination (Join-Path $game 'hollow_knight_Data')
+& (Join-Path $PSScriptRoot 'new-private-unity-data.ps1') -Source (Join-Path $template 'hollow_knight_Data') -Destination (Join-Path $storage 'hollow_knight_Data')
 foreach($dir in @('MonoBleedingEdge','D3D12')){New-Item -ItemType Junction -Path (Join-Path $game $dir) -Target (Join-Path $template $dir) | Out-Null}
 $bep=Join-Path $game 'BepInEx'
 New-Item -ItemType Directory -Path (Join-Path $bep 'plugins/TerraKnight') -Force | Out-Null
@@ -24,7 +24,18 @@ Copy-Item -LiteralPath (Join-Path $template 'BepInEx/config') -Destination $bep 
 $exe=Join-Path $game 'hollow_knight.exe'
 $player=Join-Path $env:USERPROFILE 'AppData/LocalLow/Team Cherry/Hollow Knight'
 $before=@{}
-$registryBefore=Get-ItemProperty 'HKCU:/Software/Team Cherry/Hollow Knight' | ConvertTo-Json -Depth 5 -Compress
+function Read-OriginalPreferences {
+ $key=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Team Cherry\Hollow Knight')
+ try {
+  $values=[ordered]@{}
+  if($key){foreach($name in ($key.GetValueNames() | Sort-Object)){
+   $values[$name]=[ordered]@{Kind=$key.GetValueKind($name).ToString();Value=$key.GetValue($name)}
+  }}
+  return ($values | ConvertTo-Json -Depth 7 -Compress)
+ } finally {if($key){$key.Close()}}
+}
+$registryBefore=Read-OriginalPreferences
+[IO.File]::WriteAllText((Join-Path $run 'original-preferences-before.json'),$registryBefore)
 $sharedBefore=@{}
 foreach($n in @('AppConfig.ini','shared.dat','shared.dat.bak')){
  $p=Join-Path $player $n
@@ -50,12 +61,14 @@ if(Test-Path -LiteralPath $diagnostics) {
     Get-ChildItem -LiteralPath $diagnostics -File -Filter '*.json' | Copy-Item -Destination $run
 }
 $lines=Get-Content -LiteralPath $log -Encoding UTF8
-$failures=@($lines | Where-Object {$_ -match '\[AutoTest\].*\u4e0d\u901a\u8fc7'})
+$failures=@($lines | Where-Object {$_ -match '\[AutoTest\].*\u4e0d\u901a\u8fc7'} | ForEach-Object {[string]$_})
 $completed=[bool]($lines | Where-Object {$_ -match '\[AutoTest\] \u5b8c\u6210'})
 if(-not ($lines | Where-Object { $_.Contains($saves) })) { $completed=$false }
 $changed=@($before.Keys | Where-Object {-not (Test-Path -LiteralPath $_) -or (Get-FileHash -LiteralPath $_).Hash -ne $before[$_]})
 $new=@(Get-ChildItem -LiteralPath $player -File | Where-Object {$_.Name -match '^(user\d+[._]|TerraKnight_slot\d+\.)' -and -not $before.ContainsKey($_.FullName)})
-$registryUnchanged=(Get-ItemProperty 'HKCU:/Software/Team Cherry/Hollow Knight' | ConvertTo-Json -Depth 5 -Compress) -eq $registryBefore
+$registryAfter=Read-OriginalPreferences
+[IO.File]::WriteAllText((Join-Path $run 'original-preferences-after.json'),$registryAfter)
+$registryUnchanged=$registryAfter -eq $registryBefore
 $sharedChanged=@($sharedBefore.Keys | Where-Object {$actual=if(Test-Path -LiteralPath $_){(Get-FileHash -LiteralPath $_).Hash}else{$null};$actual -ne $sharedBefore[$_]})
 @{Suite=$Suite;Run=$run;BuildHash=$candidateBuildHash;Completed=$completed;TimedOut=$timeout;Failures=$failures;ChangedPlayerSaves=$changed;NewPlayerSaves=[string[]]@($new | ForEach-Object {$_.Name});IndependentInstallation=$true;SharedSettingsRestored=$false;Note='No original-install configuration, shared save, or registry snapshot is written or restored while other tests run.'} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $run 'result.json') -Encoding utf8
 Write-Output "Evidence: $run"

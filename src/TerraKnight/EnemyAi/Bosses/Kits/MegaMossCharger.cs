@@ -104,16 +104,41 @@ namespace TerraKnight.EnemyAi.Bosses
             }
         }
 
+        /// <summary>
+        /// His own landing is coming back down to his ground's height (Start Y). Come down on something over it (a ledge, a
+        /// platform the player stood on: the user's 10-25 "跳到左边的平台上会卡好几秒"), he hops off it towards his
+        /// ground's middle at once; still up there after three hops, or in the air the whole while, he lands as his script
+        /// does (back down at his ground's height).
+        /// </summary>
         System.Collections.IEnumerator LandAfter(float seconds)
         {
-            float until = Time.time + seconds;
+            float until = Time.time + seconds, restingSince = -1f, nextHop = 0f;
+            float startY = Float("Start Y")?.Value ?? float.NegativeInfinity;
+            int hops = 0;
             while (Time.time < until)
             {
                 if (!Active || StateNow != "In Air") yield break;
+                bool resting = rb != null && Mathf.Abs(rb.linearVelocity.y) < 0.2f && transform.position.y > startY + 0.5f;
+                restingSince = resting ? (restingSince < 0f ? Time.time : restingSince) : -1f;
+                if (resting && !DevNoHop && Time.time - restingSince > 0.15f && Time.time >= nextHop)
+                {
+                    if (++hops > 3) break;
+                    float lo = Float("X Min")?.Value ?? Arena.xMin, hi = Float("X Max")?.Value ?? Arena.xMax;
+                    float dir = Mathf.Sign((lo + hi) / 2f - Me.x);
+                    rb.linearVelocity = new Vector2(dir * 10f, 8f);
+                    var s = transform.localScale;
+                    transform.localScale = new Vector3(dir * Mathf.Abs(s.x), s.y, s.z);
+                    nextHop = Time.time + 0.5f;
+                    DevHops++;
+                }
                 yield return null;
             }
-            if (StateNow == "In Air") Control.SendEvent("LAND");
+            if (Active && StateNow == "In Air") Control.SendEvent("LAND");
         }
+
+        /// <summary>Dev: hops off something over his ground; none (the suite's comparison).</summary>
+        public static int DevHops;
+        public static bool DevNoHop;
 
         /// <summary>
         /// The leap: 60% higher (×1.265 up), its sideways speed to come down where the player will be; against a player up

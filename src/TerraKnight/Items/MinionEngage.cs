@@ -22,6 +22,25 @@ namespace TerraKnight.Items
         /// <summary>The player has attacked in this room: the minions may fight.</summary>
         public static bool Engaged => DevAlways || (engagedScene != null && engagedScene == SceneNow);
 
+        static string bossScene;
+
+        /// <summary>
+        /// The player's own blow has landed on a boss in this room: from then its fight is the minions' too. Before it they
+        /// leave every boss be, asleep or awake (the user's 10-25 "boss必须等玩家出手召唤物才攻击").
+        /// </summary>
+        public static bool BossFought => DevAlways || (bossScene != null && bossScene == SceneNow);
+
+        /// <summary>A blow of the player's own on a boss (his weapons, shots, nail, spells; not a minion's).</summary>
+        public static void StruckBoss(HealthManager hm)
+        {
+            var info = hm != null ? EnemyStats.Of(hm) : null;
+            if (info == null || !info.Boss) return;
+            string s = SceneNow;
+            if (s == null || s == bossScene) return;
+            bossScene = s;
+            Plugin.Log.LogInfo($"[召唤物] 玩家打中首领 {info.Record}，召唤物开始在 {s} 打首领");
+        }
+
         public static void Engage(string why)
         {
             string s = SceneNow;
@@ -46,12 +65,13 @@ namespace TerraKnight.Items
         /// <summary>The Knight's own blows on an enemy: the nail, its arts and beams, the spells (not a companion's).</summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HealthManager), "TakeDamage")]
-        static void Struck(HitInstance hitInstance)
+        static void Struck(HealthManager __instance, HitInstance hitInstance)
         {
             var t = hitInstance.AttackType;
             if (t != AttackTypes.Nail && t != AttackTypes.NailBeam && t != AttackTypes.SharpShadow && t != AttackTypes.Spell) return;
             if (MeleeHits.Autonomous || FromCompanion(hitInstance.Source)) return;
             Engage(t.ToString());
+            StruckBoss(__instance);
         }
 
         static bool FromCompanion(GameObject go)
