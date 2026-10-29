@@ -150,6 +150,7 @@ namespace TerraKnight.World
 
         /// <summary>The scene's plants in front of the gameplay plane: vines, grass, bushes, moss, leaves, ferns, flowers.</summary>
         readonly List<SpriteRenderer> decor = new List<SpriteRenderer>();
+        readonly Dictionary<SpriteRenderer, Vector2Int> hiddenDecor = new Dictionary<SpriteRenderer, Vector2Int>();
         static readonly string[] decorNames = { "vine", "grass", "bush", "moss", "leaf", "leaves", "fern", "flower", "plant", "weed" };
         public int DevDecorHidden;
 
@@ -183,9 +184,33 @@ namespace TerraKnight.World
                 var b = sr.bounds;
                 if (b.max.x < c.x - half || b.min.x > c.x + half || b.max.y < c.y - half || b.min.y > c.y + half) continue;
                 if (!CrossesCell(sr, c, half)) continue;
+                if (sr.enabled) hiddenDecor[sr] = new Vector2Int(x, y);
                 sr.enabled = false;
                 decor.RemoveAt(i);
                 DevDecorHidden++;
+            }
+        }
+
+        internal void RestoreDecor(CellGrid grid)
+        {
+            if (hiddenDecor.Count == 0) return;
+            foreach (var entry in new List<KeyValuePair<SpriteRenderer, Vector2Int>>(hiddenDecor))
+            {
+                var sr = entry.Key;
+                if (sr == null) { hiddenDecor.Remove(entry.Key); continue; }
+                if (grid.IsDug(entry.Value.x, entry.Value.y)) continue;
+                var b = sr.bounds;
+                var min = CellGrid.WorldToCell((Vector2)b.min - (Vector2)root.position);
+                var max = CellGrid.WorldToCell((Vector2)b.max - (Vector2)root.position);
+                bool cut = false;
+                for (int y = Mathf.Max(0, min.y); y <= Mathf.Min(grid.Height - 1, max.y) && !cut; y++)
+                for (int x = Mathf.Max(0, min.x); x <= Mathf.Min(grid.Width - 1, max.x); x++)
+                    if (grid.IsDugGround(x, y) && CrossesCell(sr, (Vector2)root.position + CellGrid.CellCenter(x, y), CellGrid.CellSize * .5f + .05f))
+                    { cut = true; break; }
+                if (cut) continue;
+                sr.enabled = true;
+                decor.Add(sr);
+                hiddenDecor.Remove(sr);
             }
         }
 

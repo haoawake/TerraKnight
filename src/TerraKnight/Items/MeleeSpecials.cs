@@ -408,6 +408,7 @@ namespace TerraKnight.Items
             var p = TerraParticles.Instance;
             if (p == null) return;
             if (w.Type == ItemType.Hammush) HammushMushrooms(w, swing, dir);
+            if (UmbrellaRemade(w)) UmbrellaWater(w, swing, dir);
             var tl = TerraParticles.ToPx(new Vector2(swing.xMin, swing.yMax));
             int rw = Mathf.RoundToInt(swing.width / TerraParticles.Px), rh = Mathf.RoundToInt(swing.height / TerraParticles.Px);
             if (w.Type == ItemType.DD2SquireDemonSword)
@@ -453,6 +454,7 @@ namespace TerraKnight.Items
         {
             rot = 0.8f;
             loc = default;
+            if (UmbrellaRemade(w)) return UmbrellaLocation(w, remaining, frameW, scale, out loc, out rot);
             if (remaining > 0.666f) return false;
             float back = remaining * frameW * scale * 1.2f - 10f;
             if (back < 4f) back = 8f;
@@ -466,6 +468,8 @@ namespace TerraKnight.Items
         public static void ThrustDraw(ItemDef w, ref Vector2 loc, ref float rot)
         {
             if (w.Type != ItemType.Umbrella && w.Type != ItemType.TragicUmbrella) return;
+            // The remade techniques place and turn it themselves (UmbrellaLocation).
+            if (UmbrellaRemade(w)) return;
             loc.y -= 22f;
             rot = 1.57f;
         }
@@ -478,6 +482,7 @@ namespace TerraKnight.Items
         public static bool ThrustBox(ItemDef w, Vector2 hitboxTl, int dir, float remaining, float frameW, float frameH, float scale, out Rect box)
         {
             box = default;
+            if (UmbrellaRemade(w)) return UmbrellaBox(w, hitboxTl, dir, remaining, frameW, frameH, scale, out box);
             if (!ThrustLocation(w, remaining, frameW, scale, out var loc, out _)) return false;
             float cx = hitboxTl.x + 10f;
             float x = cx + (loc.x - 10f) * dir, y = hitboxTl.y + loc.y;
@@ -569,6 +574,165 @@ namespace TerraKnight.Items
             }
             if (ShieldRaised && __instance.cState.onGround && Mathf.Abs(___rb2d.linearVelocity.x) > 3f * TerraMovement.PxT)
                 ___rb2d.linearVelocity = new Vector2(___rb2d.linearVelocity.x / 2f, ___rb2d.linearVelocity.y);
+        }
+
+        // ------------------------------------------------------------------ the umbrellas remade
+
+        /// <summary>
+        /// The umbrellas' techniques with the remade swings on (the user's 10-26 "继续升级剩下的这些…特效，动画，粒子效果，新颖，多样"), one a
+        /// use in turn (the next within 0.6 s): 开伞顶, the open canopy driven ahead as the game's but out from the start and
+        /// further, a spray of rain off it; 伞面横扫, swung over from behind the shoulder down through the front, rain flung
+        /// along the arc; 伞尖突刺, the ferrule lunged straight out, 45% further than the game's, rain sprayed down the line.
+        /// The Tragic Umbrella's water greyer, with tears of shadow. Its box each technique's own, the blow once a use.
+        /// </summary>
+        public static bool UmbrellaRemade(ItemDef w) => w != null && WeaponRefitting.EnabledFor(w) && (w.Type == ItemType.Umbrella || w.Type == ItemType.TragicUmbrella);
+
+        static readonly string[] umbrellaMoves = { "开伞顶", "伞面横扫", "伞尖突刺" };
+        /// <summary>This use's technique (0..2).</summary>
+        public static int UmbrellaMove { get; private set; }
+        static float umbrellaLastAt = -10f, umbrellaLastRemaining;
+        static bool umbrellaBurst;
+        /// <summary>Dev: the last technique begun, techniques begun.</summary>
+        public static string DevUmbrellaMove = "";
+        public static int DevUmbrellaMoves;
+
+        /// <summary>A new use seen (its remaining time back up), the next technique of the round.</summary>
+        static void UmbrellaUse(float remaining)
+        {
+            if (remaining > umbrellaLastRemaining + 0.2f || Time.time - umbrellaLastAt > 0.25f)
+            {
+                bool goOn = Time.time - umbrellaLastAt < 0.6f;
+                UmbrellaMove = goOn ? (UmbrellaMove + 1) % umbrellaMoves.Length : 0;
+                DevUmbrellaMove = umbrellaMoves[UmbrellaMove];
+                DevUmbrellaMoves++;
+                umbrellaBurst = true;
+            }
+            umbrellaLastRemaining = remaining;
+            umbrellaLastAt = Time.time;
+        }
+
+        static float Ease(float t) => 1f - (1f - t) * (1f - t);
+
+        /// <summary>Where the remade umbrella is held this moment of its use, and its turn (as ThrustLocation).</summary>
+        static bool UmbrellaLocation(ItemDef w, float remaining, float frameW, float scale, out Vector2 loc, out float rot)
+        {
+            UmbrellaUse(remaining);
+            float t = 1f - remaining;
+            switch (UmbrellaMove)
+            {
+                case 1:
+                    // Over from behind the shoulder, down through the front: turned about the hand.
+                    rot = Mathf.Lerp(-0.45f, 2.55f, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.8f)));
+                    loc = new Vector2(10f + 2f, 24f);
+                    return true;
+                case 2:
+                {
+                    // The ferrule straight out, quick out and slower back.
+                    float o = t < 0.35f ? Ease(t / 0.35f) : Mathf.Lerp(1f, 0.3f, (t - 0.35f) / 0.65f);
+                    rot = 1.57f;
+                    loc = new Vector2(10f - 12f + o * frameW * scale * 0.95f, 24f - 22f);
+                    return true;
+                }
+                default:
+                {
+                    // The game's thrust, out from the start and a third further.
+                    float o = t < 0.3f ? Ease(t / 0.3f) : Mathf.Lerp(1f, 0.45f, (t - 0.3f) / 0.7f);
+                    rot = 1.57f;
+                    loc = new Vector2(10f - 16f + o * frameW * scale * 0.7f, 24f - 22f);
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>The remade umbrella's box (Terraria px, top-left, y down) this moment: the canopy ahead, the arc, the ferrule's line,
+        /// each taking in the game's own thrust box too (a blow never lands less often than the game's).</summary>
+        static bool UmbrellaBox(ItemDef w, Vector2 hitboxTl, int dir, float remaining, float frameW, float frameH, float scale, out Rect box)
+        {
+            if (!OwnUmbrellaBox(w, hitboxTl, dir, remaining, frameW, frameH, scale, out box)) return false;
+            // The game's box at its middle (ItemCheck_GetMeleeHitbox, useStyle 3, the umbrellas' 14 taller and 10 narrower).
+            float back = 0.4f * frameW * scale * 1.2f - 10f;
+            if (back < 4f) back = 8f;
+            float lx = 10f + (frameW * 0.5f - 4f) - back - 6f;
+            float x = hitboxTl.x + 10f + (lx - 10f) * dir, y = hitboxTl.y + 24f;
+            float bw = (int)(frameW * scale), bh = (int)(frameH * scale);
+            if (dir == -1) x -= bw;
+            y -= bh;
+            if (dir == -1) x -= (int)(bw * 1.4f - bw);
+            bw = (int)(bw * 1.4f) - 10f;
+            y += (int)(bh * 0.6f);
+            bh = (int)(bh * 0.6f) + 14f;
+            if (dir == -1) x += 10f;
+            box = Rect.MinMaxRect(Mathf.Min(box.xMin, x), Mathf.Min(box.yMin, y), Mathf.Max(box.xMax, x + bw), Mathf.Max(box.yMax, y + bh));
+            return true;
+        }
+
+        static bool OwnUmbrellaBox(ItemDef w, Vector2 hitboxTl, int dir, float remaining, float frameW, float frameH, float scale, out Rect box)
+        {
+            box = default;
+            float t = 1f - remaining;
+            float bw = frameW * scale, bh = frameH * scale;
+            float cx = hitboxTl.x + 10f, top = hitboxTl.y;
+            switch (UmbrellaMove)
+            {
+                case 1:
+                {
+                    // The arc swept in front, from over the head to the feet, while it comes down.
+                    if (t < 0.15f || t > 0.85f) return false;
+                    float reach = bw * 1.5f;
+                    box = new Rect(dir > 0 ? cx - 4f : cx - reach + 4f, top - bh * 0.55f, reach, bh * 1.6f + 20f);
+                    return true;
+                }
+                case 2:
+                {
+                    if (t < 0.12f || t > 0.75f) return false;
+                    float reach = bw * 1.45f + 12f;
+                    box = new Rect(dir > 0 ? cx : cx - reach, top + 6f, reach, bh * 0.55f);
+                    return true;
+                }
+                default:
+                {
+                    if (t < 0.1f || t > 0.8f) return false;
+                    float reach = bw * 1.3f + 8f;
+                    box = new Rect(dir > 0 ? cx : cx - reach, top - 6f, reach, bh * 0.8f + 14f);
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>Rain off the remade umbrella each tick of a use: a spray ahead, flung along the arc, down the ferrule's line.</summary>
+        static void UmbrellaWater(ItemDef w, Rect swing, float dir)
+        {
+            var p = TerraParticles.Instance;
+            if (p == null || swing.width <= 0f) return;
+            bool tragic = w.Type == ItemType.TragicUmbrella;
+            var tl = TerraParticles.ToPx(new Vector2(swing.xMin, swing.yMax));
+            var size = new Vector2(swing.width, swing.height) / TerraParticles.Px;
+            void Drop(Vector2 at, Vector2 v, float scale)
+            {
+                int i = p.NewDust(at - new Vector2(2f, 2f), 4, 4, tragic ? 278 : 33, 0f, 0f, tragic ? 50 : 0, scale * 1.25f);
+                if (i < 0) return;
+                p[i].Velocity = v + new Vector2(0f, 0.4f);
+                p[i].NoGravity = true;
+                if (tragic) { p[i].Color = new Color(0.4f, 0.45f, 0.62f); p[i].FadeIn = 0.8f; }
+            }
+            int n = umbrellaBurst ? 18 : 3;
+            umbrellaBurst = false;
+            for (int k = 0; k < n; k++)
+            {
+                var at = tl + new Vector2(Random.value * size.x, Random.value * size.y);
+                switch (UmbrellaMove)
+                {
+                    case 1: Drop(at, new Vector2(dir * Random.Range(1f, 3.5f), Random.Range(-1.5f, 2.5f)), 1f); break;
+                    case 2: Drop(new Vector2(dir > 0f ? tl.x + size.x : tl.x, at.y), new Vector2(dir * Random.Range(3f, 6f), Random.Range(-0.6f, 0.6f)), 0.9f); break;
+                    default: Drop(at, new Vector2(dir * Random.Range(2f, 5f), Random.Range(-2.5f, 0.5f)), 1.05f); break;
+                }
+            }
+            // The Tragic Umbrella's tears of shadow.
+            if (tragic && Random.value < 0.35f)
+            {
+                int i = p.NewDust(tl, Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y), 31, 0f, -0.5f, 140, 1.1f);
+                if (i >= 0) { p[i].NoGravity = true; p[i].Color = new Color(0.22f, 0.24f, 0.34f); }
+            }
         }
 
         /// <summary>The run speed factor these give (the moveSpeed debuff of the raised shield: a third).</summary>

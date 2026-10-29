@@ -4,9 +4,11 @@ namespace TerraKnight.Items
 {
     /// <summary>
     /// Hallownest's own shops (Sly, Iselda, Salubra, the Leg Eater: ShopItemStats) ask five times the game's prices (the
-    /// user's): geo comes in as Terraria's money here, from every drop sold. What Lemm pays for relics (relic entries)
-    /// stays as it is. ShopItemStats.Awake reads its price from the language sheet ("Prices") for each item it builds, so
-    /// the multiple never compounds. The prompts that ask geo (tolls, stags, the Nailsmith...) are raised too (RaiseToll).
+    /// user's): geo comes in as Terraria's money here, from every drop sold. What Lemm pays for relics (relic entries: the
+    /// shop menu pays a relic's ShopItemStats.GetCost) is five times too (the user's 10-28 "古董回收价也翻五倍"), as is a relic
+    /// sold to a Terraria merchant (HallownestRecovery.RelicValue). ShopItemStats.Awake reads its price from the language
+    /// sheet ("Prices") for each item it builds, so the multiple never compounds. The prompts that ask geo (tolls, stags, the
+    /// Nailsmith...) are raised too (RaiseToll).
     /// </summary>
     [HarmonyPatch]
     internal static class HkShopPrices
@@ -54,7 +56,7 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(ShopItemStats), "Awake")]
         static void Raise(ShopItemStats __instance)
         {
-            if (__instance == null || __instance.relic || __instance.cost <= 0) return;
+            if (__instance == null || __instance.cost <= 0) return;
             __instance.cost *= Factor;
             DevRaised++;
         }

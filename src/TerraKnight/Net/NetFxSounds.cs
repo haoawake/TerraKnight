@@ -266,6 +266,7 @@ namespace TerraKnight.Net
                 var go = new GameObject("TK net sound");
                 Object.DontDestroyOnLoad(go);
                 var src = go.AddComponent<AudioSource>();
+                src.priority = TerraMod.VoicePriority;
                 src.playOnAwake = false;
                 sources.Add((src, 0f));
                 pick = sources.Count - 1;

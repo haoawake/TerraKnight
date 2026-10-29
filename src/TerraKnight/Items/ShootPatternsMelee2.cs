@@ -53,6 +53,8 @@ namespace TerraKnight.Items
             var tp = TerraProjectiles.Instance;
             if (tp == null) return;
             var v = s.Vel * Equipment.UseScale(s.Def);
+            // The remade techniques (TerraProjectilesMonkArts), with the remade swings on.
+            if (tp.StaffArtShoot(s.Def, s.From, v, s.Damage, s.Knockback, s.Crit, s.Mouse, s.UseTicks)) return;
             float dir = s.Mouse.x < s.From.x ? -1f : 1f;
             if (s.Def.Type == ItemType.MonkStaffT2)
             {

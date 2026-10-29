@@ -71,7 +71,7 @@ namespace TerraKnight.Items
             }
             mod.GrantedAbilities.Add(OpeningFlag);
             var pages = new List<Page> { Voice(RejoinZh, RejoinEn) };
-            var next = Next(won, 0, out _, out _);
+            var next = Next(Passed(mod), 0, out _, out _);
             if (next != null) pages.Add(Hint(next));
             else if (mod.GrantedAbilities.Add(ClosingFlag))
                 foreach (var line in Closing) pages.Add(new Page { Voice = line.Voice, Text = Pick(line.Zh, line.En) });

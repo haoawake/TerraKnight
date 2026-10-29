@@ -98,6 +98,7 @@ namespace TerraKnight.Items
                 w.Write((byte)Mathf.Clamp(q.Extra, 0, 255));
                 w.Write((ushort)q.Item);
                 w.Write(q.Parent != null ? q.Parent.NetId : 0);
+                w.Write(q.Remade);
                 n++;
             }
             var data = p.Done();
@@ -133,6 +134,7 @@ namespace TerraKnight.Items
                 int extra = r.ReadByte();
                 var item = (ItemType)r.ReadUInt16();
                 int parent = r.ReadInt32();
+                bool remade = r.ReadBoolean();
                 if (!here || !specs.TryGetValue(kind, out var spec)) continue;
                 if (!mine.TryGetValue(id, out var g) || g.P.Kind != kind)
                 {
@@ -140,6 +142,7 @@ namespace TerraKnight.Items
                     mine[id] = g;
                 }
                 var q = g.P;
+                q.Remade = remade;
                 g.Scene = scene;
                 g.Seen = now;
                 g.ParentId = parent;
@@ -215,7 +218,7 @@ namespace TerraKnight.Items
                     ghostHolder = owner != null && owner.Visible ? TerraParticles.ToPx(owner.Center) : (Vector2?)null;
                     foreach (var g in kv.Value.Values)
                     {
-                        try { DrawOne(fx, g.P); }
+                        try { using var edition = new WeaponRefitting.Scope(g.P.Remade); DrawOne(fx, g.P); }
                         catch (System.Exception) { }
                     }
                 }

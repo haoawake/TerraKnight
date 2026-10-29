@@ -66,6 +66,11 @@ namespace TerraKnight
             var col = hero.GetComponent<BoxCollider2D>();
             const int slot = Inventory.HotbarSize - 1;
             var rows = new List<object>();
+            bool realMana = Environment.GetEnvironmentVariable("TK_CLASSDPS_REALMANA") == "1";
+            bool mobile = Environment.GetEnvironmentVariable("TK_CLASSDPS_MOBILE") == "1";
+            bool celestial = Environment.GetEnvironmentVariable("TK_CLASSDPS_CELESTIAL") == "1";
+            bool matchHead = Environment.GetEnvironmentVariable("TK_CLASSDPS_MATCHHEAD") == "1";
+            string measuredAmmo = "None";
 
             void Reset()
             {
@@ -79,6 +84,12 @@ namespace TerraKnight
             {
                 Reset();
                 var d = ItemDb.Get(weapon);
+                if (matchHead && d.Class == DamageClass.Ranged && ItemDb.Get(inv.Armor[1].Type)?.Set == ArmorSet.Shroomite)
+                {
+                    inv.Armor[0] = ItemStack.Of(d.UseAmmo == AmmoKind.Arrow ? ItemType.ShroomiteHeadgear
+                        : d.UseAmmo == AmmoKind.Bullet ? ItemType.ShroomiteMask : ItemType.ShroomiteHelmet);
+                    Equipment.Update(inv);
+                }
                 for (int i = 0; i < Inventory.Size; i++) inv.Slots[i] = default;
                 inv.Mouse = default; inv.Override = -1; inv.UseMouse = false;
                 // The best ammo of the stage for it.
@@ -87,6 +98,7 @@ namespace TerraKnight
                     foreach (var a in ItemDb.All)
                         if (a.Ammo == d.UseAmmo && a.Stage <= stage && a.Damage >= 0 && !a.IsWeapon && (ammo == null || a.Damage > ammo.Damage)) ammo = a;
                 if (ammo != null) inv.Slots[Inventory.Size - 1] = ItemStack.Of(ammo.Type, 9999);
+                measuredAmmo = ammo?.Type.ToString() ?? "None";
                 mod.Stats.ManaCrystals = TerraStats.MaxManaCrystals;
                 mod.Stats.UpdateMaximums(PlayerData.instance, Equipment.Current.ManaMax);
                 bool melee = (d.Class == DamageClass.Melee && !d.IsWhip) || weapon == ItemType.KnightNail;
@@ -114,13 +126,24 @@ namespace TerraKnight
                 mod.DevHold = d.Channel ? true : (bool?)null; mod.DevAim = aim;
                 yield return null;
                 int d0 = TargetDummy.DevDamage, h0 = TargetDummy.DevHits;
+                int nailBlastsBefore = TerraProjectiles.DevNailTargetBlasts;
                 float start = Time.time;
                 bool usesItem = !(d.IsSummon && staff == weapon) && weapon != ItemType.KnightNail;
                 while (Time.time - start < seconds)
                 {
                     // Pushed off by a weapon's own move: back where it stood.
                     if (((Vector2)hero.transform.position - (Vector2)stand).sqrMagnitude > 0.5f * 0.5f) { hero.transform.position = stand; heroBody.linearVelocity = Vector2.zero; }
-                    mod.DevAim = aim; mod.Stats.Mana = mod.Stats.ManaMax;
+                    mod.DevAim = aim;
+                    // Controlled offensive-state comparison at identical range and target geometry:
+                    // suppress stationary stealth, without claiming to simulate real moving accuracy.
+                    if (mobile)
+                    {
+                        ArmorEffects.Stealth = 1f;
+                        ArmorEffects.VortexStealth = false;
+                        Equipment.Update(inv);
+                    }
+                    // TK_CLASSDPS_REALMANA=1: the mana as play has it (full at the start, then only its own regeneration).
+                    if (!realMana) mod.Stats.Mana = mod.Stats.ManaMax;
                     if (usesItem && mod.DevReady && !mod.IsUsingItem) mod.DevUseSelected(aim);
                     yield return null;
                 }
@@ -130,18 +153,40 @@ namespace TerraKnight
                 yield return new WaitForSeconds(0.6f);
                 float took = Time.time - start - 0.6f;
                 int damage = TargetDummy.DevDamage - d0, hits = TargetDummy.DevHits - h0;
+                if (weapon == ItemType.NailGun && seconds >= 4f)
+                    Check("钉枪延时爆炸命中附着目标", TerraProjectiles.DevNailTargetBlasts > nailBlastsBefore,
+                        $"爆炸命中 {TerraProjectiles.DevNailTargetBlasts - nailBlastsBefore} 次");
                 mod.DevAim = null;
                 done(damage / Mathf.Max(0.1f, took), hits, EnemyStats.DevDummyDefense);
             }
 
             try
             {
+                // TK_CLASSDPS_STAGES ("4,5"): only those stages; TK_CLASSDPS_ALL=1: every weapon of the stage and class, not
+                // just the core ones (the user's 10-27 "部分后期武器伤害是不是太低了，比如终极棱镜": the Last Prism was never measured).
+                var onlyStages = (Environment.GetEnvironmentVariable("TK_CLASSDPS_STAGES") ?? "").Split(',').Where(x => x.Trim().Length > 0).Select(x => int.Parse(x.Trim())).ToList();
+                bool everyWeapon = Environment.GetEnvironmentVariable("TK_CLASSDPS_ALL") == "1";
+                // TK_CLASSDPS_ONLY ("LastPrism,LunarFlareBook"): only those weapons; TK_CLASSDPS_SECONDS: each one's time.
+                var onlyWeapons = (Environment.GetEnvironmentVariable("TK_CLASSDPS_ONLY") ?? "").Split(',').Where(x => x.Trim().Length > 0).Select(x => x.Trim()).ToList();
+                float eachSeconds = float.TryParse(Environment.GetEnvironmentVariable("TK_CLASSDPS_SECONDS"), out float es) ? es : 6f;
+                // TK_CLASSDPS_MODE: "1" the remade weapons (the default the suites force), "0" Terraria's own.
+                string mode = Environment.GetEnvironmentVariable("TK_CLASSDPS_MODE") ?? "1";
+                // TK_CLASSDPS_CLASSES ("1,2,3"): only those classes (0 warrior, 1 ranger, 2 mage, 3 summoner).
+                var onlyClasses = (Environment.GetEnvironmentVariable("TK_CLASSDPS_CLASSES") ?? "").Split(',').Where(x => x.Trim().Length > 0).Select(x => int.Parse(x.Trim())).ToList();
+                BladeArts.Set(mode != "0");
                 for (int stage = 0; stage <= 5; stage++)
                 {
+                    if (onlyStages.Count > 0 && !onlyStages.Contains(stage)) continue;
                     Shop.DevStage = stage;
                     for (int cls = 0; cls < 4; cls++)
                     {
+                        if (onlyClasses.Count > 0 && !onlyClasses.Contains(cls)) continue;
                         var armor = ProgressionBalance.ArmorFor(stage, cls).ToArray();
+                        if (celestial && stage == 5)
+                            armor = cls == 0 ? new[] { ItemType.SolarFlareHelmet, ItemType.SolarFlareBreastplate, ItemType.SolarFlareLeggings }
+                                : cls == 1 ? new[] { ItemType.VortexHelmet, ItemType.VortexBreastplate, ItemType.VortexLeggings }
+                                : cls == 2 ? new[] { ItemType.NebulaHelmet, ItemType.NebulaBreastplate, ItemType.NebulaLeggings }
+                                : new[] { ItemType.StardustHelmet, ItemType.StardustBreastplate, ItemType.StardustLeggings };
                         var accs = new List<ItemType>();
                         for (int s = stage; s >= 0 && accs.Count < Inventory.OpenAccessories; s--)
                             foreach (var t in ProgressionBalance.AccessoryPaths[s][cls])
@@ -152,15 +197,22 @@ namespace TerraKnight
                         float bestMinion = 0f, bestWhip = 0f;
                         ItemType minionStaff = ItemType.None, whip = ItemType.None;
                         var list = ProgressionBalance.Core[stage][cls].ToList();
+                        if (everyWeapon)
+                            foreach (var w in ItemDb.All)
+                                if (w != null && ItemDb.Get(w.Type) == w && w.Stage == stage && ProgressionLoot.CombatWeapon(w) && ProgressionBalance.ClassIndex(w.Class) == cls && !list.Contains(w.Type))
+                                    list.Add(w.Type);
                         if (cls == 0) list.Add(ItemType.KnightNail);
                         foreach (var t in list)
                         {
                             var d = ItemDb.Get(t);
                             if (d == null || (!d.IsWeapon && t != ItemType.KnightNail)) continue;
+                            if (onlyWeapons.Count > 0 && !onlyWeapons.Contains(t.ToString())) continue;
                             float dps = 0f; int hits = 0, def = 0;
-                            yield return Measure(t, ItemType.None, stage, 6f, (x, h, y) => { dps = x; hits = h; def = y; });
-                            weapons.Add(new { Item = t.ToString(), d.Name, d.Damage, Dps = dps, Hits = hits, Defense = def, d.IsWhip, Minion = d.IsSummon && !d.Sentry, d.Sentry });
-                            Plugin.Log.LogInfo($"[AutoTest] 职业实测 阶段{stage} 职业{cls} {d.Name}：{dps:F0}/秒，{hits} 下（防 {def}）");
+                            yield return Measure(t, ItemType.None, stage, eachSeconds, (x, h, y) => { dps = x; hits = h; def = y; });
+                            weapons.Add(new { Item = t.ToString(), d.Name, d.Damage, Dps = dps, Hits = hits, Defense = def,
+                                Ammo = measuredAmmo, Head = inv.Armor[0].Type.ToString(), mobile, celestial, matchHead,
+                                d.IsWhip, Minion = d.IsSummon && !d.Sentry, d.Sentry });
+                            Plugin.Log.LogInfo($"[AutoTest] 职业实测 阶段{stage} 职业{cls} {d.Name}：{dps:F0}/秒，{hits} 下（防 {def}）{(realMana ? $"，真实魔力（上限 {mod.Stats.ManaMax}）" : "")}");
                             if (d.IsSummon && !d.Sentry && dps > bestMinion) { bestMinion = dps; minionStaff = t; }
                             if (d.IsWhip && dps > bestWhip) { bestWhip = dps; whip = t; }
                         }
@@ -175,7 +227,7 @@ namespace TerraKnight
                         {
                             Stage = stage, Class = cls, Armor = armor.Select(x => x.ToString()).ToArray(), Accessories = accs.Select(x => x.ToString()).ToArray(),
                             b.Defense, b.Endurance, b.MeleeDamage, b.RangedDamage, b.MagicDamage, b.MinionDamage, Slots = Equipment.MaxMinions, Mastery = BossMastery.Bonus,
-                            Weapons = weapons, Combined = combined, CombinedOf = minionStaff + "+" + whip,
+                            Weapons = weapons, Combined = combined, CombinedOf = minionStaff + "+" + whip, Remade = BladeArts.Enabled,
                         });
                     }
                 }

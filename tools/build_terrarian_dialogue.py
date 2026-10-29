@@ -78,6 +78,13 @@ for identity, row in list(entries.items()):
         if alias not in entries and native.get('ZH_' + other, {}).get(key) == native['ZH_' + sheet][key]:
             entries[alias] = dict(row, Reason='exact native alias of ' + identity)
 
+# Hollow Knight draws these lines in its own static Chinese font (chinese_body: only the characters its own text uses);
+# any other character shows as an empty box. The font's characters come from the mod's suite hkfont.
+font = set((ROOT / 'tools/hk_chinese_body_chars.txt').read_text('utf-8'))
+for identity, row in entries.items():
+    lack = sorted({c for c in re.sub(r'<[^>]*>', '', row['Zh']) if ord(c) >= 0x80 and not c.isspace() and c not in font})
+    assert not lack, (identity, 'not in chinese_body: ' + ''.join(lack))
+
 out = ROOT / 'src/TerraKnight/Resources/terrarian-dialogue.json'
 out.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + '\n', 'utf-8')
 print(f'{len(entries)} keyed overrides; sheets: {dict(Counter(k.split("/")[0] for k in entries))}')

@@ -20,8 +20,9 @@ namespace TerraKnight.Items
             Spec Head(string tex, int w, float scale = 1f, int extra = 0) => new Spec
             {
                 Ai = Ai.Custom, Texture = tex, W = w, H = w, Scale = scale, Extra = extra, Time = 3600, Penetrate = -1, AlphaStart = 1f,
-                Update = (t, p) => t.StepChainHead(p), Draw = (t, fx, p, px) => DrawChainHead(fx, p, px), OnHit = (t, p, hm) => p.Ai0 = 1f,
-                TileHit = (t, p, hx, hy, before) => ChainHeadTile(p), OnKill = (t, p) => { },
+                Update = (t, p) => t.StepChainHead(p), Draw = (t, fx, p, px) => DrawChainHead(fx, p, px), OnHit = (t, p, hm) => { p.Ai0 = 1f; t.ChainRunHit(p, hm); },
+                TileHit = (t, p, hx, hy, before) => { if (!t.ChainRunTile(p)) ChainHeadTile(p); }, OnKill = (t, p) => ChainGone(p),
+                HitArea = p => ChainArea(p), ModifyHit = (t, p, hm, d, c) => (ChainDamage(p, d), c),
             };
             specs[ProjKind.GolemFistProj] = Head("Projectile_262", 30, 1f, 1);
             specs[ProjKind.BoxingGlove] = Head("Projectile_271", 20, 1.2f);
@@ -32,6 +33,8 @@ namespace TerraKnight.Items
             {
                 Ai = Ai.Boomerang, Texture = "Projectile_383", W = 34, H = 34, Time = 3600, Penetrate = -1, SpinRate = 0f, ReturnSpeed = 16f, ReturnAccel = 4f, ReturnVector = true,
                 TileHit = (t, p, hx, hy, before) => t.AnchorTile(p), Draw = (t, fx, p, px) => DrawAnchor(fx, p, px),
+                OnKill = (t, p) => ChainGone(p), OnHit = (t, p, hm) => t.ChainRunHit(p, hm),
+                HitArea = p => ChainArea(p), ModifyHit = (t, p, hm, d, c) => (ChainDamage(p, d), c),
             };
             // P:6569-6585, 14171-14175, 16094-16106: the flail, unseen at its own place, each enemy every 6 ticks along a line to its end and 48 px more.
             specs[ProjKind.SolarEruptionProj] = new Spec
@@ -45,7 +48,7 @@ namespace TerraKnight.Items
                     return (CenterPx(p), CenterPx(p) + v + n * 48f, 16f * p.Scale);
                 },
                 Update = (t, p) => t.StepSolarEruption(p), Draw = (t, fx, p, px) => DrawSolarEruption(fx, p, px), OnHit = (t, p, hm) => t.SolarEruptionHit(p, hm),
-                OnKill = (t, p) => { },
+                OnKill = (t, p) => ChainGone(p), ModifyHit = (t, p, hm, d, c) => (ChainDamage(p, d), c),
             };
             // P:6586-6598: the blast where it strikes: as Daybreak's (953) but each enemy every 6 ticks.
             specs[ProjKind.SolarEruptionBlast] = new Spec
@@ -93,13 +96,23 @@ namespace TerraKnight.Items
             }
             var mod = TerraMod.Instance;
             bool guillotine = p.Kind == ProjKind.ChainGuillotine;
+            // The remade swings (TerraProjectilesChainArts): the use's path, or a right-click art.
+            var run = ChainRunOf(p);
+            if (run != null) ChainRunTick(p, run, centre);
+            if (run != null && run.Orbit)
+            {
+                StepChainArt(p, run, centre);
+                return;
+            }
             if (!guillotine && mod != null) mod.KeepUsing(ItemDb.Get(ChainItem(p.Kind)), Flip(-toPlayer));
             if (guillotine) p.Extra = p.Ai0 == 0f ? 1 : 2;
             var v = TV(p);
             if (p.Ai0 == 0f)
             {
                 float reach = p.Kind switch { ProjKind.GolemFistProj => 500f, ProjKind.BoxingGlove => 200f, ProjKind.ChainKnifeProj => 150f, _ => 525f };
-                if (dist > 700f || dist > reach) p.Ai0 = 1f;
+                if (run != null) reach *= run.Reach;
+                if (dist > (run != null ? 700f * run.Reach : 700f) || dist > reach) p.Ai0 = 1f;
+                if (run != null) ChainPathTick(p, run, ref v);
                 p.TRot = ToRot(v) + 1.57f;
                 if (++p.Ai1 > 5f) p.Alpha = 0f;
                 if (p.Ai1 > 8f) p.Ai1 = 8f;
@@ -119,6 +132,7 @@ namespace TerraKnight.Items
                     DevFistCracks++;
                 }
             }
+            if (run != null && ChainFlourish(p, run)) return;
             p.Collide = false;
             p.TRot = Mathf.Atan2(toPlayer.y, toPlayer.x) - 1.57f;
             if (dist < 50f)
@@ -166,6 +180,7 @@ namespace TerraKnight.Items
         /// </summary>
         static void DrawChainHead(FxBatch fx, Proj p, Vector2 px)
         {
+            DrawChainRun(fx, p, px);
             if (Holder(out var player))
             {
                 var v = TV(p);
@@ -225,14 +240,16 @@ namespace TerraKnight.Items
         void StepAnchor(Proj p)
         {
             var v = TV(p);
-            if (p.Ai1 >= 10f)
+            var run = ChainRunOf(p);
+            if (run != null && AnchorRunStep(p, run, ref v)) return;
+            if (p.Ai1 >= (run != null ? run.SinkAfter : 10f))
             {
                 v.y += 0.5f;
                 if (v.y < 0f) v.y += 0.35f;
                 v.x *= 0.95f;
                 if (v.y > 16f) v.y = 16f;
                 p.Vel = Flip(v);
-                if (Holder(out var centre) && Vector2.Distance(CenterPx(p), centre) > 800f) p.Returning = true;
+                if (Holder(out var centre) && Vector2.Distance(CenterPx(p), centre) > (run != null ? 800f * run.Reach : 800f)) p.Returning = true;
             }
         }
 
@@ -249,6 +266,7 @@ namespace TerraKnight.Items
                 var away = CenterPx(p) - centre;
                 if (away.sqrMagnitude > 1e-6f) p.TRot = Mathf.Atan2(away.y, away.x) + 1.57f;
             }
+            if (chainRuns.TryGetValue(p, out var run) && Holder(out var holder)) AnchorRunTick(p, run, holder);
             // Main.DrawProj's chain sway: the velocity's average, pulled back towards the player (M:29630-29641).
             var vv = TV(p);
             if (!p.Returning) p.Point = (-vv + p.Point) / 2f;
@@ -258,6 +276,7 @@ namespace TerraKnight.Items
         /// <summary>P:19627-19690: off a block it turns for home without bouncing; after its first 10 updates it smashes the blocks round it (300 px across) with a boom.</summary>
         void AnchorTile(Proj p)
         {
+            if (chainRuns.TryGetValue(p, out var run) && AnchorRunTile(p, run)) return;
             if (p.Ai1 >= 10f)
             {
                 CrackGround(CenterPx(p), 150f);
@@ -277,6 +296,7 @@ namespace TerraKnight.Items
         /// </summary>
         static void DrawAnchor(FxBatch fx, Proj p, Vector2 px)
         {
+            DrawChainRun(fx, p, px);
             if (Holder(out var player))
             {
                 var link = FxBatch.Whole("Chain34");
@@ -339,21 +359,36 @@ namespace TerraKnight.Items
             if (p.LocalAi1 > 0f) p.LocalAi1--;
             p.Alpha = Mathf.Max(0f, p.Alpha - 42f / 255f);
             float aim = p.LocalAi0;
-            float sign = Mathf.Cos(aim) >= 0f ? 1f : -1f;
-            if (p.Ai1 <= 0f) sign = -sign;
-            float a = sign * (p.Ai0 / 30f * Mathf.PI * 2f - Mathf.PI / 2f);
-            var loop = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-            loop.y *= Mathf.Sin(p.Ai1);
-            if (p.Ai1 <= 0f) loop.y = -loop.y;
-            loop = RotateBy(loop, aim);
-            if (++p.Ai0 >= 30f)
+            var run = ChainRunOf(p);
+            if (run != null)
             {
-                Kill(p);
-                return;
+                // The remade swings: the use's shape (or the art's wheel), its tip's place over its length.
+                if (++p.Ai0 >= run.Length)
+                {
+                    Kill(p);
+                    return;
+                }
+                v = EruptionShape(run, p.Ai0 / run.Length, aim);
+                EruptionRunTick(p, run, v);
             }
-            v += 48f * loop;
+            else
+            {
+                float sign = Mathf.Cos(aim) >= 0f ? 1f : -1f;
+                if (p.Ai1 <= 0f) sign = -sign;
+                float a = sign * (p.Ai0 / 30f * Mathf.PI * 2f - Mathf.PI / 2f);
+                var loop = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                loop.y *= Mathf.Sin(p.Ai1);
+                if (p.Ai1 <= 0f) loop.y = -loop.y;
+                loop = RotateBy(loop, aim);
+                if (++p.Ai0 >= 30f)
+                {
+                    Kill(p);
+                    return;
+                }
+                v += 48f * loop;
+            }
             p.Vel = Flip(v);
-            float face = Mathf.Cos(aim) >= 0f ? 1f : -1f;
+            float face = run != null && run.Orbit ? (v.x >= 0f ? 1f : -1f) : Mathf.Cos(aim) >= 0f ? 1f : -1f;
             p.Dir = face;
             // ArmPosition: the hand (the arm points along the whip).
             var hand = TerraParticles.ToPx(mod.HandWorld);
@@ -386,7 +421,7 @@ namespace TerraKnight.Items
         {
             if (p.LocalAi1 <= 0f)
             {
-                var blast = MeleeChild(ProjKind.SolarEruptionBlast, EnemyCenterPx(hm), Vector2.zero, p.Damage, 10f, p.Crit);
+                var blast = MeleeChild(ProjKind.SolarEruptionBlast, EnemyCenterPx(hm), Vector2.zero, ChainDamage(p, p.Damage), 10f, p.Crit);
                 if (blast != null) blast.Ai1 = 0.85f + Random.value * 1.15f;
                 DevEruptionBlasts++;
             }
@@ -404,6 +439,7 @@ namespace TerraKnight.Items
             if (whole == null) return;
             var v = TV(p);
             if (v.sqrMagnitude < 1e-6f) return;
+            DrawChainRun(fx, p, px);
             int w = (int)whole.rect.width;
             var c = new Color(1f, 1f, 1f, 200f / 255f);
             float s = p.Scale;

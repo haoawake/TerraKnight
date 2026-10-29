@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.World;
 using UnityEngine;
@@ -309,8 +309,16 @@ namespace TerraKnight.Items
             public bool OwnerCheck;
             /// <summary>The item it was thrown from (a yoyo's, a flail's).</summary>
             public ItemType Item;
+            /// <summary>A spear's technique with the remade swings (TerraProjectilesSpearArts), looked for as it starts.</summary>
+            public SpearArt SpearArt;
+            public bool SpearArtTried;
+            /// <summary>A held blade's dance with the remade swings (TerraProjectilesHeldArts); the Piercing Starlight's own size.</summary>
+            public HeldDance HeldDance;
+            public float StarBase;
             /// <summary>A point it goes for (a yoyo's spot by the cursor, Terraria px).</summary>
             public Vector2 Point;
+            /// <summary>A held spell's holder (Terraria px) when it last moved: drawn carried along with the player as he is drawn since.</summary>
+            public Vector2 HeldAt;
             /// <summary>A gem bolt's features (its gem's and the robe's) and ArPenSpread's armour penetration.</summary>
             public GemFx Gem;
             /// <summary>A held spell's clock short of mana (<see cref="MagicTick"/>).</summary>
@@ -318,6 +326,11 @@ namespace TerraKnight.Items
             public int GemArmorPen;
             /// <summary>The forging level of the ranged weapon that fired it (Forging.RangedLevel: armor penetration, crit damage), its children's too.</summary>
             public int RangedForge;
+            public bool Remade;
+            /// <summary>What a remade ranged shot carries (TerraProjectilesRanged), null for the game's own.</summary>
+            public RangedShot Ranged;
+            /// <summary>A remade magic weapon's thing this projectile carries (ProjKind.MageThing).</summary>
+            public MageThing Thing;
             /// <summary>A flail wielded with its partner (Blue Moon and Sunfury), and the off-hand one of the pair; a second timer.</summary>
             public bool Dual, OffHand;
             public float Timer2;
@@ -338,6 +351,7 @@ namespace TerraKnight.Items
             public System.Action<Vector2, Vector2> Then;
             public DamageClass Class;
             public int Forge;
+            public bool Remade;
         }
 
         /// <summary>The damage class new projectiles get: the weapon firing, or the projectile whose update makes them.</summary>
@@ -347,9 +361,10 @@ namespace TerraKnight.Items
         public static int SpawnForge;
 
         /// <summary>Something to fire a number of ticks from now, aimed where the player aims then (a burst's later shots).</summary>
-        public void Later(int ticks, System.Action<Vector2, Vector2> fire) => pending.Add(new Pending { Ticks = ticks, Then = fire, Class = SpawnClass, Forge = SpawnForge });
+        public void Later(int ticks, System.Action<Vector2, Vector2> fire) => pending.Add(new Pending { Ticks = ticks, Then = fire, Class = SpawnClass, Forge = SpawnForge, Remade = BladeArts.Enabled });
 
         readonly List<Proj> live = new List<Proj>();
+        internal int DevRemadeShots => live.FindAll(p => !p.Dead && p.Remade).Count;
         readonly List<Pending> pending = new List<Pending>();
         readonly List<Collider2D> overlaps = new List<Collider2D>();
         /// <summary>NPC.immune[player]: an enemy hit by a non-local-immunity projectile can't be hit by another such shot for 10 ticks.</summary>
@@ -448,6 +463,22 @@ namespace TerraKnight.Items
         {
             for (int i = live.Count - 1; i >= 0; i--)
                 if (live[i].Kind == kind && live[i].ShownAt != null) return live[i].ShownAt;
+            return null;
+        }
+
+        /// <summary>Dev: live projectiles of a kind with more than that many updates still to go.</summary>
+        public int DevCount(ProjKind kind, int timeLeft)
+        {
+            int n = 0;
+            foreach (var q in live) if (q.Kind == kind && !q.Dead && q.TimeLeft > timeLeft) n++;
+            return n;
+        }
+
+        /// <summary>Dev: the newest live projectile of a kind's velocity and its updates so far.</summary>
+        public (Vector2 Vel, int Ticks)? DevNewestMotion(ProjKind kind)
+        {
+            for (int i = live.Count - 1; i >= 0; i--)
+                if (live[i].Kind == kind && !live[i].Dead) return (live[i].Vel, live[i].Ticks);
             return null;
         }
 
@@ -567,14 +598,14 @@ namespace TerraKnight.Items
         {
             if (!specs.TryGetValue(kind, out var spec) || (spec.Ai != Ai.Boomerang && !spec.Held)) return false;
             int n = 0, max = spec.MaxOut > 0 ? spec.MaxOut : 1;
-            foreach (var q in live) if (q.Kind == kind && !q.Dead && (spec.HoldsWhile == null || spec.HoldsWhile(q)) && ++n >= max) return true;
+            foreach (var q in live) if (q.Kind == kind && !q.Dead && !IsArtThrow(q) && (spec.HoldsWhile == null || spec.HoldsWhile(q)) && ++n >= max) return true;
             return false;
         }
 
         Proj Spawn(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int extraUpdates = 0, int useTicks = 0)
         {
             if (!specs.TryGetValue(kind, out var spec)) return null;
-            if ((spec.Ai == Ai.Boomerang || IsLance(kind)) && Holds(kind)) return null; // one out at a time
+            if ((spec.Ai == Ai.Boomerang || IsLance(kind)) && Holds(kind) && !thrownArtSpawn) return null; // one out at a time (an art's throws aside)
             // AI_001's launch clamp: no faster than 16 px an update on either axis.
             if (spec.Ai == Ai.Arrow)
                 for (int g = 0; g < 100 && (Mathf.Abs(velocity.x) >= 16f || Mathf.Abs(velocity.y) >= 16f); g++) velocity *= 0.97f;
@@ -597,6 +628,8 @@ namespace TerraKnight.Items
             DevLastGrow = p.Grow;
             DevLastClass = p.Class;
             p.RangedForge = SpawnForge;
+            p.Remade = BladeArts.Enabled;
+            TakeRanged(p);
             p.Arrow = IsArrow(kind);
             DevSpawned[kind] = DevMade(kind) + 1;
             DevLastKind = kind;
@@ -645,6 +678,7 @@ namespace TerraKnight.Items
                 tickAccumulator -= 1f;
                 Tick();
             }
+            LanceDashFrame();
             Draw();
         }
 
@@ -679,6 +713,7 @@ namespace TerraKnight.Items
                 Vector2 center = hero.GetComponent<BoxCollider2D>().bounds.center;
                 var dir = (TerraMod.Instance != null ? TerraMod.Instance.DevAim ?? TerraMod.Instance.AimPoint : center + Vector2.right) - center;
                 if (dir.sqrMagnitude < 1e-4f) dir = Vector2.right;
+                using var weaponEdition = new WeaponRefitting.Scope(s.Remade);
                 SpawnClass = s.Class;
                 SpawnForge = s.Forge;
                 if (s.Then != null) s.Then(center, dir.normalized);
@@ -689,6 +724,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < live.Count; i++)
             {
                 var p = live[i];
+                using var weaponEdition = new WeaponRefitting.Scope(p.Remade);
                 p.Ticks++;
                 if(p.Immune.Count>0) {
                     immuneTickKeys.Clear();immuneTickKeys.AddRange(p.Immune.Keys);
@@ -709,6 +745,7 @@ namespace TerraKnight.Items
                 DevCurrentId = p.GetHashCode();
                 devCurrent = p;
                 for (int u = 0; u <= updates && !p.Dead; u++) Step(p, u == 0);
+                if (p.Ranged != null && !p.Dead) RangedTick(p);
                 DevCurrentKind = ProjKind.None;
                 DevCurrentId = 0;
                 devCurrent = null;
@@ -872,7 +909,8 @@ namespace TerraKnight.Items
                     // (the Storm Spear's bolt, the Rotted Fork's and the Slime Spear's motes).
                     StepSpear(p, hero);
                     if (!p.Dead) s.Update?.Invoke(this, p);
-                    if (!p.Dead) HitEnemies(p);
+                    // A technique's wind-up strikes nothing.
+                    if (!p.Dead && !(p.SpearArt != null && p.SpearArt.Harmless)) HitEnemies(p);
                     return;
                 case Ai.Thrown2:
                     StepThrown2(p);
@@ -1008,7 +1046,7 @@ namespace TerraKnight.Items
                 bool fast = (p.Gem & GemFx.FastSlow) != 0;
                 float range = (p.Gem & (GemFx.FastSlow | GemFx.Bounce)) != 0 ? 1000f : 500f, top = fast ? 16f : 8f;
                 var gemTarget = EarlyGem(p) ? Nearest(p, range) : null;
-                var target = EarlyGem(p) ? (gemTarget != null ? (Vector2?)Centre(gemTarget) : null) : NearestEnemy(p.Pos, range * Px);
+                var target = EarlyGem(p) ? (gemTarget != null ? (Vector2?)Centre(gemTarget) : null) : NearestEnemyPoint(p.Pos, range * Px);
                 if (target.HasValue)
                 {
                     float speed = p.Vel.magnitude;
@@ -1070,7 +1108,7 @@ namespace TerraKnight.Items
                 if ((p.Gem & GemFx.Homing) != 0)
                 {
                     var gemTarget = EarlyGem(p) ? Nearest(p, 2400f) : null;
-                    var target = EarlyGem(p) ? (gemTarget != null ? (Vector2?)Centre(gemTarget) : null) : NearestEnemy(p.Pos, 2400f * Px);
+                    var target = EarlyGem(p) ? (gemTarget != null ? (Vector2?)Centre(gemTarget) : null) : NearestEnemyPoint(p.Pos, 2400f * Px);
                     if (target.HasValue && (target.Value - p.Pos).sqrMagnitude > 0f) p.Vel = (target.Value - p.Pos).normalized * oldVel.magnitude * 0.8f;
                 }
                 if (--p.Penetrate > 0)
@@ -1128,7 +1166,7 @@ namespace TerraKnight.Items
                 p.Dir = p.Vel.x < 0f ? -1f : 1f;
                 p.Ai1++;
                 // The hardmode ones have their own way out (TerraProjectilesBoomerangs.cs).
-                if (!BoomerangOut(p, hero) && p.Ai1 >= s.OutTicks) p.Returning = true;
+                if (!ThrownFlightOut(p, hero) && !BoomerangOut(p, hero) && p.Ai1 >= s.OutTicks) p.Returning = true;
             }
             else if (hero != null)
             {
@@ -1139,7 +1177,7 @@ namespace TerraKnight.Items
                     return;
                 }
                 // P:40167-40180: melee speed speeds the way home (toMax = 1/meleeSpeed, Remap(1.5, 0, 1, 1, toMax), 1 to 10).
-                float boost = Mathf.Clamp(1f + 1.5f * (Mathf.Min(3f, 1f + Equipment.Current.MeleeSpeed) - 1f), 1f, 10f);
+                float boost = Mathf.Clamp(1f + 1.5f * (Mathf.Min(3f, 1f + Equipment.Current.MeleeSpeed) - 1f), 1f, 10f) * ThrownReturning(p);
                 var target = to.normalized * s.ReturnSpeed * boost;
                 if (s.ReturnVector)
                 {
@@ -1369,7 +1407,7 @@ namespace TerraKnight.Items
                             if (hitY) p.Vel.y = -oldVel.y;
                         }
                         float speed = p.Vel.magnitude;
-                        var aim = NearestEnemy(p.Pos, 800f * Px);
+                        var aim = NearestEnemyPoint(p.Pos, 800f * Px);
                         if (aim.HasValue) p.Vel = (aim.Value - p.Pos).normalized * speed;
                         break;
                     }
@@ -1446,6 +1484,7 @@ namespace TerraKnight.Items
                 float m = Mathf.Max(extSize, 12f) * Px, len = Vector2.Distance(p.Pos, ext);
                 for (float t = m; t < len; t += m) AddOverlaps(Vector2.Lerp(p.Pos, ext, t / len), box, filter);
             }
+            if (p.SpearArt != null) SpearShaftOverlaps(p, p.SpearArt, size, filter);
             var melee = TerraMod.Instance?.Melee;
             if (melee == null) return;
             if (s.CanDamage != null && !s.CanDamage(p)) return;
@@ -1537,6 +1576,7 @@ namespace TerraKnight.Items
                 melee.HitWith(col, dealt, kb, critChance, facing, p.Pos - p.Vel.normalized * 0.3f, pen, snap, autonomous: p.MinionShot, critDamage: Forging.RangedCritDamage(p.RangedForge));
                 p.Hits++;
                 AccAfterHit(p, hm, dealt);
+                if (p.Ranged != null) RangedHit(p, hm, dealt);
                 DevHits[p.Kind] = DevHit(p.Kind) + 1;
                 if (p.MinionShot)
                 {
@@ -1564,9 +1604,10 @@ namespace TerraKnight.Items
                 }
 
                 OnHitEffects(p, hm);
+                if (p.SpearArt != null) SpearArtHit(p, p.SpearArt);
                 s.OnHit?.Invoke(this, p, hm);
                 // A boomerang turns back from what it hits (not Paladin's Hammer); the Light Disc throws sparks.
-                if (s.Ai == Ai.Boomerang && p.Kind != ProjKind.PaladinsHammer && !s.NoHitTurn)
+                if (s.Ai == Ai.Boomerang && p.Kind != ProjKind.PaladinsHammer && !s.NoHitTurn && !ThrownKeepsOn(p))
                 {
                     if (!p.Returning)
                     {
@@ -1618,6 +1659,8 @@ namespace TerraKnight.Items
         {
             if (p.Dead) return;
             p.Dead = true;
+            if (p.SpearArt != null) EndSpearArt(p.SpearArt);
+            if (p.Ranged != null) RangedDeath(p);
             var s = p.Spec;
             if (s.OnKill != null)
             {
@@ -1782,6 +1825,7 @@ namespace TerraKnight.Items
             try
             {
                 var a = gameObject.AddComponent<AudioSource>();
+                a.priority = TerraMod.VoicePriority;
                 a.clip = Terraria.TerrariaAssets.Sound("Custom/fuse");
                 a.loop = true;
                 a.volume = 0.2f;
@@ -1993,8 +2037,10 @@ namespace TerraKnight.Items
             try
             {
                 FxParticles.Draw(fx);
-                foreach (var p in live) DrawOne(fx, p);
+                DrawThrownArts(fx);
+                foreach (var p in live) { using var weaponEdition = new WeaponRefitting.Scope(p.Remade); DrawOne(fx, p); }
                 DrawGhosts(fx);
+                DrawLanceLines(fx);
             }
             finally
             {
@@ -2537,6 +2583,12 @@ namespace TerraKnight.Items
             return (Mathf.Abs(d.x) + Mathf.Abs(d.y)) / Px;
         }
 
+        /// <summary>The nearest enemy in plain sight within a Manhattan distance (px) of a point (world), or null.</summary>
+        internal static HealthManager NearestEnemy(Vector2 at, float withinPx) => Quarry(at, withinPx);
+
+        /// <summary>An enemy's middle (world).</summary>
+        internal static Vector2 EnemyCentre(HealthManager hm) => Centre(hm);
+
         /// <summary>The nearest enemy within a Manhattan distance (px) in plain sight, as the Chlorophyte Bullet looks for one.</summary>
         static HealthManager Quarry(Vector2 at, float withinPx)
         {
@@ -2772,6 +2824,20 @@ namespace TerraKnight.Items
             Vector2 centre = hero.GetComponent<BoxCollider2D>().bounds.center;
             int N = Mathf.Max(1, (int)p.Ai1), a = N - 1 - (int)p.Ai0, T = N / 3;
             bool lance = p.Kind == ProjKind.DarkLance;
+            if (!p.SpearArtTried)
+            {
+                p.SpearArtTried = true;
+                p.SpearArt = BeginSpearArt(p);
+            }
+            if (p.SpearArt != null)
+            {
+                // The remade spear: its technique moves it; what it sheds and leaves behind as ever, its drawing back the last stretch.
+                StepSpearArt(p, hero, p.SpearArt);
+                SpearExtras(p, centre, p.SpearArt.Phase == p.SpearArt.Move.Phases.Length - 1);
+                if (p.Dead) return;
+                if (++p.Ai0 >= N) Kill(p);
+                return;
+            }
             var off = p.Spec.SpearOffset == Vector3.zero ? new Vector3(4f, 0.9f, 1.2f) : p.Spec.SpearOffset;
             float n6 = off.x, n7 = off.y, n8 = off.z;
             float f = n6 + n7 * ((N - T) - Mathf.Max(0, a - T)) - n8 * (T - Mathf.Min(a, T));
@@ -2840,6 +2906,7 @@ namespace TerraKnight.Items
                 for (float k = 0.4f; k <= 1.001f; k += 0.1f)
                     fx.Draw(glint, Vector2.LerpUnclamped(player, ext, k + 0.2f) + down, col * (0.75f * k), grot, thin, flipX: right, overPlayer: true);
             }
+            if (p.SpearArt != null) DrawSpearArt(fx, p, p.SpearArt, spear, right);
             fx.Draw(spear, px, new Color(L, L, L, 1f), rot, p.Scale, flipX: right, overPlayer: true);
         }
 
@@ -3290,7 +3357,7 @@ namespace TerraKnight.Items
 
         static float Remap(float v, float a, float b, float c, float d) => Mathf.Lerp(c, d, Mathf.Clamp01((v - a) / (b - a)));
 
-        Vector2? NearestEnemy(Vector2 at, float within)
+        Vector2? NearestEnemyPoint(Vector2 at, float within)
         {
             Vector2? best = null;
             float bestD = within;

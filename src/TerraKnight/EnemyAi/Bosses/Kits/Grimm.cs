@@ -59,13 +59,11 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override void Setup()
         {
             Tempo("Out Pause", "Explode Pause", "FB Cast End", "G Dash Recover");
-            foreach (var s in Bats) OnEnter(s, SteerBat, first: false);
             At("AD Antic", 1, LeadDive);
             OnEnter("AD Antic", MarkDive, first: false);
             OnEnter("GD Antic", MarkFloorDash, first: false);
             OnEnter("Spike Attack", LockedSpike);
             OnEnter("Uppercut Antic", () => MarkLine(Me, Me + Vector2.up * 9f, Warn(0.45f)));
-            OnEnter("UP Explode", () => Run(LeanFire()), first: false);
             AddState("TK Rise Pos", RisePos, "Slash Tele In");
             Branch("Move Choice", "TK Rise Pos", WantAntiAir);
             Branch("Uppercut?", "Uppercut Antic", () =>
@@ -173,23 +171,6 @@ namespace TerraKnight.EnemyAi.Bosses
         /// <summary>The Nightmare King's own on top.</summary>
         protected virtual void SetupMore() { }
 
-        /// <summary>A firebat just cast: carried up or down so it crosses where the player will be, its way drawn.</summary>
-        void SteerBat()
-        {
-            var bat = Go("Projectile")?.Value;
-            if (bat == null || !bat.activeInHierarchy) return;
-            float vx = Float("Speed Crt")?.Value ?? 0f;
-            if (Mathf.Abs(vx) < 1f) return;
-            Vector2 from = bat.transform.position;
-            float dx = TargetCenter.x - from.x;
-            if (Mathf.Abs(dx) < 1f || Mathf.Sign(dx) != Mathf.Sign(vx)) return;
-            Vector2 to = Lead(Mathf.Abs(dx) / Mathf.Abs(vx));
-            float t = Mathf.Abs(to.x - from.x) / Mathf.Abs(vx);
-            if (t < 0.1f) return;
-            to.y = Mathf.Max(to.y, GroundBelow(to) + 0.6f);
-            MarkLine(from, to, Mathf.Min(t, 0.8f));
-            Run(Batch5.Steer(bat, from.y, to.y, t, 12f));
-        }
 
         /// <summary>The dive's angle (degrees, 270 straight down) at where the player will be, now and then.</summary>
         void LeadDive()
@@ -264,16 +245,6 @@ namespace TerraKnight.EnemyAi.Bosses
             if (copy != null) Destroy(copy);
         }
 
-        /// <summary>The uppercut's fireballs, a frame after they are let go: leaning towards the player, the middle one's landing marked.</summary>
-        IEnumerator LeanFire()
-        {
-            yield return null;
-            Vector2 from = Me;
-            Vector2 at = Lock();
-            float dx = Mathf.Clamp((at.x - from.x) / 1.2f, -10f, 10f) * 0.6f;
-            if (Batch5.Bias(from, 3f, dx, gameObject) > 0)
-                MarkGround(new Vector2(from.x + dx * 1.2f, at.y), 4f, 1f);
-        }
 
         /// <summary>Against the air: in beside the player (his slash's way in), the uppercut next whatever.</summary>
         IEnumerator RisePos()

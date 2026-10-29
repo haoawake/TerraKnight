@@ -78,7 +78,7 @@ namespace TerraKnight.UI
         static Rect Panel(float ui)
         {
             var view = GameView.Rect;
-            float w = Mathf.Min(1180f * ui, view.width - 40f * ui), h = Mathf.Min(800f * ui, view.height - 40f * ui);
+            float w = Mathf.Min(1180f * ui, view.width - 40f * ui), h = Mathf.Min(910f * ui, view.height - 40f * ui);
             return new Rect(view.center.x - w / 2f, view.center.y - h / 2f, w, h);
         }
 
@@ -133,48 +133,63 @@ namespace TerraKnight.UI
 
             // General, down the left.
             float lx = p.x + 30f * ui, lw = 380f * ui, y = p.y + 70f * ui;
+            // A toggle with a note under it, and one without: close enough that the column fits the panel.
+            float noteRow = 88f * ui, plainRow = 56f * ui;
             // LegacyMenu.114: "General"
             CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.114", "常规"), section, new Color(0.75f, 0.85f, 1f));
             y += 44f * ui;
             if (Toggle(new Rect(lx, y, lw, 44f * ui), TT(Items.Equipment.AutoReuseAll ? "UI.AutoReuseAllOn" : "UI.AutoReuseAllOff", Items.Equipment.AutoReuseAll ? "自动开火: 开" : "自动开火: 关"), ui))
                 SetAutoReuse(!Items.Equipment.AutoReuseAll);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("所有武器按住鼠标就一直挥舞、射击（泰拉瑞亚的自动挥舞）"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
-            y += 96f * ui;
+            y += noteRow;
             if (Toggle(new Rect(lx, y, lw, 44f * ui), EnemyHealthBars.Always ? Lang.T("敌人血条：一直显示") : Lang.T("敌人血条：受伤后显示"), ui))
             {
                 EnemyHealthBars.Always = !EnemyHealthBars.Always;
                 if (barsSetting != null) barsSetting.Value = EnemyHealthBars.Always;
             }
-            y += 64f * ui;
+            y += plainRow;
             if (Toggle(new Rect(lx, y, lw, 44f * ui), TerraCamera.Enabled ? Lang.T("镜头锁：开") : Lang.T("镜头锁：关"), ui))
                 SetCameraLock(!TerraCamera.Enabled);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：泰拉瑞亚的视角，人物始终在画面正中；关：空洞骑士原版镜头"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
-            y += 96f * ui;
+            y += noteRow;
             // LegacyMenu.69 / 70: "Autopause On" / "Autopause Off" (Main.autoPause).
             if (Toggle(new Rect(lx, y, lw, 44f * ui), TT(AutoPause.On ? "LegacyMenu.69" : "LegacyMenu.70", AutoPause.On ? "自动暂停: 开" : "自动暂停: 关"), ui))
                 AutoPause.Set(!AutoPause.On);
-            y += 64f * ui;
+            y += plainRow;
             // The nail and the Dream Nail swung at the mouse (Items.NailAim).
             if (Toggle(new Rect(lx, y, lw, 44f * ui), Items.NailAim.On ? Lang.T("骨钉朝鼠标劈砍：开") : Lang.T("骨钉朝鼠标劈砍：关"), ui))
                 Items.NailAim.Set(!Items.NailAim.On);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：骨钉和梦之钉朝鼠标方向挥砍（360 度），自身的后坐力仍按原版上下左右"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
-            y += 96f * ui;
+            y += noteRow;
+            // This world's weapons (World.WeaponMode), chosen with it: shown, not switched.
+            CreativeMenu.Shadowed(new Rect(lx, y, lw, 44f * ui), Lang.F("本世界的武器：{0}", World.WeaponMode.NameOf(World.WeaponMode.Current)), CreativeMenu.text, Color.white);
+            CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("创建世界时选定，之后不能更改；以前的存档用原版武器"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+            y += noteRow;
             // Hollow Knight's talk in the chat a line a second, or the game's own box (UI.DialogueBroadcast).
             if (Toggle(new Rect(lx, y, lw, 44f * ui), DialogueBroadcast.Enabled ? Lang.T("对话播报：开") : Lang.T("对话播报：关"), ui))
             {
                 if (DialogueBroadcast.Setting != null) DialogueBroadcast.Setting.Value = !DialogueBroadcast.Enabled;
             }
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("开：角色对话和碑文每秒一句进左下角聊天框；关：原版对话框"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
-            y += 96f * ui;
+            y += noteRow;
             // Player.SmartCursorSettings.SmartBlocksEnabled: Terraria's own option, LegacyMenu.215 / 216.
             if (Toggle(new Rect(lx, y, lw, 44f * ui), Items.SmartCursor.SmartBlocks ? TT("LegacyMenu.215", "智能放置物块: 到光标处") : TT("LegacyMenu.216", "智能放置物块: 禁用"), ui))
                 Items.SmartCursor.SetBlocks(!Items.SmartCursor.SmartBlocks);
-            y += 64f * ui;
+            y += plainRow;
+            // Terraria 1.4.5's Forward Zoom (UI.PanControlMode): the scopes' and the Sniper Rifle's push of the view.
+            var pan = Player.TerraCamera.Panning;
+            string panName = pan == Player.TerraCamera.PanMode.OnAlways ? TT("UI.PanControlMode_OnAlways", "始终开启")
+                : pan == Player.TerraCamera.PanMode.OffAlways ? TT("UI.PanControlMode_OffAlways", "始终关闭")
+                : pan == Player.TerraCamera.PanMode.Click ? TT("UI.PanControlMode_Click", "点击切换") : TT("UI.PanControlMode_Hold", "按住使用");
+            if (Toggle(new Rect(lx, y, lw, 44f * ui), TT("UI.PanControlMode", "向前缩放") + ": " + panName, ui))
+                Player.TerraCamera.CyclePan();
+            CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 26f * ui), Lang.T("瞄准镜的右键视野；关掉不影响属性"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+            y += 76f * ui;
             // How dug holes look (World.HoleShapes).
             if (Toggle(new Rect(lx, y, lw, 44f * ui), World.HoleShapes.Hollow ? Lang.T("挖洞样式：融合") : Lang.T("挖洞样式：泰拉瑞亚"), ui))
                 World.HoleShapes.Set(!World.HoleShapes.Hollow);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("融合：平滑洞口、墨线描边、洞内阴影，背后是调暗的泰拉瑞亚墙；泰拉瑞亚：方格洞口和原样的墙"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
-            y += 96f * ui;
+            y += noteRow;
             if (Net.NetSession.Active)
             {
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.13", "多人模式"), section, new Color(0.75f, 0.85f, 1f));

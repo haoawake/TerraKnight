@@ -80,7 +80,7 @@ namespace TerraKnight.Items
             public ItemType Type;
             public int Count;
             public Vector2 Local;
-            public byte Prefix, Forge;
+            public byte Prefix, Forge, WeaponVersion;
         }
 
         public static WorldItems Instance { get; private set; }
@@ -188,7 +188,7 @@ namespace TerraKnight.Items
             {
                 var local = centre - (Vector2)region.Root.position;
                 var action = new Net.WorldSync.Action { Op = "drop", Scene = region.SceneName, X = local.x, Y = local.y,
-                    Vx = vel.x, Vy = vel.y, Power = grabDelay, Sky = fromSky, Kind = (int)stack.Type, Count = stack.Count, Prefix = stack.Prefix, Forge = stack.Forge };
+                    Vx = vel.x, Vy = vel.y, Power = grabDelay, Sky = fromSky, Kind = (int)stack.Type, Count = stack.Count, Prefix = stack.Prefix, Forge = stack.Forge, WeaponVersion = stack.WeaponVersion };
                 if (Net.NetSession.Hosting) NetSpawn(action, Net.NetSession.MySlot);
                 else Net.WorldSync.Submit(action);
                 return null;
@@ -308,7 +308,7 @@ namespace TerraKnight.Items
             }
             // The Banner Case or the Potion Box carried: its banners or potions go into it first (Containers).
             int left = Containers.Store(inv, it.Stack, count);
-            if (left > 0) left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, left);
+            if (left > 0) left = it.Stack.Prefix > 0 || it.Stack.Forge > 0 || it.Stack.WeaponVersion > 0 ? inv.Pickup(it.Stack) : inv.Pickup(it.Stack.Type, left);
             // The Void Bag carried: what the bag had no room for goes into the Void Vault (Player.GetItem's void bag).
             if (left > 0 && World.Chests.VoidBagCarried(inv)) left = World.Chests.StoreInVoid(inv, it.Stack, left);
             if (left == count) { Achievements.AchievementTracker.BagFull(it); return; }
@@ -965,7 +965,7 @@ namespace TerraKnight.Items
         {
             var list = new List<Saved>(items.Count);
             foreach (var it in items)
-                if (!it.Stack.IsEmpty) list.Add(new Saved { Scene = it.Scene, Type = it.Stack.Type, Count = it.Stack.Count, Local = it.Local, Prefix = it.Stack.Prefix, Forge = it.Stack.Forge });
+                if (!it.Stack.IsEmpty) list.Add(new Saved { Scene = it.Scene, Type = it.Stack.Type, Count = it.Stack.Count, Local = it.Local, Prefix = it.Stack.Prefix, Forge = it.Stack.Forge, WeaponVersion = it.Stack.WeaponVersion });
             return list;
         }
 
@@ -975,7 +975,7 @@ namespace TerraKnight.Items
             if (saved == null) return;
             foreach (var s in saved)
                 if (s.Type != ItemType.None && s.Count > 0)
-                    items.Add(new Item { Stack = new ItemStack { Type = s.Type, Count = s.Count, Prefix = s.Prefix, Forge = s.Forge }, Scene = s.Scene, Local = s.Local });
+                    items.Add(new Item { Stack = new ItemStack { Type = s.Type, Count = s.Count, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion }, Scene = s.Scene, Local = s.Local });
         }
     }
 }

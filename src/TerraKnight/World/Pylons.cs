@@ -401,9 +401,11 @@ namespace TerraKnight.World
             pd.atBench = false;
             arrivingAt = p;
             Application.backgroundLoadingPriority = ThreadPriority.High;
+            string entry = p.Entry;
+            if (!DevLegacyWatcherEntry) TransitionPoint.lastEntered = entry;
             gm.BeginSceneTransition(new GameManager.SceneLoadInfo
             {
-                SceneName = p.Scene, EntryGateName = p.Entry, PreventCameraFadeOut = true, WaitForSceneTransitionCameraFade = false,
+                SceneName = p.Scene, EntryGateName = entry, PreventCameraFadeOut = true, WaitForSceneTransitionCameraFade = false,
                 Visualization = GameManager.SceneLoadVisualizations.Default, AlwaysUnloadUnusedAssets = false,
             });
         }
@@ -431,17 +433,21 @@ namespace TerraKnight.World
 
         /// <summary>A teleport on its way: the player isn't drawn until he steps out of the portal.</summary>
         public static bool Arriving => arrivingAt != null;
+        internal static bool LoadingByPortal(string scene) => !DevLegacyWatcherEntry && arrivingAt != null && arrivingAt.Scene == scene;
 
         /// <summary>
         /// The game has put the player in the pylon's scene (SendHeroInPosition): beside the pylon
         /// instead, on whichever side has floor and room, the bench made the respawn point as resting
         /// on it does, and the summoning portal plays there. False when no teleport is arriving.
         /// </summary>
-        public static bool Arrive(HeroController hero)
+        public static bool Arrive(HeroController hero, bool afterNativeEntry = false)
         {
             var p = arrivingAt;
             var gm = GameManager.instance;
             if (p == null || hero == null || gm == null || gm.sceneName != p.Scene) return false;
+            // SendHeroInPosition precedes the native bottom/side/door movement. Claim the
+            // portal now, but place the player only once FinishedEnteringScene has ended it.
+            if (!afterNativeEntry) return true;
             arrivingAt = null;
             arrivedAt = Time.unscaledTime;
             var pd = PlayerData.instance;

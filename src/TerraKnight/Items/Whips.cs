@@ -15,7 +15,7 @@ namespace TerraKnight.Items
     /// falling off with each enemy, the whip's debuff, its tag on the enemy and, for some, a
     /// proc, the snowflake or the player buff; and the enemy becomes the minions' target.
     /// </summary>
-    internal sealed class Whips : MonoBehaviour
+    internal sealed partial class Whips : MonoBehaviour
     {
         const float Px = TerraParticles.Px;
         const float L = 0.874f;
@@ -78,6 +78,23 @@ namespace TerraKnight.Items
             public Vector2 AimWorld;
             /// <summary>The Snake Band's second crack: its reach goes by the held whip's swing (FillWhipControlPoints uses HeldItem).</summary>
             public ItemDef ReachItem;
+            /// <summary>Its own lash (WhipStyles): the tip's reach at full stretch (px); when it cracked; the handle's way from the aim (degrees, + over the top).</summary>
+            public float Reach, CrackAt, HandleDeg;
+            /// <summary>Its lash of the whip's (WhipStyles.Move); the rope's links now, last update, before the last step, as this tick began.</summary>
+            public int Move;
+            /// <summary>Begun from rest (not carried on from the last lash): its tip lifted from where it lay (RestTip) onto the eight.</summary>
+            public bool FromRest;
+            public Vector2 RestTip;
+            /// <summary>How much each link is led toward the lash's shape (0: on its own); caught on something in this strike (from
+            /// link Caught out let go); a pull back of the last one's caught rope; its length now, and at the pull back's start,
+            /// and how far the pull back has gone.</summary>
+            public float[] Lead;
+            public bool LetGo, Reel;
+            public int Caught;
+            public float Held, ReelFrom, ReelDone;
+            public Vector2[] P, Prev, Before, TickStart;
+            public bool Cracked;
+            public readonly List<(Vector2 Pos, float At)> Ribbon = new List<(Vector2, float)>();
             /// <summary>A Moon Lord whip clone lasts 30 ticks whatever the swing's speed (P:49296).</summary>
             public int T => Clone ? 30 * S.Updates : AnimMax * S.Updates;
         }
@@ -90,6 +107,10 @@ namespace TerraKnight.Items
         readonly List<Collider2D> overlaps = new List<Collider2D>();
         float tickAccumulator;
         Vector2 pCenter;
+        /// <summary>The player's feet line (Terraria px, y down).</summary>
+        float pFeetY;
+        /// <summary>The player's box (Terraria px).</summary>
+        Vector2 pSize;
         int pDir = 1;
 
         /// <summary>Dev: enemies struck by whips so far.</summary>
@@ -120,6 +141,7 @@ namespace TerraKnight.Items
             {
                 Kind = whip.Whip, S = s, Item = whip, Vel = dir.normalized * whip.ShootSpeed, Ai1 = ai1, AnimMax = Mathf.Max(1, animMax),
                 Damage = Equipment.Damage(whip), Knockback = WhipKnockback(whip), AimWorld = aimWorld, TipVariant = 1 + Random.Range(0, 3),
+                Move = NextMove(whip.Whip),
             };
             c.SpriteDir = c.Vel.x < 0f ? -1 : 1;
             c.Rot = Mathf.Atan2(c.Vel.y, c.Vel.x) + Mathf.PI / 2f;
@@ -181,6 +203,7 @@ namespace TerraKnight.Items
             {
                 Kind = item.Whip, S = settings[item.Whip], Item = item, ReachItem = held, Vel = dir * item.ShootSpeed, Ai1 = ai1, AnimMax = echoAnim * 2,
                 Damage = Mathf.Max(3, (int)(Equipment.Damage(item) * 0.3f)), Knockback = WhipKnockback(item) * 0.25f, AimWorld = aim, TipVariant = 1 + Random.Range(0, 3),
+                Move = NextMove(item.Whip),
             };
             c.SpriteDir = c.Vel.x < 0f ? -1 : 1;
             c.Rot = Mathf.Atan2(c.Vel.y, c.Vel.x) + Mathf.PI / 2f;
@@ -192,7 +215,10 @@ namespace TerraKnight.Items
         {
             var hero = HeroController.SilentInstance;
             if (hero == null) return false;
-            pCenter = TerraParticles.ToPx(hero.GetComponent<BoxCollider2D>().bounds.center);
+            var box = hero.GetComponent<BoxCollider2D>().bounds;
+            pCenter = TerraParticles.ToPx(box.center);
+            pFeetY = TerraParticles.ToPx(new Vector2(box.center.x, box.min.y)).y;
+            pSize = box.size / Px;
             var rb = hero.GetComponent<Rigidbody2D>();
             pVel = rb != null ? new Vector2(rb.linearVelocity.x, -rb.linearVelocity.y) / Px / 60f : Vector2.zero;
             var mod = TerraMod.Instance;
@@ -225,7 +251,10 @@ namespace TerraKnight.Items
             }
             if (echoIn > 0 && --echoIn == 0) Echo();
             foreach (var c in live)
+            {
+                TickBegins(c);
                 for (int u = 0; u < c.S.Updates && !c.Dead; u++) Step(c);
+            }
             live.RemoveAll(c => c.Dead);
             live.AddRange(pending);
             pending.Clear();
@@ -239,13 +268,17 @@ namespace TerraKnight.Items
             if (c.Ai0 >= c.T)
             {
                 c.Dead = true;
+                KeepRope(c);
                 return;
             }
+            // A whip lashing its own way is a rope: on an update (WhipStyles).
+            if (Styled(c)) SimStep(c);
             Points(c, points, true, 0);
             if (c.Ai0 == (int)(c.T / 2f)) TerraMod.Instance?.PlaySound(c.S.Sound, c.S.SoundVolume);
             if (c.Kind == WhipKind.MoonLordWhip && !c.Clone && c.Spawned < c.Ai0 / c.T * 3f) MoonLordClone(c);
             if (c.Kind == WhipKind.SlimeWhip && c.Ai0 == (int)(c.T / 3f) * 2) SlimeSpark(c);
             Dust(c);
+            StyleDust(c);
             Points(c, oldPoints, true, -1);
             Collide(c);
         }
@@ -294,8 +327,10 @@ namespace TerraKnight.Items
         /// FillWhipControlPoints: the chain at this update (frameOffset −1: the last one); a
         /// collision chain is uncurled (the random curl is only drawn).
         /// </summary>
-        void Points(Crack c, List<Vector2> list, bool collision, int frameOffset)
+        void Points(Crack c, List<Vector2> list, bool collision, float frameOffset)
         {
+            // The whip's own lash (WhipStyles) with the remade swing on.
+            if (Styled(c) && StylePoints(c, list, frameOffset)) return;
             list.Clear();
             int segments = c.S.Segments;
             float t = (c.Ai0 + frameOffset) / c.T;
@@ -349,7 +384,9 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// Colliding: each point's box now and last update (18 px) against the enemies; then
-        /// Damage_PVE_Inner for each new one in the player's sight (CanHitWithMeleeWeapon).
+        /// Damage_PVE_Inner for each new one in the player's sight (CanHitWithMeleeWeapon). A whip lashing its own way is a rope
+        /// that can't pass the ground or a wall (WhipStyles): what it touches it reached, over a low wall or round a corner, so it
+        /// hits what its link touches with nothing between them (the user's 10-26 "矮墙，鞭子能抽过去打到后面的人才更合理").
         /// </summary>
         void Collide(Crack c)
         {
@@ -374,11 +411,34 @@ namespace TerraKnight.Items
                     int id = hm.GetInstanceID();
                     if (c.Hit.Contains(id)) continue;
                     var at = TerraParticles.ToPx(col.bounds.center);
-                    if (Vector2.Distance(at, now) > 1000f || !Clear(pCenter, at)) continue;
+                    // The Moon Lord whip's lash is the Moon Lord's: through walls (the user's 10-26 "私有物…唯一应该穿墙的武器"). The
+                    // others strike what the player sees (Terraria's sight lines), what the rope touches only with WhipStyles.Walls.
+                    if (Vector2.Distance(at, now) > 1000f || c.Kind != WhipKind.MoonLordWhip && (Styled(c) && Walls ? !Touches(now, col.bounds) : !InSight(col.bounds))) continue;
                     c.Hit.Add(id);
                     StrikeEnemy(c, col, hm);
                 }
             }
+        }
+
+        /// <summary>
+        /// CanHitWithMeleeWeapon (P:12415-12426): the enemy in the player's sight if any of four lines to it is clear: centre to
+        /// centre (Collision.CanHit), the front of his upper third to its upper third and to its centre, the front of his middle
+        /// to its lower third. A whip's lash goes over a low ledge to what stands behind it, as Terraria's does.
+        /// </summary>
+        bool InSight(Bounds b)
+        {
+            var e = TerraParticles.ToPx(b.center);
+            float eh = b.size.y / Px;
+            var front = pCenter + new Vector2(pDir * pSize.x / 2f, 0f);
+            var upper = front + new Vector2(0f, -pSize.y / 3f);
+            return Clear(pCenter, e) || Clear(upper, e + new Vector2(0f, -eh / 3f)) || Clear(upper, e) || Clear(front, e + new Vector2(0f, eh / 3f));
+        }
+
+        /// <summary>A link of the rope at an enemy with nothing between it and the nearest of the enemy's body.</summary>
+        static bool Touches(Vector2 link, Bounds b)
+        {
+            var nearest = TerraParticles.ToPx(b.ClosestPoint(TerraParticles.ToWorld(link)));
+            return Clear(link, nearest);
         }
 
         static readonly RaycastHit2D[] rayHits = new RaycastHit2D[8];
@@ -857,8 +917,11 @@ namespace TerraKnight.Items
             if (fx == null || live.Count == 0 || !Owner()) return;
             foreach (var c in live)
             {
-                Points(c, drawPoints, false, 0);
+                // Drawn where it is between updates (the share of a tick gone), smooth at any frame rate.
+                if (Styled(c)) StyleDrawPoints(c, drawPoints);
+                else Points(c, drawPoints, false, Mathf.Clamp(tickAccumulator * c.S.Updates, 0f, Mathf.Max(0f, c.T - 1f - c.Ai0)));
                 if (drawPoints.Count < 2) continue;
+                DrawStyle(fx, c);
                 // The line: a 2 px white column of FishingLine stretched between the points.
                 var line = FxBatch.Frame("FishingLine", 0, 0, 12, 12, 6f, 2f);
                 var lc = c.S.Line * L;

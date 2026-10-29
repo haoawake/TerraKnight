@@ -32,6 +32,7 @@ namespace TerraKnight.Items
 
         static IEnumerable<(ItemType, int, ItemSource, int)> MoneySources()
         {
+            yield return (ItemType.HomeEverywhere, 0, ItemSource.Shop, 500000);
             yield return (ItemType.Geo, 0, ItemSource.Drop, 0);
             yield return (ItemType.DreamEssence, 0, ItemSource.Drop, 0);
             yield return (ItemType.PiggyBank, 0, ItemSource.Shop, 10000);

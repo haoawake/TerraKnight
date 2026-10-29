@@ -241,7 +241,7 @@ namespace TerraKnight.EnemyAi.Bosses
         // ------------------------------------------------------------------ the numbers
 
         /// <summary>Its script's waits now (§1.3): the difficulty's share times the boss's pace.</summary>
-        public float TempoNow => BossAi.TempoScale * Pace;
+        public float TempoNow => Mathf.Max(1f, BossAi.TempoScale * Pace);
 
         /// <summary>A warning's length (§1.2): its base (0.6 s by default) times the difficulty's, never under 0.4 s.</summary>
         public float Warn(float seconds = 0.6f) => Mathf.Max(BossAi.MinWarn, seconds * BossAi.WarnScale);

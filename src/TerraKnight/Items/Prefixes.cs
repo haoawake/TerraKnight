@@ -102,7 +102,7 @@ namespace TerraKnight.Items
             if (d.Type == ItemType.ShadeCloak || d.Type == ItemType.CrystalHeart || AbilityShields.Is(d.Type) || d.Type == ItemType.DescendingDarkRune) return accessories;
             if (d.MaxStack > 1 || d.Permanent || d.HkItem) return null;
             int id = TerrariaId(d);
-            if (id <= 0) return null;
+            if (id <= 0) return OwnItem(d);
             if (setSwords.Contains(id)) return swords;
             if (setSpears.Contains(id)) return spears;
             if (setGunsBows.Contains(id)) return gunsBows;
@@ -112,6 +112,26 @@ namespace TerraKnight.Items
             if (id == 3389) return terrarian;
             if (d.IsAccessory && !noPrefix.Contains(id)) return accessories;
             return null;
+        }
+
+        /// <summary>
+        /// The mod's own weapons and accessories (their own pictures: the spells' weapons of the Vengeful Spirit, Howling
+        /// Wraiths, Shade Soul and Abyss Shriek), sorted as Terraria's PrefixLegacy.ItemSets sort its own: a melee weapon
+        /// swung with the swords, one thrown or held out (a yoyo, a bell) with the spears and boomerangs (the same prefixes),
+        /// the rest by their class (the user's 10-27 "黑波装备无法重铸，是否其他都这样？": none of the sixteen could be reforged).
+        /// </summary>
+        static int[] OwnItem(ItemDef d)
+        {
+            if (d.IsAccessory) return accessories;
+            if (d.Damage <= 0 || d.Consumable) return null;
+            switch (d.Class)
+            {
+                case DamageClass.Melee: return d.NoMelee ? spears : swords;
+                case DamageClass.Ranged: return gunsBows;
+                case DamageClass.Magic: return magic;
+                case DamageClass.Summon: return summons;
+                default: return null;
+            }
         }
 
         /// <summary>Item.CanHavePrefixes: whether it can be reforged.</summary>

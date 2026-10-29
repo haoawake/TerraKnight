@@ -71,12 +71,15 @@ namespace TerraKnight.Items
         /// CanHit; here its middle, its nearest edge, its top or its bottom), or one in the ground (a burrower, Terraria's
         /// noTileCollide). Longnail reaches through, a silver glint on the wall. Projectiles keep their own rules.
         /// </summary>
+        /// <summary>Where a melee blow is seen from instead of the player (a thrown phase blade's cut: BladeSkills).</summary>
+        public static Vector2? SightFrom;
+
         public static bool MeleeReaches(Collider2D col)
         {
             if (col == null) return true;
             var hero = HeroController.SilentInstance;
             if (hero == null || col.GetComponentInParent<HealthManager>() == null) return true;
-            Vector2 from = Centre(hero);
+            Vector2 from = SightFrom ?? Centre(hero);
             var b = col.bounds;
             if (World.TerraWorld.IsSolidAt(b.center)) return true;
             if (!WallBetween(from, b.center, out var wall)) return true;

@@ -61,6 +61,24 @@ namespace TerraKnight
         ItemDef swingItem;
         Sprite swingSprite;
         float swingTime, swingDuration, bladeLength;
+        /// <summary>
+        /// The remade swing (BladeArts): the move of its combo this use makes, the weapon it was and when the last use of it
+        /// ended (the next move follows on within half a second), the line to the cursor it cuts about (degrees from level),
+        /// and the stroke under way.
+        /// </summary>
+        int artMove = -1, artStroke = -1, artHits0;
+        ItemType artItem;
+        /// <summary>The use's cut (a move of the combo, or the plunge) and what its body has done: sprung, run, bounced.</summary>
+        BladeArts.Move artCut;
+        bool artSprung, artDashed, artBounced;
+        /// <summary>Where the use's cut turns when it isn't the player's (a thrown phase blade's cut where it hangs: BladeSkills), world.</summary>
+        Vector2? artRemote;
+        /// <summary>A right-click art's own cut (BladeSkills.SkillCut): its move, length (s), damage and knockback scales for the use it starts.</summary>
+        BladeArts.Move skillMove;
+        float skillSeconds, skillDamage = 1f, skillKnock = 1f, artDamage = 1f, artKnock = 1f;
+        float artLastEnd = -10f, artAim;
+        /// <summary>Dev: the line the last remade cut was aimed about (degrees from level).</summary>
+        public float DevArtAim => artAim;
         float useCooldown;
         /// <summary>The shooting swords' own itemTime: a swing shoots only once it has run out.</summary>
         float shotCooldown;
@@ -79,6 +97,10 @@ namespace TerraKnight
         /// <summary>The use button's press went to the interface (or the housing panel's placing): no use until it is let go.</summary>
         static bool uiPress;
         public bool? DevHold;
+        /// <summary>The left button down for starting uses (the real one; suite leftlatch stands in with DevLeftHeld, pressed as it turns on).</summary>
+        public bool LeftHeld => DevLeftHeld ?? (!DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem));
+        public bool? DevLeftHeld;
+        bool devLeftWas;
         Vector2Int miningCell = new Vector2Int(int.MinValue, 0);
         int miningDamage;
         float abilityCheckTimer;
@@ -98,6 +120,7 @@ namespace TerraKnight
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.playOnAwake = false;
             audioSource.spatialBlend = 0f;
+            audioSource.priority = VoicePriority;
 
             highlight = new GameObject("Terra Highlight").AddComponent<SpriteRenderer>();
             highlight.transform.SetParent(transform, false);
@@ -454,6 +477,8 @@ namespace TerraKnight
             if (!DevNoRealMouse && overUi && TerraKeys.Pressed(TerraKeys.Action.UseItem)) uiPress = true;
             if (DevNoRealMouse || !TerraKeys.Held(TerraKeys.Action.UseItem)) uiPress = false;
             if (!DevNoRealMouse && !overUi && !talked && TerraKeys.Pressed(TerraKeys.Action.Interact)) MeleeSpecials.RightLatch = true;
+            // The remade swing's right-click arts (BladeSkills): the katana's charged draw, the phase blade thrown.
+            BladeSkills.Tick(hero, def, !overUi && !talked && AltPressed, !overUi && AltHeld, IsUsingItem);
             bool usable = false, smart = false;
             Vector2? smartAim = null;
             var cell = CellGrid.WorldToCell(mouse);
@@ -478,12 +503,24 @@ namespace TerraKnight
                 BossRooms.Notice(mouse);
             if (!overUi && !talked && !usable && !DevNoRealMouse && def.PickPower > 0 && TerraKeys.Held(TerraKeys.Action.UseItem) && Shimmer.Protects(cell.x, cell.y))
                 Shimmer.Notice(mouse);
-            // Potions and crystals take a click each; everything else keeps going while held.
-            bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def);
-            bool pressed = !DevNoRealMouse && !uiPress && (once ? TerraKeys.Pressed(TerraKeys.Action.UseItem) : TerraKeys.Held(TerraKeys.Action.UseItem));
+            // Potions and crystals take a click each; everything else keeps going while held. A remade weapon that is
+            // held out (channel) and ends its own use (the Glacier Fang's icicle loosed at full charge, a Ghastly Glaive
+            // thrust) starts again while the button stays down (the user's 10-28 "有武器还无法持续左键了，比如冰川之牙和关公大刀").
+            bool channelGoesOn = def.Channel && def.Damage > 0 && BladeArts.Enabled;
+            bool once = def.HealLife > 0 || def.HealMana > 0 || def.LifeCrystal || def.ManaCrystal || !Equipment.AutoReuses(def) && !channelGoesOn;
+            // A right-click art charging or rushing holds the left button off (the user's 10-26: the right button comes first).
+            bool leftHeld = LeftHeld;
+            bool leftPressed = DevLeftHeld.HasValue ? leftHeld && !devLeftWas : !DevNoRealMouse && TerraKeys.Pressed(TerraKeys.Action.UseItem);
+            devLeftWas = leftHeld;
+            bool pressed = !uiPress && !BladeSkills.HoldsLeft && (once ? leftPressed : leftHeld);
             // The Axe strums a note on each click, by how far off the cursor is (Pl:46946-46971), whether or not it swings now.
             if (!overUi && !talked && !DevNoRealMouse && def.Type == ItemType.TheAxe && TerraKeys.Pressed(TerraKeys.Action.UseItem)) StrumGuitar(mouse);
-            if (!overUi && pressed && useCooldown <= 0f && def.IsUsable)
+            // A phase blade thrown and hanging: the left button cuts with it there (BladeSkills), the item's own use none.
+            if (BladeSkills.TakesLeft(def))
+            {
+                if (!overUi && !talked && pressed && useCooldown <= 0f && BladeSkills.RemotePivot(def).HasValue) RemoteUse(def);
+            }
+            else if (!overUi && pressed && useCooldown <= 0f && def.IsUsable)
             {
                 AltFunction = false;
                 Use(def, cell, usable, mouse, rock, smartAim);
@@ -493,8 +530,9 @@ namespace TerraKnight
             else if (useCooldown <= 0f && def.IsUsable && IsUsingItem && swingItem == def && !AltFunction && def.Shoot != ProjKind.None && !def.Channel
                      && def.Class != DamageClass.Melee && def.UseTime < def.UseAnimation && !Equipment.AutoReuses(def))
                 Use(def, cell, usable, DevAim ?? mouse, rock, smartAim);
-            // ItemCheck_ManageRightClickFeatures: an item with another use takes it on the right button (held, for the Fury).
-            else if (!overUi && !talked && !DevNoRealMouse && def.AltUse && TerraKeys.Held(TerraKeys.Action.Interact) && useCooldown <= 0f && !IsUsingItem)
+            // ItemCheck_ManageRightClickFeatures: an item with another use takes it on the right button (held, for the Fury);
+            // with a right-click art of the remade swings (BladeSkills.KindArt) the right button is the art's.
+            else if (!overUi && !talked && !DevNoRealMouse && def.AltUse && BladeSkills.KindArtOf(def) == null && TerraKeys.Held(TerraKeys.Action.Interact) && useCooldown <= 0f && !IsUsingItem)
             {
                 AltFunction = true;
                 Use(def, cell, usable, mouse, rock);
@@ -548,6 +586,7 @@ namespace TerraKnight
                 PosePlayer();
                 // The other players of a LAN game, drawn after this one (the player sprite's per-frame statics are this one's first).
                 Net.NetSession.PosePlayers();
+                DuckSounds();
             }
             finally { PerfProbe.End(PerfProbe.Part.LateUpdate, began); }
         }
@@ -763,7 +802,7 @@ namespace TerraKnight
             return drunk;
         }
 
-        void QuickUse(System.Func<ItemDef, bool> kind)
+        internal void QuickUse(System.Func<ItemDef, bool> kind)
         {
             int best = -1;
             for (int i = 0; i < Inventory.Size; i++)
@@ -837,7 +876,8 @@ namespace TerraKnight
             }
             var def = Inventory.Slots[best].Def;
             Vector2 aim = DevAim ?? (MouseWorld(out var m) ? m : (Vector2)hero.transform.position);
-            bool done = TeleportRods.Use(this, hero, aim, def.Type == ItemType.RodofDiscord);
+            if (!TeleportRods.Ready) { DevLastQuickUse = "混沌传送：还在使用间隔里"; return; }
+            bool done = TeleportRods.Use(this, hero, aim, def.Type == ItemType.RodofDiscord, def.UseTime);
             if (done) PlaySound(def.UseSound ?? "Item_8");
             DevLastQuickUse = $"混沌传送：第 {best} 格 {def.Name}，{(done ? "传过去了" : "没传成")}";
         }
@@ -1099,8 +1139,12 @@ namespace TerraKnight
             def.PlacesWall > 0 ? BuildingTools.CanPlaceWall(cell) || BlockSwap.CanSwapWall(def, cell)
             : def.Places != CellKind.Empty && (CanPlace(cell, def.Places) || BlockSwap.CanSwap(def, cell));
 
+        /// <summary>Dev: uses begun by the buttons (Use), counted.</summary>
+        public static int DevUseCount;
+
         void Use(ItemDef def, Vector2Int cell, bool usable, Vector2 mouse, Collider2D rock, Vector2? smartAim = null)
         {
+            DevUseCount++;
             if (!Net.WorldSync.CanInteract) return;
             // Soul Eater's minion mode, the spore mist, Unn's light: no weapon.
             if (CharmEffects.WeaponLocked(def)) { CharmEffects.SayLocked(); return; }
@@ -1220,7 +1264,7 @@ namespace TerraKnight
             }
             if (ItemDb.IsTeleportRod(def.Type))
             {
-                if (TeleportRods.Use(this, hero, DevAim ?? mouse, def.Type == ItemType.RodofDiscord)) PlaySound(def.UseSound ?? "Item_8");
+                if (TeleportRods.Use(this, hero, DevAim ?? mouse, def.Type == ItemType.RodofDiscord, def.UseTime)) PlaySound(def.UseSound ?? "Item_8");
                 return;
             }
             if (def.Bucket != BucketUse.None)
@@ -1271,7 +1315,7 @@ namespace TerraKnight
             // A drill whose head is already out mines on (its strokes are the item's own, every useTime).
             else if (def.Shoot != ProjKind.None && CountShot(def) && !Fire(def, hero, mouse) && !(def.PickPower > 0 && TerraProjectiles.Instance != null && TerraProjectiles.Instance.Holds(def.Shoot))) return;
 
-            if (!IsUsingItem || swingItem != def) StartSwing(def);
+            if (!SwingOngoing(def)) StartSwing(def);
             if (rock != null)
             {
                 // Mining goes at the pickaxe's speed times pickSpeed (ApplyItemTime(pick, pickSpeed)).
@@ -1333,6 +1377,16 @@ namespace TerraKnight
         }
 
         /// <summary>
+        /// Player.ItemCheck_CheckCanUse (Pl:52750): in a liquid (Terraria's lava aside; Hallownest has none) these can't be used: the
+        /// flames (85: the Flamethrower, the Elf Melter), the Ball of Fire (15: the Flower of Fire), the Flamelash (34) and the
+        /// Arc Surge's bolt (1122).
+        /// </summary>
+        internal static bool Drowned(ItemDef def, HeroController hero) =>
+            def != null && hero != null && (def.Shoot == ProjKind.FlamethrowerFlame || def.Shoot == ProjKind.BallofFire || def.Shoot == ProjKind.Flamelash
+                                            || def.Shoot == ProjKind.ArcSurgeBolt)
+            && (AcidLiquid.Swimming(hero) || PouredSwimming.Wet);
+
+        /// <summary>
         /// A use that shoots: ammo from the inventory for bows and guns (Terraria adds the ammo's
         /// damage and speed to the weapon's), mana for magic, the item itself when thrown.
         /// False when there's nothing to shoot with.
@@ -1348,8 +1402,15 @@ namespace TerraKnight
                 ammo = Inventory.Slots[ammoSlot].Def;
             }
             if (TerraProjectiles.Instance != null && TerraProjectiles.Instance.Holds(def.Shoot)) return false;
-            // Mana is paid as a use starts: the Aqua Scepter's second stream in the same use is free.
-            bool freeShot = def.ManaEveryOtherShot && IsUsingItem && swingItem == def;
+            if (Drowned(def, hero)) return false;
+            // Mana is paid as a use starts (ItemCheck_TryStartUse, 1.4.5): the Aqua Scepter's second stream in the same use is
+            // free, and so are the later shots of a use that fires again within it (useTime under useAnimation: the Arc Surge's
+            // three bolts, the Nightglow's and the Tome of Infinite Wisdom's five) - CountShot has counted this one.
+            bool freeShot = def.ManaEveryOtherShot && IsUsingItem && swingItem == def
+                            || def.UseTime < def.UseAnimation && IsUsingItem && swingItem == def && shotsThisUse > 1;
+            // A use begun short of mana (slowMagicUse) is slower throughout: its free shots wait 2.5 times as long as well.
+            if (freeShot && def.Mana > 0 && SlowMagicUse) useCooldown *= SlowMagic;
+            if (DevShotLog != null && def.Mana > 0) DevShotLog.Add($"{shotsThisUse}:{swingTime * 60f:F1}/{swingDuration * 60f:F1}{(freeShot ? "免" : "付")}{(SlowMagicUse ? "慢" : "")}");
             if (def.Mana > 0 && !freeShot && !def.NoUseMana && !CheckMana(def, startOfUse: true)) return false;
 
             Vector2 center = hero.GetComponent<BoxCollider2D>().bounds.center;
@@ -1392,11 +1453,13 @@ namespace TerraKnight
             // A forged ranged weapon's levels go with what it fires (armor penetration, crit damage).
             TerraProjectiles.SpawnForge = Forging.RangedLevel(def);
             ShootPatterns.NoAmmo = false;
-            if (ShootPatterns.Try(new ShootPatterns.Shot
-                {
-                    Def = def, Ammo = ammo, Kind = kind, From = from, Mouse = mouse, Vel = vel, Speed = speed, Knockback = knockback,
-                    Crit = Equipment.Crit(def), Damage = damage, UseTicks = useTicks, Melee = meleeShot, Hero = hero, Extra = quiver ? 1 : 0,
-                })) { }
+            var shot = new ShootPatterns.Shot
+            {
+                Def = def, Ammo = ammo, Kind = kind, From = from, Mouse = mouse, Vel = vel, Speed = speed, Knockback = knockback,
+                Crit = Equipment.Crit(def), Damage = damage, UseTicks = useTicks, Melee = meleeShot, Hero = hero, Extra = quiver ? 1 : 0,
+            };
+            // A remade ranged weapon fires its own way (RangedFire), the game's shot at its heart.
+            if (RangedFire.Fire(in shot) || MageFire.Fire(in shot) || ShootPatterns.Try(shot)) { }
             else if (def.Type == ItemType.Starfury) StarfuryStar(hero, mouse, damage, Equipment.Crit(def), speed);
             else if (def.Pellets > 0)
             {
@@ -1611,13 +1674,23 @@ namespace TerraKnight
         /// <summary>Shots so far in the use in progress, this one included (1 for its first).</summary>
         public int ShotsThisUse => shotsThisUse;
 
+        /// <summary>Dev: each mana weapon's shot (its number in the use, the swing's ticks gone and all, free or paid), when set.</summary>
+        public static List<string> DevShotLog;
+
         /// <summary>Counts the shot about to be fired in this use (a new use starts again at 1); always true.</summary>
         bool CountShot(ItemDef def)
         {
-            if (!IsUsingItem || swingItem != def) shotsThisUse = 0;
+            if (!SwingOngoing(def)) shotsThisUse = 0;
             shotsThisUse++;
             return true;
         }
+
+        /// <summary>
+        /// The item's swing still going, not within half a tick of its end: a use firing again on the tick its animation runs out
+        /// begins the next use (itemAnimation 0 then: its mana paid, its swing begun), not a fourth shot of the old one (the
+        /// frame's time adding up a hair short of the swing's).
+        /// </summary>
+        bool SwingOngoing(ItemDef def) => IsUsingItem && swingItem == def && swingTime < swingDuration - 0.5f / 60f;
 
         /// <summary>Player.reuseDelay: no next use for that many ticks.</summary>
         public void ReuseDelay(int ticks) => useCooldown = Mathf.Max(useCooldown, ticks / 60f);
@@ -2122,7 +2195,7 @@ namespace TerraKnight
             }
             Inventory.Mouse = default;
             var hero = HeroController.SilentInstance;
-            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix, Forge = m.Forge };
+            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix, Forge = m.Forge, WeaponVersion = m.WeaponVersion };
             if (left > 0 && hero != null) WorldItems.Drop(rest, hero.GetComponent<BoxCollider2D>().bounds.center);
             else if (left > 0) Inventory.Mouse = rest;
         }
@@ -2321,7 +2394,8 @@ namespace TerraKnight
             // Terraria draws held swords diagonally from the handle, so the blade spans the diagonal.
             bladeLength = swingSprite != null ? swingSprite.bounds.size.magnitude * Equipment.ItemScale(def) : 0f;
             CharmEffects.OnMeleeSwing(HeroController.SilentInstance, def, UseDirection, bladeLength);
-            swingDuration = Mathf.Max(def.UseAnimation * Equipment.UseScale(def) * (slowSwing && def.Mana > 0 ? SlowMagic : 1f), 0.1f);
+            swingDuration = skillMove != null && skillSeconds > 0f ? skillSeconds
+                : Mathf.Max(def.UseAnimation * Equipment.UseScale(def) * (slowSwing && def.Mana > 0 ? SlowMagic : 1f), 0.1f);
             slowSwing = false;
             swingTime = 0f;
             BeginUse(def);
@@ -2332,10 +2406,11 @@ namespace TerraKnight
         void BeginUse(ItemDef def)
         {
             UseSerial++;
-            MinionEngage.Used(def);
             if (def.Class == DamageClass.Magic) CharmEffects.OnMagicUse(HeroController.SilentInstance, def, DevAim ?? AimPoint);
+            if (def.Class == DamageClass.Magic) SwordFx.Instance?.MageBegin(def);
             if (def.UseSound != null) PlaySound(def.UseSound, 0.6f * def.UseSoundVolume);
-            if (!def.NoMelee) melee.Begin(def, UseDirection);
+            bool art = BladeArts.Active(def);
+            if (!def.NoMelee || art) melee.Begin(def, UseDirection);
             finalFractalShots = 0;
             // Swords that shoot (their slashes, the stab, Light's Bane's cut, the leaf) turn the
             // player to the cursor and shoot once as each use starts (shootsEveryUse).
@@ -2344,8 +2419,93 @@ namespace TerraKnight
             {
                 Vector2 aim = DevAim ?? AimPoint;
                 UseDirection = aim.x < hero.transform.position.x ? -1f : 1f;
-                SwordFx.Instance?.OnUse(def, hero, UseDirection, aim);
+                // A remade swing is the sword's slash itself: its other shots (the Terra Blade's beam...) as ever.
+                SwordFx.Instance?.OnUse(def, hero, UseDirection, aim, art && BladeArts.SlashFinisher(def));
             }
+            if (art && hero != null) ArtBegin(def, hero);
+        }
+
+        /// <summary>
+        /// A use of a remade weapon begins (BladeArts): the next move of its combo while the uses follow on (the button held,
+        /// or pressed again within half a second of the last one's end), its first after a pause; its cut aimed about the
+        /// line from the shoulder to the cursor, facing that way; its look (SwordFx.ArtUse).
+        /// </summary>
+        void ArtBegin(ItemDef def, HeroController hero)
+        {
+            var art = BladeArts.Of(def);
+            Vector2 aim = DevAim ?? AimPoint;
+            // A phase blade thrown and hanging: its cut there, toward the cursor from it.
+            artRemote = BladeSkills.RemotePivot(def);
+            UseDirection = aim.x < (artRemote ?? (Vector2)hero.transform.position).x ? -1f : 1f;
+            var shoulder = artRemote ?? BladeArts.Feet(hero) + new Vector2(-UseDirection, 25f) * Effects.TerraParticles.Px;
+            artAim = BladeArts.Aim(shoulder, aim);
+            // A right-click art's own cut (SkillCut): its move, the combo where it was.
+            var forced = skillMove;
+            skillMove = null;
+            artDamage = forced != null ? skillDamage : 1f;
+            artKnock = forced != null ? skillKnock : 1f;
+            // In the air with the cursor well below: the plunge, the combo where it was.
+            const bool plunge = false;
+            if (!plunge && forced == null)
+            {
+                artMove = artItem == def.Type && artMove >= 0 && Time.time - artLastEnd < 0.5f ? (artMove + 1) % art.Combo.Length : 0;
+                artItem = def.Type;
+            }
+            artCut = forced ?? (plunge ? BladeArts.Plunge : art.Combo[artMove]);
+            artStroke = -1;
+            artSprung = artDashed = artBounced = false;
+            artHits0 = SwordFx.DevArtFlashes;
+            bool finisher = forced == null && !plunge && art.Combo.Length > 1 && artMove == art.Combo.Length - 1;
+            SwordFx.Instance?.ArtUse(def, art, artCut, artAim, UseDirection, swingDuration * 60f, Equipment.ItemScale(def), finisher, artRemote);
+        }
+
+        /// <summary>
+        /// The swing under way cut off (a right-click art taking over the left button's swing). What was left of its use time
+        /// stands: the left's next use waits for it, so right clicks don't start the left's use over and over (the user's 10-27
+        /// "按住左键的时候狂点右键可以无限重置左键的攻击").
+        /// </summary>
+        public void CutSwing()
+        {
+            if (swingItem == null) return;
+            swingItem = null;
+            heldProgress = -1f;
+            melee.End();
+            artLastEnd = Time.time;
+            if (DevOldCut) useCooldown = 0f;
+            DevCutSwings++;
+        }
+
+        /// <summary>Dev (suite rightspam): cuts swings handed their use time back, as before.</summary>
+        public static bool DevOldCut;
+        public static int DevCutSwings;
+
+        /// <summary>
+        /// A right-click art's cut (BladeSkills): the move given, that long, its damage and knockback scaled, through the
+        /// remade swing (its look, its hits, its pose), aimed at the cursor; no shot of the item's, the combo where it was.
+        /// </summary>
+        public void SkillCut(ItemDef def, BladeArts.Move move, float seconds, float damage, float knock)
+        {
+            if (def == null || move == null) return;
+            skillMove = move;
+            skillSeconds = seconds;
+            skillDamage = damage;
+            skillKnock = knock;
+            useCooldown = seconds;
+            swingItem = null;
+            StartSwing(def);
+            skillMove = null;
+        }
+
+        /// <summary>
+        /// A use of the thrown phase blade's (BladeSkills): the item's use time and combo as a swing here, its cut where the
+        /// blade hangs (ArtBegin takes its place), no shot of the item's.
+        /// </summary>
+        public void RemoteUse(ItemDef def)
+        {
+            if (useCooldown > 0f || def == null) return;
+            useCooldown = def.UseTime * Equipment.UseScale(def);
+            if (!IsUsingItem || swingItem != def) StartSwing(def);
+            else BeginUse(def);
         }
 
         /// <summary>Dev: Shift held for Auto Select.</summary>
@@ -2413,6 +2573,8 @@ namespace TerraKnight
 
         /// <summary>The item being swung or used right now (null when none).</summary>
         public ItemDef SwingItem => swingItem;
+        /// <summary>How far through its use the item in use is (0..1).</summary>
+        internal float UseProgress => SwingProgress;
 
         /// <summary>TryTogglingShield raising it: itemAnimation, itemTime and reuseDelay all 0.</summary>
         public void CancelUse()
@@ -2437,6 +2599,9 @@ namespace TerraKnight
             get
             {
                 if (swingItem == null || swingDuration <= 0f) return 0f;
+                // The remade swing's blade (SwordFx.ArtAngle), mirrored for the left.
+                if (BladeArts.Active(swingItem) && SwordFx.Instance != null && SwordFx.Instance.ArtAngle(out float artDeg))
+                    return UseDirection * (Mathf.PI / 4f - artDeg * Mathf.Deg2Rad);
                 float remaining = 1f - SwingProgress;
                 return (remaining - 0.5f) * -UseDirection * 3.5f - UseDirection * 0.3f;
             }
@@ -2479,11 +2644,12 @@ namespace TerraKnight
                 // Holding the button keeps swinging, like Terraria's auto-reuse.
                 bool overUi = InventoryGui.Open && InventoryGui.MouseOverUi;
                 // Shooting items start each use themselves (they need ammo or mana for it).
-                if (hero != null && !DevNoRealMouse && TerraKeys.Held(TerraKeys.Action.UseItem) && !overUi && swingItem.Shoot == ProjKind.None && Equipment.AutoReuses(swingItem)
+                if (hero != null && LeftHeld && !BladeSkills.HoldsLeft && !overUi && swingItem.Shoot == ProjKind.None && Equipment.AutoReuses(swingItem)
                     && !swingItem.IsSummon && !swingItem.IsWhip
                     && swingItem == Inventory.Current.Def && GameHooks.PlayerHasControl())
                 {
                     swingTime = 0f;
+                    artLastEnd = Time.time;
                     BeginUse(swingItem);
                 }
                 else
@@ -2491,13 +2657,16 @@ namespace TerraKnight
                     swingItem = null;
                     heldProgress = -1f;
                     melee.End();
+                    artLastEnd = Time.time;
                     return;
                 }
             }
             if (swingItem.ShootsFinalFractal) ThrowFinalFractals(hero);
-            if (swingItem.NoMelee) return;
+            bool art = BladeArts.Active(swingItem);
+            if (swingItem.NoMelee && !art) return;
             Vector2 p = hero.transform.position;
-            if (swingItem.Thrust)
+            if (art) ArtSwing(hero);
+            else if (swingItem.Thrust)
             {
                 // useStyle 3: the item's own box once it is out (ItemCheck_GetMeleeHitbox), Terraria px to world.
                 float remaining = 1f - SwingProgress;
@@ -2515,6 +2684,46 @@ namespace TerraKnight
                 MeleeSpecials.SwingAnimMax = Mathf.Max(1, Mathf.RoundToInt(swingDuration * 60f));
                 MeleeSpecials.SwingAnim = Mathf.RoundToInt((1f - SwingProgress) * MeleeSpecials.SwingAnimMax);
                 MeleeSpecials.SwingDust(swingItem, melee.SwingBox, UseDirection, new Vector2(v.x, -v.y));
+            }
+        }
+
+        /// <summary>
+        /// The remade swing's step (BladeArts): each stroke of the use's move as it begins (its share of the use's damage,
+        /// the combo's last move knocking back harder; a softer sound for a second or third stroke), then whatever it has swept
+        /// from the shoulder out to its reach struck; a smash's blow spreads along the ground where it lands.
+        /// </summary>
+        void ArtSwing(HeroController hero)
+        {
+            var art = BladeArts.Of(swingItem);
+            var move = artCut;
+            if (move == null) return;
+            int stroke = BladeArts.StrokeAt(move, SwingProgress, out float su);
+            // The left button's cuts move nobody (the user's 10-26 "左键的攻击不要有强制位移…位移都放到右键去"): the
+            // runs and springs are the right-click arts' (BladeSkills).
+            if (stroke != artStroke)
+            {
+                artStroke = stroke;
+                int n = move.Strokes.Length;
+                bool finisher = move != BladeArts.Plunge && art.Combo.Length > 1 && artMove == art.Combo.Length - 1 && artDamage == 1f;
+                melee.NextCut(art, stroke, art.Boost / n * artDamage * BladeSkills.CutScale(swingItem), (finisher ? 1.25f : 1f) * artKnock, 1f / n);
+                if (stroke > 0 && swingItem.UseSound != null) PlaySound(swingItem.UseSound, 0.4f * swingItem.UseSoundVolume, 1.05f + 0.05f * stroke);
+            }
+            var s = move.Strokes[stroke];
+            float bladePx = SwordFx.BladeLength(swingItem, Equipment.ItemScale(swingItem));
+            float floor = artRemote.HasValue ? -90f : BladeArts.FloorAngle(9f + bladePx * s.Reach * art.Reach);
+            if (!BladeArts.Swept(s, su, artAim, out float lo, out float hi, out float reach, floor)) return;
+            var shoulder = artRemote ?? BladeArts.Feet(hero) + new Vector2(-UseDirection, 25f) * Effects.TerraParticles.Px;
+            BladeArts.Blade(s, su, artAim, out _, out float ext, out _, floor);
+            float radius = (9f + Mathf.Max(0f, ext) + bladePx * reach * art.Reach) * Effects.TerraParticles.Px;
+            // A thrown blade's cut reaches what it sees from where it hangs.
+            CharmEffects.SightFrom = artRemote;
+            try { melee.TickArc(shoulder, radius, lo, hi, UseDirection); }
+            finally { CharmEffects.SightFrom = null; }
+            if (s.Shape == BladeArts.Shape.Smash && su >= 0.6f && su < 0.8f)
+            {
+                float a = Mathf.Max(s.To, floor) * Mathf.Deg2Rad;
+                var land = shoulder + new Vector2(Mathf.Cos(a) * UseDirection, Mathf.Sin(a)) * radius;
+                melee.TickBox(new Rect(land.x - 1.6f, land.y - 0.4f, 3.2f, 1.4f));
             }
         }
 
@@ -2654,6 +2863,19 @@ namespace TerraKnight
                 hold.Thrust = true;
                 hold.Item = swingItem;
             }
+            // The remade swing: the blade drawn by SwordFx along its way, the arm following it (only here: the other players
+            // see the game's swing).
+            else if (swingItem != null && BladeArts.Active(swingItem) && SwordFx.Instance != null && SwordFx.Instance.ArtAngle(out float artDeg))
+            {
+                hold.Art = true;
+                hold.ArtAngle = artDeg;
+            }
+            // A whip lashing its own way (Items.WhipStyles): the arm following its handle round.
+            else if (swingItem != null && swingItem.IsWhip && Whips.Instance != null && Whips.Instance.ArmAngle(out float whipDeg))
+            {
+                hold.Art = true;
+                hold.ArtAngle = whipDeg;
+            }
             else if (swingItem != null && swingItem.HoldOut)
             {
                 var to = shotDir != Vector2.zero ? shotDir : AimPoint - (Vector2)col.bounds.center;
@@ -2667,6 +2889,48 @@ namespace TerraKnight
                 else if (swingItem.Type == ItemType.ShadeRiftRifle) Shade.Pose(ref hold.Offset, ref hold.Angle);
                 else if (swingItem.Type == ItemType.VoidSniper) Abyss.Pose(ref hold.Offset, ref hold.Angle);
                 hold.Item = swingItem;
+            }
+            // A magic weapon's cast (Items.MageArts, look only): the staff, book or gun moved through the use; a wand swept round
+            // by SwordFx along its flourish, the arm after it.
+            if (swingItem != null && MageArts.Active(swingItem))
+            {
+                if (hold.Out)
+                {
+                    MageArts.Motion(swingItem, SwingProgress, Time.time, out float mageTurn, out float magePush, out float mageRise);
+                    hold.Angle = Mathf.Clamp(hold.Angle + mageTurn, -88f, 100f);
+                    hold.Push = magePush;
+                    hold.Rise = mageRise;
+                }
+                else if (SwordFx.Instance != null && SwordFx.Instance.MageWandAngle(out float wandDeg))
+                {
+                    hold.Art = true;
+                    hold.ArtAngle = wandDeg;
+                }
+            }
+            // A ranged weapon's use (Items.RangedArts): held out, kicked, drawn and pumped through the use; a thrown one flung
+            // overhand by the arm, SwordFx drawing the next one in the hand.
+            if (swingItem != null && RangedArts.Active(swingItem))
+            {
+                if (RangedArts.Flung(swingItem) && SwordFx.Instance != null && SwordFx.Instance.RangedThrowAngle(out float throwDeg))
+                {
+                    hold.Out = false;
+                    hold.Art = true;
+                    hold.ArtAngle = throwDeg;
+                }
+                else if (hold.Out && RangedArts.Of(swingItem).Kind != RangedArts.Kind.Held)
+                {
+                    RangedArts.Motion(swingItem, SwingProgress, RangedFire.LastItem == swingItem.Type ? Time.time - RangedFire.LastShotAt : 9f, Time.time,
+                        out float rangedTurn, out float rangedPush, out float rangedRise);
+                    hold.Angle = Mathf.Clamp(hold.Angle + rangedTurn, -88f, 100f);
+                    hold.Push = rangedPush;
+                    hold.Rise = rangedRise;
+                }
+            }
+            // A right-click art's pose (BladeSkills): the arm toward the thrown phase blade, the katana's blade held drawn.
+            if (hero != null && BladeSkills.Pose(hero, facing, out float awayDeg))
+            {
+                hold.Away = true;
+                hold.ArtAngle = awayDeg;
             }
             if (--coverCheckFrames <= 0)
             {
@@ -2698,7 +2962,14 @@ namespace TerraKnight
             bool poseSeated = PlayerData.instance != null && PlayerData.instance.atBench;
             var mountFeet=feet;
             // Sat in the saddle: the riding legs and the mount's body frame, at Terraria's height over its middle (Mounts.RiderRise).
-            if(Mounts.Riding) { feet.y+=Mounts.RiderRise(Mounts.Current, poseVel, grounded); poseLeg=Mounts.RiderLeg(Mounts.Current); bodyOverride=Mounts.RiderBody(Mounts.Current); }
+            if(Mounts.Riding) {
+                feet.y+=Mounts.RiderRise(Mounts.Current, poseVel, grounded);
+                if(Mounts.Current.Skates) {
+                    equips.Shoe=Mounts.Current.Native-30;
+                    if(grounded&&TerraMovement.DevMove==0&&!TerraKeys.Held(TerraKeys.Action.Left)&&!TerraKeys.Held(TerraKeys.Action.Right))poseLeg=0;
+                    if(GrapplingHook.IsLatched)poseLeg=5;
+                } else {poseLeg=Mounts.RiderLeg(Mounts.Current);bodyOverride=Mounts.RiderBody(Mounts.Current);}
+            }
             if (showRider)
             {
                 int specialPose = HeroSpecialAnimations.Code(hero);
@@ -2714,7 +2985,7 @@ namespace TerraKnight
                 WingAir = !grounded && !GrapplingHook.IsLatched, Glow = playerSprite.HeldGlow != null, Facing = facing, Swing = poseSwing,
                 ItemScale = poseScale, Opacity = opacity,
                 Item = shown == null ? ItemType.None : hold.Idle ? heldDef.Type : swingItem != null ? swingItem.Type : ItemType.None,
-                BodyOverride = bodyOverride, LegOverride = poseLeg, Shadows = TerraMovement.ShadowCount,
+                BodyOverride = bodyOverride, LegOverride = Mounts.Current?.Skates==true?playerSprite.LegFrameNow:poseLeg, Shadows = TerraMovement.ShadowCount,
                 Wing = !Mounts.OwnMovement && TerraMovement.Wing != null ? TerraMovement.Wing.Slot : 0, WingFrame = TerraWings.Frame,
                 Equips = equips, Hold = hold, Box = col.bounds,
             };
@@ -2906,12 +3177,41 @@ namespace TerraKnight
             try
             {
                 var clip = TerrariaAssets.Sound(name);
+                // The same sound again in the same frame or the next (a shotgun's pellets striking together, a barrage going
+                // off): the copy just started made a little louder, not another on top. Identical copies add up past what the
+                // game's mixer lets through, and its limiter then turns the whole mix down, the music with it.
+                if (lastVoice.TryGetValue(name, out var same) && same != null && same.isPlaying && same.clip == clip
+                    && stacked.TryGetValue(name, out var st) && Time.frameCount - st.Frame <= 1)
+                {
+                    st.Extra++;
+                    st.Volume = Mathf.Max(st.Volume, volume);
+                    float louder = Mathf.Min(1f, st.Volume * (1f + 0.12f * Mathf.Min(st.Extra, 5)));
+                    // Only as much louder as the room under the ceiling allows.
+                    float per = ClipPeak(clip) * BusGain * SoundGain * duck;
+                    float was = voiceLevel.TryGetValue(same, out float lv) ? lv : st.Volume;
+                    float stackRoom = Mathf.Max(0f, 0.85f - heardPeak - startedPeak);
+                    if (per > 0f) louder = Mathf.Max(was, Mathf.Min(louder, was + stackRoom / per));
+                    startedPeak += (louder - was) * per;
+                    voiceLevel[same] = louder;
+                    same.volume = louder * SoundGain * duck;
+                    stacked[name] = st;
+                    lastPlayed = same;
+                    return;
+                }
                 var voice = Voice(name);
                 voice.pitch = item ? Mathf.Pow(2f, Random.Range(-6, 7) * 0.01f) : 1f;
-                voice.volume = volume;
+                // Its onset fitted into the room left under the ceiling by what was heard last frame and what else starts in
+                // this one (the duck below only answers a frame later, after the onset has gone through).
+                float hot = ClipPeak(clip) * BusGain * volume * SoundGain * duck;
+                float room = Mathf.Max(0f, 0.85f - heardPeak - startedPeak);
+                float fit = hot > room && hot > 0f ? Mathf.Max(0.15f, room / hot) : 1f;
+                startedPeak += hot * fit;
+                voiceLevel[voice] = volume * fit;
+                voice.volume = volume * fit * SoundGain * duck;
                 voice.clip = clip;
                 voice.Play();
                 lastPlayed = voice;
+                stacked[name] = new Stacked { Frame = Time.frameCount, Volume = volume };
             }
             catch (System.Exception e)
             {
@@ -2925,10 +3225,101 @@ namespace TerraKnight
             if (lastVoice.TryGetValue(name, out var v) && v != null && v.isPlaying && v.clip != null && v.clip.name.EndsWith(name)) v.Stop();
         }
 
+        struct Stacked
+        {
+            public int Frame, Extra;
+            public float Volume;
+        }
+
+        /// <summary>Each voice's own volume, before SoundGain and the duck.</summary>
+        readonly Dictionary<AudioSource, float> voiceLevel = new Dictionary<AudioSource, float>();
+
+        readonly float[] heard = new float[1024];
+
+        /// <summary>How much louder the game's mixer makes a sound than its own samples (measured 1.3–1.8, suite bgmvoices).</summary>
+        const float BusGain = 1.8f;
+
+        /// <summary>The loudest of what the listener heard last frame, and the onsets started since (each clip's peak at its volume).</summary>
+        float heardPeak, startedPeak;
+
+        static readonly Dictionary<AudioClip, float> clipPeaks = new Dictionary<AudioClip, float>();
+
+        /// <summary>A clip's loudest sample, read once.</summary>
+        internal static float ClipPeak(AudioClip clip)
+        {
+            if (clip == null) return 0f;
+            if (clipPeaks.TryGetValue(clip, out float peak)) return peak;
+            peak = 1f;
+            try
+            {
+                var data = new float[clip.samples * clip.channels];
+                if (data.Length > 0 && clip.GetData(data, 0))
+                {
+                    peak = 0f;
+                    foreach (float x in data) peak = Mathf.Max(peak, x < 0f ? -x : x);
+                }
+            }
+            catch (System.Exception) { }
+            clipPeaks[clip] = peak;
+            return peak;
+        }
+
+        /// <summary>The mod's voices turned down by this (1 none) while what the listener hears is near the game's mixer's ceiling.</summary>
+        float duck = 1f;
+
+        /// <summary>Dev: the lowest duck since last read.</summary>
+        internal float DevDuckLow = 1f;
+
+        /// <summary>
+        /// What the listener hears, watched every frame while the mod's sounds play: past 0.8 of the ceiling of the game's mixer
+        /// (1.0, where its limiter turns the whole mix down, the music with it) the mod's voices are turned down at once, as far
+        /// as a third; they come back over about half a second.
+        /// </summary>
+        void DuckSounds()
+        {
+            bool playing = false;
+            foreach (var v in voices)
+                if (v.isPlaying) { playing = true; break; }
+            float was = duck;
+            startedPeak = 0f;
+            // Heard every frame (the music alone leaves less room for the next onset), the duck only while the mod's sounds play.
+            float peak = 0f;
+            for (int ch = 0; ch < 2; ch++)
+            {
+                AudioListener.GetOutputData(heard, ch);
+                for (int i = 0; i < heard.Length; i++)
+                {
+                    float a = heard[i] < 0f ? -heard[i] : heard[i];
+                    if (a > peak) peak = a;
+                }
+            }
+            heardPeak = peak;
+            if (!playing) duck = 1f;
+            else if (peak > 0.8f) duck = Mathf.Max(0.33f, duck * 0.8f / peak);
+            else duck = Mathf.MoveTowards(duck, 1f, Time.unscaledDeltaTime * 1.3f);
+            DevDuckLow = Mathf.Min(DevDuckLow, duck);
+            if (duck == was) return;
+            foreach (var v in voices)
+                if (v.isPlaying && voiceLevel.TryGetValue(v, out float level)) v.volume = level * SoundGain * duck;
+        }
+
+        /// <summary>Each sound's last start: its frame, its volume, how many more were asked for on it.</summary>
+        readonly Dictionary<string, Stacked> stacked = new Dictionary<string, Stacked>();
+
         readonly List<AudioSource> voices = new List<AudioSource>();
         readonly Dictionary<string, AudioSource> lastVoice = new Dictionary<string, AudioSource>();
         static readonly HashSet<string> overlapping = new HashSet<string> { "Item_9", "Item_10", "Item_24", "Item_26", "Item_34", "Item_43", "Item_103", "Item_156", "Item_162", "Item_205" };
         int nextVoice;
+
+        /// <summary>The mod's sounds' level under the game's: Terraria's sounds are mastered near full scale, and on top of the music
+        /// a burst of them reached the ceiling of the game's mixer, whose limiter then turned the whole mix down, the music with it.</summary>
+        internal static float SoundGain = 1f;
+
+        /// <summary>The mod's sounds' priority (Unity: 0 the most important, 256 the least).</summary>
+        internal const int VoicePriority = 200;
+
+        /// <summary>Dev: the mod's voices (its sound pool).</summary>
+        internal System.Collections.Generic.IEnumerable<AudioSource> DevVoices => voices;
 
         /// <summary>A source to play a sound on: the one it last played on (cutting it short), else a free one.</summary>
         AudioSource Voice(string name)
@@ -2939,6 +3330,24 @@ namespace TerraKnight
                 return v;
             }
             AudioSource pick = null;
+            if (overlapping.Contains(name))
+            {
+                // Terraria lets these overlap; three at once at most here, the furthest on started again.
+                int n = 0;
+                foreach (var s in voices)
+                    if (s.isPlaying && s.clip != null && s.clip.name == "Terraria/" + name)
+                    {
+                        n++;
+                        if (pick == null || s.time > pick.time) pick = s;
+                    }
+                if (n >= 3)
+                {
+                    pick.Stop();
+                    lastVoice[name] = pick;
+                    return pick;
+                }
+                pick = null;
+            }
             foreach (var s in voices)
                 if (!s.isPlaying) { pick = s; break; }
             if (pick == null)
@@ -2948,6 +3357,9 @@ namespace TerraKnight
                     pick = gameObject.AddComponent<AudioSource>();
                     pick.playOnAwake = false;
                     pick.spatialBlend = 0f;
+                    // Less important than the game's own sources (128): past Unity's real voices a burst of the mod's sounds (a
+                    // shotgun's shards, a barrage) is dropped first, not the music's layered stems (the BGM went quiet).
+                    pick.priority = VoicePriority;
                     voices.Add(pick);
                 }
                 else pick = voices[nextVoice++ % voices.Count];

@@ -56,6 +56,8 @@ namespace TerraKnight.Items
             logged.Clear();
             flymealHit.Clear();
             hitEnemyThisSwing = false;
+            cutDamage = cutKnock = procScale = 1f;
+            Art = null;
             MeleeSpecials.OnSwingStart(item);
             // Re-arming the prop trigger each swing lets a lever or pot register every swing.
             props.End();
@@ -86,6 +88,144 @@ namespace TerraKnight.Items
             var size = new Vector2(bladeLength * 1.1f, bladeLength * 1.8f);
             source.transform.position = new Vector3(hand.x + direction * bladeLength * 0.5f, hand.y, 0f);
             Sweep(center, size);
+        }
+
+        /// <summary>The remade swing's cut under way (BladeArts): its share of the use's damage and of the knockback; 1 for the game's own swing.</summary>
+        float cutDamage = 1f, cutKnock = 1f;
+
+        /// <summary>Dev: every blow its damage exactly, no crits (damage comparisons without the dice).</summary>
+        public static bool DevSteady;
+
+        /// <summary>The share of the blow Deal leaves after the enemy's defense (a remade swing's cut), 1 otherwise.</summary>
+        float afterDefense = 1f;
+
+        /// <summary>The remade swing striking now (its hits flash in its colours), null for the game's own.</summary>
+        public BladeArts.Art Art;
+
+        /// <summary>
+        /// The next cut of a remade swing: every enemy and prop may be struck again, this cut's share of the damage and the
+        /// knockback (damage 0: the weapon's own projectile slash does the hitting, the blade only sets props off).
+        /// </summary>
+        public void NextCut(BladeArts.Art art, int index, float damage, float knock, float time)
+        {
+            Art = art;
+            Cut = index;
+            hitThisSwing.Clear();
+            struckThisSwing.Clear();
+            logged.Clear();
+            cutDamage = damage;
+            cutKnock = knock;
+            // Muramasa's cut and the Volcano's fireball on each cut's first enemy, at the cut's share of a swing.
+            hitEnemyThisSwing = false;
+            procScale = time;
+            props.End();
+            if (weapon != null && weapon.IsWeapon) props.Begin(direction, weapon.Damage);
+        }
+
+        /// <summary>Dev: the enemies the remade swings' cuts have struck, all and by the cut's place in its combo.</summary>
+        public static int DevArcHits;
+        public static readonly int[] DevCutHits = new int[16];
+
+        /// <summary>The remade swing's cut under way (its place in the combo), and its share of a swing for the first-hit effects.</summary>
+        public int Cut;
+        float procScale = 1f;
+
+        /// <summary>
+        /// Hits whatever a remade cut has swept so far (BladeArts): the sector about the pivot (the shoulder) between lo and hi
+        /// (degrees, facing right, counterclockwise from ahead; mirrored for the left), out to radius (world units). Props go
+        /// by the sector's box; an enemy by its collider's box reaching into the sector (its nearest point, its centre or a
+        /// corner inside it, or one of the sector's rays every 10 degrees going through it).
+        /// </summary>
+        public void TickArc(Vector2 pivot, float radius, float lo, float hi, float facing)
+        {
+            if (weapon == null || !weapon.IsWeapon) return;
+            direction = facing;
+            Vector2 min = pivot, max = pivot;
+            for (float a = lo; ; a += 15f)
+            {
+                var q = pivot + ArcDir(Mathf.Min(a, hi), facing) * radius;
+                min = Vector2.Min(min, q);
+                max = Vector2.Max(max, q);
+                if (a >= hi) break;
+            }
+            var size = max - min;
+            var center = (min + max) * 0.5f;
+            source.transform.position = new Vector3(pivot.x + facing * radius * 0.4f, pivot.y, 0f);
+            SwingBox = new Rect(min, size);
+            if (weapon.Type == ItemType.Flymeal) Town.TownNpcs.FlymealStrike(SwingBox, flymealHit);
+            props.Tick(center, size);
+            if (cutDamage <= 0f) return;
+            var filter = new ContactFilter2D { useTriggers = true, useLayerMask = true, layerMask = HitMask };
+            overlaps.Clear();
+            Physics2D.OverlapBox(center, size, 0f, filter, overlaps);
+            sweeping = true;
+            try
+            {
+                foreach (var col in overlaps)
+                    if (col != null && InSector(col.bounds, pivot, radius, lo, hi, facing)) TryHit(col);
+            }
+            finally { sweeping = false; }
+        }
+
+        static Vector2 ArcDir(float deg, float facing)
+        {
+            float r = deg * Mathf.Deg2Rad;
+            return new Vector2(Mathf.Cos(r) * facing, Mathf.Sin(r));
+        }
+
+        static bool InSector(Bounds b, Vector2 pivot, float radius, float lo, float hi, float facing)
+        {
+            var bmin = (Vector2)b.min;
+            var bmax = (Vector2)b.max;
+            if (pivot.x >= bmin.x && pivot.x <= bmax.x && pivot.y >= bmin.y && pivot.y <= bmax.y) return true;
+            var near = new Vector2(Mathf.Clamp(pivot.x, bmin.x, bmax.x), Mathf.Clamp(pivot.y, bmin.y, bmax.y));
+            if ((near - pivot).sqrMagnitude > radius * radius) return false;
+            if (PointIn(near, pivot, radius, lo, hi, facing) || PointIn(b.center, pivot, radius, lo, hi, facing)
+                || PointIn(bmin, pivot, radius, lo, hi, facing) || PointIn(bmax, pivot, radius, lo, hi, facing)
+                || PointIn(new Vector2(bmin.x, bmax.y), pivot, radius, lo, hi, facing) || PointIn(new Vector2(bmax.x, bmin.y), pivot, radius, lo, hi, facing))
+                return true;
+            for (float a = lo; ; a += 10f)
+            {
+                if (SegmentHitsBox(pivot, pivot + ArcDir(Mathf.Min(a, hi), facing) * radius, bmin, bmax)) return true;
+                if (a >= hi) break;
+            }
+            return false;
+        }
+
+        static bool PointIn(Vector2 p, Vector2 pivot, float radius, float lo, float hi, float facing)
+        {
+            var d = p - pivot;
+            if (d.sqrMagnitude > radius * radius) return false;
+            float ang = Mathf.Atan2(d.y, d.x * facing) * Mathf.Rad2Deg;
+            for (int k = -1; k <= 1; k++)
+            {
+                float a = ang + 360f * k;
+                if (a >= lo && a <= hi) return true;
+            }
+            return false;
+        }
+
+        /// <summary>The segment a-b crosses the box (the slab test).</summary>
+        static bool SegmentHitsBox(Vector2 a, Vector2 b, Vector2 bmin, Vector2 bmax)
+        {
+            float t0 = 0f, t1 = 1f;
+            var d = b - a;
+            for (int axis = 0; axis < 2; axis++)
+            {
+                float da = axis == 0 ? d.x : d.y, aa = axis == 0 ? a.x : a.y;
+                float mn = axis == 0 ? bmin.x : bmin.y, mx = axis == 0 ? bmax.x : bmax.y;
+                if (Mathf.Abs(da) < 1e-6f)
+                {
+                    if (aa < mn || aa > mx) return false;
+                    continue;
+                }
+                float ta = (mn - aa) / da, tb = (mx - aa) / da;
+                if (ta > tb) { float s = ta; ta = tb; tb = s; }
+                t0 = Mathf.Max(t0, ta);
+                t1 = Mathf.Min(t1, tb);
+                if (t0 > t1) return false;
+            }
+            return true;
         }
 
         /// <summary>Hits whatever a box covers this frame (a thrust's item box, world units).</summary>
@@ -227,11 +367,27 @@ namespace TerraKnight.Items
             int baseDamage = Equipment.Damage(weapon);
             int damage = MeleeSpecials.ModifyDamage(weapon, hm, baseDamage);
             float kb = MeleeSpecials.Knockback(weapon, Equipment.Knockback(weapon));
+            // A remade swing's cut: its share of the use's damage, taken after the enemy's defense (a cut is part of one
+            // blow, not a lighter blow), and of the knockback (BladeArts).
+            kb *= cutKnock;
             ArmorEffects.Context = new ArmorEffects.Hit { Class = weapon.Class, TrueMelee = true };
-            int rolled = Deal(col, hm, target, damage + snap, kb, Equipment.Crit(weapon), direction, b.ArmorPen);
+            int rolled;
+            afterDefense = cutDamage;
+            try { rolled = Deal(col, hm, target, damage + snap, kb, Equipment.Crit(weapon), direction, b.ArmorPen); }
+            finally { afterDefense = 1f; }
             if (hm == null || weapon == null) return;
             if (rolled > 0)
             {
+                if (Art != null)
+                {
+                    DevArcHits++;
+                    DevCutHits[Mathf.Clamp(Cut, 0, DevCutHits.Length - 1)]++;
+                    SwordFx.Instance?.ArtHit(Art, col.bounds.center, direction);
+                    BladeSkills.OnArtHit(weapon, hm, rolled);
+                    // Each cut of the Horseman's Blade calls its pumpkin, as its slash does, at the cut's share of a swing.
+                    if (weapon.Fx == MeleeFx.HorsemansBlade && !hm.isDead)
+                        SwordFx.Instance?.ArtPumpkin(hm, Mathf.Max(1, Mathf.RoundToInt(Equipment.Damage(weapon) * procScale)), kb);
+                }
                 MeleeSpecials.OnHit(weapon, hm, col, baseDamage, damage, kb, Equipment.Crit(weapon), direction, SwingBox);
                 if (hm.isDead) MeleeSpecials.OnKill(weapon);
             }
@@ -255,7 +411,8 @@ namespace TerraKnight.Items
             if (!hitEnemyThisSwing)
             {
                 hitEnemyThisSwing = true;
-                if (weapon.Fx == MeleeFx.Muramasa || weapon.Fx == MeleeFx.Volcano) SwordFx.Instance?.OnFirstHit(weapon, col, Equipment.Damage(weapon), direction);
+                if (weapon.Fx == MeleeFx.Muramasa || weapon.Fx == MeleeFx.Volcano)
+                    SwordFx.Instance?.OnFirstHit(weapon, col, Mathf.Max(1, Mathf.RoundToInt(Equipment.Damage(weapon) * procScale)), direction);
             }
             if (weapon.Type == ItemType.FieryGreatsword && Random.value < 0.5f) EnemyDebuffs.Add(hm, EnemyDebuffs.OnFire, 180);
             if (weapon.Type == ItemType.MoltenPickaxe && Random.Range(0, 10) == 0) EnemyDebuffs.Add(hm, EnemyDebuffs.OnFire, 180);
@@ -415,16 +572,14 @@ namespace TerraKnight.Items
             // Who dealt it, for the armor sets' on-hit effects (cleared whatever happens).
             var armorCtx = ArmorEffects.Context;
             ArmorEffects.Context = default;
-            // The player's own blow on an enemy: his minions join in (MinionEngage).
-            if (hm != null && !Autonomous) MinionEngage.Engage("命中");
             // The enemy's banner carried: its DamageDealt before the variation (Pl:20597-20600, 44656-44659; P:13388-13391).
             if (hm != null) baseDamage = Banners.Dealt(hm, baseDamage);
             // Fury of the Fallen's frenzy: everything the player deals doubled for its second.
             if (hm != null) baseDamage = CharmEffects.ScaleOutgoing(baseDamage);
-            bool crit = Random.value * 100f < critChance;
+            bool crit = !DevSteady && Random.value * 100f < critChance;
             // Terraria rolls each hit within +-15% of the weapon's damage (Main.DamageVar); a snapping stone's strike comes after.
             // Main.DamageVar: ±15%, rolled again by luck (the better of two with good luck, the worse with bad).
-            float variation = Random.Range(0.85f, 1.15f);
+            float variation = DevSteady ? 1f : Random.Range(0.85f, 1.15f);
             float luck = Equipment.Current.Luck;
             if (luck > 0f && Random.value < luck) variation = Mathf.Max(variation, Random.Range(0.85f, 1.15f));
             else if (luck < 0f && Random.value < -luck) variation = Mathf.Min(variation, Random.Range(0.85f, 1.15f));
@@ -451,6 +606,12 @@ namespace TerraKnight.Items
                 World.EnemyAggro.Struck(hm, info);
                 if (Net.NetSession.Active) Net.EnemyTargets.Struck(hm, Net.NetSession.MySlot);
                 damage = EnemyStats.Strike(info, damage, crit, armorPen, critDamage);
+                if (afterDefense != 1f)
+                {
+                    float share = damage * afterDefense;
+                    int whole = Mathf.FloorToInt(share);
+                    damage = Mathf.Max(1, whole + (Random.value < share - whole ? 1 : 0));
+                }
                 LastStruck = damage;
                 // A Target Dummy counts every hit's Terraria damage, also the ones too small to take a point of its health.
                 if (info.Dummy && !blocked) World.TargetDummy.Record(hm, damage);

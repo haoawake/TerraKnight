@@ -10,7 +10,9 @@ namespace TerraKnight.World
     /// others), and the floors broken by striking them (break_floor). There is no dive here: the Ram
     /// Rune's slam breaks the one it lands on (it comes with Desolate Dive), a bomb's blast breaks
     /// them, and a pickaxe swung at one in reach chips at it, pick power until <see cref="Toughness"/>
-    /// breaks it.
+    /// breaks it. In a boss room the dive floors are the game's own way on (Dung Defender's arena down to his sleeping
+    /// chamber, the White Defender's dream): they break as anywhere once no boss is up there (the user's 10-27 "白色防御者右边
+    /// 下去需要下砸的地方下不去，砸不了"); the room's other floors stay as the fight left them.
     /// </summary>
     internal static class DiveFloors
     {
@@ -63,9 +65,11 @@ namespace TerraKnight.World
             var seen = new HashSet<PlayMakerFSM>();
             foreach (var col in Physics2D.OverlapCircleAll(center, radius))
             {
-                if (BossRooms.ProtectsNativeArea(col.ClosestPoint(center))) continue;
+                var near = col.ClosestPoint(center);
+                bool kept = BossRooms.ProtectsNativeArea(near);
+                if (kept && BossRooms.BossUp(near)) continue;
                 foreach (var fsm in col.GetComponentsInParent<PlayMakerFSM>())
-                    if (seen.Add(fsm) && Break(fsm)) n++;
+                    if ((!kept || IsDive(fsm)) && seen.Add(fsm) && Break(fsm)) n++;
             }
             return n;
         }
@@ -79,7 +83,7 @@ namespace TerraKnight.World
             int n = 0;
             var seen = new HashSet<PlayMakerFSM>();
             var at = new Vector2(hero.center.x, hero.min.y - 0.25f);
-            if (BossRooms.ProtectsNativeArea(at)) return 0;
+            if (BossRooms.BossUp(at)) return 0;
             foreach (var col in Physics2D.OverlapBoxAll(at, new Vector2(hero.size.x + 0.2f, 0.6f), 0f))
                 foreach (var fsm in col.GetComponentsInParent<PlayMakerFSM>())
                     if (IsDive(fsm) && seen.Add(fsm) && Break(fsm)) n++;
@@ -104,7 +108,7 @@ namespace TerraKnight.World
         public static bool TryMine(ItemDef pick, Vector2 mouse, HeroController hero)
         {
             if (pick == null || pick.PickPower <= 0 || hero == null) return false;
-            if (BossRooms.ProtectsNativeArea(mouse)) return false;
+            if (BossRooms.BossUp(mouse)) return false;
             var reach = Reach(hero);
             foreach (var col in Physics2D.OverlapPointAll(mouse))
             {

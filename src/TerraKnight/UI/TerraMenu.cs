@@ -292,19 +292,22 @@ namespace TerraKnight.UI
             var divider = TerraUi.Tex("UI/Divider");
             if (divider != null) TerraUi.Whole(new Rect(nx, inner.y + 21f * s, r.xMax - nx, divider.height * s), divider, Color.white);
 
-            // The info boxes: play mode, difficulty, enemy AI, where it was saved, play time and completion.
+            // The info boxes: play mode, difficulty, enemy AI, weapons, where it was saved, play time and completion.
             float x = nx + 6f * s, y = inner.y + 29f * s, h = TerraUi.InfoHeight, step5 = 5f * s;
             var mode = ModeLine(row);
             var diff = row.Head?.Difficulty ?? DifficultyLevel.Master;
             var ai = row.Head?.EnemyAi ?? EnemyAiKind.Vanilla;
-            float wMode = 84f * s, wDiff = 64f * s, wAi = 96f * s, wTime = 118f * s;
-            float wArea = inner.xMax - x - wMode - wDiff - wAi - wTime - 4f * step5;
+            var rowWeapons = row.Head?.Weapons ?? WeaponKind.Vanilla;
+            float wMode = 84f * s, wDiff = 64f * s, wAi = 96f * s, wWeapons = 96f * s, wTime = 118f * s;
+            float wArea = inner.xMax - x - wMode - wDiff - wAi - wWeapons - wTime - 5f * step5;
             TerraUi.InfoBox(new Rect(x, y, wMode, h), mode.Text, mode.Color);
             x += wMode + step5;
             TerraUi.InfoBox(new Rect(x, y, wDiff, h), GameDifficulty.NameOf(diff), GameDifficulty.ColorOf(diff));
             x += wDiff + step5;
             TerraUi.InfoBox(new Rect(x, y, wAi, h), ai == EnemyAiKind.New ? Lang.T("新版AI") : Lang.T("原版AI"), ai == EnemyAiKind.New ? AiNewColor : Color.white);
             x += wAi + step5;
+            TerraUi.InfoBox(new Rect(x, y, wWeapons, h), WeaponMode.NameOf(rowWeapons), rowWeapons == WeaponKind.New ? WeaponsNewColor : Color.white);
+            x += wWeapons + step5;
             if (wArea >= 48f * s)
             {
                 TerraUi.InfoBox(new Rect(x, y, wArea, h), AreaLine(row), Color.white);
@@ -352,6 +355,7 @@ namespace TerraKnight.UI
         }
 
         static readonly Color AiNewColor = new Color(1f, 0.55f, 0.48f);
+        static readonly Color WeaponsNewColor = new Color(1f, 0.84f, 0.45f);
         /// <summary>Where the name being renamed is drawn (screen coordinates).</summary>
         static Rect renameRect;
 
@@ -457,6 +461,7 @@ namespace TerraKnight.UI
             public Player.Appearance Look;
             public string WorldName, PlayerName;
             public EnemyAiKind Ai;
+            public WeaponKind Weapons;
         }
 
         static Pending pending;
@@ -528,10 +533,11 @@ namespace TerraKnight.UI
                 PlayerName = (CharacterCreation.Name ?? "").Trim(),
                 WorldName = world,
                 Ai = ai,
+                Weapons = weapons,
             };
             CreativeMenu.SetPending(style == PlayStyle.Journey ? slot : 0, difficulty, guide);
             CreativeMenu.DevStarted++;
-            Plugin.Log.LogInfo($"[开始菜单] 新世界「{world}」在存档 {slot}：人物「{pending.PlayerName}」，{style}，难度{GameDifficulty.NameOf(difficulty)}，敌人AI {EnemyAiMode.NameOf(ai)}，神的指引{(guide ? "听从" : "拒绝")}");
+            Plugin.Log.LogInfo($"[开始菜单] 新世界「{world}」在存档 {slot}：人物「{pending.PlayerName}」，{style}，难度{GameDifficulty.NameOf(difficulty)}，敌人AI {EnemyAiMode.NameOf(ai)}，{WeaponMode.NameOf(weapons)}，神的指引{(guide ? "听从" : "拒绝")}");
             // A mod save left by a game save deleted outside the game would be read as this one's.
             Save.ModSave.Delete(slot);
             Close();
@@ -541,16 +547,17 @@ namespace TerraKnight.UI
             ui.StartNewGame(style == PlayStyle.SteelSoul, style == PlayStyle.Godseeker);
         }
 
-        /// <summary>GameHooks' StartNewGame: the enemy AI, the look and the names chosen (none: Hollow Knight's AI, Terraria's default character).</summary>
+        /// <summary>GameHooks' StartNewGame: the enemy AI, the weapons, the look and the names chosen (none: Hollow Knight's AI, Terraria's own weapons, Terraria's default character).</summary>
         public static void ApplyNewGame()
         {
             var p = pending;
             pending = null;
             EnemyAiMode.Current = p?.Ai ?? EnemyAiKind.Vanilla;
+            WeaponMode.Current = p?.Weapons ?? WeaponKind.Vanilla;
             Player.Appearance.Current = p?.Look ?? Player.Appearance.Default();
             Save.ModSave.WorldName = p?.WorldName ?? "";
             Save.ModSave.PlayerName = p?.PlayerName ?? "";
-            if (p != null) Plugin.Log.LogInfo($"[新存档] 世界「{p.WorldName}」，人物「{p.PlayerName}」，敌人AI {EnemyAiMode.NameOf(p.Ai)}");
+            if (p != null) Plugin.Log.LogInfo($"[新存档] 世界「{p.WorldName}」，人物「{p.PlayerName}」，敌人AI {EnemyAiMode.NameOf(p.Ai)}，{WeaponMode.NameOf(p.Weapons)}");
         }
 
         // ------------------------------------------------------------------ dev
@@ -564,7 +571,18 @@ namespace TerraKnight.UI
 
         public static void DevChoose(int slot) => devSlot = slot;
 
-        /// <summary>Dev: a new game started at once at this difficulty (creative when the creative panel was asked for), no guidance, Hollow Knight's AI.</summary>
+        /// <summary>Dev (suite weaponmode): from the character creation on to the world's (its options reset), a weapons choice on it, its 创建.</summary>
+        public static void DevToWorld()
+        {
+            if (step != Step.Character) return;
+            ResetWorldOptions();
+            step = Step.World;
+        }
+
+        public static void DevWeapons(WeaponKind k) => weapons = k;
+        public static void DevCreate() => Create();
+
+        /// <summary>Dev: a new game started at once at this difficulty (creative when the creative panel was asked for), no guidance, Hollow Knight's AI, the remade weapons.</summary>
         public static void DevPick(DifficultyLevel d)
         {
             var gm = GameManager.instance;
@@ -575,7 +593,7 @@ namespace TerraKnight.UI
             var style = askStyle;
             devCreative = false;
             devSlot = 0;
-            pending = new Pending { Look = Player.Appearance.Default(), WorldName = "", PlayerName = "", Ai = EnemyAiKind.Vanilla };
+            pending = new Pending { Look = Player.Appearance.Default(), WorldName = "", PlayerName = "", Ai = EnemyAiKind.Vanilla, Weapons = WeaponKind.New };
             CreativeMenu.SetPending(creative ? slot : 0, d, false);
             CreativeMenu.DevStarted++;
             Close();

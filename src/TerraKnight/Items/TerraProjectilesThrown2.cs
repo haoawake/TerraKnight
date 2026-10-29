@@ -44,7 +44,7 @@ namespace TerraKnight.Items
             specs[ProjKind.CombatWrenchProj] = new Spec
             {
                 Ai = Ai.Boomerang, Texture = "Projectile_902", W = 20, H = 20, Extra = 1, Time = 3600, Penetrate = -1, TileBox = new Vector2(8f, 8f), OwnerImmune = 7,
-                NoHitTurn = true, PushFromPlayer = true, TrailLength = 10, OnHit = (t, p, hm) => p.Returning = true, Draw = (t, fx, p, px) => DrawWrench(fx, p, px),
+                NoHitTurn = true, PushFromPlayer = true, TrailLength = 10, OnHit = (t, p, hm) => { if (!ThrownKeepsOn(p)) p.Returning = true; }, Draw = (t, fx, p, px) => DrawWrench(fx, p, px),
             };
             // P:8314-8326, 14142-14170, 19666: 30×30 (10×10 on blocks), twice a tick, each enemy once, off walls; five hits, then harmless home.
             specs[ProjKind.BouncingShieldProj] = new Spec
@@ -301,6 +301,8 @@ namespace TerraKnight.Items
         /// </summary>
         static void StepVampireKnife(Proj p)
         {
+            // The remade throws' turn (TerraProjectilesThrownArts.cs).
+            KnifeSteer(p);
             var v = TV(p);
             if (++p.Ai0 >= 30f)
             {
@@ -395,6 +397,9 @@ namespace TerraKnight.Items
         /// </summary>
         static void StepShadowflameKnife(Proj p)
         {
+            // The remade throws' turn (TerraProjectilesThrownArts.cs).
+            if (p.Updates == 1) KnifeFirst(p);
+            KnifeSteer(p);
             var v = TV(p);
             var c = CenterPx(p);
             int i = BoxDust(c - new Vector2(15f, 15f), 30, 30, 27, v.x, v.y, 100, 1.2f);
@@ -455,6 +460,9 @@ namespace TerraKnight.Items
         /// </summary>
         void StepFlyingKnife(Proj p)
         {
+            // The remade throws' look, and the right-click art's knives circling the cursor (TerraProjectilesThrownArts.cs).
+            if (p.Updates == 1) KnifeFirst(p);
+            if (FlyingKnifeArt(p)) return;
             var mod = TerraMod.Instance;
             var c = CenterPx(p);
             var v = TV(p);
@@ -532,16 +540,21 @@ namespace TerraKnight.Items
             if (Random.Range(0, 16) == 0) n++;
             var keep = SpawnClass;
             SpawnClass = DamageClass.Melee;
+            volley.Clear();
             for (int k = 0; k < n; k++)
             {
                 float spread = 0.05f * k;
                 var v = vel + new Vector2(Random.Range(-35, 36) * spread, Random.Range(-35, 36) * spread);
                 var p = Spawn(ProjKind.VampireKnife, from, v, damage, knockback, crit);
-                if (p != null) p.Melee = true;
+                if (p != null) { p.Melee = true; volley.Add(p); }
             }
             SpawnClass = keep;
+            // The remade throws' shape of the volley (TerraProjectilesThrownArts.cs).
+            ShapeVampireVolley(volley, vel);
             DevVampireThrows++;
         }
+
+        static readonly System.Collections.Generic.List<Proj> volley = new System.Collections.Generic.List<Proj>();
 
         public static string DevFlyingKnife = "";
         public static int DevShieldLeaps, DevVampireOrbs, DevVampireHealed, DevKnifeBounces, DevVampireThrows;

@@ -195,6 +195,7 @@ namespace TerraKnight.UI
             DrawGateMarkers(shown, toMini, 9f * ui, inside, null);
             DrawNpcHeads(toMini, ui * 0.75f, inside, null);
             DrawGrimmFlames(toMini, 18f * ui, inside, null);
+            DrawMapPins(toMini, 16f * ui, inside, null);
             // The Wayward Compass's way to the next fight (WorldMapCompass).
             DrawCompassWay(toMini, inside, ui, miniAlpha);
             GUI.color = prev;
@@ -227,6 +228,7 @@ namespace TerraKnight.UI
             DrawGateMarkers(shown, toOverlay, 11f * ui, screen, null);
             DrawNpcHeads(toOverlay, ui * 0.8f, screen, null);
             DrawGrimmFlames(toOverlay, 20f * ui, screen, null);
+            DrawMapPins(toOverlay, 18f * ui, screen, null);
             DrawCompassWay(toOverlay, screen, ui, Mathf.Max(overlayAlpha, 0.5f));
             DrawOthers(c => new Vector2(Screen.width / 2f + (c.x - centre.x) * oz, Screen.height / 2f - (c.y - centre.y) * oz), ui * 0.6f, false, screen);
             FullMap.DrawHead(new Vector2(Screen.width / 2f, Screen.height / 2f), ui * 0.6f);

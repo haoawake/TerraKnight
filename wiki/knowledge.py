@@ -291,8 +291,21 @@ def load(root, sections, entries):
         condition='击败 '+boss_link(boss[1]) if boss else ('世界进度 ≥ '+step[1] if step else expr)
         for t in re.findall(r'ItemType\.(\w+)',m[1]):material_gates[t]=condition
     gate_rows=[]
+    step_names={
+        'Evil':'邪恶首领进度（击败粪虫防御者或吸虫之母，或达到后续世界 Boss 进度）',
+        'Hardmode':'困难模式进度', 'MechOne':'至少一位机械首领进度',
+        'MechAll':'全部三位机械首领进度', 'Plantera':'叛徒领主进度',
+        'Golem':'神之驯服者进度', 'Cultist':'空洞骑士进度',
+    }
+    item_entries={e['id']:e for e in entries if e['kind']=='物品'}
     for t in sorted(set(equip_gates)|set(material_gates)):
-        gate_rows.append((f'[{t}](#item-{t.lower()})','；'.join(dict.fromkeys(c for c in [material_gates.get(t),equip_gates.get(t)] if c))))
+        condition='；'.join(dict.fromkeys(c for c in [material_gates.get(t),equip_gates.get(t)] if c))
+        for step,label in step_names.items():
+            condition=condition.replace('世界进度 ≥ '+step,'世界进度达到'+label)
+        gate_rows.append((f'[{t}](#item-{t.lower()})',condition))
+        entry=item_entries.get('item-'+t.lower())
+        if entry:
+            entry['body']+='\n\n## 额外获取条件\n\n'+condition+'。能力阶段与此条件都要满足；阶段掉落表按该阶段世界 Boss 已推进后的状态展示。固定 Boss 奖励以对应 Boss 的奖励规则为准。\n\n[完整进度条件](#equipment-gates) · [Boss 推进路线](#boss-progression)'
     add('equipment-gates','全部材料与装备的世界 Boss 进度条件',
         '此门槛同时影响商店、制作与获取，不能仅凭能力阶段跳过。表内直接整理当前 Allowed/AllowedEquipment 配置。未列出的普通装备：阶段 0–2 不额外要求世界进度，阶段 3–4 需要 Hardmode，阶段 5 需要 Plantera；法术奖励武器改由对应法术解锁。普通材料若无表内规则，则仍检查自己的物品阶段。\n\n'
         'Hardmode：进入困难模式 Boss 进度；Plantera：叛徒领主进度；Golem：神之驯服者进度；Cultist：空洞骑士进度；MechOne/MechAll：一个/全部机械 Boss 对应战斗进度。详细顺序见 [Boss 推进路线](#boss-progression)。\n\n'+table(['物品','额外进度条件'],gate_rows)+'\n\n'+source('src/TerraKnight/Items/VanillaBossProgression.cs'))

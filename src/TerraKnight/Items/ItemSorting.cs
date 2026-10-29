@@ -28,7 +28,7 @@ namespace TerraKnight.Items
                 for (int k = 0; k < stacks.Count && s.Count > 0; k++)
                 {
                     var t = stacks[k];
-                    if (t.Type != s.Type || t.Count >= max) continue;
+                    if (t.Type != s.Type || t.Prefix != s.Prefix || t.Forge != s.Forge || t.WeaponVersion != s.WeaponVersion || t.Count >= max) continue;
                     int moved = Mathf.Min(s.Count, max - t.Count);
                     t.Count += moved;
                     s.Count -= moved;

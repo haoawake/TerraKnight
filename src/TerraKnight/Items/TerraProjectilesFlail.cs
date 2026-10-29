@@ -59,8 +59,8 @@ namespace TerraKnight.Items
                     CanDamage = p => !(p.Ai0 == 0f && p.LocalAi1 <= 12f),
                     HitArea = p => FlailArea(p), HitTest = (p, col) => FlailTouch(p, col),
                     ModifyHit = (t, p, hm, d, c) => (FlailDamage(t, p, d), c), KnockbackScale = p => p.Ai0 == 0f ? 0.35f : p.Ai0 == 6f ? 0.5f : 1f,
-                    Update = (t, p) => t.StepFlail(p), Draw = (t, fx, p, px) => t.DrawFlail(fx, p, px), OnKill = (t, p) => { },
-                    TileHit = (t, p, x, y, v) => FlailTile(p, x, y, v), OnHit = (t, p, hm) => FlailDebuffs(p, hm),
+                    Update = (t, p) => t.StepFlail(p), Draw = (t, fx, p, px) => t.DrawFlail(fx, p, px), OnKill = (t, p) => FlailGone(p),
+                    TileHit = (t, p, x, y, v) => FlailTile(p, x, y, v), OnHit = (t, p, hm) => { FlailDebuffs(p, hm); t.FlailRunHit(p, hm); },
                 };
             }
             // P:3308-3314: Flower Pow's petal (AI_001 without gravity), straight on until it hits.
@@ -231,8 +231,24 @@ namespace TerraKnight.Items
                     }
                 }
             }
+            // The remade swings (TerraProjectilesFlailArts): the use's spin and throw, or a right-click art.
+            var run = FlailRunOf(p, f);
+            if (run != null && run.Art != FlailArtKind.None)
+            {
+                StepFlailArt(p, f, def, run, owner);
+                return;
+            }
             float ms = Equipment.UseScale(def), k = 1f / ms;
             float launch = f.Launch * k, retract = f.Retract * k, ret = f.Return * k, retractAcc = 3f * k, returnAcc = 6f * k;
+            // The remade swings reach further by going faster: out, back and home in the game's time.
+            if (run != null)
+            {
+                launch *= FlailReach;
+                retract *= FlailReach;
+                ret *= FlailReach;
+                retractAcc *= FlailReach;
+                returnAcc *= FlailReach;
+            }
             float maxLen = launch * f.Throw;
             var c = CenterPx(p);
             var v = TV(p);
@@ -265,14 +281,19 @@ namespace TerraKnight.Items
                         c = owner;
                         p.Immune.Clear();
                         p.Cooldown = 10;
+                        if (run != null) FlailThrowStart(p, f, run, ref v, launch, owner, mirror);
                         break;
                     }
                     p.LocalAi1++;
                     float dir = (mirror ? -aim.x : aim.x) < 0f ? -1f : 1f;
-                    var o = RotateBy(new Vector2(dir, dir), Mathf.PI * 10f * (p.LocalAi1 / 60f) * dir);
-                    o.y *= 0.8f;
-                    if (o.y > 0f) o.y *= 0.5f;
-                    c = owner + o * f.SpinRadius;
+                    if (run != null) c = owner + FlailSpinOffset(p, f, run, dir);
+                    else
+                    {
+                        var o = RotateBy(new Vector2(dir, dir), Mathf.PI * 10f * (p.LocalAi1 / 60f) * dir);
+                        o.y *= 0.8f;
+                        if (o.y > 0f) o.y *= 0.5f;
+                        c = owner + o * f.SpinRadius;
+                    }
                     v = Vector2.zero;
                     p.Cooldown = f.SpinCooldown;
                     mod.KeepUsing(def, Flip(mirror ? new Vector2(-aim.x, aim.y) : aim));
@@ -281,7 +302,8 @@ namespace TerraKnight.Items
                 case 1:
                 {
                     fast = true;
-                    bool done = p.Ai1++ >= f.Throw || toPlayer.magnitude >= 800f;
+                    bool done = p.Ai1++ >= (run != null ? run.ThrowTicks : f.Throw) || toPlayer.magnitude >= 800f;
+                    if (run != null) FlailThrowTick(p, run, ref v, ref done);
                     if (pressed)
                     {
                         p.Ai0 = 6f;
@@ -372,10 +394,11 @@ namespace TerraKnight.Items
             if (p.Kind != ProjKind.FlaironFlail) p.Dir = v.x > 0f ? 1f : -1f;
             p.OwnerCheck = wasSpinning;
             if (p.Kind != ProjKind.FlowerPowFlail && p.Kind != ProjKind.FlaironFlail)
-                p.TRot = v.magnitude > 1f ? Mathf.Atan2(v.y, v.x) + v.x * 0.1f : p.TRot + v.x * 0.1f;
+                p.TRot = v.magnitude > 1f ? Mathf.Atan2(v.y, v.x) + v.x * 0.1f : run != null && wasSpinning ? Mathf.Atan2(c.y - owner.y, c.x - owner.x) + Mathf.PI / 2f : p.TRot + v.x * 0.1f;
             p.TimeLeft = 2;
             if (p.Ai0 != 4f) p.Collide = p.Ai0 != 0f;
             FlailDust(p, c, v, fast, owner);
+            if (run != null) FlailRunTick(p, f, run, c, v, owner);
             p.Pos = TerraParticles.ToWorld(c);
             p.Vel = Flip(v);
         }
@@ -386,6 +409,7 @@ namespace TerraKnight.Items
         /// <summary>Spinning: the box round the player (an ellipse 55 px out, flatter below); else its own box.</summary>
         static (Vector2, Vector2) FlailArea(Proj p)
         {
+            if (flailRuns.TryGetValue(p, out var run) && RunArea(p, run, out var area)) return area;
             if (p.Ai0 == 0f && Holder(out var owner)) return (TerraParticles.ToWorld(owner), new Vector2(110f, 110f) * Px);
             var s = p.Spec;
             return (p.Pos, new Vector2((int)(s.W * s.Scale), (int)(s.H * s.Scale)) * Px);
@@ -394,6 +418,7 @@ namespace TerraKnight.Items
         /// <summary>Colliding (P:15421-15441): spinning, the enemy box's point nearest the player within 55 px, its height /0.8 (/0.4 below).</summary>
         static bool FlailTouch(Proj p, Collider2D col)
         {
+            if (flailRuns.TryGetValue(p, out var run) && RunTouch(p, run, col, out bool touch)) return touch;
             if (p.Ai0 != 0f || !Holder(out var owner)) return true;
             var close = TerraParticles.ToPx(col.ClosestPoint(TerraParticles.ToWorld(owner)));
             var d = close - owner;
@@ -404,6 +429,12 @@ namespace TerraKnight.Items
         /// <summary>P:14502-14535: spinning ×1.2 (×0.96 with a partner out); thrown or retracting ×2.</summary>
         static int FlailDamage(TerraProjectiles t, Proj p, int dmg)
         {
+            if (flailRuns.TryGetValue(p, out var run) && (run.Art != FlailArtKind.None || run.Shock > 0))
+            {
+                // A shock never makes the ball's own blow lighter than the game's (thrown twice, spun 1.2).
+                float own = run.Art != FlailArtKind.None ? 0f : p.Ai0 == 1f || p.Ai0 == 2f ? 2f : p.Ai0 == 0f ? 1.2f : 1f;
+                return Mathf.Max(1, Mathf.RoundToInt(dmg * Mathf.Max(run.Share, own)));
+            }
             if (p.Ai0 == 0f) return (int)(dmg * (p.Dual && t.FlailPartner(p) != null ? 1.2f * 0.8f : 1.2f));
             if (p.Ai0 == 1f || p.Ai0 == 2f) return dmg * 2;
             return dmg;
@@ -424,6 +455,7 @@ namespace TerraKnight.Items
         /// </summary>
         static void FlailTile(Proj p, bool hitX, bool hitY, Vector2 oldVel)
         {
+            if (flailRuns.TryGetValue(p, out var run) && FlailRunTile(p, run, hitX, hitY, oldVel)) return;
             float bounce = p.Ai0 == 1f || p.Ai0 == 5f ? 0.4f : p.Ai0 == 6f ? 0f : 0.2f;
             int impact = 0;
             if (hitX)
@@ -684,7 +716,11 @@ namespace TerraKnight.Items
             float facing = dirAim.x < 0f ? -1f : 1f;
             var arm = p.Kind == ProjKind.FlaironFlail ? owner : ArmPx(owner, facing, AimFrame(dirAim));
             var to = Vector2.MoveTowards(arm, px, 4f) - px;
-            if (to.sqrMagnitude > 1e-4f)
+            flailRuns.TryGetValue(p, out var run);
+            if (run != null) DrawFlailRun(fx, p, px, run, over);
+            // The remade swings: the chain hangs with its weight when it slackens.
+            if (run != null && DrawSaggingChain(fx, p, f, arm, px, run, over)) { }
+            else if (to.sqrMagnitude > 1e-4f)
             {
                 var d = to.normalized;
                 float step = f.ChainH + f.ChainExtra;

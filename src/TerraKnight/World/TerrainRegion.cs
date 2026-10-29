@@ -194,6 +194,8 @@ namespace TerraKnight.World
         /// <summary>The holes' style switched (World.HoleShapes): every hole drawn again on the next tick.</summary>
         public void RestyleHoles() => visuals.MarkAll();
 
+        internal void RestoreScenery() => Holes.RestoreDecor(Grid);
+
         void Build()
         {
             pendingBuild = false;
@@ -268,6 +270,7 @@ namespace TerraKnight.World
             colliders.MarkDirty(x, y);
             visuals.MarkDirty(x, y);
             handPlaced?.CellChanged(x, y);
+            if (!Grid.IsDug(x, y)) Holes.RestoreDecor(Grid);
             Liquid?.CellChanged(x, y);
             TerraWorld.RaiseChanged(x + CellOffset.x, y + CellOffset.y, Grid.GetAt(i));
             Edited?.Invoke(this, x, y);

@@ -32,9 +32,10 @@ namespace TerraKnight.Items
             && t != ItemType.HkCityCrest && t != ItemType.HkElegantKey && t != ItemType.HkLoveKey
             && t != ItemType.HkShopkeepersKey && t != ItemType.HkDelicateFlower
             && t != ItemType.HkRancidEgg && t != ItemType.HkPaleOre && RelicValue(t) == 0;
-        internal static long RelicValue(ItemType t) => t == ItemType.HkWanderersJournal ? 20000
-            : t == ItemType.HkHallownestSeal ? 45000 : t == ItemType.HkKingsIdol ? 80000
-            : t == ItemType.HkArcaneEgg ? 120000 : 0;
+        /// <summary>A relic sold to a Terraria merchant: Lemm's price (200, 450, 800, 1200 geo), five times as he pays it (HkShopPrices).</summary>
+        internal static long RelicValue(ItemType t) => HkShopPrices.Factor * (t == ItemType.HkWanderersJournal ? 20000L
+            : t == ItemType.HkHallownestSeal ? 45000L : t == ItemType.HkKingsIdol ? 80000L
+            : t == ItemType.HkArcaneEgg ? 120000L : 0L);
         public static bool CanBuy(Inventory inv, ItemType t) => inv != null && Recoverable(t) && inv.HallownestObtained.Contains(t);
         public static bool SoldTool(Inventory inv, ItemType t) => inv != null && inv.HallownestTradeOffsets.TryGetValue(t, out int offset) && offset < 0;
         public static IEnumerable<ItemType> Stock(Inventory inv)

@@ -17,6 +17,7 @@ namespace TerraKnight.World
     {
         public static bool Enabled = true;
         public static int DevRefused, DevReplayed;
+        internal static bool DevLegacyVesselGate;
 
         struct Pending
         {
@@ -29,6 +30,24 @@ namespace TerraKnight.World
         static bool replaying;
 
         static string Room(string scene) => scene != null && scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
+
+        // This seal's native ENTER action has no tag filter. Any collider (including one ahead of
+        // the Knight) used to activate its solid children, shutting the Knight outside the temple.
+        static bool VesselGate(GameObject owner) => !DevLegacyVesselGate && owner != null
+            && owner.scene.name == "Room_Final_Boss_Core" && owner.name == "Gate"
+            && PlayMakerFSM.FindFsmOnGameObject(owner, "Control") != null;
+
+        static bool Ready(GameObject owner, string room)
+        {
+            if (!HeroIn(room)) return false;
+            if (!VesselGate(owner)) return true;
+            var hero = HeroController.SilentInstance;
+            var body = hero != null ? hero.GetComponent<BoxCollider2D>() : null;
+            var entry = owner.GetComponent<Collider2D>();
+            // The seal stands left of this trigger. Wait until the whole body is over its inner
+            // edge; a weapon, toe or sensor reaching ahead isn't an arrival in the arena.
+            return body == null || entry == null || body.bounds.min.x > entry.bounds.min.x + .05f;
+        }
 
         /// <summary>The Knight's body stands in this room's ground (or in no room's: as the game has it).</summary>
         static bool HeroIn(string room)
@@ -46,11 +65,17 @@ namespace TerraKnight.World
             room = null;
             if (!Enabled || replaying || owner == null || other == null) return false;
             var hero = HeroController.SilentInstance;
+            if (hero != null && VesselGate(owner) && other != hero.GetComponent<BoxCollider2D>())
+            {
+                DevRefused++;
+                room = owner.scene.name;
+                return true;
+            }
             if (hero == null || !other.transform.IsChildOf(hero.transform)) return false;
             string scene = owner.scene.name;
             if (!BossRooms.IsRoom(scene)) return false;
             room = Room(scene);
-            if (HeroIn(room)) return false;
+            if (Ready(owner, room)) return false;
             DevRefused++;
             return true;
         }
@@ -58,6 +83,8 @@ namespace TerraKnight.World
         /// <summary>An entering kept back, to be told again once the Knight is in the room and still touching the trigger.</summary>
         static void Hold(GameObject owner, Collider2D other, string room, System.Action replay)
         {
+            // Non-body contacts on the seal are discarded, never replayed when the player arrives.
+            if (VesselGate(owner) && other != HeroController.SilentInstance?.GetComponent<BoxCollider2D>()) return;
             Collider2D trigger = null;
             foreach (var c in owner.GetComponents<Collider2D>())
                 if (c != null && c.enabled && c.isTrigger) { trigger = c; break; }
@@ -110,7 +137,7 @@ namespace TerraKnight.World
                     pending.RemoveAt(i);
                     continue;
                 }
-                if (!HeroIn(p.Room)) continue;
+                if (!Ready(p.Trigger.gameObject, p.Room)) continue;
                 pending.RemoveAt(i);
                 replaying = true;
                 try

@@ -9,10 +9,14 @@ namespace TerraKnight.Items
         static partial void RegisterMore()
         {
             RegisterSwords();
+            RegisterMageThing();
             RegisterSpears();
+            RegisterSpearArts();
+            RegisterHeldArts();
             RegisterCraftingSupplement();
             RegisterBoomerangs();
             RegisterRanged();
+            RegisterRestorationSpray();
             RegisterMagic();
             RegisterMagic2();
             RegisterSoulWave();
@@ -39,6 +43,7 @@ namespace TerraKnight.Items
             RegisterHeld2();
             RegisterJavelins();
             RegisterMonk();
+            RegisterMonkArts();
             RegisterThrown2();
             RegisterFlint();
             RegisterChains();

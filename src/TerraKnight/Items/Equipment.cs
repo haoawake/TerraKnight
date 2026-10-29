@@ -450,7 +450,9 @@ namespace TerraKnight.Items
         public static float UseScale(ItemDef item) =>
             item.IsWhip ? WhipScale() : item.Class == DamageClass.Melee && !item.ShootsFinalFractal ? 1f / UnityEngine.Mathf.Min(3f, 1f + Current.MeleeSpeed)
             // Spell Twister: magic 30% quicker.
-            : item.Class == DamageClass.Magic ? CharmEffects.MagicUseScale : 1f;
+            : item.Class == DamageClass.Magic ? CharmEffects.MagicUseScale
+            // A remade ranged weapon's burst, a machine gun's quickening (RangedArts.UseScale).
+            : item.Class == DamageClass.Ranged ? RangedArts.UseScale(item) : 1f;
 
         /// <summary>The mana a use costs; the Tome of Infinite Wisdom's twister twice its own (Pl:53317-53325).</summary>
         public static int ManaCost(ItemDef item)

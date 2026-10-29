@@ -11,7 +11,7 @@ namespace TerraKnight.Items
     /// </summary>
     internal sealed partial class TerraProjectiles
     {
-        public static int DevStyngerShrapnel, DevNailsStuck;
+        public static int DevStyngerShrapnel, DevNailsStuck, DevNailTargetBlasts;
 
         static void RegisterAmmo3()
         {
@@ -31,7 +31,7 @@ namespace TerraKnight.Items
             specs[ProjKind.StyngerShrapnel] = new Spec
             {
                 Ai = Ai.Custom, Texture = "Projectile_249", W = 12, H = 12, Time = 3600, Penetrate = 1, OwnerImmune = 7,
-                Update = (t, p) => StepShrapnel(p), Draw = (t, fx, p, px) => DrawGenericLit(fx, p, px), OnKill = (t, p) => t.KillShrapnel(p),
+                Update = (t, p) => StepShrapnel(p), Draw = (t, fx, p, px) => DrawFramed(fx, p, px, 5, new Color(L, L, L, 1f) * (1f - p.Alpha)), OnKill = (t, p) => t.KillShrapnel(p),
             };
             // P:4035, 18848: the candy corn, three enemies each every 10 ticks, 5 s, off walls four times.
             specs[ProjKind.CandyCornProj] = new Spec
@@ -172,7 +172,11 @@ namespace TerraKnight.Items
             {
                 var d = new Vector2(Random.Range(-100, 101) + 0.01f, Random.Range(-100, 101));
                 if (d.sqrMagnitude < 1e-6f) d = Vector2.up;
-                if (Spawn(ProjKind.StyngerShrapnel, from, Flip(d.normalized * 8f), p.Damage, p.Knockback, p.Crit) != null) DevStyngerShrapnel++;
+                var q = Spawn(ProjKind.StyngerShrapnel, from, Flip(d.normalized * 8f), p.Damage, p.Knockback, p.Crit);
+                if (q == null) continue;
+                // P:11092: one of its five pieces (Main.projFrames[249] = 5).
+                q.Frame = Random.Range(0, 5);
+                DevStyngerShrapnel++;
             }
             SpawnClass = keep;
         }
@@ -405,7 +409,12 @@ namespace TerraKnight.Items
                 if (Random.Range(0, 2) == 0 && (i = BoxDust(tl, 10, 10, 6, 0f, 0f, 100, 1.1f)) >= 0) D(i).Velocity *= 2.7f;
             }
             p.Ai0 = 2f;
-            Blast(p, 112f, (int)(p.Damage * 1.35f), p.Knockback);
+            // Blast normally excludes the enemy just hit by an immediate impact.
+            // A nail detonates 90 ticks after sticking: its attached enemy is the
+            // primary target of that explosion, not a permanently excluded victim.
+            p.LastHit = 0;
+            var hit = Blast(p, 112f, (int)(p.Damage * 1.35f), p.Knockback);
+            if (p.Target != null && hit.Contains(p.Target.GetInstanceID())) DevNailTargetBlasts++;
         }
 
         // ------------------------------------------------------------------ 669: the Ale Tosser's mug (AI_068)

@@ -705,6 +705,17 @@ def build(assets_only=False):
         return f'[{e["name"]}](#enemy-{e["key"].lower().replace("@","-")})'
     extra_sources = collections.defaultdict(list)
     pet_types = re.findall(r'\[ItemType\.(\w+)\]\s*=\s*new PetDef', read('Items/PetsData.cs'))
+    # Pets.Eggs excludes authored boss rewards and special native companions.
+    boss_progression = read('Items/VanillaBossProgression.cs')
+    reserved_pets = set()
+    for line in boss_progression.splitlines():
+        if re.search(r'\]=P\(', line):
+            reserved_pets.update(re.findall(r'ItemType\.(\w+)', line.split(',M(', 1)[0]))
+    extras = boss_progression.split('Extras =', 1)[1].split('internal static readonly Dictionary<string,(int Life', 1)[0]
+    reserved_pets.update(re.findall(r'ItemType\.(\w+)', extras))
+    exclusive = read('Items/VanillaProgressionMapping.cs').split('ExclusiveBossItems', 1)[1].split('};', 1)[0]
+    reserved_pets.update(re.findall(r'ItemType\.(\w+)', exclusive))
+    pet_types = [t for t in pet_types if t not in reserved_pets and t not in ('HkLumaflyLantern', 'HkGrimmchild')]
     for t in pet_types:
         items[t]['kind'] = '宠物与照明宠物'
         extra_sources[t].append('有掉落表的已登记怪物击杀（包含首领）的额外抽选：本物品概率 0.01%（1/10000），×1；全部宠物共享一次抽选，一次最多给其中一种。此抽选不套用普通掉落的难度倍率或阶段门槛。')
@@ -1144,7 +1155,11 @@ def build(assets_only=False):
         add(f'<a id="item-{t.lower()}"></a>'); add(); add(f'### {d["name"]}'); add()
         add(f'`{t}` · {d["kind"]} · 配置阶段 {d["stage"]}'); add()
         if d['tip']:
-            add('**作用**：'+esc(d['tip'])); add()
+            # Item text is literal game text, not Markdown formatting (e.g. Fedora's asterisks).
+            tip = esc(d['tip'])
+            for char in '*_`[]':
+                tip = tip.replace(char, f'&#{ord(char)};')
+            add('**作用**：'+tip); add()
         if d['stats']:
             add('**基础属性**：'+'；'.join(f'{k} {v}' for k,v in d['stats'].items())+'。'); add()
         if d['set'] and d['set']!='None':

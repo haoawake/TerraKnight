@@ -140,6 +140,7 @@ namespace TerraKnight.Terraria
 
         public static Texture2D Texture(string name)
         {
+            if(name=="HomeEverywhere_Item")return Items.HomeEverywhereArt.Texture(false);
             if(name!=null&&name.StartsWith("Casino_",System.StringComparison.Ordinal))return Items.CasinoArt.Texture(name);
             if(name!=null&&name.StartsWith("PrefabHouse_",System.StringComparison.Ordinal))return World.PrefabHouses.Texture(name);
             // Generated from this player's Hollow Knight portraits, used everywhere an item draws.

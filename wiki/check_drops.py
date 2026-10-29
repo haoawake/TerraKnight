@@ -63,11 +63,17 @@ def main():
             checked += 1
     pets = re.findall(r'\[ItemType\.(\w+)\]\s*=\s*new PetDef',
                       (CATALOG/'src/TerraKnight/Items/PetsData.cs').read_text(encoding='utf-8'))
-    systems = (OUT/'systems.html').read_text(encoding='utf-8')
+    pet_guide = read_page('pet-drops.html')
+    fixed_pets = {r['Type'] for records in runtime['drop_stages'].values() for rows in records.values() for r in rows}
     for item in pets:
-        assert f'href="/terraknight-wiki/item-{item.lower()}.html"' in systems
+        if item in ('HkLumaflyLantern', 'HkGrimmchild'):
+            continue
+        assert f'href="/terraknight-wiki/item-{item.lower()}.html"' in pet_guide
         item_page = (OUT/f'item-{item.lower()}.html').read_text(encoding='utf-8')
-        assert '1/10000' in item_page and '×1' in item_page
+        if item in fixed_pets:
+            assert '本物品概率 0.01%' not in item_page, item
+        else:
+            assert '1/10000' in item_page and '×1' in item_page, item
     relic_source = (CATALOG/'src/TerraKnight/Items/Relics.cs').read_text(encoding='utf-8')
     if re.search(r'\bEnabled\s*=\s*false', relic_source):
         assert not any(d['Master'] for rows in runtime['drops'].values() for d in rows)

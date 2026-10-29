@@ -171,6 +171,7 @@ namespace TerraKnight.Player
         public void Throw(HeroController hero, ItemType item, Vector2 target)
         {
             if (!Hooks.TryGetValue(item, out var h)) return;
+            if (Mounts.Riding && !Mounts.Current.CanUseHooks) Mounts.Dismount();
             int proj = h.Proj;
             int latched = 0, flying = 0;
             foreach (var k in hooks)

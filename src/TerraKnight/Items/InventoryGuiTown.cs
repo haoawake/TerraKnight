@@ -48,10 +48,12 @@ namespace TerraKnight.Items
             // His forging (Items.Forging), the mod's own.
             if (TownNpcs.TalkingIsGoblin) buttons.Add((Lang.T("锻造"), 7));
             if (TownNpcs.TalkingIsGoblin) buttons.Add((Lang.T("圣巢补购"), 8));
+            if (TownNpcs.TalkingIsGoblin) buttons.Add((Lang.T("武器改制"), 10));
             // The Stylist's hair styles (GameUI.HairStyle).
             if (TownNpcs.TalkingIsStylist) buttons.Add((TT("GameUI.HairStyle", "发型"), 9));
             buttons.Add((Lang.T("关闭"), 1));
-            float w = 500f * ui, h = (30f + 30f * lines.Count + 30f) * ui;
+            float buttonRows = TownNpcs.TalkingIsGoblin ? 2f : 1f;
+            float w = 500f * ui, h = (30f + 30f * lines.Count + 30f * buttonRows) * ui;
             var panel = new Rect(view.center.x - w / 2f, view.y + 100f * ui, w, h);
             var back = TerrariaAssets.Texture("Chat_Back");
             var prev = GUI.color;
@@ -66,13 +68,14 @@ namespace TerraKnight.Items
             for (int i = 0; i < lines.Count; i++)
                 Outlined(new Rect(panel.x + 20f * ui, panel.y + (20f + i * 30f) * ui, 470f * ui, 28f * ui), lines[i], chatStyle, new Color(n, n, n, 1f));
             // The buttons, 30 px apart from x + 30; the hovered one bigger, with a brown edge.
-            float bx = panel.x + 30f * ui, by = panel.yMax - 22f * ui - 6f * ui;
+            float bx = panel.x + 30f * ui, by = panel.yMax - 22f * ui - 6f * ui - (buttonRows - 1f) * 30f * ui;
             int over = -1;
             float b = ChatPulse / 255f;
             foreach (var (text, index) in buttons)
             {
                 chatButtonStyle.fontSize = Mathf.RoundToInt(17 * 0.9f / 0.85f * ui);
                 float bw = chatButtonStyle.CalcSize(new GUIContent(text)).x;
+                if (bx + bw > panel.xMax - 20f * ui) { bx = panel.x + 30f * ui; by += 30f * ui; }
                 var r = new Rect(bx, by, bw, 22f * ui);
                 bool hover = r.Contains(mouse);
                 if (hover) over = index;

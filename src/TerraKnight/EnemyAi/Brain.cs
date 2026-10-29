@@ -25,6 +25,8 @@ namespace TerraKnight.EnemyAi
         Collider2D body;
         tk2dSpriteAnimator anim;
         SpriteFlash flash;
+        tk2dBaseSprite bodySprite;
+        Renderer bodyRenderer;
         PlayMakerFSM[] fsms, controls;
         /// <summary>Each move's script for its own attack (Kind.Own), by the move's index.</summary>
         PlayMakerFSM[] ownFsms;
@@ -152,6 +154,8 @@ namespace TerraKnight.EnemyAi
             body = h.GetComponent<Collider2D>();
             anim = h.GetComponent<tk2dSpriteAnimator>();
             flash = h.GetComponent<SpriteFlash>();
+            bodySprite = h.GetComponent<tk2dBaseSprite>() ?? h.GetComponentInChildren<tk2dBaseSprite>(true);
+            bodyRenderer = bodySprite != null ? bodySprite.GetComponent<Renderer>() : h.GetComponent<Renderer>();
             climber = h.GetComponent<Climber>();
             fsms = h.GetComponentsInChildren<PlayMakerFSM>(true);
             var c = new List<PlayMakerFSM>();
@@ -406,9 +410,13 @@ namespace TerraKnight.EnemyAi
                 if (!prof.KeepWake) World.EnemyAggro.Struck(hm, info);
             }
             // A boss fighting in the room: its summons and the room's others aim as their own scripts do.
-            LeadAim(Alert && !EnemyAi.BossNear(scene));
+            LeadAim(Alert && NativeBodyVisible() && !EnemyAi.BossNear(scene));
             if (cur != null)
             {
+                // Native animation events can still hide the body while a move holds its FSM's updates.
+                // Give that FSM back immediately so its own appearance can finish. A blink/burrow's
+                // deliberate hide is owned here and must run to its normal end.
+                if (!hidden && !NativeBodyVisible()) { End(false); return; }
                 Tick(now);
                 return;
             }
@@ -561,7 +569,7 @@ namespace TerraKnight.EnemyAi
                 string s = f.ActiveStateName;
                 if (string.IsNullOrEmpty(s)) continue;
                 // Its native states are named "Tele Line", "Tele Out" and "Tele In", not "Teleport".
-                if (info.Record == "Mage" && s.StartsWith("Tele", System.StringComparison.OrdinalIgnoreCase))
+                if (s.StartsWith("Tele", System.StringComparison.OrdinalIgnoreCase))
                 { busyState = s; return true; }
                 if (!busyStates.TryGetValue(s, out bool busy))
                 {
@@ -611,19 +619,19 @@ namespace TerraKnight.EnemyAi
             return v.x > -0.05f && v.x < 1.05f && v.y > -0.05f && v.y < 1.05f;
         }
 
-        bool VisibleMage()
+        bool NativeBodyVisible()
         {
-            if (info.Record != "Mage") return true;
-            var sprite = hm.GetComponent<tk2dBaseSprite>();
-            var renderer = hm.GetComponent<Renderer>();
-            return (renderer == null || renderer.enabled) && (sprite == null || sprite.color.a > .05f)
-                && Mathf.Abs(transform.lossyScale.x) > .05f && Mathf.Abs(transform.lossyScale.y) > .05f;
+            var tr = bodySprite != null ? bodySprite.transform : transform;
+            return (bodyRenderer == null || bodyRenderer.enabled && bodyRenderer.gameObject.activeInHierarchy)
+                && (bodySprite == null || bodySprite.color.a > .05f)
+                && Mathf.Abs(tr.lossyScale.x) > .05f && Mathf.Abs(tr.lossyScale.y) > .05f;
         }
 
         bool Allowed(Move m, int i, float now, float d, bool struck, bool postDash)
         {
-            // A sleeping or vanished Twister must finish its own appearance before any new attack, including shots.
-            if (!VisibleMage()) return No(i, "hidden");
+            // Every kind must finish its native appearance before any new attack, including shots.
+            // State-name guesses alone miss native hidden states and child sprites.
+            if (!NativeBodyVisible()) return No(i, "hidden");
             if ((int)m.Tier > (int)EnemyAi.TierNow) return No(i, "tier");
             if (Drawn(m)) return No(i, "drawn");
             if (now < readyAt[i]) return No(i, "cooldown");
@@ -656,6 +664,11 @@ namespace TerraKnight.EnemyAi
                 string st = f.ActiveStateName;
                 if (m.OwnFrom != null) { if (System.Array.IndexOf(m.OwnFrom, st) < 0) return No(i, "from"); }
                 else if (Busy()) return No(i, busyState);
+            }
+            if (m.Kind == Kind.Shot)
+            {
+                if (Busy()) return No(i, busyState);
+                if (KnockedBack()) return No(i, "knocked");
             }
             if (Moves(m.Kind))
             {
@@ -733,7 +746,7 @@ namespace TerraKnight.EnemyAi
 
         void Begin(int index, float now)
         {
-            cur = prof.Moves[index];
+            cur = prof.Moves[index].ForExecution();
             curIndex = index;
             if (cur.When == When.Struck) chargeUntil = -10f;
             repeatsLeft = cur.Repeat;
@@ -742,12 +755,26 @@ namespace TerraKnight.EnemyAi
             StartAntic(now, 1f);
         }
 
+        /// <summary>Dev (suite hivelooks): its first move of a kind begun now (its wind-up's clip played).</summary>
+        internal bool DevBegin(Kind kind)
+        {
+            for (int i = 0; i < prof.Moves.Count; i++)
+                if (prof.Moves[i].Kind == kind) { Begin(i, Time.time); return true; }
+            return false;
+        }
+
         void StartAntic(float now, float scale)
         {
             phase = Phase.Antic;
             float antic = Mathf.Max(EnemyAi.MinAntic, cur.Antic * EnemyAi.AnticScale * scale);
+            if (cur.Kind == Kind.Shot)
+            {
+                antic = Mathf.Max(0.65f, antic);
+                // Lock before the tell, so walking out of its aim is a real answer.
+                aimPoint = cur.Aim == Aim.Target ? TargetCenter : Lead(0.2f);
+            }
             phaseEnd = now + antic;
-            if (Moves(cur.Kind) && cur.Kind != Kind.Drop)
+            if ((Moves(cur.Kind) && cur.Kind != Kind.Drop) || cur.Kind == Kind.Shot)
             {
                 Seize();
                 if (rb != null) rb.linearVelocity = prof.Flyer ? Vector2.zero : new Vector2(0f, Mathf.Min(0f, rb.linearVelocity.y));
@@ -844,6 +871,7 @@ namespace TerraKnight.EnemyAi
                     phaseEnd = now + 2.5f;
                     break;
                 case Kind.Shot:
+                    Play(cur.ActClip, actWords);
                     shotsLeft = Mathf.Max(1, cur.Count);
                     nextShotAt = now;
                     phaseEnd = now + cur.Interval * shotsLeft + 0.05f;
@@ -875,7 +903,7 @@ namespace TerraKnight.EnemyAi
                     {
                         FireShot(cur.Count - shotsLeft);
                         shotsLeft--;
-                        nextShotAt += Mathf.Max(0.01f, cur.Interval);
+                        nextShotAt += cur.Interval > 0f ? Mathf.Max(0.01f, cur.Interval) : 0f;
                     }
                     if (shotsLeft <= 0) Recover(now);
                     return;
@@ -1629,13 +1657,7 @@ namespace TerraKnight.EnemyAi
             var s = cur;
             float speed = s.ShotSpeed * Tile;
             Vector2 from = Me;
-            Vector2 target;
-            switch (s.Aim)
-            {
-                case Aim.Target: target = TargetCenter; break;
-                case Aim.Bracket: target = (n % 2 == 0) ? TargetCenter : Lead(0.6f); break;
-                default: target = Lead(Mathf.Clamp(Vector2.Distance(from, TargetCenter) / Mathf.Max(1f, speed), 0.1f, 0.9f)); break;
-            }
+            Vector2 target = aimPoint;
             Vector2 dir;
             if (s.Aim == Aim.Down || s.Aim == Aim.Up)
             {
@@ -1647,7 +1669,7 @@ namespace TerraKnight.EnemyAi
             else if (s.Aim == Aim.Radial)
             {
                 // One ray at the player, the rest round it (a ring turned only by its count missed him between two rays).
-                float at = Mathf.Atan2(TargetCenter.y - from.y, TargetCenter.x - from.x) * Mathf.Rad2Deg;
+                float at = Mathf.Atan2(target.y - from.y, target.x - from.x) * Mathf.Rad2Deg;
                 dir = Quaternion.Euler(0f, 0f, at + 360f / Mathf.Max(1, s.Count) * n) * Vector2.right;
             }
             else dir = (target - from).normalized;
@@ -1940,15 +1962,98 @@ namespace TerraKnight.EnemyAi
         void Play(string clip, string[] words)
         {
             if (anim == null || anim.Library == null) return;
-            if (clip != null && anim.GetClipByName(clip) != null) { anim.Play(clip); return; }
+            var named = clip != null ? anim.GetClipByName(clip) : null;
+            if (named != null && OwnClip(named)) { anim.Play(named); return; }
             if (words == null) return;
             foreach (var w in words)
                 foreach (var c in anim.Library.clips)
-                    if (c != null && !string.IsNullOrEmpty(c.name) && c.name.ToLowerInvariant().Contains(w) && c.frames != null && c.frames.Length > 0)
+                    if (c != null && !string.IsNullOrEmpty(c.name) && c.name.ToLowerInvariant().Contains(w) && c.frames != null && c.frames.Length > 0 && OwnClip(c))
                     {
                         anim.Play(c);
                         return;
                     }
+        }
+
+        /// <summary>
+        /// Each library and kind's own clips (its scripts' clips, and the name they share when they all begin alike), found once.
+        /// Some kinds keep their clips in another's library: a Hiveling's "Bee Fly" is in the Husk Hive's "Zombie Hive", beside
+        /// the Husk Hive's own Idle and Jump Antic, and a Hiveling's lunge looked for an "antic" clip and drew the Husk Hive
+        /// (the user's 10-27 "小蜜蜂冲刺时贴图会变成蜂巢躯壳的贴图").
+        /// </summary>
+        static readonly Dictionary<(int, string), (HashSet<string> Own, string Lead)> clipOwners = new Dictionary<(int, string), (HashSet<string>, string)>();
+        HashSet<string> ownClips;
+        string ownLead;
+        public static int DevForeignClipsRefused;
+        /// <summary>Dev: any clip of the library, as before (to compare).</summary>
+        internal static bool DevAnyClip;
+
+        bool OwnClip(tk2dSpriteAnimationClip c)
+        {
+            if (ownClips == null)
+            {
+                // Its kind: the name without a copy's number ("Bee Hatchling (3)", "Zombie Hive 1").
+                string kind = hm != null ? hm.name : "";
+                int cut = kind.IndexOf('(');
+                if (cut > 0) kind = kind.Substring(0, cut);
+                kind = kind.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+                var key = (anim.Library.GetInstanceID(), kind);
+                if (!clipOwners.TryGetValue(key, out var found)) clipOwners[key] = found = FindOwnClips();
+                ownClips = found.Own;
+                ownLead = found.Lead;
+            }
+            if (DevAnyClip || ownClips.Count == 0 || ownClips.Contains(c.name)) return true;
+            string lead = ClipLead(c.name);
+            bool own;
+            if (ownLead != null) own = lead == ownLead;
+            else if (lead == null) own = true;
+            else
+            {
+                // A set of the library's clips named alike, none of them this kind's, is another kind's.
+                int alike = 0;
+                own = false;
+                foreach (var o in anim.Library.clips)
+                    if (o != null && ClipLead(o.name) == lead) { alike++; if (ownClips.Contains(o.name)) own = true; }
+                own |= alike < 2;
+            }
+            if (!own) DevForeignClipsRefused++;
+            return own;
+        }
+
+        static string ClipLead(string name)
+        {
+            int sp = string.IsNullOrEmpty(name) ? -1 : name.IndexOf(' ');
+            return sp > 0 ? name.Substring(0, sp) : null;
+        }
+
+        (HashSet<string> Own, string Lead) FindOwnClips()
+        {
+            var own = new HashSet<string>();
+            if (anim.DefaultClip != null) own.Add(anim.DefaultClip.name);
+            if (anim.CurrentClip != null) own.Add(anim.CurrentClip.name);
+            foreach (var f in fsms)
+            {
+                if (f == null) continue;
+                foreach (var s in f.FsmStates)
+                    foreach (var act in s.Actions)
+                    {
+                        if (act == null) continue;
+                        foreach (var field in act.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                        {
+                            if (field.FieldType != typeof(HutongGames.PlayMaker.FsmString) && field.FieldType != typeof(string)) continue;
+                            var v = field.GetValue(act);
+                            string str = v is HutongGames.PlayMaker.FsmString fs ? fs.Value : v as string;
+                            if (!string.IsNullOrEmpty(str) && anim.GetClipByName(str) != null) own.Add(str);
+                        }
+                    }
+            }
+            string lead = null;
+            foreach (var n in own)
+            {
+                string l = ClipLead(n);
+                if (l == null || lead != null && l != lead) { lead = null; break; }
+                lead = l;
+            }
+            return (own, lead);
         }
 
         public static int DevPaced;

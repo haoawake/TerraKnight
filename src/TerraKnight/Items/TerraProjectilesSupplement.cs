@@ -16,13 +16,13 @@ namespace TerraKnight.Items
             };
             specs[ProjKind.LightningStrikeBolt] = new Spec
             {
-                Ai = Ai.Custom, Texture = "Projectile_731", W = 12, H = 12, Time = 30, Extra = 4, Penetrate = 1,
+                Ai = Ai.Custom, Texture = "Projectile_731", W = 12, H = 12, Time = 90, Extra = 2, Penetrate = 1,
                 Light = new Color(.5f,.7f,1f), TrailLength = 12, Frames = 4,
                 Update = (t, p) =>
                 {
                     // The original upgraded lightning acquires nearby enemies and follows them.
                     if (p.Target == null) p.Target = Nearest(p, 240f);
-                    if (p.Target != null) p.Vel = ((Vector2)p.Target.transform.position - p.Pos).normalized * 12f;
+                    if (p.Target != null) p.Vel = (Centre(p.Target) - p.Pos).normalized * 12f;
                     p.Frame = p.Updates / 4 % 4;
                 },
                 OnHit = (t, p, hm) =>
@@ -32,7 +32,7 @@ namespace TerraKnight.Items
                     p.Immune[hm.GetInstanceID()] = 9999;
                     var next = Nearest(p, 480f);
                     if (next == null || next == hm) return;
-                    var child = t.Spawn(ProjKind.LightningStrikeBolt, p.Pos, ((Vector2)next.transform.position - p.Pos).normalized * 12f, p.Damage, p.Knockback, p.Crit);
+                    var child = t.Spawn(ProjKind.LightningStrikeBolt, p.Pos, (Centre(next) - p.Pos).normalized * 12f, p.Damage, p.Knockback, p.Crit);
                     if (child != null) { child.Ai0 = p.Ai0 + 1; child.Target = next; child.LastHit = hm.GetInstanceID(); }
                 },
             };

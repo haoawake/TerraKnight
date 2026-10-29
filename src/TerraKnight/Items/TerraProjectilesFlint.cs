@@ -12,6 +12,9 @@ namespace TerraKnight.Items
     /// </summary>
     internal sealed partial class TerraProjectiles
     {
+        /// <summary>When the Flint was last held charged (SwordFx's outline motes while it is).</summary>
+        internal static float FlintChargedAt = -1f;
+
         static void RegisterFlint()
         {
             // P:9823-9835: the unseen holder, through everything.
@@ -76,6 +79,7 @@ namespace TerraKnight.Items
             p.Dir = AimPx().x >= centre.x ? 1f : -1f;
             p.Ai1++;
             if (p.Ai1 == 30f) Sound("Custom/deadcells_flint_charge", 0.5f);
+            if (p.Ai1 >= 30f) FlintChargedAt = Time.time;
             mod.HoldSwing(def, 0f, p.Dir);
             if (Random.Range(0, 10) == 0)
             {

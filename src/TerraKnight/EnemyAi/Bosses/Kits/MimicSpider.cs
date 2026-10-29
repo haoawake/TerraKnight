@@ -34,23 +34,10 @@ namespace TerraKnight.EnemyAi.Bosses
                 return;
             }
             OnEnter("Fall Antic", LockDrop);
-            OnEnter("Roof Drop", () => Run(Drips()), first: false);
-            OnEnter("Spit 1", () => Run(GooAt()), first: false);
             AddState("TK Dive", Dive, "Land 2");
             Branch("Idle", "TK Dive", () => !Grace && (WantAntiAir() || Rank >= 1 && Random.value < 0.2f));
         }
 
-        /// <summary>With his spit, three more of his own goo globs lobbed at where the player is (spread a little).</summary>
-        IEnumerator GooAt()
-        {
-            if (GooShot == null || Grace) yield break;
-            var at = OnGround(Lock());
-            for (int i = -1; i <= 1; i++)
-            {
-                OwnShots.Lob(GooShot, Me + Vector2.up, at + new Vector2(i * 1.6f, 0f), 0.9f);
-                yield return new WaitForSeconds(0.12f);
-            }
-        }
 
         /// <summary>Out of the roof on the player: put over him (unseen up there) as the drop's wait begins.</summary>
         void LockDrop()
@@ -62,19 +49,6 @@ namespace TerraKnight.EnemyAi.Bosses
             MarkGround(new Vector2(x, TargetFeet.y + 0.3f), 6f, 1.3f);
         }
 
-        /// <summary>While he crawls the roof: drips of his own goo on the player now and then.</summary>
-        IEnumerator Drips()
-        {
-            yield return new WaitForSeconds(0.6f);
-            float every = Rank >= 2 ? 0.7f : Rank >= 1 ? 0.9f : 1.1f;
-            while (StateNow == "Roof Drop")
-            {
-                float x = Lock().x + Random.Range(-1f, 1f);
-                float top = Mathf.Max(Me.y, CeilingAbove(new Vector2(x, TargetCenter.y + 1f), 40f) - 0.6f);
-                OwnShots.Throw(GooShot, new Vector2(x, top), new Vector2(0f, -2f));
-                yield return new WaitForSeconds(every);
-            }
-        }
 
         /// <summary>Up, a hang over the player (the line of his dive drawn), and straight down at where he was then.</summary>
         IEnumerator Dive()

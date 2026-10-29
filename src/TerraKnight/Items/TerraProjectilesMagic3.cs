@@ -212,7 +212,8 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// AI_047_MagnetSphere: it slows to 2 px an update, turning a little, five frames of 7
-        /// updates; a newer sphere sends the older ones away (30 updates left). Every 9 updates it
+        /// updates; a newer sphere sends the older ones away (30 updates left; the remade left's
+        /// keep three). Every 9 updates it
         /// zaps one of the enemies in sight within 300 px (Manhattan) with a bolt at 6 px an update
         /// from 4 of its steps ahead, while it has more than 30 updates to live.
         /// </summary>
@@ -226,8 +227,10 @@ namespace TerraKnight.Items
                 if (++p.Frame > 4) p.Frame = 0;
             }
             if (v.magnitude > 2f) p.Vel *= 0.98f;
-            foreach (var q in live)
-                if (q != p && !q.Dead && q.Kind == ProjKind.MagnetSphere && p.TimeLeft > q.TimeLeft && q.TimeLeft > 30) q.TimeLeft = 30;
+            // The remade left's spheres (MageKits5) keep three out, sent away as each is cast (SendAwaySpheres).
+            if (p.Ranged?.OnFly == null)
+                foreach (var q in live)
+                    if (q != p && !q.Dead && q.Kind == ProjKind.MagnetSphere && q.Ranged?.OnFly == null && p.TimeLeft > q.TimeLeft && q.TimeLeft > 30) q.TimeLeft = 30;
             if (p.TimeLeft < 30) return;
             var c = CenterPx(p);
             var near = new System.Collections.Generic.List<Vector2>();
@@ -243,6 +246,21 @@ namespace TerraKnight.Items
             var to = near[Random.Range(0, near.Count)] - at;
             var bolt = Spawn(ProjKind.MagnetBolt, TerraParticles.ToWorld(at), Flip(to.normalized * 6f), p.Damage, p.Knockback, p.Crit);
             if (bolt != null) bolt.Melee = p.Melee;
+        }
+
+        static readonly System.Collections.Generic.List<Proj> spheresOut = new System.Collections.Generic.List<Proj>();
+
+        /// <summary>
+        /// The remade Magnet Sphere's cast (MageKits5): of its spheres out still zapping, all but the newest `keep` sent
+        /// away (30 updates left, as the game sends them), before the new one is made.
+        /// </summary>
+        public void SendAwaySpheres(int keep)
+        {
+            spheresOut.Clear();
+            foreach (var q in live)
+                if (!q.Dead && q.Kind == ProjKind.MagnetSphere && q.Ranged?.OnFly != null && q.TimeLeft > 30) spheresOut.Add(q);
+            spheresOut.Sort((a, b) => b.TimeLeft.CompareTo(a.TimeLeft));
+            for (int i = keep; i < spheresOut.Count; i++) spheresOut[i].TimeLeft = 30;
         }
 
         /// <summary>Its frame (44 px of 220), 3 px lower than the middle; GetAlpha unlit and added, fading over its last 30 updates.</summary>
@@ -369,10 +387,33 @@ namespace TerraKnight.Items
             }
         }
 
+        /// <summary>What a remade cloud's rain carries: its debuff, arcs and doing to what it strikes (MageKits' wet and blood), nothing that moves or splits it.</summary>
+        static RangedShot Rain(RangedShot r, Proj to) =>
+            new RangedShot { Item = r.Item, Debuff = r.Debuff, DebuffTicks = r.DebuffTicks, DebuffChance = r.DebuffChance, Chain = r.Chain, ChainDamage = r.ChainDamage, OnStrike = r.OnStrike, Base = to.Damage, LastPos = to.Pos };
+
+        /// <summary>The middle (world) of the player's raining cloud the rain at a world point fell from: the nearest over it.</summary>
+        public Vector2? CloudOver(Vector2 at)
+        {
+            var px = TerraParticles.ToPx(at);
+            Vector2? best = null;
+            float nearest = float.MaxValue;
+            foreach (var q in live)
+            {
+                if (q.Dead || q.Kind != ProjKind.NimbusCloud && q.Kind != ProjKind.CrimsonCloud) continue;
+                var c = CenterPx(q);
+                float up = px.y - c.y;
+                if (Mathf.Abs(c.x - px.x) > 24f || up < 0f || up >= nearest) continue;
+                nearest = up;
+                best = q.Pos;
+            }
+            return best;
+        }
+
         void KillNimbusMoving(Proj p)
         {
             var c = Spawn(p.Kind == ProjKind.CrimsonCloudMoving ? ProjKind.CrimsonCloud : ProjKind.NimbusCloud, p.Pos, Vector2.zero, p.Damage, p.Knockback, p.Crit);
             if (c != null) c.Melee = p.Melee;
+            if (c != null && p.Ranged != null) c.Ranged = Rain(p.Ranged, c);
         }
 
         /// <summary>A raining cloud's life, in updates: Terraria's 18000, five minutes (SetDefaults' timeLeft for 238 and 244).</summary>
@@ -414,6 +455,7 @@ namespace TerraKnight.Items
                     p.Ai0 = 0f;
                     var drop = Spawn(crimson ? ProjKind.BloodRain : ProjKind.NimbusRain, TerraParticles.ToWorld(new Vector2(c.x + Random.Range(-14, 15), bottom + 20f)), new Vector2(0f, -5f), p.Damage, 0f, p.Crit);
                     if (drop != null) drop.Melee = p.Melee;
+                    if (drop != null && p.Ranged != null) drop.Ranged = Rain(p.Ranged, drop);
                 }
             }
             if (++p.LocalAi0 < 10f) return;

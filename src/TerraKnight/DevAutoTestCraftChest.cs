@@ -20,6 +20,12 @@ namespace TerraKnight
             PlayerData.instance.isInvincible = true;
             var hero = HeroController.instance;
             var inv = TerraMod.Instance.Inventory;
+            // Keep the fixture clear of the left exit and its scene-entry movement.
+            for(int x=54;x<=88;x++)for(int y=20;y<=38;y++)TerraWorld.Set(x,y,y==20?CellKind.Stone:CellKind.Empty);
+            yield return new WaitForSeconds(.5f);
+            hero.transform.position=Clear(hero,CellGrid.CellCenter(60,24));
+            hero.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
+            yield return new WaitForSeconds(2f);
             // Crafting that costs: not the test save's free one.
             bool allInfinite = TerraMod.DevAllInfinite;
             TerraMod.DevAllInfinite = false;

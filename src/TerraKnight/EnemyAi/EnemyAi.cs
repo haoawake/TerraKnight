@@ -102,9 +102,9 @@ namespace TerraKnight.EnemyAi
         {
             DifficultyLevel.Normal => 2,
             DifficultyLevel.Hard => 2,
-            DifficultyLevel.Expert => 3,
-            DifficultyLevel.Master => 4,
-            _ => 5,
+            DifficultyLevel.Expert => 2,
+            DifficultyLevel.Master => 2,
+            _ => 2,
         };
 
         static readonly HashSet<Brain> holding = new HashSet<Brain>();
@@ -200,6 +200,8 @@ namespace TerraKnight.EnemyAi
             if (!EnemyAiMode.New || hm == null || TerraMod.Instance == null || hm.isDead) return;
             if (hm.GetComponent<Brain>() != null) return;
             if (TargetDummy.Is(hm) || Net.Enemies.IsPuppet(hm)) return;
+            // A corpse that carries a HealthManager (the Spiny Husk's) is no enemy of its own: it gets no brain.
+            if (hm.GetComponent<Corpse>() != null) return;
             // A body's second HealthManager (the Mantis Lords carry two): its first decides; in a LAN game the first is
             // the puppet, and a kit put on by the second would fight the owner's moves there.
             if (hm.GetComponent<HealthManager>() != hm) return;

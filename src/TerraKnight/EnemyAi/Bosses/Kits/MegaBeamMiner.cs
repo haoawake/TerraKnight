@@ -21,7 +21,7 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override float Pace => 0.8f;
         protected override Look Theme => Look.Crystal;
 
-        bool enraged, aimHero, again;
+        bool enraged, aimHero;
         string Sfx => enraged ? " 2" : "";
 
         protected override void Setup()
@@ -37,22 +37,13 @@ namespace TerraKnight.EnemyAi.Bosses
             var wait = antic != null ? Batch1Helpers.First<HutongGames.PlayMaker.Actions.Wait>(antic) : null;
             if (wait != null)
             {
-                TempoFixed(Control, "Beam Antic" + Sfx, 0.8f);
-                float span = wait.time.Value * 0.8f;
+                float span = wait.time.Value;
                 OnEnter("Beam Antic" + Sfx, () => { if (aimHero) Run(Follow(span)); }, first: false);
             }
             Branch("Choice", "Range Check" + Sfx, WantAntiAir);
             // His laser's cleanup done (its CD): fired again at once, aimed anew, now and then.
-            if (Batch2.Has(Control, "CD" + Sfx)) Branch("CD" + Sfx, "Aim" + Sfx, Again);
         }
 
-        /// <summary>From his second rank half his lasers go again (never a third in a row).</summary>
-        bool Again()
-        {
-            if (again || Rank < 1 || Grace || Random.value >= 0.5f) { again = false; return false; }
-            again = true;
-            return true;
-        }
 
         Vector2 Origin
         {

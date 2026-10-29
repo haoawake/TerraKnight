@@ -60,7 +60,8 @@ namespace TerraKnight.Items
                 case ItemType.Eventide: count=5; units=6; break; // central arrow deals double damage
                 case ItemType.Celebration: count=units=2; break;
                 case ItemType.Flamethrower: case ItemType.ElfMelter: count=units=5; break;
-                case ItemType.Zenith:
+                // The True Copper Shortsword (the Zenith shimmered) throws the same three swords (ZenithSwords): the same output.
+                case ItemType.Zenith: case ItemType.TrueCopperShortsword:
                     return new WeaponOutput(cycle,3,3,"三把剑独立11帧冷却；往返与残影共用各剑命中间隔（固定靶估计）",repeat:4.5f*7f/ZenithSwords.ZenithHitCooldownTicks);
                 case ItemType.BetsysWrath: count=units=3; break;
                 case ItemType.BeeGun:

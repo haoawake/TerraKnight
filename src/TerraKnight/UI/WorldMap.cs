@@ -862,6 +862,8 @@ namespace TerraKnight.UI
             // The townsfolk, under the players' heads (Main.DrawNPCHeadOnMap).
             string hoveredNpc = DrawNpcHeads(ToScreen, ui, null, mp);
             string hoveredFlame = DrawGrimmFlames(ToScreen, 26f * ui, null, mp);
+            // The Collector's Map's grubs, the Bench Pin's benches (WorldMapPins).
+            string hoveredPin = DrawMapPins(ToScreen, 24f * ui, null, mp);
             // The player on their own layer.
             if (PlayerDeep == ViewDeep) FullMap.DrawHead(ToScreen(HeadCell(out _)), ui);
             // The other players of a LAN game where they are, their names under them.
@@ -871,7 +873,7 @@ namespace TerraKnight.UI
 
             // What is under the cursor, as Terraria names it.
             string label = hoveredPylon != null ? Lang.T(hoveredPylon.Name) + "（" + Areas.Display(Areas.AreaName(hoveredPylon.Scene)) + "）　" + Lang.T("点击传送")
-                : hoveredFlame ?? hoveredNpc ?? (hoveredGate != null ? GateLabel(hoveredGate) : Show(NameAt(ToCell(mp))));
+                : hoveredFlame ?? hoveredPin ?? hoveredNpc ?? (hoveredGate != null ? GateLabel(hoveredGate) : Show(NameAt(ToCell(mp))));
             DevLabel = label;
             if (!string.IsNullOrEmpty(label))
                 FullMap.Outlined(new Rect(mp.x + 26f * ui, mp.y - 10f * ui, 600f * ui, 24f * ui), label, hoveredPylon != null ? new Color(1f, 0.9f, 0.5f) : Color.white);

@@ -120,6 +120,7 @@ namespace TerraKnight.Items
                 TileHit = (t, p, x, yy, v) => { if (x) p.Vel.x = -v.x; if (yy) p.Vel.y = -v.y; },
                 OnHit = (t, p, hm) => { t.Counterweight(EnemyCenterPx(hm), p.Damage, p.Knockback); p.Ai1 = 1000f; },
             };
+            RegisterYoyoPulse();
         }
 
         /// <summary>Dev: the farthest live one of a kind from a point (Terraria px), -1 when none; how many are loose copies.</summary>
@@ -192,6 +193,8 @@ namespace TerraKnight.Items
                 p.Channel = true;
                 p.Melee = true;
             }
+            // The remade yoyo's tricks and arts (TerraProjectilesYoyoArts.cs).
+            var art = YoyoArtPre(p);
             var b = Equipment.Current;
             bool secondary = SecondYoyo(p);
             float ms = YoyoMeleeSpeed(p);
@@ -234,6 +237,7 @@ namespace TerraKnight.Items
             if (b.YoyoString) R = R * 1.25f + 30f;
             R /= (1f + ms * 3f) / 4f;
             V /= (1f + ms * 3f) / 4f;
+            if (art != null) R *= YoyoReach;
             float inertia = Mathf.Max(1f, 14f - V / 2f);
             float arrive = 5f + V / 2f + (secondary ? 20f : 0f);
             var v = TV(p);
@@ -255,6 +259,7 @@ namespace TerraKnight.Items
                         if ((m - owner).magnitude > R - 1f) m = owner + (m - owner).normalized * (R - 1f);
                         p.Point = m;
                     }
+                    if (art != null && !secondary && art.OrbitOf == null) p.Point = YoyoTrickPoint(p, art, owner, p.Point, R);
                 }
                 if (tooFar) p.Ai0 = -1f;
                 if (p.Ai0 >= 0f)
@@ -333,6 +338,7 @@ namespace TerraKnight.Items
                 v = (v * (inertia - 1f) + d.normalized * V) / inertia;
             }
             else p.Collide = true;
+            if (art != null && p.Ai0 >= 0f) v = YoyoArtSteer(p, art, owner, v, R, V);
             p.TRot += p.Ai0 == -2f || p.Kind == ProjKind.KrakenYoyo ? 0.45f * p.Dir : 0.45f;
             p.Vel = Flip(v);
         }
@@ -369,6 +375,9 @@ namespace TerraKnight.Items
             var c = CenterPx(p);
             var e = EnemyCenterPx(hm);
             var v = TV(p);
+            crit = YoyoArtCrit(p, crit);
+            if (BladeArts.Enabled && p.Ai0 >= 0f) dmg = Mathf.RoundToInt(dmg * YoyoGapBlow(p, hm));
+            else if (p.Ai0 >= 0f && IsYoyo(p.Kind)) DevGap(p, hm);
             if (p.Ai0 == -2f)
             {
                 // The loose copy hops up off what it hits.
@@ -414,6 +423,7 @@ namespace TerraKnight.Items
         /// <summary>The yoyos' debuffs (StatusNPC, P:11444-11464) and their counted procs (P:13727-13869).</summary>
         void YoyoAfterHit(Proj p, HealthManager hm)
         {
+            YoyoArtHit(p, hm);
             switch (p.Kind)
             {
                 case ProjKind.CascadeYoyo: if (Random.Range(0, 3) == 0) EnemyDebuffs.Add(hm, EnemyDebuffs.OnFire, Random.Range(60, 240)); break;
@@ -973,6 +983,7 @@ namespace TerraKnight.Items
                 }
             }
             if (p.Kind == ProjKind.AbyssYoyo) DrawAbyssYoyoGlow(fx, p, px, held);
+            if (BladeArts.Enabled) DrawYoyoArt(fx, p, px, held, spr);
             fx.Draw(spr, px, col * (1f - p.Alpha), p.TRot, p.Scale, flipX: flip && p.Kind == ProjKind.KrakenYoyo, overPlayer: held);
             if (p.Kind == ProjKind.KrakenYoyo || p.Kind == ProjKind.TerrarianYoyo || p.Kind == ProjKind.HelFireYoyo)
             {
@@ -1034,6 +1045,7 @@ namespace TerraKnight.Items
             pos -= d.normalized * 1.2f;
             var v = TV(p);
             var baseCol = StringColour(Equipment.Current.StringColor, out bool additive);
+            bool arts = BladeArts.Enabled && StyleOf(p.Kind) != null;
             bool first = true, last = false;
             for (int guard = 0; guard < 200 && !last; guard++)
             {
@@ -1073,7 +1085,15 @@ namespace TerraKnight.Items
                 float rot = Mathf.Atan2(d.y, d.x) - 1.57f;
                 var c = baseCol * 0.5f;
                 if (seg <= 0f) break;
-                fx.Draw(seg >= 12f ? line : FxBatch.Frame("FishingLine", 0, 0, 12, Mathf.Max(1, (int)seg), 6f, 0f), pos - new Vector2(6f, 0f) + new Vector2(6f, 0f), c, rot, 1f, overPlayer: over);
+                // The remade yoyo's string: a ripple running out along it as a trick begins, a glow in the yoyo's colours.
+                var at = pos;
+                if (arts)
+                {
+                    var along = d.normalized;
+                    at += YoyoStringRipple(p, guard, along);
+                    YoyoStringGlow(fx, p, at, at + along * seg);
+                }
+                fx.Draw(seg >= 12f ? line : FxBatch.Frame("FishingLine", 0, 0, 12, Mathf.Max(1, (int)seg), 6f, 0f), at, c, rot, 1f, overPlayer: over);
             }
         }
     }

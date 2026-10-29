@@ -26,6 +26,8 @@ def main():
     if not key:
         raise SystemExit('Missing API key')
     context = ssl._create_unverified_context() if a.self_signed else ssl.create_default_context()
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
+                                        urllib.request.HTTPSHandler(context=context))
 
     def call(endpoint, **data):
         timestamp = str(int(time.time()))
@@ -33,7 +35,7 @@ def main():
             (timestamp + hashlib.md5(key.encode()).hexdigest()).encode()).hexdigest())
         req = urllib.request.Request(a.panel.rstrip('/') + endpoint,
             data=urllib.parse.urlencode(data).encode(), headers={'User-Agent': 'TerraKnightWiki/1.0'})
-        with urllib.request.urlopen(req, context=context, timeout=45) as response:
+        with opener.open(req, timeout=45) as response:
             return json.loads(response.read().decode('utf-8'))
 
     if a.action == 'update-check':
@@ -73,7 +75,8 @@ def main():
             expected_build = archive.read('terraknight-wiki/build-info.json').decode('utf-8') if a.action == 'update' else None
         listing = call('/files?action=GetDir', path='/www/wwwroot/homepage')
         if listing.get('PATH') != '/www/wwwroot/homepage':
-            raise SystemExit('Unable to verify destination')
+            raise SystemExit('Unable to verify destination: ' + json.dumps(
+                {k: listing.get(k) for k in ('status', 'msg', 'PATH')}, ensure_ascii=False))
         if a.action == 'deploy' and any(value.split(';')[0] == 'terraknight-wiki' for value in listing.get('DIR', []) + listing.get('FILES', [])):
             raise SystemExit('Target already exists; refusing to overwrite it')
         if a.action == 'update':
@@ -119,7 +122,7 @@ def main():
             chunks.append(f'\r\n--{boundary}--\r\n'.encode())
             request = urllib.request.Request(a.panel.rstrip('/') + '/files?action=upload', data=b''.join(chunks),
                                             headers={'Content-Type': 'multipart/form-data; boundary=' + boundary})
-            with urllib.request.urlopen(request, context=context, timeout=45) as response:
+            with opener.open(request, timeout=45) as response:
                 result = json.loads(response.read().decode('utf-8'))
             if not ((isinstance(result, dict) and result.get('status') is not False)
                     or (isinstance(result, int) and result == offset + len(block))):

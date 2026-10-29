@@ -21,13 +21,9 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override bool Roams => true;
 
         PlayMakerFSM choices, commands, teleport, phases;
-        bool climbing, kitBusy;
+        bool climbOrbCast;
 
         public static int DevClimbMoves, DevClimbOrbs, DevClimbRain, DevClimbFans;
-
-        /// <summary>Her own orb (her Spawn Fireball's), hunting the player as hers do.</summary>
-        GameObject orbShot;
-        GameObject OrbShot => orbShot != null ? orbShot : orbShot = commands != null ? OwnShots.Of(State("Spawn Fireball", commands)) : null;
 
         /// <summary>Her own sword comb (her Comb Top's: a row of her swords with gaps that fly off together).</summary>
         GameObject combShot;
@@ -47,27 +43,14 @@ namespace TerraKnight.EnemyAi.Bosses
             Tempo("Arena 1 Idle", "Arena 2 Idle", "A1 Cast End", "A2 Cast End");
             if (choices != null) TempoIn(choices, "A1 Pause", "A2 Pause", "Eye Beam Recover", "Nail Fan Recover", "Orb Recover");
             if (commands != null) TempoIn(commands, "Spawn Fireball");
-            // The sweeps: cut short (never before their last wave: leaving the state drops its waves), her orbs beside them.
-            if (choices != null)
+            if (commands != null) OnEnter("Orb Antic", () =>
             {
-                Sweep("Nail Top Sweep", 6f, 4.1f);
-                Sweep("Nail L Sweep", 7f, 5.6f);
-                Sweep("Nail R Sweep", 7f, 5.6f);
-                Sweep("Beam Sweep L", 2f, 2f);
-                Sweep("Beam Sweep R", 2f, 2f);
-                Sweep("Nail Top Sweep 2", 3f, 1.6f);
-                Sweep("Nail L Sweep 2", 4f, 2.6f);
-                Sweep("Nail R Sweep 2", 4f, 2.6f);
-                Sweep("Beam Sweep L 2", 2f, 2f);
-                Sweep("Beam Sweep R 2", 2f, 2f);
-            }
+                if (climbOrbCast && Int("Shots", commands) is var shots && shots != null) shots.Value = 1;
+            }, first: false, f: commands);
             // Her arenas move: where she arrives, and each phase's, is the fight's now (Lead and ClampToArena go by it).
             if (teleport != null) OnEnter("Arrive", Rearena, first: false, f: teleport);
             if (phases != null)
                 foreach (var s in new[] { "Set Phase 2", "Set Phase 3", "Stun 1", "Set Ascend" }) OnEnter(s, Rearena, f: phases);
-            OnEnter("Ascend Tele", () => climbing = true);
-            OnEnter("Plat Setup", () => climbing = true);
-            OnEnter("Final Impact", () => climbing = false);
             // The climb: her other attacks between the aimed beams.
             if (commands != null) OnEnter("Aim", () => aimAt = Time.time, f: commands);
             OnEnter("Ascend Cast", () => Run(Climb()));
@@ -102,10 +85,40 @@ namespace TerraKnight.EnemyAi.Bosses
 
         IEnumerator ClimbOrbs()
         {
-            if (OrbShot == null || kitBusy) yield break;
-            DevClimbOrbs++;
-            DevClimbMoves++;
-            yield return WithCleanup(Orbs(), () => kitBusy = false);
+            if (commands == null) yield break;
+            float ready = Time.time + 2.5f;
+            while (Time.time < ready && !(commands.ActiveStateName == "Aim" && Time.time - aimAt >= 1.3f)) yield return null;
+            if (commands.ActiveStateName != "Aim" || StateNow != "Ascend Cast") yield break;
+            var bounds = new[] { Float("Orb Min X", commands), Float("Orb Max X", commands), Float("Orb Min Y", commands), Float("Orb Max Y", commands) };
+            var distance = Batch3.Find<HutongGames.PlayMaker.Actions.DistanceBetweenPoints>(State("Orb Pos", commands));
+            if (System.Array.Exists(bounds, v => v == null) || distance == null) yield break;
+            var saved = System.Array.ConvertAll(bounds, v => v.Value);
+            var oldReference = distance.point2;
+            Vector2 locked = Lock();
+            try
+            {
+                // The original lower arena is nowhere near the climb. Its native 3..11 unit
+                // rejection test otherwise retries synchronously forever. Sample a guaranteed
+                // valid ring near the locked player position, independently of later movement.
+                bounds[0].Value = locked.x - .5f; bounds[1].Value = locked.x + .5f;
+                bounds[2].Value = locked.y + 4f; bounds[3].Value = locked.y + 5f;
+                distance.point2 = new HutongGames.PlayMaker.FsmVector3 { Value = locked };
+                climbOrbCast = true;
+                DevClimbOrbs++;
+                DevClimbMoves++;
+                commands.SendEvent("ORBS");
+                float end = Time.time + 8f;
+                while (Time.time < end && commands.ActiveStateName != "Orb End" && commands.ActiveStateName != "End"
+                    && StateNow == "Ascend Cast") yield return null;
+            }
+            finally
+            {
+                for (int i = 0; i < bounds.Length; i++) bounds[i].Value = saved[i];
+                distance.point2 = oldReference;
+                climbOrbCast = false;
+                if (commands != null && commands.isActiveAndEnabled && StateNow == "Ascend Cast")
+                    commands.SendEvent("ASCEND BEAM");
+            }
         }
 
         /// <summary>
@@ -161,40 +174,7 @@ namespace TerraKnight.EnemyAi.Bosses
 
         // ------------------------------------------------------------------ her sweeps: shorter, her orbs beside them
 
-        void Sweep(string state, float wait, float safe)
-        {
-            OnEnter(state, () =>
-            {
-                float t = Mathf.Max(safe, wait * TempoNow);
-                if (t < wait - 0.05f) Run(EndAfter(state, t));
-                if (Rank >= 1 && !kitBusy && !climbing && !Grace && Random.value < (Rank >= 2 ? 0.7f : 0.5f))
-                    Run(WithCleanup(Orbs(), () => kitBusy = false));
-            }, f: choices);
-        }
 
-        IEnumerator EndAfter(string state, float seconds)
-        {
-            yield return new WaitForSeconds(seconds);
-            if (choices != null && choices.ActiveStateName == state) choices.SendEvent("FINISHED");
-        }
 
-        /// <summary>A few of her own orbs out round her after a moment, hunting the player (none when hers can't be found).</summary>
-        IEnumerator Orbs()
-        {
-            if (OrbShot == null) yield break;
-            kitBusy = true;
-            int n = Rank >= 2 ? 4 : 3;
-            float spin = Random.Range(0f, 360f);
-            Vector2 c = Me;
-            yield return new WaitForSeconds(Warn(0.5f));
-            for (int i = 0; i < n; i++)
-            {
-                float a = (spin + i * 360f / n) * Mathf.Deg2Rad;
-                Vector2 p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 2.5f;
-                Vector2 to = TargetCenter - p;
-                OwnShots.Throw(OrbShot, p, (to.sqrMagnitude > 0.01f ? to.normalized : Vector2.down) * 6f, fire: true);
-            }
-            kitBusy = false;
-        }
     }
 }

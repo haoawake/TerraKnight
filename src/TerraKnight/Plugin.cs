@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "5.1.0";
+        public const string Version = "5.2.0";
 
         internal static ManualLogSource Log;
 
@@ -118,6 +118,7 @@ namespace TerraKnight
             UI.DialogueBroadcast.Bind(Config);
             Items.NailAim.Bind(Config);
             Items.SmartCursor.Bind(Config);
+            Player.TerraCamera.BindPan(Config);
             World.HoleShapes.Bind(Config);
             var darkness = Config.Bind("Gameplay", "HollowKnightDarkness", false,
                 "保留空洞骑士的黑暗：没有光蝇灯笼时，黑暗区域（呼啸悬崖边缘、深巢、水晶山峰的矿道等）把视野缩成人物周围一小圈。默认关：不缩视野；开着泰拉瑞亚光照时，这些地方按泰拉瑞亚的方式是暗的，由火把、头灯、光蝇灯笼或法术的光照亮。\nHollow Knight's darkness: without the Lumafly Lantern, dark areas (the dark edges of the Howling Cliffs, Deepnest, Crystal Peak's mines and so on) close the view to a small circle around the player. Off by default: no narrowed view; with Terraria lighting on, these places are dark the Terraria way and are lit by torches, the Mining Helmet, the Lumafly Lantern or spells.");

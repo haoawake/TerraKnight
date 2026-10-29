@@ -89,7 +89,7 @@ namespace TerraKnight.Items
         {
             if (!leftPress || !TownNpcs.ReforgeOpen) return;
             // His forging takes a weapon only; his reforging what can have a prefix.
-            if (!inv.Mouse.IsEmpty && (TownNpcs.ForgeMode ? !Forging.Forgeable(ItemDb.Get(inv.Mouse.Type)) : !Prefixes.CanHave(ItemDb.Get(inv.Mouse.Type)))) return;
+            if (!inv.Mouse.IsEmpty && (TownNpcs.RefitMode ? !WeaponRefitting.CanRefit(inv.Mouse.Def) : TownNpcs.ForgeMode ? !Forging.Forgeable(ItemDb.Get(inv.Mouse.Type)) : !Prefixes.CanHave(ItemDb.Get(inv.Mouse.Type)))) return;
             var held = inv.Mouse;
             inv.Mouse = TownNpcs.ReforgeItem;
             TownNpcs.ReforgeItem = held;
@@ -99,6 +99,7 @@ namespace TerraKnight.Items
         /// <summary>Main.ReforgeItemInReforgeSlot after Player.BuyItem: paid, a new prefix, its name popping up over the player.</summary>
         static bool Reforge()
         {
+            if (TownNpcs.RefitMode) return RefitWeapon();
             ref var item = ref TownNpcs.ReforgeItem;
             if (!TownNpcs.ReforgeOpen || item.IsEmpty) return false;
             // The best prefix just rolled: the hammer holds a second (the click is lost, nothing paid).

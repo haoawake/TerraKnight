@@ -37,6 +37,7 @@ namespace TerraKnight
                 }
             }
             finally { Shop.DevStage = -1; }
+            Plugin.Log.LogInfo($"[AutoTest] 鞋带束头 诊断：{ProgressionLoot.DevExtraWhy(ItemType.Aglet)}");
             Plugin.Log.LogInfo($"[AutoTest] 鞋带束头 {(found > 0 ? "通过" : "不通过")}");
         }
     }

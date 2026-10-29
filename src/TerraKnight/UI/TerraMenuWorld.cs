@@ -11,18 +11,20 @@ namespace TerraKnight.UI
         static string worldName = "";
         static DifficultyLevel difficulty = DifficultyLevel.Normal;
         static EnemyAiKind ai = EnemyAiKind.New;
+        static WeaponKind weapons = WeaponKind.New;
         static bool guide = true;
 
         static bool nameTyping;
         static readonly ImeTextEntry nameInput = new ImeTextEntry(NameTyped);
 
-        /// <summary>Terraria's defaults for a new world (Classic: 普通 here), the new enemy AI, the guidance followed, a random name.</summary>
+        /// <summary>Terraria's defaults for a new world (Classic: 普通 here), the new enemy AI, the remade weapons, the guidance followed, a random name.</summary>
         static void ResetWorldOptions()
         {
             EndNameTyping();
             worldName = RandomWorldName();
             difficulty = DifficultyLevel.Normal;
             ai = EnemyAiKind.New;
+            weapons = WeaponKind.New;
             guide = true;
         }
 
@@ -75,14 +77,15 @@ namespace TerraKnight.UI
 
         /// <summary>
         /// UIWorldCreation: the name (with its random button), the character it is for in the seed's place, the preview,
-        /// three rows of options (the five difficulties, the enemy AI, the guidance), the hovered option's description, 返回 and 创建.
+        /// four rows of options (the five difficulties, the enemy AI, the weapons, the guidance), the hovered option's description,
+        /// 返回 and 创建.
         /// </summary>
         static void DrawWorld()
         {
             float s = TerraUi.S;
             float w = 500f * s;
-            var box = new Rect((Screen.width - w) / 2f, (170f - 18f) * s, w, 452f * s);
-            var panel = new Rect(box.x, box.y + 50f * s, w, 298f * s);
+            var box = new Rect((Screen.width - w) / 2f, (170f - 18f) * s, w, 500f * s);
+            var panel = new Rect(box.x, box.y + 50f * s, w, 346f * s);
             TerraUi.Panel(panel, TerraUi.ListBack, Color.black);
             var info = new Rect(panel.x + 10f * s, panel.y + 8f * s, panel.width - 20f * s, panel.height - 20f * s);
             string desc = null;
@@ -152,6 +155,23 @@ namespace TerraKnight.UI
                 if (TerraUi.Over(r)) desc = k == EnemyAiKind.New
                     ? Lang.T("小怪、精英和首领按泰拉人物的高机动重新设计的攻击与索敌。")
                     : Lang.T("空洞骑士原本的攻击和索敌。");
+            }
+            top += 48f * s;
+            TerraUi.Separator(info.x, top - 8f * s, info.width);
+            // The weapons (World.WeaponMode): the remade ones or Terraria's own, for good with this world.
+            for (int i = 0; i < 2; i++)
+            {
+                var k = i == 0 ? WeaponKind.Vanilla : WeaponKind.New;
+                var r = OptionRect(info, top, i, 2, 4f);
+                devRects["weapons" + i] = r;
+                if (TerraUi.Option(r, null, WeaponMode.NameOf(k), k == WeaponKind.New ? TerraUi.C(255, 214, 115) : Color.white, weapons == k, "wp" + i))
+                {
+                    weapons = k;
+                    Sound("Menu_Tick");
+                }
+                if (TerraUi.Over(r)) desc = k == WeaponKind.New
+                    ? Lang.T("重做的武器：近战连招和右键技艺，长枪、悠悠球、链枷、投掷武器、短剑和鞭子的新招式，魔法武器的施法动作。建好世界后不能更改。")
+                    : Lang.T("泰拉瑞亚原本的武器用法和动作。建好世界后不能更改。");
             }
             top += 48f * s;
             TerraUi.Separator(info.x, top - 8f * s, info.width);

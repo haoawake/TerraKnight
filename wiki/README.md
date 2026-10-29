@@ -1,6 +1,28 @@
 # 泰拉圣巢wiki
 
-## 当前本地资料快照（2026-10-24 / 4.4.2）
+## 当前本地资料（2026-10-27 / 5.1.0）
+
+当前入口以根目录 `wiki-source.json` 为准，已切换至 `artifacts/wiki-release510-source/`。这个目录来自已发布 5.1.0 的独立源码，未混入主工作区尚未发布的武器重做。用发布 DLL 分别重新运行了 `wikiassets_zh`、`healthbook`、`wikidetails_zh`，导入物品、掉落、地区、图标、台词、敌人血量、NPC、商店和神居资料。
+
+新增玩家入口：`pet-drops.html`（48 种圣巢首领宠物、7 种原生首领专属宠物、77 种通用彩蛋宠物及概率口径），`ore-unlocks.html`（45 项矿石与锭），`boss-stage-0.html` 至 `boss-stage-5.html`（逐阶段、逐首领资源许可）。`progress.html`、`boss-progression.html`、`equipment-gates.html`、相关物品与首领页均有互相链接。`bestiary-progress.html` 说明实际掉落回退与预览的区别。
+
+首领宠物基础 1% 会乘掉落难度倍率；通用宠物每种 0.01% 不乘倍率。原生首领专属宠物不能标成通用彩蛋来源。5.1.0 变体宝藏袋开袋丢失战斗场景的问题已在宠物指南明确标注，未把不可用的变体获取路径写成已修复。
+
+构建与验证：
+
+```powershell
+$env:TK_WIKI_SOURCE_ROOT=(Resolve-Path artifacts/wiki-release510-source).Path
+python tools/generate_encyclopedia.py
+python wiki/build.py
+python wiki/check_current_catalog.py
+python wiki/check_drops.py
+python wiki/check.py
+python artifacts/check-wiki510-progression.py
+```
+
+本地站点为 `artifacts/wiki-preview/terraknight-wiki/`，完整包为 `artifacts/terraknight-wiki.zip`。这些路径存在不代表已经更新线上站点；线上是否发布需另有服务器操作与公开下载校验记录。
+
+## 历史本地资料快照（2026-10-24 / 4.4.2）
 
 本次以 `artifacts/wiki-current-20261024-r2/source/` 的冻结源码与隔离游戏导出为依据。`wiki-source.json` 记录 DLL 和源码清单哈希；`wiki/build.py` 默认读取该快照，避免同时进行的源码修改使文字、掉落与数值混用版本。只更新本地站点，没有发布到服务器。
 

@@ -30,7 +30,7 @@ namespace TerraKnight.Items
             specs[ProjKind.ChargedBlaster] = new Spec
             {
                 Ai = Ai.Custom, Texture = "Projectile_460", W = 14, H = 18, Time = 2, Penetrate = -1, TileCollide = false, OwnMove = true, Held = true,
-                CanDamage = p => false, Update = (t, p) => t.StepChargedBlaster(p), Draw = (t, fx, p, px) => DrawChargedBlaster(fx, p, px), OnKill = (t, p) => { },
+                CanDamage = p => false, Update = (t, p) => t.StepChargedBlaster(p), Draw = (t, fx, p, px) => t.DrawChargedBlaster(fx, p, px), OnKill = (t, p) => { },
             };
             specs[ProjKind.ChargedBlasterOrb] = new Spec
             {
@@ -41,7 +41,7 @@ namespace TerraKnight.Items
             {
                 Ai = Ai.Custom, Texture = "Projectile_461", W = 18, H = 18, Time = 3600, Penetrate = -1, TileCollide = false, OwnMove = true,
                 Beam = p => (CenterPx(p), CenterPx(p) + TV(p).normalized * p.LocalAi1, 22f * p.Scale),
-                Update = (t, p) => t.StepBlasterBeam(p), Draw = (t, fx, p, px) => DrawBlasterBeam(fx, p, px), OnKill = (t, p) => { },
+                Update = (t, p) => t.StepBlasterBeam(p), Draw = (t, fx, p, px) => t.DrawBlasterBeam(fx, p, px), OnKill = (t, p) => { },
             };
             specs[ProjKind.MedusaHead] = new Spec
             {
@@ -371,8 +371,8 @@ namespace TerraKnight.Items
         // ------------------------------------------------------------------ 460: the Charged Blaster Cannon (AI_075)
 
         /// <summary>
-        /// AI_075 for 460: the charge builds (stage 1 at 80 updates, 2 at 180); it re-aims every 5
-        /// updates (once charged, every 5th); it fires an orb at 1 and every 10 up to 50, then one
+        /// AI_075 for 460: the charge builds (stage 1 at 80 updates, 2 at 180); it acts every 5
+        /// updates (once charged, every 5th) and turns to the cursor every update; it fires an orb at 1 and every 10 up to 50, then one
         /// every 30 from 80 (bigger with the stage, 2.5 times the damage from 1.0); mana at 80, 180
         /// and every 20 after; at 180 the beam (1.5 times the damage), and it goes when the beam
         /// does. A hum quickening with the charge; sparks drawn into its muzzle.
@@ -395,13 +395,19 @@ namespace TerraKnight.Items
             if (!full && tick) p.Ai1++;
             bool act = tick && (p.Ai0 == 1f || (full && p.Ai0 % 20f == 0f));
             var v = TV(p);
+            p.OldVel = p.Vel;
+            p.HeldAt = centre;
             if ((!full && p.Ai1 >= 5f) || (full && ai0 % 5 == 0) || v == Vector2.zero)
             {
                 if (!full) p.Ai1 = 0f;
                 act = true;
-                var aim = AimPx() - centre;
-                v = (aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(0f, -1f)) * def.ShootSpeed * p.Scale;
             }
+            // AI_075 snaps it to the cursor on those updates only, and the beam swept in jumps twelve times a
+            // second: it turns 30% of the way there every update instead.
+            var aim = AimPx() - centre;
+            var want = aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(0f, -1f);
+            var cur = v.sqrMagnitude > 1e-6f ? v.normalized : want;
+            v = Vector2.Lerp(want, cur, 0.7f).normalized * def.ShootSpeed * p.Scale;
             if (p.SoundDelay > 0) p.SoundDelay--;
             if (p.SoundDelay <= 0 && !full)
             {
@@ -478,14 +484,37 @@ namespace TerraKnight.Items
             mod.KeepUsing(def, Flip(v));
         }
 
-        /// <summary>Main.DrawProj for 460: the cannon, lit, turned along the aim; its glow (Glow_102) added over it, flipped when aimed left.</summary>
-        static void DrawChargedBlaster(FxBatch fx, Proj p, Vector2 px)
+        /// <summary>
+        /// Where the player's own held cannon is drawn this frame (px) and along what: carried with the player as
+        /// he is drawn (his rigidbody draws him between physics steps, the cannon moves on Terraria's updates, and
+        /// it shook on him as he ran), its aim part of the way from the last update's to this one's by the time
+        /// since (one update behind, never jumping). Another player's as it came.
+        /// </summary>
+        (Vector2 at, Vector2 dir) HeldDrawn(Proj p, Vector2 px)
         {
-            var at = new Vector2(Mathf.Floor(px.x), Mathf.Floor(px.y));
-            bool flip = p.Dir < 0f;
-            fx.Draw(FxBatch.Frame("Projectile_460", 0, 0, 14, 18, 7f, 9f), at, new Color(L, L, L, 1f), p.TRot, p.Scale, flipX: flip, overPlayer: true);
-            bool left = Mathf.Abs(p.TRot - Mathf.PI / 2f) > Mathf.PI / 2f;
-            fx.Draw(FxBatch.Frame("Glow_102", 0, 0, 14, 14, 7f, 9f), at, new Color(1f, 1f, 1f, 0f), p.TRot - Mathf.PI / 2f, p.Scale, flipY: left, flipX: flip, overPlayer: true);
+            var dir = TV(p);
+            dir = dir.sqrMagnitude > 1e-6f ? dir.normalized : new Vector2(0f, -1f);
+            var hero = HeroController.SilentInstance;
+            if (ghostHolder.HasValue || hero == null || p.HeldAt == Vector2.zero) return (px, dir);
+            var was = Flip(p.OldVel);
+            if (was.sqrMagnitude > 1e-6f)
+            {
+                float a = Mathf.LerpAngle(Mathf.Atan2(was.y, was.x) * Mathf.Rad2Deg, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg, Mathf.Clamp01(tickAccumulator)) * Mathf.Deg2Rad;
+                dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+            }
+            return (px + TerraParticles.ToPx(Player.TerraCamera.HeroCenter(hero)) - p.HeldAt, dir);
+        }
+
+        /// <summary>Main.DrawProj for 460: the cannon, lit, turned along the aim; its glow (Glow_102) added over it, flipped when aimed left.</summary>
+        void DrawChargedBlaster(FxBatch fx, Proj p, Vector2 px)
+        {
+            var (drawn, dir) = HeldDrawn(p, px);
+            var at = new Vector2(Mathf.Floor(drawn.x), Mathf.Floor(drawn.y));
+            float rot = Mathf.Atan2(dir.y, dir.x) + Mathf.PI / 2f;
+            bool flip = dir.x < 0f;
+            fx.Draw(FxBatch.Frame("Projectile_460", 0, 0, 14, 18, 7f, 9f), at, new Color(L, L, L, 1f), rot, p.Scale, flipX: flip, overPlayer: true);
+            bool left = Mathf.Abs(rot - Mathf.PI / 2f) > Mathf.PI / 2f;
+            fx.Draw(FxBatch.Frame("Glow_102", 0, 0, 14, 14, 7f, 9f), at, new Color(1f, 1f, 1f, 0f), rot - Mathf.PI / 2f, p.Scale, flipY: left, flipX: flip, overPlayer: true);
         }
 
         // ------------------------------------------------------------------ 459: the blaster orb (AI_001)
@@ -625,14 +654,23 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Main.DrawProj for 461: its start at its centre, middles from 10.5 px on, its end; white, added, 90% strong.</summary>
-        static void DrawBlasterBeam(FxBatch fx, Proj p, Vector2 px)
+        void DrawBlasterBeam(FxBatch fx, Proj p, Vector2 px)
         {
             var v = TV(p);
             if (v == Vector2.zero) return;
             v.Normalize();
+            var from = CenterPx(p);
+            // Out of the cannon as it is drawn this frame.
+            if (p.Parent != null && !p.Parent.Dead)
+            {
+                var (cannon, dir) = HeldDrawn(p.Parent, CenterPx(p.Parent));
+                v = dir;
+                from = cannon + dir * 16f;
+                px = from;
+            }
             var colour = FxBatch.C(255, 255, 255, 0) * 0.9f;
             var at = new Vector2(Mathf.Floor(px.x), Mathf.Floor(px.y));
-            float rot = p.TRot;
+            float rot = Mathf.Atan2(v.y, v.x) - Mathf.PI / 2f;
             fx.Draw(FxBatch.Frame("Projectile_461", 0, 0, 26, 22, 13f, 11f), at, colour, rot, p.Scale, overPlayer: true);
             float len = p.LocalAi1 - 33f * p.Scale;
             var pos = at + v * p.Scale * 10.5f;
@@ -650,7 +688,7 @@ namespace TerraKnight.Items
                 }
             }
             fx.Draw(FxBatch.Frame("Projectile_461", 0, 56, 26, 22, 13f, 0f), pos, colour, rot, p.Scale, overPlayer: true);
-            BeamLight(fx, CenterPx(p), v, p.LocalAi1, new Color(0.4f, 0.85f, 0.9f));
+            BeamLight(fx, from, v, p.LocalAi1, new Color(0.4f, 0.85f, 0.9f));
         }
 
         // ------------------------------------------------------------------ 535-536: the Medusa Head (AI_100, AI_101)

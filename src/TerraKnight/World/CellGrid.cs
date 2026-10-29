@@ -219,6 +219,24 @@ namespace TerraKnight.World
         CellKind[] networkBase;
         public void CaptureNetworkBase() => networkBase = (CellKind[])cells.Clone();
 
+        /// <summary>The scene's unmodified raster, including open air, before saved digging/meteor edits.</summary>
+        internal bool OriginalAt(int index, out CellKind kind)
+        {
+            kind = CellKind.Empty;
+            if (networkBase == null || index < 0 || index >= networkBase.Length) return false;
+            kind = networkBase[index];
+            return true;
+        }
+
+        internal bool RestoreOriginal(int x, int y)
+        {
+            if (!InClip(x, y) || !OriginalAt(y * Width + x, out var kind)) return false;
+            int i = y * Width + x;
+            bool changed = cells[i] != kind || dug[i] || slopes[i] != 0;
+            ApplyNetwork(i, kind, false, 0);
+            return changed;
+        }
+
         public void ResetNetworkEdits()
         {
             if (networkBase == null) return;

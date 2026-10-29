@@ -215,9 +215,16 @@ namespace TerraKnight.Player
             /// how much lower it is held (Y), in Terraria pixels.
             /// </summary>
             public Vector2 Offset;
+            /// <summary>A magic weapon's cast (Items.MageArts): pushed along the aim (px, − back) and raised (px).</summary>
+            public float Push, Rise;
             /// <summary>useStyle 3 (the umbrellas): thrust out level (<see cref="Items.MeleeSpecials.ThrustLocation"/>); the item thrust.</summary>
             public bool Thrust;
             public Items.ItemDef Item;
+            /// <summary>The remade swing (Items.BladeArts): its blade drawn by SwordFx, not held; the arm along its way (degrees from level).</summary>
+            public bool Art;
+            public float ArtAngle;
+            /// <summary>The item out of the hand (a thrown phase blade, a katana's blade held drawn for its charge: SwordFx draws it): the arm at ArtAngle.</summary>
+            public bool Away;
             /// <summary>
             /// A hold style while not in use: where the item's bottom-left corner sits from the
             /// hitbox's top-left (Terraria px, as if facing right), its turn (clockwise radians) and
@@ -325,6 +332,7 @@ namespace TerraKnight.Player
         public static float BobPx;
         /// <summary>The body frame drawn this frame (for the layers the effect batch draws).</summary>
         public static int BodyFrameNow;
+        internal int LegFrameNow => legFrame;
 
         /// <summary>PlayerDrawSet's raptor keeps helmets/face accessories, not a second humanoid body.</summary>
         internal void MountAppearance(MountDef mount, float facing, Vector2 velocity, bool grounded, Equips equips)
@@ -630,7 +638,8 @@ namespace TerraKnight.Player
                 // legFrameCounter += |velocity.X| * 1.3 per tick, in pixels per tick.
                 float pxPerTick = Mathf.Abs(velocity.x) * Ppu / 60f;
                 if (legFrame < 7) legFrame = 19;
-                legCounter += pxPerTick * 1.3f * ticks;
+                bool skates=equips.Shoe>=27&&equips.Shoe<=30;
+                legCounter += (skates&&pxPerTick>=TerraMovement.SkateRunThreshold?2f:pxPerTick*1.3f) * ticks;
                 while (legCounter > 8f)
                 {
                     legCounter -= 8f;
@@ -658,8 +667,11 @@ namespace TerraKnight.Player
                           : hold.Angle > 0.75f * Mathf.Rad2Deg ? 2 : hold.Angle < -0.6f * Mathf.Rad2Deg ? 4 : 3;
             else if (swingProgress >= 0f && hold.Thrust)
                 bodyFrame = 3;
+            else if (hold.Away)
+                bodyFrame = Items.BladeArts.ArmFrame(hold.ArtAngle);
             else if (swingProgress >= 0f)
-                bodyFrame = swingProgress < 0.334f ? 1 : swingProgress < 0.667f ? 2 : 3;
+                // The remade swing's arm follows its blade (Items.BladeArts.ArmFrame).
+                bodyFrame = hold.Art ? Items.BladeArts.ArmFrame(hold.ArtAngle) : swingProgress < 0.334f ? 1 : swingProgress < 0.667f ? 2 : 3;
             // PlayerFrame (Pl:36736-36765): a hold style's frame, then the raised shield's, over the jump's and the wings'.
             else if (hold.Idle)
                 bodyFrame = hold.IdleBody;
@@ -753,6 +765,7 @@ namespace TerraKnight.Player
             {
                 accShoes.Texture = "Acc_Shoes_" + equips.Shoe;
                 Leg(accShoes, legFrame, seated);
+                if(equips.Shoe>=27&&equips.Shoe<=30)accShoes.Renderer.transform.localPosition+=Vector3.down*(2f/Ppu);
             }
             Show(waist, UseSheet(waist, "Acc_Waist_", equips.Waist), legFrame);
             Show(neck, UseSheet(neck, "Acc_Neck_", equips.Neck), bodyFrame);
@@ -1550,10 +1563,18 @@ namespace TerraKnight.Player
         /// while it rotates from behind the head to the feet in front. Worked out facing right;
         /// the body's mirrored scale flips it for the left.
         /// </summary>
+        /// <summary>The far end of the item held out this frame (world), for the casts' motes (Items.SwordFx); null when none is.</summary>
+        public Vector2? HeldTip { get; private set; }
+
+        /// <summary>The held item's picture as drawn (SwordFx's charged outline motes).</summary>
+        internal SpriteRenderer HeldRenderer => heldItem;
+
         void PoseItem(float progress, Sprite item, float scale, Hold hold)
         {
+            HeldTip = null;
             bool idle = progress < 0f && item != null && hold.Idle;
-            if ((progress < 0f && !idle) || item == null)
+            // The remade swing's blade is SwordFx's (drawn along its way, foreshortened), not the held item.
+            if ((progress < 0f && !idle) || item == null || (hold.Art && progress >= 0f) || hold.Away)
             {
                 heldItem.gameObject.SetActive(false);
                 if (heldGlow != null) heldGlow.gameObject.SetActive(false);
@@ -1590,18 +1611,20 @@ namespace TerraKnight.Player
                 // 45 degrees so the diagonal art points along the aim. The frame's centre is 3 px
                 // above the hitbox centre. The sprite pivots at its bottom-left.
                 float iw = item.rect.width, ih = item.rect.height;
-                var center = new Vector2(-2f, -3f - hold.Offset.y) / Ppu;
+                var center = new Vector2(-2f, -3f - hold.Offset.y + hold.Rise) / Ppu;
                 var aim = new Vector2(Mathf.Cos(hold.Angle * Mathf.Deg2Rad), Mathf.Sin(hold.Angle * Mathf.Deg2Rad));
                 if (hold.Staff)
                 {
-                    itemRoot.localPosition = new Vector3(0f, -3f / Ppu, 0f) + (Vector3)(aim * (6f / Ppu));
+                    itemRoot.localPosition = new Vector3(0f, (-3f + hold.Rise) / Ppu, 0f) + (Vector3)(aim * ((6f + hold.Push) / Ppu));
                     itemRoot.localRotation = Quaternion.Euler(0f, 0f, hold.Angle - 45f);
+                    HeldTip = heldItem.transform.TransformPoint(new Vector3(iw / Ppu, ih / Ppu, 0f));
                     return;
                 }
                 var q = Quaternion.Euler(0f, 0f, hold.Angle);
-                var corner = (Vector2)(q * (new Vector2(hold.Offset.x, -ih / 2f) * scale / Ppu));
+                var corner = (Vector2)(q * (new Vector2(hold.Offset.x + hold.Push, -ih / 2f) * scale / Ppu));
                 itemRoot.localPosition = new Vector3(center.x + corner.x, center.y + corner.y, 0f);
                 itemRoot.localRotation = q;
+                HeldTip = heldItem.transform.TransformPoint(new Vector3(iw / Ppu, ih / 2f / Ppu, 0f));
                 return;
             }
 

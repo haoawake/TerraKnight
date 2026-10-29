@@ -36,10 +36,7 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override bool Burrows => true;
 
         bool Phase2 => Control != null && Control.FsmName == "Mage Lord 2";
-        /// <summary>His own soul orb (his Shot's; the second phase's fireball, its Spawn Fireball's), homing as it does.</summary>
-        GameObject orbShot;
-        GameObject OrbShot => orbShot != null ? orbShot : orbShot = OwnShots.Of(State(Phase2 ? "Spawn Fireball" : "Shot"));
-        float nextAirOrbs, nextVolley;
+        float nextVolley;
 
         protected override void Setup()
         {
@@ -56,15 +53,6 @@ namespace TerraKnight.EnemyAi.Bosses
             if (Batch2.Has(Control, "Tele Quake 2")) LeadAfterHero("Tele Quake 2");
             OnEnter("TeleportQ", MarkQuake);
             if (Phase2) Batch2.Disable<ChaseObjectGround>(State("Quake Antic"));
-            OnEnter("After Tele", () =>
-            {
-                if (Random.value < 0.35f) Run(Orbs(Rank >= 2 ? 2 : 1, 0.35f));
-            });
-            if (Batch2.Has(Control, "Shot"))
-                OnEnter("Shot", () =>
-                {
-                    if (Rank >= 2) Run(Orbs(1, 0.2f));
-                }, first: false);
             if (!Phase2)
             {
                 OnEnter("Tele Top Y", SpinnerHeight, first: false);
@@ -82,20 +70,6 @@ namespace TerraKnight.EnemyAi.Bosses
                         BossAi.DevAntiAir++;
                         return true;
                     });
-                OnEnter("Wait Frame", () =>
-                {
-                    if (Time.time < nextAirOrbs) return;
-                    nextAirOrbs = Time.time + 2.2f;
-                    Run(Orbs(2, 0.4f));
-                });
-                // A quake that could not reach him (up over its fall, or off past its side): fireballs at him from the landing.
-                OnEnter("Quake Land", () =>
-                {
-                    if (!HasTarget || !AirCamping || Mathf.Abs(TargetCenter.x - Me.x) < 2.5f || Time.time < nextAirOrbs) return;
-                    nextAirOrbs = Time.time + 2.2f;
-                    BossAi.DevAntiAir++;
-                    Run(Orbs(2, 0.3f));
-                }, first: false);
             }
         }
 
@@ -133,18 +107,5 @@ namespace TerraKnight.EnemyAi.Bosses
             MarkLine(new Vector2(l, h), new Vector2(r, h), Warn(0.9f) + 0.4f);
         }
 
-        /// <summary>Homing soul orbs after a short charge.</summary>
-        IEnumerator Orbs(int count, float charge)
-        {
-            yield return new WaitForSeconds(Antic(charge));
-            for (int i = 0; i < count; i++)
-            {
-                Vector2 from = Me + Vector2.up * 0.8f;
-                Vector2 dir = (TargetCenter - from).normalized;
-                if (count > 1) dir = Quaternion.Euler(0f, 0f, (i - (count - 1) * 0.5f) * 40f) * dir;
-                OwnShots.Throw(OrbShot, from, dir * 9f, fire: true);
-                yield return new WaitForSeconds(0.15f);
-            }
-        }
     }
 }

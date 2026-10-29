@@ -68,6 +68,7 @@ namespace TerraKnight.Items
         /// <summary>Where the line starts: the beam's place after a few updates (AI_048_GetStartPositionSettingDelay).</summary>
         static void BeamStart(Proj p, int delay)
         {
+            if (DevBeamPath != null && p.Kind == ProjKind.Shadowbeam && DevBeamPath.Count < 4000) DevBeamPath.Add((p.Pos, p.Vel));
             if (p.LocalAi0 == delay)
             {
                 p.StartPos = p.Pos;
@@ -90,13 +91,32 @@ namespace TerraKnight.Items
             float len = Vector2.Distance(from, to), speed = TV(p).magnitude;
             var step = (to - from).sqrMagnitude > 1e-6f ? (to - from).normalized * speed : Vector2.zero;
             float stride = Mathf.Max(4f, speed);
-            for (float d = 0f; d < len; d += stride)
+            // The dust pool holds 400 and a full pool overwrites its oldest: a beam's whole flight in open air (some 900 dust)
+            // overwrote the part by the player with the part off screen, and nothing of it was seen (the user's 10-28 "暗影束
+            // 法杖的弹幕依旧没修好"). Only the stretch within reach of the player is drawn, at most 80 steps of it.
+            float d0 = 0f, d1 = len;
+            var hero = HeroController.SilentInstance;
+            if (hero != null && len > 1f)
+            {
+                var c = TerraParticles.ToPx(hero.transform.position);
+                float reach = 18f / Px;
+                var dir = (to - from) / len;
+                float along = Vector2.Dot(c - from, dir);
+                float across2 = (c - from).sqrMagnitude - along * along;
+                if (across2 >= reach * reach) return;
+                float half = Mathf.Sqrt(reach * reach - across2);
+                d0 = Mathf.Max(0f, along - half);
+                d1 = Mathf.Min(len, along + half);
+                if (d1 <= d0) return;
+            }
+            stride = Mathf.Max(stride, (d1 - d0) / 80f);
+            // Each step's dust spread over the step (a stretched step left gaps between its little clumps).
+            int per = shadow ? 3 : 4;
+            var unit = len > 0f ? (to - from) / len : Vector2.zero;
+            for (float d = d0; d < d1; d += stride)
             {
                 var at = Vector2.Lerp(from, to, d / len);
-                if (shadow)
-                    for (int k = 0; k < 3; k++) LineDust(173, at - step * 0.25f * k);
-                else
-                    for (int k = 0; k < 4; k++) LineDust(162, at - step * 0.25f * k);
+                for (int k = 0; k < per; k++) LineDust(shadow ? 173 : 162, at - unit * (stride * k / per) - step * 0.05f * k);
             }
         }
 
@@ -105,27 +125,41 @@ namespace TerraKnight.Items
             int i = PointDust(at, type, Vector2.zero);
             if (i < 0) return;
             D(i).Scale = Random.Range(70, 110) * 0.013f;
+            // The line stays where the beam went and fades there (it sank to the floor: "甚至还受到重力").
+            D(i).NoGravity = true;
         }
 
-        /// <summary>P:18976: off a wall the Shadowbeam shows its path so far and starts a new line there.</summary>
+        /// <summary>
+        /// P:18976: off a wall the Shadowbeam shows its path so far and starts a new line there. Terraria moves it on by what
+        /// TileCollision left of its speed (up to the wall); Move has already stopped it short of the wall, so it only turns:
+        /// a whole step on put it inside the wall, where the game's hollow colliders let it wander.
+        /// </summary>
         static void BounceShadowbeam(Proj p, bool hitX, bool hitY, Vector2 oldVel)
         {
-            if (hitX)
-            {
-                p.Pos.x += p.Vel.x * Px;
-                p.Vel.x = -oldVel.x;
-            }
-            if (hitY)
-            {
-                p.Pos.y += p.Vel.y * Px;
-                p.Vel.y = -oldVel.y;
-            }
+            if (hitX) p.Vel.x = -oldVel.x;
+            if (hitY) p.Vel.y = -oldVel.y;
             BeamLine(p, 9);
             if (p.LocalAi0 >= 9f)
             {
                 p.StartPos = p.Pos;
                 p.LocalAi1 = 1f;
             }
+            DevBeamBounces?.Add((p.Pos, Blocked(p.Pos, TileBox(p) * 0.5f * Px, false, p)));
+            p.Ranged?.OnBounce?.Invoke(p.Pos, p.Vel);
+        }
+
+        /// <summary>Dev: each Shadowbeam bounce, where it left the beam and whether that is inside a wall (null: not kept).</summary>
+        public static System.Collections.Generic.List<(Vector2 at, bool inWall)> DevBeamBounces;
+
+        /// <summary>Dev: a Shadowbeam's place and velocity at each of its updates (null: not kept).</summary>
+        public static System.Collections.Generic.List<(Vector2 at, Vector2 vel)> DevBeamPath;
+
+        /// <summary>Dev: the live projectiles of a kind now: where, their velocity (world, per update), their age in ticks.</summary>
+        public System.Collections.Generic.List<(Vector2 pos, Vector2 vel, int ticks)> DevLive(ProjKind kind)
+        {
+            var list = new System.Collections.Generic.List<(Vector2, Vector2, int)>();
+            foreach (var p in live) if (p != null && !p.Dead && p.Kind == kind) list.Add((p.Pos, p.Vel, p.Ticks));
+            return list;
         }
 
         // ------------------------------------------------------------------ 410: Bubble Gun (AI_072)

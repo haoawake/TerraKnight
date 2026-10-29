@@ -18,6 +18,7 @@ namespace TerraKnight.World
             public int[] Cells;
             public List<Renderer> Art;
             public bool Gone;
+            public bool[] Visible;
         }
 
         /// <summary>Art of pieces dug away, which nothing may switch back on (a neighbour's art being restored).</summary>
@@ -102,10 +103,25 @@ namespace TerraKnight.World
 
         void Check(Piece p)
         {
-            if (p.Gone) return;
+            if (p.Gone)
+            {
+                bool restored = false;
+                foreach (int i in p.Cells) if (grid.GetAt(i) == CellKind.Original && !grid.IsDugAt(i)) { restored = true; break; }
+                if (!restored) return;
+                p.Gone = false;
+                for (int k = 0; k < p.Art.Count; k++)
+                {
+                    var r = p.Art[k];
+                    if (r == null) continue;
+                    r.enabled = p.Visible[k];
+                    Destroyed.Remove(r);
+                }
+                return;
+            }
             foreach (int i in p.Cells)
                 if (Cells.Blocks(grid.GetAt(i))) return;
             p.Gone = true;
+            p.Visible = p.Art.ConvertAll(r => r != null && r.enabled).ToArray();
             foreach (var r in p.Art)
             {
                 if (r == null) continue;

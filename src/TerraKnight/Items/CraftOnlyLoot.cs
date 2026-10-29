@@ -12,7 +12,10 @@ namespace TerraKnight.Items
             new Dictionary<IReadOnlyList<EnemyDrops.Drop>,IReadOnlyList<EnemyDrops.Drop>>();
 
         internal static bool OnlyCrafted(ItemType type)=>ItemDb.Get(type).Source==ItemSource.Craft;
-        internal static bool Blocked(ItemType type)=>OnlyCrafted(type)||ShopLoot.Equipment(type);
+        // A townsperson's equipment never drops, but for the pools' extras (ProgressionLoot.PoolExtras): the Aglet, which the
+        // Skeleton Merchant sells one moon phase in eight, is the small enemies' all the same (the user's 10-27 "鞋带束头小怪还是
+        // 不掉落吗？": that rule kept it from every drop).
+        internal static bool Blocked(ItemType type)=>OnlyCrafted(type)||ShopLoot.Equipment(type)&&!ProgressionLoot.PoolExtra(type);
 
         internal static IReadOnlyList<EnemyDrops.Drop> Filter(IReadOnlyList<EnemyDrops.Drop> drops)
         {

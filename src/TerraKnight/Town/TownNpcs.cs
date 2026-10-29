@@ -1024,7 +1024,8 @@ namespace TerraKnight.Town
 
         /// <summary>The Goblin Tinkerer's reforge slot (Main.reforgeItem) and whether his reforging is open (Main.InReforgeMenu).</summary>
         public static ItemStack ReforgeItem;
-        static bool reforge, forge;
+        static bool reforge, forge, refit;
+        public static bool RefitMode => ReforgeOpen && refit;
         public static bool ReforgeOpen => talk != null && reforge && InventoryGui.Open;
         /// <summary>His slot open for forging (Items.Forging) rather than reforging.</summary>
         public static bool ForgeMode => ReforgeOpen && forge;
@@ -1036,6 +1037,7 @@ namespace TerraKnight.Town
             if (!TalkingIsGoblin) return;
             reforge = true;
             forge = false;
+            refit = false;
             ChatText = "";
             InventoryGui.Open = true;
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
@@ -1047,19 +1049,28 @@ namespace TerraKnight.Town
             if (!TalkingIsGoblin) return;
             reforge = true;
             forge = true;
+            refit = false;
             ChatText = "";
             InventoryGui.Open = true;
             TerraMod.Instance?.PlaySound("Menu_Tick", 0.7f);
         }
 
         /// <summary>Player.dropItemCheck for the reforge slot: back into the bag whole (its prefix kept), else at the player's feet. Also before every save.</summary>
+        public static void OpenRefit()
+        {
+            if (!TalkingIsGoblin) return;
+            ReturnReforgeItem();
+            reforge = refit = true; forge = false; ChatText = "";
+            InventoryGui.Open = true;
+            TerraMod.Instance?.PlaySound("Menu_Tick", .7f);
+        }
         internal static void ReturnReforgeItem()
         {
             if (ReforgeItem.IsEmpty) return;
             var stack = ReforgeItem;
             ReforgeItem = default;
             var inv = TerraMod.Instance?.Inventory;
-            int left = inv != null ? inv.Pickup(stack) : stack.Count;
+            int left = inv != null ? inv.Pickup(stack, stack.Favorite) : stack.Count;
             if (left <= 0) return;
             stack.Count = left;
             var hero = HeroController.SilentInstance;
@@ -1212,7 +1223,7 @@ namespace TerraKnight.Town
                 long price = BuyPrice(slot);
                 // Can't afford it: nothing happens at all (Player.BuyItem).
                 if (!Shop.Spend(price)) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix, Forge = item.Forge };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix, Forge = item.Forge, WeaponVersion = item.WeaponVersion };
                 inv.Mouse.Count++;
                 HkItems.Trade(inv, item.Type, 1);
                 HallownestRecovery.Record(inv, item.Type);
@@ -1353,7 +1364,7 @@ namespace TerraKnight.Town
                     if (Locked(i)) { ShopItems[i] = default; ShopLock[i] = 0; ShopSpell[i] = 0; at = i; break; }
             if (at >= 0)
             {
-                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge };
+                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge, WeaponVersion = stack.WeaponVersion };
                 ShopItems[at].Count += keep;
                 BuyBack[at] = true;
                 // Bought back for exactly what each fetched (Terraria's buyOnce price: the sale's fifth).

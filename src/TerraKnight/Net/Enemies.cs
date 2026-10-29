@@ -92,7 +92,7 @@ namespace TerraKnight.Net
         static readonly HashSet<HutongGames.PlayMaker.Fsm> frozenFsms = new HashSet<HutongGames.PlayMaker.Fsm>();
         public static int DevEventsHeld;
 
-        static void Freeze(PlayMakerFSM f)
+        internal static void Freeze(PlayMakerFSM f)
         {
             if (f == null) return;
             if (frozen.TryGetValue(f, out var r)) { frozen[f] = (r.On, r.Holds + 1, r.Fsm); return; }
@@ -102,7 +102,7 @@ namespace TerraKnight.Net
         }
 
         /// <summary>One hold let go; the last one puts it back (an FSM destroyed with its scene just leaves the records).</summary>
-        static void Thaw(PlayMakerFSM f)
+        internal static void Thaw(PlayMakerFSM f)
         {
             if (ReferenceEquals(f, null) || !frozen.TryGetValue(f, out var r)) return;
             if (r.Holds > 1 && f != null) { frozen[f] = (r.On, r.Holds - 1, r.Fsm); return; }
@@ -624,7 +624,7 @@ namespace TerraKnight.Net
         }
 
         /// <summary>Behaviours a puppet keeps: its life, its sprite and its animation, what it does to the hero, its death and hit effects.</summary>
-        static bool Keep(Behaviour b)
+        internal static bool Keep(Behaviour b)
         {
             string n = b.GetType().Name;
             return n == "HealthManager" || n.StartsWith("tk2d") || n == "SpriteFlash" || n == "DamageHero" || n.StartsWith("EnemyDeathEffects")
@@ -729,15 +729,60 @@ namespace TerraKnight.Net
             var type = (AttackTypes)r.ReadByte();
             if (!puppets.TryGetValue((scene, id), out var p) || p.Hm == null) return;
             DevDeathsReceived++;
+            PuppetDies(p, dir, type);
+        }
+
+        static readonly AccessTools.FieldRef<EnemyDeathEffects, GameObject> corpseOf = AccessTools.FieldRefAccess<EnemyDeathEffects, GameObject>("corpse");
+        public static int DevCorpseFsmsThawed;
+        /// <summary>Dev: the corpse kept frozen with the body (as before), to compare.</summary>
+        internal static bool DevNoCorpseThaw;
+
+        static void PuppetDies(Puppet p, float dir, AttackTypes type)
+        {
             var hm = p.Hm;
             p.Dead = true;
             EnemyStats.Of(hm).Net = false;
             if (clones.Contains(hm.gameObject)) DropClone(hm.gameObject, 12f);
             if (!hm.gameObject.activeSelf) hm.gameObject.SetActive(true);
             if (hm.isDead) return;
+            var effects = hm.GetComponent<EnemyDeathEffects>();
+            var corpse = effects != null ? corpseOf(effects) : null;
+            // A warrior's dream beaten counts in this game's own save too: its 'Set Ghost PD Int' (ZERO HP → its beaten
+            // count 1, GHOST DEAD) runs here, so its ghost comes back wounded and takes the Dream Nail for its essence (the
+            // user's 10-27 "马尔福联机的时候无法用梦之钉抽魂"). It does nothing else; the body's other scripts stay still.
+            if (!DevNoCorpseThaw)
+                foreach (var f in p.Fsms)
+                    if (f != null && f.FsmName == "Set Ghost PD Int") ThawOne(f);
             // A splatter would destroy it at once; a plain death leaves the corpse.
             hm.hp = 0;
             hm.Die(dir, type == AttackTypes.Splatter ? AttackTypes.Generic : type, true);
+            // Its corpse is this game's own, as each game makes its own: its scripts run here (it falls and lands, a
+            // warrior's ghost takes the Dream Nail and gives its essence; the user's 10-27 "马尔福联机的时候无法用梦之钉抽魂"),
+            // the body's stay still. The corpse was made under the body before it became a puppet, so it was frozen with it.
+            if (corpse != null && !DevNoCorpseThaw) ThawUnder(p, corpse.transform);
+        }
+
+        /// <summary>The puppet's FSMs under a part of it let go for good (whatever else holds them).</summary>
+        static void ThawUnder(Puppet p, Transform root)
+        {
+            foreach (var f in p.Fsms)
+                if (f != null && f.transform.IsChildOf(root)) ThawOne(f);
+        }
+
+        static void ThawOne(PlayMakerFSM f)
+        {
+            if (!frozen.TryGetValue(f, out var r)) return;
+            frozen.Remove(f);
+            if (r.Fsm != null) frozenFsms.Remove(r.Fsm);
+            f.enabled = r.On;
+            DevCorpseFsmsThawed++;
+        }
+
+        /// <summary>Dev (suite warriorghost): an enemy made a puppet of another player's (slot 99) and killed as the owner's death would kill it.</summary>
+        internal static void DevPuppetDeath(HealthManager hm, string scene)
+        {
+            var p = MakePuppet(hm, scene, 900000 + nextId++, 99);
+            PuppetDies(p, 0f, AttackTypes.Nail);
         }
 
         public static int DevHitsSent, DevHitsShown;

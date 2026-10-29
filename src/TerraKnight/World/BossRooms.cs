@@ -117,6 +117,17 @@ namespace TerraKnight.World
             return Locked(c.x, c.y);
         }
 
+        /// <summary>Within reach of a boss alive and out in its room now (a fight on or about to start there).</summary>
+        public static bool BossUp(Vector2 world)
+        {
+            var c = CellGrid.WorldToCell(world);
+            var r = TerraWorld.RegionAt(c.x, c.y);
+            if (r == null) return false;
+            var at = new Vector2((c.x + 0.5f) * CellGrid.CellSize, (c.y + 0.5f) * CellGrid.CellSize);
+            foreach (var reach in BossReach(r, Room(r.SceneName))) if (reach.Contains(at)) return true;
+            return false;
+        }
+
         /// <summary>The entire native boss room, or a temporary boss's combat area.</summary>
         public static bool ProtectsNativeArea(int gx, int gy)
         {

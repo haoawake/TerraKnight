@@ -8,9 +8,11 @@ namespace TerraKnight.World
     /// Every pylon can be moved. A pickaxe knocks one out (pick power until 100, as a Life Crystal) and it drops as its item,
     /// Terraria's pylon of its style; a bench's pylon knocked out doesn't come back by resting on that bench again. The item
     /// set down where it has room (three cells wide and four tall over solid floor, within reach) is a pylon there, on the map
-    /// and travelled to like the others; not in a boss's fight (the cells BossRooms keeps), nor in a dream or Godhome, where
-    /// nothing takes the player. A moved pylon is reached the way into its scene that is there: its nearest bench (made the
-    /// respawn point, as resting on it does), else one of its gates; the player steps out of the portal beside the pylon.
+    /// and travelled to like the others; in dreams, Godhome and the White Palace too, so the pylons by their benches knocked
+    /// out can go back (the user's 10-27 "晶塔可以在神居和梦境被放置，不然挖掉了放不回去"); not in a boss's fight (the cells
+    /// BossRooms keeps), the final fight's room or a cinematic. A moved pylon is reached the way into its scene that is there:
+    /// its nearest bench (made the respawn point, as resting on it does), else one of its gates; the player steps out of the
+    /// portal beside the pylon.
     /// </summary>
     internal static partial class Pylons
     {
@@ -25,6 +27,7 @@ namespace TerraKnight.World
         const string TakenPrefix = "pylon.taken.v1.";
 
         public static int DevMined, DevPlaced;
+        internal static bool DevLegacyWatcherEntry;
 
         internal static void AddItems(List<ItemDef> list)
         {
@@ -33,7 +36,7 @@ namespace TerraKnight.World
                 {
                     Type = styleItemTypes[i], Name = StyleNames[i], Texture = "Item_" + StyleItems[i], PylonStyle = i, MaxStack = 99,
                     Source = ItemSource.Drop, Stage = 0, Rare = 1, Value = 100000, AutoReuse = false, UseAnimation = .25f, UseTime = .25f, NoMelee = true,
-                    Tooltip = "放在有空地的地面上（宽 3 格、高 4 格），之后和其他晶塔一样可以传送过来\n梦境和神居里不能放\n用镐敲下来可以再搬到别处",
+                    Tooltip = "放在有空地的地面上（宽 3 格、高 4 格），之后和其他晶塔一样可以传送过来\n用镐敲下来可以再搬到别处",
                 });
         }
 
@@ -114,9 +117,9 @@ namespace TerraKnight.World
             var gm = GameManager.UnsafeInstance;
             if (item == null || !item.IsPylon || hero == null || gm == null) return false;
             string scene = gm.sceneName ?? "";
-            if (scene.StartsWith("Dream_") || scene.StartsWith("GG_") || scene.StartsWith("White_Palace") || scene.StartsWith("Room_Final_Boss") || scene.StartsWith("Cinematic"))
+            if (scene.StartsWith("Room_Final_Boss") || scene.StartsWith("Cinematic"))
             {
-                Refuse(mouse, "梦境和神居里不能放晶塔");
+                Refuse(mouse, "这里放不下晶塔");
                 return false;
             }
             var cell = CellGrid.WorldToCell(mouse);

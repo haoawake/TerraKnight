@@ -325,16 +325,19 @@ namespace TerraKnight.Items
             // P:8432-8438: 25×25, DefaultToSpear, faded in from 255.
             Ai = Ai.Custom, Texture = "Projectile_" + texture, W = 25, H = 25, Time = 3600, Penetrate = -1, TileCollide = false, OwnMove = true, OwnerHitCheck = true,
             Held = true, AlphaStart = 1f,
-            Update = (t, p) => t.StepLance(p, item), Draw = (t, fx, p, px) => DrawSpear(fx, p, px), OnKill = (t, p) => { },
-            // Colliding (P:15679-15695): the shaft, 95 px back from its centre towards the player and 23 px across.
+            Update = (t, p) => t.StepLance(p, item), Draw = (t, fx, p, px) => { t.DrawLanceArt(fx, p, item); DrawSpear(fx, p, px); }, OnKill = (t, p) => { },
+            // The remade lance's sparks where it strikes (TerraProjectilesClose).
+            OnHit = (t, p, hm) => t.LanceHit(p, hm, item),
+            // Colliding (P:15679-15695): the shaft, 95 px back from its centre towards the player and 23 px across (the remade one's longer).
             Beam = p =>
             {
                 var c = TerraParticles.ToPx(p.Pos);
-                return (c, c - TV(p).normalized * 95f, 23f * p.Scale);
+                return (c, c - TV(p).normalized * 95f * Mathf.Max(1f, p.Scale), 23f * p.Scale);
             },
-            // Projectile.Damage (P:14536-14539, 12861-12865): its damage 0.1 + 0.9 of the player's speed over 7, its knockback that speed over 7.
-            ModifyHit = (t, p, hm, damage, crit) => (Mathf.Max(1, Mathf.RoundToInt(damage * LanceMultiplier(HeroVelocity()))), crit),
-            KnockbackScale = p => LanceSpeed() / 7f,
+            // Projectile.Damage (P:14536-14539, 12861-12865): its damage 0.1 + 0.9 of the player's speed over 7, its knockback that speed over 7
+            // (a right-click charge's speed while it carries the lance).
+            ModifyHit = (t, p, hm, damage, crit) => (Mathf.Max(1, Mathf.RoundToInt(damage * LanceScale(p))), crit),
+            KnockbackScale = p => LanceKnockScale(p),
         };
 
         /// <summary>The player's speed in Terraria px a tick.</summary>
@@ -370,7 +373,7 @@ namespace TerraKnight.Items
             }
             if (p.Ai1 <= 0f) p.Ai1 = Mathf.Max(3, Mathf.RoundToInt(ItemDb.Get(item).UseAnimation * 60f));
             int N = (int)p.Ai1, T = N / 3;
-            bool held = mod.UseHeld && mod.Inventory.Current.Type == item;
+            bool held = mod.UseHeld && mod.Inventory.Current.Type == item || lanceDash != null && lanceDash.Lance == p;
             int a = N - 1 - (int)p.Ai0;
             if (held && a < T)
             {
@@ -379,7 +382,7 @@ namespace TerraKnight.Items
             }
             float f = 28f + 0.4f * ((N - T) - Mathf.Max(0, a - T)) - 0.4f * (T - Mathf.Min(a, T));
             Vector2 centre = hero.GetComponent<BoxCollider2D>().bounds.center;
-            p.Pos = centre + p.Vel * f * Px;
+            p.Pos = centre + p.Vel * f * LanceOut(p) * Px;
             p.Anim = a;
             p.Alpha = Mathf.Max(0f, p.Alpha - 40f / 255f);
             if (p.Kind != ProjKind.JoustingLanceThrust)
@@ -408,6 +411,7 @@ namespace TerraKnight.Items
                 }
             }
             if (++p.Ai0 >= N && !held) Kill(p);
+            LanceLook(p, item);
         }
 
         // ------------------------------------------------------------------ 819: the Blood Rain Bow's arrow

@@ -24,7 +24,7 @@ namespace TerraKnight.Items
         {
             var tex = TerrariaAssets.Texture("UI/ChestStack_0");
             float x = view.x + RightOfAmmo(ui);
-            if (index == 4) { x += (tex.width + 8f) * ui; index = 0; }
+            if (index >= 4) { x += (index - 3) * (tex.width + 8f) * ui; index = 0; }
             // One button beside each ammo slot, centered on the same row.
             float y = view.y + (Margin + 18f + (index + 1) * SlotStep + (SlotSize - tex.height) / 2f) * ui;
             return new Rect(x, y, tex.width * ui, tex.height * ui);

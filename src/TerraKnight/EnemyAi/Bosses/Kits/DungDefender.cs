@@ -56,10 +56,6 @@ namespace TerraKnight.EnemyAi.Bosses
             OnEnter("Idle", () => chained = 0);
             Branch("Roar?", "Timer", ChainBurrow);
             OnEnter("Erupt Antic", LockErupt);
-            OnEnter("Erupt Out", () =>
-            {
-                if (WantAntiAir() || !Grace && High && Random.value < 0.75f) Run(UpFan());
-            }, first: false);
             More();
         }
 
@@ -120,18 +116,6 @@ namespace TerraKnight.EnemyAi.Bosses
             MarkGround(new Vector2(x, TargetFeet.y + 0.3f), 5f, Warn(0.5f));
         }
 
-        /// <summary>A fan of his own dung balls up at the player kept up in the air, each at the top of its arc at his height.</summary>
-        IEnumerator UpFan()
-        {
-            yield return new WaitForSeconds(0.1f);
-            if (DungShot == null) yield break;
-            Vector2 from = Me + Vector2.up * 0.5f;
-            var prb = DungShot.GetComponent<Rigidbody2D>();
-            float g = Mathf.Abs(Physics2D.gravity.y) * (prb != null ? prb.gravityScale : 1f);
-            var v = UpTo(from, TargetCenter, g);
-            for (int i = -2; i <= 2; i++)
-                OwnShots.Throw(DungShot, from, new Vector2(v.x + i * 3.5f, v.y));
-        }
 
         /// <summary>A throw from a point whose arc tops out at another (straight at it with no gravity on the thing).</summary>
         static Vector2 UpTo(Vector2 from, Vector2 to, float g)

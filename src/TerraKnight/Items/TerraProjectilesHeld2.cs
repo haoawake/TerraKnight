@@ -67,15 +67,23 @@ namespace TerraKnight.Items
                 return;
             }
             p.TimeLeft = 2;
+            var aim = AimPx() - centre;
+            aim = aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(mod.UseDirection, 0f);
+            var v = aim * def.ShootSpeed * Equipment.ItemScale(def);
+            if (BladeArts.Enabled)
+            {
+                // The remade swings: the blade dances its cuts (TerraProjectilesHeldArts).
+                p.Vel = Flip(v);
+                StepHeldDance(p, def, centre, aim);
+                mod.KeepUsing(def, Flip(v));
+                return;
+            }
             if (++p.Frame >= 28) p.Frame = 0;
             if (--p.SoundDelay <= 0)
             {
                 Sound("Item_1");
                 p.SoundDelay = 12;
             }
-            var aim = AimPx() - centre;
-            aim = aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(mod.UseDirection, 0f);
-            var v = aim * def.ShootSpeed * Equipment.ItemScale(def);
             p.Vel = Flip(v);
             p.Dir = v.x < 0f ? -1f : 1f;
             p.TRot = ToRot(v) + (p.Dir < 0f ? Mathf.PI : 0f);
@@ -97,6 +105,11 @@ namespace TerraKnight.Items
         /// <summary>Main.DrawProj's framed branch: its frame, mirrored with the player, white-lit and half added (GetAlpha: 85% to white, alpha 128).</summary>
         static void DrawHeldBlade(FxBatch fx, Proj p, Vector2 px)
         {
+            if (p.HeldDance != null)
+            {
+                DrawHeldDance(fx, p, px);
+                return;
+            }
             var whole = FxBatch.Whole(p.Spec.Texture);
             if (whole == null) return;
             int w = (int)whole.rect.width, fh = (int)whole.rect.height / 28;
@@ -114,12 +127,17 @@ namespace TerraKnight.Items
         {
             var def = ItemDb.Get(ItemType.PiercingStarlight);
             var mod = TerraMod.Instance;
-            if (mod == null || !Holder(out var centre) || !Channel(ItemType.PiercingStarlight))
+            // The meteor flurry (a right-click art) goes on its own while it lasts; the held one while the button is held.
+            bool burst = p.LocalAi1 > 0f;
+            if (mod == null || !Holder(out var centre) || !burst && !Channel(ItemType.PiercingStarlight) || burst && --p.LocalAi1 <= 0f)
             {
                 Kill(p);
                 return;
             }
             p.TimeLeft = 2;
+            if (p.StarBase == 0f) p.StarBase = p.Ai1 > 0f ? p.Ai1 : 1f;
+            // The remade swings: 35% further, a meteor thrust of more stars now and then (TerraProjectilesHeldArts).
+            if (BladeArts.Enabled) p.Ai1 = p.StarBase * 1.35f * (StarlightMeteor(p) && !burst ? 1.7f : 1f);
             p.Scale = p.Ai1 > 0f ? p.Ai1 : 1f;
             if (++p.Ai0 >= 8f) p.Ai0 = 0f;
             if (--p.SoundDelay <= 0)
@@ -129,14 +147,17 @@ namespace TerraKnight.Items
             }
             var aim = AimPx() - centre;
             aim = aim.sqrMagnitude > 1e-6f ? aim.normalized : new Vector2(mod.UseDirection, 0f);
+            // The remade swings: the flurry swept across a fan.
+            if (BladeArts.Enabled && !burst) aim = Rotate(aim, StarlightSweep(p));
             var v = aim * def.ShootSpeed;
             p.Vel = Flip(v);
             p.Dir = v.x < 0f ? -1f : 1f;
             p.TRot = ToRot(v);
             p.Pos = TerraParticles.ToWorld(centre + v);
-            mod.KeepUsing(def, Flip(v));
+            if (!burst) mod.KeepUsing(def, Flip(v));
             for (float d = 0f; d <= 80f; d += 32f) FxBatch.Instance?.Light(centre + aim * d, new Color(0.5f, 0.5f, 0.5f), 2f);
             p.LocalAi0 = Random.Range(0, int.MaxValue);
+            if (burst) return;
         }
 
         /// <summary>

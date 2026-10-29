@@ -86,10 +86,14 @@ namespace TerraKnight.Items
         /// </summary>
         public static void Balance(ItemDef[] items)
         {
-            items[(int)ItemType.RevenantEdge].Damage = 11;
-            items[(int)ItemType.RevenantPulseRifle].Damage = 5;
-            items[(int)ItemType.VengefulSpiritFocus].Damage = 20;
-            items[(int)ItemType.WanderingSoulStaff].Damage = 12;
+            // 24 (the user's 10-26 "这把剑好像有点弱了"): with the remade swing the Blade of Grass reached 103 a second, the
+            // sword at 11 only 44; at 24 it stands by it again.
+            items[(int)ItemType.RevenantEdge].Damage = 24;
+            // 10-26 measured again beside stage 1 (the user's "那就都改一下"): the rifle 53 a second against the Gold Bow's 83,
+            // the spell 48 against the Topaz Staff's 97, the soul 17 against the Slime Staff's 47; raised to stand by them.
+            items[(int)ItemType.RevenantPulseRifle].Damage = 12;
+            items[(int)ItemType.VengefulSpiritFocus].Damage = 48;
+            items[(int)ItemType.WanderingSoulStaff].Damage = 36;
         }
 
         // ------------------------------------------------------------------ the rifle in the hand
@@ -191,8 +195,16 @@ namespace TerraKnight.Items
 
         static readonly bool soulWave = Add(ItemType.RevenantEdge, RevenantEdge) & Add(ItemType.RevenantPulseRifle, PulseRifle) & Add(ItemType.VengefulSpiritFocus, SpiritFocus);
 
-        /// <summary>The Revenant Edge: its swing's crescent (drawn only; its wraiths come from its blows, MeleeSpecials.OnHit).</summary>
-        static void RevenantEdge(in Shot s) => TerraProjectiles.Instance?.SoulSwing(s.From, s.Mouse, s.Vel, s.Damage, s.Knockback, s.Crit, s.UseTicks);
+        /// <summary>
+        /// The Revenant Edge: its swing's crescent (drawn only; its wraiths come from its blows, MeleeSpecials.OnHit). With the
+        /// remade swing on (BladeArts) its cut is the slash, and the crescent isn't drawn over it (the user's 10-26 "出了新特效还有
+        /// 原版的那个挥砍特效").
+        /// </summary>
+        static void RevenantEdge(in Shot s)
+        {
+            if (BladeArts.Active(s.Def)) return;
+            TerraProjectiles.Instance?.SoulSwing(s.From, s.Mouse, s.Vel, s.Damage, s.Knockback, s.Crit, s.UseTicks);
+        }
 
         /// <summary>The Revenant Pulse Rifle: the laser on the left button (none while a charge is held); the charge on the right, costing nothing as it starts.</summary>
         static void PulseRifle(in Shot s)

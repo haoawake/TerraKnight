@@ -22,7 +22,7 @@ namespace TerraKnight.Items
         static readonly UI.ImeTextEntry nameInput = new UI.ImeTextEntry(TypedChar);
 
         /// <summary>A chest's name is being typed: the keys are the text's.</summary>
-        public static bool TypingName => renaming || Time.frameCount - renameEnded <= 1 || BookTyping;
+        public static bool TypingName => renaming || Time.frameCount - renameEnded <= 1 || BookTyping || HomeTyping;
         /// <summary>The frame the typing ended: its Enter or Esc closes nothing else.</summary>
         static int renameEnded = -10;
 
@@ -102,13 +102,25 @@ namespace TerraKnight.Items
         {
             if (Chests.IsOpen || Town.TownNpcs.ShopOpen) return;
             int over = -1;
-            for (int i = 0; i < 2; i++)
+            // A third with a Home Everywhere placed: the quick stack onto every home's storages.
+            int buttons = World.Stations.HasHomes ? 3 : 2;
+            for (int i = 0; i < buttons; i++)
             {
-                var tex = TerrariaAssets.Texture((i == 0 ? "UI/ChestStack_" : "UI/Sort_") + "0");
+                var tex = TerrariaAssets.Texture((i == 1 ? "UI/Sort_" : "UI/ChestStack_") + "0");
                 var r = new Rect(at.x + i * 36f * ui, at.y, tex.width * ui, tex.height * ui);
                 Add(r, Kind.InvButton, i);
                 bool hover = r.Contains(mouse);
                 if (hover) over = i;
+                if (i == 2)
+                {
+                    var before = GUI.color;
+                    GUI.color = hover ? new Color(.8f, 1f, .85f) : new Color(.65f, .85f, .75f);
+                    GUI.DrawTexture(r, TerrariaAssets.Texture("UI/ChestStack_" + (hover ? "1" : "0")));
+                    GUI.color = before;
+                    if (hover)
+                        DrawLines(mouse, new List<string> { Lang.T("快速堆叠至全部家园"), Lang.F("背包里的物品堆到 {0} 个家园里已有同种物品的仓储", World.Stations.Homes().Count) }, Color.white);
+                    continue;
+                }
                 GUI.DrawTexture(r, TerrariaAssets.Texture((i == 0 ? "UI/ChestStack_" : "UI/Sort_") + (hover ? "1" : "0")));
                 if (hover)
                     DrawLines(mouse, new List<string> { TerrariaText.Get(Lang.Culture, i == 0 ? "GameUI.QuickStackToNearby" : "GameUI.SortInventory") ?? Lang.T(i == 0 ? "快速堆叠至附近的箱子" : "排序物品") }, Color.white);
@@ -197,6 +209,11 @@ namespace TerraKnight.Items
                 if (hero == null) return;
                 int moved = Chests.QuickStackNearby(inv, hero.GetComponent<BoxCollider2D>().bounds.center);
                 Sound(moved > 0 ? "Grab" : "Menu_Tick");
+                return;
+            }
+            if (index == 2)
+            {
+                Sound(Chests.QuickStackHomes(inv) > 0 ? "Grab" : "Menu_Tick");
                 return;
             }
             // ItemSorting.SortInventory: the bag below the hotbar, favourites left where they are.
@@ -299,7 +316,7 @@ namespace TerraKnight.Items
             for (int k = 0; k <= superFastStack && !slot.IsEmpty; k++)
             {
                 if (!(inv.Mouse.IsEmpty || (CanStack(inv.Mouse, slot) && inv.Mouse.Count < inv.Mouse.Def.MaxStack))) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge, WeaponVersion = slot.WeaponVersion };
                 inv.Mouse.Count++;
                 slot.Count--;
                 if (slot.Count <= 0) slot = default;

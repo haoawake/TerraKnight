@@ -11,7 +11,7 @@ namespace TerraKnight.World
         {
             foreach (var s in stations)
                 // Placed: which way it faces (Station.Right).
-                if (!s.Fixed) yield return new WorldSync.Record { Key = WorldSync.Key("s", s.Scene, s.Local), Scene = s.Scene, X = s.Local.x, Y = s.Local.y, Kind = (int)s.Kind, Placed = s.Right };
+                if (!s.Fixed) yield return new WorldSync.Record { Key = WorldSync.Key("s", s.Scene, s.Local), Scene = s.Scene, X = s.Local.x, Y = s.Local.y, Kind = (int)s.Kind, Placed = s.Right, HomeColor=s.HomeColor,HomeOrder=s.HomeOrder,HomeName=s.HomeName };
             // Dirtmouth's altars knocked off in the host's world: gone in every game.
             foreach (var kind in new[] { StationKind.DemonAltar, StationKind.CrimsonAltar })
                 if (FixedStations.Taken(kind)) yield return new WorldSync.Record { Key = "s:altar:" + kind, Kind = (int)kind, Taken = true };
@@ -32,14 +32,17 @@ namespace TerraKnight.World
                 {
                     if (s.Kind != (StationKind)r.Kind)
                     {
+                        if (s.Aura != null) Object.Destroy(s.Aura.sharedMaterial);
+                        s.Aura = null;
                         if (s.Renderer != null) Object.Destroy(s.Renderer.gameObject);
                         s.Renderer = null; s.Top = null; s.SupportedIn = null;
                         s.Kind = (StationKind)r.Kind;
                     }
+                    s.HomeColor=r.HomeColor;s.HomeOrder=r.HomeOrder;s.HomeName=r.HomeName;
                     s.Right = r.Placed && s.Spec.Faces;
                     return;
                 }
-            stations.Add(new Station { Scene = r.Scene, Local = at, Kind = (StationKind)r.Kind, Region = RegionNamed(r.Scene), Right = r.Placed && specs[(StationKind)r.Kind].Faces });
+            stations.Add(new Station { Scene = r.Scene, Local = at, Kind = (StationKind)r.Kind, Region = RegionNamed(r.Scene), Right = r.Placed && specs[(StationKind)r.Kind].Faces,HomeColor=r.HomeColor,HomeOrder=r.HomeOrder,HomeName=r.HomeName });
         }
 
         internal static void NetRemove(string key)
@@ -61,10 +64,12 @@ namespace TerraKnight.World
 
         internal static bool NetPlace(WorldSync.Action a)
         {
+            if((StationKind)a.Kind==StationKind.HomeEverywhere&&FreeHomeColor()<0)return false;
             if (!specs.TryGetValue((StationKind)a.Kind, out var spec) || spec.Item == ItemType.None || string.IsNullOrEmpty(a.Scene)) return false;
             var box = new Rect(a.X - spec.W * 8f * Px, a.Y, spec.W * 16f * Px, spec.H * 16f * Px);
             if (NetOverlaps(a.Scene, box) || Chests.NetOverlaps(a.Scene, box)) return false;
-            NetApply(new WorldSync.Record { Key = WorldSync.Key("s", a.Scene, new Vector2(a.X, a.Y)), Scene = a.Scene, X = a.X, Y = a.Y, Kind = a.Kind, Placed = a.Placed });
+            NetApply(new WorldSync.Record { Key = WorldSync.Key("s", a.Scene, new Vector2(a.X, a.Y)), Scene = a.Scene, X = a.X, Y = a.Y, Kind = a.Kind, Placed = a.Placed, HomeColor=(StationKind)a.Kind==StationKind.HomeEverywhere?FreeHomeColor():-1 });
+            RepairHomeColors();
             DevPlaced++;
             return true;
         }
@@ -144,11 +149,14 @@ namespace TerraKnight.World
             if (a.Keys == null || a.Slots == null || a.Targets == null || a.Keys.Length > 64 || a.Slots.Length > 256 || a.Targets.Length != a.Slots.Length) return false;
             var player = NetSession.Player(slot);
             var near = new Chest[a.Keys.Length];
+            var uniqueKeys = new HashSet<string>();
             for (int k = 0; k < a.Keys.Length; k++)
             {
+                if (!uniqueKeys.Add(a.Keys[k])) return false;
                 var c = chests.Find(ch => WorldSync.Key("c", ch.Scene, ch.Local) == a.Keys[k]);
                 if (c == null || busy(a.Keys[k])) return false;
-                if (player == null || !player.HasState || (c.Scene != player.Latest.Scene && !player.Loaded.Contains(c.Scene) && !player.In.Contains(c.Scene))) return false;
+                if(a.Home!=null) { if(!HomeContainsChest(a.Home,c))return false; }
+                else if (player == null || !player.HasState || (c.Scene != player.Latest.Scene && !player.Loaded.Contains(c.Scene) && !player.In.Contains(c.Scene))) return false;
                 near[k] = c;
             }
             var need = new Dictionary<(int, ItemType), int>();
@@ -224,7 +232,9 @@ namespace TerraKnight.World
             {
                 var c = chests.Find(ch => WorldSync.Key("c", ch.Scene, ch.Local) == a.Keys[k]);
                 if (c == null || busy(a.Keys[k])) continue;
-                if (slot != NetSession.MySlot && (player == null || !player.HasState
+                // A chest a Home Everywhere holds is reached from anywhere (its quick stack to every home).
+                bool homed = Stations.AnyHomeContains(c.Scene, new Rect(c.Local.x - WidthOf(c.Style) / 2, c.Local.y, WidthOf(c.Style), Height));
+                if (slot != NetSession.MySlot && !homed && (player == null || !player.HasState
                     || (c.Scene != player.Latest.Scene && !player.Loaded.Contains(c.Scene) && !player.In.Contains(c.Scene)))) continue;
                 near[k] = c;
             }
@@ -256,6 +266,7 @@ namespace TerraKnight.World
             if (c == null) return;
             NetSet(c, slots);
             c.Region = RegionNamed(c.Scene);
+            c.Remote=Stations.HomeActive&&HomeContainsChest(Stations.SelectedHome,c);
             Open(c);
         }
 

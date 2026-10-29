@@ -18,7 +18,7 @@ namespace TerraKnight.Town
     /// Terraria's words on why (LegacyInterface.55 and the room's own fault). The "?" of Terraria's list is the housing
     /// query (Main.PerformHousingCheck): a click on a room, the verdict. While the panel is up each home shows its banner
     /// under the ceiling (Main.DrawNPCHousesInWorld) and a right click on one turns its townsperson out (WorldGen.kickOut).
-    /// The panel's chair and bench stay for clicks in Dirtmouth's open street, and for the two Terraria never houses.
+        /// The panel's chair and bench stay for clicks in Dirtmouth's open street, and for NPCs excluded from housing.
     /// </summary>
     internal static partial class TownNpcs
     {
@@ -56,11 +56,10 @@ namespace TerraKnight.Town
         public static int DevEvicted, DevHouseChecks;
 
         /// <summary>
-        /// Who Terraria lets have a house: not the Traveling Merchant (no head in the housing list, NPCHeadID.Sets.
-        /// CannotBeDrawnInHousingUI), the Skeleton Merchant or the Old Man (none at all); WorldGen.QuickFindHome
-        /// skips the same three (368, 453, 37).
+        /// The Traveling Merchant and Old Man remain excluded. TerraKnight also allows the Skeleton Merchant
+        /// to live in a normal house, using the same room, occupancy and progression checks as other residents.
         /// </summary>
-        public static bool Housable(NpcDef def) => def != null && def.Id != 368 && def.Id != 453 && def.Id != 37;
+        public static bool Housable(NpcDef def) => def != null && def.Id != 368 && def.Id != 37;
 
         /// <summary>NPC.housingCategory: the town pets and town slimes 1, the rest 0.</summary>
         static int Category(NpcDef def) => def.Kind == NpcKind.Pet ? 1 : 0;

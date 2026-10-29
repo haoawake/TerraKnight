@@ -9408,8 +9408,8 @@
  "护符技（{0}）：获得一层 25% 生命的生命血护盾（不叠加）。护盾在时，敌人的一击最多只能把它打碎，伤害不会穿过它。冷却 60 秒": {
   "en-US": "Charm Skill ({0}): a lifeblood shield of 25% of your life (doesn't stack). While it holds, a single hit can at most break it; no damage gets through. 60 s cooldown"
  },
- "戴着时：5 秒没有掉血，获得一层 10% 生命的护盾，最多 3 层；和生命血之心同戴时护盾叠加": {
-  "en-US": "While worn: 5 s without losing life gives a shield layer of 10% of your life, up to 3 layers; worn with Lifeblood Heart, the shields stack"
+ "戴着时：一直生成生命血护盾，每 5 秒一层 10% 生命，最多 3 层；掉血后 5 秒内只按四分之一的速度生成；和生命血之心同戴时护盾叠加": {
+  "en-US": "While worn: a lifeblood shield keeps forming, a layer of 10% of your life every 5 s, 3 at most; for 5 s after losing life it forms at a quarter of the speed; it stacks with the Lifeblood Heart's"
  },
  "戴着时：药水病时间缩短 15%（和炼金石、神话护身符同戴时缩短 30%）；受伤后自然回血早 1 秒开始（3 秒，不戴是 4 秒）": {
   "en-US": "While worn: potion sickness 15% shorter (30% with the Philosopher's Stone or Charm of Myths); natural regeneration starts 1 s sooner after a hit (3 s instead of 4)"
@@ -10927,5 +10927,410 @@
  },
  "掉落阶段 {0} · 由房主选择，角色与敌人数值保持当前进度": {
   "en-US": "Loot stage {0} · Host controlled; character and enemy stats stay unchanged"
+ },
+ "可在微光中嬗变为 {0}": {
+  "en-US": "Transmutes into {0} in the Shimmer"
+ },
+ "（阶段 5 解锁）": {
+  "en-US": " (unlocks at stage 5)"
+ },
+ "快速堆叠至全部家园": {
+  "en-US": "Quick stack to every home"
+ },
+ "背包里的物品堆到 {0} 个家园里已有同种物品的仓储": {
+  "en-US": "Puts the bag's items onto the storages of {0} homes that already hold them"
+ },
+ "一键堆叠": {
+  "en-US": "Quick stack"
+ },
+ "新版武器": {
+  "en-US": "Remade weapons"
+ },
+ "原版武器": {
+  "en-US": "Terraria's weapons"
+ },
+ "重做的武器：近战连招和右键技艺，长枪、悠悠球、链枷、投掷武器、短剑和鞭子的新招式，魔法武器的施法动作。建好世界后不能更改。": {
+  "en-US": "The remade weapons: melee combos and right-click arts, new moves for spears, yoyos, flails, thrown weapons, shortswords and whips, the magic weapons' casts. Can't be changed once the world is made."
+ },
+ "泰拉瑞亚原本的武器用法和动作。建好世界后不能更改。": {
+  "en-US": "Terraria's own weapon moves and animations. Can't be changed once the world is made."
+ },
+ "本世界的武器：{0}": {
+  "en-US": "This world's weapons: {0}"
+ },
+ "创建世界时选定，之后不能更改；以前的存档用原版武器": {
+  "en-US": "Chosen when the world was made, for good; saves from before use Terraria's weapons"
+ },
+ "冷却 {0} 秒": {
+  "en-US": "Cooldown {0} s"
+ },
+ "向前缩放": {
+  "en-US": "Forward Zoom"
+ },
+ "始终开启": {
+  "en-US": "Always On"
+ },
+ "始终关闭": {
+  "en-US": "Always Off"
+ },
+ "点击切换": {
+  "en-US": "Click"
+ },
+ "按住使用": {
+  "en-US": "Hold"
+ },
+ "瞄准镜的右键视野；关掉不影响属性": {
+  "en-US": "The scopes' right-button view; off, their stats still count"
+ },
+ "魔力不足": {
+  "en-US": "Not enough mana"
+ },
+ "长椅": {
+  "en-US": "Bench"
+ },
+ "全部存入": {
+  "en-US": "Deposit all"
+ },
+ "背包里快捷栏以下的物品（收藏的除外）全部存进这片区域": {
+  "en-US": "Everything in the bag below the hotbar (favourites aside) goes into this area's storage"
+ },
+ "背包里快捷栏以下的物品（收藏的除外）堆进所有家园里已有同种物品的储物空间": {
+  "en-US": "The bag's items below the hotbar (favourites aside) are stacked onto any home's storage already holding them"
+ },
+ "更换这片区域的光环颜色，或给它改名": {
+  "en-US": "Change this area's aura colour, or rename it"
+ },
+ "清除搜索": {
+  "en-US": "Clear search"
+ },
+ "颜色 / 名称": {
+  "en-US": "Colour / name"
+ },
+ "灰色的颜色已被其他家园占用": {
+  "en-US": "Greyed colours are taken by other homes"
+ },
+ "放置后连接上下左右10格内的储物空间与制作站\n右键放置物或在背包里点家园按钮，远程存取这片区域的物品，并用它的材料与工作站制作\n仓库里点「颜色 / 名称」可换光环颜色（64种，各家园不重复）和改名；区域之间不混用材料和工作站": {
+  "en-US": "Once placed, links the storage and crafting stations within 10 tiles each way\nRight-click it, or press the home button in the bag, to use this area's items from afar and craft with its materials and stations\nIn the storage, \"Colour / name\" changes its aura colour (64, never shared between homes) and its name; areas don't share materials or stations"
+ },
+ "哪都是家": {
+  "en-US": "Home Everywhere"
+ },
+ "打开区域仓库": {
+  "en-US": "Open area storage"
+ },
+ "家园 · 光环与名称": {
+  "en-US": "Home · Aura and name"
+ },
+ " · 区域仓库": {
+  "en-US": " · Area storage"
+ },
+ "哪都是家 · 选择区域": {
+  "en-US": "Home Everywhere · Choose an area"
+ },
+ "未占用颜色 {0}": {
+  "en-US": "Free colour {0}"
+ },
+ "左键打开区域，右键更改颜色和名称": {
+  "en-US": "Left click opens the area, right click changes its colour and name"
+ },
+ "选择上方色块打开区域仓库\n同一区域的所有储物空间合并显示": {
+  "en-US": "Pick a colour above to open an area's storage\nAll of an area's storage shows as one"
+ },
+ "按物品名称搜索…": {
+  "en-US": "Search by item name…"
+ },
+ "排序区域内全部物品": {
+  "en-US": "Sort the whole area"
+ },
+ "统一堆叠并排序所有箱子，不受搜索筛选影响": {
+  "en-US": "Stacks and sorts every chest together, whatever the search shows"
+ },
+ "区域仓库 · 左键存取，右键取一个，Shift移入背包": {
+  "en-US": "Area storage · Left click takes or puts, right click takes one, Shift moves into the bag"
+ },
+ "没有匹配的物品": {
+  "en-US": "No matching items"
+ },
+ "正在同步物品…": {
+  "en-US": "Syncing items…"
+ },
+ "{0} / {1} 格": {
+  "en-US": "{0} / {1} slots"
+ },
+ "家园 {0}": {
+  "en-US": "Home {0}"
+ },
+ "保存名称": {
+  "en-US": "Save name"
+ },
+ "返回家园列表": {
+  "en-US": "Back to the homes"
+ },
+ "点击更换光环颜色": {
+  "en-US": "Click to change the aura colour"
+ },
+ "此颜色已被其他家园占用": {
+  "en-US": "Another home has this colour"
+ },
+ "猩红弹": {
+  "en-US": "Crimson Rounds"
+ },
+ "凤凰弹": {
+  "en-US": "Phoenix Rounds"
+ },
+ "藤蔓弹": {
+  "en-US": "Vine Rounds"
+ },
+ "烟花信号": {
+  "en-US": "Firework Flares"
+ },
+ "嘟嘟齐鸣": {
+  "en-US": "Honk Chorus"
+ },
+ "彩虹乱射": {
+  "en-US": "Rainbow Spray"
+ },
+ "钉阵": {
+  "en-US": "Nail Volley"
+ },
+ "剧毒镖": {
+  "en-US": "Venom Darts"
+ },
+ "全自动": {
+  "en-US": "Full Auto"
+ },
+ "糖果风暴": {
+  "en-US": "Candy Storm"
+ },
+ "三叉鱼叉": {
+  "en-US": "Trident Harpoon"
+ },
+ "过载": {
+  "en-US": "Overdrive"
+ },
+ "鳄牙": {
+  "en-US": "Gator Fangs"
+ },
+ "鲨群": {
+  "en-US": "Shark Pack"
+ },
+ "双持": {
+  "en-US": "Dual Wield"
+ },
+ "星辰弹": {
+  "en-US": "Star Rounds"
+ },
+ "独头弹": {
+  "en-US": "Slugs"
+ },
+ "四管齐发": {
+  "en-US": "Four-Barrel Blast"
+ },
+ "龙息弹": {
+  "en-US": "Dragon's Breath"
+ },
+ "破片弹": {
+  "en-US": "Fragment Shells"
+ },
+ "集束榴弹": {
+  "en-US": "Cluster Grenades"
+ },
+ "火箭齐射": {
+  "en-US": "Rocket Salvo"
+ },
+ "雷区": {
+  "en-US": "Minefield"
+ },
+ "雪崩": {
+  "en-US": "Avalanche"
+ },
+ "烟花秀": {
+  "en-US": "Fireworks Show"
+ },
+ "电网": {
+  "en-US": "Electric Net"
+ },
+ "南瓜大王": {
+  "en-US": "Pumpkin King"
+ },
+ "连环桶": {
+  "en-US": "Barrel Chain"
+ },
+ "毒刺破片": {
+  "en-US": "Stynger Shrapnel"
+ },
+ "流星召唤": {
+  "en-US": "Meteor Call"
+ },
+ "星爆": {
+  "en-US": "Starburst"
+ },
+ "大雪球": {
+  "en-US": "Giant Snowball"
+ },
+ "沙暴": {
+  "en-US": "Sandstorm"
+ },
+ "毒泡潮": {
+  "en-US": "Toxic Tide"
+ },
+ "星旋火箭": {
+  "en-US": "Vortex Rockets"
+ },
+ "终章烟花": {
+  "en-US": "Finale Fireworks"
+ },
+ "空中连按两下下键：黑砸，猛击伤害为普通下砸的两倍\n落地短暂无敌，并砸开脆弱地板；冷却 2 秒": {
+  "en-US": "Double-tap Down in the air: Descending Dark, its slam hitting twice as hard as a plain dive\nBriefly invincible on landing, and it breaks fragile floors; 2 s cooldown"
+ },
+ "右键单击打开": {
+  "en-US": "Right Click to open"
+ },
+ "购买（不用材料）：{0}": {
+  "en-US": "Buy (no materials): {0}"
+ },
+ "免费拿取（不用材料）": {
+  "en-US": "Take for free (no materials)"
+ },
+ "免伤：": {
+  "en-US": "Damage reduction: "
+ },
+ "当前敌袭总比例免伤：": {
+  "en-US": "Damage reduction against enemies now: "
+ },
+ "近战增伤：": {
+  "en-US": "Melee damage: "
+ },
+ "远程增伤：": {
+  "en-US": "Ranged damage: "
+ },
+ "魔法增伤：": {
+  "en-US": "Magic damage: "
+ },
+ "召唤增伤：": {
+  "en-US": "Summon damage: "
+ },
+ "手持武器锻造增伤：": {
+  "en-US": "Held weapon's forging damage: "
+ },
+ "武器版本：": {
+  "en-US": "Weapon version: "
+ },
+ "当前": {
+  "en-US": "Current"
+ },
+ "武器改制": {
+  "en-US": "Weapon refit"
+ },
+ "放入武器，在原版与新版之间改制": {
+  "en-US": "Put in a weapon to refit it between its Terraria and its remade version"
+ },
+ "保留词缀和锻造；价格按武器阶段与稀有度计算": {
+  "en-US": "Prefix and forging are kept; the price goes by the weapon's stage and rarity"
+ },
+ "这件物品没有另一版本": {
+  "en-US": "This item has no other version"
+ },
+ "敲击改制 · 必定成功，武器数量不变": {
+  "en-US": "Strike to refit · always succeeds, the weapon count stays the same"
+ },
+ "改制为": {
+  "en-US": "Refit into "
+ },
+ "无法改制：请检查武器或吉欧是否足够": {
+  "en-US": "Can't refit: check the weapon and that you have enough Geo"
+ },
+ "找回已获得的装备，不补售钥匙、矿石、遗物等消耗品": {
+  "en-US": "Buy back gear you have found; keys, ore, relics and other consumables aren't restocked"
+ },
+ "名单中的掉落物拾取时自动出售": {
+  "en-US": "Listed drops are sold as you pick them up"
+ },
+ "点击背包物品出售，可在出售栏按原价买回": {
+  "en-US": "Click an item in the bag to sell it; buy it back at the same price from the sold row"
+ },
+ "掉落物黑名单 · 拾取时自动出售": {
+  "en-US": "Drop blacklist · sold as you pick them up"
+ },
+ "名单只记录类型，不消耗添加的物品；之后捡到时自动出售": {
+  "en-US": "The list keeps only the kind of item, and the item added isn't used up; picked up later, it's sold"
+ },
+ "每件售价：{0}": {
+  "en-US": "Sells for {0} each"
+ },
+ "上一页": {
+  "en-US": "Previous page"
+ },
+ "下一页": {
+  "en-US": "Next page"
+ },
+ "可冲刺撞击敌人\n双击方向键可冲刺": {
+  "en-US": "Allows the player to dash into the enemy\nDouble tap a direction to dash"
+ },
+ "\"抓过来！\"\n按 E 朝光标抛出": {
+  "en-US": "'Get over here!'\nPress E to throw it at the cursor"
+ },
+ "造成会摧毁大部分图格的小爆炸\n能炸开需要下砸的地板": {
+  "en-US": "A small explosion that will destroy most tiles\nBreaks floors that need a dive"
+ },
+ "造成会摧毁大部分图格的大爆炸\n能炸开需要下砸的地板": {
+  "en-US": "A large explosion that will destroy most tiles\nBreaks floors that need a dive"
+ },
+ "可供攀爬\n按住上下攀爬": {
+  "en-US": "Can be climbed on\nHold Up or Down to climb"
+ },
+ "存储物品的私人仓库\n放进去的增益站（水晶球、施法桌、利器站、弹药箱、战争桌、蛋糕块）和增益家具（篝火、红心灯笼、星星瓶、巴斯特雕像、向日葵、花园侏儒）照样有增益": {
+  "en-US": "Stores your items\nBuff stations put in it (Crystal Ball, Bewitching Table, Sharpening Station, Ammo Box, War Table, Slice of Cake) and buff furniture (Campfire, Heart Lantern, Star in a Bottle, Bast Statue, Sunflower, Garden Gnome) still give their buffs"
+ },
+ "无需弹药或溶液\n喷射所经之处的泰拉瑞亚物块、背景墙和家具变为掉落物\n恢复被挖掘或陨石改变的原始地形\n容器及其底部承托格不受影响": {
+  "en-US": "Needs no ammo or solution\nThe Terraria blocks, walls and furniture it sprays over drop as items\nRestores the original ground changed by digging or meteorites\nContainers and the tiles holding them up are left alone"
+ },
+ "在祭坛上按交互键（默认右键），吸收深渊尖啸": {
+  "en-US": "Press Interact (right click by default) at the altar to take in the Abyss Shriek"
+ },
+ "界面缩放：{0}%（实际 {1}%）": {
+  "en-US": "UI scale: {0}% (actual {1}%)"
+ },
+ "界面缩放：{0}%": {
+  "en-US": "UI scale: {0}%"
+ },
+ "放大或缩小 mod 的全部界面：背包、生命和魔力、地图、聊天、提示和这个设置面板。和泰拉瑞亚的“界面缩放”一样，范围 50%～200%，松开鼠标后生效；屏幕放不下时按屏幕能容纳的最大值显示。": {
+  "en-US": "Scales all of the mod's interface up or down: the bag, life and mana, the map, chat, tips and this settings panel. Like Terraria's UI Scale, from 50% to 200%, applied when you let go of the mouse; when the screen can't fit it, it shows at the most the screen can hold."
+ },
+ "恢复 100%": {
+  "en-US": "Reset to 100%"
+ },
+ "目标是布蕾塔家地下室的左特雕像，用梦之钉攻击雕像入梦。若入口未开放，请确认已两次救下左特、救出布蕾塔，并在勇士的试炼击败左特。": {
+  "en-US": "The target is Zote's statue in Bretta's basement: strike it with the Dream Nail to enter the dream. If the way isn't open, make sure you have saved Zote twice, rescued Bretta and beaten Zote in the Trial of the Warrior."
+ },
+ "沿金色路线前进，光点标出房间出口；路线按房间连接，不代表可以穿过墙壁。": {
+  "en-US": "Follow the golden route; the dots mark the rooms' exits. The route links rooms and doesn't mean you can pass through walls."
+ },
+ "暂未找到连通路线，请先探索连接区域。": {
+  "en-US": "No connected route found yet: explore the connecting areas first."
+ },
+ "目标位于另一地图层；从路线标出的门进入，或切换浅层/深层查看后续路线。": {
+  "en-US": "The target is on another map layer: go in by the door the route marks, or switch between the shallow and deep layers to see the rest of the route."
+ },
+ "任性指南针": {
+  "en-US": "Wayward Compass"
+ },
+ "在旁边的长椅上坐一下，就能点亮这座晶塔": {
+  "en-US": "Sit on the bench beside it to light this pylon"
+ },
+ "放在有空地的地面上（宽 3 格、高 4 格），之后和其他晶塔一样可以传送过来\n用镐敲下来可以再搬到别处": {
+  "en-US": "Place it on open ground (3 wide, 4 high); then you can teleport to it like any other pylon\nKnock it down with a pickaxe to move it elsewhere"
+ },
+ "这座晶塔还没点亮，在旁边的长椅上坐一下": {
+  "en-US": "This pylon isn't lit yet: sit on the bench beside it"
+ },
+ "这里放不下晶塔": {
+  "en-US": "A pylon doesn't fit here"
+ },
+ "这里已经有晶塔了": {
+  "en-US": "There's already a pylon here"
+ },
+ "这个房间没有能传送进来的入口，不能放晶塔": {
+  "en-US": "This room has no way in to teleport to, so no pylon can go here"
  }
 }

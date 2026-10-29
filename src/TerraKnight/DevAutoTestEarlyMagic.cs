@@ -170,15 +170,7 @@ namespace TerraKnight
                 yield return GoTo("Town", "left1");
                 for (float until = Time.realtimeSinceStartup + 12; TargetDummy.DevHm == null && Time.realtimeSinceStartup < until;) yield return null;
                 if (TargetDummy.DevHm == null) throw new InvalidOperationException("No target dummy");
-                if (suite == "earlymagicrelease") {
-                    Minions.Instance.DevCatContactAudit(TargetDummy.DevHm);
-                    yield return EarlyMagicSingleHit();
-                    foreach (var type in new[] { ItemType.AmethystStaff, ItemType.TopazStaff, ItemType.SapphireStaff, ItemType.EmeraldStaff, ItemType.RubyStaff, ItemType.DiamondStaff, ItemType.AmberStaff })
-                        yield return EarlyMagicDummy(ItemDb.Get(type), "bare", 4f, true, false);
-                    foreach (var robe in new[] { ItemType.SapphireRobe, ItemType.RubyRobe, ItemType.AmberRobe })
-                        yield return EarlyMagicDummy(ItemDb.Get(ItemType.SapphireStaff), "reference", 5f, true, false, robe);
-                    yield return EarlyMagicTracking();
-                } else if (suite == "earlymagicsmoke") {
+                if (suite == "earlymagicsmoke") {
                     foreach (var type in new[] { ItemType.AmethystStaff, ItemType.MagicMissile, ItemType.CrimsonRod, ItemType.HowlingWraithsFocus })
                         yield return EarlyMagicDummy(ItemDb.Get(type), "bare", 4f, true, false);
                 } else if (suite == "earlymagicboss") {

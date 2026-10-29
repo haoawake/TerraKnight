@@ -1,4 +1,4 @@
-﻿using TerraKnight.World;
+using TerraKnight.World;
 
 namespace TerraKnight.Items
 {
@@ -579,6 +579,9 @@ namespace TerraKnight.Items
         BossPetGhostGalien, BossPetMegaJellyfish, BossPetLobsterLancer, BossPetOblobble, BossPetZote, BossPetGreyPrince,
         BossPetNailBros, BossPetPaintmaster, BossPetNailsage, BossPetPaleLurker, BossPetMegaBeamMiner, BossPetEnragedGuardian,
         BossPetGrimm, BossPetNightmareGrimm, BossPetHollowKnight, BossPetHollowKnightPrime, BossPetFinalBoss, BossPetAbsoluteRadiance,
+        HomeEverywhere,
+        Clentaminator,
+
     }
 
     /// <summary>What an equipped accessory does. The movement ones stand in for the Knight's abilities.</summary>
@@ -1040,6 +1043,15 @@ namespace TerraKnight.Items
         AbyssYoyo, AbyssRipple, AbyssRend, AbyssHitRing, VoidTracer, VoidSnipe, VoidMark, VoidSight, VoidBomb, AbyssTriad, AbyssPulse, AbyssThread, DirgeLaser, DirgeLaserHit,
         // The 10-21 batch's (Items/TerraProjectilesBatch1021.cs): 1122 730 732 877 878 819 950.
         ArcSurgeBolt, ThunderSpearThrust, ThunderSpearShot, JoustingLanceThrust, ShadowJoustingLanceThrust, BloodRainArrow, PrincessRing,
+        // The spears' right-click arts (Items/TerraProjectilesSpearArts.cs): Gungnir thrown.
+        ThrownGungnir,
+        // The held blades' (Items/TerraProjectilesHeldArts.cs): the Terragrim's cutting gale.
+        CuttingGale,
+        // The yoyos' right-click arts (Items/TerraProjectilesYoyoArts.cs): a ring of a yoyo's power.
+        YoyoPulse,
+        RestorationSpray,
+        // The remade magic weapons' things left in the world (Items/TerraProjectilesMageThing.cs, MageMech).
+        MageThing,
     }
 
     /// <summary>
@@ -1299,6 +1311,7 @@ namespace TerraKnight.Items
         /// <summary>A forged copy's level (Forging), and the definition it was forged from.</summary>
         public byte Forge;
         public ItemDef Unforged;
+        public byte WeaponVersion;
         public int PrefixTagDamage, PrefixArmorPen;
 
         public ItemDef Clone() => (ItemDef)MemberwiseClone();
@@ -1873,6 +1886,7 @@ namespace TerraKnight.Items
             AddFlails(list);
             AddMelee2(list);
             AddTools(list);
+            AddRestorationGun(list);
             AddGenerated(list);
             AddGuns(list);
             AddR7(list);
@@ -1882,6 +1896,7 @@ namespace TerraKnight.Items
             AddOres(list);
             MeteoriteBlock(list);
             AddMoney(list);
+            AddHomeEverywhere(list);
             AddCraftChain(list);
             AddCraftingSupplement(list);
             AddFishing(list);
@@ -2354,7 +2369,8 @@ namespace TerraKnight.Items
         /// <summary>Its forge level (the Goblin Tinkerer's forging: Forging), 0 none; its definition is then the forged copy.</summary>
         public byte Forge;
         public bool IsEmpty => Type == ItemType.None || Count <= 0;
-        public ItemDef Def => IsEmpty ? ItemDb.Get(ItemType.None) : Forging.Apply(Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix), Forge);
+        public byte WeaponVersion;
+        public ItemDef Def => IsEmpty ? ItemDb.Get(ItemType.None) : WeaponRefitting.Apply(Forging.Apply(Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix), Forge), WeaponVersion);
 
         public static ItemStack Of(ItemType type, int count = 1) => new ItemStack { Type = type, Count = count };
     }
@@ -2661,7 +2677,7 @@ namespace TerraKnight.Items
         public int Pickup(ItemStack s, bool favorite = false)
         {
             if (s.IsEmpty) return 0;
-            if (s.Prefix == 0 && s.Forge == 0) return Pickup(s.Type, s.Count, favorite);
+            if (s.Prefix == 0 && s.Forge == 0 && s.WeaponVersion == 0) return Pickup(s.Type, s.Count, favorite);
             s.Favorite = favorite;
             for (int i = 0; i < Size; i++)
                 if (Slots[i].IsEmpty)

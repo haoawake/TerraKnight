@@ -182,6 +182,14 @@ namespace TerraKnight.Items
             public int ItemPen, ItemTag;
             /// <summary>A pet's projectile (MinionsPets.cs).</summary>
             public PetProj Pet;
+            /// <summary>Summoned by a remade staff: it hunts the remade way (MinionsHunt.cs).</summary>
+            public bool Remade;
+            /// <summary>The flying hunter's sprint: ticks left, rest left, its speed; the gap to its enemy a third of a second ago and whether it isn't closing.</summary>
+            public int Sprint, SprintCool, GapTicks, FollowCool;
+            public float SprintSpeed, GapWas;
+            public bool Lagging;
+            /// <summary>The walker's throw: its rest left, and how long its enemy has been out of reach overhead.</summary>
+            public int TossCool, Overhead;
 
             public Vector2 Center
             {
@@ -201,6 +209,13 @@ namespace TerraKnight.Items
             public Vector2 Center;
             public bool Boss;
             public int Id;
+            /// <summary>Its speed (px a tick, smoothed) and the ticks since a teleport counting down (MinionsHunt.cs).</summary>
+            public Vector2 Vel;
+            public int Blink;
+            public bool Steady;
+            /// <summary>Where it really is while a remade minion's AI sees it ahead of itself (LeadFor).</summary>
+            public Vector2 Real;
+            public Rect RealBox;
         }
 
         /// <summary>The player's minions (swapped for another player's ghosts while those are drawn).</summary>
@@ -278,6 +293,9 @@ namespace TerraKnight.Items
 
         /// <summary>Slots in use (slotsMinions) as of the last tick.</summary>
         public float SlotsUsed => slotsMinions;
+
+        /// <summary>Dev: Player.numMinions as of the last tick.</summary>
+        public int DevMinionCount => numMinions;
 
         /// <summary>Dev: how many of a kind live.</summary>
         public int DevCount(Kind kind)
@@ -535,6 +553,9 @@ namespace TerraKnight.Items
                 m.GfxOffY = m.GfxOffY > 0f ? Mathf.Max(0f, m.GfxOffY - k) : Mathf.Min(0f, m.GfxOffY + k);
                 m.GfxOffY = Mathf.Clamp(m.GfxOffY, -16f, 16f);
             }
+            // A remade staff's minion thinks with every enemy where it will be, then sprints or throws (MinionsHunt.cs).
+            bool hunt = m.Remade && m.S.Minion && Hunts(m.Kind);
+            if (hunt && Leads(m.Kind)) LeadFor(m);
             switch (m.Kind)
             {
                 case Kind.BabySlime:
@@ -686,6 +707,15 @@ namespace TerraKnight.Items
                 case Kind.DirgeSoul:
                     AIDirge(m);
                     break;
+            }
+            if (hunt)
+            {
+                if (!m.Dead)
+                {
+                    Pursue(m);
+                    Toss(m);
+                }
+                Unlead();
             }
             if (m.Dead) return;
             if (m.S.Sentry) Sling(m);
@@ -981,6 +1011,7 @@ namespace TerraKnight.Items
                 Kind = kind, S = s, Staff = staff != null ? staff.Type : ItemType.None, W = s.W, H = s.H,
                 OriginalDamage = damage, Damage = damage, Knockback = 0f, Serial = serial++,
                 ItemPen = staff != null ? staff.PrefixArmorPen : 0, ItemTag = staff != null ? staff.PrefixTagDamage : 0,
+                Remade = staff != null ? WeaponRefitting.EnabledFor(staff) : WeaponRefitting.Enabled,
             };
             m.Center = centerPx;
             m.OldPos = m.Pos;
@@ -1051,7 +1082,6 @@ namespace TerraKnight.Items
         {
             RefreshOwner();
             if (!hasOwner) return;
-            MinionEngage.Engage("指定目标");
             FindNpcs();
             var m = TerraParticles.ToPx(mouseWorld);
             Npc best = null;
@@ -1075,7 +1105,6 @@ namespace TerraKnight.Items
         public void SetTarget(HealthManager hm)
         {
             if (hm == null || hm.isDead) return;
-            MinionEngage.Engage("鞭子");
             Target = hm;
         }
 
@@ -1103,11 +1132,10 @@ namespace TerraKnight.Items
         /// <summary>Every chaseable enemy near the player: alive, active, with more than 5 Terraria life.</summary>
         void FindNpcs()
         {
+            NextHuntTick();
             npcs.Clear();
             npcById.Clear();
             overlaps.Clear();
-            // Nothing to fight until the player attacks in the room (MinionEngage).
-            if (!MinionEngage.Engaged) return;
             Physics2D.OverlapBox(TerraParticles.ToWorld(pCenter), new Vector2(7000f, 5000f) * Px, 0f, enemyFilter, overlaps);
             foreach (var col in overlaps)
             {
@@ -1135,6 +1163,7 @@ namespace TerraKnight.Items
                     Box = new Rect(b.min.x / Px, -b.max.y / Px, b.size.x / Px, b.size.y / Px),
                 };
                 n.Center = n.Box.center;
+                TrackNpc(n);
                 npcs.Add(n);
                 npcById[id] = n;
             }
@@ -1472,7 +1501,6 @@ namespace TerraKnight.Items
         /// </summary>
         void Damage(M m)
         {
-            if (!MinionEngage.Engaged) return;
             if (IsAura(m.Kind))
             {
                 if (m.Ai0 == 0f && m.LocalAi0 != 0f) AuraDamage(m);

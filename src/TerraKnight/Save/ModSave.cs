@@ -26,6 +26,8 @@ namespace TerraKnight.Save
             public int Difficulty;
             /// <summary>World.EnemyAiKind: 0 Hollow Knight's own (every save from before the choice), 1 the new one.</summary>
             public int EnemyAi;
+            /// <summary>World.WeaponKind: 0 Terraria's own weapons (every save from before the choice), 1 the remade ones.</summary>
+            public int Weapons;
             public int LootStageSelection = -1;
             /// <summary>The world's and the character's names (UI.TerraMenu); none in a save from before.</summary>
             public string WorldName, PlayerName;
@@ -164,6 +166,8 @@ namespace TerraKnight.Save
 
         sealed class StationSave
         {
+            public int HomeColor=-1, HomeOrder;
+            public string HomeName;
             public string Scene, Kind;
             public float X, Y;
             /// <summary>Placed facing right (a chair, a bed, a relic).</summary>
@@ -203,9 +207,10 @@ namespace TerraKnight.Save
             public int Prefix;
             /// <summary>A forged weapon's level (Items.Forging), 0 none.</summary>
             public int Forge;
+            public byte WeaponVersion;
         }
 
-        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix, Forge = s.Forge };
+        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion };
 
         /// <summary>Dev: a stack through the save's packing and back.</summary>
         internal static ItemStack DevRoundTrip(ItemStack s) => Unpack(Pack(s));
@@ -221,6 +226,7 @@ namespace TerraKnight.Save
             if (s.Prefix > 0 && Items.Prefixes.Valid(Items.ItemDb.Get(type), s.Prefix)) stack.Prefix = (byte)s.Prefix;
             // A weapon's forge level; a treasure bag's first-kill mark in the same byte.
             if (s.Forge > 0 && (Items.Forging.Forgeable(Items.ItemDb.Get(type)) || Items.TreasureBags.Is(type))) stack.Forge = (byte)Mathf.Min(s.Forge, 255);
+            if (s.WeaponVersion <= 2) stack.WeaponVersion = s.WeaponVersion;
             return stack;
         }
 
@@ -246,6 +252,7 @@ namespace TerraKnight.Save
             public bool Creative;
             public World.DifficultyLevel Difficulty = World.DifficultyLevel.Master;
             public World.EnemyAiKind EnemyAi;
+            public World.WeaponKind Weapons;
             public string WorldName, PlayerName;
             public Player.Appearance Look;
         }
@@ -277,6 +284,7 @@ namespace TerraKnight.Save
                                 case nameof(SaveFile.Creative): head.Creative = reader.TokenType == JsonToken.Boolean && (bool)reader.Value; break;
                                 case nameof(SaveFile.Difficulty): head.Difficulty = World.GameDifficulty.Parse(reader.TokenType == JsonToken.Integer ? Convert.ToInt32(reader.Value) : 0); break;
                                 case nameof(SaveFile.EnemyAi): head.EnemyAi = World.EnemyAiMode.Parse(reader.TokenType == JsonToken.Integer ? Convert.ToInt32(reader.Value) : 0); break;
+                                case nameof(SaveFile.Weapons): head.Weapons = World.WeaponMode.Parse(reader.TokenType == JsonToken.Integer ? Convert.ToInt32(reader.Value) : 0); break;
                                 case nameof(SaveFile.WorldName): head.WorldName = reader.Value as string; break;
                                 case nameof(SaveFile.PlayerName): head.PlayerName = reader.Value as string; break;
                                 case nameof(SaveFile.Look): head.Look = reader.TokenType == JsonToken.StartObject ? serializer.Deserialize<Player.Appearance>(reader) : null; break;
@@ -343,6 +351,10 @@ namespace TerraKnight.Save
 
         static string PathFor(int slot) => Path.Combine(TerraMod.SaveDir, $"TerraKnight_slot{slot}.json");
 
+        /// <summary>Dev (suite weaponmode): a slot's save file; its identity (AI, weapons, look, names) read again from it as a load would.</summary>
+        internal static string DevPathFor(int slot) => PathFor(slot);
+        internal static void DevIdentity(int slot) => SetIdentity(ParseSave(PathFor(slot), out _));
+
         /// <summary>
         /// The slot whose save the mod's state now is (read from it, or begun there as a new game);
         /// -1 before any. A save of another slot never gets this state written into it.
@@ -371,7 +383,7 @@ namespace TerraKnight.Save
             // The Guide's slot too: an item shown to him belongs to the bag.
             Town.TownNpcs.ReturnGuideItem();
             Town.TownNpcs.ReturnReforgeItem();
-            var file = new SaveFile { LootStageSelection = LootStage.Selection, Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, EnemyAi = (int)World.EnemyAiMode.Current,
+            var file = new SaveFile { LootStageSelection = LootStage.Selection, Creative = mod.Creative, Difficulty = (int)World.GameDifficulty.Current, EnemyAi = (int)World.EnemyAiMode.Current, Weapons = (int)World.WeaponMode.Current,
                 WorldName = WorldName, PlayerName = PlayerName, Look = Player.Appearance.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
             HallownestRecovery.Observe(inv);
             inv.ObserveCollections();
@@ -463,7 +475,7 @@ namespace TerraKnight.Save
             file.Boosts = new List<string>();
             foreach (var b in mod.Stats.Boosts) file.Boosts.Add(b.ToString());
             file.Stations = new List<StationSave>();
-            foreach (var s in Net.WorldSync.SaveStations()) file.Stations.Add(new StationSave { Scene = s.Scene, Kind = s.Kind.ToString(), X = s.Local.x, Y = s.Local.y, Right = s.Right });
+            foreach (var s in Net.WorldSync.SaveStations()) file.Stations.Add(new StationSave { Scene = s.Scene, Kind = s.Kind.ToString(), X = s.Local.x, Y = s.Local.y, Right = s.Right, HomeColor=s.HomeColor,HomeOrder=s.HomeOrder,HomeName=s.HomeName });
             file.Chests = new List<ChestSave>();
             foreach (var c in Net.WorldSync.SaveChests())
             {
@@ -571,10 +583,11 @@ namespace TerraKnight.Save
             return null;
         }
 
-        /// <summary>The save's enemy AI, look and names as read (a save from before them: Hollow Knight's AI, Terraria's default character, no names).</summary>
+        /// <summary>The save's enemy AI, weapons, look and names as read (a save from before them: Hollow Knight's AI, Terraria's own weapons, Terraria's default character, no names).</summary>
         static void SetIdentity(SaveFile file)
         {
             World.EnemyAiMode.Current = World.EnemyAiMode.Parse(file?.EnemyAi ?? 0);
+            World.WeaponMode.Current = World.WeaponMode.Parse(file?.Weapons ?? 0);
             Player.Appearance.Current = file?.Look != null ? file.Look.Clone() : Player.Appearance.Default();
             WorldName = file?.WorldName ?? "";
             PlayerName = file?.PlayerName ?? "";
@@ -748,7 +761,7 @@ namespace TerraKnight.Save
                 {
                     var stations = new List<World.Stations.Saved>();
                     foreach (var s in file.Stations)
-                        if (Enum.TryParse(s.Kind, out World.StationKind kind)) stations.Add(new World.Stations.Saved { Scene = s.Scene, Kind = kind, Local = new Vector2(s.X, s.Y), Right = s.Right });
+                        if (Enum.TryParse(s.Kind, out World.StationKind kind)) stations.Add(new World.Stations.Saved { Scene = s.Scene, Kind = kind, Local = new Vector2(s.X, s.Y), Right = s.Right,HomeColor=s.HomeColor,HomeOrder=s.HomeOrder,HomeName=s.HomeName });
                     World.Stations.Load(stations);
                 }
                 {

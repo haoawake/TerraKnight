@@ -17,6 +17,17 @@ namespace TerraKnight.Items
         static string ClassName(DamageClass value) => value == DamageClass.Melee ? "近战" : value == DamageClass.Ranged ? "远程"
             : value == DamageClass.Magic ? "魔法" : value == DamageClass.Summon ? "召唤" : "通用";
 
+        /// <summary>The permanent boosts used (the items' names), the life fruits eaten among them.</summary>
+        static string Boosts(Player.TerraStats stats)
+        {
+            var names = new List<string>();
+            if (stats.LifeFruits > 0) names.Add($"生命果 ×{stats.LifeFruits}");
+            foreach (var def in ItemDb.All)
+                if (def != null && ItemDb.Get(def.Type) == def && def.Boost != PermanentBoost.None && def.Boost != PermanentBoost.LifeFruit && stats.Boosts.Contains(def.Boost))
+                    names.Add(def.Name);
+            return names.Count == 0 ? "无" : string.Join("、", names);
+        }
+
         internal static ItemDef CurrentWeapon(out ItemDef ammo)
         {
             ammo = null;
@@ -66,6 +77,14 @@ namespace TerraKnight.Items
                 Add("哨兵（已用 / 上限）", $"{Minions.Instance?.DevSentries() ?? 0} / {Equipment.MaxTurrets}");
                 Add("装备生命再生加成", Number(stats.LifeRegenBonus / 2f) + " / 秒");
                 Add("魔力再生加成", stats.ManaRegenBonus);
+                Add("魔力再生（当前魔力下，移动 / 站立）", $"{Number(stats.ManaRegenRate(false))} / {Number(stats.ManaRegenRate(true))} 每秒");
+                if (stats.Boosts.Contains(PermanentBoost.ArcaneCrystal))
+                {
+                    // The Arcane Crystal (Pl:19551-19577): the wait 5% shorter, manaMax / 50 more regeneration (none below 50 mana).
+                    float more = stats.ManaRegenRate(false) - stats.ManaRegenRate(false, false);
+                    Add("奥术水晶", "再生等待缩短 5%" + (more > 0f ? $"，回魔每秒多 {Number(more)}" : "；最大魔力 50 以上时回魔也更快"));
+                }
+                Add("已用永久增益", Boosts(stats));
                 Add("魔力消耗减免", Percent(Mathf.Clamp01(b.ManaCost)));
                 Add("弹药节省概率", Percent(b.AmmoSave));
                 Add("药水病剩余", Number(stats.PotionSickness) + " 秒");

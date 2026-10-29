@@ -22,6 +22,12 @@ namespace TerraKnight
             var hero = HeroController.instance;
             var rb = hero.GetComponent<Rigidbody2D>();
             const float c = CellGrid.CellSize;
+            // A fixed interior test pad avoids native exit triggers and uneven generated terrain.
+            for(int x=54;x<=96;x++)for(int y=20;y<=43;y++)TerraWorld.Set(x,y,y==20?CellKind.Stone:CellKind.Empty);
+            yield return new WaitForSeconds(.5f);
+            hero.transform.position=Clear(hero,CellGrid.CellCenter(60,24));
+            rb.linearVelocity=Vector2.zero;
+            yield return new WaitForSeconds(2f);
             int ok = 0, all = 0;
             void Check(string what, bool pass, string detail)
             {

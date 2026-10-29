@@ -44,6 +44,9 @@ namespace TerraKnight.UI
         sealed class Way
         {
             public string Scene;
+            /// <summary>Where the way ends (map cells) and the room's part it is in (-1: any).</summary>
+            public Vector2 End;
+            public int EndPart = -1;
             public readonly Dictionary<Gate, float> Cost = new Dictionary<Gate, float>();
             public readonly Dictionary<Gate, Gate> Exit = new Dictionary<Gate, Gate>();
             public readonly Dictionary<Gate, Gate> Land = new Dictionary<Gate, Gate>();
@@ -85,11 +88,14 @@ namespace TerraKnight.UI
             return "Room_Bretta_Basement";
         }
 
-        static Vector2 CompassEnd(string scene)
+        /// <summary>Where a fight is pointed to in its room: its surveyed spot (WorldMapCompassData), else the room's middle.</summary>
+        static Vector2 CompassEnd(string scene, ItemType? fight)
         {
             // Native Dream Enter object in Room_Bretta_Basement, surveyed from the game's scene.
             if (scene == "Room_Bretta_Basement" && layout.TryGetValue(scene, out var at))
                 return (Vector2)at + new Vector2(16.29f, 7.03f) / C;
+            if (SpotOf(fight, scene, out var cell, out _) && layout.TryGetValue(scene, out at))
+                return new Vector2(at.x + cell.x + 0.5f, at.y + cell.y + 0.5f);
             return RoomMiddle(scene);
         }
 
@@ -114,18 +120,23 @@ namespace TerraKnight.UI
             return layout.TryGetValue(scene, out var at) ? (Vector2)at : Vector2.zero;
         }
 
-        /// <summary>The gates' costs to a room, worked out once (Dijkstra from the room back over the gate table).</summary>
-        static Way WayTo(string scene)
+        /// <summary>
+        /// The gates' costs to a fight's spot in its room, worked out once for what the save has open (Dijkstra from the spot
+        /// back over the gate table, walking in a room only between parts joined now: WorldMapCompassParts).
+        /// </summary>
+        static Way WayTo(string scene, ItemType? fight)
         {
-            if (ways.TryGetValue(scene, out var w)) return w;
-            w = new Way { Scene = scene };
-            ways[scene] = w;
+            string key = fight.HasValue ? scene + "#" + fight.Value : scene;
+            if (ways.TryGetValue(key, out var w)) return w;
+            w = new Way { Scene = scene, End = CompassEnd(scene, fight) };
+            if (SpotOf(fight, scene, out _, out int endPart)) w.EndPart = endPart;
+            ways[key] = w;
             if (!Gates.TryGetValue(scene, out var inRoom) || !layout.ContainsKey(scene)) return w;
             EnsureAcross();
-            var end = CompassEnd(scene);
+            var end = w.End;
             var heap = new List<(float Cost, Gate Gate)>();
             foreach (var g in inRoom)
-                if (CellOf(g, out var c))
+                if (Walks(scene, PartOf(g), w.EndPart) && CellOf(g, out var c))
                 {
                     float d = Vector2.Distance(c, end);
                     w.Cost[g] = d;
@@ -140,9 +151,11 @@ namespace TerraKnight.UI
                 {
                     if (!CellOf(a, out var ac) || !Gates.TryGetValue(a.Scene, out var here)) continue;
                     float through = d + CrossCost;
+                    int aPart = PartOf(a);
                     foreach (var y in here)
                     {
-                        if (!CellOf(y, out var yc)) continue;
+                        // Come in by y, walk to a: only where the room's parts join now.
+                        if (!Walks(a.Scene, PartOf(y), aPart) || !CellOf(y, out var yc)) continue;
                         float cost = Vector2.Distance(yc, ac) + through;
                         if (w.Cost.TryGetValue(y, out var had) && had <= cost) continue;
                         w.Cost[y] = cost;
@@ -206,13 +219,15 @@ namespace TerraKnight.UI
         static float StartCost(Way w, string scene, Vector2 at, out Gate exit, out Gate land)
         {
             exit = land = null;
-            if (scene == w.Scene) return Vector2.Distance(at, CompassEnd(scene));
+            // The parts of this room the player walks to (empty: any).
+            var mine = PlayerParts(scene, at);
+            if (scene == w.Scene && PlayerWalks(scene, mine, w.EndPart)) return Vector2.Distance(at, w.End);
             float best = float.MaxValue;
             if (!Gates.TryGetValue(scene, out var here)) return best;
             EnsureAcross();
             foreach (var a in here)
             {
-                if (!across.TryGetValue(a, out var outs) || !CellOf(a, out var ac)) continue;
+                if (!PlayerWalks(scene, mine, PartOf(a)) || !across.TryGetValue(a, out var outs) || !CellOf(a, out var ac)) continue;
                 foreach (var b in outs)
                 {
                     if (!w.Cost.TryGetValue(b, out var rest)) continue;
@@ -231,17 +246,30 @@ namespace TerraKnight.UI
         {
             if (Time.unscaledTime < compassNext && compassAt == scene && compassFight.HasValue) return;
             compassNext = Time.unscaledTime + 2f;
+            // Each pick tries the ways through what is open now first.
+            if (ignoreShutters) { ignoreShutters = false; ways.Clear(); playerPartsScene = null; }
+            RefreshShutters();
             compassAt = scene;
             ItemType? pick = null;
             string room = null;
             float best = float.MaxValue, kept = float.MaxValue;
-            foreach (var f in BossGuide.NextFights(TerraMod.Instance))
+            var fights = DevCompassOnly.HasValue ? new List<ItemType> { DevCompassOnly.Value } : BossGuide.NextFights(TerraMod.Instance);
+            for (int pass = 0; pass < 2; pass++)
             {
-                string r = CompassRoomOf(f, scene);
-                if (!layout.ContainsKey(r)) continue;
-                float cost = StartCost(WayTo(r), scene, at, out _);
-                if (compassFight == f && compassRoom == r) kept = cost;
-                if (pick == null || cost < best) { best = cost; pick = f; room = r; }
+                foreach (var f in fights)
+                {
+                    string r = CompassRoomOf(f, scene);
+                    if (!layout.ContainsKey(r)) continue;
+                    float cost = StartCost(WayTo(r, f), scene, at, out _);
+                    if (compassFight == f && compassRoom == r) kept = cost;
+                    if (pick == null || cost < best) { best = cost; pick = f; room = r; }
+                }
+                // None reachable through what is open: the way over every gate, as one that may need a wall or door opened.
+                if (best < float.MaxValue || ignoreShutters || fights.Count == 0) break;
+                ignoreShutters = true;
+                ways.Clear();
+                playerPartsScene = null;
+                pick = null; room = null; best = kept = float.MaxValue;
             }
             if (pick.HasValue && compassFight.HasValue && kept < float.MaxValue && best > kept * 0.85f && (pick != compassFight || room != compassRoom))
             {
@@ -262,7 +290,7 @@ namespace TerraKnight.UI
             string name = def != null ? def.Name.Replace("圣物", "").Replace(" Relic", "").Trim() : pick.Value.ToString();
             compassLabel = Lang.F("下一个首领：{0}", name);
             if (def != null && def.Texture != null) compassIcon = Relics.NativeArt(def.Texture) ? Relics.SculptureTexture(def.Texture) : Relics.Texture(def.Texture);
-            Plugin.Log.LogInfo($"[指南针] 指向 {pick.Value}（{room}），从 {scene} 走 {(best < float.MaxValue ? best.ToString("F0") + " 格" : "找不到路")}");
+            Plugin.Log.LogInfo($"[指南针] 指向 {pick.Value}（{room}），从 {scene} 走 {(best < float.MaxValue ? best.ToString("F0") + " 格" : "找不到路")}{(ignoreShutters ? "（按已打开的路走不到，不管没开的墙和门）" : "")}");
         }
 
         /// <summary>The way from the player to the fight pointed to, as map points (wayPoints); false: no fight, or no way from here.</summary>
@@ -276,13 +304,13 @@ namespace TerraKnight.UI
             if (!found || scene == null || !layout.ContainsKey(scene)) return false;
             PickFight(scene, head);
             if (!compassFight.HasValue || compassRoom == null) return false;
-            var w = WayTo(compassRoom);
+            var w = WayTo(compassRoom, compassFight);
             wayPoints.Add(new WayPoint { Cell = head, Deep = PlayerDeep });
             wayScenes.Add(scene);
-            if (scene != w.Scene)
+            // Straight to the spot when it is in the player's part of this room; else out through the gates.
+            if (StartCost(w, scene, head, out var g, out var land) >= float.MaxValue) return false;
+            if (g != null)
             {
-                StartCost(w, scene, head, out var g, out var land);
-                if (g == null) return false;
                 for (int guard = 0; g != null && land != null && guard < 400; guard++)
                 {
                     if (!CellOf(g, out var gc) || !CellOf(land, out var bc)) return false;
@@ -295,7 +323,7 @@ namespace TerraKnight.UI
                     w.Land.TryGetValue(from, out land);
                 }
             }
-            wayPoints.Add(new WayPoint { Cell = CompassEnd(w.Scene), Deep = IsDeep(w.Scene) });
+            wayPoints.Add(new WayPoint { Cell = w.End, Deep = IsDeep(w.Scene) });
             return true;
         }
 
@@ -474,8 +502,33 @@ namespace TerraKnight.UI
         internal static ItemType? DevCompassFight => compassFight;
         internal static int DevFullCompassDots => compassFullDots;
         internal static string DevCompassHintOf(ItemType fight) { if (fight == ItemType.RelicGreyPrince) { GreyPrinceDestination(out var hint); return hint; } return null; }
-        internal static Vector2 DevCompassEnd => compassRoom != null ? CompassEnd(compassRoom) : Vector2.zero;
+        internal static Vector2 DevCompassEnd => compassRoom != null ? CompassEnd(compassRoom, compassFight) : Vector2.zero;
         internal static void DevCompassForget() { compassFight = null; compassRoom = null; compassNext = 0f; }
+        /// <summary>Dev: the compass points to this fight only.</summary>
+        internal static ItemType? DevCompassOnly;
+        /// <summary>Dev: a point of the room being played (world units) on the map, as the player's head is placed.</summary>
+        internal static Vector2 DevLiveCell(Vector2 world)
+        {
+            var live = TerraWorld.Live;
+            return live != null && live.SceneName != null && layout.TryGetValue(live.SceneName, out var at)
+                ? new Vector2(at.x + world.x / C - live.CellOffset.x, at.y + world.y / C - live.CellOffset.y) : Vector2.zero;
+        }
+        /// <summary>Dev (suite compasssurvey): every scene with gates; a scene's gates (name, side, cell); each fight's room.</summary>
+        internal static List<string> DevGateScenes => new List<string>(Gates.Keys);
+        internal static List<(string Name, char Side, Vector2Int At)> DevGatesOf(string scene) =>
+            Gates.TryGetValue(scene, out var list) ? list.ConvertAll(g => (g.Name, g.Side, g.At)) : new List<(string, char, Vector2Int)>();
+        internal static Dictionary<ItemType, string> DevCompassRooms => new Dictionary<ItemType, string>(compassRooms);
+        /// <summary>Dev: a point of a scene (its own units, as it loads unmoved) on the map, by its laid-out place and terrain offset when loaded.</summary>
+        internal static Vector2 DevSceneCell(string scene, Vector2 local)
+        {
+            var live = TerraWorld.Live;
+            var off = live != null && live.SceneName == scene ? (Vector2)live.CellOffset : Vector2.zero;
+            return layout.TryGetValue(scene, out var at) ? new Vector2(at.x + local.x / C - off.x, at.y + local.y / C - off.y) : Vector2.zero;
+        }
+        /// <summary>Dev: the full map centred on a global cell.</summary>
+        internal static void DevPanTo(Vector2 cell) => pan = cell;
+        /// <summary>Dev: a room's place and size on the map.</summary>
+        internal static string DevRoomRect(string scene) => rooms.TryGetValue(scene, out var r) ? $"{r.At} {r.W}x{r.H}" : layout.TryGetValue(scene, out var at) ? $"{at} 无图" : "不在地图上";
         internal static List<string> DevCompassScenes => wayScenes;
         internal static string DevCompassRoomOf(ItemType fight, string from) => CompassRoomOf(fight, from);
         internal static bool DevLaidOut(string scene) => layout.ContainsKey(scene) && Gates.ContainsKey(scene);
@@ -484,7 +537,7 @@ namespace TerraKnight.UI
         {
             var head = HeadCell(out bool found);
             string scene = TerraWorld.Live?.SceneName;
-            return found && scene != null && layout.ContainsKey(room) ? StartCost(WayTo(room), scene, head, out _) : float.MaxValue;
+            return found && scene != null && layout.ContainsKey(room) ? StartCost(WayTo(room, compassRoom == room ? compassFight : null), scene, head, out _) : float.MaxValue;
         }
     }
 }

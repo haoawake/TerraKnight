@@ -49,7 +49,7 @@ namespace TerraKnight.Player
             var clip=animator.CurrentClip;
             int kind=3,frame=0;
             if(clip!=null && HeroSpecialAnimations.Clips.TryGetValue(clip.name,out var range))
-            {kind=range.Kind;frame=HeroSpecialAnimations.FrameFor(range,HeroSpecialAnimations.NativeFrame(range,animator,clip),clip.frames.Length);}
+            {kind=range.Kind;frame=HeroSpecialAnimations.FrameOf(range,animator,clip);}
             else if(clip!=null && name.StartsWith("Knight Dummy",System.StringComparison.Ordinal))
             {
                 var r=clip.name=="Fall"?new HeroSpecialAnimations.Range(0,10,10)

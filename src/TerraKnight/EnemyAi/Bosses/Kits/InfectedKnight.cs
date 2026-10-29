@@ -67,10 +67,8 @@ namespace TerraKnight.EnemyAi.Bosses
             OnEnter("Land", RestoreAirDash);
             // Its waits between moves count down a float (Idle Counter), not a Wait: shortened where it is set.
             At("Set Counter", 1, () => { var c = Float("Idle Counter"); if (c != null) c.Value *= TempoNow; });
-            OnEnter("Evade Dash", Balloons);
             OnEnter("Ohead Antic", () => slashAt = Lock());
             At("Ohead Slashing", 0, () => Batch3.Face(transform, slashAt.x - Me.x, true));
-            OnEnter("Shaking Spawn", () => Run(Rain()), first: false);
             AddState("TK Wall Dash", WallDash, "Set Counter");
             Branch("Attack Choice", "TK Wall Dash", () => !Grace && (WantAntiAir() || Random.value < 0.18f));
             var spawner = FindFsm("Spawn Balloon");
@@ -154,33 +152,7 @@ namespace TerraKnight.EnemyAi.Bosses
                 dashY.Value = -dashY.Value;
         }
 
-        /// <summary>A balloon (two for the Lost Kin) let go as it springs back, while the room has few.</summary>
-        void Balloons()
-        {
-            if (balloon == null) return;
-            int max = LostKin ? 5 : 3;
-            if (GameObject.FindGameObjectsWithTag("Extra Tag").Length >= max) return;
-            int n = LostKin ? 2 : 1;
-            for (int i = 0; i < n; i++)
-            {
-                var b = ObjectPool.Spawn(balloon, (Vector3)(Me + new Vector2((i - (n - 1) / 2f) * 1.5f, 1.5f)));
-                if (b != null) BossAi.DevMoves++;
-            }
-        }
 
-        /// <summary>While it shakes: its own blobs from the ceiling on the player.</summary>
-        IEnumerator Rain()
-        {
-            float every = LostKin ? 0.45f : 0.6f;
-            yield return new WaitForSeconds(0.4f);
-            while (StateNow == "Shaking Spawn")
-            {
-                float x = Lock().x + Random.Range(-1.5f, 1.5f);
-                float top = CeilingAbove(new Vector2(x, TargetCenter.y + 1f), 40f) - 0.6f;
-                OwnShots.Throw(BlobShot, new Vector2(x, top), new Vector2(0f, -2f));
-                yield return new WaitForSeconds(every);
-            }
-        }
 
         /// <summary>To the wall behind it, a cling with its line drawn, and a dash off the wall at the player.</summary>
         IEnumerator WallDash()

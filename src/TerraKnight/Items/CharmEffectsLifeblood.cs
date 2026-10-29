@@ -10,7 +10,8 @@ namespace TerraKnight.Items
     ///   The Heart's skill: a shield of a quarter of the life (not stacked: used again it only fills up). While it holds, a hit
     ///   can at most break it: a smaller hit wears it down, the one that breaks it goes no further, with a sound and its
     ///   pieces flying. A minute before it comes again.
-    ///   The Core: five seconds without losing life, a layer of a tenth of the life, three at most, again every five seconds.
+    ///   The Core: always filling, a layer of a tenth of the life every five seconds, three at most; within five seconds of
+    ///   life lost a quarter as fast.
     /// Both worn, they stack (the Core's layers outside, the Heart's within). The shield shows round the player as rings of
     /// lifeblood, one for each layer (the Heart's the brightest); the life's silver hearts count them too.
     /// </summary>
@@ -20,7 +21,7 @@ namespace TerraKnight.Items
         const int CoreLayers = 3;
         static readonly Color BloodColor = new Color(0.45f, 0.85f, 1f);
         static int heartShield, coreShield;
-        static float heartBreakAt = -10f, heartGotAt = -10f, coreGotAt = -10f, coreLayerAt;
+        static float heartBreakAt = -10f, heartGotAt = -10f, coreGotAt = -10f, coreFill;
         static Vector2 breakAt;
         public static int DevHeartBreaks, DevCoreLayersGot;
 
@@ -88,14 +89,22 @@ namespace TerraKnight.Items
             var st = Stats;
             // Taken off, or dead: its shield gone.
             if (!On(LifebloodHeart) || hero == null || hero.cState.dead) heartShield = 0;
-            if (!On(LifebloodCore) || hero == null || hero.cState.dead) { coreShield = 0; return; }
+            if (!On(LifebloodCore) || hero == null || hero.cState.dead) { coreShield = 0; coreFill = 0f; return; }
             if (st == null || !Playing(hero)) return;
-            if (coreShield >= CoreLayers * CoreLayer) { coreLayerAt = Time.time; return; }
-            // Five quiet seconds (no life lost) since the last loss and the last layer: one more.
-            if (Time.time - lifeLostAt < CoreQuiet || Time.time - coreLayerAt < CoreQuiet) return;
-            coreShield = Mathf.Min(CoreLayers * CoreLayer, coreShield + CoreLayer);
-            coreLayerAt = coreGotAt = Time.time;
-            DevCoreLayersGot++;
+            int cap = CoreLayers * CoreLayer;
+            if (coreShield >= cap) { coreFill = 0f; return; }
+            // Always filling (the user's 10-28 "持续回"): a layer every five seconds, a quarter as fast within five seconds of life lost.
+            coreFill += CoreLayer / CoreQuiet * (Time.time - lifeLostAt < CoreQuiet ? 0.25f : 1f) * Time.deltaTime;
+            int whole = Mathf.FloorToInt(coreFill);
+            if (whole <= 0) return;
+            coreFill -= whole;
+            int before = CoreCount;
+            coreShield = Mathf.Min(cap, coreShield + whole);
+            if (CoreCount > before)
+            {
+                coreGotAt = Time.time;
+                DevCoreLayersGot++;
+            }
         }
 
         static void DrawLifeblood(FxBatch fx, Vector2 c, float opacity)
@@ -123,7 +132,8 @@ namespace TerraKnight.Items
             }
             for (int i = 0; i < core; i++)
             {
-                float swell = i == core - 1 ? Mathf.Clamp01((t - coreGotAt) / 0.4f) : 1f;
+                // The layer filling now as bright as it is full.
+                float swell = i == core - 1 ? Mathf.Min(Mathf.Clamp01((t - coreGotAt) / 0.4f), Mathf.Clamp01((coreShield - i * CoreLayer) / (float)CoreLayer)) : 1f;
                 float r = 37f + i * 4.5f + (1f - swell) * 8f;
                 fx.Draw(Ring, c, Glow(BloodColor, (0.35f + 0.1f * i) * swell * shimmer * opacity), -t * 0.2f, r * 2f / 64f, overPlayer: true);
             }

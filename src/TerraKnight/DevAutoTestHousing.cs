@@ -149,6 +149,58 @@ namespace TerraKnight
             Check("达到阶段后同一房屋可安置护士",TownNpcs.Houses.ContainsKey("Nurse") && TownNpcs.Present("Nurse"),allowed);
             TownNpcs.Remove("Nurse");
 
+            if (suite == "skeletonhousing")
+            {
+                TownNpcs.Remove("SkeletonMerchant");
+                Shop.DevStage=0;
+                string skeletonDenied=TownNpcs.DevHouse("SkeletonMerchant",inside);
+                Check("骷髅商人未解锁时不能借住房提前出现",!TownNpcs.Houses.ContainsKey("SkeletonMerchant")&&!TownNpcs.Present("SkeletonMerchant"),skeletonDenied);
+                Shop.DevStage=5;
+                string skeletonPlaced=TownNpcs.DevHouse("SkeletonMerchant",inside);
+                bool SkeletonInside()
+                {
+                    var point=TownNpcs.DevFeet("SkeletonMerchant");
+                    return point.HasValue&&point.Value.x>(hx+1)*c&&point.Value.x<(hx+W-1)*c
+                        &&point.Value.y>(hy+1)*c-.3f&&point.Value.y<(hy+2)*c+.3f;
+                }
+                Check("骷髅商人通过住房面板真实入住",TownNpcs.Houses.ContainsKey("SkeletonMerchant")&&SkeletonInside(),skeletonPlaced);
+                string secondResident=TownNpcs.DevHouse("Merchant",inside);
+                Check("骷髅商人占住房间，其他居民不能重复入住",!TownNpcs.Houses.ContainsKey("Merchant")&&Said(T("LegacyInterface.41")),secondResident);
+                yield return new WaitForSeconds(2f);
+                Check("入住后在自己的房间内活动",SkeletonInside(),TownNpcs.DevFeet("SkeletonMerchant").ToString());
+                TownNpcs.DevRecheckHouses();
+                Check("定期房屋复查保留骷髅商人住房",TownNpcs.Houses.ContainsKey("SkeletonMerchant")&&SkeletonInside());
+                var skeletonPosition=TownNpcs.DevPos("SkeletonMerchant");
+                if(skeletonPosition.HasValue)Put(skeletonPosition.Value+Vector2.left*.8f);
+                yield return new WaitForSeconds(.4f);
+                bool skeletonTalk=skeletonPosition.HasValue&&TownNpcs.TryRightClick(TownNpcs.DevPos("SkeletonMerchant").Value);
+                TownNpcs.OpenShop();yield return null;
+                Check("入住后仍可对话打开商店",skeletonTalk&&TownNpcs.ShopOpen&&TownNpcs.DevStock().Contains("="),TownNpcs.DevStock());
+                TownNpcs.Close(true);InventoryGui.Open=false;
+                int skeletonSlot=GameManager.instance.profileID;
+                string skeletonBefore=TownNpcs.DevHouseOf("SkeletonMerchant",out _);
+                Save.ModSave.Write(skeletonSlot,mod);
+                // Load the saved world before re-entering its room, as a normal game load does.
+                yield return GoTo("Crossroads_01",EntryGateOf("Crossroads_01"));
+                Save.ModSave.Read(skeletonSlot,mod);
+                yield return GoTo("Town","left1");
+                yield return new WaitForSeconds(1.5f);
+                string skeletonAfter=TownNpcs.DevHouseOf("SkeletonMerchant",out _);
+                Check("存读档后骷髅商人仍住在原房屋",skeletonBefore!=null&&skeletonAfter!=null&&SkeletonInside(),$"之前 {skeletonBefore}，之后 {skeletonAfter}，脚下 {TownNpcs.DevFeet("SkeletonMerchant")}");
+                Put(Cell(hx+2,hy+1));yield return Land();
+                InventoryGui.Open=true;if(!TownNpcs.PanelOpen)TownNpcs.TogglePanel();
+                yield return new WaitForSeconds(.5f);
+                Check("住房旗帜包含骷髅商人",TownNpcs.DevBannerAt("SkeletonMerchant").HasValue);
+                Shot("Town","skeleton_merchant_housed");yield return null;yield return null;
+                TownNpcs.ClosePanel();InventoryGui.Open=false;
+                TerraWorld.Set(hx+W-1,hy+3,CellKind.Empty);
+                TownNpcs.DevRecheckHouses();
+                Check("房屋损坏后按普通居民规则失去住房",!TownNpcs.Houses.ContainsKey("SkeletonMerchant"));
+                TownNpcs.Remove("SkeletonMerchant");Shop.DevStage=stageWas;mod.DevNoFallDamage=false;
+                Plugin.Log.LogInfo($"[AutoTest] 房屋 合计 {ok}/{all} {(ok==all?"通过":"不通过")}");
+                yield break;
+            }
+
             // 3. What each missing thing gives (before anyone lives here, so the periodic look can't turn anyone out).
             TerraWorld.Set(hx + 9, hy + 4, CellKind.Empty);
             q = TownNpcs.DevQuery(inside);

@@ -25,6 +25,8 @@ namespace TerraKnight
             Player.TerraStats.DevImmortal = true;
             mod.DevNoFallDamage = true;
             bool vanilla = Environment.GetEnvironmentVariable("TK_RAD_VANILLA") == "1";
+            bool masterPacing = Environment.GetEnvironmentVariable("TK_RAD_MASTER") == "1";
+            if (masterPacing) World.GameDifficulty.Current = World.DifficultyLevel.Master;
             World.EnemyAiMode.Current = vanilla ? World.EnemyAiKind.Vanilla : World.EnemyAiKind.New;
             float climbFor = float.TryParse(Environment.GetEnvironmentVariable("TK_RAD_CLIMB"), out var cf) ? cf : 22f;
             int ok = 0, all = 0;
@@ -110,8 +112,9 @@ namespace TerraKnight
                 float t0 = Time.time, nextStrike = Time.time + 5f, nextShot = 0f, nextLog = 0f, nextPlace = 0f, climbAt = -1f;
                 bool deadEarly = false;
                 var trail = new List<string>();
+                var climbCommands = new HashSet<string>();
                 int platsClimb = -1, floorHp = -1;
-                bool floorTried = false, floorDead = false;
+                bool floorTried = false, floorDead = false, floorInvincible = false;
                 while (Time.time - t0 < 260f && Bestiary.KillsOf("FinalBoss") <= kills0 && rad != null)
                 {
                     string st = control != null ? control.ActiveStateName : "?";
@@ -138,6 +141,7 @@ namespace TerraKnight
                     }
                     if (st == "Ascend Cast")
                     {
+                        if (commands != null) climbCommands.Add(commands.ActiveStateName);
                         if (climbAt < 0f)
                         {
                             climbAt = Time.time;
@@ -151,15 +155,25 @@ namespace TerraKnight
                             // Partway up: on a platform 9-15 under her, held there.
                             if (Time.time >= nextPlace)
                             {
-                                nextPlace = Time.time + 1f;
+                                nextPlace = Time.time + .25f;
                                 Vector2 want = her + new Vector2(-3f, -11f);
-                                Put(new Vector2(want.x, Ground(want + Vector2.up * 2f) + 1.2f));
+                                // A ray at one fixed X can miss the climbing platforms and put
+                                // the tester fifty units below her, outside ArenaGuard's reach.
+                                var platform = Object.FindObjectsByType<Collider2D>(FindObjectsSortMode.None)
+                                    .Where(c => c.enabled && c.gameObject.activeInHierarchy && !c.isTrigger
+                                        && c.bounds.max.y < her.y - 7f && c.bounds.max.y > her.y - 18f
+                                        && Mathf.Abs(c.bounds.center.x - her.x) < 16f
+                                        && c.GetComponentsInParent<Transform>().Any(t => t.name.StartsWith("Radiant Plat")))
+                                    .OrderBy(c => Mathf.Abs(c.bounds.max.y - want.y)).FirstOrDefault();
+                                Put(platform != null ? new Vector2(platform.bounds.center.x, platform.bounds.max.y + 1.2f)
+                                    : new Vector2(want.x, Ground(want + Vector2.up * 2f) + 1.2f));
                             }
                             // Her life near its end, struck from down here (a ranged player's): it keeps its last point.
-                            if (!floorTried && Time.time - climbAt > 4f)
+                            if (!floorTried && Time.time - climbAt > 4f && !World.ArenaGuard.Outside(rad))
                             {
                                 floorTried = true;
                                 rad.hp = 3;
+                                floorInvincible = rad.IsInvincible;
                                 Strike(Mathf.Max(1, life / 10));
                                 floorHp = rad.hp;
                                 floorDead = rad.isDead;
@@ -231,10 +245,13 @@ namespace TerraKnight
                 Shot(gm.sceneName, "radiance_end");
                 int loot = BossLootTiming.DevByGone + BossLootTiming.DevByBurst + BossLootTiming.DevByTime + BossLootTiming.DevByLeft - loot0;
                 Check("血量在她的结局之前没见底", !deadEarly, deadEarly ? "她的血打空了（原版靠爬到顶上一击收尾）" : "");
-                Check("爬升中远处打到只剩 3 点血：留住最后一点", floorTried && !floorDead && floorHp == 1, $"打完血 {floorHp}{(floorDead ? "（死了）" : "")}，留住 {RadianceEnding.DevHeld} 次");
+                Check("爬升远处攻击保留终结状态", floorTried && !floorDead && floorHp == 1,
+                    $"攻击时原生无敌 {floorInvincible}，打完血 {floorHp}{(floorDead ? "（死了）" : "")}，留住 {RadianceEnding.DevHeld} 次");
                 Check("爬到她身边一击就收尾", impact, $"爬升 {(climbAt >= 0f ? "到了" : "没到")}，身边一击 {RadianceEnding.DevTouches} 次，留住最后一点血 {RadianceEnding.DevHeld} 次，挑战梦醒 {RadianceEnding.DevChallengeWakes} 次");
                 if (!vanilla) Check("爬升时有光束以外的招：光球、剑雨、剑扇都出过", climbAt >= 0f && RadianceKit.DevClimbOrbs > 0 && RadianceKit.DevClimbRain > 0 && RadianceKit.DevClimbFans > 0,
                     $"爬升里新招 {RadianceKit.DevClimbMoves} 次（光球 {RadianceKit.DevClimbOrbs}、剑雨 {RadianceKit.DevClimbRain}、剑扇 {RadianceKit.DevClimbFans}），招式计数 {BossAi.DevMoves - climbMoves0}");
+                if (masterPacing) Check("爬升光球经过原生前摇并回到光束", climbCommands.Contains("Orb Antic")
+                    && climbCommands.Contains("Orb End") && climbCommands.Contains("Aim"), string.Join(",", climbCommands));
                 Check("赢下记入图鉴", won, $"图鉴 {kills0}→{Bestiary.KillsOf("FinalBoss")}");
                 Check("撤战斗墙时平台不动", won && platsTaken == platsWin && wallsTaken == 0, $"赢时平台 {platsWin}，撤墙后 {platsTaken}，撤掉 {wallsTaken} 道");
                 Check("平台的碰撞体都还在", platsLast >= platsWin, $"爬升开始 {platsClimb}，赢时 {platsWin}，之后最少 {platsLast}");

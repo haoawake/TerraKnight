@@ -13,9 +13,10 @@ namespace TerraKnight.Items
     /// target and back behind him, carried along as he moves, leaving a ribbon in its own colour
     /// over the area its blade swept, with three afterimages, a glow and a sparkle at the tip as it
     /// reaches the target. Worked in Terraria's space (pixels, y down) on its 60 Hz tick, two
-    /// steps a tick, as the original does.
+    /// steps a tick, as the original does. With the remade swings on, each use's three swords fly one of five patterns in
+    /// turn and the right button gathers more of them to loose at once (ZenithArts.cs).
     /// </summary>
-    internal sealed class ZenithSwords : MonoBehaviour
+    internal sealed partial class ZenithSwords : MonoBehaviour
     {
         struct Profile
         {
@@ -70,6 +71,15 @@ namespace TerraKnight.Items
             public float BladeAngle, Opacity;
             public int Spin;
             public readonly Dictionary<int, int> Cooldowns = new Dictionary<int, int>();
+            /// <summary>The way it flies (ZenithArts.cs): the game's loop or one of the remade patterns; its place in its use (0-2), the cursor's spot (px from the player), where it set out from.</summary>
+            public Pattern Pattern;
+            public int Index;
+            public Vector2 V, From;
+            public float Phase;
+            public bool Burst;
+            /// <summary>Held to a spot of the world (Terraria px) rather than to the player: the rain's, on the cursor's spot as thrown.</summary>
+            public bool Anchored;
+            public Vector2 Anchor;
         }
 
         public static ZenithSwords Instance { get; private set; }
@@ -93,6 +103,8 @@ namespace TerraKnight.Items
         AudioSource voice;
         float tickAccumulator;
         Vector2 playerPx;
+        /// <summary>The spot (Terraria px) the rain of the use under way comes down on.</summary>
+        Vector2 rainSpot;
 
         public static ZenithSwords Create(Transform parent)
         {
@@ -108,6 +120,7 @@ namespace TerraKnight.Items
                          ?? Shader.Find("Mobile/Particles/Additive") ?? Shader.Find("Sprites/Default");
             additive = new Material(shader) { mainTexture = Texture2D.whiteTexture };
             voice = gameObject.AddComponent<AudioSource>();
+            voice.priority = TerraMod.VoicePriority;
             voice.playOnAwake = false;
             voice.spatialBlend = 0f;
         }
@@ -124,6 +137,7 @@ namespace TerraKnight.Items
             if (Mathf.Abs(v.x) > 960f) k = Mathf.Min(k, 960f / Mathf.Abs(v.x));
             if (Mathf.Abs(v.y) > 600f) k = Mathf.Min(k, 600f / Mathf.Abs(v.y));
             v *= k;
+            var cursor = v;
             if (n >= 1)
             {
                 bool found = NearestEnemy(p + v, 400f, out var enemy);
@@ -135,10 +149,21 @@ namespace TerraKnight.Items
                     v += new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
                 }
             }
+            if (n == 0) usePattern = NextPattern();
             var s = Get();
             s.Active = true;
             s.Root.SetActive(true);
             s.D = v / 2f;
+            Shape(s, usePattern, n, v);
+            // The rain's three all come down on the cursor's spot itself as the use began (they leave over a few ticks, the
+            // view moving with a walking player), held there in the world while the player moves.
+            s.Anchored = usePattern == Pattern.Rain && !DevOldRain;
+            if (s.Anchored)
+            {
+                if (n == 0) rainSpot = p + cursor;
+                s.Anchor = rainSpot;
+                s.V = rainSpot - p;
+            }
             s.Ai0 = Random.Range(-100, 101);
             // The True Copper Shortsword throws its own sword every time, with the copper shortsword's trail (Pl:49194-49197, M:30660-30664).
             bool trueCopper = item != null && item.Type == ItemType.TrueCopperShortsword;
@@ -184,7 +209,12 @@ namespace TerraKnight.Items
 
         Sword Get()
         {
-            foreach (var s in swords) if (!s.Active) return s;
+            foreach (var s in swords)
+                if (!s.Active)
+                {
+                    s.Anchored = false;
+                    return s;
+                }
             var sword = new Sword { Root = new GameObject("Zenith Sword") };
             sword.Root.transform.SetParent(transform, false);
             sword.Main = Renderer(sword.Root, "Blade", null);
@@ -237,7 +267,15 @@ namespace TerraKnight.Items
                 foreach (var s in swords) Stop(s);
                 return;
             }
+            var was = playerPx;
             playerPx = TerraParticles.ToPx(hero.GetComponent<BoxCollider2D>().bounds.center);
+            // A sword held to the world keeps its trail there too (the trail is kept relative to the player).
+            var moved = playerPx - was;
+            if (moved != Vector2.zero)
+                foreach (var s in swords)
+                    if (s.Active && s.Anchored)
+                        for (int i = 0; i < s.TrailCount; i++) s.TrailPos[i] -= moved;
+            Gather();
             tickAccumulator += Time.deltaTime * 60f;
             int ticks = Mathf.Min(Mathf.FloorToInt(tickAccumulator), 4);
             tickAccumulator -= Mathf.FloorToInt(tickAccumulator);
@@ -249,8 +287,9 @@ namespace TerraKnight.Items
                     // extraUpdates = 1: two AI steps a tick.
                     for (int step = 0; step < 2 && s.Active; step++)
                     {
-                        Step(s);
-                        if (s.Active) HitTest(s);
+                        if (s.Pattern == Pattern.Loop) Step(s);
+                        else StepPattern(s);
+                        if (s.Active && s.Pattern != Pattern.Orbit) HitTest(s);
                     }
                 }
             foreach (var s in swords) if (s.Active) Draw(s);
@@ -361,8 +400,10 @@ namespace TerraKnight.Items
                 if (hm == null || hm.isDead) continue;
                 int id = hm.GetInstanceID();
                 if (s.Cooldowns.ContainsKey(id)) continue;
-                s.Cooldowns[id] = s.Item != null && s.Item.Type == ItemType.Zenith ? ZenithHitCooldownTicks : HitCooldownTicks;
+                // The Zenith's slower hits, and the True Copper Shortsword's (the Zenith shimmered: the same swords, the same damage a second).
+                s.Cooldowns[id] = s.Item != null && (s.Item.Type == ItemType.Zenith || s.Item.Type == ItemType.TrueCopperShortsword) ? ZenithHitCooldownTicks : HitCooldownTicks;
                 melee.HitFrom(col, s.Item, s.Spin, world);
+                DevHit(s.Pattern);
             }
         }
 
@@ -387,9 +428,11 @@ namespace TerraKnight.Items
 
         void Draw(Sword s)
         {
-            float fade = Fade(s.T);
+            float fade = FadeOf(s, s.T);
+            // A remade pattern's swords meet on one spot: each drawn fainter, so their glow added keeps its colours (ZenithArts.Brightness).
+            float bright = Brightness(s.Pattern);
             Place(s.Main, s, s.Rel, s.BladeAngle, 1f, new Color(1f, 1f, 1f, s.Opacity * fade), 0f);
-            Place(s.Glow, s, s.Rel, s.BladeAngle, 1.25f, new Color(1f, 1f, 1f, 0.5f * s.Opacity * fade), -0.0001f);
+            Place(s.Glow, s, s.Rel, s.BladeAngle, 1.25f, new Color(1f, 1f, 1f, 0.5f * s.Opacity * fade * bright), -0.0001f);
             for (int i = 0; i < s.Echoes.Length; i++)
             {
                 int k = 15 * (i + 1);
@@ -397,7 +440,7 @@ namespace TerraKnight.Items
                 bool on = k < s.TrailCount;
                 if (echo.enabled != on) echo.enabled = on;
                 if (!on) continue;
-                float alpha = (60 - k) / 60f * s.Opacity * Fade(s.T - k * s.Increment);
+                float alpha = (60 - k) / 60f * s.Opacity * FadeOf(s, s.T - k * s.Increment);
                 Place(echo, s, s.TrailPos[k], s.TrailAngle[k], 1f, new Color(1f, 1f, 1f, alpha), 0.0001f * (i + 1));
             }
             DrawSparkle(s, fade);
@@ -407,8 +450,9 @@ namespace TerraKnight.Items
             if (s.T < 60f && fx != null)
             {
                 var trail = s.Profile.Trail;
-                fx.Light(playerPx + s.Rel, trail * (0.5f * s.Opacity), 3f, true);
-                fx.Light(playerPx, Color.Lerp(Color.white, trail, 0.7f) * (0.15f * s.Opacity), 3f, true);
+                // The lights of swords meeting on a spot add up to a round glare: theirs the more faint.
+                fx.Light(playerPx + s.Rel, trail * (0.5f * s.Opacity * bright * bright), 3f, true);
+                fx.Light(playerPx, Color.Lerp(Color.white, trail, 0.7f) * (0.15f * s.Opacity * bright * bright), 3f, true);
             }
         }
 
@@ -430,7 +474,9 @@ namespace TerraKnight.Items
         /// <summary>Main.DrawPrettyStarSparkle at the blade's tip, brightest as the sword reaches its target.</summary>
         void DrawSparkle(Sword s, float fade)
         {
-            float g = Mathf.Clamp01((s.T - 15f) / 15f) * Mathf.Clamp01((45f - s.T) / 15f);
+            // Gathered round the player (ZenithArts) they show no sparkle.
+            float st = s.T - SparkleDelay(s);
+            float g = s.Pattern == Pattern.Orbit ? 0f : Mathf.Clamp01((st - 15f) / 15f) * Mathf.Clamp01((45f - st) / 15f) * Brightness(s.Pattern);
             var tipPx = playerPx + s.Rel + new Vector2(Mathf.Cos(s.BladeAngle), Mathf.Sin(s.BladeAngle)) * s.Profile.Blade / 2f;
             var tip = TerraParticles.ToWorld(tipPx);
             var c = s.Profile.Trail * 0.5f * s.Opacity * fade;
@@ -462,11 +508,14 @@ namespace TerraKnight.Items
             verts.Clear();
             colors.Clear();
             tris.Clear();
-            float half = s.Profile.Blade / 2f;
+            // A remade pattern's sword flies point first: its ribbon is a band across its way, a little narrower.
+            bool across = s.Pattern != Pattern.Loop;
+            float half = s.Profile.Blade / (across ? 3f : 2f);
             for (int i = 0; i < s.TrailCount; i++)
             {
                 var c = playerPx + s.TrailPos[i];
-                var axis = new Vector2(Mathf.Cos(s.TrailAngle[i]), Mathf.Sin(s.TrailAngle[i])) * half;
+                float ang = s.TrailAngle[i] + (across ? Mathf.PI / 2f : 0f);
+                var axis = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * half;
                 var a = TerraParticles.ToWorld(c + axis);
                 var m = TerraParticles.ToWorld(c);
                 var b = TerraParticles.ToWorld(c - axis);
@@ -475,7 +524,7 @@ namespace TerraKnight.Items
                 verts.Add(new Vector3(b.x, b.y, Z + 0.0003f));
                 // Fading towards the old end, and (the shader's gradient, roughly) across the blade from its middle.
                 var col = s.Profile.Trail;
-                col.a = 0.35f * Mathf.Max(0f, 1f - (i / 59f) / 0.98f) * s.Opacity;
+                col.a = 0.35f * Mathf.Max(0f, 1f - (i / 59f) / 0.98f) * s.Opacity * Brightness(s.Pattern);
                 col = Effects.WeaponEffects.Straight(col);
                 var edge = col;
                 edge.a = 0f;

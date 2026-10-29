@@ -413,7 +413,9 @@ namespace TerraKnight.Net
             float facing = s.FacingRight ? 1f : -1f;
             if (showRider)
             {
-                sprite.Pose(Feet, s.Vel, s.Grounded, facing, s.Swing, item, s.ItemScale, s.Opacity, s.Body, s.Eq, s.Shadows, s.Hold(), s.Leg, s.Seated);
+                var mountEquips=s.Eq;
+                if(mount?.Skates==true)mountEquips.Shoe=mount.Native-30;
+                sprite.Pose(Feet, s.Vel, s.Grounded, facing, s.Swing, item, s.ItemScale, s.Opacity, s.Body, mountEquips, s.Shadows, s.Hold(), s.Leg, s.Seated);
                 if (!sprite.SpecialPoseActive) sprite.MountAppearance(mount, facing, s.Vel, s.Grounded, s.Eq);
             }
             if(mount!=null)Mounts.Draw(s.Mount,Feet-Vector2.up*Mounts.RiderRise(mount,s.Vel,s.Grounded),s.Vel,s.Grounded,facing,s.Opacity);

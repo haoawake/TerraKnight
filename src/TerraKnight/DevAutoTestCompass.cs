@@ -171,10 +171,28 @@ namespace TerraKnight
                     Check("灰王地下室全屏显示路线", UI.WorldMap.DevFullCompassDots > 0, grey);
                     Shot("Room_Bretta_Basement", "compass_grey_prince_statue");
                     yield return new WaitForSeconds(.2f);
+                    // Zote dead: his fights pass over to the next (here none is left).
                     pd.zoteDead = true;
                     UI.WorldMap.DevCompassForget();
                     string blocked = UI.WorldMap.DevCompass();
-                    Check("剧情记录变化不跳转深巢或真菌荒地", UI.WorldMap.DevCompassFight == ItemType.RelicGreyPrince && UI.WorldMap.DevCompassRoom == "Room_Bretta_Basement", blocked);
+                    Check("左特死后不再指向他的战斗", UI.WorldMap.DevCompassFight != ItemType.RelicGreyPrince && UI.WorldMap.DevCompassFight != ItemType.RelicZote
+                        && !BossGuide.NextFights(mod).Contains(ItemType.RelicGreyPrince), blocked);
+                    mod.GrantedAbilities.Remove(BossMastery.Prefix + ItemType.RelicZote);
+                    mod.GrantedAbilities.Remove(BossMastery.Prefix + ItemType.RelicOblobble);
+                    Shop.DevStage = 4;
+                    var stage4 = BossGuide.NextFights(mod);
+                    Check("左特死后斗兽场指向下一个首领", !stage4.Contains(ItemType.RelicZote) && stage4.Contains(ItemType.RelicOblobble), string.Join("、", stage4));
+                    // The voice's way on (BossGuide.Compose) passes over him the same way.
+                    var wayOn = BossGuide.DevWayOn(mod, ItemType.RelicLobsterLancer);
+                    Check("左特死后指引指向下一个首领", wayOn == ItemType.RelicOblobble, wayOn?.ToString() ?? "无");
+                    mod.GrantedAbilities.Add(BossMastery.Prefix + ItemType.RelicOblobble);
+                    wayOn = BossGuide.DevWayOn(mod, ItemType.RelicLobsterLancer);
+                    Check("左特死后指引跳过灰色王子左特", wayOn != ItemType.RelicZote && wayOn != ItemType.RelicGreyPrince, wayOn?.ToString() ?? "无（收束对白）");
+                    mod.GrantedAbilities.Remove(BossMastery.Prefix + ItemType.RelicOblobble);
+                    pd.zoteDead = false;
+                    Check("左特活着时仍指向他", BossGuide.NextFights(mod).Contains(ItemType.RelicZote), string.Join("、", BossGuide.NextFights(mod)));
+                    wayOn = BossGuide.DevWayOn(mod, ItemType.RelicLobsterLancer);
+                    Check("左特活着时指引仍指向他", wayOn == ItemType.RelicZote, wayOn?.ToString() ?? "无");
                     UI.FullMap.DevSetOpen(false);
                 }
                 finally { pd.zoteDead = oldDead; pd.zoteRescuedBuzzer = oldBuzzer; pd.zoteRescuedDeepnest = oldDeepnest; pd.brettaRescued = oldBretta; pd.zoteDefeated = oldDefeated; }

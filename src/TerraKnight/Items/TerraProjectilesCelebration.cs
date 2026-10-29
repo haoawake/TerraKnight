@@ -716,9 +716,12 @@ namespace TerraKnight.Items
                 D(i).NoGravity = true;
             }
             var near = new Rect(c - new Vector2(40f, 40f), new Vector2(80f, 80f));
+            var r = p.Ranged;
             foreach (var q in live)
             {
                 if (q.Dead || q.Kind != ProjKind.Electrosphere) continue;
+                // An art's spheres stay as set for their five seconds (the Electrosphere Launcher's net of three).
+                if (q.Ranged != null && q.Ranged.Volley != 0) continue;
                 var qc = CenterPx(q);
                 var qs = q.HitSize != Vector2.zero ? q.HitSize : new Vector2(80f, 80f);
                 if (!near.Overlaps(new Rect(qc - qs / 2f, qs))) continue;
@@ -727,8 +730,17 @@ namespace TerraKnight.Items
             }
             var keep = SpawnClass;
             SpawnClass = p.Class;
-            if (Spawn(ProjKind.Electrosphere, p.Pos, Vector2.zero, p.Damage, 0f, p.Crit) != null) DevElectrospheres++;
+            var sphere = Spawn(ProjKind.Electrosphere, p.Pos, Vector2.zero, p.Damage, 0f, p.Crit);
             SpawnClass = keep;
+            if (sphere == null) return;
+            DevElectrospheres++;
+            // The missile's lightning (its left's and its art's) goes on in the sphere, on every fourth of its hits.
+            if (r != null && (r.Chain > 0 || r.Volley != 0))
+                sphere.Ranged = new RangedShot
+                {
+                    Item = r.Item, Chain = r.Chain, ChainDamage = r.ChainDamage, ChainEvery = 4, Volley = r.Volley,
+                    Debuff = r.Debuff, DebuffTicks = r.DebuffTicks, DebuffChance = r.DebuffChance, Base = sphere.Damage, LastPos = sphere.Pos,
+                };
         }
     }
 }

@@ -49,7 +49,6 @@ namespace TerraKnight.EnemyAi.Bosses
             // The second part.
             OnEnter("SmallShot LowHigh", AimArc);
             OnEnter("SmallShot HighLow", AimArc);
-            OnEnter("Plume Up", () => { if (Phase >= 2 && Phase <= 3) Run(March()); });
             if (AddState("TK Rising Slash", RisingSlash, "Idle Stance") != null)
             {
                 Branch("Dash End", "TK Rising Slash", WantRise);
@@ -57,8 +56,6 @@ namespace TerraKnight.EnemyAi.Bosses
                     if (Batch2.Has(Control, c)) Branch(c, "TK Rising Slash", RiseAtHigh);
             }
             // The third.
-            OnEnter("SelfStab Thrust", () => Run(Rings(2)));
-            OnEnter("Mini Thrust", () => Run(Rings(1)));
             OnEnter("Puppet Up", LockBounce);
             OnEnter("Puppet ReUp", LockBounce);
             foreach (var s in new[] { "PuppetSlam", "Puppet End", "Stun Start", "Idle Stance", "Fall Down", "Quick Stun" }) OnEnter(s, FreeBounce);
@@ -101,37 +98,7 @@ namespace TerraKnight.EnemyAi.Bosses
             ang.Value = a - tween.Value * 0.75f;
         }
 
-        /// <summary>
-        /// His own plumes from under him one after another to where the player was, each rising as his stomp's do. They are
-        /// set where his own are (Plume Y, the floor's height; his own height left five of them hanging in the air after a
-        /// stomp, the user's 10-25) and wait in their wind-up for his PLUMES UP, which his stomp's Plume Up sends before
-        /// these come: each is sent its own a moment after it shows.
-        /// </summary>
-        IEnumerator March()
-        {
-            if (Plume == null || !RoomForStrike) yield break;
-            Vector2 target = Lock();
-            float dir = target.x >= Me.x ? 1f : -1f;
-            float ground = GroundBelow(Me);
-            var plumeY = Float("Plume Y");
-            float y = plumeY != null ? plumeY.Value : ground;
-            float wall = WallTowards(new Vector2(Me.x, ground + 0.6f), dir, 60f);
-            float end = target.x + dir * 2.2f;
-            float x = Me.x + dir * 2.5f;
-            for (int i = 0; i < 12 && (end - x) * dir > -0.01f && Mathf.Abs(wall - x) > 0.8f; i++)
-            {
-                var go = OwnShots.Throw(Plume, new Vector2(x, y), Vector2.zero);
-                if (go != null) Run(PlumeUp(go));
-                x += dir * 2.2f;
-                yield return wait012;
-            }
-        }
 
-        IEnumerator PlumeUp(GameObject go)
-        {
-            yield return new WaitForSeconds(Warn(0.5f));
-            if (go != null && go.activeInHierarchy) FSMUtility.SendEventToGameObject(go, "PLUMES UP");
-        }
 
         /// <summary>A dash that ends under the player (or one kept up in the air) goes on up.</summary>
         bool WantRise()
@@ -247,27 +214,7 @@ namespace TerraKnight.EnemyAi.Bosses
 
         // ------------------------------------------------------------------ the third part
 
-        float gap;
 
-        /// <summary>Rings of his own infection shots out of him as he stabs himself, a gap in each, the gap turning.</summary>
-        IEnumerator Rings(int count)
-        {
-            if (Phase != 3 || Shot == null) yield break;
-            for (int r = 0; r < count; r++)
-            {
-                const int n = 16;
-                const float step = 360f / n;
-                Vector2 c = Me;
-                for (int i = 3; i < n; i++)
-                {
-                    float a = (gap + i * step) * Mathf.Deg2Rad;
-                    var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                    OwnShots.Throw(Shot, c + d * 1.2f, d * 9f);
-                }
-                gap += 45f;
-                if (r + 1 < count) yield return wait035;
-            }
-        }
 
         /// <summary>Each bounce of the puppet slams goes after where the player is as it rises, not after him.</summary>
         void LockBounce()

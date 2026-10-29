@@ -27,6 +27,7 @@ namespace TerraKnight.Player
 
         // Player defaults.
         const float MaxRunSpeed = 3f, RunAcceleration = 0.08f, RunSlowdown = 0.2f;
+        internal static float SkateRunThreshold {get;private set;} = 4f;
         const float JumpSpeed = 5.01f;
         const int JumpHeight = 15;
         const float MaxFallSpeed = 10f;
@@ -53,7 +54,7 @@ namespace TerraKnight.Player
         public static bool JumpBoost;
         /// <summary>rocketBoots: 1 Rocket Boots, 2 Spectre or Lightning Boots; 0 none.</summary>
         public static int RocketKind;
-        static bool RocketBoots => RocketKind > 0;
+        static bool RocketBoots => RocketKind > 0 && !Mounts.Riding;
         /// <summary>Frog Leg: jumpSpeedBoost, and auto-jump (holding jump jumps again on landing).</summary>
         public static float JumpSpeedBoost;
         public static bool AutoJump;
@@ -75,8 +76,8 @@ namespace TerraKnight.Player
         public static bool FairyDust, DesertBoots, FlameTrail;
 
         // UpdateJumpHeight (Pl:19719-19738): the werewolf jumps 2 ticks longer and 0.2 faster; the Soaring Insignia 1.8 faster.
-        static float JumpSpeedNow => (JumpBoost ? 6.51f : JumpSpeed) + JumpSpeedBoost + (Werewolf ? 0.2f : 0f) + (EmpressBrooch ? 1.8f : 0f);
-        static int JumpHeightNow => (JumpBoost ? 20 : JumpHeight) + (Werewolf ? 2 : 0);
+        static float JumpSpeedNow => (JumpBoost ? 6.51f : JumpSpeed) + JumpSpeedBoost + (Werewolf ? 0.2f : 0f) + (EmpressBrooch ? 1.8f : 0f) + (Mounts.Current?.Skates==true?Mounts.Current.Jump:0f);
+        static int JumpHeightNow => (JumpBoost ? 20 : JumpHeight) + (Werewolf ? 2 : 0) + (Mounts.Current?.Skates==true?Mounts.Current.JumpTicks:0);
 
         /// <summary>The werewolf (the Moon Charm at night).</summary>
         public static bool Werewolf;
@@ -704,6 +705,24 @@ namespace TerraKnight.Player
                 accel *= 1.25f;
             }
             float sprintDust = (accRun + maxRun) / 2f;
+            SkateRunThreshold=maxRun;
+            if(Mounts.Current?.Skates==true)
+            {
+                if(!left&&!right&&!GrapplingHook.IsLatched)
+                {
+                    float amount=1f-Mathf.Pow(.7f,t);
+                    if(Mathf.Abs(vx)<1.5f) {vx=Mathf.Lerp(vx,0f,amount);if(Mathf.Abs(vx)<.03f)vx=0f;}
+                    else if(Mathf.Abs(vx)<accRun-1f && (grounded||Mathf.Abs(vx)<=MaxRunSpeed))
+                    {
+                        var inventory=TerraMod.Instance?.Inventory;
+                        var held=inventory!=null?inventory.Slots[inventory.Held].Def:null;
+                        float buildTicks=held!=null&&(held.Places!=World.CellKind.Empty||held.PlacesStation!=World.StationKind.None||held.PlacesChest)?Mathf.Max(1f,held.UseTime*60f/(1f+Items.Equipment.Current.TileSpeed+Items.Equipment.Current.BlockSpeed)):10f;
+                        vx=Mathf.Lerp(vx,Mathf.Sign(vx)*Mathf.Max(1.5f,16f/buildTicks),amount);
+                    }
+                }
+                // Player.RollerSkateMovement: only brake the part above the current run-speed cap.
+                slowdown=Mathf.Clamp(Mathf.Abs(vx)-Mathf.Max(maxRun,accRun),0f,slowdown);
+            }
             if (left && vx > -maxRun)
             {
                 if (vx > slowdown) vx -= slowdown * t;

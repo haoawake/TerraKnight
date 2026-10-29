@@ -158,6 +158,7 @@ namespace TerraKnight
                 {
                     Type = d.Type.ToString(), d.Name, d.Texture, d.Damage, Defense = d.Defense, d.Stage, Source = d.Source.ToString(), Class = d.Class.ToString(),
                     d.IsWeapon, d.IsArmor, d.IsAccessory, Ammo = d.Ammo.ToString(), From = src.TryGetValue(d.Type, out var how) ? how : null,
+                    d.IsWhip, d.IsSummon, d.Sentry, UseAmmo = d.UseAmmo.ToString(), Combat = ProgressionLoot.CombatWeapon(d), Calibrated = WeaponCalibration.Measured(d.Type),
                 });
             string path = System.IO.Path.Combine(outDir, "itemdump.json");
             System.IO.File.WriteAllText(path, Newtonsoft.Json.JsonConvert.SerializeObject(rows, Newtonsoft.Json.Formatting.Indented));

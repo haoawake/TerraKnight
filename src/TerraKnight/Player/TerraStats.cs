@@ -34,6 +34,20 @@ namespace TerraKnight.Player
         public int LifeRegenBonus;
         /// <summary>manaRegenBonus from equipment (the Mana Regeneration Band's 60).</summary>
         public int ManaRegenBonus;
+
+        /// <summary>
+        /// Mana a second once the regeneration wait is over, at the pool's present fill. UpdateManaRegen (Pl:19539): manaMax/3 +
+        /// manaRegenBonus + 1 (twice standing still or with the potion), the Arcane Crystal manaMax / 50 more, by half to whole as
+        /// the pool fills, at least 2; every 120 of it a point.
+        /// </summary>
+        internal float ManaRegenRate(bool still, bool arcane = true)
+        {
+            int regen = ManaMax / 3 + ManaRegenBonus + 1;
+            if (still || ManaRegenBuff) regen *= 2;
+            if (arcane && Boosts.Contains(Items.PermanentBoost.ArcaneCrystal)) regen += ManaMax / 50;
+            regen = Mathf.Max(2, (int)(regen * (0.5f + 0.5f * Mana / Mathf.Max(1, ManaMax))));
+            return regen * 60f / 120f;
+        }
         public int LifeCrystals, ManaCrystals;
         /// <summary>Life Fruits eaten (5 more maximum life each, up to 20, after the crystals).</summary>
         public int LifeFruits;
@@ -317,14 +331,7 @@ namespace TerraKnight.Player
                 return;
             }
             if (Mana >= ManaMax) return;
-            // UpdateManaRegen (Pl:19539): manaMax/3 + manaRegenBonus + 1 (twice standing still or with the potion), by half to whole as the
-            // pool fills, at least 2; every 120 of it a point; the Arcane Crystal manaMax / 50 more.
-            int regen = ManaMax / 3 + ManaRegenBonus + 1;
-            if (standingStill || ManaRegenBuff) regen *= 2;
-            if (arcane) regen += ManaMax / 50;
-            regen = Mathf.Max(2, (int)(regen * (0.5f + 0.5f * Mana / Mathf.Max(1, ManaMax))));
-            float rate = regen * 60f / 120f;
-            manaAccumulator += rate * dt;
+            manaAccumulator += ManaRegenRate(standingStill) * dt;
             if (manaAccumulator >= 1f)
             {
                 int whole = Mathf.FloorToInt(manaAccumulator);

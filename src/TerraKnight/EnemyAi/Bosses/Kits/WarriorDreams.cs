@@ -36,6 +36,11 @@ namespace TerraKnight.EnemyAi.Bosses
             rage = Bool("Rage");
             Tempo("Wait", "Wait Rage", "Recover");
             if (Batch2.Has(Control, "Check Hero Pos")) Branch("Check Hero Pos", "Antic", () => Engaged && HasTarget);
+            // With all four swords away, Antic Rage cancels. Going straight back through
+            // our unconditional position branch retries in the same frame forever. Use his
+            // own rage cooldown before checking again, as the two-sword cancellation does.
+            if (Batch2.Has(Control, "Antic Rage") && Batch2.Has(Control, "Wait Rage"))
+                Divert("Antic Rage", "CANCEL", "Wait Rage");
             OnEnter("Recover", () => { if (Rank >= 2) Run(OneMore()); });
             Run(HookSwords());
         }
@@ -191,14 +196,42 @@ namespace TerraKnight.EnemyAi.Bosses
     /// <summary>
     /// Elder Hu: his rings closing in from both sides close faster. His ring rows keep their own patterns: rings switched
     /// off and on again to move a row's gap restarted their scripts and missed the row's fall (no ring of a row ever hit,
-    /// 10-25).
+    /// 10-25). A ring of his comes in at a fixed height (its Reset: y 13) and slams down from there, under a player up in a
+    /// tall hall (Godhome's, its top at 21.6; the user's 10-28 "新版ai依旧有boss打不到高处，比如胡长老"): one that would come in
+    /// under him comes in over his head instead, under the hall's top, and slams down through him as from its own height.
     /// </summary>
     [Kit("GhostHu")]
     internal sealed class GhostHuKit : WarriorDreamKit
     {
         protected override Look Theme => Look.Soul;
 
-        protected override void Setup() => ScaleFloat("Mega Pause", 0.7f);
+        public static int DevLifted;
+
+        protected override void Setup()
+        {
+            ScaleFloat("Mega Pause", 0.7f);
+            foreach (var root in gameObject.scene.GetRootGameObjects())
+            {
+                if (root.name != "Ring Holder") continue;
+                foreach (var f in root.GetComponentsInChildren<PlayMakerFSM>(true))
+                {
+                    if (f.FsmName != "Control") continue;
+                    var ring = f.transform;
+                    OnEnter("Antic", () => Lift(ring), true, f);
+                }
+            }
+        }
+
+        void Lift(Transform ring)
+        {
+            if (!HasTarget) return;
+            float over = TargetCenter.y + TargetHeight * 0.5f + 1.2f;
+            if (over <= ring.position.y) return;
+            float y = Mathf.Min(over, Arena.yMax - 1f);
+            if (y <= ring.position.y) return;
+            ring.position = new Vector3(ring.position.x, y, ring.position.z);
+            DevLifted++;
+        }
     }
 
     /// <summary>

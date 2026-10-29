@@ -50,7 +50,7 @@ namespace TerraKnight.World
         /// <summary>Terraria's Target Dummy (tile 378, ItemID 3202): struck, never dying, its damage a second shown (World.TargetDummy).</summary>
         TargetDummy,
         RegionalFirst = 1000, RegionalLast = 1503,
-        CasinoSlots=1504, CasinoPinball=1505, CasinoRoulette=1506,
+        CasinoSlots=1504, CasinoPinball=1505, CasinoRoulette=1506, HomeEverywhere=1507,
     }
 
     /// <summary>
@@ -126,6 +126,7 @@ namespace TerraKnight.World
                 // Tile 617: Direction PlaceLeft with a PlaceRight alternate (frameY 72 on: the sculpture turned).
                 specs[kv.Key] = new Spec { Custom = kv.Value.Texture, W = kv.Value.W, H = kv.Value.H, Heights = h, Item = kv.Value.Item, Counts = new string[0], Faces = true };
             }
+            AddHomeSpec();
             AddHousingSpecs();
             AddRegionalSpecs();
             AddCasinoSpecs();
@@ -228,6 +229,11 @@ namespace TerraKnight.World
             /// <summary>Bottom middle, in the scene's own coordinates.</summary>
             public Vector2 Local;
             public int Damage;
+            public int HomeColor = -1, HomeOrder;
+            public string HomeName;
+            public LineRenderer Aura;
+            public ParticleSystem HomeHighlight;
+            public SoftHomeBoundary HomeBoundary;
             /// <summary>Set in the world by the mod (the altars): not the player's, never knocked down nor saved.</summary>
             public bool Fixed;
             /// <summary>Placed facing right (Spec.Faces: the player faced right as it went down).</summary>
@@ -263,6 +269,8 @@ namespace TerraKnight.World
             public StationKind Kind;
             /// <summary>Placed facing right (Station.Right).</summary>
             public bool Right;
+            public int HomeColor, HomeOrder;
+            public string HomeName;
         }
 
         public static Stations Instance { get; private set; }
@@ -290,6 +298,7 @@ namespace TerraKnight.World
         /// <summary>Player.AdjTiles: a station of this recipe name stands within the player's reach.</summary>
         public static bool Near(string station, HeroController hero)
         {
+            if(HomeActive)return SelectedHomeStations().Contains(station);
             if (string.IsNullOrEmpty(station) || hero == null) return false;
             var reach = Reach(hero);
             foreach (var s in stations)
@@ -304,6 +313,7 @@ namespace TerraKnight.World
         /// <summary>The station names in reach added to <paramref name="into"/> (the crafting column asks every frame).</summary>
         public static void NearNames(HeroController hero, ICollection<string> into)
         {
+            if(HomeActive){HomeStations(SelectedHome,into);return;}
             if (hero == null) return;
             var reach = Reach(hero);
             foreach (var s in stations)
@@ -314,6 +324,7 @@ namespace TerraKnight.World
         public static List<string> NearNames(HeroController hero)
         {
             var names = new List<string>();
+            if(HomeActive){HomeStations(SelectedHome,names);return names;}
             if (hero == null) return names;
             var reach = Reach(hero);
             foreach (var s in stations)
@@ -347,6 +358,7 @@ namespace TerraKnight.World
         {
             if (!Net.WorldSync.CanInteract) return false;
             if (hero == null || !specs.ContainsKey(kind)) return false;
+            if(kind==StationKind.HomeEverywhere && FreeHomeColor()<0) { Net.NetChat.Add("64种家园颜色已全部占用，请先回收一个家园。",Color.yellow);return false; }
             if (!FindSpot(kind, hero, aim, out var bottom)) return false;
             var at = CellGrid.WorldToCell(bottom + new Vector2(0f, 0.1f));
             var region = TerraWorld.RegionAt(at.x, at.y) ?? TerrainSystem.Current?.Region;
@@ -358,7 +370,8 @@ namespace TerraKnight.World
                 Net.WorldSync.Submit(new Net.WorldSync.Action { Op = "station", Scene = region.SceneName, X = local.x, Y = local.y, Kind = (int)kind, Count = TerraMod.Instance.Inventory.Infinite ? 0 : 1, Placed = right });
                 return true;
             }
-            stations.Add(new Station { Kind = kind, Region = region, Scene = region.SceneName, Local = bottom - (Vector2)region.Root.position, Right = right });
+            stations.Add(new Station { Kind = kind, Region = region, Scene = region.SceneName, Local = bottom - (Vector2)region.Root.position, Right = right, HomeColor = kind==StationKind.HomeEverywhere?FreeHomeColor():-1 });
+            RepairHomeColors();
             TerraMod.Instance?.PlaySound("Dig_" + Random.Range(0, 3));
             DevPlaced++;
             return true;
@@ -523,6 +536,8 @@ namespace TerraKnight.World
         /// <summary>A right click on a station (Player.TileInteractionsUse): what it does; false for one a click does nothing to.</summary>
         static bool Use(Station s, HeroController hero)
         {
+            // A home right-clicked: its storage, as a chest opens (its colour and name from the storage's button).
+            if(s.Kind==StationKind.HomeEverywhere) { InventoryGui.OpenHome(HomeKey(s));return true; }
             if (Casino.IsMachine(s.Kind)) return Casino.OpenFor(s.Kind,s.Box);
             {
                 // A door opens or shuts (StationsHousing: WorldGen.OpenDoor / CloseDoor).
@@ -923,6 +938,7 @@ namespace TerraKnight.World
                 }
                 s.Renderer.gameObject.SetActive(true);
                 s.Renderer.enabled = true;
+                DrawHomeAura(s);
                 if (s.Relic != null)
                 {
                     s.Relic.SetVisible(true);
@@ -937,6 +953,7 @@ namespace TerraKnight.World
                 float sink = (spec.Heights[spec.Heights.Length - 1] - 16) + spec.DrawY;
                 s.Renderer.transform.localPosition = new Vector3(s.Local.x, s.Local.y - sink * Px, Z - s.Region.Root.position.z);
                 Animate(s, sink, redraw);
+                DrawHomeConnection(s);
                 if (s.Spec.SolidTop)
                 {
                     if (s.Top == null) s.Top = MakeTop(s);
@@ -959,6 +976,7 @@ namespace TerraKnight.World
         static Sprite SpriteOf(StationKind kind, bool right = false, int frame = 0, bool placed = false)
         {
             if(Casino.IsMachine(kind))return CasinoArt.Sprite(kind);
+            if(kind==StationKind.HomeEverywhere) { var texture=HomeEverywhereArt.Texture(true);return HomeSprite??(HomeSprite=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,0),texture.width/(3*CellGrid.CellSize),0,SpriteMeshType.FullRect)); }
             var spec = specs[kind];
             if (spec.Native != null) return RegionalFurniture.Sprite(kind);
             right &= spec.RightX > 0 && spec.Custom == null;
@@ -1150,12 +1168,14 @@ namespace TerraKnight.World
         static void Remove(int i)
         {
             var s = stations[i];
+            if (s.Aura != null) Object.Destroy(s.Aura.sharedMaterial);
             if (s.Renderer != null) Object.Destroy(s.Renderer.gameObject);
             stations.RemoveAt(i);
         }
 
         public static void Clear()
         {
+            SelectedHome=null;
             FixedStations.Reset();
             for (int i = stations.Count - 1; i >= 0; i--) Remove(i);
         }
@@ -1163,7 +1183,7 @@ namespace TerraKnight.World
         public static List<Saved> Save()
         {
             var list = new List<Saved>(stations.Count);
-            foreach (var s in stations) if (!s.Fixed) list.Add(new Saved { Scene = s.Scene, Local = s.Local, Kind = s.Kind, Right = s.Right });
+            foreach (var s in stations) if (!s.Fixed) list.Add(new Saved { Scene = s.Scene, Local = s.Local, Kind = s.Kind, Right = s.Right, HomeColor=s.HomeColor, HomeOrder=s.HomeOrder, HomeName=s.HomeName });
             return list;
         }
 
@@ -1172,7 +1192,8 @@ namespace TerraKnight.World
             Clear();
             if (saved == null) return;
             foreach (var s in saved)
-                if (specs.ContainsKey(s.Kind)) stations.Add(new Station { Scene = s.Scene, Local = s.Local, Kind = s.Kind, Right = s.Right && specs[s.Kind].Faces });
+                if (specs.ContainsKey(s.Kind)) stations.Add(new Station { Scene = s.Scene, Local = s.Local, Kind = s.Kind, Right = s.Right && specs[s.Kind].Faces, HomeColor=s.HomeColor,HomeOrder=s.HomeOrder,HomeName=s.HomeName });
+            RepairHomeColors();
         }
 
         /// <summary>Dev: the stations standing in loaded scenes, by kind.</summary>

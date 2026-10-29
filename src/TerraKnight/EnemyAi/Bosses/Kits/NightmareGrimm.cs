@@ -25,17 +25,7 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override void SetupMore()
         {
             OnEnter("Pillar", () => MarkGround(TargetFeet, 3f, Warn(0.5f)));
-            OnEnter("AD Fire", () => Run(Trail()), first: false);
         }
 
-        /// <summary>Fire dropped from him as he dives: pools where it lands (the floor, or a block the player built).</summary>
-        IEnumerator Trail()
-        {
-            for (int i = 0; i < 6 && StateNow == "AD Fire"; i++)
-            {
-                OwnShots.Throw(FireShot, Me, new Vector2(Random.Range(-1f, 1f), -6f));
-                yield return Batch5.Drip;
-            }
-        }
     }
 }

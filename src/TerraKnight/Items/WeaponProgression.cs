@@ -6,8 +6,8 @@ namespace TerraKnight.Items
 {
     internal static partial class ProgressionBalance
     {
-        // Apply after model, boost, calibration and recipe passes: none may promote
-        // cheap construction wood or flatten lunar/final weapons back into ordinary drops.
+        // Apply after model, boost, calibration and recipe passes. Keep timber cheap
+        // and native endgame floors, then apply explicitly measured late-game exceptions.
         internal static readonly Dictionary<ItemType,int> DamageBeforeProgression = new Dictionary<ItemType,int>();
         internal static bool TimberWeapon(ItemType t)
         {
@@ -21,6 +21,8 @@ namespace TerraKnight.Items
             {
                 if(!BalancedWeapon(d))continue;
                 DamageBeforeProgression[d.Type]=d.Damage;
+                // The class balance's table (WeaponCalibration) is the last word on the weapons it holds.
+                if(WeaponCalibration.Measured(d.Type))continue;
                 if(!OriginalWeapon(d,out int native,out int rarity)||native<=0)continue;
                 // At most twice their native hit: a wooden bow is an improvised
                 // beginning, not a metal/boss weapon bought with a few pieces of wood.
@@ -39,6 +41,7 @@ namespace TerraKnight.Items
                     d.Damage=Mathf.Max(d.Damage,floor);
                 }
             }
+            LateWeaponCalibration.Apply(items);
         }
     }
 }

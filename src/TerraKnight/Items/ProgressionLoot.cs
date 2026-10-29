@@ -541,6 +541,7 @@ namespace TerraKnight.Items
         /// only a surface chest's or the Skeleton Merchant's at one moon phase in eight.
         /// </summary>
         static readonly ItemType[] PoolExtras = { ItemType.Aglet };
+        internal static bool PoolExtra(ItemType t) => Array.IndexOf(PoolExtras, t) >= 0;
 
         /// <summary>
         /// What an enemy may drop at all: not crafted-only nor sold by a townsperson (CraftOnlyLoot), not a boss's own
@@ -623,6 +624,18 @@ namespace TerraKnight.Items
             }
             list.Sort();
             return droppable[(kind,cls,stage)]=list;
+        }
+
+        /// <summary>Dev (suite agletpool): an extra's way into the pools, step by step.</summary>
+        internal static string DevExtraWhy(ItemType t)
+        {
+            var d=ItemDb.Get(t);
+            var sb=new System.Text.StringBuilder($"阶段 {d.Stage} 档 {d.Tier} 套装 {d.Kit} 可掉 {Droppable(t)} 只能合成 {CraftOnlyLoot.OnlyCrafted(t)} 商店装备 {ShopLoot.Equipment(t)} 首领专属 {BossDropPlan.BossOnly(t)}；");
+            for(int st=0;st<=5;st++) sb.Append($" 阶段{st}解锁={ProgressionBalance.Unlocked(t,st,false,false)}");
+            sb.Append($"；legacy 里有={legacyItems!=null && legacyItems.Contains(t)}；");
+            foreach(var kv in catalogues) if(kv.Value.Contains(t)) sb.Append($" 目录 {kv.Key}");
+            foreach(var kv in sources) foreach(var r in kv.Value) if(r.Value.Contains(t)) sb.Append($" 来源 {kv.Key}→{r.Key}");
+            return sb.ToString();
         }
 
         static void AddExtras(List<ItemType> pool,string record,int stage,int cls,int category,bool entry,bool final,HashSet<ItemType> specialties=null)

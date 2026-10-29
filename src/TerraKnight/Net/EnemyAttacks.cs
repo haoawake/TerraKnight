@@ -22,7 +22,7 @@ namespace TerraKnight.Net
         static readonly Dictionary<(string Scene, int Id), Ghost> ghosts = new Dictionary<(string, int), Ghost>();
         static readonly Dictionary<string, tk2dSpriteCollectionData> collections = new Dictionary<string, tk2dSpriteCollectionData>();
         static readonly Dictionary<string, HashSet<int>> received = new Dictionary<string, HashSet<int>>();
-        public static int DevHits, DevReceived;
+        public static int DevHits, DevReceived, DevOverlaps, DevTickSkips;
         public static int DevGhosts => ghosts.Count;
         public static int DevLiveGhosts
         {
@@ -56,7 +56,7 @@ namespace TerraKnight.Net
             foreach (var damage in hurting)
             {
                 if (damage == null) continue;
-                if (damage.gameObject.scene.name != scene || damage.hazardType != 1 || damage.damageDealt <= 0) continue;
+                if (!Belongs(damage.gameObject, scene) || damage.hazardType != 1 || damage.damageDealt <= 0) continue;
                 foreach (var collider in damage.GetComponents<Collider2D>())
                 {
                     if (!collider.enabled || !collider.gameObject.activeInHierarchy) continue;
@@ -65,7 +65,7 @@ namespace TerraKnight.Net
             }
             foreach (var fsm in hurtingFsms)
             {
-                if (fsm == null || !fsm.isActiveAndEnabled || fsm.gameObject.scene.name != scene) continue;
+                if (fsm == null || !fsm.isActiveAndEnabled || !Belongs(fsm.gameObject, scene)) continue;
                 int damage = FSMUtility.GetInt(fsm, "damageDealt");
                 if (damage <= 0 || FSMUtility.GetInt(fsm, "hazardType") != 1) continue;
                 foreach (var collider in fsm.GetComponents<Collider2D>())
@@ -77,6 +77,27 @@ namespace TerraKnight.Net
             end.W.Write(scene); end.W.Write(0);
             NetSession.Send(end.Done());
         }
+
+        /// <summary>
+        /// Whether a hurting object is one of the scene's attacks (sent with its round): the scene's own, or one of the game's
+        /// global pool in the scene's room. The pool keeps its objects in DontDestroyOnLoad (Nosk's vomit globs, the Soul
+        /// Master's orbs), so they went to no one and hurt only the scene's owner (the user's 10-27 "boss对联机队友依旧不造成伤害，
+        /// 比如诺斯克的弹幕").
+        /// </summary>
+        static bool Belongs(GameObject go, string scene)
+        {
+            string own = go.scene.name;
+            if (own == scene) return true;
+            if (own != "DontDestroyOnLoad" || DevSceneOnly) return false;
+            var cell = World.CellGrid.WorldToCell(go.transform.position);
+            return World.TerraWorld.RegionAt(cell.x, cell.y)?.SceneName == scene;
+        }
+
+        /// <summary>Dev: only a scene's own objects (as before), to compare.</summary>
+        internal static bool DevSceneOnly;
+
+        /// <summary>Dev (suite bossshots): whether a hitbox would go to the other players with a room's (or its boss scene's) round.</summary>
+        internal static bool DevWouldSend(DamageHero d, string room) => d != null && (Belongs(d.gameObject, room) || Belongs(d.gameObject, room + "_boss"));
 
         static void SendCollider(string scene, Vector2 shift, Collider2D collider, int amount, bool shadow)
         {
@@ -241,11 +262,12 @@ namespace TerraKnight.Net
                 if (g.Go == null || Time.unscaledTime - g.Seen > 2f || !Enemies.RemoteOwned(kv.Key.Scene))
                 { if (g.Go != null) Object.Destroy(g.Go); ghosts.Remove(kv.Key); continue; }
                 if (heroCollider == null || !heroCollider.enabled || hero.cState.dead || HeroBox.inactive
-                    || (hero.cState.shadowDashing && g.Damage.shadowDashHazard)) continue;
+                    || (hero.cState.shadowDashing && g.Damage.shadowDashHazard)) { DevTickSkips++; continue; }
                 // Both bodies can be kinematic in TerraMovement. Evaluate the mirrored shape
                 // explicitly, rather than relying on Unity generating a trigger callback.
                 if (g.Damage.damageDealt > 0 && g.Collider != null && g.Collider.enabled && Physics2D.Distance(heroCollider, g.Collider).isOverlapped)
                 {
+                    DevOverlaps++;
                     int before = TerraMod.Instance?.Stats.Life ?? 0;
                     hero.TakeDamage(g.Go, g.Go.transform.position.x > hero.transform.position.x ? CollisionSide.right : CollisionSide.left, g.Damage.damageDealt, 1);
                     if ((TerraMod.Instance?.Stats.Life ?? before) < before) DevHits++;

@@ -22,8 +22,8 @@ namespace TerraKnight.Net
             public int Type, Count;
             public bool Favorite;
             /// <summary>Its reforge and its forge level (a reforged or forged item keeps them through a shared chest).</summary>
-            public byte Prefix, Forge;
-            public static Stack From(ItemStack s) => new Stack { Type = (int)s.Type, Count = s.Count, Favorite = s.Favorite, Prefix = s.Prefix, Forge = s.Forge };
+            public byte Prefix, Forge, WeaponVersion;
+            public static Stack From(ItemStack s) => new Stack { Type = (int)s.Type, Count = s.Count, Favorite = s.Favorite, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion };
             public ItemStack Item()
             {
                 if (!ItemDb.Has((ItemType)Type) || Count <= 0) return default;
@@ -31,6 +31,7 @@ namespace TerraKnight.Net
                 s.Favorite = Favorite;
                 s.Prefix = Prefix;
                 s.Forge = Forge;
+                s.WeaponVersion = WeaponVersion;
                 return s;
             }
         }
@@ -38,10 +39,12 @@ namespace TerraKnight.Net
         internal sealed class Record
         {
             public string Key, Scene;
+            public int HomeColor=-1,HomeOrder;
+            public string HomeName;
             public float X, Y, Vx, Vy;
             public int Kind, Seed, Age, Delay, Dropper = -1, Owner = -1;
             /// <summary>A dropped item's reforge and forge level.</summary>
-            public byte Prefix, Forge;
+            public byte Prefix, Forge, WeaponVersion;
             public bool Placed, Taken, Sky, Shimmered;
             /// <summary>A chest another player has open (the host's leases): not for others' crafting.</summary>
             public bool Busy;
@@ -56,8 +59,8 @@ namespace TerraKnight.Net
         {
             public int Id, Kind, Power, Count;
             /// <summary>A dropped item's reforge and forge level.</summary>
-            public byte Prefix, Forge;
-            public string Op, Key, Scene;
+            public byte Prefix, Forge, WeaponVersion;
+            public string Op, Key, Scene, Home, Name;
             public float X, Y, Vx, Vy;
             public bool Placed, Sky;
             public Stack[] Slots;
@@ -75,7 +78,7 @@ namespace TerraKnight.Net
         {
             public int Id, Type, Count;
             /// <summary>A claimed item's reforge and forge level.</summary>
-            public byte Prefix, Forge;
+            public byte Prefix, Forge, WeaponVersion;
             public string Op, Key;
             public bool Ok;
             public Stack[] Slots;
@@ -206,14 +209,15 @@ namespace TerraKnight.Net
             void Str(string t) { if (t == null) { Mix(-1); return; } foreach (char c in t) Mix(c); Mix(t.Length); }
             Str(r.Key);
             Str(r.Scene);
+            Mix(r.HomeColor);Mix(r.HomeOrder);Str(r.HomeName);
             bool item = r.Key.StartsWith("i:", StringComparison.Ordinal);
             Mix(Mathf.RoundToInt(r.X * 64f)); Mix(Mathf.RoundToInt(r.Y * 64f));
             Mix(Mathf.RoundToInt(r.Vx * 16f)); Mix(Mathf.RoundToInt(r.Vy * 16f));
-            Mix(r.Kind); Mix(r.Seed); Mix(r.Dropper); Mix(r.Owner); Mix(r.Prefix); Mix(r.Forge);
+            Mix(r.Kind); Mix(r.Seed); Mix(r.Dropper); Mix(r.Owner); Mix(r.Prefix); Mix(r.Forge); Mix(r.WeaponVersion);
             Mix(item ? (r.Delay > 0 ? 1 : 0) : r.Delay);
             if (!item) Mix(r.Age);
             Mix((r.Placed ? 1 : 0) | (r.Taken ? 2 : 0) | (r.Sky ? 4 : 0) | (r.Shimmered ? 8 : 0));
-            if (r.Slots != null) foreach (var st in r.Slots) { if (st == null) Mix(-2); else { Mix(st.Type); Mix(st.Count); Mix(st.Favorite ? 1 : 0); Mix(st.Prefix); Mix(st.Forge); } }
+            if (r.Slots != null) foreach (var st in r.Slots) { if (st == null) Mix(-2); else { Mix(st.Type); Mix(st.Count); Mix(st.Favorite ? 1 : 0); Mix(st.Prefix); Mix(st.Forge); Mix(st.WeaponVersion); } }
             if (r.Cells != null) { Mix(r.Cells.Length); foreach (long c in r.Cells) Mix(c); }
             if (r.Walls != null) { Mix(r.Walls.Length); foreach (long c in r.Walls) Mix(c); }
             if (r.Torches != null) { Mix(r.Torches.Length); foreach (long c in r.Torches) Mix(c); }
@@ -492,6 +496,13 @@ namespace TerraKnight.Net
             switch (a.Op)
             {
                 case "station": result.Ok = Stations.NetPlace(a); break;
+                case "restoreTerrain": result.Ok = RestorationGun.NetApply(a, slot); break;
+                case "homeStyle": result.Ok=Stations.ApplyHomeStyle(a.Key,a.Kind,a.Name);break;
+                case "homeSort": result.Ok = Chests.NetSortHome(a.Home, key => key != null && leases.ContainsKey(key)); break;
+                case "homeSlot":
+                    result.Slots = Chests.NetHomeMove(a, key => key != null && leases.ContainsKey(key));
+                    result.Ok = result.Slots != null;
+                    break;
                 case "prefabHouse": result.Ok = PrefabHouses.NetBuild(a); break;
                 case "chest": result.Ok = Chests.NetPlace(a); break;
                 case "mineStation": result.Ok = Stations.NetMine(a); break;
@@ -511,7 +522,7 @@ namespace TerraKnight.Net
                     result.Ok = result.Count > 0;
                     break;
                 case "claim":
-                    WorldItems.NetClaim(a, slot, out result.Type, out result.Count, out result.Prefix, out result.Forge);
+                    WorldItems.NetClaim(a, slot, out result.Type, out result.Count, out result.Prefix, out result.Forge, out result.WeaponVersion);
                     result.Ok = result.Count > 0;
                     break;
                 case "stack":
@@ -566,6 +577,8 @@ namespace TerraKnight.Net
         {
             if (result == null || !pending.TryGetValue(result.Id, out var action)) return;
             pending.Remove(result.Id);
+            if (result.Op == "homeSort") { Chests.CompleteHomeSort(); return; }
+            if (result.Op == "homeSlot") { Chests.CompleteHomeMove(action, result.Ok, result.Slots); return; }
             if (result.Op == "lease")
             {
                 leasePending = false;
@@ -585,6 +598,7 @@ namespace TerraKnight.Net
                     var got = ItemStack.Of((ItemType)result.Type, result.Count);
                     got.Prefix = result.Prefix;
                     got.Forge = result.Forge;
+                    got.WeaponVersion = result.WeaponVersion;
                     var hero = HeroController.SilentInstance;
                     Vector2 at = hero != null ? (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center : Vector2.zero;
                     // A heart or a star heals or gives mana as it is taken, never into the bag.
@@ -616,7 +630,7 @@ namespace TerraKnight.Net
         {
             if (!CanInteract) return;
             DevCraftTakes++;
-            Submit(new Action { Op = "craftTake", Keys = keys, Slots = slots, Targets = targets, Made = made });
+            Submit(new Action { Op = "craftTake", Keys = keys, Slots = slots, Targets = targets, Made = made, Home=Stations.HomeActive?Stations.SelectedHome:null });
         }
 
         /// <summary>The host couldn't take the ingredients: what was made goes back (off the cursor, else out of the bag).</summary>
@@ -727,7 +741,7 @@ namespace TerraKnight.Net
             if (leasePending) return;
             if (ownLease != null) Chests.Close(false);
             leasePending = true;
-            Submit(new Action { Op = "lease", Key = Key("c", scene, local) });
+            Submit(new Action { Op = "lease", Key = Key("c", scene, local), Home=Stations.HomeActive?Stations.SelectedHome:null });
         }
 
         public static void FlushChest(string key, Stack[] slots, bool release)
@@ -762,6 +776,8 @@ namespace TerraKnight.Net
             bool wasGuestWorld = personal != null;
             // A quick stack the host never answered: the stacks back to the player.
             foreach (var a in pending.Values) if (a.Op == "stack") Restack(a, null);
+            foreach (var a in pending.Values) if (a.Op == "homeSlot") Chests.CompleteHomeMove(a, false, null);
+            Chests.CompleteHomeSort();
             if (personal != null && TerrainSystem.Current != null) Install(personal);
             personal = null;
             Ready = receiving = leasePending = false;
@@ -779,7 +795,7 @@ namespace TerraKnight.Net
         {
             if (personal == null) return Stations.Save();
             var list = new List<Stations.Saved>();
-            foreach (var r in personal) if (r.Key.StartsWith("s:") && !r.Taken) list.Add(new Stations.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Kind = (StationKind)r.Kind, Right = r.Placed });
+            foreach (var r in personal) if (r.Key.StartsWith("s:") && !r.Taken) list.Add(new Stations.Saved { Scene = r.Scene, Local = new Vector2(r.X, r.Y), Kind = (StationKind)r.Kind, Right = r.Placed,HomeColor=r.HomeColor,HomeOrder=r.HomeOrder,HomeName=r.HomeName });
             return list;
         }
         public static List<Chests.Saved> SaveChests()

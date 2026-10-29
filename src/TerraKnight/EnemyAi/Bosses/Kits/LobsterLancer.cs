@@ -75,7 +75,6 @@ namespace TerraKnight.EnemyAi.Bosses
                 spitAt = Lock();
                 MarkGround(spitAt, 6f, Warn(0.75f));
             }, true, beast);
-            OnEnter("Fire Globs", SpitMore, false, beast);
             var launch = State("RC Launch", beast);
             launchY = Batch4.FloatField(Batch4.Find(launch, "SetVelocity2d"), "y");
             int vi = Batch4.IndexOf(launch, "SetVelocity2d");
@@ -85,17 +84,6 @@ namespace TerraKnight.EnemyAi.Bosses
 
         Vector2 BeastAt => beastBody != null && beastBody.enabled ? (Vector2)beastBody.bounds.center : (Vector2)beast.transform.position;
 
-        /// <summary>A fourth spray of four globs, lobbed round the marked point; they leave infection where they land.</summary>
-        void SpitMore()
-        {
-            var sp = Go("Spit Point", beast)?.Value;
-            Vector2 from = sp != null ? (Vector2)sp.transform.position : BeastAt + Vector2.up;
-            for (int i = 0; i < 4; i++)
-            {
-                var to = spitAt + new Vector2((i - 1.5f) * 1.2f, 0f);
-                OwnShots.Lob(globShot, from, to, Random.Range(0.75f, 0.95f));
-            }
-        }
 
         /// <summary>The roll's launch off the wall: at where the player is going, as high as he is if he keeps to the air.</summary>
         void AimLaunch()

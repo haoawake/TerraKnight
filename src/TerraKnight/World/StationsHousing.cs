@@ -318,7 +318,9 @@ namespace TerraKnight.World
                     keys = (GameHooks.Input.inputActions.right.IsPressed ? 1 : 0) - (GameHooks.Input.inputActions.left.IsPressed ? 1 : 0);
             }
             bool dashing = hero.cState.dashing || hero.cState.shadowDashing || Player.TerraMovement.EocDash > 0f;
-            float speed = keys != 0 || dashing ? rb.linearVelocity.x / Player.TerraMovement.PxT : 0f;
+            bool skates=Player.Mounts.Current?.Skates==true;
+            float speed = keys != 0 || dashing || skates ? rb.linearVelocity.x / Player.TerraMovement.PxT : 0f;
+            if(skates&&Mathf.Abs(speed)>0f&&Mathf.Abs(speed)<3f)speed=3f*Mathf.Sign(speed);
             float value = keys + speed;
             int shift = Mathf.Abs(value) < 1e-4f ? 0 : (int)Mathf.Sign(value) * Mathf.CeilToInt(Mathf.Abs(value));
             int dir = keys != 0 ? keys : shift > 0 ? 1 : shift < 0 ? -1 : 0;

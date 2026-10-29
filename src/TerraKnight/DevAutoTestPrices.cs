@@ -136,9 +136,9 @@ namespace TerraKnight
                         // Awake reads a fresh language price. Invoke the real native initializer on inactive stock as well.
                         int original=item.cost;HarmonyLib.AccessTools.Method(typeof(ShopItemStats),"Awake").Invoke(item,null);int first=item.cost;
                         HarmonyLib.AccessTools.Method(typeof(ShopItemStats),"Awake").Invoke(item,null);int again=item.cost;
-                        Check("native price "+scene+"/"+item.name,first==vanilla*(item.relic?1:HkShopPrices.Factor)&&again==first);
+                        Check("native price "+scene+"/"+item.name,first==vanilla*HkShopPrices.Factor&&again==first);
                         natives.Add(new {Scene=scene,Object=item.name,item.playerDataBoolName,item.priceConvo,item.specialType,item.relic,item.relicPDInt,item.dungDiscount,Vanilla=vanilla,Original=original,First=first,Again=again,
-                            Expected=vanilla*(item.relic?1:HkShopPrices.Factor)});
+                            Expected=vanilla*HkShopPrices.Factor});
                     }
                     Plugin.Log.LogInfo($"[AutoTest] PRICE_AUDIT native {scene} rows={natives.Count}");
                 }

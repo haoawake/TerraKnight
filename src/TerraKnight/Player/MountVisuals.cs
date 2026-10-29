@@ -4,6 +4,19 @@ namespace TerraKnight.Player
 {
     internal static partial class Mounts
     {
+        static void SkateDust(HeroController hero)
+        {
+            var particles=Effects.TerraParticles.Instance;if(particles==null)return;
+            var box=hero.GetComponent<BoxCollider2D>().bounds;
+            var at=Effects.TerraParticles.ToPx(new Vector2(box.center.x,box.min.y));
+            // Mount.DoSpawnDust: 40 smoke particles in the ten-pixel strip around the feet.
+            int half=Mathf.RoundToInt(box.size.x*32f/2f);
+            for(int k=0;k<40;k++) {
+                int index=particles.NewDust(at+new Vector2(-half-10,-10),Mathf.Max(1,half+20),10,31);
+                if(index<0)continue;
+                ref var dust=ref particles[index];dust.Velocity*=.8f;dust.Velocity.y=dust.Velocity.y*.75f+.25f;dust.NoGravity=true;
+            }
+        }
         // Exported from this installation's Terraria ArmorIDs and Player.GetHelmetOffsetAddonFromMount.
         static readonly HashSet<int> raptorHelmets = new HashSet<int> { 212, 241, 274, 277, 5, 278, 34, 205, 41, 42, 30, 8, 84, 79, 33, 91, 90, 99, 35, 4, 256, 257, 36, 85, 80, 1, 112, 2, 215, 201, 202, 199, 194, 206, 262, 259, 234, 226, 238, 250, 280, 232, 225, 223, 224, 219, 220, 216, 263, 273, 264, 267, 18, 19, 24, 21, 26, 25, 16, 14, 12, 275, 65, 51, 56, 40, 29, 81, 94, 95, 62, 67, 44, 68, 121, 114, 116, 113, 92, 106, 100, 96, 97, 141, 143, 145, 139, 140, 144, 126, 130, 133, 159, 158, 161, 166, 183, 181, 178, 184, 182, 13, 64, 60, 59, 73, 63, 117, 138, 160, 10, 235, 197, 195, 203, 191, 228, 233, 227, 217, 218, 245, 243, 244, 242, 231, 229, 222, 265, 272, 279, 15, 163, 288, 289, 290 };
         static readonly HashSet<int> raptorFaces = new HashSet<int> { 1, 6, 9, 8, 19, 7, 20, 21, 23 };

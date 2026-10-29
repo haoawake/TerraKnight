@@ -150,6 +150,40 @@ namespace TerraKnight.Terraria
             r["tk_dirge_summon"] = new[] { L("Item_44", 0.75f, 0.8f), L("Item_103", 0.7f, 0.4f) };
             r["tk_dirge_laser"] = new[] { L("Item_15", 0.8f, 0.5f, cut: 0.6f, lowpass: 4000f), L("Roar_2", 1.2f, 0.15f, start: 0.3f, cut: 0.5f, lowpass: 3000f) };
             Casino(r);
+            // The remade blades' charges (Items.BladeSkills, the user's 10-26 "蓄力还要有音效"): the phase blade's hum three
+            // times rising over the Deadly Sphere's swell, as the pulse rifle's charge but steel-bright for the katana's draw,
+            // low for the greatswords' leap, with a star's chime for the star swords'; the dragged tip's scrape a dig's scratch
+            // and a faint tink, high and short.
+            r["tk_iai_charge"] = new[]
+            {
+                L("Item_15", 0.8f, 0.5f), L("Item_15", 0.95f, 0.5f, 0.33f), L("Item_15", 1.1f, 0.5f, 0.66f),
+                L("Item_113", 1f, 0.28f, cut: 1f, fadeIn: 0.25f), L("Item_35", 1.7f, 0.12f, 0.9f, cut: 0.25f),
+            };
+            r["tk_heavy_charge"] = new[]
+            {
+                L("Item_113", 0.7f, 0.45f, cut: 1.3f, fadeIn: 0.2f, lowpass: 3000f), L("Item_15", 0.55f, 0.45f), L("Item_15", 0.65f, 0.45f, 0.4f), L("Item_15", 0.75f, 0.45f, 0.8f),
+            };
+            r["tk_blade_charge"] = new[]
+            {
+                L("Item_15", 0.75f, 0.45f), L("Item_15", 0.9f, 0.45f, 0.3f), L("Item_15", 1.05f, 0.45f, 0.6f), L("Item_113", 0.9f, 0.25f, cut: 0.9f, fadeIn: 0.2f),
+            };
+            r["tk_star_charge"] = new[]
+            {
+                L("Item_15", 1f, 0.4f), L("Item_15", 1.15f, 0.4f, 0.37f), L("Item_15", 1.3f, 0.4f, 0.74f), L("Item_9", 1.4f, 0.22f, 0.5f), L("Item_25", 1.2f, 0.2f, 1f, cut: 0.4f),
+            };
+            // A bow drawn: its string's creak (the bow's own twang, low and cut short) over the charge's rising tones, softer;
+            // a gun's charge: the hammer's clicks (the gunshot pitched high and cut to its first crack), the tones under them.
+            r["tk_bow_draw"] = new[]
+            {
+                L("Item_5", 0.45f, 0.3f, cut: 0.3f, lowpass: 2500f), L("Item_5", 0.5f, 0.2f, 0.35f, cut: 0.25f, lowpass: 2500f),
+                L("Item_15", 0.7f, 0.3f, 0.1f), L("Item_15", 0.85f, 0.3f, 0.5f),
+            };
+            r["tk_gun_charge"] = new[]
+            {
+                L("Item_11", 2.2f, 0.3f, cut: 0.04f), L("Item_11", 2.5f, 0.3f, 0.2f, cut: 0.04f),
+                L("Item_15", 0.8f, 0.35f, 0.1f), L("Item_15", 0.95f, 0.35f, 0.5f),
+            };
+            r["tk_iai_scrape"] = new[] { L("Dig_1", 1.7f, 0.35f, cut: 0.12f, lowpass: 5000f), L("Tink_0", 1.5f, 0.12f, cut: 0.1f) };
             return r;
         }
 

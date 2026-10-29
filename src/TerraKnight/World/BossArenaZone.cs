@@ -75,7 +75,11 @@ namespace TerraKnight.World
         /// Nailmasters' "CamLock Intro" holds the camera on one spot, its view 3.6 units short of the arena's left wall and
         /// 3 into its right), else of all; with none, a view round it.
         /// </summary>
-        public static Rect Around(Scene scene, Rect room, Vector2 at, Scene? mainScene = null)
+        public static Rect Around(Scene scene, Rect room, Vector2 at, Scene? mainScene = null) =>
+            Grow(View(scene, room, at, mainScene) ?? new Rect(at.x - HalfW, at.y - HalfH, 2f * HalfW, 2f * HalfH), Margin);
+
+        /// <summary>What the camera shows round a point: the view of the smallest lock it is in (those on now first); null in none.</summary>
+        public static Rect? View(Scene scene, Rect room, Vector2 at, Scene? mainScene = null)
         {
             // The smallest lock it is in (the arena's own, not one over the whole room).
             foreach (bool on in new[] { true, false })
@@ -85,9 +89,9 @@ namespace TerraKnight.World
                 if (mainScene.HasValue) views.AddRange(LockViews(mainScene.Value, room, on));
                 foreach (var view in views)
                     if (view.Contains(at) && (zone == null || view.width * view.height < zone.Value.width * zone.Value.height)) zone = view;
-                if (zone != null) return Grow(zone.Value, Margin);
+                if (zone != null) return zone;
             }
-            return Grow(new Rect(at.x - HalfW, at.y - HalfH, 2f * HalfW, 2f * HalfH), Margin);
+            return null;
         }
 
         /// <summary>The bosses of the scene, up or still waiting (inactive), by the monster book's kinds.</summary>

@@ -34,26 +34,19 @@ namespace TerraKnight.EnemyAi.Bosses
         };
 
         /// <summary>How fast a boss's own animations run, its wind-ups and recoveries with them (§1.3).</summary>
-        public static float AnimScale => D switch
-        {
-            DifficultyLevel.Normal => 1.1f,
-            DifficultyLevel.Hard => 1.15f,
-            DifficultyLevel.Expert => 1.2f,
-            DifficultyLevel.Master => 1.25f,
-            _ => 1.3f,
-        };
+        public static float AnimScale => 1f;
 
         /// <summary>The rank a boss starts the fight at (§1.4): its second rank's moves from the start on Expert and up.</summary>
-        public static int RankFloor => D >= DifficultyLevel.Expert ? 1 : 0;
+        public static int RankFloor => 0;
 
         /// <summary>A warning's length over its base (§1.2), as the new moves' wind-ups: shorter than the common enemies'.</summary>
-        public static float WarnScale => EnemyAi.AnticScale * 0.85f;
+        public static float WarnScale => EnemyAi.AnticScale;
 
         /// <summary>No warning of a locked or ranged move is shorter; a close wind-up, <see cref="MinAntic"/>.</summary>
-        public const float MinWarn = 0.4f, MinAntic = 0.3f;
+        public const float MinWarn = 0.65f, MinAntic = 0.45f;
 
         /// <summary>How much of the player's coming move a lead takes in (§1.1, as the common enemies').</summary>
-        public static float LeadWeight => EnemyAi.LeadWeight;
+        public static float LeadWeight => EnemyAi.LeadWeight * 0.5f;
 
         /// <summary>A "sometimes" lead's chance (§1.1).</summary>
         public static float LeadChance => D switch
@@ -66,7 +59,7 @@ namespace TerraKnight.EnemyAi.Bosses
         };
 
         /// <summary>How many locked or led strikes may be live at once (§1.6).</summary>
-        public static int MaxStrikes => D >= DifficultyLevel.Master ? 4 : 3;
+        public static int MaxStrikes => 2;
 
         /// <summary>Master and Hollow (the hooks let go and so on, as the common enemies').</summary>
         public static bool MasterRules => EnemyAi.MasterRules;
@@ -184,7 +177,7 @@ namespace TerraKnight.EnemyAi.Bosses
             if (a is Wait || a is WaitRandom) tempo[a] = (kit, factor);
         }
 
-        static float FactorOf((BossKit Kit, float Factor) t) => Mathf.Clamp(t.Factor > 0f ? t.Factor : t.Kit.TempoNow, 0.2f, 3f);
+        static float FactorOf((BossKit Kit, float Factor) t) => Mathf.Clamp(t.Factor > 0f ? t.Factor : t.Kit.TempoNow, 1f, 3f);
 
         internal static void Forget(BossKit kit)
         {

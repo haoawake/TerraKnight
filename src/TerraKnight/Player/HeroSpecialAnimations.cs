@@ -55,6 +55,23 @@ namespace TerraKnight.Player
         /// <summary>The native frame a range is read at: for one played once, the frames gone by since the clip began, its loops counted.</summary>
         public static int NativeFrame(Range range,tk2dSpriteAnimator anim,tk2dSpriteAnimationClip clip) =>
             range.Once ? Mathf.FloorToInt(anim.ClipTimeSeconds*(clip.fps>0f?clip.fps:1f)) : anim.CurrentFrame;
+        /// <summary>
+        /// The sheet frame for the clip now. A sheet never loops (the user's 10-28 "角色的动画有些在抽搐…拿梦钉的时候在做俯卧撑"):
+        /// a clip the game loops (Loop, or LoopSection from its loop start: the Dreamgate's charge, Isma's Tear taken, a mask
+        /// shard, focus, the roar's stagger) has its range played over its first pass, up to where the loop begins, and its
+        /// last frame held while the game goes round.
+        /// </summary>
+        public static int FrameOf(Range range,tk2dSpriteAnimator anim,tk2dSpriteAnimationClip clip)
+        {
+            int n=clip.frames.Length;
+            if(range.Once || n<=1) return FrameFor(range,NativeFrame(range,anim,clip),n);
+            int pass=clip.wrapMode==tk2dSpriteAnimationClip.WrapMode.LoopSection?Mathf.Clamp(clip.loopStart,1,n)
+                    :clip.wrapMode==tk2dSpriteAnimationClip.WrapMode.Loop?n:0;
+            if(pass==0) return FrameFor(range,anim.CurrentFrame,n);
+            int gone=Mathf.FloorToInt(anim.ClipTimeSeconds*(clip.fps>0f?clip.fps:1f));
+            float t=pass<=1?1f:Mathf.Clamp01(gone/(float)(pass-1));
+            return Mathf.RoundToInt(Mathf.Lerp(range.First,range.Last,t));
+        }
         public static int Code(HeroController hero)
         {
             if(hero==null || Mounts.Riding) return -1;
@@ -63,7 +80,7 @@ namespace TerraKnight.Player
             if(clip==null || !Clips.TryGetValue(clip.name,out var range)) return -1;
             // Bench and walking map poses already use Terraria's seated/walking layers.
             if(range.Kind==4 && (PlayerData.instance.atBench || Mathf.Abs(hero.GetComponent<Rigidbody2D>().linearVelocity.x)>.1f)) return -1;
-            return Encode(range.Kind,FrameFor(range,NativeFrame(range,anim,clip),clip.frames.Length));
+            return Encode(range.Kind,FrameOf(range,anim,clip));
         }
         public static Sprite Frame(int kind,int frame)
         {

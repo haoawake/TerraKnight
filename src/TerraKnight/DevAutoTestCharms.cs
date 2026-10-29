@@ -734,32 +734,36 @@ namespace TerraKnight
             st.Life = st.LifeMax;
             st.Shield = 0;
             int layer = Mathf.CeilToInt(st.LifeMax * 0.1f);
+            // Always filling (the user's 10-28 "持续回"): a layer every 5 s, a quarter as fast within 5 s of life lost.
             st.TakeShare(5);
-            yield return new WaitForSeconds(4.6f);
-            CharmCheck("不到 5 秒没有护盾", CharmEffects.DevCore == 0, $"护盾 {CharmEffects.DevCore}");
-            yield return new WaitForSeconds(0.6f);
-            CharmCheck("5 秒没掉血获得一层 10%", CharmEffects.DevCore == layer && CharmEffects.DevCoreCount == 1, $"护盾 {CharmEffects.DevCore}（{CharmEffects.DevCoreCount} 层）");
-            yield return new WaitForSeconds(10.2f);
-            CharmCheck("再过 10 秒共 3 层", CharmEffects.DevCoreCount == 3 && CharmEffects.DevCore == 3 * layer, $"{CharmEffects.DevCoreCount} 层，{CharmEffects.DevCore}");
+            yield return new WaitForSeconds(4f);
+            float hurt = CharmEffects.DevCore / (float)layer;
+            CharmCheck("掉血后 5 秒内也在回，速度四分之一", hurt > 0.1f && hurt < 0.3f, $"4 秒回了 {hurt:0.00} 层（应约 0.2）");
+            yield return new WaitForSeconds(1.2f);
+            float at5 = CharmEffects.DevCore / (float)layer;
+            yield return new WaitForSeconds(5f);
+            float quiet = CharmEffects.DevCore / (float)layer - at5;
+            CharmCheck("没掉血时 5 秒一层", quiet > 0.85f && quiet < 1.15f, $"5 秒回了 {quiet:0.00} 层");
+            yield return new WaitForSeconds(10f);
+            CharmCheck("最多 3 层", CharmEffects.DevCoreCount == 3 && CharmEffects.DevCore == 3 * layer, $"{CharmEffects.DevCoreCount} 层，{CharmEffects.DevCore}");
             CharmShot("three");
-            yield return new WaitForSeconds(5.3f);
-            CharmCheck("最多 3 层", CharmEffects.DevCoreCount == 3, $"{CharmEffects.DevCoreCount} 层");
 
-            // A hit on the shield is no life lost: the layers come back on their own time.
+            // A hit on the shield is no life lost: it fills again at the whole speed.
             int life = st.Life;
             st.TakeShare(layer + 2);
             CharmCheck("打在护盾上不掉血", st.Life == life && CharmEffects.DevCore == 2 * layer - 2, $"生命 {st.Life}，护盾 {CharmEffects.DevCore}（{CharmEffects.DevCoreCount} 层）");
             yield return new WaitForSeconds(5.3f);
-            CharmCheck("护盾被打不算掉血，5 秒后补回", CharmEffects.DevCore >= 3 * layer - 2, $"护盾 {CharmEffects.DevCore}");
+            CharmCheck("护盾被打不算掉血，5 秒补回一层", CharmEffects.DevCore >= 3 * layer - 2, $"护盾 {CharmEffects.DevCore}");
 
-            // Life lost: the clock starts again.
+            // Life lost: a quarter as fast for 5 s.
             st.TakeShare(st.ShieldShown + 10);
             int core = CharmEffects.DevCore;
             CharmCheck("打穿护盾后掉血", st.Life < life && core == 0, $"生命 {st.Life}，护盾 {core}");
             yield return new WaitForSeconds(3f);
-            CharmCheck("掉血后重新计时", CharmEffects.DevCore == 0);
+            float slow = CharmEffects.DevCore / (float)layer;
+            CharmCheck("掉血后 3 秒按四分之一回", slow > 0.05f && slow < 0.22f, $"{slow:0.00} 层（应约 0.15）");
             yield return new WaitForSeconds(2.3f);
-            CharmCheck("掉血 5 秒后再有一层", CharmEffects.DevCore == layer);
+            CharmCheck("掉血 5 秒后恢复全速", CharmEffects.DevCore > 0);
 
             // With the Heart: stacked, the Core's outside.
             WearOnly(Id, CharmEffects.LifebloodHeart);
@@ -768,11 +772,13 @@ namespace TerraKnight
             yield return null;
             yield return null;
             int heart = CharmEffects.DevHeart;
-            CharmCheck("和生命血之心叠加", heart > 0 && CharmEffects.DevCore == layer && st.ShieldShown == heart + layer, $"心 {heart} + 核心 {CharmEffects.DevCore} = 显示 {st.ShieldShown}");
+            int coreNow = CharmEffects.DevCore;
+            CharmCheck("和生命血之心叠加", heart > 0 && coreNow > 0 && st.ShieldShown == heart + coreNow, $"心 {heart} + 核心 {coreNow} = 显示 {st.ShieldShown}");
             yield return new WaitForSeconds(0.5f);
             CharmShot("stacked");
-            st.TakeShare(layer + 5);
-            CharmCheck("先扣核心再扣心", CharmEffects.DevCore == 0 && CharmEffects.DevHeart == heart - 5 && st.Life == st.LifeMax, $"核心 {CharmEffects.DevCore}，心 {CharmEffects.DevHeart}，生命 {st.Life}");
+            coreNow = CharmEffects.DevCore;
+            st.TakeShare(coreNow + 5);
+            CharmCheck("先扣核心再扣心", CharmEffects.DevCore <= 1 && CharmEffects.DevHeart == heart - 5 && st.Life == st.LifeMax, $"核心 {CharmEffects.DevCore}，心 {CharmEffects.DevHeart}，生命 {st.Life}");
             Charms.Click(Id);
             yield return null;
             CharmCheck("摘下核心，核心护盾消失、心还在", CharmEffects.DevCore == 0 && CharmEffects.DevHeart == heart - 5);

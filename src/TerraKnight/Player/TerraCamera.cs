@@ -34,7 +34,7 @@ namespace TerraKnight.Player
         /// drawn at 144 or more): a camera on them moved in jerks under a smoothly drawn player, and the scenery nearest
         /// the camera, the foreground, shook worst.
         /// </summary>
-        static Vector2 HeroCenter(HeroController hero)
+        internal static Vector2 HeroCenter(HeroController hero)
         {
             var col = hero.GetComponent<BoxCollider2D>();
             return col != null ? (Vector2)hero.transform.TransformPoint(col.offset) : (Vector2)hero.transform.position;
@@ -192,13 +192,42 @@ namespace TerraKnight.Player
         public static Vector2? DevPan;
         public static Vector2 Pan => pan;
 
+        /// <summary>Terraria 1.4.5's Forward Zoom (PlayerInput.CurrentProfile.PanControl_Keyboard, its options' "向前缩放").</summary>
+        internal enum PanMode { OnAlways, OffAlways, Click, Hold }
+
+        public static ConfigEntry<PanMode> PanSetting;
+        public static PanMode Panning => PanSetting != null ? PanSetting.Value : PanMode.Hold;
+
+        public static void BindPan(ConfigFile cfg) =>
+            PanSetting = cfg.Bind("Gameplay", "ForwardZoom", PanMode.Hold,
+                "向前缩放（泰拉瑞亚的同名选项）：瞄准镜和狙击步枪把视野推向鼠标。Hold 按住右键，Click 点右键切换，OnAlways 始终开启，OffAlways 始终关闭（饰品的属性照常）。\nForward Zoom (Terraria's option): the scopes and the Sniper Rifle push the view toward the mouse. Hold: while the right button is held; Click: the right button toggles it; OnAlways; OffAlways (the accessories' stats still count).");
+
+        /// <summary>Utils.CycleControlControl_OffOnClickHold's order: off, on, click, hold.</summary>
+        public static void CyclePan()
+        {
+            if (PanSetting == null) return;
+            PanSetting.Value = PanSetting.Value switch { PanMode.OffAlways => PanMode.OnAlways, PanMode.OnAlways => PanMode.Click, PanMode.Click => PanMode.Hold, _ => PanMode.OffAlways };
+            panToggled = false;
+            Plugin.Log.LogInfo($"[设置] 向前缩放：{PanSetting.Value}");
+        }
+
+        /// <summary>Click mode: the pan switched on by a right click, off by the next.</summary>
+        static bool panToggled, rightWas;
+        static int panToggledFrame = -1;
+
+        /// <summary>Dev: the right button held (null: the mouse's).</summary>
+        public static bool? DevRight;
+
         /// <summary>
-        /// GetPanControlValues (Pl:6268-6291, 1.4.5): a scope worn, whatever is held, half the screen (panFactor 0.5); the
-        /// Sniper Rifle's own scope two thirds, with a scope worn too 0.8. -1: no pan.
+        /// GetPanControlValues (Pl:6268-6291, 1.4.5): a scope worn, half the screen (panFactor 0.5); the Sniper Rifle's own
+        /// scope two thirds, with a scope worn too 0.8. -1: no pan. A worn scope counts (player.scope, Pl:15001-15010) only
+        /// with a gun that fires bullets, candy corn, stakes or gel in hand.
         /// </summary>
         static float PanFactor(TerraMod mod)
         {
-            bool scope = Items.Equipment.Current.Scope;
+            var held = mod.Inventory.Current.Def;
+            var ammo = held != null ? held.UseAmmo : Items.AmmoKind.None;
+            bool scope = Items.Equipment.Current.Scope && (ammo == Items.AmmoKind.Bullet || ammo == Items.AmmoKind.CandyCorn || ammo == Items.AmmoKind.Stake || ammo == Items.AmmoKind.Gel);
             float f = scope ? 0.5f : -1f;
             if (mod.Inventory.Current.Type == Items.ItemType.SniperRifle) f = scope ? 0.8f : 2f / 3f;
             return f;
@@ -216,8 +245,20 @@ namespace TerraKnight.Player
             var mouse = UnityEngine.InputSystem.Mouse.current;
             var cam = cc.cam != null ? cc.cam : Camera.main;
             float factor = mod != null && cam != null ? PanFactor(mod) : -1f;
-            if (factor > 0f && DevPan.HasValue) target = DevPan.Value;
-            else if (factor > 0f && mouse != null && !TerraMod.DevNoRealMouse && mouse.rightButton.isPressed && !Items.InventoryGui.MouseOverUi && !Items.InventoryGui.Open)
+            var mode = Panning;
+            bool real = mouse != null && !TerraMod.DevNoRealMouse;
+            // The right button (a test's DevRight; DevPan alone counts as held), not over the interface.
+            bool right = DevRight ?? (DevPan.HasValue || real && mouse.rightButton.isPressed && !Items.InventoryGui.MouseOverUi && !Items.InventoryGui.Open);
+            if (panToggledFrame != Time.frameCount)
+            {
+                panToggledFrame = Time.frameCount;
+                if (factor <= 0f || mode != PanMode.Click) panToggled = false;
+                else if (right && !rightWas) panToggled = !panToggled;
+                rightWas = right;
+            }
+            bool on = mode == PanMode.OnAlways || mode == PanMode.Hold && right || mode == PanMode.Click && panToggled;
+            if (factor > 0f && on && DevPan.HasValue) target = DevPan.Value;
+            else if (factor > 0f && on && real)
             {
                 var m = mouse.position.ReadValue();
                 var n = new Vector2(Mathf.Clamp01(m.x / Screen.width) * 2f - 1f, Mathf.Clamp01(m.y / Screen.height) * 2f - 1f);

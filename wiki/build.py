@@ -17,6 +17,7 @@ import markdown
 from world_map_page import content as world_map_content
 from knowledge import load as load_knowledge
 from player_content import apply as player_content, player_release_notes
+from progression_guide import apply as progression_guide
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'artifacts/wiki-preview/terraknight-wiki'
@@ -30,6 +31,7 @@ TITLE = '空洞泰拉wiki'
 RELEASES_FILE = ROOT / 'wiki/releases.json'
 BUILD = hashlib.sha256(SOURCE.read_bytes() + RELEASES_FILE.read_bytes() + json.dumps(VERSION, sort_keys=True).encode('utf-8') + Path(__file__).read_bytes() + (ROOT/'wiki/knowledge.py').read_bytes() + b''.join(p.read_bytes() for p in sorted((CATALOG_ROOT/'tools').glob('encyclopedia_knowledge*.json'))) + b''.join(p.read_bytes() for p in sorted((ROOT/'wiki/assets').glob('*')) if p.is_file()) + (ROOT/'wiki/world_map_page.py').read_bytes() + (ROOT/'artifacts/wiki-world-map/map.json').read_bytes() + (ROOT/'artifacts/wiki-illustrations/manifest.json').read_bytes()).hexdigest()[:12]
 BUILD = hashlib.sha256((BUILD + (ROOT/'wiki/player_content.py').read_text('utf-8')).encode('utf-8')).hexdigest()[:12]
+BUILD = hashlib.sha256((BUILD + (ROOT/'wiki/progression_guide.py').read_text('utf-8')).encode('utf-8')).hexdigest()[:12]
 NAV = [('knowledge', '全部资料'), ('map', '世界地图'), ('progress', '阶段与解锁'), ('items', '物品图鉴'), ('enemies', '怪物图鉴'),
        ('npcs', 'NPC 与商店'), ('recipes', '合成配方'), ('fishing', '钓鱼与宝匣'), ('casino', '赌博概率'), ('dialogue', '全部台词'), ('enemy-ai', '攻击与打法'), ('boss-summons', 'Boss 召唤物'), ('systems', '玩法系统'), ('changelog', '更新日志')]
 
@@ -157,6 +159,7 @@ def main():
     base_sections = set(sections)
     coverage = load_knowledge(CATALOG_ROOT, sections, entries)
     coverage.update(player_content(CATALOG_ROOT, sections, entries))
+    coverage.update(progression_guide(CATALOG_ROOT, sections, entries))
     knowledge_sections = [s for key,s in sections.items() if key not in base_sections]
     npc_intro = '[圣巢本地商店与服务](#native-shops) · [全部新版台词](#dialogue)\n\n城镇居民按能力阶段与条件入住。商品会随阶段、月相和首领进度变化，具体购买条件请查看居民词条。月相按游戏内时间轮换，共八个阶段。'
     releases = json.loads(RELEASES_FILE.read_text(encoding='utf-8'))

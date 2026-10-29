@@ -9,7 +9,9 @@ namespace TerraKnight.Player
     /// within the view and the room, the player's feet where the cursor's height less his own is
     /// (gravDir 1), nowhere his box would be in rock. Each end shimmers (TeleportEffect style 1, purple
     /// dust 164). The Rod of Discord gives Chaos State (88, 6 s); used again meanwhile it takes a seventh
-    /// of the player's most life, past his defense, and may kill him.
+    /// of the player's most life, past his defense, and may kill him. Either rod is used once per its use time (20
+    /// ticks), however it is used: the item, or the 混沌传送 key (the user's 10-27 "传送杖快捷键没传送cd？": the key went
+    /// every press, the Rod of Harmony's with nothing at all between).
     /// </summary>
     internal static class TeleportRods
     {
@@ -18,16 +20,22 @@ namespace TerraKnight.Player
         static readonly bool defined = Define();
         public static int DevTeleports, DevChaosHurts;
 
+        /// <summary>When a rod may teleport again (unscaled time): its use time after the last teleport by either way.</summary>
+        static float readyAt;
+        public static bool Ready => DevNoGate || Time.unscaledTime >= readyAt;
+        /// <summary>Dev (suite rodkey): no use time between teleports (as before), to compare.</summary>
+        internal static bool DevNoGate;
+
         static bool Define()
         {
             PlayerBuffs.Define(ChaosState, "混沌状态", "使用混沌传送杖将消耗生命值", debuff: true);
             return true;
         }
 
-        /// <summary>One use at the cursor; whether the player went.</summary>
-        public static bool Use(TerraMod mod, HeroController hero, Vector2 cursor, bool discord)
+        /// <summary>One use at the cursor, its use time (s) the wait before the next; whether the player went.</summary>
+        public static bool Use(TerraMod mod, HeroController hero, Vector2 cursor, bool discord, float useTime = 20f / 60f)
         {
-            if (!defined || hero == null || mod == null) return false;
+            if (!defined || hero == null || mod == null || !Ready) return false;
             var box = hero.GetComponent<BoxCollider2D>();
             if (box == null) return false;
             var b = box.bounds;
@@ -56,6 +64,8 @@ namespace TerraKnight.Player
             if (rb != null) rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Min(rb.linearVelocity.y, 0f));
             Shimmer(centre);
             DevTeleports++;
+            // A hair under the use time: the item's own next use (its use time later) is never refused.
+            readyAt = Time.unscaledTime + useTime * 0.9f;
             if (!discord) return true;
             if (PlayerBuffs.Has(ChaosState))
             {

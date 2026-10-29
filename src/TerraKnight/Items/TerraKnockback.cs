@@ -91,7 +91,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static void PushUp(HealthManager hm, float knockBack)
         {
-            if (hm == null || hm.isDead || Immune(hm)) return;
+            if (hm == null || hm.isDead || Immune(hm) || MageMech.IsHeld(hm)) return;
             var info = EnemyStats.Of(hm);
             if (info == null || EnemyStats.NoKnockback(info)) return;
             float speed = Launch(knockBack, World.Areas.KnockbackTaken(info.Level), false);
@@ -231,7 +231,8 @@ namespace TerraKnight.Items
         {
             DevPushCalls++;
             DevPushSpeed = speed;
-            if (hm == null || speed <= 0f || hm.isDead) return;
+            // Held still (turned to stone, frozen: MageMech.Slow): no knockback.
+            if (hm == null || speed <= 0f || hm.isDead || MageMech.IsHeld(hm)) return;
             var col = BodyCollider(hm);
             if (col == null) return;
             var body = hm.GetComponent<Rigidbody2D>();

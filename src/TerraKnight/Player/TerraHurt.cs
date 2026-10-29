@@ -73,6 +73,8 @@ namespace TerraKnight.Player
             if (hazardType == 1 && damageAmount > 0 && go != null && canTakeDamage(__instance))
             {
                 var attacker = go.GetComponentInParent<HealthManager>();
+                // A remade blade's parry (Items.BladeSkills): the touch or the shot turned in its moment, a riposte.
+                if (Items.BladeSkills.TryParry(__instance, go, attacker)) return false;
                 if (attacker != null && Items.MeleeSpecials.TryParry(__instance, attacker, PlayerHooks.RawContact(damageAmount, go))) return false;
                 if (attacker != null) Items.ArmorEffects.OnContact(attacker, PlayerHooks.RawContact(damageAmount, go));
                 // The Baldur Shell's guard: a perfect one refuses the hit (a shot sent back); a late one lets 30% of it land.

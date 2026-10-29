@@ -61,6 +61,9 @@ namespace TerraKnight.Items
         /// <summary>P:23858-23880: no fall; once it shows (alpha 200 or less) four small motes (184) along its last step; fading in 50 an update, turned along its flight.</summary>
         static void StepScourge(Proj p)
         {
+            // The remade throws' turn (TerraProjectilesThrownArts.cs).
+            if (p.Updates == 1) KnifeFirst(p);
+            KnifeSteer(p);
             var v = TV(p);
             var c = CenterPx(p);
             if (p.Alpha <= 200f / 255f)
@@ -216,6 +219,9 @@ namespace TerraKnight.Items
         /// </summary>
         void StepDaybreak(Proj p)
         {
+            // The remade throws' turn (TerraProjectilesThrownArts.cs).
+            if (p.Updates == 1) KnifeFirst(p);
+            KnifeSteer(p);
             p.Alpha = Mathf.Max(0f, p.Alpha - 25f / 255f);
             var v = TV(p);
             if (p.Ai0 == 0f)

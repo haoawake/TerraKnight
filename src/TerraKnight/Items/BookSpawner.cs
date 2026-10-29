@@ -296,7 +296,7 @@ namespace TerraKnight.Items
     internal sealed class BookCopy : MonoBehaviour
     {
         /// <summary>The events a spawner or waker sends, in the order tried (a wall sentry waits for WAKE or IDLE).</summary>
-        static readonly string[] wakes = { "SPAWN", "BALLOON SPAWN", "WAKE", "START", "BATTLE START", "GO", "APPEAR", "IDLE" };
+        static readonly string[] wakes = { "SPAWN", "BALLOON SPAWN", "EMERGE", "WAKE", "START", "BATTLE START", "GO", "APPEAR", "IDLE" };
 
         HealthManager hm;
         readonly List<(PlayMakerFSM Fsm, string State)> woken = new List<(PlayMakerFSM, string)>();
@@ -323,6 +323,19 @@ namespace TerraKnight.Items
             foreach (var fsm in GetComponentsInChildren<PlayMakerFSM>(true))
             {
                 var vars = fsm.FsmVariables;
+                // The hopper Zoteling's Ball entry uses literal coordinates from its old arena,
+                // rather than Spawn X/Y variables. Only relocate a book copy's initial drop.
+                var ball = fsm.Fsm.GetState("Ball");
+                if (fsm.Fsm.GetState("Hopper Land") != null && ball != null)
+                {
+                    foreach (var action in ball.Actions)
+                    {
+                        if (action is HutongGames.PlayMaker.Actions.RandomFloat random && random.storeResult?.Name == "X Pos")
+                        { random.min.Value = now.x - 1f; random.max.Value = now.x + 1f; moved++; }
+                        if (action is HutongGames.PlayMaker.Actions.SetPosition position && position.x?.Name == "X Pos")
+                        { position.y.Value = now.y + 2f; moved++; }
+                    }
+                }
                 foreach (var v in vars.GameObjectVariables)
                 {
                     var set = v.Value;

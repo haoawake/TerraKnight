@@ -23,7 +23,7 @@ namespace TerraKnight.EnemyAi.Bosses
 
         readonly List<PlayMakerFSM> droppers = new List<PlayMakerFSM>();
         readonly Dictionary<PlayMakerFSM, ChaseObjectGround> chases = new Dictionary<PlayMakerFSM, ChaseObjectGround>();
-        float callUntil, swarmAt = -10f, swarmX, nextCall;
+        float swarmAt = -10f, swarmX;
         PlayMakerFSM globs;
 
         protected override void Setup()
@@ -46,7 +46,6 @@ namespace TerraKnight.EnemyAi.Bosses
                 var own = glob;
                 At("Tween Up", 1, () => { var t = Float("Translate", own); if (t != null) t.Value = 0f; }, own);
             }
-            OnEnter("Land", CallBees, first: false);
             OnEnter("Dash Antic", () => LineOut(12f, Warn(0.45f)), first: false);
             OnEnter("TeleIn 1", () => LineOut(10f, 0.6f), first: false);
             foreach (var phase in new[] { "Phase 1", "Phase 2", "Phase 3" }) Branch(phase, "TeleOut 1", WantAntiAir);
@@ -65,36 +64,14 @@ namespace TerraKnight.EnemyAi.Bosses
         {
             var place = Float("Random", f);
             if (place == null) return;
-            bool called = Time.time < callUntil;
-            if (chases.TryGetValue(f, out var chase)) chase.Enabled = called;
-            float x;
-            if (called) x = Lock().x + Random.Range(-4f, 4f);
-            else
-            {
-                if (Time.time - swarmAt > 1f) { swarmAt = Time.time; swarmX = Lock().x; }
-                x = swarmX + (index - (droppers.Count - 1) / 2f) * 2.5f;
-                MarkGround(new Vector2(x, TargetFeet.y + 0.3f), 2f, 1.5f);
-            }
+            if (chases.TryGetValue(f, out var chase)) chase.Enabled = false;
+            if (Time.time - swarmAt > 1f) { swarmAt = Time.time; swarmX = Lock().x; }
+            float x = swarmX + (index - (droppers.Count - 1) / 2f) * 2.5f;
+            MarkGround(new Vector2(x, TargetFeet.y + 0.3f), 2f, 1.5f);
             var parent = f.transform.parent;
             place.Value = parent != null ? parent.InverseTransformPoint(new Vector3(x, 0f, 0f)).x : x;
         }
 
-        /// <summary>After a jump: a few of the hive's bees, idle up there, sent after the player.</summary>
-        void CallBees()
-        {
-            if (Time.time < nextCall || droppers.Count == 0) return;
-            nextCall = Time.time + 4f;
-            callUntil = Time.time + 0.5f;
-            int want = Rank >= 2 ? 4 : 3;
-            foreach (var f in droppers)
-            {
-                if (want <= 0) break;
-                if (f == null || !f.isActiveAndEnabled || f.ActiveStateName != "Idle") continue;
-                f.SetState("Swarm Start");
-                want--;
-                BossAi.DevMoves++;
-            }
-        }
 
         /// <summary>The three globs set over where the player is (each burst ringed); a fourth of his own from rank 1.</summary>
         void PlaceGlobs()
@@ -111,43 +88,7 @@ namespace TerraKnight.EnemyAi.Bosses
                 g.transform.position = new Vector3(gx, p.y, p.z);
                 MarkCircle(new Vector2(gx, p.y + 9f), 6f, 2.6f);
             }
-            if (Rank >= 1 && RoomForStrike) Run(FourthGlob(x));
         }
 
-        /// <summary>
-        /// A fourth honey glob beside the three: one of his own globs copied (its rise, its forming, its burst into stingers,
-        /// all the game's), let go of the hive's glob holder so the holder's draw never picks it, and gone when it is spent.
-        /// </summary>
-        IEnumerator FourthGlob(float x)
-        {
-            float side = x + 8f < Arena.xMax - 1f ? 1f : -1f;
-            Vector2 at = new Vector2(x + side * 8f, Me.y + 9f);
-            at = ClampToArena(at, 1f);
-            yield return new WaitForSeconds(1f);
-            var model = Go("Glob M", globs)?.Value;
-            if (model != null)
-            {
-                var copy = Instantiate(model);
-                // The original is rising as it is copied: its tween is not the copy's.
-                foreach (var tween in copy.GetComponents<iTween>()) Destroy(tween);
-                yield return null;
-                yield return null;
-                var fsm = copy != null ? copy.GetComponent<PlayMakerFSM>() : null;
-                if (fsm != null)
-                {
-                    var parent = fsm.FsmVariables.FindFsmGameObject("Parent");
-                    if (parent != null) parent.Value = null;
-                    copy.transform.SetParent(null, true);
-                    copy.transform.position = new Vector3(at.x, at.y - 9f, model.transform.position.z);
-                    fsm.SendEvent("FIRE");
-                    BossAi.DevMoves++;
-                    for (float t = 0f; t < 6f && copy != null && fsm.ActiveStateName != "End"; t += Time.deltaTime) yield return null;
-                    yield return new WaitForSeconds(0.2f);
-                    if (copy != null) Destroy(copy);
-                    yield break;
-                }
-                if (copy != null) Destroy(copy);
-            }
-        }
     }
 }

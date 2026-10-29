@@ -32,6 +32,7 @@ namespace TerraKnight.Player
         internal float Run, Dash, Accel, Jump, Fall;
         internal bool Hover, Infinite;
         internal bool Skates => Native>=57 && Native<=60;
+        internal bool CanUseHooks => Skates || Native==54; // MountID.Sets.CanUseHooks
         // PlayerDrawSet: wolf, rat, bat and pixie hide the whole rider; raptor keeps head accessories.
         internal bool Transform => Native==52 || Native==54 || Native==55 || Native==56 || Native==61;
         internal bool HeadAccessoriesOnly => Native==54;
@@ -69,9 +70,9 @@ namespace TerraKnight.Player
         /// The rider's legs (Player.PlayerFrame, Pl:36428-36440): frame 6, sat astride; straight (0) on the broom, the Spooky
         /// Wood mount and the Dark Mage's tome; a transformation and the skates keep the stance.
         /// </summary>
-        internal static int RiderLeg(MountDef m)=>!Seated(m) || m.Native==23 || m.Native==45 || m.Native==48 ? 0 : 6;
+        internal static int RiderLeg(MountDef m)=>m!=null&&m.Skates ? -1 : !Seated(m) || m.Native==23 || m.Native==45 || m.Native==48 ? 0 : 6;
         /// <summary>The rider's body (Pl:36766-36770): the mount's bodyFrame (3, the arms out on the reins, on most).</summary>
-        internal static int RiderBody(MountDef m)=>Seated(m) ? SeatOf(m).Body : 0;
+        internal static int RiderBody(MountDef m)=>m!=null&&m.Skates ? -1 : Seated(m) ? SeatOf(m).Body : 0;
         /// <summary>
         /// How far over the ground the rider's feet are (world units). Terraria centres the mount's frame (42 + heightBoost) / 2
         /// - yOffset px over the ground and lifts the rider playerYOffsets[frame] px (PlayerDrawSet: Position.Y -= mountOffSet);
@@ -80,6 +81,7 @@ namespace TerraKnight.Player
         internal static float RiderRise(MountDef m,Vector2 velocity,bool grounded)
         {
             if(m==null)return 0f;
+            if(m.Skates)return SeatOf(m).Rise[0]/32f;
             if(!Seated(m) || m.Layers.Length==0)return Mathf.Max(0,m.Lift)/32f;
             var s=SeatOf(m);var tex=TerrariaAssets.Texture(m.Layers[0].Texture);
             if(tex==null)return Mathf.Max(0,m.Lift)/32f;
@@ -127,7 +129,7 @@ namespace TerraKnight.Player
             if(!ProgressionBalance.Unlocked(def.Item)) {
                 CombatText.Show(hero.transform.position,"坐骑需要阶段 "+def.Stage,CombatText.PlayerHurt);return false;
             }
-            if(TerraMovement.OnRope || GrapplingHook.IsLatched || GravityGlobe.Flipped)return false;
+            if(TerraMovement.OnRope || (GrapplingHook.IsLatched&&!def.CanUseHooks) || GravityGlobe.Flipped)return false;
             Dismount();
             var box=hero.GetComponent<BoxCollider2D>();
             if(box==null)return false;
@@ -145,6 +147,7 @@ namespace TerraKnight.Player
             var rb=hero.GetComponent<Rigidbody2D>();originalGravity=rb.gravityScale;suppressGravity=false;oldVx=rb.linearVelocity.x/TerraMovement.PxT;oldVy=rb.linearVelocity.y/TerraMovement.PxT;
             jumpWasHeld=TerraMovement.JumpHeldNow;extraJump=hero.cState.onGround;shotAt=Time.time+.5f;hitAt.Clear();
             TerraMod.Instance?.ResetFall();
+            if(def.Skates)SkateDust(hero);
             return true;
         }
         static bool Blocked(Vector2 center,Vector2 size)
@@ -155,6 +158,7 @@ namespace TerraKnight.Player
         }
         internal static void Dismount()
         {
+            if(Current?.Skates==true&&owner!=null)SkateDust(owner);
             if(owner!=null && suppressGravity)owner.GetComponent<Rigidbody2D>().gravityScale=originalGravity;
             suppressGravity=false;
             if(collider!=null){collider.size=originalSize;collider.offset=originalOffset;}
@@ -163,20 +167,20 @@ namespace TerraKnight.Player
         }
         internal static void Tick(bool gameplay,HeroController hero)
         {
-            if(Riding && (!gameplay || owner!=hero || hero==null || hero.cState.dead || hero.cState.hazardRespawning || hero.cState.transitioning || GrapplingHook.IsLatched || TerraMovement.OnRope || GravityGlobe.Flipped || scene!=GameManager.UnsafeInstance?.sceneName))Dismount();
+            if(Riding && (!gameplay || owner!=hero || hero==null || hero.cState.dead || hero.cState.hazardRespawning || hero.cState.transitioning || (GrapplingHook.IsLatched&&!Current.CanUseHooks) || TerraMovement.OnRope || GravityGlobe.Flipped || scene!=GameManager.UnsafeInstance?.sceneName))Dismount();
             if(!gameplay || hero==null || GameManager.UnsafeInstance.isPaused)return;
             if(TerraKeys.Pressed(TerraKeys.Action.Mount) && !InventoryGui.Open && !TerraKeys.Listening.HasValue && GameHooks.PlayerHasControl())Toggle();
             if(Riding && hero.cState.onGround){Fuel=Current.Flight;extraJump=true;}
         }
         internal static void ApplyJump(HeroController hero)
         {
-            if(!Riding)return;
-            hero.JUMP_SPEED=(Current.Skates ? hero.JUMP_SPEED/TerraMovement.PxT+1f : Current.Jump)*TerraMovement.PxT;
-            if(!Current.Skates)hero.JUMP_STEPS=Mathf.Max(1,Mathf.RoundToInt(Current.JumpTicks/60f/Time.fixedDeltaTime));
+            if(!Riding || Current.Skates)return; // Skate additions are part of the shared jump stats, including extra jumps.
+            hero.JUMP_SPEED=Current.Jump*TerraMovement.PxT;
+            hero.JUMP_STEPS=Mathf.Max(1,Mathf.RoundToInt(Current.JumpTicks/60f/Time.fixedDeltaTime));
         }
         internal static bool Move(HeroController hero,Rigidbody2D rb,float direction)
         {
-            if(!OwnMovement || hero!=owner)return false;
+            if(!OwnMovement || hero!=owner || (Current.CanUseHooks&&GrapplingHook.IsLatched))return false;
             if(hero.cState.recoiling || !hero.acceptingInput){dashAsk=0;return true;}
             float ticks=Time.fixedDeltaTime*60f;
             // Mount.RunSpeed: the swimmers' speed in water, the Shrimpy Truffle's when wet or hurt.
@@ -285,6 +289,7 @@ namespace TerraKnight.Player
         internal static bool FixedStep(HeroController hero,Rigidbody2D rb,float ticks)
         {
             if(!OwnMovement || hero!=owner)return false;
+            if(Current.CanUseHooks&&GrapplingHook.IsLatched){RestoreGravity(rb);return false;}
             if(!hero.acceptingInput || hero.cState.dead || hero.cState.recoiling || hero.cState.transitioning){RestoreGravity(rb);return true;}
             var m=Current;var v=rb.linearVelocity/TerraMovement.PxT;
             bool ground=hero.cState.onGround,jump=TerraMovement.JumpHeldNow,wet=Wet(hero);
@@ -413,10 +418,6 @@ namespace TerraKnight.Player
                 if(!sprites.TryGetValue(key,out var sprite))sprites[key]=sprite=TerrariaAssets.Sprite(layer.Texture,0,fr*h,tex.width,h,32f,new Vector2(.5f,0));
                 var p=TerraParticles.ToPx(feet);p.x+=ahead;
                 FxBatch.Instance.Draw(sprite,p,new Color(1f,1f,1f,opacity),0f,Vector2.one,false,facing<0,layer.Front);
-            }
-            if(m.Skates) {
-                var sprite=TerraMod.ItemSprite(m.Item);
-                FxBatch.Instance.Draw(sprite,TerraParticles.ToPx(feet),new Color(1,1,1,opacity),0f,Vector2.one*.6f,false,facing<0,true);
             }
         }
     }

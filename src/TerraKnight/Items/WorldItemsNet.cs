@@ -58,7 +58,7 @@ namespace TerraKnight.Items
         }
 
         static WorldSync.Record NetRecord(Item it) => new WorldSync.Record { Key = it.NetId, Scene = it.Scene, X = it.Local.x, Y = it.Local.y,
-            Vx = it.Vel.x, Vy = it.Vel.y, Kind = (int)it.Stack.Type, Seed = it.Stack.Count, Prefix = it.Stack.Prefix, Forge = it.Stack.Forge,
+            Vx = it.Vel.x, Vy = it.Vel.y, Kind = (int)it.Stack.Type, Seed = it.Stack.Count, Prefix = it.Stack.Prefix, Forge = it.Stack.Forge, WeaponVersion = it.Stack.WeaponVersion,
             Age = it.Age, Delay = it.GrabDelay, Sky = it.FromSky, Dropper = it.Dropper, Shimmered = it.Shimmered,
             Owner = NetSession.Owners.TryGetValue(it.Scene, out int owner) ? owner : NetSession.Hosting ? NetSession.MySlot : it.PhysicsOwner };
 
@@ -82,6 +82,7 @@ namespace TerraKnight.Items
             it.Stack = ItemStack.Of((ItemType)r.Kind, r.Seed);
             it.Stack.Prefix = r.Prefix;
             it.Stack.Forge = r.Forge;
+            it.Stack.WeaponVersion = r.WeaponVersion;
             it.FromSky = r.Sky;
             it.Dropper = r.Dropper;
             it.PhysicsOwner = r.Owner;
@@ -131,6 +132,7 @@ namespace TerraKnight.Items
             var stack = ItemStack.Of((ItemType)a.Kind, a.Count);
             stack.Prefix = a.Prefix;
             stack.Forge = a.Forge;
+            stack.WeaponVersion = a.WeaponVersion;
             items.Add(new Item { NetId = "i:" + Guid.NewGuid().ToString("N"), Stack = stack,
                 Scene = a.Scene, Local = new Vector2(a.X, a.Y), Vel = new Vector2(a.Vx, a.Vy),
                 Region = RegionNamed(a.Scene), Dropper = dropper, GrabDelay = Mathf.Max(0, a.Power), FromSky = a.Sky });
@@ -139,14 +141,14 @@ namespace TerraKnight.Items
 
         internal static void NetDrop(ItemStack stack, string scene, Vector2 local)
         {
-            NetSpawn(new WorldSync.Action { Kind = (int)stack.Type, Count = stack.Count, Prefix = stack.Prefix, Forge = stack.Forge, Scene = scene, X = local.x, Y = local.y,
+            NetSpawn(new WorldSync.Action { Kind = (int)stack.Type, Count = stack.Count, Prefix = stack.Prefix, Forge = stack.Forge, WeaponVersion = stack.WeaponVersion, Scene = scene, X = local.x, Y = local.y,
                 Vx = UnityEngine.Random.Range(-3f, 3f), Vy = UnityEngine.Random.Range(1.6f, 4f) }, -1);
         }
 
-        internal static void NetClaim(WorldSync.Action a, int slot, out int type, out int count, out byte prefix, out byte forge)
+        internal static void NetClaim(WorldSync.Action a, int slot, out int type, out int count, out byte prefix, out byte forge, out byte weaponVersion)
         {
             type = count = 0;
-            prefix = forge = 0;
+            prefix = forge = weaponVersion = 0;
             var it = items.Find(item => item.NetId == a.Key && !item.Stack.IsEmpty);
             if (it == null || a.Count <= 0 || (it.Dropper == slot && it.GrabDelay > 0)) return;
             var player = NetSession.Player(slot);
@@ -165,6 +167,7 @@ namespace TerraKnight.Items
             type = (int)it.Stack.Type;
             prefix = it.Stack.Prefix;
             forge = it.Stack.Forge;
+            weaponVersion = it.Stack.WeaponVersion;
             count = Mathf.Min(a.Count, it.Stack.Count);
             it.Stack.Count -= count;
             if (it.Stack.Count <= 0) it.Stack = default;

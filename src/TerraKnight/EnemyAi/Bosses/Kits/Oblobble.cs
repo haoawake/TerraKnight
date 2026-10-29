@@ -21,32 +21,20 @@ namespace TerraKnight.EnemyAi.Bosses
         protected override bool Roams => true;
 
         bool raging;
-        float aimAngle;
-        bool aimed;
 
         protected override void Setup()
         {
             Tempo("Wait", "CD", "Rage Wait");
             var bounce = FindFsm("fat fly bounce");
-            if (bounce != null) ScaleFloat("Speed", 1.3f, bounce);
             var rage = FindFsm("Set Rage");
             // Its rage sets its flight to 12: faster still, as the one left.
             if (rage != null && bounce != null)
                 OnEnter("Roar Antic", () =>
                 {
                     raging = true;
-                    SetFloat("Speed", 12f * 1.3f * 1.2f, bounce);
                 }, true, rage);
-            OnEnter("Attack Antic 2", Aim);
             // Its flight's way after each bounce (Left or Right? reads it to face): at the player, now and then.
             if (bounce != null) OnEnter("Left or Right?", () => AtPlayer(bounce), true, bounce);
-            At("Shoot Anim", 1, () =>
-            {
-                var mod = Float("Angle Mod");
-                // The first round's first shot goes out at 45° plus the round's turn.
-                if (aimed && mod != null) mod.Value = aimAngle - 45f;
-                aimed = false;
-            });
         }
 
         void AtPlayer(PlayMakerFSM bounce)
@@ -60,12 +48,5 @@ namespace TerraKnight.EnemyAi.Bosses
             if (AirCamping) BossAi.DevAntiAir++;
         }
 
-        void Aim()
-        {
-            var at = Lock();
-            aimAngle = Batch4.AngleTo(Me, at);
-            aimed = true;
-            MarkLine(Me, Me + (at - Me).normalized * 14f, Warn(0.4f));
-        }
     }
 }

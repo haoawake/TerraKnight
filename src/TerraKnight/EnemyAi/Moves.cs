@@ -13,7 +13,7 @@ namespace TerraKnight.EnemyAi
     {
         // The enemy moves.
         Lunge, Chase, Leap, Dive, Stalk, Blink, Burrow, Drop,
-        // Beside its own script.
+        // Shot pauses its native attack for a readable volley; areas act beside its own script.
         Shot, Pulse, Wave, Pillar, Cloud, Pull, Beam,
         // Its own attack again: its script put at the state that starts it (a Gulka's spit, a Kingsmould's throw).
         Own,
@@ -89,6 +89,21 @@ namespace TerraKnight.EnemyAi
         public string[] OwnFrom;
 
         public Move Clone() => (Move)MemberwiseClone();
+
+        /// <summary>One readable shot volley per complete native wind-up, without hidden follow-up bursts.</summary>
+        public Move ForExecution()
+        {
+            var move = Clone();
+            if (move.Kind != Kind.Shot) return move;
+            if (move.Interval > 0f) move.Count = 1;
+            else move.Count = System.Math.Min(move.Count, move.Aim == Aim.Radial ? 6 : 3);
+            move.Interval = 0f;
+            move.Repeat = 0;
+            move.Antic = System.Math.Max(move.Antic, 0.75f);
+            move.Recover = System.Math.Max(move.Recover, 0.8f);
+            move.Cooldown = System.Math.Max(move.Cooldown, 4f);
+            return move;
+        }
     }
 
     /// <summary>One enemy kind's new AI: how it finds the player and the moves it adds.</summary>

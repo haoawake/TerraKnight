@@ -39,6 +39,7 @@ namespace TerraKnight.World
             public int BankKind;
             /// <summary>Opened by an item where the player is (the Money Trough, the Void Bag): it goes with him, no reach.</summary>
             public bool Portable;
+            public bool Remote;
             /// <summary>The item or furniture it was opened with, for the panel's name.</summary>
             public Items.ItemType OpenedWith;
             /// <summary>Chest.name: what the player called it (ChestUI's Rename), "" for none.</summary>
@@ -51,6 +52,7 @@ namespace TerraKnight.World
             public SpriteRenderer Renderer;
             /// <summary>The smart cursor's outline over it (Images/Misc/TileOutlines/Tiles_21).</summary>
             public SpriteRenderer Outline;
+            public ParticleSystem HomeHighlight;
             TerrainRegion region;
             public TerrainRegion Region
             {
@@ -94,7 +96,7 @@ namespace TerraKnight.World
         }
 
         public static int Count => chests.Count;
-        public static bool IsOpen => open != null && open.Region != null;
+        public static bool IsOpen => open != null && (open.Region != null || open.Remote);
         /// <summary>The open chest's slots (null when none is open).</summary>
         public static ItemStack[] OpenItems => IsOpen ? open.Items : null;
         internal static string DevOpenKey => IsOpen && !open.Bank ? Net.WorldSync.Key("c", open.Scene, open.Local) : null;
@@ -421,6 +423,7 @@ namespace TerraKnight.World
             if (open == null) return;
             if (!open.Bank && Net.NetSession.Active)
                 Net.WorldSync.FlushChest(Net.WorldSync.Key("c", open.Scene, open.Local), NetSlots(open), true);
+            open.Remote=false;
             open = null;
             if (sound) TerraMod.Instance?.PlaySound("Menu_Close", 0.7f);
         }
@@ -571,6 +574,7 @@ namespace TerraKnight.World
         /// <summary>The chests crafting draws from added to <paramref name="list"/> (the crafting column asks every frame).</summary>
         public static void ForCrafting(HeroController hero, List<ItemStack[]> list)
         {
+            if(Stations.HomeActive) { HomeCrafting(list);return; }
             if (hero == null) return;
             var col = hero.GetComponent<BoxCollider2D>();
             if (col == null) return;
@@ -599,23 +603,68 @@ namespace TerraKnight.World
 
         static int QuickStackNearbyCore(Inventory inv, Vector2 from)
         {
-            int moved = 0;
             float range = 600f * Effects.TerraParticles.Px;
             var near = new List<Chest>();
             if (BankWithin(from, range)) near.Add(new Chest(inv.Bank) { Bank = true });
             foreach (var c in chests)
                 if (c.Region != null && !c.Bank && Vector2.Distance(c.Box.center, from) <= range) near.Add(c);
             near.Sort((a, b) => a.Bank != b.Bank ? (a.Bank ? -1 : 1) : (a.Bank ? 0 : Vector2.Distance(a.Box.center, from).CompareTo(Vector2.Distance(b.Box.center, from))));
+            return QuickStackTo(inv, near, true);
+        }
+
+        /// <summary>
+        /// The Home Everywhere's quick stack (the user's 10-27 "能够一键快速堆叠到多个颜色背包内"): Quick Stack to Nearby Chests' rules
+        /// onto every home's storages at once, whatever their colour and wherever they stand (their scenes loaded or not):
+        /// each home's chests, in the homes' order, and its banks (the player's Piggy Bank, Safe, Defender's Forge and Void
+        /// Vault, each once) first. A currency goes only into a bank or a chest that holds it, never into whichever chest
+        /// comes first (a far home is no place to drop the purse). How many stacks moved.
+        /// </summary>
+        public static int QuickStackHomes(Inventory inv) => HallownestStorage.Move(inv, () => QuickStackHomesCore(inv));
+
+        static int QuickStackHomesCore(Inventory inv)
+        {
+            var banks = new List<Chest>();
+            var stores = new List<Chest>();
+            var kinds = new HashSet<int>();
+            foreach (var home in Stations.Homes())
+            {
+                foreach (var bank in Stations.HomeBanks(home.Key))
+                    if (kinds.Add(bank.Kind)) banks.Add(new Chest(inv.BankOf(bank.Kind)) { Bank = true, BankKind = bank.Kind });
+                foreach (var c in chests)
+                    if (!c.Bank && !stores.Contains(c) && HomeContainsChest(home.Key, c)) stores.Add(c);
+            }
+            banks.AddRange(stores);
+            DevHomeStackTargets = banks.Count;
+            return QuickStackTo(inv, banks, false);
+        }
+
+        /// <summary>Dev: the storages the last home quick stack went over (banks and chests).</summary>
+        public static int DevHomeStackTargets;
+
+        /// <summary>
+        /// A quick stack onto these storages, the banks first (QuickStacking.QuickStackToNearbyChests' rules): each currency into
+        /// the first bank, else a chest that holds it (else the first of them, with <paramref name="coinsAnywhere"/>); the bag below
+        /// the hotbar, not its favourites, onto those that hold each item. A LAN game's chests this player hasn't open go to the
+        /// host in one request. How many stacks moved.
+        /// </summary>
+        static int QuickStackTo(Inventory inv, List<Chest> near, bool coinsAnywhere)
+        {
+            int moved = 0;
             // Here: the bank and a chest this player has open (alone, every chest); the host's: the rest.
             bool Here(Chest c) => c.Bank || Net.WorldSync.OwnsChest(c.Scene, c.Local);
-            var shared = near.FindAll(c => !Here(c));
+            // The host takes 64 chests a request: those holding something of the bag's (or a currency), in order.
+            var shared = near.FindAll(c => !Here(c) && System.Array.Exists(c.Items, it => !it.IsEmpty && (Currencies.Is(it.Type)
+                || System.Array.Exists(inv.Slots, s => !s.IsEmpty && !s.Favorite && s.Type == it.Type))));
+            if (shared.Count > 64) shared.RemoveRange(64, shared.Count - 64);
+            near = near.FindAll(c => Here(c) || shared.Contains(c));
             var sent = new List<(int Slot, ItemStack Stack, int Target)>();
             bool Sent(int slot) => sent.Exists(e => e.Slot == slot);
-            // Each currency: the bank first, else a chest that has some, else the nearest chest.
+            // Each currency: the bank first, else a chest that has some, else (nearby) the nearest chest.
             if (near.Count > 0)
                 foreach (var t in Currencies.All)
                 {
-                    Chest to = near[0].Bank ? near[0] : near.Find(c => Holds(c, t)) ?? near[0];
+                    Chest to = near[0].Bank ? near[0] : near.Find(c => Holds(c, t)) ?? (coinsAnywhere ? near[0] : null);
+                    if (to == null) continue;
                     if (Here(to)) { moved += MoveCoins(inv, to, t); continue; }
                     for (int i = 0; i < Inventory.Total; i++)
                     {
@@ -813,7 +862,7 @@ namespace TerraKnight.World
                 }
             }
             // Shut when out of reach, its scene gone, the inventory closed, or a townsperson talked to.
-            if (open != null && (open.Region == null || !InventoryGui.Open || hero.cState.dead || (!open.Portable && !InReach(hero, open.Box)) || Town.TownNpcs.ChatOpen))
+            if (open != null && ((!open.Remote && open.Region == null) || !InventoryGui.Open || hero.cState.dead || (open.Remote && (!Stations.HomeActive || !HomeStorages(Stations.SelectedHome).Exists(x=>x.Items==open.Items))) || (!open.Remote && !open.Portable && !InReach(hero, open.Box)) || Town.TownNpcs.ChatOpen))
                 Close(open.Region != null);
             ticks += Mathf.Min(Time.deltaTime, 0.1f) * 60f;
             while (ticks >= 1f)
@@ -838,6 +887,7 @@ namespace TerraKnight.World
                 if (c.Region == null)
                 {
                     if (c.Renderer != null) c.Renderer.enabled = false;
+                    if (c.HomeHighlight != null) c.HomeHighlight.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                     continue;
                 }
                 if (c.Renderer == null)
@@ -853,6 +903,7 @@ namespace TerraKnight.World
                 // Terraria's bottom tile is 18 px tall: its last 2 px sink into the ground (an area's chest its last one, its feet on it).
                 c.Renderer.transform.localPosition = new Vector3(c.Local.x, c.Local.y - (RegionalFurniture.IsDresser(c.Style) ? 0f : area != null ? 1f : 2f) * Px, Z - c.Region.Root.position.z);
                 DrawOutline(c);
+                DrawHomeConnection(c);
             }
         }
 
@@ -1006,6 +1057,9 @@ namespace TerraKnight.World
             for (int i = 0; i < Capacity && items != null && i < items.Length; i++) c.Items[i] = items[i];
             chests.Add(c);
         }
+
+        /// <summary>Dev: the slots of the chest standing at a spot of a scene (AddWorld copies what it is given).</summary>
+        internal static ItemStack[] DevItemsAt(string scene, Vector2 local) => chests.Find(c => c.Scene == scene && c.Local == local)?.Items;
 
         /// <summary>A chest of a scene this close to a spot (its bottom middle, the scene's coordinates).</summary>
         internal static bool AnyNear(string scene, Vector2 local, float distance)

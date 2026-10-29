@@ -75,6 +75,24 @@ namespace TerraKnight.Items
             return won;
         }
 
+        /// <summary>
+        /// The fights the way on passes over: the won ones and those that can't be had any more (with Zote dead, his trial in the
+        /// Colosseum and Grey Prince Zote: the user's 10-27 "如果左特死了就自动指向下一个…指引也应该同步更改"). Not counted as wins.
+        /// </summary>
+        static HashSet<ItemType> Passed(TerraMod mod)
+        {
+            var passed = Won(mod);
+            if (ZoteDead)
+            {
+                passed.Add(ItemType.RelicZote);
+                passed.Add(ItemType.RelicGreyPrince);
+            }
+            return passed;
+        }
+
+        /// <summary>Zote died (left in Deepnest's webs): the fights he is in won't come.</summary>
+        static bool ZoteDead => PlayerData.instance != null && PlayerData.instance.GetBool("zoteDead");
+
         /// <summary>The way on from a stage: the first fight not won of it or a later one; else the first not won at all (behind).</summary>
         static Entry Next(HashSet<ItemType> won, int stage, out bool onward, out bool behind)
         {
@@ -119,7 +137,7 @@ namespace TerraKnight.Items
         static List<Page> Compose(TerraMod mod, Talk t)
         {
             var fight = t.Fight;
-            var won = Won(mod);
+            var won = Passed(mod);
             won.Add(fight.Relic);
             var pages = new List<Page> { t.Late ? Voice(fight.LateZh, fight.LateEn) : Voice(fight.WinZh, fight.WinEn) };
             var next = Next(won, fight.Stage, out bool onward, out bool behind);
@@ -176,7 +194,7 @@ namespace TerraKnight.Items
             if (won.Count > 0) return;
             var pages = new List<Page>();
             foreach (var line in Opening) pages.Add(new Page { Voice = line.Voice, Text = Pick(line.Zh, line.En) });
-            var first = Next(won, 0, out _, out _);
+            var first = Next(Passed(mod), 0, out _, out _);
             if (first != null) pages.Add(Voice(HintZhOf(first) + OpeningLastZh, HintEnOf(first) + " " + OpeningLastEn));
             waiting.Enqueue(new Talk { Lines = pages });
             queuedAt = Time.unscaledTime - AfterWin;

@@ -85,7 +85,7 @@ namespace TerraKnight.Items
             return n;
         }
 
-        static Vector2 Rotate(Vector2 v, float degrees)
+        static Vector2 RotateHowl(Vector2 v, float degrees)
         {
             float a = degrees * Mathf.Deg2Rad, c = Mathf.Cos(a), s = Mathf.Sin(a);
             return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
@@ -358,7 +358,7 @@ namespace TerraKnight.Items
             for (int k = 0; k < n; k++)
             {
                 float a = Mathf.Lerp(-spread, spread, k / (float)(n - 1));
-                var v = Rotate(dir, a) * speed;
+                var v = RotateHowl(dir, a) * speed;
                 var q = Spawn(ProjKind.ShriekWave, TerraParticles.ToWorld(mouth + v.normalized * 6f), Flip(v), dmg, knockback * (last ? 1.6f : 1f), crit);
                 if (q == null) continue;
                 q.Ai0 = roar;

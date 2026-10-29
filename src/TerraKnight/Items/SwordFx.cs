@@ -44,14 +44,14 @@ namespace TerraKnight.Items
     /// their first hit with a cut and a fireball; hits flash (ParticleOrchestrator's bursts),
     /// swords shed their dust, and fire and poison keep hurting (On Fire!, Poisoned).
     /// </summary>
-    internal sealed class SwordFx : MonoBehaviour
+    internal sealed partial class SwordFx : MonoBehaviour
     {
         const float Px = TerraParticles.Px;
         const float Pi = Mathf.PI;
 
         public static SwordFx Instance { get; private set; }
 
-        enum Kind { Swing, TerraShot, LightsBaneCut, Leaf, MuramasaCut, VolcanoBlast, Stab, TrueNightsShot }
+        enum Kind { Swing, TerraShot, LightsBaneCut, Leaf, MuramasaCut, VolcanoBlast, Stab, TrueNightsShot, CloseArt }
 
         sealed class Proj
         {
@@ -107,7 +107,8 @@ namespace TerraKnight.Items
         static Vector2 PlayerCenterPx(HeroController hero) => TerraParticles.ToPx(hero.GetComponent<BoxCollider2D>().bounds.center);
 
         /// <summary>Player.ItemCheck_Shoot for a sword, once at the start of each use.</summary>
-        public void OnUse(ItemDef item, HeroController hero, float direction, Vector2 aimWorld)
+        /// <param name="artSlash">The remade swing (BladeArts) is the sword's slash: only its other shots (the Terra Blade's beam, Night's Edge's slash at the cursor, the True Night's Edge's blade).</param>
+        public void OnUse(ItemDef item, HeroController hero, float direction, Vector2 aimWorld, bool artSlash = false)
         {
             var p = PlayerCenterPx(hero);
             var aimPx = TerraParticles.ToPx(aimWorld) - p;
@@ -118,14 +119,14 @@ namespace TerraKnight.Items
             switch (item.Fx)
             {
                 case MeleeFx.NightsEdge:
-                    Add(Kind.Swing, 972, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 2);
+                    if (!artSlash) Add(Kind.Swing, 972, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 2);
                     Add(Kind.Swing, 972, p, aim * 5f, damage, Equipment.Knockback(item), crit, direction * 0.1f, 30f, 2);
                     break;
                 case MeleeFx.Excalibur:
-                    Add(Kind.Swing, 982, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 3);
+                    if (!artSlash) Add(Kind.Swing, 982, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 3);
                     break;
                 case MeleeFx.TerraBlade:
-                    Add(Kind.Swing, 984, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 3);
+                    if (!artSlash) Add(Kind.Swing, 984, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 3);
                     var shot = Add(Kind.TerraShot, 985, p, aim * 12f * 5f, damage, Equipment.Knockback(item), crit, direction, 18f, -1);
                     shot.Opacity = 0f;
                     break;
@@ -138,7 +139,7 @@ namespace TerraKnight.Items
                 case MeleeFx.TrueNightsEdge:
                 {
                     // Player.ItemCheck_Shoot (Pl:49422): the Night's Edge slash, and 973 at the cursor for half the damage.
-                    Add(Kind.Swing, 972, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 2);
+                    if (!artSlash) Add(Kind.Swing, 972, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 2);
                     var blade = Add(Kind.TrueNightsShot, 973, p, aim * 14f * Equipment.UseScale(item), Mathf.Max(1, damage / 2), Equipment.Knockback(item), crit, direction, 32f, 3);
                     blade.Rotation = 0f;
                     blade.Opacity = 0f;
@@ -147,17 +148,19 @@ namespace TerraKnight.Items
                 }
                 case MeleeFx.TrueExcalibur:
                     // Pl:49430: its own slash, and Excalibur's (982) beneath it for nothing.
+                    if (artSlash) break;
                     Add(Kind.Swing, 983, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 6);
                     Add(Kind.Swing, 982, p, new Vector2(direction, 0f), 0, Equipment.Knockback(item), crit, direction, anim, 0);
                     break;
                 case MeleeFx.HorsemansBlade:
                     // Pl:49398.
-                    Add(Kind.Swing, 997, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 3);
+                    if (!artSlash) Add(Kind.Swing, 997, p, new Vector2(direction, 0f), damage, Equipment.Knockback(item), crit, direction, anim, 3);
                     break;
                 case MeleeFx.ChlorophyteClaymore:
                 {
                     // Pl:49405-49420: with chlorophyteBladeCounter run out, a slam (velocity (dir, 0)) half as hard again,
                     // a quarter more knockback, and the counter set three uses on; otherwise the plain slash (dir, 1).
+                    if (artSlash) break;
                     bool slam = ClaymoreCounter <= 0;
                     float kb = Equipment.Knockback(item) * (slam ? 1.25f : 1f);
                     var swing = Add(Kind.Swing, 1126, p, new Vector2(direction, slam ? 0f : 1f), slam ? (int)(damage * 1.5f) : damage, kb, crit, direction, anim, -1);
@@ -167,6 +170,8 @@ namespace TerraKnight.Items
                 }
                 case MeleeFx.Shortsword:
                 {
+                    // The remade stabs' techniques (SwordFxClose), with the remade swings on.
+                    if (CloseStabUse(item, p, aim, damage, crit)) break;
                     // The rapiers stab every useTime of the use (ItemCheck_Shoot each time itemTime runs out), each aimed anew.
                     int type = StabType(item.Type);
                     Stab(item, p, aim, damage, crit, type);
@@ -258,7 +263,7 @@ namespace TerraKnight.Items
             get
             {
                 foreach (var p in live) if (p.Kind == Kind.Stab && !p.Dead) return p.Velocity;
-                return Vector2.zero;
+                return CloseStabDirection();
             }
         }
 
@@ -409,6 +414,7 @@ namespace TerraKnight.Items
                     if (++f.Age >= f.Ttl) flashes.RemoveAt(i);
                 }
                 EnemyDebuffs.Tick();
+                TickArts(hero);
                 SwingDust(hero);
                 if (ClaymoreCounter > 0) ClaymoreCounter--;
                 if (hero != null && pendingStabs.Count > 0) StabsDue(hero);
@@ -434,6 +440,7 @@ namespace TerraKnight.Items
                     for (int u = 0; u < 2 && !p.Dead; u++) TickStab(p, hero);
                     break;
                 case Kind.TrueNightsShot: TickTrueNights(p, hero); break;
+                case Kind.CloseArt: TickClose(p, hero); break;
             }
             if (p.Recent.Count > 0)
             {
@@ -1174,6 +1181,7 @@ namespace TerraKnight.Items
         {
             var fx = Fx;
             if (fx == null) return;
+            DrawArts(fx);
             foreach (var p in live)
             {
                 if (p.Dead) continue;
@@ -1195,12 +1203,14 @@ namespace TerraKnight.Items
                         fx.Draw(FxBatch.Whole("Projectile_" + p.Type), p.Center, light, p.Rotation - (diagonal ? Pi / 4f * sd : 0f), 1f, flipX: sd < 0f, overPlayer: false);
                         break;
                     }
+                    case Kind.CloseArt: DrawClose(fx, p); break;
                     case Kind.VolcanoBlast:
                         fx.Draw(FxBatch.Frame("Projectile_978", 0, p.Frame * 52, 52, 52, 26f, 26f), p.Center, FxBatch.C(255, 255, 255, 127) * p.Opacity, 0f, p.Scale);
                         break;
                 }
             }
             foreach (var f in flashes) DrawFlash(fx, f);
+            DrawCloseGhosts(fx);
         }
 
         /// <summary>The environment's light at the slash (Hallownest has no light map: the dust's constant).</summary>
@@ -1757,7 +1767,10 @@ namespace TerraKnight.Items
         public void Clear()
         {
             live.Clear();
+            closes.Clear();
+            closeGhosts.Clear();
             flashes.Clear();
+            arts.Clear();
         }
 
         /// <summary>Dev: projectiles and flashes alive.</summary>

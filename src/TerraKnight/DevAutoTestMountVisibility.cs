@@ -25,6 +25,7 @@ namespace TerraKnight
         {
             if (!DevCopy.Verified) throw new InvalidOperationException("Isolated saves required");
             int checks = 0, failures = 0, oldStage = Shop.DevStage;
+            bool freeBefore=mod.Inventory.FreeMaking;
             void Check(string name, bool pass)
             {
                 checks++; if (!pass) failures++;
@@ -32,6 +33,8 @@ namespace TerraKnight
             }
             yield return GoTo("Town", "left1");
             mod.ApplyCreative(false); mod.Inventory.Infinite = false; Shop.DevStage = 5;
+            // This suite checks rendering, not boss gates: make every tested mount available in its private save.
+            mod.Inventory.FreeMaking=true;
             PlayerData.instance.isInvincible = true; mod.DevNoFallDamage = true;
             Equip(Array.Empty<ItemType>(), Array.Empty<ItemType>());
             var hero = HeroController.instance; var rb = hero.GetComponent<Rigidbody2D>();
@@ -84,6 +87,8 @@ namespace TerraKnight
                 yield return new WaitForEndOfFrame(); RenderMountPhoto(54, "_helmet");
                 foreach (int direction in new[] { 1, -1 })
                 {
+                    // DevMove injects velocity directly; a real direction key also turns the hero.
+                    if(direction>0)hero.FaceRight();else hero.FaceLeft();
                     TerraMovement.DevMove = direction;
                     yield return new WaitForSeconds(.25f);
                     var rider = mod.GetComponentsInChildren<TerraPlayerSprite>(true).First(p => p.transform.parent == mod.transform);
@@ -96,7 +101,7 @@ namespace TerraKnight
                 Check("盔甲及身体完整恢复", VisibleRider(mod.transform) > 5);
                 yield return new WaitForEndOfFrame(); RenderMountPhoto(54, "_dismounted");
             }
-            finally { remote.Destroy(); Mounts.Dismount(); TerraMovement.DevMove = 0; Shop.DevStage = oldStage; }
+            finally { remote.Destroy(); Mounts.Dismount(); TerraMovement.DevMove = 0; Shop.DevStage = oldStage; mod.Inventory.FreeMaking=freeBefore; }
             Plugin.Log.LogInfo($"[AutoTest] 变身外观 合计 {checks - failures}/{checks} 通过");
         }
     }

@@ -228,6 +228,7 @@ namespace TerraKnight.Items
         public static long PriceOf(ItemDef d)
         {
             if(d==null)return 0;
+            if(d.Type==ItemType.HomeEverywhere)return 500000;
             long previous=ResalePriceOf(d);
             // Native item 2203 is worth 100000 copper; the generated shop entry had zero.
             // Correct the purchase without minting resale income from that former zero-value item.
