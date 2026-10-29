@@ -161,7 +161,7 @@ namespace TerraKnight.Items
                     // Round the player at 72 px for a turn and a quarter, then loosed straight through the spot.
                     float a0 = s.Phase * Mathf.Deg2Rad + Mathf.Atan2(u.y, u.x);
                     // Loosed one after another.
-                    float wind = 0.3f + s.Index * 0.07f;
+                    float wind = 0.2f + s.Index * 0.05f;
                     var orbit = new Vector2(Mathf.Cos(a0 + side * Mathf.PI * 2.5f), Mathf.Sin(a0 + side * Mathf.PI * 2.5f)) * 72f;
                     if (t < wind)
                     {
@@ -170,11 +170,18 @@ namespace TerraKnight.Items
                     }
                     else
                     {
-                        // Through the spot and curling back through it from the side.
+                        // Through the spot, then a half loop out to the side that comes back down on the spot itself and on
+                        // past it: two passes through what is there, as the game's loop makes (a curl merely beside it took
+                        // its second pass past a target at range, the user's 10-29 "天顶剑是不是有丢失伤害的情况").
                         float k = (t - wind) / (1f - wind);
                         var far = s.V + u * 130f;
-                        if (k < 0.5f) s.Rel = Vector2.Lerp(orbit, far, 1f - (1f - k / 0.5f) * (1f - k / 0.5f));
-                        else s.Rel = Bezier(far, s.V + across * side * 110f, s.V - u * 60f, (k - 0.5f) / 0.5f);
+                        if (k < 0.45f) s.Rel = Vector2.Lerp(orbit, far, 1f - (1f - k / 0.45f) * (1f - k / 0.45f));
+                        else if (k < 0.85f)
+                        {
+                            float th = (k - 0.45f) / 0.4f * Mathf.PI;
+                            s.Rel = s.V + u * 65f + (u * Mathf.Cos(th) + across * side * Mathf.Sin(th)) * 65f;
+                        }
+                        else s.Rel = Vector2.Lerp(s.V, s.V - u * 70f, (k - 0.85f) / 0.15f);
                     }
                     break;
                 }

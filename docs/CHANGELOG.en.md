@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.2.1 — Movable windows and minion balance
+
+### Improvements
+
+- The inventory's windows can be moved: drag one by an empty part (its title, its frame, the gaps between slots) and it stays where it is put; a double click on an empty part puts it back. Home Everywhere's storage opens right of the crafting column.
+- The left column of Terraria Settings scrolls with the mouse wheel, so the multiplayer options stay on the screen.
+
+### Balance
+
+- The Imp Staff, Hornet Staff, Mushroom Staff and Shade Soul Staff (stage 2) and the Optic Staff and Pirate Staff (stage 4) deal more damage: used alone, they match the other classes' weapons of their stage.
+- The Zenith's move that circles you before flying out passes through its target twice, and from afar hits as hard as its other moves.
+
+### Fixes
+
+- In rooms full of their own sounds (Fog Canyon), weapon and spell sounds play as usual.
+- The "Path of Pain" achievement unlocks on completing the Path of Pain.
+
 ## 5.2.0 — Remade weapons, damage balance and Home Everywhere
 
 ### New

@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "5.2.0";
+        public const string Version = "5.2.1";
 
         internal static ManualLogSource Log;
 
@@ -113,6 +113,7 @@ namespace TerraKnight
             Player.TerraCamera.Bind(Config);
             UI.TerraCursor.Bind(Config);
             UI.GameView.Bind(Config);
+            Items.InventoryGui.BindPanes(Config);
             Effects.WeaponEffects.Bind(Config);
             Items.Charms.Bind(Config);
             UI.DialogueBroadcast.Bind(Config);

@@ -107,8 +107,9 @@ namespace TerraKnight.Items
             TickRename();
             TickHomeRename();
             TickBookSearch();
-            leftPress |= UI.TerraCursor.LeftPressed(mouse);
+            if (UI.TerraCursor.LeftPressed(mouse)) { leftPress = true; NotePress(mouse); }
             rightPress |= mouse.rightButton.wasPressedThisFrame;
+            DragPane(mouse);
             if (Open)
             {
                 // Terraria: with the inventory open the wheel scrolls the crafting column.
@@ -197,14 +198,16 @@ namespace TerraKnight.Items
             {
                 var m = UI.TerraCursor.ScreenMouse(mouse);
                 var at = new Vector2(m.x, Screen.height - m.y);
-                bool onUi = false;
+                bool onUi = false, onAction = false;
                 for (int i = hits.Count - 1; i >= 0; i--)
                 {
                     if (!hits[i].Rect.Contains(at)) continue;
                     onUi = true;
+                    onAction = !Passive(hits[i].Kind);
                     Act(hits[i], lp, rp, left, right);
                     break;
                 }
+                if (lp && inv.Mouse.IsEmpty) GrabPane(at, onAction);
                 // Player.dropItemCheck: a right click off the interface (and off a pylon) throws the cursor's stack.
                 if (rp && Open && !onUi && !MouseOverUi && !inv.Mouse.IsEmpty && !World.Pylons.HoveringPylon)
                     TerraMod.Instance.ThrowHeld(true);
@@ -1095,6 +1098,7 @@ namespace TerraKnight.Items
             if (e.type != EventType.Repaint) return;
             panels.Clear();
             hits.Clear();
+            paneAreas.Clear();
             if (!Open) sellMode = false;
 
             float slot = SlotSize * ui, step = SlotStep * ui;
@@ -1286,16 +1290,17 @@ namespace TerraKnight.Items
                 // recipes whatever chest is open, under its rows), the chest's items counted.
                 // Quick selling's row takes the chest's place; a chest or a shop opened ends it.
                 if (sellMode && (World.Chests.IsOpen || Town.TownNpcs.ShopOpen || Town.TownNpcs.ReforgeOpen)) sellMode = false;
-                if (Town.TownNpcs.ShopOpen) DrawShopPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                // Each window drawn against the screen moved by where it was dragged (InventoryGuiPanes).
+                if (Town.TownNpcs.ShopOpen) { var pv = BeginPane(Pane.Shop, view, ui); DrawShopPanel(pv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.Shop); }
                 // The Goblin Tinkerer's reforging: its slot in the crafting column's place.
-                else if (Town.TownNpcs.RefitMode) DrawRefit(view, ui, mouse, ref hovered, ref hoveredKind);
-                else if (Town.TownNpcs.ForgeMode) DrawForge(view, ui, mouse, ref hovered, ref hoveredKind);
-                else if (Town.TownNpcs.ReforgeOpen) DrawReforge(view, ui, mouse, ref hovered, ref hoveredKind);
+                else if (Town.TownNpcs.RefitMode) { var pv = BeginPane(Pane.Refit, view, ui); DrawRefit(pv, ui, mouse, ref hovered, ref hoveredKind); EndPane(Pane.Refit); }
+                else if (Town.TownNpcs.ForgeMode) { var pv = BeginPane(Pane.Forge, view, ui); DrawForge(pv, ui, mouse, ref hovered, ref hoveredKind); EndPane(Pane.Forge); }
+                else if (Town.TownNpcs.ReforgeOpen) { var pv = BeginPane(Pane.Reforge, view, ui); DrawReforge(pv, ui, mouse, ref hovered, ref hoveredKind); EndPane(Pane.Reforge); }
                 else
                 {
-                    if (World.Chests.IsOpen && !HomeMergedVisible) DrawChestPanel(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
-                    else if (sellMode) DrawSellRow(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
-                    DrawCrafting(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+                    if (World.Chests.IsOpen && !HomeMergedVisible) { var pv = BeginPane(Pane.Chest, view, ui); DrawChestPanel(pv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.Chest); }
+                    else if (sellMode) { var pv = BeginPane(Pane.Sell, view, ui); DrawSellRow(pv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.Sell); }
+                    var cv = BeginPane(Pane.Craft, view, ui); DrawCrafting(cv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.Craft);
                 }
                 // The four utility buttons stand where an open chest's buttons go (Loot All...): as Terraria's own buttons
                 // beside the bag, they give way while a chest, a shop or the Goblin's forge is open.
@@ -1324,16 +1329,17 @@ namespace TerraKnight.Items
                 GUI.color = settingsTint;
             }
 
-            DrawChat(view, ui, mouse);
+            { var pv = BeginPane(Pane.Chat, view, ui); DrawChat(pv, ui, mouse); EndPane(Pane.Chat); }
+            // The Stylist's window stays put: its buttons and sliders answer IMGUI events of their own, laid out on the screen as is.
             DrawAppearanceWindow(view);
             BookHint = null;
-            if (Open && bestiaryOpen) DrawBestiary(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
-            if (Open) DrawRecipeTracking(view,ui,mouse,ref hovered,ref hoveredExtra,ref hoveredKind);
-            if (Open && hkOpen && !bestiaryOpen) DrawHkBag(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
-            if (Open && blacklistOpen) DrawBlacklist(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
+            if (Open && bestiaryOpen) { var pv = BeginPane(Pane.Bestiary, view, ui); DrawBestiary(pv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.Bestiary); }
+            if (Open) { var pv = BeginPane(Pane.Tracking, view, ui); DrawRecipeTracking(pv,ui,mouse,ref hovered,ref hoveredExtra,ref hoveredKind); EndPane(Pane.Tracking); }
+            if (Open && hkOpen && !bestiaryOpen) { var pv = BeginPane(Pane.HkBag, view, ui); DrawHkBag(pv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.HkBag); }
+            if (Open && blacklistOpen) { var pv = BeginPane(Pane.Blacklist, view, ui); DrawBlacklist(pv, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind); EndPane(Pane.Blacklist); }
             if (Open && statsOpen)
             {
-                DrawStats(view, ui, mouse);
+                var pv = BeginPane(Pane.Stats, view, ui); DrawStats(pv, ui, mouse); EndPane(Pane.Stats);
                 // Do not let a slot underneath the attributes panel draw its tooltip on top.
                 hovered = default;
                 hoveredExtra = null;
@@ -1507,7 +1513,12 @@ namespace TerraKnight.Items
             // The window carries its own title; the column's is only for the column, so it doesn't show
             // through the window's translucent panel. Nothing to make is still drawn as an empty column
             // (the hammer that opens the window lives past this, and has to stay reachable either way).
-            if (!grid) Outlined(new Rect(label.x, label.y, 300f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
+            if (!grid)
+            {
+                Outlined(new Rect(label.x, label.y, 300f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
+                // The title is where the column is taken to move it (InventoryGuiPanes).
+                panels.Add(new Rect(label.x, label.y, 56f * ui, 24f * ui));
+            }
             // Only the by-hand ones out here: say where the rest are.
             if (!grid && !CraftingHere && !guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
 

@@ -814,6 +814,11 @@ namespace TerraKnight
                 yield return BossLandingSurvey(suite == "bosslandingsurvey" ? null : suite.Substring("bosslandingsurvey_".Length));
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "bestiarypillars")
+            {
+                yield return BestiaryPillarsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "bestiarysync")
             {
                 yield return BestiarySyncTest();
@@ -1946,6 +1951,36 @@ namespace TerraKnight
             if (suite == "bgmvoices")
             {
                 yield return BgmVoicesTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "bossspin")
+            {
+                yield return BossSpinTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "zenithloss")
+            {
+                yield return ZenithLossTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "lostkinentry")
+            {
+                yield return LostKinEntryTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "optscroll")
+            {
+                yield return OptScrollTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "panedrag")
+            {
+                yield return PaneDragTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "roomsfx")
+            {
+                yield return RoomSfxTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
             if (suite == "pylonplace")

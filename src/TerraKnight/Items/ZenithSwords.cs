@@ -71,6 +71,8 @@ namespace TerraKnight.Items
             public float BladeAngle, Opacity;
             public int Spin;
             public readonly Dictionary<int, int> Cooldowns = new Dictionary<int, int>();
+            /// <summary>Dev: this flight's blade lay on an enemy; it struck one.</summary>
+            public bool DevTouched, DevStruck;
             /// <summary>The way it flies (ZenithArts.cs): the game's loop or one of the remade patterns; its place in its use (0-2), the cursor's spot (px from the player), where it set out from.</summary>
             public Pattern Pattern;
             public int Index;
@@ -398,11 +400,14 @@ namespace TerraKnight.Items
                 var hm = col.GetComponentInParent<HealthManager>();
                 if (hm == null) melee.HitProp(col, Mathf.Max(1, Equipment.Damage(s.Item)), s.Spin >= 0f ? 1f : -1f, world);
                 if (hm == null || hm.isDead) continue;
+                s.DevTouched = true;
                 int id = hm.GetInstanceID();
                 if (s.Cooldowns.ContainsKey(id)) continue;
                 // The Zenith's slower hits, and the True Copper Shortsword's (the Zenith shimmered: the same swords, the same damage a second).
                 s.Cooldowns[id] = s.Item != null && (s.Item.Type == ItemType.Zenith || s.Item.Type == ItemType.TrueCopperShortsword) ? ZenithHitCooldownTicks : HitCooldownTicks;
                 melee.HitFrom(col, s.Item, s.Spin, world);
+                s.DevStruck = true;
+                DevHitCalls++;
                 DevHit(s.Pattern);
             }
         }
@@ -413,8 +418,17 @@ namespace TerraKnight.Items
             tickAccumulator=0;
         }
 
+        /// <summary>Dev: flights ended, those whose blade lay on an enemy and struck nothing, the blows sent.</summary>
+        internal static int DevFlights, DevLostFlights, DevHitCalls;
+
         static void Stop(Sword s)
         {
+            if (s.Active)
+            {
+                DevFlights++;
+                if (s.DevTouched && !s.DevStruck) DevLostFlights++;
+            }
+            s.DevTouched = s.DevStruck = false;
             s.Active = false;
             if (s.Root.activeSelf) s.Root.SetActive(false);
             // Its last ribbon not shown for a frame when it is thrown again.

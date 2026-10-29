@@ -131,8 +131,21 @@ namespace TerraKnight.UI
             // The mod's version, in gold at the top right, so it is seen at a glance.
             CreativeMenu.Shadowed(new Rect(p.xMax - 430f * ui, p.y + 12f * ui, 400f * ui, 44f * ui), Lang.F("空洞泰拉 v{0}", Plugin.Version), version, Gold);
 
-            // General, down the left.
-            float lx = p.x + 30f * ui, lw = 380f * ui, y = p.y + 70f * ui;
+            // General, down the left: a column of its own that scrolls with the wheel when it is longer than the panel (the
+            // multiplayer rows under the others went past its foot).
+            float lx0 = p.x + 30f * ui, lw = 380f * ui, top = p.y + 70f * ui;
+            leftClip = new Rect(lx0 - 10f * ui, top, lw + 26f * ui, p.yMax - 20f * ui - top);
+            float maxScroll = Mathf.Max(0f, leftContent - leftClip.height);
+            if (e.type == EventType.Repaint && UnityEngine.InputSystem.Mouse.current != null && leftClip.Contains(TerraCursor.GuiMouse()))
+            {
+                float wheel = UnityEngine.InputSystem.Mouse.current.scroll.ReadValue().y;
+                if (wheel > 0.1f) leftScroll -= 60f * ui;
+                else if (wheel < -0.1f) leftScroll += 60f * ui;
+            }
+            leftScroll = Mathf.Clamp(leftScroll, 0f, maxScroll);
+            GUI.BeginGroup(leftClip);
+            inLeft = true;
+            float lx = 10f * ui, y = -leftScroll;
             // A toggle with a note under it, and one without: close enough that the column fits the panel.
             float noteRow = 88f * ui, plainRow = 56f * ui;
             // LegacyMenu.114: "General"
@@ -190,7 +203,7 @@ namespace TerraKnight.UI
                 World.HoleShapes.Set(!World.HoleShapes.Hollow);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("融合：平滑洞口、墨线描边、洞内阴影，背后是调暗的泰拉瑞亚墙；泰拉瑞亚：方格洞口和原样的墙"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
             y += noteRow;
-            if (Net.NetSession.Active)
+            if (Net.NetSession.Active || DevShowNet)
             {
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.13", "多人模式"), section, new Color(0.75f, 0.85f, 1f));
                 y += 40f * ui;
@@ -200,15 +213,29 @@ namespace TerraKnight.UI
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 52f * ui), where, CreativeMenu.text, new Color(0.8f, 0.95f, 1f));
                 y += 56f * ui;
                 // LegacyMenu.2: "Disconnect"
-                if (Toggle(new Rect(lx, y, lw, 44f * ui), TT("LegacyMenu.2", "断开连接"), ui))
+                DevDisconnectRect = new Rect(leftClip.x + lx, leftClip.y + y, lw, 44f * ui);
+                if (Toggle(new Rect(lx, y, lw, 44f * ui), TT("LegacyMenu.2", "断开连接"), ui) && !DevShowNet)
                 {
                     Net.NetSession.Leave(Net.NetText.Mod("你离开了多人游戏"));
                     Net.NetChat.Add(Lang.T("你离开了多人游戏"), new Color(1f, 0.94f, 0.08f));
                 }
+                y += 50f * ui;
             }
+            leftContent = y + leftScroll;
+            inLeft = false;
+            GUI.EndGroup();
+            if (maxScroll > 0f)
+            {
+                // Where the column is scrolled to: a thin bar down its right edge.
+                var track = new Rect(leftClip.xMax - 5f * ui, leftClip.y, 4f * ui, leftClip.height);
+                CreativeMenu.Fill(track, new Color(0f, 0f, 0f, 0.3f));
+                float h = track.height * leftClip.height / leftContent;
+                CreativeMenu.Fill(new Rect(track.x, track.y + (track.height - h) * leftScroll / maxScroll, track.width, h), new Color(0.75f, 0.85f, 1f, 0.8f));
+            }
+            float lxRight = lx0;
 
             // On the right, two tabs: the keybindings (two or three columns of Terraria's actions), or the cursor's look.
-            float rx = lx + lw + 30f * ui, rw = p.xMax - 30f * ui - rx, ry = p.y + 70f * ui;
+            float rx = lxRight + lw + 30f * ui, rw = p.xMax - 30f * ui - rx, ry = p.y + 70f * ui;
             CreativeMenu.Fill(new Rect(rx - 15f * ui, ry, 2f * ui, p.yMax - 100f * ui - ry), new Color(0.05f, 0.05f, 0.12f, 0.7f));
             // UI.Keybindings: "Keybindings"
             if (Tab(new Rect(rx, ry, 190f * ui, 34f * ui), TT("UI.Keybindings", "按键绑定"), rightPage == 0, ui)) rightPage = 0;
@@ -559,10 +586,22 @@ namespace TerraKnight.UI
             return v;
         }
 
+        /// <summary>The left column's window on the panel, its height of rows and how far it is scrolled; drawing inside it.</summary>
+        static Rect leftClip;
+        static float leftContent, leftScroll;
+        static bool inLeft;
+        internal static bool DevShowNet;
+        internal static Rect DevDisconnectRect;
+        internal static Rect DevLeftClip => leftClip;
+        internal static float DevLeftContent => leftContent;
+        internal static float DevLeftScroll { get => leftScroll; set => leftScroll = value; }
+
         /// <summary>A line to click, Terraria's way: bigger and yellow under the mouse.</summary>
         static bool Toggle(Rect r, string text, float ui)
         {
-            bool over = r.Contains(TerraCursor.GuiMouse());
+            var m = TerraCursor.GuiMouse();
+            // In the scrolled column only a row in sight answers (one scrolled off still lies under the mouse's local point).
+            bool over = r.Contains(m) && (!inLeft || new Rect(0f, 0f, leftClip.width, leftClip.height).Contains(m));
             row.fontSize = Mathf.RoundToInt((over ? 27 : 24) * ui);
             CreativeMenu.Shadowed(r, text, row, over ? Gold : Color.white);
             var e = Event.current;

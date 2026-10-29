@@ -94,6 +94,13 @@ namespace TerraKnight.Items
             GUI.color = tint;
             if (icon.Contains(mouse)) DrawLines(mouse, new List<string> { Lang.T("哪都是家"), Lang.T("打开区域仓库") }, Color.white);
             if (!homePanel) return;
+            var pv = BeginPane(Pane.Home, view, ui);
+            DrawHomePanel(pv, ui, mouse, ref hovered, ref extra, ref hoveredKind);
+            EndPane(Pane.Home);
+        }
+
+        static void DrawHomePanel(Rect view, float ui, Vector2 mouse, ref ItemStack hovered, ref string extra, ref Kind hoveredKind)
+        {
             var homes = Stations.Homes();
             var editing = homeEditing ? Stations.Home(homeEditKey) : null;
             if (homeEditing && editing == null) { homeEditing = false; homeRenaming = false; homeNameInput.End(); }
@@ -103,7 +110,8 @@ namespace TerraKnight.Items
             float width = Mathf.Min(610f * ui, view.width - 90f * ui);
             float y = view.y + 315f * ui;
             float height = homeEditing ? (162f + colorRows * 25f) * ui : Mathf.Min(430f * ui, view.yMax - y - 12f * ui);
-            homePanelRect = new Rect(view.x + 65f * ui, y, width, height);
+            // Right of the crafting column and the focused recipe's ingredients, which stay in sight.
+            homePanelRect = new Rect(view.x + Mathf.Min(420f * ui, view.width - width - 140f * ui), y, width, height);
             var panel = homePanelRect;
             if (panel.Contains(mouse)) { hovered = default; extra = null; }
             panels.Add(panel); Add(panel, Kind.HomePanel, 0); HomeFrame(panel, ui);

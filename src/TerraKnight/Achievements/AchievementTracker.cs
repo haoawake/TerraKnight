@@ -81,8 +81,9 @@ namespace TerraKnight.Achievements
             Check("B20", pd.colosseumBronzeCompleted);
             Check("B21", pd.colosseumSilverCompleted);
             Check("B22", pd.colosseumGoldCompleted);
-            // The Path of Pain's end is its secret room.
-            Check("C21", pd.whitePalaceSecretRoomVisited);
+            // The Path of Pain's end: the Seal of Binding it ends at goes into the Hunter's Journal (whitePalaceSecretRoomVisited
+            // is the palace's own hidden room, by the way to the King's throne).
+            Check("C21", pd.killedBindingSeal);
             Check("X05", pd.rancidEggs >= 10);
             Check("H08", Player.PlayerBuffs.Has(87) && Player.PlayerBuffs.Has(89) && Player.PlayerBuffs.Has(158));
             Check("H13", Player.PlayerBuffs.Has(207));

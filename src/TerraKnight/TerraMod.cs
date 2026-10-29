@@ -3189,7 +3189,7 @@ namespace TerraKnight
                     // Only as much louder as the room under the ceiling allows.
                     float per = ClipPeak(clip) * BusGain * SoundGain * duck;
                     float was = voiceLevel.TryGetValue(same, out float lv) ? lv : st.Volume;
-                    float stackRoom = Mathf.Max(0f, 0.85f - heardPeak - startedPeak);
+                    float stackRoom = Mathf.Max(0f, 0.85f - Taken - startedPeak);
                     if (per > 0f) louder = Mathf.Max(was, Mathf.Min(louder, was + stackRoom / per));
                     startedPeak += (louder - was) * per;
                     voiceLevel[same] = louder;
@@ -3203,7 +3203,7 @@ namespace TerraKnight
                 // Its onset fitted into the room left under the ceiling by what was heard last frame and what else starts in
                 // this one (the duck below only answers a frame later, after the onset has gone through).
                 float hot = ClipPeak(clip) * BusGain * volume * SoundGain * duck;
-                float room = Mathf.Max(0f, 0.85f - heardPeak - startedPeak);
+                float room = Mathf.Max(0f, 0.85f - Taken - startedPeak);
                 float fit = hot > room && hot > 0f ? Mathf.Max(0.15f, room / hot) : 1f;
                 startedPeak += hot * fit;
                 voiceLevel[voice] = volume * fit;
@@ -3241,6 +3241,16 @@ namespace TerraKnight
 
         /// <summary>The loudest of what the listener heard last frame, and the onsets started since (each clip's peak at its volume).</summary>
         float heardPeak, startedPeak;
+
+        /// <summary>The game's own level: what the listener hears while none of the mod's sounds play, held while they do.</summary>
+        float gameLevel;
+
+        /// <summary>
+        /// What a new sound's onset has to fit over: the mod's own sounds still ringing in full, the game's (rain, machinery, the
+        /// music) only up to a quiet room's 0.35. In a loud room the game's mixer turns the mix down for a shot as it does for its
+        /// own loud sounds; fitted under the whole of it the weapons there were a sixth of their volume (suite roomsfx).
+        /// </summary>
+        float Taken => Mathf.Min(gameLevel, 0.35f) + Mathf.Max(0f, heardPeak - gameLevel);
 
         static readonly Dictionary<AudioClip, float> clipPeaks = new Dictionary<AudioClip, float>();
 
@@ -3294,8 +3304,10 @@ namespace TerraKnight
                 }
             }
             heardPeak = peak;
+            if (!playing) gameLevel = peak > gameLevel ? peak : Mathf.MoveTowards(gameLevel, peak, Time.unscaledDeltaTime * 0.5f);
             if (!playing) duck = 1f;
-            else if (peak > 0.8f) duck = Mathf.Max(0.33f, duck * 0.8f / peak);
+            // Only when the mod's sounds are what brought it there: a loud room alone ducks nothing.
+            else if (peak > 0.8f && peak - gameLevel > 0.15f) duck = Mathf.Max(0.33f, duck * 0.8f / peak);
             else duck = Mathf.MoveTowards(duck, 1f, Time.unscaledDeltaTime * 1.3f);
             DevDuckLow = Mathf.Min(DevDuckLow, duck);
             if (duck == was) return;
@@ -3315,11 +3327,17 @@ namespace TerraKnight
         /// a burst of them reached the ceiling of the game's mixer, whose limiter then turned the whole mix down, the music with it.</summary>
         internal static float SoundGain = 1f;
 
-        /// <summary>The mod's sounds' priority (Unity: 0 the most important, 256 the least).</summary>
-        internal const int VoicePriority = 200;
+        /// <summary>The mod's sounds' priority (Unity: 0 the most important, 256 the least): above the game's ambient sources (128),
+        /// below its music (0). Unity plays 32 voices; Fog Canyon alone keeps about 30 of the game's sources going, and the mod's
+        /// sounds made less important than those went silent there (suite roomsfx, the user's 10-29 "部分房间只有环境音效没有武器音效").</summary>
+        internal static int VoicePriority = 64;
 
         /// <summary>Dev: the mod's voices (its sound pool).</summary>
         internal System.Collections.Generic.IEnumerable<AudioSource> DevVoices => voices;
+        internal AudioSource DevLastVoice => lastPlayed;
+        internal float DevDuck => duck;
+        internal float DevGameLevel => gameLevel;
+        internal float DevLevel(AudioSource v) => v != null && voiceLevel.TryGetValue(v, out float l) ? l : -1f;
 
         /// <summary>A source to play a sound on: the one it last played on (cutting it short), else a free one.</summary>
         AudioSource Voice(string name)
@@ -3357,8 +3375,6 @@ namespace TerraKnight
                     pick = gameObject.AddComponent<AudioSource>();
                     pick.playOnAwake = false;
                     pick.spatialBlend = 0f;
-                    // Less important than the game's own sources (128): past Unity's real voices a burst of the mod's sounds (a
-                    // shotgun's shards, a barrage) is dropped first, not the music's layered stems (the BGM went quiet).
                     pick.priority = VoicePriority;
                     voices.Add(pick);
                 }
