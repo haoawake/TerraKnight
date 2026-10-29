@@ -17,6 +17,30 @@
 - The Lifeblood Core keeps growing a shield: a layer every 5 seconds, up to 3.
 - Relics sell for five times the game's price, matching what Hallownest's shops ask.
 
+### Improvements
+
+- The Amethyst Stat Viewer shows the mana regained a second moving and standing still, what the Arcane Crystal adds and the permanent boosts already used.
+- An item the Shimmer transmutes says what it becomes in its tooltip, marked "(unlocks at stage 5)" when it waits for that.
+- The music keeps its volume through gunfire and explosions.
+- The Aglet drops from small enemies from stage 1.
+- The Vengeful Spirit's, Howling Wraiths', Shade Soul's and Abyss Shriek's weapons can be reforged at the Goblin Tinkerer.
+- The Wayward Compass leads by the ways the save has open, and passes over Zote's fights once he is dead.
+
+### Fixes
+
+- Pylons can be set down in Godhome, dreams and the White Palace; teleporting to a pylon enters the room as Hollow Knight does, and coming back to a pylon by the Watcher Knights loads the fight as usual.
+- The Black Egg Temple's door shuts once you have walked all the way in.
+- A boss room's dive floors break as usual once its boss is beaten.
+- The Nightmare King's arena has a ceiling: you can't fly out of the view.
+- A magic weapon that fires several times in one use (the Arc Surge) pays its mana once; the Flamethrower, Elf Melter, Flower of Fire, Flamelash and Arc Surge can't be used in water, acid or shimmer.
+- The Shadowbeam Staff's beam bounces straight off walls; the Lightning Strike's bolts fly at an enemy's middle; the Nail Gun's delayed blasts hurt the enemy the nails are in; the Stynger's shrapnel looks as in Terraria.
+- The Rod of Discord and the Rod of Harmony teleport through their key as often as in the hand, the Rod of Discord giving Chaos State as usual.
+- Minions and sentries fight small enemies as soon as they are in the room, and a boss once you have struck it.
+- The cutscene poses the game loops (charging the Dreamgate, taking a mask shard and the like) play once and hold their last pose.
+- A Spiny Husk's corpse doesn't burst into spines.
+- New enemy AI: enemies come into sight as the game has them; Xero keeps attacking down to his last health; Elder Hu's rings slam down over a player flying high; an enemy sharing its animations (the Hive's Hivelings) uses only its own.
+- In multiplayer, a warrior's dream beaten in a teammate's game counts as beaten in yours too, and what a boss flings or leaves on the ground hurts every player.
+
 ## 5.1.0 — Vanity, boss pets and boss fight fixes
 
 ### New
