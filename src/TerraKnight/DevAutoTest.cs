@@ -1958,6 +1958,16 @@ namespace TerraKnight
                 yield return BossSpinTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "guideadvice")
+            {
+                yield return GuideAdviceTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "vkwall")
+            {
+                yield return VengeflyWallTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "zenithloss")
             {
                 yield return ZenithLossTest();

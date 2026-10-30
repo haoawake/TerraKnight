@@ -183,8 +183,11 @@ namespace TerraKnight.Town
         public static bool ChatOpen => talk != null && !shop && !guideCraft && !reforge;
         /// <summary>Talking to the Guide, whose chat has the crafting button.</summary>
         public static bool TalkingIsGuide => talk != null && talk.Def.Internal == "Guide";
-        /// <summary>The Guide's crafting menu: talking to him with the inventory open after his crafting button.</summary>
-        public static bool GuideCraftOpen => talk != null && guideCraft && InventoryGui.Open;
+        /// <summary>
+        /// The Guide's crafting menu: talking to him with the inventory open after his crafting button, or his advice carried
+        /// with the column switched to it (<see cref="GuideAdvice"/>).
+        /// </summary>
+        public static bool GuideCraftOpen => InventoryGui.Open && (talk != null && guideCraft || GuideAdvice.On);
         /// <summary>A shop is open: talking with the inventory open (Main.npcShop).</summary>
         public static bool ShopOpen => talk != null && shop && InventoryGui.Open;
         public static bool TalkingHasShop => talk != null && talk.Def.Items != null && talk.Def.Items.Length > 0;

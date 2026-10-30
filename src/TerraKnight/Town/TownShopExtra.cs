@@ -47,7 +47,7 @@ namespace TerraKnight.Town
         public static Stock[] With(string npc, Stock[] items)
         {
             List<Stock> more = null;
-            if(npc=="Guide")more=new List<Stock>(items){new Stock(ItemType.RandomPrefabHouse,0,null),new Stock(ItemType.SimplePrefabHouse,0,null),new Stock(ItemType.HomeEverywhere,0,null)};
+            if(npc=="Guide")more=new List<Stock>(items){new Stock(ItemType.RandomPrefabHouse,0,null),new Stock(ItemType.SimplePrefabHouse,0,null),new Stock(ItemType.HomeEverywhere,0,null),new Stock(ItemType.GuideAdvice,0,null)};
             foreach (var (n, t, stage) in System.Linq.Enumerable.Concat(extra, CraftingSupplementShops.All))
             {
                 if (n != npc) continue;

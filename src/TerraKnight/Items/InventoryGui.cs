@@ -63,7 +63,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory, InfoToggle, BuilderToggle, CreativeStage, RecipeTracePanel, RecipeTraceIngredient, RecipeTraceSource, RecipeTraceAction, HomeButton, HomeColor, HomeStorage, HomeAction, HomePanel, HomeSlot, HomeSearch }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory, InfoToggle, BuilderToggle, CreativeStage, RecipeTracePanel, RecipeTraceIngredient, RecipeTraceSource, RecipeTraceAction, HomeButton, HomeColor, HomeStorage, HomeAction, HomePanel, HomeSlot, HomeSearch, GuideBookToggle }
 
         struct Hit
         {
@@ -107,6 +107,9 @@ namespace TerraKnight.Items
             TickRename();
             TickHomeRename();
             TickBookSearch();
+            // Player.dropItemCheck: the Guide's slot empties into the bag once his list is down (the talk over, the
+            // inventory shut, his advice switched off or no longer carried).
+            if (!Town.TownNpcs.GuideCraftOpen && !Town.TownNpcs.GuideItem.IsEmpty) Town.TownNpcs.ReturnGuideItem();
             if (UI.TerraCursor.LeftPressed(mouse)) { leftPress = true; NotePress(mouse); }
             rightPress |= mouse.rightButton.wasPressedThisFrame;
             DragPane(mouse);
@@ -306,6 +309,17 @@ namespace TerraKnight.Items
                     return;
                 case Kind.FilterEntry:
                     ClickFilter(hit.Index, leftPress, rightPress);
+                    return;
+                case Kind.GuideBookToggle:
+                    if (leftPress)
+                    {
+                        GuideAdvice.Toggle();
+                        ClearRecipeTracking();
+                        focus = 0;
+                        focusY = 0f;
+                        preventCraft = true;
+                        Sound("Menu_Tick");
+                    }
                     return;
                 case Kind.GridToggle:
                     if (leftPress)
@@ -1515,12 +1529,12 @@ namespace TerraKnight.Items
             // (the hammer that opens the window lives past this, and has to stay reachable either way).
             if (!grid)
             {
-                Outlined(new Rect(label.x, label.y, 300f * ui, 24f * ui), Lang.T("制作"), nameStyleLeft(ui), Color.white);
+                Outlined(new Rect(label.x, label.y, 300f * ui, 24f * ui), Lang.T(GuideAdvice.On ? "合成表" : "制作"), nameStyleLeft(ui), Color.white);
                 // The title is where the column is taken to move it (InventoryGuiPanes).
                 panels.Add(new Rect(label.x, label.y, 56f * ui, 24f * ui));
             }
             // Only the by-hand ones out here: say where the rest are.
-            if (!grid && !CraftingHere && !guideShown) Outlined(new Rect(label.x + 60f * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
+            if (!grid && !CraftingHere && !guideShown) Outlined(new Rect(label.x + (GuideAdvice.On ? 76f : 60f) * ui, label.y + 2f * ui, 360f * ui, 22f * ui), Lang.T("（徒手，或在所需的制作站旁）"), labelStyle, new Color(1f, 1f, 1f, 0.55f));
 
             // The hammer beside the column switches between the column and Terraria's crafting window.
             if (grid) DrawCraftWindow(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
@@ -1597,14 +1611,16 @@ namespace TerraKnight.Items
             // The hammer beside the column opens the crafting window (UI/Craft_Toggle_{2 normal, 0 open});
             // while the window is up it has its own close button instead, so nothing shows through it.
             if (grid) return;
-            // The grid toggle (UI/Craft_Toggle_{2 normal, 0 grid open}, +1 under the mouse).
-            var tc = P(94f, 450f + adjY);
+            // The grid toggle (UI/Craft_Toggle_{2 normal, 0 grid open}, +1 under the mouse), clear of the column's title
+            // over it (the user's 10-29: the title ran into it).
+            var tc = P(94f, 466f + adjY);
             var toggle = TerrariaAssets.Texture("UI/Craft_Toggle_2");
             var tr = new Rect(tc.x - toggle.width * ui / 2f, tc.y - toggle.height * ui / 2f, toggle.width * ui, toggle.height * ui);
             bool over = tr.Contains(mouse);
             GUI.DrawTexture(tr, TerrariaAssets.Texture("UI/Craft_Toggle_" + ((grid ? 0 : 2) + (over ? 1 : 0))));
             Add(tr, Kind.GridToggle, 0);
             if (over) DrawLines(mouse, new List<string> { grid ? Lang.T("关闭制作窗口") : Lang.T("打开制作窗口") }, Color.white);
+            DrawGuideBookToggle(P(134f, 466f + adjY), ui, mouse);
 
         }
 

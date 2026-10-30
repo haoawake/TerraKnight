@@ -56,6 +56,28 @@ namespace TerraKnight.Items
             utilityHover = over;
         }
 
+        /// <summary>
+        /// The stat viewer's, the drop blacklist's and the monster book's keys (the mod's own, unbound at first, set in the
+        /// Terraria settings' key list): the window opened or shut as its button would, the bag opened with it if shut.
+        /// </summary>
+        internal static void PanelKeys()
+        {
+            int which = Player.TerraKeys.Pressed(Player.TerraKeys.Action.StatViewer) ? 0
+                : Player.TerraKeys.Pressed(Player.TerraKeys.Action.DropBlacklist) ? 1
+                : Player.TerraKeys.Pressed(Player.TerraKeys.Action.Bestiary) ? 2 : -1;
+            if (which >= 0) PanelKey(which);
+        }
+
+        /// <summary>A window's key pressed (0 the stat viewer, 1 the drop blacklist, 2 the monster book; tests call it too).</summary>
+        internal static void PanelKey(int which)
+        {
+            // Shut, the bag opens with every window of its folded away: the key's then opens.
+            if (!Open) Open = true;
+            if (which == 0) ToggleStats();
+            else if (which == 1) ToggleBlacklist();
+            else ToggleBestiary();
+        }
+
         static void ToggleBlacklist()
         {
             blacklistOpen = !blacklistOpen;

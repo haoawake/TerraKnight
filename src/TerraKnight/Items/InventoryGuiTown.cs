@@ -127,6 +127,31 @@ namespace TerraKnight.Items
             Outlined(new Rect(text.x, text.y + 26f * ui, 420f * ui, 24f * ui), TT("LegacyInterface.22", "需要物件:") + " " + station, labelStyle, color);
         }
 
+        /// <summary>
+        /// The Guide's advice carried: its scroll beside the crafting window's hammer switches the column to his recipe list
+        /// and back (lit while the list is up).
+        /// </summary>
+        static void DrawGuideBookToggle(Vector2 center, float ui, Vector2 mouse)
+        {
+            if (!GuideAdvice.Carried) return;
+            var icon = TerrariaAssets.Texture(ItemDb.Get(ItemType.GuideAdvice).Texture);
+            float fit = 30f / Mathf.Max(icon.width, icon.height);
+            float w = icon.width * fit * ui, h = icon.height * fit * ui;
+            var rect = new Rect(center.x - w / 2f, center.y - h / 2f, w, h);
+            bool over = rect.Contains(mouse);
+            var prev = GUI.color;
+            GUI.color = GuideAdvice.On || over ? new Color(1f, .88f, .5f) : new Color(.8f, .8f, .8f, .9f);
+            GUI.DrawTexture(rect, icon);
+            GUI.color = prev;
+            Add(rect, Kind.GuideBookToggle, 0);
+            if (over)
+                DrawLines(mouse, new List<string>
+                {
+                    Lang.T(GuideAdvice.On ? "切换为制作" : "切换为合成表"),
+                    Lang.T("合成表：放入一件材料，列出所有用到它的配方"),
+                }, Color.white);
+        }
+
         /// <summary>ItemSlot.Handle for context 7: a click swaps the cursor's item with the slot's; only a material (an ingredient of some recipe) goes in.</summary>
         static void ActGuideSlot(bool leftPress)
         {
@@ -143,6 +168,10 @@ namespace TerraKnight.Items
 
         /// <summary>Dev: a click on the Guide's slot; the crafting column's results, in order.</summary>
         public static void DevGuideSlot() => ActGuideSlot(true);
+        /// <summary>Dev: a click on the Guide's advice scroll by the crafting column.</summary>
+        public static void DevGuideBookToggle() => Act(new Hit { Kind = Kind.GuideBookToggle }, true, false, false, false);
+        /// <summary>Dev: the crafting column's title as drawn.</summary>
+        public static string DevCraftTitle => Lang.T(GuideAdvice.On ? "合成表" : "制作");
         public static string DevRecipeNames(int max)
         {
             RefreshRecipes();

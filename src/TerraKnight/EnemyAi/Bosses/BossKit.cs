@@ -628,11 +628,20 @@ namespace TerraKnight.EnemyAi.Bosses
             var list = new List<FsmTransition>(s.Transitions) { new FsmTransition { FsmEvent = ev, ToState = to, ToFsmState = target } };
             s.Transitions = list.ToArray();
             var fsm = f.Fsm;
+            // A branch taken again and again in one frame is a loop with the script's own way back (the game stops a script
+            // for good at a thousand moves in a frame): from the twentieth time in a frame, the script's own way is left.
+            int frame = -1, times = 0;
             Insert(s, new KitAction
             {
                 Kit = this,
                 Enter = () =>
                 {
+                    if (Time.frameCount != frame) { frame = Time.frameCount; times = 0; }
+                    if (++times > 20)
+                    {
+                        if (warned.Add(Record + "|loop|" + state)) Plugin.Log.LogWarning($"[首领AI] {Record} {state} → {to} 一帧里来回 20 次，这一帧按原版走");
+                        return;
+                    }
                     if (!when()) return;
                     BossAi.DevBranches++;
                     fsm.Event(ev);
@@ -741,7 +750,7 @@ namespace TerraKnight.EnemyAi.Bosses
         public static int DevSurfaced;
 
         /// <summary>The room's own ground at a point by its grid (a cell of the scene's terrain, untouched).</summary>
-        static bool RoomRockAt(Vector2 p)
+        protected static bool RoomRockAt(Vector2 p)
         {
             var c = World.CellGrid.WorldToCell(p);
             var r = World.TerraWorld.RegionAt(c.x, c.y);

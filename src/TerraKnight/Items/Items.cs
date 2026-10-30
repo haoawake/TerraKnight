@@ -581,6 +581,8 @@ namespace TerraKnight.Items
         BossPetGrimm, BossPetNightmareGrimm, BossPetHollowKnight, BossPetHollowKnightPrime, BossPetFinalBoss, BossPetAbsoluteRadiance,
         HomeEverywhere,
         Clentaminator,
+        // The Guide's recipe list carried (Items/GuideAdvice.cs, the user's 10-29).
+        GuideAdvice,
 
     }
 
@@ -1897,6 +1899,7 @@ namespace TerraKnight.Items
             MeteoriteBlock(list);
             AddMoney(list);
             AddHomeEverywhere(list);
+            AddGuideAdvice(list);
             AddCraftChain(list);
             AddCraftingSupplement(list);
             AddFishing(list);

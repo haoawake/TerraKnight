@@ -415,6 +415,8 @@ namespace TerraKnight
                 return;
             }
             if (gameplay && terrain != null && !gm.isPaused && !Net.NetChat.BlocksKeys && !UI.IngameOptions.AnyOpen) HandleEscape();
+            // The stat viewer's, the drop blacklist's and the monster book's keys (unbound at first).
+            if (gameplay && terrain != null && !gm.isPaused && !Net.NetChat.BlocksKeys && !UI.IngameOptions.AnyOpen && !UI.HkMenus.Open) InventoryGui.PanelKeys();
             // The Dream Nail item's button (the game's FSM reads it, in control or not).
             DreamNailItem.Sample();
             // Sitting on a bench (the game holds the Knight there), the housing panel still answers the mouse, as Terraria's

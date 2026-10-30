@@ -1,11 +1,16 @@
 # Changelog
 
-## 5.2.1 — Movable windows and minion balance
+## 5.2.1 — Guide's Advice, movable windows and minion balance
+
+### New
+
+- The Guide sells the Guide's Advice (10000 Geo): carried, it puts a scroll beside the crafting column's hammer that switches the column to the recipe book; put a material in to list every recipe that uses it.
 
 ### Improvements
 
 - The inventory's windows can be moved: drag one by an empty part (its title, its frame, the gaps between slots) and it stays where it is put; a double click on an empty part puts it back. Home Everywhere's storage opens right of the crafting column.
 - The left column of Terraria Settings scrolls with the mouse wheel, so the multiplayer options stay on the screen.
+- The Amethyst Stat Viewer, the Drop Blacklist and the Bestiary can have keys (unbound by default, set in Terraria Settings' key list); pressed with the inventory shut, the inventory opens with the window.
 
 ### Balance
 
@@ -16,6 +21,7 @@
 
 - In rooms full of their own sounds (Fog Canyon), weapon and spell sounds play as usual.
 - The "Path of Pain" achievement unlocks on completing the Path of Pain.
+- The new-AI Vengefly King keeps after the player once they leave its alert range, flies round rock in the way, and its swoop stops above the ground.
 
 ## 5.2.0 — Remade weapons, damage balance and Home Everywhere
 

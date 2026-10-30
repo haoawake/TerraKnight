@@ -37,6 +37,8 @@ namespace TerraKnight.Player
             Recall, DiscordTeleport,
             // The mod's own: the Crystal Heart's Super Dash (Items.AbilityAccessories), on the Dash key at first.
             SuperDash,
+            // The mod's own, unbound at first: the inventory's stat viewer, drop blacklist and monster book (InventoryGui.PanelKeys).
+            StatViewer, DropBlacklist, Bestiary,
         }
 
         /// <summary>
@@ -48,7 +50,7 @@ namespace TerraKnight.Player
             Action.UseItem, Action.Interact, Action.Up, Action.Down, Action.Left, Action.Right, Action.Jump, Action.Grapple, Action.AutoSelect, Action.SmartCursor, Action.Favorite,
             Action.Mount, Action.QuickHeal, Action.QuickMana, Action.QuickBuff, Action.Throw, Action.Inventory, Action.Chat, Action.ViewZoomIn, Action.ViewZoomOut,
             Action.Loadout1, Action.Loadout2, Action.Loadout3, Action.Loadout4, Action.NextLoadout, Action.PreviousLoadout, Action.ArmorSetAbility, Action.Dash, Action.SuperDash, Action.ShadowDash, Action.CharmSkill,
-            Action.Recall, Action.DiscordTeleport,
+            Action.Recall, Action.DiscordTeleport, Action.StatViewer, Action.DropBlacklist, Action.Bestiary,
             Action.MapZoomIn, Action.MapZoomOut, Action.MapAlphaUp, Action.MapAlphaDown, Action.FullMap, Action.MapStyle,
             Action.Hotbar1, Action.Hotbar2, Action.Hotbar3, Action.Hotbar4, Action.Hotbar5, Action.Hotbar6, Action.Hotbar7, Action.Hotbar8, Action.Hotbar9, Action.Hotbar10,
         };
@@ -99,6 +101,7 @@ namespace TerraKnight.Player
             [Action.MapAlphaUp] = Key.PageUp, [Action.MapAlphaDown] = Key.PageDown, [Action.NextLoadout] = Key.None, [Action.PreviousLoadout] = Key.None,
             [Action.ArmorSetAbility] = Key.None, [Action.ShadowDash] = Key.X, [Action.CharmSkill] = Key.C,
             [Action.Recall] = Key.None, [Action.DiscordTeleport] = Key.None,
+            [Action.StatViewer] = Key.None, [Action.DropBlacklist] = Key.None, [Action.Bestiary] = Key.None,
             // The Super Dash on the Dash key: a long press of it (a key of its own: held, it charges at once).
             [Action.SuperDash] = Key.F,
             // PlayerInput's defaults: OemPlus and OemMinus, the = and - keys by the backspace.
@@ -269,7 +272,7 @@ namespace TerraKnight.Player
                 Action.Mount => "上下坐骑", Action.Chat => "聊天", Action.Loadout4 => "配装4", Action.Jump => "跳", Action.Throw => "丢下", Action.Grapple => "抓钩", Action.FullMap => "切换完整地图",
                 Action.MapStyle => "切换地图类型", Action.Dash => "冲刺", Action.QuickBuff => "快速增益", Action.MapZoomIn => "放大", Action.MapZoomOut => "缩小",
                 Action.MapAlphaUp => "降低透明度", Action.MapAlphaDown => "提高透明度", Action.NextLoadout => "下一配装", Action.PreviousLoadout => "上一配装",
-                Action.ArmorSetAbility => "盔甲套装能力", Action.ShadowDash => "暗影冲刺", Action.SuperDash => "超级冲刺", Action.CharmSkill => "护符技", Action.Recall => "回城", Action.DiscordTeleport => "混沌传送", Action.UseItem => "使用物品", Action.Interact => "交互", Action.Favorite => "收藏",
+                Action.ArmorSetAbility => "盔甲套装能力", Action.ShadowDash => "暗影冲刺", Action.SuperDash => "超级冲刺", Action.CharmSkill => "护符技", Action.Recall => "回城", Action.DiscordTeleport => "混沌传送", Action.StatViewer => "紫晶属性观测仪", Action.DropBlacklist => "掉落物黑名单", Action.Bestiary => "怪物图鉴", Action.UseItem => "使用物品", Action.Interact => "交互", Action.Favorite => "收藏",
                 Action.ViewZoomIn => "放大", Action.ViewZoomOut => "缩小", _ => a.ToString(),
             };
             return (key != null ? Terraria.TerrariaText.Get(Lang.Culture, key) : null) ?? Lang.T(zh);

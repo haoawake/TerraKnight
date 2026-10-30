@@ -11332,5 +11332,29 @@
  },
  "这个房间没有能传送进来的入口，不能放晶塔": {
   "en-US": "This room has no way in to teleport to, so no pylon can go here"
+ },
+ "向导的叮嘱": {
+  "en-US": "Guide's Advice"
+ },
+ "拿着我的合成表滚吧，把我丢弃在圣巢的烂人": {
+  "en-US": "Take my recipe book and get lost, you wretch who left me behind in Hallownest"
+ },
+ "合成表": {
+  "en-US": "Recipe Book"
+ },
+ "切换为合成表": {
+  "en-US": "Switch to the recipe book"
+ },
+ "切换为制作": {
+  "en-US": "Switch to crafting"
+ },
+ "合成表：放入一件材料，列出所有用到它的配方": {
+  "en-US": "Recipe book: put in a material to list every recipe that uses it"
+ },
+ "紫晶属性观测仪": {
+  "en-US": "Amethyst Stat Viewer"
+ },
+ "掉落物黑名单": {
+  "en-US": "Drop Blacklist"
  }
 }
