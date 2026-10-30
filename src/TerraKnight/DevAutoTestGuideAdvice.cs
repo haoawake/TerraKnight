@@ -85,6 +85,31 @@ namespace TerraKnight
                 yield return null;
                 Check("放在圣巢背包里也算带着", GuideAdvice.Carried && GuideAdvice.On);
                 inv.HkBag[0] = default;
+                // Personal Piggy Bank storage works without carrying or opening a Piggy Bank.
+                World.Chests.Close(false);
+                inv.Bank[0] = ItemStack.Of(ItemType.GuideAdvice);
+                yield return new WaitForSeconds(.3f);
+                Check("存钱罐关闭时也生效", !World.Chests.IsOpen && GuideAdvice.Carried && GuideAdvice.On && InventoryGui.DevCraftTitle == "合成表");
+                PutWood(inv);
+                InventoryGui.DevGuideSlot(); yield return new WaitForSeconds(.3f);
+                Check("存钱罐里的叮嘱能查询配方", TownNpcs.GuideItem.Type == ItemType.Wood && InventoryGui.DevRecipeNames(200).Contains("工作台"));
+                Shot("Town", "guideadvice_piggybank");
+                yield return new WaitForSeconds(.3f);
+                InventoryGui.Open = false; yield return null;
+                InventoryGui.Open = true; yield return new WaitForSeconds(.3f);
+                Check("关包再开仍能远程查询", GuideAdvice.On && TownNpcs.GuideCraftOpen && Recipes.Count(inv, ItemType.Wood) == wood);
+                PutWood(inv); InventoryGui.DevGuideSlot(); yield return null;
+                inv.Bank[0] = default;
+                yield return new WaitForSeconds(.3f);
+                Check("移出存钱罐后关闭查询并退回材料", !GuideAdvice.Carried && !GuideAdvice.On && !TownNpcs.GuideCraftOpen && TownNpcs.GuideItem.IsEmpty && Recipes.Count(inv, ItemType.Wood) == wood);
+                inv.Bank[0] = ItemStack.Of(ItemType.GuideAdvice, 0);
+                yield return null;
+                Check("空物品堆不生效", !GuideAdvice.Carried);
+                inv.Bank[0] = default;
+                inv.Safe[0] = inv.Forge[0] = inv.Void[0] = ItemStack.Of(ItemType.GuideAdvice);
+                yield return null;
+                Check("其他仓库没有扩大生效范围", !GuideAdvice.Carried);
+                inv.Safe[0] = inv.Forge[0] = inv.Void[0] = default;
                 if (GuideAdvice.Chosen) GuideAdvice.Toggle();
 
                 // The windows' keys.

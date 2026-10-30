@@ -223,10 +223,10 @@ namespace TerraKnight.World
             {
                 if (c.Region == null || !c.Box.Contains(mouse) || !InReach(hero, c.Box)) continue;
                 // A dresser's lower half (Player.TileInteractionsUse, frameY past 0): its clothes window, not its drawers.
-                if (RegionalFurniture.IsDresser(c.Style) && mouse.y < c.Box.center.y)
+                if (WantsWardrobe(c))
                 {
                     if (open == c) Close(true);
-                    UI.AppearanceWindow.OpenClothes();
+                    InventoryGui.OpenWardrobe();
                     return true;
                 }
                 if (open == c) Close(true);
@@ -240,6 +240,8 @@ namespace TerraKnight.World
 
         /// <summary>The chest the smart cursor has picked (SmartInteract: nearest the cursor of all it weighs), or none.</summary>
         static Chest smart, smartBest;
+        static bool WantsWardrobe(Chest c) => RegionalFurniture.IsDresser(c.Style) && !InventoryGui.DevShift
+            && !(UnityEngine.InputSystem.Keyboard.current?.leftShiftKey.isPressed == true || UnityEngine.InputSystem.Keyboard.current?.rightShiftKey.isPressed == true);
         public static int DevSmartOpened;
 
         /// <summary>
@@ -268,7 +270,8 @@ namespace TerraKnight.World
             if (smart == null || smart.Region == null) return false;
             var hero = HeroController.SilentInstance;
             if (hero == null || !InReach(hero, smart.Box)) return false;
-            if (open == smart) Close(true);
+            if (WantsWardrobe(smart)) InventoryGui.OpenWardrobe();
+            else if (open == smart) Close(true);
             else Open(smart);
             DevSmartOpened++;
             return true;
@@ -405,6 +408,7 @@ namespace TerraKnight.World
 
         static void Open(Chest c)
         {
+            InventoryGui.CloseWardrobe();
             if (!c.Bank && Net.NetSession.Active && !Net.WorldSync.OwnsChest(c.Scene, c.Local))
             {
                 if (Net.WorldSync.CanInteract) Net.WorldSync.OpenChest(c.Scene, c.Local);

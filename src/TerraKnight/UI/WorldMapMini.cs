@@ -26,13 +26,22 @@ namespace TerraKnight.UI
         static float keyTicks;
         const string FrameDir = "UI/Minimap/Default/";
 
+        /// <summary>The corner map this frame shows Hollow Knight's map (FullMap.RenderCorner).</summary>
+        static bool hollowCorner;
+        public static bool HollowCorner => hollowCorner;
+
         /// <summary>Dev: the minimap's keys read during a test (the keys suite).</summary>
         public static bool DevKeys;
 
         /// <summary>Keys and the frame's buttons for the minimap and overlay; call every frame in gameplay.</summary>
         public static void UpdateMini()
         {
+            hollowCorner = false;
             if (!Enabled || Open) return;
+            // Hollow Knight's map in the corner when it is the one M opens (FullMap): its picture rendered before the interface draws it.
+            if (FullMap.Hollow && Style != 0 && GameHooks.IsGameplay(GameManager.UnsafeInstance))
+                hollowCorner = FullMap.RenderCorner(Style == 1 ? MinimapRect().size : new Vector2(Screen.width, Screen.height),
+                    (Style == 1 ? miniScale : overlayScale) * GameView.Scale * FullMap.CellsPerUnit);
             var kb = Keyboard.current;
             // Tests set the style and zoom themselves: keys and clicks in their window don't count (but for DevKeys).
             if (kb == null || (TerraMod.Instance?.AutoTest != null && !DevKeys) || Net.NetChat.BlocksKeys) return;
@@ -157,7 +166,7 @@ namespace TerraKnight.UI
             foreach (var room in rooms.Values)
             {
                 if (!room.Captured || !room.AnyShown || !Shown(room)) continue;
-                var rect = new Rect(cx + (room.At.x - centre.x) * z, cy - (room.At.y + room.H - centre.y) * z, room.W * z, room.H * z);
+                var rect = new Rect(cx + (room.At.x - centre.x) * z, cy - (room.At.y + room.DrawnH - centre.y) * z, room.DrawnW * z, room.DrawnH * z);
                 float left = inGroup ? 0f : area.x, top = inGroup ? 0f : area.y;
                 if (rect.xMax < left || rect.yMax < top || rect.xMin > left + w || rect.yMin > top + h) continue;
                 // The corner maps make a room's pictures again whole at most twice a second; changed cells go in at once.
@@ -166,9 +175,13 @@ namespace TerraKnight.UI
                 visible.Add((room, rect));
             }
             LiveOnTop(visible);
+            // The passages between gates apart on the map (WorldMapPassages): over their own rooms' rock, under the others'.
+            PreparePassages(new Vector2(cx, cy), centre, z, new Rect(inGroup ? 0f : area.x, inGroup ? 0f : area.y, w, h));
             var prev = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, alpha);
-            foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);
+            foreach (var (room, rect) in visible) if (InPassage(room)) GUI.DrawTexture(rect, room.Solid);
+            DrawGatePassages(alpha);
+            foreach (var (room, rect) in visible) if (!InPassage(room)) GUI.DrawTexture(rect, room.Solid);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Open);
             LiveAgain(visible);
             GUI.color = prev;
@@ -186,6 +199,13 @@ namespace TerraKnight.UI
             GUI.color = prev;
             var centre = HeadCell(out _);
             GUI.BeginGroup(area);
+            if (hollowCorner)
+            {
+                FullMap.DrawCorner(new Rect(0f, 0f, area.width, area.height), miniAlpha, miniAlpha, ui * 0.7f, ui * 0.5f);
+                GUI.EndGroup();
+                DrawMinimapFrame();
+                return;
+            }
             var shown = DrawRooms(area, centre, miniScale * ui, miniAlpha, true);
             float mz = miniScale * ui;
             System.Func<Vector2, Vector2> toMini = c => new Vector2(area.width / 2f + (c.x - centre.x) * mz, area.height / 2f - (c.y - centre.y) * mz);
@@ -202,6 +222,13 @@ namespace TerraKnight.UI
             DrawOthers(toMini, ui * 0.5f, false, inside);
             FullMap.DrawHead(new Vector2(area.width / 2f, area.height / 2f), ui * 0.5f);
             GUI.EndGroup();
+            DrawMinimapFrame();
+        }
+
+        /// <summary>The minimap's frame over its picture, a button's picture under the mouse.</summary>
+        static void DrawMinimapFrame()
+        {
+            float ui = GameView.Scale;
             var frameTex = TerrariaAssets.Texture(FrameDir + "MinimapFrame");
             var frame = FramePosition();
             if (frameTex != null) GUI.DrawTexture(new Rect(frame.x, frame.y, frameTex.width * ui, frameTex.height * ui), frameTex);
@@ -219,6 +246,11 @@ namespace TerraKnight.UI
         {
             float ui = GameView.Scale;
             var screen = new Rect(0f, 0f, Screen.width, Screen.height);
+            if (hollowCorner)
+            {
+                FullMap.DrawCorner(screen, overlayAlpha, Mathf.Max(overlayAlpha, 0.5f), ui * 0.8f, ui * 0.6f);
+                return;
+            }
             var centre = HeadCell(out _);
             var shown = DrawRooms(screen, centre, overlayScale * ui, overlayAlpha, false);
             var prev = GUI.color;

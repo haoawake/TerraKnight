@@ -194,8 +194,8 @@ namespace TerraKnight.Items
         public static int Count(Inventory inv, ItemType t)
         {
             int n = 0;
-            foreach (var s in inv.Slots) if (!s.IsEmpty && s.Type == t) n += s.Count;
-            foreach (var s in inv.HkBag) if (!s.IsEmpty && s.Type == t) n += s.Count;
+            foreach (var s in inv.Slots) if (!s.IsEmpty && !s.WardrobeCopy && s.Type == t) n += s.Count;
+            foreach (var s in inv.HkBag) if (!s.IsEmpty && !s.WardrobeCopy && s.Type == t) n += s.Count;
             return n;
         }
 
@@ -205,7 +205,7 @@ namespace TerraKnight.Items
             int n = Count(inv, t);
             if (chests != null)
                 foreach (var slots in chests)
-                    foreach (var s in slots) if (!s.IsEmpty && s.Type == t) n += s.Count;
+                    foreach (var s in slots) if (!s.IsEmpty && !s.WardrobeCopy && s.Type == t) n += s.Count;
             return n;
         }
 
@@ -251,7 +251,7 @@ namespace TerraKnight.Items
             for (int i = slots.Length - 1; i >= 0 && left > 0; i--)
             {
                 ref var s = ref slots[i];
-                if (s.IsEmpty || s.Type != t) continue;
+                if (s.IsEmpty || s.WardrobeCopy || s.Type != t) continue;
                 int take = UnityEngine.Mathf.Min(left, s.Count);
                 s.Count -= take;
                 left -= take;

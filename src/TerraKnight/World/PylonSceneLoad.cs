@@ -31,6 +31,29 @@ namespace TerraKnight.World
             return __exception;
         }
     }
+    /// <summary>
+    /// A portal arrival goes in by its gate as by a door (the user's 10-29 "传送动画变长了吗？有人说有点卡卡的"): the game's
+    /// walk in from a side, jump up from below or drop from above (HeroController.EnterScene) came first, the room faded in
+    /// on it, then the player was put by the pylon, the view jumping after him. A door's way in moves nobody, so he is put by
+    /// the pylon as he is placed (Pylons.Arrive at SendHeroInPosition) and the room fades in on him there. Only the arriving
+    /// room's gates while that arrival is pending; the conditional loads above keep their rule.
+    /// </summary>
+    [HarmonyPatch(typeof(TransitionPoint), nameof(TransitionPoint.GetGatePosition))]
+    internal static class PylonDoorEntry
+    {
+        internal static int DevDoorEntries;
+        /// <summary>Dev (suite pylonspeed): the game's own way in by the gate, as before, to compare.</summary>
+        internal static bool DevOff;
+        [HarmonyPrefix]
+        static bool Prefix(TransitionPoint __instance, ref GlobalEnums.GatePosition __result)
+        {
+            if (DevOff || __instance == null || !Pylons.LoadingByPortal(__instance.gameObject.scene.name)) return true;
+            __result = GlobalEnums.GatePosition.door;
+            DevDoorEntries++;
+            return false;
+        }
+    }
+
     [HarmonyPatch(typeof(HeroController), "FinishedEnteringScene")]
     internal static class PylonArrivalAfterEntry
     {

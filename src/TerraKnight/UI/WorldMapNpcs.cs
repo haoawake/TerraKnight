@@ -42,10 +42,17 @@ namespace TerraKnight.UI
             cell = default;
             if (!Shown(h.Scene, h.Local)) return false;
             if (!h.AtTownBench) return ScenePoint(h.Scene, h.Local, out cell);
+            // On Hollow Knight's map: over the scene's bench pin.
+            if (elsewhere != null)
+            {
+                foreach (var b in BenchPins)
+                    if (b.Scene == h.Scene) return ScenePoint(h.Scene, b.Local + new Vector2(0f, 1f), out cell);
+                return false;
+            }
             // Not seen yet this session on Dirtmouth's street: at the town's bench (a thing of the town's room), as the townsfolk gather there.
             if (!rooms.TryGetValue(h.Scene, out var room) || !layout.TryGetValue(h.Scene, out var at)) return false;
             foreach (var o in room.Things)
-                if (o.Kind == Obj.Bench) { cell = new Vector2(at.x + o.Cells.center.x, at.y + o.Cells.yMin + 2f); return true; }
+                if (o.Kind == Obj.Bench) { cell = OnMap(h.Scene, at, new Vector2(o.Cells.center.x, o.Cells.yMin + 2f)); return true; }
             return false;
         }
 

@@ -11356,5 +11356,101 @@
  },
  "掉落物黑名单": {
   "en-US": "Drop Blacklist"
+ },
+ "破盾！": {
+  "en-US": "Shield broken!"
+ },
+ "商店": {
+  "en-US": "Shop"
+ },
+ "电车站": {
+  "en-US": "Tram Station"
+ },
+ "战士之墓": {
+  "en-US": "Warrior's Grave"
+ },
+ "生命血茧": {
+  "en-US": "Lifeblood Cocoon"
+ },
+ "低语之根": {
+  "en-US": "Whispering Root"
+ },
+ "全屏地图：空洞骑士": {
+  "en-US": "Full map: Hollow Knight"
+ },
+ "全屏地图：泰拉瑞亚": {
+  "en-US": "Full map: Terraria"
+ },
+ "空洞骑士：原版地图；泰拉瑞亚：按实际地形一格一格画。两种都标出晶塔、居民、幼虫和长椅": {
+  "en-US": "Hollow Knight: the game's own map; Terraria: drawn tile by tile from the real terrain. Both mark pylons, townsfolk, grubs and benches"
+ },
+ "斯莱": {
+  "en-US": "Sly"
+ },
+ "伊塞尔达": {
+  "en-US": "Iselda"
+ },
+ "萨鲁巴": {
+  "en-US": "Salubra"
+ },
+ "食腿者": {
+  "en-US": "Leg Eater"
+ },
+ "骨钉匠": {
+  "en-US": "Nailsmith"
+ },
+ "米莉贝儿": {
+  "en-US": "Millibelle"
+ },
+ "遗物寻求者莱姆": {
+  "en-US": "Relic Seeker Lemm"
+ },
+ "忏悔者吉吉": {
+  "en-US": "Confessor Jiji"
+ },
+ "幼虫之父": {
+  "en-US": "Grubfather"
+ },
+ "猎人": {
+  "en-US": "Hunter"
+ },
+ "先知": {
+  "en-US": "Seer"
+ },
+ "头": {
+  "en-US": "Head"
+ },
+ "身": {
+  "en-US": "Body"
+ },
+ "脚": {
+  "en-US": "Legs"
+ },
+ "神居": {
+  "en-US": "Godhome"
+ },
+ "{0}时装": {
+  "en-US": "{0} Vanity"
+ },
+ "衣柜穿戴副本：无价值，丢弃即消失": {
+  "en-US": "Wardrobe copy: no value, vanishes when dropped"
+ },
+ "获得这件时装后即可永久取用": {
+  "en-US": "Obtain this vanity piece once to take it out any time"
+ },
+ "请先放下鼠标上的物品": {
+  "en-US": "Put down the item on the cursor first"
+ },
+ "全局衣柜 · 已收藏 {0} 件": {
+  "en-US": "Wardrobe · {0} collected"
+ },
+ "左键取用 · 右键穿戴 · 永久保留 · 副本无售价，丢弃即消失": {
+  "en-US": "Left click: take · Right click: wear · Kept for good · Copies have no value and vanish when dropped"
+ },
+ "已收纳时装：{0}": {
+  "en-US": "Vanity stored: {0}"
+ },
+ "重复时装已出售：{0}": {
+  "en-US": "Duplicate vanity sold: {0}"
  }
 }

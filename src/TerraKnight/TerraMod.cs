@@ -2197,7 +2197,7 @@ namespace TerraKnight
             }
             Inventory.Mouse = default;
             var hero = HeroController.SilentInstance;
-            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix, Forge = m.Forge, WeaponVersion = m.WeaponVersion };
+            var rest = new ItemStack { Type = m.Type, Count = left, Prefix = m.Prefix, Forge = m.Forge, WeaponVersion = m.WeaponVersion, WardrobeCopy = m.WardrobeCopy };
             if (left > 0 && hero != null) WorldItems.Drop(rest, hero.GetComponent<BoxCollider2D>().bounds.center);
             else if (left > 0) Inventory.Mouse = rest;
         }

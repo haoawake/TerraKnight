@@ -218,6 +218,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static bool AutoSell(Inventory inv, ItemStack s, Vector2 at)
         {
+            if (Wardrobe.Collect(inv, s)) return true;
             if (!Sells(inv, s.Type) || !Listable(s, out _, requireValue: !inv.DropBlacklist.Contains(s.Type))) return false;
             long money = Shop.SellValue(s);
             inv.RecordCollection(s.Type);

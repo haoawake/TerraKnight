@@ -50,6 +50,7 @@ namespace TerraKnight.Items
                     EndRename(false);
                     EndBookSearch();
                     grid = false;
+                    wardrobeOpen = false;
                     hkOpen = false;
                     blacklistOpen = false;
                     statsOpen = false;
@@ -63,7 +64,7 @@ namespace TerraKnight.Items
         /// <summary>The mouse was over a panel last frame; item use is blocked while it is.</summary>
         public static bool MouseOverUi { get; private set; }
 
-        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory, InfoToggle, BuilderToggle, CreativeStage, RecipeTracePanel, RecipeTraceIngredient, RecipeTraceSource, RecipeTraceAction, HomeButton, HomeColor, HomeStorage, HomeAction, HomePanel, HomeSlot, HomeSearch, GuideBookToggle }
+        enum Kind { Slot, Armor, Accessory, Trash, Recipe, GridToggle, FilterEntry, Settings, Loadout, Buff, ChatButton, ShopSlot, BestiaryButton, BestiaryEntry, BestiaryPanel, ChestSlot, ChestButton, Pvp, Team, GuideSlot, InvButton, Misc, EquipPage, HkButton, HkBag, SellButton, SellSlot, ReforgeSlot, ReforgeButton, ForgeButton, NpcButton, NpcHead, BlacklistButton, BlacklistEntry, StatsButton, StatsTab, StatsScroll, CharmSlot, CharmWorn, VanityArmor, VanityAccessory, InfoToggle, BuilderToggle, CreativeStage, RecipeTracePanel, RecipeTraceIngredient, RecipeTraceSource, RecipeTraceAction, HomeButton, HomeColor, HomeStorage, HomeAction, HomePanel, HomeSlot, HomeSearch, GuideBookToggle, WardrobePanel, WardrobeItem, WardrobeFilter, WardrobeButton }
 
         struct Hit
         {
@@ -103,6 +104,8 @@ namespace TerraKnight.Items
             var mouse = Mouse.current;
             if (mouse == null || TerraMod.Instance == null) return;
             TerrariaAssets.TickDeferred();
+            Wardrobe.Migrate(inv);
+            if (!inv.Mouse.IsEmpty && Wardrobe.Collect(inv, inv.Mouse)) inv.Mouse = default;
             if(RecipeTracking.Active)RecipeTracking.TickSources();
             TickRename();
             TickHomeRename();
@@ -117,7 +120,12 @@ namespace TerraKnight.Items
             {
                 // Terraria: with the inventory open the wheel scrolls the crafting column.
                 float wheel = mouse.scroll.ReadValue().y;
-                if (HomeMergedVisible && homePanelRect.Contains(UI.TerraCursor.GuiMouse()))
+                if (wardrobeOpen)
+                {
+                    if (wheel > .1f) wardrobePage = Mathf.Max(0, wardrobePage - 1);
+                    else if (wheel < -.1f) wardrobePage++;
+                }
+                else if (HomeMergedVisible && homePanelRect.Contains(UI.TerraCursor.GuiMouse()))
                 {
                     if (wheel > .1f) homeStoragePage = Mathf.Max(0, homeStoragePage - 1);
                     else if (wheel < -.1f) homeStoragePage++;
@@ -259,6 +267,10 @@ namespace TerraKnight.Items
         {
             switch (hit.Kind)
             {
+                case Kind.WardrobePanel: return;
+                case Kind.WardrobeItem: if (leftPress || rightPress) TakeWardrobe(hit.Index, rightPress); return;
+                case Kind.WardrobeFilter: if (leftPress) { wardrobeRegion = hit.Index; wardrobePage = 0; } return;
+                case Kind.WardrobeButton: if (leftPress) { if (hit.Index == 0) wardrobeOpen = false; else wardrobePage = Mathf.Max(0, wardrobePage + (hit.Index == 1 ? -1 : 1)); } return;
                 case Kind.Slot:
                     if (!Open)
                     {
@@ -627,7 +639,7 @@ namespace TerraKnight.Items
                 if (!(inv.Mouse.IsEmpty || (CanStack(inv.Mouse, slot) && inv.Mouse.Count < inv.Mouse.Def.MaxStack))) break;
                 // PickupItemIntoMouse: the cursor copy is a favourite only if the whole (single) item was.
                 bool fav = slot.Favorite && slot.Count == 1;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge, WeaponVersion = slot.WeaponVersion };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge, WeaponVersion = slot.WeaponVersion, WardrobeCopy = slot.WardrobeCopy };
                 inv.Mouse.Count++;
                 inv.Mouse.Favorite = fav;
                 // Creative: a stack that shows ∞ gives as many as are taken off it, held to a full stack, and keeps its own.
@@ -780,7 +792,7 @@ namespace TerraKnight.Items
         public static void DevClickTrash() => ClickTrash();
 
         /// <summary>Into the bag, all or nothing: a plain stack by its type (onto stacks of it), a reforged or forged one whole.</summary>
-        static bool BackToBag(ItemStack s) => s.Prefix == 0 && s.Forge == 0 && s.WeaponVersion == 0 ? inv.Add(s.Type, s.Count) : inv.Pickup(s) == 0;
+        static bool BackToBag(ItemStack s) => !s.WardrobeCopy && s.Prefix == 0 && s.Forge == 0 && s.WeaponVersion == 0 ? inv.Add(s.Type, s.Count) : inv.Pickup(s) == 0;
 
         /// <summary>Dev: a left click on an equipment slot (with whatever Dev modifiers are set).</summary>
         public static void DevLeftClickEquip(bool armor, int index) => LeftClickEquip(armor, index);
@@ -1058,8 +1070,11 @@ namespace TerraKnight.Items
                     if (!Recipes.HasIngredients(r, inv, near)) break;
                     Recipes.Consume(r, inv, near);
                 }
-                if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(r.Result, 0);
-                inv.Mouse.Count += r.Count;
+                if (!Wardrobe.Collect(inv, ItemStack.Of(r.Result, r.Count)))
+                {
+                    if (inv.Mouse.IsEmpty) inv.Mouse = ItemStack.Of(r.Result, 0);
+                    inv.Mouse.Count += r.Count;
+                }
                 inv.RecordCollection(r.Result);
                 HallownestRecovery.Record(inv, r.Result);
                 made++;
@@ -1359,6 +1374,7 @@ namespace TerraKnight.Items
                 hoveredExtra = null;
             }
             if (Open) DrawCharmIntro(ui);
+            if (Open && wardrobeOpen) DrawWardrobe(view, ui, mouse, ref hovered, ref hoveredExtra, ref hoveredKind);
             MouseOverUi = Casino.IsOpen || UI.WorldMap.MouseOnMinimap(mouse);
             foreach (var p in panels)
                 if (p.Contains(mouse)) MouseOverUi = true;
@@ -2308,7 +2324,7 @@ namespace TerraKnight.Items
             craftingNow = -1;
             int before = inv.Mouse.Type == type ? inv.Mouse.Count : 0;
             ClickRecipe(i, true, true);
-            return inv.Mouse.Type == type && inv.Mouse.Count > before;
+            return Wardrobe.Clothing(type) ? craftingNow == i : inv.Mouse.Type == type && inv.Mouse.Count > before;
         }
 
         /// <summary>Dev: the focused recipe's hover text (what it needs, or how it's taken).</summary>

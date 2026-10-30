@@ -105,6 +105,7 @@ namespace TerraKnight.Save
             public int AnglerQuests;
             public int? AnglerPending;
             public List<string> CollectedItems;
+            public List<string> WardrobeItems;
             /// <summary>A meteorite coming at midnight (World.Meteorites.Pending), and how many have come down.</summary>
             public bool MeteorPending;
             public int MeteorsLanded;
@@ -200,6 +201,7 @@ namespace TerraKnight.Save
 
         sealed class SlotItem
         {
+            public bool WardrobeCopy;
             public string Type;
             public int Count;
             public bool Fav;
@@ -210,7 +212,7 @@ namespace TerraKnight.Save
             public byte WeaponVersion;
         }
 
-        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion };
+        static SlotItem Pack(ItemStack s) => new SlotItem { Type = s.Type.ToString(), Count = s.Count, Fav = s.Favorite, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion, WardrobeCopy = s.WardrobeCopy };
 
         /// <summary>Dev: a stack through the save's packing and back.</summary>
         internal static ItemStack DevRoundTrip(ItemStack s) => Unpack(Pack(s));
@@ -227,6 +229,7 @@ namespace TerraKnight.Save
             // A weapon's forge level; a treasure bag's first-kill mark in the same byte.
             if (s.Forge > 0 && (Items.Forging.Forgeable(Items.ItemDb.Get(type)) || Items.TreasureBags.Is(type))) stack.Forge = (byte)Mathf.Min(s.Forge, 255);
             if (s.WeaponVersion <= 2) stack.WeaponVersion = s.WeaponVersion;
+            stack.WardrobeCopy = s.WardrobeCopy && Wardrobe.Clothing(stack.Type);
             return stack;
         }
 
@@ -387,6 +390,8 @@ namespace TerraKnight.Save
                 WorldName = WorldName, PlayerName = PlayerName, Look = Player.Appearance.Current, Selected = inv.Selected, LifeMax = mod.Stats.LifeMax, ManaMax = mod.Stats.ManaMax, LifeCrystals = mod.Stats.LifeCrystals, ManaCrystals = mod.Stats.ManaCrystals };
             HallownestRecovery.Observe(inv);
             inv.ObserveCollections();
+            file.WardrobeItems = new List<string>();
+            foreach (var t in inv.WardrobeItems) file.WardrobeItems.Add(t.ToString());
             file.CollectedItems = new List<string>();
             foreach (var t in inv.CollectedItems) file.CollectedItems.Add(t.ToString());
             file.HallownestObtained = new List<string>();
@@ -721,6 +726,16 @@ namespace TerraKnight.Save
                     foreach (var name in file.CollectedItems)
                         if (Enum.TryParse(name, out ItemType collected)) inv.RecordCollection(collected);
                 inv.ObserveCollections();
+                if (file.WardrobeItems != null)
+                {
+                    foreach (var name in file.WardrobeItems)
+                        if (Enum.TryParse(name, out ItemType clothing) && Wardrobe.Clothing(clothing)) inv.WardrobeItems.Add(clothing);
+                }
+                else
+                {
+                    foreach (var clothing in inv.CollectedItems) if (Wardrobe.Clothing(clothing)) inv.WardrobeItems.Add(clothing);
+                }
+                Wardrobe.Migrate(inv);
                 World.Meteorites.Pending = file.MeteorPending;
                 World.Meteorites.Landed = file.MeteorsLanded;
                 inv.Trash = Unpack(file.Trash);

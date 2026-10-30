@@ -23,6 +23,10 @@ namespace TerraKnight.Items
 
         static readonly string[] trickNames = { "睡眠", "环游世界", "遛狗", "摇篮摆荡", "射月", "八字", "抽送", "彗星环" };
 
+        /// <summary>A yoyo's tricks in turn for the wiki (WeaponWikiLines), by its projectile; null for none.</summary>
+        internal static string[] WikiYoyoTricks(ProjKind k) =>
+            YoyoStyles.TryGetValue(k, out var s) && s.Tricks != null ? System.Array.ConvertAll(s.Tricks, t => trickNames[(int)t]) : null;
+
         /// <summary>The string's reach over the game's, the remade yoyos.</summary>
         const float YoyoReach = 1.3f;
 

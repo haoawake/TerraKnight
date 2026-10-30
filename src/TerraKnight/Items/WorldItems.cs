@@ -173,7 +173,7 @@ namespace TerraKnight.Items
         /// <summary>An item into a scene by its own coordinates, loaded or not: it lies there once the scene comes in.</summary>
         public static void DropIn(ItemStack stack, string scene, Vector2 local)
         {
-            if (stack.IsEmpty || string.IsNullOrEmpty(scene)) return;
+            if (stack.IsEmpty || stack.WardrobeCopy || string.IsNullOrEmpty(scene)) return;
             stack.Favorite = false;
             items.Add(new Item { Stack = stack, Scene = scene, Local = local, Vel = Vector2.zero });
         }
@@ -181,6 +181,8 @@ namespace TerraKnight.Items
         /// <summary>The item made (null: none, or a LAN game's, which the host makes).</summary>
         static Item Spawn(ItemStack stack, Vector2 centre, Vector2 vel, int grabDelay, bool fromSky = false, bool personal = false)
         {
+            // Discarded free copies dissolve instead of becoming valuable world items.
+            if (stack.WardrobeCopy) return null;
             var region = RegionAt(centre) ?? TerrainSystem.Current?.Region;
             if (region == null) return null;
             personal |= !stack.IsEmpty && HallownestRecovery.IsUnique(stack.Type);
@@ -300,6 +302,7 @@ namespace TerraKnight.Items
                 return;
             }
             int count = it.Stack.Count;
+            if (Wardrobe.Collect(inv, it.Stack)) { it.Stack = default; return; }
             // The Auto-Sell Bag carried: an item on its list is sold as it is picked up (Containers).
             if (Containers.AutoSell(inv, it.Stack, at))
             {

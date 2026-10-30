@@ -592,6 +592,7 @@ namespace TerraKnight.Items
         /// <summary>A stack of loot: into the bag (no time to pick it up), into the world for all (a LAN game), or the player's own.</summary>
         static void Place(ItemStack stack, Vector2 at, bool direct, bool perPlayer)
         {
+            if ((!Net.NetSession.Active || perPlayer) && Wardrobe.Collect(TerraMod.Instance?.Inventory, stack)) return;
             if (direct) { Give(stack); return; }
             if (perPlayer) { WorldItems.Drop(stack, at, personal: true); return; }
             if (PuppetsLoot) { DevPuppetSkipped++; return; }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TerraKnight.Effects;
 using TerraKnight.Items;
 using TerraKnight.World;
@@ -1091,7 +1091,7 @@ namespace TerraKnight.Town
             GuideItem = default;
             var inv = TerraMod.Instance?.Inventory;
             // A reforged or forged one goes back whole, its prefix and level kept.
-            bool whole = stack.Prefix != 0 || stack.Forge != 0;
+            bool whole = stack.Prefix != 0 || stack.Forge != 0 || stack.WardrobeCopy;
             int left = inv == null ? stack.Count : whole ? inv.Pickup(stack) : inv.AddSome(stack.Type, stack.Count);
             if (left <= 0) return;
             var hero = HeroController.SilentInstance;
@@ -1226,7 +1226,7 @@ namespace TerraKnight.Town
                 long price = BuyPrice(slot);
                 // Can't afford it: nothing happens at all (Player.BuyItem).
                 if (!Shop.Spend(price)) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix, Forge = item.Forge, WeaponVersion = item.WeaponVersion };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = item.Type, Prefix = item.Prefix, Forge = item.Forge, WeaponVersion = item.WeaponVersion, WardrobeCopy = item.WardrobeCopy };
                 inv.Mouse.Count++;
                 HkItems.Trade(inv, item.Type, 1);
                 HallownestRecovery.Record(inv, item.Type);
@@ -1367,7 +1367,7 @@ namespace TerraKnight.Town
                     if (Locked(i)) { ShopItems[i] = default; ShopLock[i] = 0; ShopSpell[i] = 0; at = i; break; }
             if (at >= 0)
             {
-                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge, WeaponVersion = stack.WeaponVersion };
+                if (ShopItems[at].IsEmpty) ShopItems[at] = new ItemStack { Type = stack.Type, Prefix = stack.Prefix, Forge = stack.Forge, WeaponVersion = stack.WeaponVersion, WardrobeCopy = stack.WardrobeCopy };
                 ShopItems[at].Count += keep;
                 BuyBack[at] = true;
                 // Bought back for exactly what each fetched (Terraria's buyOnce price: the sale's fifth).

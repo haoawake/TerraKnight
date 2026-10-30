@@ -49,7 +49,7 @@ namespace TerraKnight.UI
         /// <summary>Dev: centre the map on a cell of a room.</summary>
         public static void DevCentreCell(string scene, Vector2Int cell)
         {
-            if (rooms.TryGetValue(scene, out var room)) pan = new Vector2(room.At.x + cell.x + 0.5f, room.At.y + cell.y + 0.5f);
+            if (rooms.TryGetValue(scene, out var room)) pan = OnMap(scene, room.At, new Vector2(cell.x + 0.5f, cell.y + 0.5f));
         }
 
         /// <summary>Dev: what the map draws at a room's cell now (its picture rebuilt first), and whether it is seen.</summary>

@@ -21,9 +21,10 @@ namespace TerraKnight.Net
         {
             public int Type, Count;
             public bool Favorite;
+            public bool WardrobeCopy;
             /// <summary>Its reforge and its forge level (a reforged or forged item keeps them through a shared chest).</summary>
             public byte Prefix, Forge, WeaponVersion;
-            public static Stack From(ItemStack s) => new Stack { Type = (int)s.Type, Count = s.Count, Favorite = s.Favorite, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion };
+            public static Stack From(ItemStack s) => new Stack { Type = (int)s.Type, Count = s.Count, Favorite = s.Favorite, Prefix = s.Prefix, Forge = s.Forge, WeaponVersion = s.WeaponVersion, WardrobeCopy = s.WardrobeCopy };
             public ItemStack Item()
             {
                 if (!ItemDb.Has((ItemType)Type) || Count <= 0) return default;
@@ -32,6 +33,7 @@ namespace TerraKnight.Net
                 s.Prefix = Prefix;
                 s.Forge = Forge;
                 s.WeaponVersion = WeaponVersion;
+                s.WardrobeCopy = WardrobeCopy;
                 return s;
             }
         }
@@ -217,7 +219,7 @@ namespace TerraKnight.Net
             Mix(item ? (r.Delay > 0 ? 1 : 0) : r.Delay);
             if (!item) Mix(r.Age);
             Mix((r.Placed ? 1 : 0) | (r.Taken ? 2 : 0) | (r.Sky ? 4 : 0) | (r.Shimmered ? 8 : 0));
-            if (r.Slots != null) foreach (var st in r.Slots) { if (st == null) Mix(-2); else { Mix(st.Type); Mix(st.Count); Mix(st.Favorite ? 1 : 0); Mix(st.Prefix); Mix(st.Forge); Mix(st.WeaponVersion); } }
+            if (r.Slots != null) foreach (var st in r.Slots) { if (st == null) Mix(-2); else { Mix(st.Type); Mix(st.Count); Mix(st.Favorite ? 1 : 0); Mix(st.Prefix); Mix(st.Forge); Mix(st.WeaponVersion); Mix(st.WardrobeCopy ? 1 : 0); } }
             if (r.Cells != null) { Mix(r.Cells.Length); foreach (long c in r.Cells) Mix(c); }
             if (r.Walls != null) { Mix(r.Walls.Length); foreach (long c in r.Walls) Mix(c); }
             if (r.Torches != null) { Mix(r.Torches.Length); foreach (long c in r.Torches) Mix(c); }
@@ -602,7 +604,7 @@ namespace TerraKnight.Net
                     var hero = HeroController.SilentInstance;
                     Vector2 at = hero != null ? (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center : Vector2.zero;
                     // A heart or a star heals or gives mana as it is taken, never into the bag.
-                    if (WorldItems.TakeAtOnce(got, at)) { }
+                    if (WorldItems.TakeAtOnce(got, at) || Wardrobe.Collect(TerraMod.Instance?.Inventory, got)) { }
                     else if (TerraMod.Instance == null || !Containers.AutoSell(TerraMod.Instance.Inventory, got, at)) Give(got);
                     DevPickups++;
                 }

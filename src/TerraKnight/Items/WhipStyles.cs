@@ -82,6 +82,9 @@ namespace TerraKnight.Items
             [WhipKind.ConstellationWhip] = new Style { Height = 1.1f, Tilt = 5f, Trail = new Color(0.5f, 0.7f, 1f) },
         };
 
+        /// <summary>For the wiki (WeaponWikiLines): a whip lashed its own way with the remade weapons.</summary>
+        internal static bool WikiStyled(ItemDef d) => d != null && d.IsWhip && d.Whip != WhipKind.MoonLordWhip && styles.ContainsKey(d.Whip);
+
         /// <summary>The whip lashes its own way: the remade swing on, a style for it, not one of the Moon Lord whip's.</summary>
         static bool Styled(Crack c) => WeaponRefitting.EnabledFor(c.Item) && c.Kind != WhipKind.MoonLordWhip && styles.ContainsKey(c.Kind);
 

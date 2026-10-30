@@ -55,6 +55,14 @@ namespace TerraKnight.UI
             public bool BuiltDeep;
             public Texture2D Solid, Open;
             public Color Hue;
+            /// <summary>The drawing it is a passage's end in (WorldMapPassages): its rock under the passage.</summary>
+            public int PassageStamp;
+
+            /// <summary>Its stretch on the map (WorldMapLayout's), and its size drawn there (map cells).</summary>
+            public Vector2 Stretch => stretchOf ?? (stretchOf = StretchOf(Name)).Value;
+            Vector2? stretchOf;
+            public float DrawnW => W * Stretch.x;
+            public float DrawnH => H * Stretch.y;
 
             public bool IsSeen(int x, int y) { int i = y * W + x; return (Seen[i >> 3] & (1 << (i & 7))) != 0; }
             /// <summary>Drawn on the map: seen, or its area's map bought.</summary>
@@ -390,7 +398,7 @@ namespace TerraKnight.UI
                 // The body's middle (Terraria's map puts the head on the player's centre), as the cells round it are revealed.
                 var body = hero.GetComponent<Collider2D>();
                 Vector2 p = body != null ? (Vector2)body.bounds.center : (Vector2)hero.transform.position;
-                lastHead = new Vector2(at.x + p.x / C - live.CellOffset.x, at.y + p.y / C - live.CellOffset.y);
+                lastHead = OnMap(live.SceneName, at, new Vector2(p.x / C - live.CellOffset.x, p.y / C - live.CellOffset.y));
                 haveHead = true;
                 found = true;
             }
@@ -401,8 +409,14 @@ namespace TerraKnight.UI
         static bool ScenePoint(string scene, Vector2 local, out Vector2 cell)
         {
             cell = default;
+            if (elsewhere != null)
+            {
+                var on = scene != null ? elsewhere(scene, local) : null;
+                cell = on ?? default;
+                return on.HasValue;
+            }
             if (scene == null || !layout.TryGetValue(scene, out var at)) return false;
-            cell = new Vector2(at.x + local.x / C, at.y + local.y / C);
+            cell = OnMap(scene, at, local / C);
             return true;
         }
 
@@ -653,6 +667,8 @@ namespace TerraKnight.UI
             var gm = GameManager.UnsafeInstance;
             var hero = HeroController.SilentInstance;
             if (gm == null || hero == null || GameHooks.HeldByTheGame()) return;
+            // Hollow Knight's own map when it is the one chosen and the game's map is there to copy (FullMap).
+            hollowView = FullMap.Hollow && FullMap.Begin();
             Open = true;
             openedFrame = Time.frameCount;
             dragging = false;
@@ -675,6 +691,10 @@ namespace TerraKnight.UI
         /// <summary>The frame the map opened in: the click that opened it (a right click on a pylon) isn't one on the map too.</summary>
         static int openedFrame = -1;
 
+        /// <summary>The map open shows Hollow Knight's own map (FullMap) rather than the world's cells.</summary>
+        static bool hollowView;
+        public static bool HollowShown => Open && hollowView;
+
         /// <summary>Input while open; call every frame.</summary>
         public static void Update()
         {
@@ -687,6 +707,11 @@ namespace TerraKnight.UI
             if (gm == null || hero == null || gm.IsInSceneTransition || hero.cState.dead || gm.isPaused || kb != null && kb.escapeKey.wasPressedThisFrame)
             {
                 Close();
+                return;
+            }
+            if (hollowView)
+            {
+                FullMap.Input(Time.frameCount == openedFrame);
                 return;
             }
             var mouse = Mouse.current;
@@ -790,6 +815,11 @@ namespace TerraKnight.UI
         public static void Draw()
         {
             if (!Open || Event.current.type != EventType.Repaint) return;
+            if (hollowView)
+            {
+                FullMap.DrawView();
+                return;
+            }
             float ui = GameView.Scale;
             var prev = GUI.color;
             GUI.color = Color.black;
@@ -803,8 +833,8 @@ namespace TerraKnight.UI
             foreach (var room in rooms.Values)
             {
                 if (!room.Captured || !room.AnyShown || !Shown(room)) continue;
-                var a = ToScreen(new Vector2(room.At.x, room.At.y + room.H));
-                var b = ToScreen(new Vector2(room.At.x + room.W, room.At.y));
+                var a = ToScreen(new Vector2(room.At.x, room.At.y + room.DrawnH));
+                var b = ToScreen(new Vector2(room.At.x + room.DrawnW, room.At.y));
                 var rect = Rect.MinMaxRect(a.x, a.y, b.x, b.y);
                 if (rect.xMax < 0 || rect.yMax < 0 || rect.xMin > Screen.width || rect.yMin > Screen.height) continue;
                 if (NeedsBuild(room)) toBuild.Add((room, Vector2.SqrMagnitude(rect.center - middle)));
@@ -821,7 +851,11 @@ namespace TerraKnight.UI
             }
             visible.RemoveAll(v => v.room.Solid == null);
             LiveOnTop(visible);
-            foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Solid);
+            // The passages drawn between gates apart on the map (WorldMapPassages): over their own rooms' rock, under the others'.
+            PreparePassages(new Vector2(Screen.width / 2f, Screen.height / 2f), pan, zoom, new Rect(0f, 0f, Screen.width, Screen.height));
+            foreach (var (room, rect) in visible) if (InPassage(room)) GUI.DrawTexture(rect, room.Solid);
+            DrawGatePassages(1f);
+            foreach (var (room, rect) in visible) if (!InPassage(room)) GUI.DrawTexture(rect, room.Solid);
             foreach (var (room, rect) in visible) GUI.DrawTexture(rect, room.Open);
             LiveAgain(visible);
             // Time to spare: the rooms of this layer off screen made ahead, so zooming out or dragging over them finds them made.
@@ -1042,7 +1076,8 @@ namespace TerraKnight.UI
             foreach (var room in rooms.Values)
             {
                 if (!Shown(room)) continue;
-                int x = Mathf.FloorToInt(cell.x) - room.At.x, y = Mathf.FloorToInt(cell.y) - room.At.y;
+                var c = InScene(room.Name, room.At, cell);
+                int x = Mathf.FloorToInt(c.x), y = Mathf.FloorToInt(c.y);
                 if (room.Captured && x >= 0 && y >= 0 && x < room.W && y < room.H && room.IsSeen(x, y) && CellOnLayer(room, x, y, ViewDeep)) return true;
             }
             return false;
@@ -1093,7 +1128,8 @@ namespace TerraKnight.UI
             foreach (var room in rooms.Values)
             {
                 if (!room.Captured || !room.AnyShown || !Shown(room)) continue;
-                int x = gx - room.At.x, y = gy - room.At.y;
+                var c = InScene(room.Name, room.At, cell);
+                int x = Mathf.FloorToInt(c.x), y = Mathf.FloorToInt(c.y);
                 if (x < 0 || y < 0 || x >= room.W || y >= room.H || !room.Shows(x, y) || !CellOnLayer(room, x, y, ViewDeep)) continue;
                 foreach (var o in room.Things)
                     if (o.Cells.Contains(new Vector2Int(x, y))) return o.Name;
@@ -1306,7 +1342,7 @@ namespace TerraKnight.UI
                 if (r == null || r.SceneName == null || !layout.TryGetValue(r.SceneName, out var at)) continue;
                 int x = Mathf.FloorToInt(world.x / C) - r.CellOffset.x, y = Mathf.FloorToInt(world.y / C) - r.CellOffset.y;
                 if (x < 0 || y < 0 || x >= r.Grid.Width || y >= r.Grid.Height) continue;
-                return NameAt(new Vector2(at.x + x + 0.5f, at.y + y + 0.5f)) ?? "（空）";
+                return NameAt(OnMap(r.SceneName, at, new Vector2(x + 0.5f, y + 0.5f))) ?? "（空）";
             }
             return "不在地图上";
         }
@@ -1368,7 +1404,7 @@ namespace TerraKnight.UI
             TerraCursor.DevAt = null;
             var live = TerraWorld.Live;
             if (world == null || live == null || !layout.TryGetValue(live.SceneName, out var at)) return;
-            var cell = new Vector2(at.x + world.Value.x / C - live.CellOffset.x, at.y + world.Value.y / C - live.CellOffset.y);
+            var cell = OnMap(live.SceneName, at, new Vector2(world.Value.x / C - live.CellOffset.x, world.Value.y / C - live.CellOffset.y));
             devMouse = ToScreen(cell);
             TerraCursor.DevAt = devMouse;
         }
@@ -1391,7 +1427,7 @@ namespace TerraKnight.UI
         {
             var live = TerraWorld.Live;
             if (live == null || !layout.TryGetValue(live.SceneName, out var at)) return;
-            pan = new Vector2(at.x + world.x / C - live.CellOffset.x, at.y + world.y / C - live.CellOffset.y);
+            pan = OnMap(live.SceneName, at, new Vector2(world.x / C - live.CellOffset.x, world.y / C - live.CellOffset.y));
         }
 
         /// <summary>Dev: write the map save and read it back; what is kept, before and after.</summary>

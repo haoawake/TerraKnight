@@ -75,13 +75,13 @@ namespace TerraKnight.UI
             if (g.Side == 'd' || string.IsNullOrEmpty(g.To) || !layout.TryGetValue(g.Scene, out var at)) return false;
             if (!layout.TryGetValue(g.To, out var there) || g.Partner == null) return true;
             if (GateDeep(g) != (g.Partner != null ? GateDeep(g.Partner) : IsDeep(g.To))) return true;
-            var a = at + g.Fit;
-            var b = there + g.Partner.Fit;
+            var a = OnMap(g.Scene, at, g.Fit);
+            var b = OnMap(g.To, there, g.Partner.Fit);
             return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) > 2;
         }
 
         /// <summary>A gate's spot on the map (global cells, the middle of its cell).</summary>
-        static Vector2 GateCell(Gate g, Vector2Int at) => new Vector2(at.x + g.At.x + 0.5f, at.y + g.At.y + 0.5f);
+        static Vector2 GateCell(Gate g, Vector2Int at) => OnMap(g.Scene, at, new Vector2(g.At.x + 0.5f, g.At.y + 0.5f));
 
         /// <summary>The other end on the map, when there is one.</summary>
         static bool OtherEnd(Gate g, out Vector2 cell, out bool deep)
@@ -95,7 +95,10 @@ namespace TerraKnight.UI
         }
 
         /// <summary>The cell just inside the room by a gate: an arrow shows once the map shows it.</summary>
-        static bool GateShown(Room room, Gate g)
+        static bool GateShown(Room room, Gate g) => GateNear(room, g, false);
+
+        /// <summary>The cells just inside the room by a gate shown on the map (seen: explored, not only charted).</summary>
+        static bool GateNear(Room room, Gate g, bool seen)
         {
             if (GateDeep(g) != ViewDeep) return false;
             int x = Mathf.Clamp(g.At.x + (g.Side == 'r' ? -2 : g.Side == 'l' ? 1 : 0), 0, room.W - 1);
@@ -104,7 +107,7 @@ namespace TerraKnight.UI
                 for (int dx = -2; dx <= 2; dx++)
                 {
                     int cx = x + dx, cy = y + dy;
-                    if (cx >= 0 && cy >= 0 && cx < room.W && cy < room.H && room.Shows(cx, cy)) return true;
+                    if (cx >= 0 && cy >= 0 && cx < room.W && cy < room.H && (seen ? room.IsSeen(cx, cy) : room.Shows(cx, cy))) return true;
                 }
             return false;
         }
@@ -201,7 +204,8 @@ namespace TerraKnight.UI
                 if (!Gates.TryGetValue(room.Name, out var list)) continue;
                 foreach (var g in list)
                 {
-                    if (!NeedsMarker(g) || !GateShown(room, g)) continue;
+                    // A gate joined to its partner by a drawn passage (WorldMapPassages) needs no arrow.
+                    if (!NeedsMarker(g) || !GateShown(room, g) || Joined(g)) continue;
                     var s = cellToScreen(GateCell(g, room.At));
                     if (clip.HasValue && !clip.Value.Contains(s)) continue;
                     var r = ArrowRect(g, s, size);
@@ -323,8 +327,8 @@ namespace TerraKnight.UI
                 string apart = "";
                 if (g.Partner != null && layout.TryGetValue(g.Scene, out var a) && layout.TryGetValue(g.To, out var b))
                 {
-                    var d = b + g.Partner.Fit - (a + g.Fit);
-                    apart = $" 相差 {d.x},{d.y}";
+                    var d = OnMap(g.To, b, g.Partner.Fit) - OnMap(g.Scene, a, g.Fit);
+                    apart = $" 相差 {d.x:F0},{d.y:F0}";
                 }
                 sb.Append($" {g.Name}→{g.To}{(mark ? "[标记]" : "[接上]")}{apart}");
             }

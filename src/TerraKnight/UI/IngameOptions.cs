@@ -203,6 +203,14 @@ namespace TerraKnight.UI
                 World.HoleShapes.Set(!World.HoleShapes.Hollow);
             CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("融合：平滑洞口、墨线描边、洞内阴影，背后是调暗的泰拉瑞亚墙；泰拉瑞亚：方格洞口和原样的墙"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
             y += noteRow;
+            // Which map M opens (FullMap.Hollow): Hollow Knight's own, or Terraria's drawn from the world.
+            if (WorldMap.Enabled)
+            {
+                if (Toggle(new Rect(lx, y, lw, 44f * ui), FullMap.Hollow ? Lang.T("全屏地图：空洞骑士") : Lang.T("全屏地图：泰拉瑞亚"), ui))
+                    FullMap.SetHollow(!FullMap.Hollow);
+                CreativeMenu.Shadowed(new Rect(lx, y + 42f * ui, lw, 46f * ui), Lang.T("空洞骑士：原版地图；泰拉瑞亚：按实际地形一格一格画。两种都标出晶塔、居民、幼虫和长椅"), CreativeMenu.text, new Color(0.85f, 0.85f, 0.95f, 0.85f));
+                y += noteRow;
+            }
             if (Net.NetSession.Active || DevShowNet)
             {
                 CreativeMenu.Shadowed(new Rect(lx, y, lw, 34f * ui), TT("LegacyMenu.13", "多人模式"), section, new Color(0.75f, 0.85f, 1f));

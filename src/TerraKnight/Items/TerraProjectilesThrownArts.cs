@@ -122,6 +122,9 @@ namespace TerraKnight.Items
             [ProjKind.Bananarang] = new[] { Fly.Arc, Fly.Corkscrew, Fly.Arc, Fly.Loop },
         };
 
+        /// <summary>A boomerang's throws in turn for the wiki (WeaponWikiLines), by its projectile; null for none.</summary>
+        internal static string[] WikiThrows(ProjKind k) => throwCycles.TryGetValue(k, out var s) ? System.Array.ConvertAll(s, FlyName) : null;
+
         internal static string FlyName(Fly f) => f switch
         {
             Fly.Straight => "疾投", Fly.Arc => "弧旋", Fly.Loop => "回环", Fly.Lob => "高抛", Fly.Corkscrew => "螺旋", Fly.Zigzag => "折射",

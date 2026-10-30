@@ -70,12 +70,24 @@ namespace TerraKnight
             }
             File.WriteAllText(Path.Combine(folder, "manifest.json"), JsonConvert.SerializeObject(manifest, Formatting.Indented));
             var itemData = new Dictionary<string, object>();
+            // The remade weapons' left and right buttons (WeaponWikiLines), read with them on whatever this save's are.
+            var weaponsBefore = World.WeaponMode.Current;
+            BladeArts.Set(true);
+            int newWeaponLines = 0;
             foreach (var def in ItemDb.All)
-                if (def.Type != ItemType.None) itemData[def.Type.ToString()] = new { def.Stage, Source = def.Source.ToString(), def.MaxStack, def.Texture,
+                if (def.Type != ItemType.None)
+                {
+                    var newWeapon = WeaponWikiLines.Lines(def);
+                    if (newWeapon.Count > 0) newWeaponLines++;
+                    itemData[def.Type.ToString()] = new { def.Stage, Source = def.Source.ToString(), def.MaxStack, def.Texture,
                     def.Name, def.Tooltip, def.Value, def.Price, def.Damage, def.Defense, def.Mana, def.PickPower, def.HealLife, def.HealMana,
                     Class = def.Class.ToString(), Accessory = def.Accessory.ToString(),
                     Places = def.Places.ToString(), PlacesStation = def.PlacesStation.ToString(), def.PlacesWall,
-                    def.UseTime, def.UseAnimation, def.Channel, def.NoUseMana, def.PayManaAfterCheck, def.ManaEveryOtherShot, def.ShotsPerUse };
+                    def.UseTime, def.UseAnimation, def.Channel, def.NoUseMana, def.PayManaAfterCheck, def.ManaEveryOtherShot, def.ShotsPerUse,
+                    NewWeapon = newWeapon };
+                }
+            BladeArts.Set(weaponsBefore == World.WeaponKind.New);
+            Plugin.Log.LogInfo($"[AutoTest] Wiki 新版武器说明 {newWeaponLines} 件");
             int magicCount = 0, manaErrors = 0;
             // Terraria's magic weapons (the mod's own, drawn from tk_ sheets, have no vanilla cost to keep).
             foreach (var def in ItemDb.All)

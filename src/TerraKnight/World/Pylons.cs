@@ -412,24 +412,66 @@ namespace TerraKnight.World
 
         /// <summary>Dev: when the last teleport was clicked (realtime), and how long until the player could move.</summary>
         public static float DevTravelStart, DevTravelTook;
+        /// <summary>Dev: from the click to the player put by the pylon.</summary>
+        public static float DevPlacedTook;
 
         static float arrivedAt = -10f;
 
         /// <summary>
-        /// HeroController.Respawn (standing) plays "Wake Up Ground" and holds control for its length:
-        /// a pylon's arrival steps out of a portal instead, so the clip takes no time then.
+        /// HeroController.Respawn (standing) plays "Wake Up Ground" and holds control for its length, and a way in by a door
+        /// "Exit Door To Idle" (EnterScene): a pylon's arrival steps out of a portal instead, so the clip takes no time then,
+        /// from the click on (a bench pylon's arrival is placed only once Respawn has finished: the user's 10-30 "使用晶塔之后
+        /// 要等很久", 1.6 s of the clip with the room already shown).
         /// </summary>
         [HarmonyLib.HarmonyPatch(typeof(HeroAnimationController), nameof(HeroAnimationController.GetClipDuration))]
         static class SkipWakeUp
         {
             static void Postfix(string clipName, ref float __result)
             {
-                if (clipName == "Wake Up Ground" && Time.unscaledTime - arrivedAt < 1f) __result = 0f;
+                if ((clipName == "Wake Up Ground" || clipName == "Exit Door To Idle") && (arrivingAt != null || Time.unscaledTime - arrivedAt < 1f)) __result = 0f;
             }
         }
 
+        /// <summary>
+        /// A pylon's arrival is brought in standing (HeroController.Respawn's other road), whatever set the respawn type in
+        /// between: a room's RespawnTrigger the player touches as it loads (RestingGrounds_12's, by its bench) made it the
+        /// bench's again, the bench sat the hidden player down and the portal waited out its 8 s. The bench's type comes back
+        /// once the portal hands him back (<see cref="Settled"/>).
+        /// </summary>
+        [HarmonyLib.HarmonyPatch(typeof(HeroController), nameof(HeroController.Respawn))]
+        static class StandingArrival
+        {
+            static void Prefix()
+            {
+                var pd = PlayerData.instance;
+                var gm = GameManager.UnsafeInstance;
+                if (pd == null || gm == null || arrivingAt == null || arrivingAt.Scene != gm.sceneName || pd.respawnType == 0) return;
+                DevStandingKept++;
+                Plugin.Log.LogInfo($"[晶塔] {gm.sceneName} 到达前复活点被改成 {pd.respawnMarkerName} 类型 {pd.respawnType}：仍按站着进场");
+                pd.respawnType = 0;
+            }
+        }
+
+        public static int DevStandingKept;
+
         static Pylon arrivingAt;
         public static int DevArrivals;
+
+        /// <summary>
+        /// The bench arrived at becomes the resting respawn (respawnType 1) once the portal hands the player back
+        /// (<see cref="Settled"/>), not on arrival: placed before HeroController.Respawn had read the type (the world's own
+        /// SendHeroInPosition can come first, RestingGrounds_12), it took the bench's road and the bench sat the hidden
+        /// player down, the portal waiting out its 8 s (the user's 10-30 "使用晶塔之后要等很久").
+        /// </summary>
+        static bool settleBench;
+
+        internal static void Settled()
+        {
+            if (!settleBench) return;
+            settleBench = false;
+            var pd = PlayerData.instance;
+            if (pd != null) pd.respawnType = 1;
+        }
 
         /// <summary>A teleport on its way: the player isn't drawn until he steps out of the portal.</summary>
         public static bool Arriving => arrivingAt != null;
@@ -445,11 +487,13 @@ namespace TerraKnight.World
             var p = arrivingAt;
             var gm = GameManager.instance;
             if (p == null || hero == null || gm == null || gm.sceneName != p.Scene) return false;
-            // SendHeroInPosition precedes the native bottom/side/door movement. Claim the
-            // portal now, but place the player only once FinishedEnteringScene has ended it.
-            if (!afterNativeEntry) return true;
+            // SendHeroInPosition precedes the native bottom/side/top movement, which would carry the player off the pylon
+            // again: a portal arrival enters as by a door (PylonDoorEntry: nothing moves him after this), placed at once.
+            // One entering any other way still waits, claimed, for FinishedEnteringScene to end it.
+            if (!afterNativeEntry && hero.cState.transitioning && hero.gatePosition != GlobalEnums.GatePosition.door) return true;
             arrivingAt = null;
             arrivedAt = Time.unscaledTime;
+            DevPlacedTook = Time.realtimeSinceStartup - DevTravelStart;
             var pd = PlayerData.instance;
             if (pd != null) pd.atBench = false;
             // The bench is the respawn point now, as resting on it makes it; one not there to rest on
@@ -457,7 +501,7 @@ namespace TerraKnight.World
             string bench = p.Placed ? p.ArriveBench : p.Bench;
             // In by a gate (a placed pylon with no bench by it): the respawn point never changed.
             bool byGate = p.Placed && string.IsNullOrEmpty(bench);
-            if (pd != null && !byGate && BenchUsable(bench)) pd.respawnType = 1;
+            if (pd != null && !byGate && BenchUsable(bench)) settleBench = true;
             else if (pd != null && !byGate)
             {
                 pd.respawnScene = prevRespawnScene;

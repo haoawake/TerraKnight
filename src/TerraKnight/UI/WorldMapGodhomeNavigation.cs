@@ -21,7 +21,7 @@ namespace TerraKnight.UI
             var room = GodhomeMapTarget();
             if (room == null) return false;
             layerChoice = MapLayer.Deep;
-            pan = new Vector2(room.At.x + room.W / 2f, room.At.y + room.H / 2f);
+            pan = new Vector2(room.At.x + room.DrawnW / 2f, room.At.y + room.DrawnH / 2f);
             zoom = Mathf.Clamp(Mathf.Min(Screen.width / (room.W + 80f), Screen.height / (room.H + 80f)), .3f, 4f);
             TerraMod.Instance?.PlaySound("Menu_Tick", .7f);
             return true;

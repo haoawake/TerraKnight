@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "5.2.1";
+        public const string Version = "5.3.0";
 
         internal static ManualLogSource Log;
 
@@ -108,6 +108,8 @@ namespace TerraKnight
             var terrariaMap = Config.Bind("Gameplay", "TerrariaMap", true,
                 "泰拉瑞亚式全屏地图（M）：照实际地形一格一格画，走到哪里揭开到哪里，长椅、路灯、门等画成方块，鼠标指着显示名字。关闭时使用空洞骑士地图块拼成的地图。\nTerraria-style full map (M): drawn tile by tile from the real terrain and revealed where the player goes; benches, lamps, doors and the like are drawn as blocks, and pointing at one shows its name. Off: the map assembled from Hollow Knight's map pieces.");
             UI.WorldMap.Enabled = terrariaMap.Value;
+            UI.FullMap.HollowSetting = Config.Bind("Gameplay", "HollowKnightMap", true,
+                "全屏地图（M）用空洞骑士原版地图：到过的房间画成原版的样子，买了区域地图的显示柯尼法的草图，伊塞尔达的图钉照原版显示；晶塔（点击传送）、居民、幼虫、长椅、格林火焰、指南针路线、阴影和队友照常标出。关闭时用泰拉瑞亚式地图。角落的小地图不变。\nThe full map (M) is Hollow Knight's own: rooms visited drawn as the game draws them, an area whose map was bought as Cornifer sketched it, Iselda's pins as in the game; pylons (click to teleport), townsfolk, grubs, benches, Grimm flames, the compass's way, the shade and teammates marked as before. Off: the Terraria-style map. The corner minimap stays as it is.");
             UI.WorldMap.StyleSetting = Config.Bind("Gameplay", "MapStyle", 1,
                 "泰拉瑞亚地图的显示方式（Tab 切换，会记住）：0 = 不显示，1 = 右上角小地图，2 = 半透明覆盖在画面上。\nHow the Terraria map shows (Tab cycles it and is remembered): 0 = hidden, 1 = minimap at the top right, 2 = translucent overlay over the screen.");
             Player.TerraCamera.Bind(Config);

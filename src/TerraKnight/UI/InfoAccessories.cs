@@ -250,10 +250,12 @@ namespace TerraKnight.UI
         {
             tile = default;
             var region = TerrainSystem.Current?.Region;
-            if (region == null || !WorldMap.TryLayout(region.SceneName, out var origin) || !WorldMap.TryLayout("Town", out var town)) return false;
+            if (region == null) return false;
             var cell = CellGrid.WorldToCell(hero.GetComponent<BoxCollider2D>().bounds.min);
             var local = cell - region.CellRect.min;
-            tile = new Vector2(origin.x + local.x - (town.x + 263), origin.y + local.y - (town.y + 20));
+            // On the map, each room as it is stretched there (WorldMapStretch).
+            if (!WorldMap.TryMapCell(region.SceneName, local, out var here) || !WorldMap.TryMapCell("Town", new Vector2(263f, 20f), out var middle)) return false;
+            tile = here - middle;
             return true;
         }
 

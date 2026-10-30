@@ -146,7 +146,7 @@ namespace TerraKnight.UI
             return grubPin != null && benchPin != null;
         }
 
-        static void DrawSprite(Sprite s, Rect rect)
+        internal static void DrawSprite(Sprite s, Rect rect)
         {
             var tex = s.texture;
             var r = s.textureRect;

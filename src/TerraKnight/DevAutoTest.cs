@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.IO;
 using BepInEx;
 using GlobalEnums;
@@ -31,7 +31,7 @@ namespace TerraKnight
             this.suite = suite ?? "all";
             // Storage/furniture fixtures must survive the travel before their coroutine starts.
             // Native invincibility alone does not guard the mod's Terraria life accounting.
-            if (this.suite == "homeeverywhere" || this.suite == "craftchest" || this.suite == "furniture" || this.suite == "skeletonhousing" || this.suite == "skates")
+            if (this.suite.StartsWith("wardrobe") || this.suite == "homeeverywhere" || this.suite == "craftchest" || this.suite == "furniture" || this.suite == "skeletonhousing" || this.suite == "skates")
                 Player.TerraStats.DevImmortal = true;
             // A suite ending in "_zh" runs with the game in Simplified Chinese (the trailer's Chinese cut).
             if (this.suite.EndsWith("_zh"))
@@ -1656,6 +1656,7 @@ namespace TerraKnight
                 yield return RecipeGroupsTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "wardrobe") { yield return WardrobeTest(); Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break; }
             if (suite == "vanity")
             {
                 yield return VanityTest();
@@ -1958,9 +1959,59 @@ namespace TerraKnight
                 yield return BossSpinTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "dungstuck")
+            {
+                yield return DungStuckTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "flukelag")
+            {
+                yield return FlukeLagTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "pylonspeed")
+            {
+                yield return PylonSpeedTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "shieldbreak")
+            {
+                yield return ShieldBreakTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "homeedge")
+            {
+                yield return HomeEdgeTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "guideadvice")
             {
                 yield return GuideAdviceTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "stretchmap")
+            {
+                yield return StretchMapTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "mappassages")
+            {
+                yield return MapPassagesTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "pylonbench")
+            {
+                yield return PylonBenchTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "hollowcells")
+            {
+                yield return HollowCellsTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "hollowmap")
+            {
+                yield return HollowMapTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
             if (suite == "vkwall")
@@ -2411,6 +2462,7 @@ namespace TerraKnight
                 else if (suite == "acidhit") yield return AcidHitTest();
                 else if (suite == "buyback") yield return BuyBackTest();
                 else if (suite == "abilityrecovery") yield return AbilityRecoveryTest();
+                else if (suite == "wardrobe") yield return WardrobeTest();
                 else if (suite == "agletpool") yield return AgletPoolTest();
                 else if (suite == "godhomebalance") yield return GodhomeBalanceTest();
                 else if (suite == "bossdefense") yield return BossDefenseTest();

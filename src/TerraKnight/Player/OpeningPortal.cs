@@ -227,7 +227,8 @@ namespace TerraKnight.Player
                         time = 0f;
                         Plugin.Log.LogInfo($"[首领召唤物] 进场后从传送门里走出来：{feet:F2}");
                     }
-                    // The portal opens as the scene fades in (a pylon's at once).
+                    // The portal opens as the scene fades in (a pylon's at once, but not while a bench pylon's view is still black).
+                    if (fromPylon && time < 2f && StillBlack()) return;
                     if (time >= (fromPylon ? 0f : 0.35f))
                     {
                         Next(Phase.Opening);
@@ -262,6 +263,7 @@ namespace TerraKnight.Player
                         {
                             hero.RegainControl();
                             tookControl = false;
+                            World.Pylons.Settled();
                             World.Pylons.DevTravelTook = Time.realtimeSinceStartup - World.Pylons.DevTravelStart;
                             Plugin.Log.LogInfo($"[晶塔] 点下到能动 {World.Pylons.DevTravelTook:F2}s");
                         }
@@ -280,6 +282,14 @@ namespace TerraKnight.Player
             Draw(dt);
         }
 
+        /// <summary>The view still black from the respawn's fade (a bench pylon's way): fading out or waiting for the respawn.</summary>
+        static bool StillBlack()
+        {
+            var fade = GameCameras.instance != null ? GameCameras.instance.cameraFadeFSM : null;
+            string state = fade != null ? fade.ActiveStateName : null;
+            return state == "RespawnFadingOut" || state == "WaitForRespawn";
+        }
+
         static void Next(Phase p)
         {
             phase = p;
@@ -294,6 +304,8 @@ namespace TerraKnight.Player
                 hero.AcceptInput();
             }
             if (phase != Phase.None) DevRuns++;
+            // A pylon's bench made the resting respawn however the portal ended.
+            World.Pylons.Settled();
             phase = Phase.None;
             tookControl = false;
             fromPylon = false;

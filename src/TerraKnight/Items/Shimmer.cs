@@ -52,7 +52,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static bool CanShimmer(ItemStack s)
         {
-            if (s.IsEmpty) return false;
+            if (s.IsEmpty || s.WardrobeCopy) return false;
             int stage = Shop.UnlockedStage();
             if (TransformOf(s.Type, out bool late) != ItemType.None) return !late || stage >= MoonLordStage;
             var r = DecraftRecipe(s.Type, stage);

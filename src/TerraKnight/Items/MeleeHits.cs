@@ -698,6 +698,12 @@ namespace TerraKnight.Items
                 // not spend the fractional damage earned by earlier accepted hits.
                 info.Carry = carryBefore;
                 if (!quietBlock) blockFxAt[hm.GetInstanceID()] = Time.time;
+                // A shield's blocked damage adds up: its bearer's whole life of it breaks it for a while (ShieldBreak).
+                if (blocked && ShieldBreak.Take(hm, info, damage))
+                {
+                    CombatText.Show(col.bounds.center + Vector3.up * col.bounds.extents.y, Lang.T("破盾！"), CombatText.Notice, true);
+                    mod.PlaySound("Shatter");
+                }
                 return 0;
             }
             // Terraria's knockback: launched back and up (bosses and elites have no push speed).

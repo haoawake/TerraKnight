@@ -49,16 +49,18 @@ namespace TerraKnight.Items
             public bool Net;
             /// <summary>Dirtmouth's Target Dummy (World.TargetDummy): no defense, no knockback.</summary>
             public bool Dummy;
+            /// <summary>A Spiny Husk's corpse (<see cref="SpinyCorpse"/>): its own health as its life, no defense.</summary>
+            public bool Corpse;
             public int NetLife, NetLifeMax, NetDefense;
             /// <summary>
             /// Terraria life per point of the enemy's own health: a boss's, its stand-in's life over its
             /// health; any other, the level's (its toughness, <see cref="World.Areas.LevelHealth"/>, included).
             /// </summary>
-            public float Scale => (Ref != null
+            public float Scale => Corpse ? 1f : (Ref != null
                 ? BossStats.LifeOf(Ref, Scene, World.GameDifficulty.Current, GodhomeTier) * Tune.Life * BossPhases.Factor(this) / (float)Mathf.Max(1, MaxHp)
                 : Boss ? World.Areas.HealthScale * World.Areas.LevelHealth(Level, true) : World.Areas.LifeScale(Level)) * Players;
             /// <summary>Terraria defense: a boss's stand-in's (<see cref="BossDefense"/>), else the level's.</summary>
-            public int Defense => Dummy ? DevDummyDefense : Net ? NetDefense : Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
+            public int Defense => Dummy ? DevDummyDefense : Corpse ? 0 : Net ? NetDefense : Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
         }
@@ -145,6 +147,7 @@ namespace TerraKnight.Items
                 }
                 info.Record = record;
                 info.Dummy = World.TargetDummy.Is(hm);
+                info.Corpse = hm.GetComponent<CorpseSpineBurst>() != null;
                 string kind = EnemyDrops.KindOf(record);
                 info.Boss = HasBossScale(hm) || IsBossKind(record, info.MaxHp) || RelicBosses.Contains(record ?? "");
                 info.Elite = !info.Boss && EliteKind(record, info.MaxHp);

@@ -316,7 +316,7 @@ namespace TerraKnight.Items
             for (int k = 0; k <= superFastStack && !slot.IsEmpty; k++)
             {
                 if (!(inv.Mouse.IsEmpty || (CanStack(inv.Mouse, slot) && inv.Mouse.Count < inv.Mouse.Def.MaxStack))) break;
-                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge, WeaponVersion = slot.WeaponVersion };
+                if (inv.Mouse.IsEmpty) inv.Mouse = new ItemStack { Type = slot.Type, Prefix = slot.Prefix, Forge = slot.Forge, WeaponVersion = slot.WeaponVersion, WardrobeCopy = slot.WardrobeCopy };
                 inv.Mouse.Count++;
                 slot.Count--;
                 if (slot.Count <= 0) slot = default;

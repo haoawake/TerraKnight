@@ -31,7 +31,7 @@ namespace TerraKnight.UI
         static bool CellOnLayer(Room room, int x, int y, bool deep) =>
             IsDeepAt(room.Name, new Vector2((x + .5f) * C, (y + .5f) * C)) == deep;
 
-        static bool Shown(string scene, Vector2 local) => IsDeepAt(scene, local) == ViewDeep;
+        static bool Shown(string scene, Vector2 local) => elsewhere != null || IsDeepAt(scene, local) == ViewDeep;
 
         public static bool DevDeepAt(string scene, Vector2 local) => IsDeepAt(scene, local);
         /// <summary>

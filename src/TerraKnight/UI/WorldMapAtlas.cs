@@ -305,7 +305,7 @@ namespace TerraKnight.UI
         /// <summary>Dev: centre the open map on a scene's middle.</summary>
         public static void DevCentreScene(string scene)
         {
-            if (rooms.TryGetValue(scene, out var room)) pan = new Vector2(room.At.x + room.W / 2f, room.At.y + room.H / 2f);
+            if (rooms.TryGetValue(scene, out var room)) pan = new Vector2(room.At.x + room.DrawnW / 2f, room.At.y + room.DrawnH / 2f);
             else if (layout.TryGetValue(scene, out var at)) pan = at;
         }
     }

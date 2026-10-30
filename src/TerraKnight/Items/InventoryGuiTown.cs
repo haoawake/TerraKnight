@@ -170,6 +170,14 @@ namespace TerraKnight.Items
         public static void DevGuideSlot() => ActGuideSlot(true);
         /// <summary>Dev: a click on the Guide's advice scroll by the crafting column.</summary>
         public static void DevGuideBookToggle() => Act(new Hit { Kind = Kind.GuideBookToggle }, true, false, false, false);
+        /// <summary>Dev: the stations the crafting column's recipes are made at now (each once).</summary>
+        public static string DevColumnStations()
+        {
+            RefreshRecipes();
+            var names = new List<string>();
+            foreach (var r in recipes) if (!string.IsNullOrEmpty(r.Station) && !names.Contains(r.Station)) names.Add(r.Station);
+            return string.Join("、", names);
+        }
         /// <summary>Dev: the crafting column's title as drawn.</summary>
         public static string DevCraftTitle => Lang.T(GuideAdvice.On ? "合成表" : "制作");
         public static string DevRecipeNames(int max)

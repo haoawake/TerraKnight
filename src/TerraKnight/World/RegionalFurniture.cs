@@ -80,7 +80,7 @@ namespace TerraKnight.World
             if(p.Base==StationKind.Bed)return "右键设置或取消重生点";
             if(p.Base==StationKind.Chair||p.Base==StationKind.Sofa||p.Base==StationKind.Toilet)return "可放置\n可在房屋菜单中将居民安置在座位上";
             if(p.Base==StationKind.Door)return "右键开关；走近时自动开门";
-            if(p.Base==StationKind.Dresser)return "右键打开 40 格储物空间\n空梳妆台可用镐挖回";
+            if(p.Base==StationKind.Dresser)return "右键打开全局衣柜\n时装自动收纳，重复时装自动出售\n已收纳时装可永久免费取用（副本无价值）\nShift＋右键打开原有储物抽屉\n空梳妆台可用镐挖回";
             if(p.Base==StationKind.Sink)return "在附近合成时可代替水";
             if(p.Base==StationKind.Clock)return "右键查看当前时间";
             if(p.Base==StationKind.WorkBench||p.Base==StationKind.Bookcase)return "可放置\n在附近可作为合成站";

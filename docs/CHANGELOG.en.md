@@ -1,5 +1,23 @@
 # Changelog
 
+## 5.3.0 — Hollow Knight's map, the Wardrobe and faster pylons
+
+### New
+
+- **Hollow Knight's map**: M opens Hollow Knight's own map, with the pylons, townsfolk, grubs, benches, Grimm flames, the Wayward Compass's way and teammates marked on it as before; the minimap and the overlay map use it too, and in creative mode the whole map is open. Terraria Settings' "Full map" switches back to Terraria's map.
+- **Wardrobe**: right-click any area's dresser to open the Wardrobe, holding every vanity piece the save has had, paged by set and area; left click takes a piece out and right click puts it on. Pieces taken out are copies with no value, free to mix. Duplicates are sold for their price as they come in. Shift + right click opens the dresser's old drawer.
+- A shield that has blocked its bearer's whole life in damage breaks for 6 seconds, and hits land from every side meanwhile.
+- The Guide's Advice switches the crafting column to the recipe book from the Piggy Bank too.
+
+### Improvements
+
+- On Terraria's map every room stretches a little to fit its real ground, so most neighbouring gates meet; a passage is drawn between the gates that still lie apart.
+- A pylon's teleport takes about 1.3 seconds from the click to moving again, and the view opens beside the pylon.
+
+### Fixes
+
+- A Spiny Husk bursts its spines once after dying, as in Hollow Knight, and they hurt only as they burst; after the burst its corpse can be broken, without counting as a kill.
+
 ## 5.2.1 — Guide's Advice, movable windows and minion balance
 
 ### New

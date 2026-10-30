@@ -356,6 +356,8 @@ def build(assets_only=False):
         d.update(name=rd['Name'] if rd['Name'] != t else d['name'], stage=rd['Stage'], source=rd['Source'], texture=rd['Texture'], value=rd['Value'])
         if rd.get('Tooltip'):
             d['tip'] = rd['Tooltip']
+        # The remade weapons' left and right buttons (WeaponWikiLines in the export), for the wiki alone.
+        d['newweapon'] = rd.get('NewWeapon') or []
         if t.startswith('Relic'):
             d['kind'] = '大师圣物' if relics_enabled else '未启用的大师圣物'
             if not relics_enabled:
@@ -1162,6 +1164,15 @@ def build(assets_only=False):
             add('**作用**：'+tip); add()
         if d['stats']:
             add('**基础属性**：'+'；'.join(f'{k} {v}' for k,v in d['stats'].items())+'。'); add()
+        if d.get('newweapon'):
+            # Not `lines`: that is the document add() writes to.
+            parts = []
+            for part in d['newweapon']:
+                part = esc(part)
+                for char in '*_`[]':
+                    part = part.replace(char, f'&#{ord(char)};')
+                parts.append(part)
+            add('**新版武器效果**（创建世界时选「新版武器」）：'+'；'.join(parts)+'。'); add()
         if d['set'] and d['set']!='None':
             add('**盔甲套装**：`'+d['set']+'`；套装判定 `'+d['setbonus']+'`。'+esc(bonus_texts.get(d['setbonus'],''))); add()
         sources = []

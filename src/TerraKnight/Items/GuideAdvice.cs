@@ -13,7 +13,7 @@ namespace TerraKnight.Items
     }
 
     /// <summary>
-    /// The Guide's advice carried (in the bag or the Hallownest bag): the inventory's crafting column switches to his recipe
+    /// The Guide's advice carried (in the bag, Hallownest bag or Piggy Bank): the inventory's crafting column switches to his recipe
     /// list (Town.TownNpcs.GuideCraftOpen: his slot over the column, every recipe the item put in it goes into) without
     /// talking to him. Switched on the scroll by the column; the item gone, the column is the crafting one again.
     /// </summary>
@@ -25,7 +25,7 @@ namespace TerraKnight.Items
         static int seenFrame = -1;
         static bool carried;
 
-        /// <summary>The item in the bag or the Hallownest bag (looked for once a frame).</summary>
+        /// <summary>The item in the bag, Hallownest bag or Piggy Bank, even while the bank is closed (once a frame).</summary>
         public static bool Carried
         {
             get
@@ -35,7 +35,8 @@ namespace TerraKnight.Items
                 {
                     seenFrame = frame;
                     var inv = TerraMod.Instance?.Inventory;
-                    carried = inv != null && Recipes.Count(inv, ItemType.GuideAdvice) > 0;
+                    carried = inv != null && (Recipes.Count(inv, ItemType.GuideAdvice) > 0
+                        || System.Array.Exists(inv.Bank, s => !s.IsEmpty && s.Type == ItemType.GuideAdvice));
                 }
                 return carried;
             }

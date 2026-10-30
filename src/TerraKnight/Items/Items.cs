@@ -2373,7 +2373,16 @@ namespace TerraKnight.Items
         public byte Forge;
         public bool IsEmpty => Type == ItemType.None || Count <= 0;
         public byte WeaponVersion;
-        public ItemDef Def => IsEmpty ? ItemDb.Get(ItemType.None) : WeaponRefitting.Apply(Forging.Apply(Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix), Forge), WeaponVersion);
+        public bool WardrobeCopy;
+        public ItemDef Def
+        {
+            get
+            {
+                var d = IsEmpty ? ItemDb.Get(ItemType.None) : WeaponRefitting.Apply(Forging.Apply(Prefix == 0 ? ItemDb.Get(Type) : Prefixes.Apply(ItemDb.Get(Type), Prefix), Forge), WeaponVersion);
+                if (!WardrobeCopy || d == null) return d;
+                return Wardrobe.CopyDefinition(d);
+            }
+        }
 
         public static ItemStack Of(ItemType type, int count = 1) => new ItemStack { Type = type, Count = count };
     }
@@ -2614,6 +2623,7 @@ namespace TerraKnight.Items
 
         public void Clear()
         {
+            WardrobeItems.Clear();
             CollectedItems.Clear();
             HallownestObtained.Clear();
             HallownestTradeOffsets.Clear();
@@ -2647,6 +2657,7 @@ namespace TerraKnight.Items
         /// </summary>
         public bool Add(ItemType type, int count = 1)
         {
+            if (Wardrobe.Collect(this, ItemStack.Of(type, count))) return true;
             if (Room(type) < count) return false;
             return AddSome(type, count) == 0;
         }
@@ -2654,6 +2665,7 @@ namespace TerraKnight.Items
         /// <summary>As much as fits, the same way; returns how many were left over.</summary>
         public int AddSome(ItemType type, int count)
         {
+            if (Wardrobe.Collect(this, ItemStack.Of(type, count))) return 0;
             if (count > 0 && Room(type) > 0) RecordCollection(type);
             if (count > 0 && Room(type) > 0) HallownestRecovery.Record(this, type);
             var def = ItemDb.Get(type);
@@ -2680,7 +2692,8 @@ namespace TerraKnight.Items
         public int Pickup(ItemStack s, bool favorite = false)
         {
             if (s.IsEmpty) return 0;
-            if (s.Prefix == 0 && s.Forge == 0 && s.WeaponVersion == 0) return Pickup(s.Type, s.Count, favorite);
+            if (Wardrobe.Collect(this, s)) return 0;
+            if (!s.WardrobeCopy && s.Prefix == 0 && s.Forge == 0 && s.WeaponVersion == 0) return Pickup(s.Type, s.Count, favorite);
             s.Favorite = favorite;
             for (int i = 0; i < Size; i++)
                 if (Slots[i].IsEmpty)
@@ -2702,6 +2715,7 @@ namespace TerraKnight.Items
         /// </summary>
         public int Pickup(ItemType type, int count, bool favorite = false)
         {
+            if (Wardrobe.Collect(this, ItemStack.Of(type, count))) return 0;
             if (count > 0 && Room(type) > 0) RecordCollection(type);
             if (count > 0 && Room(type) > 0) HallownestRecovery.Record(this, type);
             var def = ItemDb.Get(type);
@@ -2808,6 +2822,7 @@ namespace TerraKnight.Items
         /// <summary>Room for this many more of an item: the bag, and the ammo slots as far as they take it.</summary>
         public int Room(ItemType type)
         {
+            if (Wardrobe.Clothing(type)) return int.MaxValue;
             var def = ItemDb.Get(type);
             int room = 0;
             for (int i = 0; i < Total; i++)
@@ -2921,6 +2936,13 @@ namespace TerraKnight.Items
         public void ReturnMouseItem()
         {
             if (Mouse.IsEmpty) return;
+            if (Mouse.WardrobeCopy)
+            {
+                int left = Pickup(Mouse, Mouse.Favorite);
+                Mouse.Count = left;
+                if (left == 0) Mouse = default;
+                return;
+            }
             if (Add(Mouse.Type, Mouse.Count)) Mouse = default;
         }
     }

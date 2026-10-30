@@ -73,6 +73,9 @@ namespace TerraKnight.Items
         /// <summary>Dev: the last thrown piece drawn (its picture, size, place).</summary>
         public static string DevCloseSprite = "";
 
+        /// <summary>A shortsword's round of techniques for the wiki (WeaponWikiLines), or null.</summary>
+        internal static string[] WikiStabs(ItemType t) => stabCombos.TryGetValue(t, out var s) ? s : null;
+
         /// <summary>The basic shortswords' rounds of techniques, by metal (the next use within half a second goes on to the next).</summary>
         static readonly Dictionary<ItemType, string[]> stabCombos = new Dictionary<ItemType, string[]>
         {

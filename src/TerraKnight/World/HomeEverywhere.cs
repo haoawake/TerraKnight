@@ -149,6 +149,12 @@ namespace TerraKnight.World
         }
         public static List<string> SelectedHomeStations()
         { var names=new List<string>();HomeStations(SelectedHome,names);return names; }
+        /// <summary>Dev: every crafting station's footprint (cells across and up) and the recipe names it counts as.</summary>
+        internal static IEnumerable<(StationKind Kind,int W,int H,string[] Counts)> DevCraftingSpecs()
+        {
+            foreach(var kv in specs)
+                if(kv.Key!=StationKind.HomeEverywhere&&kv.Value.Counts!=null&&kv.Value.Counts.Length>0)yield return(kv.Key,kv.Value.W,kv.Value.H,kv.Value.Counts);
+        }
     }
 
     internal sealed partial class Chests

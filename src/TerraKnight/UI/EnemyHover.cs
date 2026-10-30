@@ -260,10 +260,11 @@ namespace TerraKnight.UI
             ("White Palace Fly", "PalaceFly"), ("Big Centipede", "BigCentipede"), ("Ordeal Zoteling", "ZotelingHopper"), ("Zote Balloon", "ZotelingBalloon"), ("Zoteling", "ZotelingBuzzer"),
             ("Nightmare Grimm Boss", "NightmareGrimm"), ("Grimm Boss", "Grimm"), ("Corpse Flukeman", null), ("Flukeman Top", null), ("Flukeman Bot", null),
             ("fluke_baby", null), ("Hollow Shade", null),
+            // A Spiny Husk's corpse, struck apart after its burst (Items.SpinyCorpse): the husk was counted when it fell.
+            ("Corpse Garden Zombie", null),
             // Their deaths carry the placeholder record (Dummy) or none: the Soul Tyrant's two phases (the dream's, Godhome's;
-            // the book keeps it as MageLord@5), the Abyss's Siblings, the Spiny Husks risen from the corpses, Godhome's Crystal
-            // and Enraged Guardians, the Absolute Radiance.
-            ("Dream Mage Lord", "MageLord"), ("Shade Sibling", "Sibling"), ("Corpse Garden Zombie", "GardenZombie"),
+            // the book keeps it as MageLord@5), the Abyss's Siblings, Godhome's Crystal and Enraged Guardians, the Absolute Radiance.
+            ("Dream Mage Lord", "MageLord"), ("Shade Sibling", "Sibling"),
             ("Mega Zombie Beam Miner", "MegaBeamMiner"), ("Zombie Beam Miner Rematch", "MegaBeamMiner"), ("Absolute Radiance", "FinalBoss"),
             // Godhome's Winged Nosk: its name starts with the Hornet's record, but it is Nosk (its relic is too).
             ("Hornet Nosk", "MimicSpider"),

@@ -204,7 +204,7 @@ namespace TerraKnight.Items
         /// </summary>
         public static long SellValue(ItemStack s)
         {
-            if (s.IsEmpty) return 0;
+            if (s.IsEmpty || s.WardrobeCopy) return 0;
             if (HallownestRecovery.RelicValue(s.Type) > 0) return HallownestRecovery.RelicValue(s.Type) * s.Count;
             if (HallownestRecovery.IsUnique(s.Type)) return System.Math.Max(1L, HallownestRecovery.Price(s.Def) / 5) * s.Count;
             if (s.Def.Value <= 0 || Recipes.Worthless(s.Type)) return 0;

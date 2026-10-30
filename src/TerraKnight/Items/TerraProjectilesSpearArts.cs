@@ -112,6 +112,9 @@ namespace TerraKnight.Items
             } },
         };
 
+        /// <summary>A spear's techniques in turn for the wiki (WeaponWikiLines), or null.</summary>
+        internal static string[] WikiSpearMoves(ItemType t) => spearCombos.TryGetValue(t, out var s) ? s.Split(' ') : null;
+
         /// <summary>Each spear's techniques in turn, a use each (more of them stage by stage).</summary>
         static readonly Dictionary<ItemType, string> spearCombos = new Dictionary<ItemType, string>
         {

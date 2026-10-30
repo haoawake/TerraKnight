@@ -180,7 +180,7 @@ namespace TerraKnight.UI
             if (ignoreShutters) { playerParts.Clear(); return playerParts; }
             EnsureParts();
             if (!roomParts.TryGetValue(scene, out var rp) || !layout.TryGetValue(scene, out var at)) { playerParts.Clear(); return playerParts; }
-            var start = Vector2Int.FloorToInt(head - (Vector2)at);
+            var start = Vector2Int.FloorToInt(InScene(scene, at, head));
             if (playerPartsScene == scene && (start == playerPartsCell || Time.unscaledTime < playerPartsAt + 0.5f)) return playerParts;
             playerPartsScene = scene;
             playerPartsCell = start;

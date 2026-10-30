@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using TerraKnight.Items;
 using TerraKnight.World;
 using UnityEngine;
@@ -56,6 +56,8 @@ namespace TerraKnight.UI
         {
             public Vector2 Cell;
             public bool Deep;
+            /// <summary>The scene it is in (Hollow Knight's map places it by its scene, WorldMapHollow).</summary>
+            public string Scene;
             /// <summary>Come to through a gate whose two sides don't meet on the map: no line to it.</summary>
             public bool Jump;
         }
@@ -93,9 +95,9 @@ namespace TerraKnight.UI
         {
             // Native Dream Enter object in Room_Bretta_Basement, surveyed from the game's scene.
             if (scene == "Room_Bretta_Basement" && layout.TryGetValue(scene, out var at))
-                return (Vector2)at + new Vector2(16.29f, 7.03f) / C;
+                return OnMap(scene, at, new Vector2(16.29f, 7.03f) / C);
             if (SpotOf(fight, scene, out var cell, out _) && layout.TryGetValue(scene, out at))
-                return new Vector2(at.x + cell.x + 0.5f, at.y + cell.y + 0.5f);
+                return OnMap(scene, at, new Vector2(cell.x + 0.5f, cell.y + 0.5f));
             return RoomMiddle(scene);
         }
 
@@ -110,7 +112,7 @@ namespace TerraKnight.UI
         /// <summary>Where a room's fight is drawn: its middle (the room's picture's, else its gates').</summary>
         static Vector2 RoomMiddle(string scene)
         {
-            if (rooms.TryGetValue(scene, out var room) && room.W > 0) return new Vector2(room.At.x + room.W / 2f, room.At.y + room.H / 2f);
+            if (rooms.TryGetValue(scene, out var room) && room.W > 0) return new Vector2(room.At.x + room.DrawnW / 2f, room.At.y + room.DrawnH / 2f);
             Vector2 sum = Vector2.zero;
             int n = 0;
             if (Gates.TryGetValue(scene, out var list))
@@ -305,7 +307,7 @@ namespace TerraKnight.UI
             PickFight(scene, head);
             if (!compassFight.HasValue || compassRoom == null) return false;
             var w = WayTo(compassRoom, compassFight);
-            wayPoints.Add(new WayPoint { Cell = head, Deep = PlayerDeep });
+            wayPoints.Add(new WayPoint { Cell = head, Deep = PlayerDeep, Scene = scene });
             wayScenes.Add(scene);
             // Straight to the spot when it is in the player's part of this room; else out through the gates.
             if (StartCost(w, scene, head, out var g, out var land) >= float.MaxValue) return false;
@@ -315,15 +317,15 @@ namespace TerraKnight.UI
                 {
                     if (!CellOf(g, out var gc) || !CellOf(land, out var bc)) return false;
                     bool gDeep = GateDeep(g), bDeep = GateDeep(land);
-                    wayPoints.Add(new WayPoint { Cell = gc, Deep = gDeep });
-                    wayPoints.Add(new WayPoint { Cell = bc, Deep = bDeep, Jump = gDeep != bDeep || (gc - bc).sqrMagnitude > 9f });
+                    wayPoints.Add(new WayPoint { Cell = gc, Deep = gDeep, Scene = g.Scene });
+                    wayPoints.Add(new WayPoint { Cell = bc, Deep = bDeep, Jump = gDeep != bDeep || (gc - bc).sqrMagnitude > 9f, Scene = land.Scene });
                     wayScenes.Add(land.Scene);
                     var from = land;
                     w.Exit.TryGetValue(from, out g);
                     w.Land.TryGetValue(from, out land);
                 }
             }
-            wayPoints.Add(new WayPoint { Cell = w.End, Deep = IsDeep(w.Scene) });
+            wayPoints.Add(new WayPoint { Cell = w.End, Deep = IsDeep(w.Scene), Scene = w.Scene });
             return true;
         }
 
@@ -468,6 +470,12 @@ namespace TerraKnight.UI
             var screen = new Rect(0f, 0f, Screen.width, Screen.height);
             DrawCompassWay(ToScreen, screen, ui, 1f);
             compassFullDots = compassDots;
+            DrawCompassCard(ui);
+        }
+
+        /// <summary>The full map's card for the fight pointed to: its name and what to do.</summary>
+        static void DrawCompassCard(float ui)
+        {
             if (!compassFight.HasValue && string.IsNullOrEmpty(compassHint)) return;
             var prev = GUI.color;
             if (compassHintStyle == null) compassHintStyle = new GUIStyle(GUI.skin.label) { wordWrap = true, alignment = TextAnchor.UpperLeft };
@@ -475,7 +483,7 @@ namespace TerraKnight.UI
             float width = Mathf.Min(900f * ui, Screen.width - 32f * ui);
             string note = compassHint ?? Lang.T("沿金色路线前进，光点标出房间出口；路线按房间连接，不代表可以穿过墙壁。");
             if (!compassRouteBuilt && compassFight.HasValue) note = Lang.T("暂未找到连通路线，请先探索连接区域。") + "\n" + note;
-            if (compassFight.HasValue && IsDeep(compassRoom) != ViewDeep)
+            if (compassFight.HasValue && elsewhere == null && IsDeep(compassRoom) != ViewDeep)
                 note += "\n" + Lang.T("目标位于另一地图层；从路线标出的门进入，或切换浅层/深层查看后续路线。");
             float bodyHeight = compassHintStyle.CalcHeight(new GUIContent(note), width - 24f * ui);
             float height = bodyHeight + 46f * ui;
@@ -511,7 +519,7 @@ namespace TerraKnight.UI
         {
             var live = TerraWorld.Live;
             return live != null && live.SceneName != null && layout.TryGetValue(live.SceneName, out var at)
-                ? new Vector2(at.x + world.x / C - live.CellOffset.x, at.y + world.y / C - live.CellOffset.y) : Vector2.zero;
+                ? OnMap(live.SceneName, at, new Vector2(world.x / C - live.CellOffset.x, world.y / C - live.CellOffset.y)) : Vector2.zero;
         }
         /// <summary>Dev (suite compasssurvey): every scene with gates; a scene's gates (name, side, cell); each fight's room.</summary>
         internal static List<string> DevGateScenes => new List<string>(Gates.Keys);
@@ -523,7 +531,7 @@ namespace TerraKnight.UI
         {
             var live = TerraWorld.Live;
             var off = live != null && live.SceneName == scene ? (Vector2)live.CellOffset : Vector2.zero;
-            return layout.TryGetValue(scene, out var at) ? new Vector2(at.x + local.x / C - off.x, at.y + local.y / C - off.y) : Vector2.zero;
+            return layout.TryGetValue(scene, out var at) ? OnMap(scene, at, new Vector2(local.x / C - off.x, local.y / C - off.y)) : Vector2.zero;
         }
         /// <summary>Dev: the full map centred on a global cell.</summary>
         internal static void DevPanTo(Vector2 cell) => pan = cell;

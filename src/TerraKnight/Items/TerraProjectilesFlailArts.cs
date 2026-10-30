@@ -37,6 +37,10 @@ namespace TerraKnight.Items
         static string SpinName(FlailSpin s) => s == FlailSpin.Wheel ? "横轮" : s == FlailSpin.Overhead ? "头顶回旋" : s == FlailSpin.Eight ? "八字" : s == FlailSpin.Sweep ? "地扫" : "蓄势";
         static string ThrowName(FlailThrow t) => t == FlailThrow.Straight ? "直抛" : t == FlailThrow.Arc ? "弧砸" : t == FlailThrow.Skip ? "跳弹" : "回旋抛";
 
+        /// <summary>A flail's styles in turn for the wiki (WeaponWikiLines: "spin·throw"), by its projectile; null for none.</summary>
+        internal static string[] WikiFlailStyles(ProjKind k) =>
+            flailCombos.TryGetValue(k, out var s) ? System.Array.ConvertAll(s, f => f.Name) : null;
+
         /// <summary>Each flail's styles in turn, a use each (more of them the later the flail).</summary>
         static readonly Dictionary<ProjKind, FlailStyle[]> flailCombos = new Dictionary<ProjKind, FlailStyle[]>
         {
