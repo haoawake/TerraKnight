@@ -113,7 +113,8 @@ namespace TerraKnight.World
         }
         static void DrawHomeConnection(Station s)
         {
-            bool connectable=(s.Spec.Counts!=null&&s.Spec.Counts.Length>0) || s.Kind==StationKind.PiggyBank || s.Kind==StationKind.Safe
+            // The Piggy Bank is no home's storage (the user's 10-30 "让“哪都是家”去掉储钱罐的识别"); the other banks are.
+            bool connectable=(s.Spec.Counts!=null&&s.Spec.Counts.Length>0) || s.Kind==StationKind.Safe
                 || s.Kind==StationKind.DefendersForge || s.Kind==StationKind.VoidVault;
             var box=new Rect(s.Local.x-s.Spec.W*CellGrid.CellSize*.5f,s.Local.y,s.Spec.W*CellGrid.CellSize,s.Spec.H*CellGrid.CellSize);
             HomeConnectionHighlight.Draw(ref s.HomeHighlight,s.Renderer,connectable&&AnyHomeContains(s.Scene,box));
@@ -133,7 +134,7 @@ namespace TerraKnight.World
         internal static IEnumerable<(int Kind,ItemType Item)> HomeBanks(string key)
         {
             foreach(var s in stations)
-                if((s.Kind==StationKind.PiggyBank||s.Kind==StationKind.Safe||s.Kind==StationKind.DefendersForge||s.Kind==StationKind.VoidVault)
+                if((s.Kind==StationKind.Safe||s.Kind==StationKind.DefendersForge||s.Kind==StationKind.VoidVault)
                     &&HomeContains(key,s.Scene,new Rect(s.Local.x-s.Spec.W*CellGrid.CellSize*.5f,s.Local.y,s.Spec.W*CellGrid.CellSize,s.Spec.H*CellGrid.CellSize)))
                     yield return(s.Kind==StationKind.PiggyBank?0:s.Kind==StationKind.Safe?1:s.Kind==StationKind.DefendersForge?2:3,s.Spec.Item);
         }

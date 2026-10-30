@@ -1999,6 +1999,11 @@ namespace TerraKnight
                 yield return MapPassagesTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "wardrobechat")
+            {
+                yield return WardrobeChatTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "pylonbench")
             {
                 yield return PylonBenchTest();

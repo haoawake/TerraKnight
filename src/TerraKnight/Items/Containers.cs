@@ -68,7 +68,8 @@ namespace TerraKnight.Items
 
         /// <summary>
         /// The container works for its effects (the Banner Case's banners, the Potion Box's held buffs): carried, or lying in
-        /// the Piggy Bank (Inventory.Bank). Picking up into it, quick use from it and selling on pickup want it carried.
+        /// the Piggy Bank (Inventory.Bank). The Banner Case takes banners picked up from there too (<see cref="Takes"/>);
+        /// picking up into the Potion Box, quick use from it and selling on pickup want them carried.
         /// </summary>
         public static bool InEffect(Inventory inv, ItemType t)
         {
@@ -111,15 +112,21 @@ namespace TerraKnight.Items
         /// <summary>The container a picked-up item goes into, 0 none.</summary>
         static int KindFor(ItemDef d) => Banners.Is(d.Type) ? CaseKind : IsPotion(d) ? BoxKind : 0;
 
+        /// <summary>
+        /// The container a picked-up item goes into takes it: the Banner Case carried or in the Piggy Bank (the user's 10-30
+        /// "让旗帜盒放在存钱罐里也能自动收纳旗帜"), the Potion Box carried.
+        /// </summary>
+        static bool Takes(Inventory inv, int kind) => kind == CaseKind ? InEffect(inv, ItemType.BannerCase) : Carried(inv, ItemOf(kind));
+
         public static int DevStored;
 
-        /// <summary>A stack picked up: into its container when that is carried (its stacks of it first, then the first empty slot). Returns how many are left.</summary>
+        /// <summary>A stack picked up: into its container when that takes it (<see cref="Takes"/>; its stacks of it first, then the first empty slot). Returns how many are left.</summary>
         public static int Store(Inventory inv, ItemStack s, int count)
         {
             if (inv == null || s.IsEmpty || count <= 0 || s.Prefix != 0 || s.Forge != 0) return count;
             var def = s.Def;
             int kind = KindFor(def);
-            if (kind == 0 || !Carried(inv, ItemOf(kind))) return count;
+            if (kind == 0 || !Takes(inv, kind)) return count;
             var pages = inv.ContainerOf(kind);
             int max = def.MaxStack;
             foreach (var page in pages)
@@ -143,13 +150,13 @@ namespace TerraKnight.Items
             return count;
         }
 
-        /// <summary>Room for some of an item in its carried container, or it is sold on pickup (the magnet pulls it then, a full bag or not).</summary>
+        /// <summary>Room for some of an item in the container that takes it, or it is sold on pickup (the magnet pulls it then, a full bag or not).</summary>
         public static bool HasRoom(Inventory inv, ItemType type)
         {
             if (Sells(inv, type)) return true;
             var def = ItemDb.Get(type);
             int kind = KindFor(def);
-            if (kind == 0 || !Carried(inv, ItemOf(kind))) return false;
+            if (kind == 0 || !Takes(inv, kind)) return false;
             foreach (var page in inv.ContainerOf(kind))
                 foreach (var v in page)
                     if (v.IsEmpty || (v.Type == type && v.Prefix == 0 && v.Forge == 0 && v.Count < def.MaxStack)) return true;

@@ -74,7 +74,7 @@ namespace TerraKnight
                 var outside = new ItemStack[40]; outside[0] = ItemStack.Of(ItemType.Gel, 10);
                 Chests.AddWorld(here, aLocal + Vector2.left * (4 * cs), 0, a1);
                 Chests.AddWorld(here, aLocal + Vector2.right * (4 * cs), 0, a2);
-                Stations.PlaceIn(StationKind.PiggyBank, here, aLocal + Vector2.right * (7 * cs));
+                Stations.PlaceIn(StationKind.Safe, here, aLocal + Vector2.right * (7 * cs));
                 Chests.AddWorld(here, aLocal + Vector2.right * (16 * cs), 0, outside);
                 Chests.AddWorld(Far, bLocal + Vector2.left * (4 * cs), 0, b1);
                 // The chests' own slots (AddWorld copies the arrays given).

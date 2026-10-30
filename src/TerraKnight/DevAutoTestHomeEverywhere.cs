@@ -71,8 +71,10 @@ namespace TerraKnight
                 Chests.AddWorld(homeB.Scene,bLocal+Vector2.left*(4*cs),0,chestB);
                 Stations.PlaceIn(StationKind.IronAnvil,homeA.Scene,aLocal+Vector2.right*(4*cs));
                 Stations.PlaceIn(StationKind.WorkBench,homeB.Scene,bLocal+Vector2.right*(4*cs));
-                Stations.PlaceIn(StationKind.PiggyBank,homeA.Scene,aLocal+Vector2.right*(6*cs));
-                Stations.PlaceIn(StationKind.PiggyBank,homeA.Scene,aLocal+Vector2.right*(8*cs));
+                // Two Safes (the same bank, listed once) and a Piggy Bank, which no home takes in (the user's 10-30).
+                Stations.PlaceIn(StationKind.Safe,homeA.Scene,aLocal+Vector2.right*(6*cs));
+                Stations.PlaceIn(StationKind.Safe,homeA.Scene,aLocal+Vector2.right*(8*cs));
+                Stations.PlaceIn(StationKind.PiggyBank,homeA.Scene,aLocal+Vector2.right*(10*cs));
                 Chests.AddWorld(homeA.Scene,aLocal+Vector2.right*(12*cs),0,new ItemStack[40]);
                 Stations.PlaceIn(StationKind.IronAnvil,homeA.Scene,aLocal+Vector2.right*(15*cs));
                 yield return new WaitForSeconds(.5f);
@@ -97,7 +99,8 @@ namespace TerraKnight
                 Check("色块真实命中选择区域",InventoryGui.DevHomeClick("HomeColor",63)&&Stations.SelectedHome==homeA.Key);
                 yield return new WaitForSeconds(.25f);
                 var storages=Chests.HomeStorages(homeA.Key);
-                Check("普通箱子及私人银行都可连接且同一银行去重",storages.Count==2&&storages.Count(x=>x.Bank==0)==1);
+                Check("普通箱子及私人银行都可连接且同一银行去重",storages.Count==2&&storages.Count(x=>x.Bank==1)==1);
+                Check("存钱罐不接入家园",storages.All(x=>x.Bank!=0)&&Stations.HomeBanks(homeA.Key).All(b=>b.Kind!=0));
                 Check("从区域真实箱子制作",InventoryGui.DevOffered().Contains(recipe.Result)&&InventoryGui.DevCraftRecipe(recipe)==null,recipe.Def.Name);
                 int remaining=Chests.HomeStorages(homeA.Key).First(x=>x.Bank<0).Items[0].Count;
                 Check("制作直接扣真实材料",remaining==ingredient.Count*4,$"{remaining}/{ingredient.Count*4}");

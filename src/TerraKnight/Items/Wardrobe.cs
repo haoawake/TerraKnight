@@ -36,8 +36,9 @@ namespace TerraKnight.Items
                 stack.Count = duplicates;
                 Shop.Earn(Shop.SellValue(stack));
             }
-            if (ReferenceEquals(inventory, TerraMod.Instance?.Inventory))
-                UI.CenterNotice.Show(first ? Lang.F("已收纳时装：{0}", stack.Def.Name) : Lang.F("重复时装已出售：{0}", stack.Def.Name));
+            // A new piece told in the chat at the bottom left, out of the way (the user's 10-30); a duplicate is sold quietly.
+            if (first && ReferenceEquals(inventory, TerraMod.Instance?.Inventory))
+                Net.NetChat.Add(Lang.F("已收纳时装：{0}", stack.Def.Name), new UnityEngine.Color(1f, 0.94f, 0.08f));
             return true;
         }
 

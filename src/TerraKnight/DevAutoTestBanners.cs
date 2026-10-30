@@ -157,6 +157,18 @@ namespace TerraKnight
             int dNone = Banners.Dealt(target, 100);
             BannerCheck("猪猪存钱罐里的旗帜、存钱罐里的旗帜盒也生效", dBank == (int)(100 * fd) && dBankCase == (int)(100 * fd) && dNone == 100,
                 $"存钱罐里的旗帜 {dBank}，存钱罐里的旗帜盒 {dBankCase}，都拿走 {dNone}");
+            // Picked up with the case only in the Piggy Bank: into the case (the user's 10-30 "让旗帜盒放在存钱罐里也能自动收纳旗帜").
+            ClearPages(inv.BannerCase);
+            inv.Bank[BankB] = ItemStack.Of(ItemType.BannerCase);
+            int leftBank = Containers.Store(inv, ItemStack.Of(banner, 3), 3);
+            bool roomBank = Containers.HasRoom(inv, banner);
+            int caseHeld = inv.BannerCase[0][0].Type == banner ? inv.BannerCase[0][0].Count : 0;
+            inv.Bank[BankB] = default;
+            int leftNoCase = Containers.Store(inv, ItemStack.Of(banner, 1), 1);
+            BannerCheck("旗帜盒放在存钱罐里，拾取的旗帜也收进盒子", leftBank == 0 && roomBank && caseHeld == 3 && leftNoCase == 1,
+                $"收进 {3 - leftBank}/3，有空位 {roomBank}，盒子里 {caseHeld}；盒子不在身上也不在存钱罐时不收 {leftNoCase == 1}");
+            ClearPages(inv.BannerCase);
+            inv.BannerCase[0][0] = ItemStack.Of(banner);
             inv.Slots[CaseSlot] = ItemStack.Of(ItemType.BannerCase);
             Banners.Refresh(true);
 
