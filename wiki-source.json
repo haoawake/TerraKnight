@@ -4,7 +4,7 @@
   "date": "2026-10-30",
   "source_hashes": "tools/encyclopedia_runtime.json",
   "snapshot": "artifacts/wiki-release530-source",
-  "build_hash": "39f09568f9aa733ef6f94232498184466444f780c042036d04582d741a3f17ec",
+  "build_hash": "124dfcff3d8ca4d97c7284bd65dd796de26bb4091065fd4514b4451f21f6e2d9",
   "tag": "v5.3.0",
-  "commit": "ca672ed0a861de689ecf3314a64a30bcb8abc393"
+  "commit": "73098e3da627a1131413232df42a78b8f7efebfc"
 }
