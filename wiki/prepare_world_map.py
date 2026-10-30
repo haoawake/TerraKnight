@@ -27,6 +27,9 @@ def prepare(atlas_path):
     if (SRC / 'UI/WorldMapGodhome.cs').exists():
         for name, x, y in re.findall(r'layout\["([^"]+)"\] = new Vector2Int\((-?\d+), (-?\d+)\)', source('UI/WorldMapGodhome.cs')):
             layout[name] = (int(x), int(y))
+    # Each room's stretch on the map (UI/WorldMapStretch.cs): drawn from its origin that much wider and taller.
+    stretch = {name: (float(sx), float(sy)) for name, sx, sy in re.findall(
+        r'\["([^"]+)"\] = new Vector2\((-?[\d.]+)f, (-?[\d.]+)f\)', layout_text)}
     deep = set(re.findall(r'"([^"]+)"', source('UI/WorldMapLayers.cs').split('new HashSet<string>')[1]))
     # WorldMap.IsDeep: Godhome is the deep layer's, but for the three parts of Hallownest that carry its prefix.
     deep |= {name for name in layout if name.startswith('GG_') and not name.startswith(('GG_Pipeway', 'GG_Waterways', 'GG_Lurker'))}
@@ -109,7 +112,9 @@ def prepare(atlas_path):
             wet_pixels = b''.join(bytes(wet_palette[v] if t not in solid else wet_palette[0]) for t, v in zip(terrain, wet))
             Image.frombytes('RGBA', (w, h), wet_pixels).transpose(Image.Transpose.FLIP_TOP_BOTTOM).save(OUT / f'{name}-wet.png')
         x, y = layout[name]
-        rooms.append(dict(id=name, x=x, y=-y-h, w=w, h=h, area=label,
+        sx, sy = stretch.get(name, (1.0, 1.0))
+        dw, dh = round(w * sx, 3), round(h * sy, 3)
+        rooms.append(dict(id=name, x=x, y=round(-y-dh, 3), w=w, h=h, dw=dw, dh=dh, area=label,
                           layer='deep' if name in deep else 'world', objects=things, wet=any(wet)))
     assert data.read() == b'', 'Unexpected trailing atlas bytes'
     assert {r['id'] for r in rooms} == set(layout), 'Atlas must cover the entire current map layout'
@@ -150,7 +155,7 @@ def prepare(atlas_path):
                          'GG_Painter', 'GG_Radiance', 'GG_Mantis_Lords_V', 'GG_Nosk_Hornet']}}
         anchor = scene if scene in by_id else entrances[scene]
         room = by_id[anchor]
-        boss.update(anchor=anchor, x=room['x']+room['w']/2, y=room['y']+room['h']/2,
+        boss.update(anchor=anchor, x=room['x']+room['dw']/2, y=room['y']+room['dh']/2,
                     layer=room['layer'], area=area(scene) if scene != anchor else room['area'],
                     precision='room' if anchor == scene else 'entrance')
         if boss['id'] in ('Hornet', 'Hornet@4'):

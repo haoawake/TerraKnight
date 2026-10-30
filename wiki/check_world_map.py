@@ -34,8 +34,9 @@ def main():
     assert bosses['EnragedGuardian']['stage'] == 2
     for boss in bosses.values():
         room = rooms[boss['anchor']]
-        assert room['x'] <= boss['x'] <= room['x']+room['w']
-        assert room['y'] <= boss['y'] <= room['y']+room['h']
+        # The room as drawn, stretched (prepare_world_map: dw, dh).
+        assert room['x'] <= boss['x'] <= room['x']+room.get('dw', room['w'])
+        assert room['y'] <= boss['y'] <= room['y']+room.get('dh', room['h'])
         assert (boss['precision']=='room') == (boss['scene']==boss['anchor'])
         assert (SITE / boss['url']).is_file(), boss
         if boss['summon']:

@@ -15,7 +15,7 @@
   const visibleBosses = () => data.bosses.filter(b => ($('map-layer').value === 'all' || b.layer === $('map-layer').value) && `${b.name} ${b.en} ${b.scene} ${b.area}`.toLowerCase().includes($('map-search').value.trim().toLowerCase()));
   function schedule() { if (!frame) frame = requestAnimationFrame(draw); }
   function bounds(rooms) {
-    return [Math.min(...rooms.map(r=>r.x)), Math.min(...rooms.map(r=>r.y)), Math.max(...rooms.map(r=>r.x+r.w)), Math.max(...rooms.map(r=>r.y+r.h))];
+    return [Math.min(...rooms.map(r=>r.x)), Math.min(...rooms.map(r=>r.y)), Math.max(...rooms.map(r=>r.x+(r.dw||r.w))), Math.max(...rooms.map(r=>r.y+(r.dh||r.h)))];
   }
   function fit() {
     if (!data) return;
@@ -40,7 +40,8 @@
     const rooms = visibleRooms();
     const visible = [];
     for (const room of rooms) {
-      const x=tx+room.x*scale,y=ty+room.y*scale,w=room.w*scale,h=room.h*scale;
+      // Drawn as the game draws it, stretched (dw, dh); its cells and things scale with it.
+      const x=tx+room.x*scale,y=ty+room.y*scale,w=(room.dw||room.w)*scale,h=(room.dh||room.h)*scale;
       if (x+w<0 || y+h<0 || x>width || y>height) continue;
       visible.push({room,x,y,w,h});
       const image=images.get(room.id); if (image) ctx.drawImage(image,x,y,w,h);
@@ -54,7 +55,8 @@
     for (const {room,x,y,w,h} of visible) {
       if ($('map-objects').checked) for(const o of room.objects) {
         ctx.fillStyle=objectColors[o.kind] || '#f0f';
-        ctx.fillRect(x+o.x*scale,y+o.y*scale,Math.max(1,o.w*scale),Math.max(1,o.h*scale));
+        const kx=w/room.w,ky=h/room.h;
+        ctx.fillRect(x+o.x*kx,y+o.y*ky,Math.max(1,o.w*kx),Math.max(1,o.h*ky));
       }
       if(selected && selected.anchor===room.id) {ctx.strokeStyle='#fff3a6';ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);}
     }
@@ -86,7 +88,7 @@
   function choose(b, focus=true) {
     selected=b;
     if($('map-layer').value!=='all' && $('map-layer').value!==b.layer) $('map-layer').value=b.layer;
-    if(focus) {scale=Math.max(.9,Math.min(2.5,(width-80)/data.rooms.find(r=>r.id===b.anchor).w));tx=width/2-b.x*scale;ty=height/2-b.y*scale;}
+    if(focus) {scale=Math.max(.9,Math.min(2.5,(width-80)/(r=>r.dw||r.w)(data.rooms.find(r=>r.id===b.anchor))));tx=width/2-b.x*scale;ty=height/2-b.y*scale;}
     const detail=$('map-detail');detail.replaceChildren();detail.hidden=false;
     const close=document.createElement('button');close.className='close';close.textContent='×';close.setAttribute('aria-label','关闭 Boss 详情');close.onclick=()=>{selected=null;detail.hidden=true;list();schedule();};detail.append(close);
     const heading=document.createElement('h2');heading.textContent=b.name;detail.append(heading);
