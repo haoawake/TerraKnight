@@ -1,10 +1,10 @@
 {
   "kind": "release",
-  "version": "5.1.0",
-  "date": "2026-10-27",
+  "version": "5.2.1",
+  "date": "2026-10-29",
   "source_hashes": "tools/encyclopedia_runtime.json",
-  "snapshot": "artifacts/wiki-release510-source",
-  "build_hash": "807adeaf01efa39c922c6d47cb3c42c2b23937987ba3eb0ad985bee50409259a",
-  "tag": "v5.1.0",
-  "commit": "81b6286c264f59f374bb1c943ed196d48a15b4ac"
+  "snapshot": "artifacts/wiki-ws1029-source",
+  "build_hash": "d6a78862a1b00270691587afcc9dd2a23336537ee4125a91dcfd7d6ba5e491fd",
+  "tag": "v5.2.1",
+  "commit": "197d9c47f5d3167517be4681c4c5971c4731ace4"
 }
