@@ -1145,6 +1145,10 @@ namespace TerraKnight.Items
             npcs.Clear();
             npcById.Clear();
             overlaps.Clear();
+            // The room's scale, the difficulty and the player's progress are the same for every enemy here: ask for
+            // them once a tick, not once per enemy per tick (LifeMax -> Info.Scale -> Areas.LifeScale ->
+            // Shop.UnlockedStage: 45 ms a second among nine enemies, none of them even looked at twice).
+            int stage = Shop.UnlockedStage();
             Physics2D.OverlapBox(TerraParticles.ToWorld(pCenter), new Vector2(7000f, 5000f) * Px, 0f, enemyFilter, overlaps);
             foreach (var col in overlaps)
             {
@@ -1153,7 +1157,9 @@ namespace TerraKnight.Items
                 int id = hm.GetInstanceID();
                 if (npcById.ContainsKey(id)) continue;
                 var info = EnemyStats.Of(hm);
-                if (info == null || EnemyStats.LifeMax(info) <= 5) continue;
+                if (info == null) continue;
+                info.Cached(stage, out _, out int max);
+                if (max <= 5) continue;
                 // A boss waits for the player's own first blow on it (MinionEngage.BossFought).
                 if (info.Boss && !MinionEngage.BossFought) continue;
                 // CanBeChasedBy (dontTakeDamage): not while nothing can hurt it (burrowed, asleep in the moss); a
