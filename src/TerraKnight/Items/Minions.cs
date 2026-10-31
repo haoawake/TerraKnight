@@ -353,6 +353,13 @@ namespace TerraKnight.Items
         /// <summary>Dev: the biggest single minion hit (before variance) and the Firecracker blasts so far.</summary>
         public static int DevMaxHit, DevBlasts;
 
+        /// <summary>Whether a minion is out (the player's own or a ghost's): the enemy scan serves their aim only.</summary>
+        bool AnyLiveMinion()
+        {
+            for (int i = 0; i < live.Count; i++) if (!live[i].Dead) return true;
+            return false;
+        }
+
         // ------------------------------------------------------------------ the tick
 
         void Update()
@@ -375,7 +382,9 @@ namespace TerraKnight.Items
         {
             RefreshOwner();
             if (!hasOwner) return;
-            FindNpcs();
+            // The scan is for the minions' aim only: with none out nothing reads it, and scanning a room of a hundred
+            // and ten enemies every frame was 6–7 ms of the frame.
+            if (AnyLiveMinion()) FindNpcs();
             UpdateTarget();
             Respawner();
             PlayerBuffs.Tick(ownerDead);

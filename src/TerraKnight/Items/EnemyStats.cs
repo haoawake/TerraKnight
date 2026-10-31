@@ -63,6 +63,45 @@ namespace TerraKnight.Items
             public int Defense => Dummy ? DevDummyDefense : Corpse ? 0 : Net ? NetDefense : Ref != null ? BossDefense(Ref, Tune, Scene) : Mathf.RoundToInt(World.Areas.Defense(World.Areas.StatLevel(Level)) * World.Areas.CatchUp(Level));
             /// <summary>A boss's own measure (<see cref="BossBalance"/>): its life, defense and damage by how it fights.</summary>
             public BossBalance.Tune Tune => BossBalance.Of(Record, EnemyDrops.VariantLevel(Scene));
+
+            int cacheStage = -1, cacheHp = int.MinValue, cacheMaxHp, cacheLevel, cacheLife, cacheMax, cacheNetLifeMax;
+            float cacheCarry, cachePlayers;
+            bool cacheCorpse, cacheNet;
+
+            /// <summary>
+            /// <see cref="Life"/> and <see cref="LifeMax"/>, worked out again only when something they depend on has
+            /// changed. The bars asked for them for every enemy every frame, and for a plain enemy the answer is just
+            /// the room's scale (the difficulty and the player's progress), the same for all of them: a hundred times
+            /// over that was 8 ms a frame (<see cref="World.Areas.LifeScale"/> →
+            /// <see cref="Items.Shop.UnlockedStage"/>), for a hundred bars of which none was even showing.
+            /// A boss or its stand-in is always worked out afresh: its scale turns with its phases, and its bar is
+            /// drawn from <see cref="EnemyHealthBars.Fought"/>, not from this.
+            /// </summary>
+            internal bool Cached(int stage, out int life, out int max)
+            {
+                if (Ref != null || Boss)
+                {
+                    life = Life(Hm, this);
+                    max = LifeMax(this);
+                    return false;
+                }
+                int hp = Hm != null ? Hm.hp : 0;
+                if (cacheStage == stage && cacheHp == hp && cacheMaxHp == MaxHp && cacheLevel == Level
+                    && cachePlayers == Players && cacheCarry == Carry && cacheCorpse == Corpse
+                    && cacheNet == Net && cacheNetLifeMax == NetLifeMax)
+                {
+                    life = cacheLife;
+                    max = cacheMax;
+                    return true;
+                }
+                life = Life(Hm, this);
+                max = LifeMax(this);
+                cacheStage = stage; cacheHp = hp; cacheMaxHp = MaxHp; cacheLevel = Level;
+                cachePlayers = Players; cacheCarry = Carry; cacheCorpse = Corpse;
+                cacheNet = Net; cacheNetLifeMax = NetLifeMax;
+                cacheLife = life; cacheMax = max;
+                return false;
+            }
         }
 
         /// <summary>Dev: the Target Dummy's defense (0 in play), the stage's for the classdps suite.</summary>
