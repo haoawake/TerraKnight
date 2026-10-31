@@ -81,6 +81,9 @@ namespace TerraKnight
                 Check("合并存入手中物品", Chests.PutHome() && inv.Mouse.IsEmpty && Chests.UnifiedHomeSlots(home.Key, "Wood").Single().Item.Count == 110);
                 second[0] = first[0]; first[0] = default;
                 Check("未知名称没有结果", Chests.UnifiedHomeSlots(home.Key, "不存在的物品000").Count == 0);
+                Check("拼音全拼搜索物品", Chests.UnifiedHomeSlots(home.Key, "mucai").Any(s => s.Item.Type == ItemType.Wood));
+                Check("拼音分词搜索物品", Chests.UnifiedHomeSlots(home.Key, "mu cai").Any(s => s.Item.Type == ItemType.Wood));
+                Check("拼音首字母搜索物品", Chests.UnifiedHomeSlots(home.Key, "mc").Any(s => s.Item.Type == ItemType.Wood));
                 InventoryGui.DevHomeSearch(""); yield return new WaitForSeconds(.15f);
                 Check("搜索框能聚焦", InventoryGui.DevHomeClick("HomeSearch", 0) && InventoryGui.TypingName);
                 yield return null;

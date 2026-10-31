@@ -17,6 +17,10 @@ namespace TerraKnight
             var creative=mod.Creative;int stage=Shop.DevStage;
             try {
                 mod.ApplyCreative(true);Shop.DevStage=5;PlayerData.instance.isInvincible=true;
+                // The pinyin matcher on its own: full spellings, initials, mixed, polyphones and ü.
+                foreach(var c in new[]{("天顶剑","tiandingjian"),("天顶剑","tdj"),("天顶剑","tdjian"),("灵魂","linghun"),("灵魂","lh"),("重庆","chongqing"),("重庆","zhongqing"),("女","nv"),("绿","lv")})
+                    Check("拼音搜索 "+c.Item1+" / "+c.Item2, UI.PinyinSearch.Matches(c.Item1,c.Item2), c.Item1+" 应能用 "+c.Item2+" 搜到");
+                Check("拼音不误报", !UI.PinyinSearch.Matches("天顶剑","tiandingjina"), "tiandingjina 不该命中 天顶剑");
                 InventoryGui.Open=false;yield return SearchPerfFrames("closed");
                 InventoryGui.Open=true;InventoryGui.DevBestiary(true);yield return SearchPerfFrames("book-cold");
                 foreach(string query in new[]{"远古","木","灵魂","zzzz-no-result","远古"}) {

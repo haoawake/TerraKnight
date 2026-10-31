@@ -63,8 +63,9 @@ namespace TerraKnight.World
                 var entry = new HomeSlot { Storage = storage, Index = i, Item = item, Home = home };
                 if (item.IsEmpty) { if (search.Length == 0) empty.Add(entry); continue; }
                 var d = item.Def;
-                if (search.Length == 0 || d.Name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
-                    || (d.ZhName ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
+                if (search.Length == 0
+                    || UI.PinyinSearch.Matches(d.Name, search)
+                    || (d.ZhName != d.Name && UI.PinyinSearch.Matches(d.ZhName ?? "", search))
                     || d.Type.ToString().IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     var key = (item.Type, (int)item.Prefix, (int)item.Forge, item.WeaponVersion);

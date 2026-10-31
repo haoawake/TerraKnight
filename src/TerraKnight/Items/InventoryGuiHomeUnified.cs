@@ -178,7 +178,7 @@ namespace TerraKnight.Items
             JournalNine(search, "UI/PanelBorder", 8, 6f * ui, homeItemSearchTyping ? new Color(.8f, .83f, 1f, .8f) : new Color(.5f, .57f, .73f, .7f));
             Add(search, Kind.HomeSearch, 0);
             string query = homeItemSearch + (homeItemSearchTyping ? homeItemSearchInput.Composition + "▏" : "");
-            Outlined(new Rect(search.x + 8f * ui, search.y, search.width - 16f * ui, search.height), string.IsNullOrEmpty(query) ? Lang.T("按物品名称搜索…") : query,
+            Outlined(new Rect(search.x + 8f * ui, search.y, search.width - 16f * ui, search.height), string.IsNullOrEmpty(query) ? Lang.T("按物品名称或拼音搜索…") : query,
                 HomeTextStyle(false), string.IsNullOrEmpty(query) ? new Color(.62f, .67f, .8f) : Color.white);
             if (homeItemSearchTyping) homeItemSearchInput.Anchor(new Vector2(search.x + 12f * ui, search.yMax));
             if (searching) HomeButton(new Rect(search.xMax + 4f * ui, top, 28f * ui, 28f * ui), "×", 8, mouse, "清除搜索");
