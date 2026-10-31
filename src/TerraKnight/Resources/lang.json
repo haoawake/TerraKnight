@@ -5756,17 +5756,17 @@
   "pt-BR": "Os {0} cristais de vida que versões antigas davam pelas máscaras foram recolhidos: as máscaras agora são vida própria (os corações ciano)",
   "ru-RU": "Кристаллы жизни ({0}), которые старые версии давали за маски, забраны: маски теперь отдельная жизнь (бирюзовые сердца)"
  },
- "搜索怪物或掉落物": {
-  "en-US": "Search enemies or drops",
-  "zh-Hant": "搜尋怪物或掉落物",
-  "ja-JP": "敵やドロップを検索",
-  "ko-KR": "몬스터나 드롭 검색",
-  "de-DE": "Gegner oder Beute suchen",
-  "fr-FR": "Chercher un ennemi ou un butin",
-  "es-ES": "Buscar enemigos o botín",
-  "it-IT": "Cerca nemici o bottino",
-  "pt-BR": "Buscar inimigos ou itens",
-  "ru-RU": "Поиск врагов или добычи"
+ "搜索怪物或掉落物（支持拼音）": {
+  "en-US": "Search enemies or drops (pinyin works)",
+  "zh-Hant": "搜尋怪物或掉落物（支援拼音）",
+  "ja-JP": "敵やドロップを検索（ピンイン対応）",
+  "ko-KR": "몬스터나 드롭 검색 (병음 지원)",
+  "de-DE": "Gegner oder Beute suchen (Pinyin wird unterstützt)",
+  "fr-FR": "Chercher un ennemi ou un butin (pinyin accepté)",
+  "es-ES": "Buscar enemigos o botín (se admite pinyin)",
+  "it-IT": "Cerca nemici o bottino (pinyin supportato)",
+  "pt-BR": "Buscar inimigos ou itens (pinyin aceito)",
+  "ru-RU": "Поиск врагов или добычи (поддерживается пиньинь)"
  },
  "找到 {0} 种": {
   "en-US": "{0} found",
@@ -11036,8 +11036,17 @@
  "选择上方色块打开区域仓库\n同一区域的所有储物空间合并显示": {
   "en-US": "Pick a colour above to open an area's storage\nAll of an area's storage shows as one"
  },
- "按物品名称搜索…": {
-  "en-US": "Search by item name…"
+ "按物品名称或拼音搜索…": {
+  "en-US": "Search by item name or pinyin…",
+  "zh-Hant": "按物品名稱或拼音搜尋…",
+  "ja-JP": "アイテム名またはピンインで検索…",
+  "ko-KR": "아이템 이름 또는 병음으로 검색…",
+  "de-DE": "Nach Itemname oder Pinyin suchen…",
+  "fr-FR": "Chercher par nom d’objet ou pinyin…",
+  "es-ES": "Buscar por nombre de objeto o pinyin…",
+  "it-IT": "Cerca per nome oggetto o pinyin…",
+  "pt-BR": "Buscar por nome do item ou pinyin…",
+  "ru-RU": "Поиск по названию предмета или пиньиню…"
  },
  "排序区域内全部物品": {
   "en-US": "Sort the whole area"

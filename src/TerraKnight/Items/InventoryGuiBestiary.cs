@@ -786,7 +786,8 @@ namespace TerraKnight.Items
         /// <summary>Dev: start or end typing into the search, as a click on the box and Enter do.</summary>
         public static void DevBookType(bool on) { if (on) StartBookSearch(); else EndBookSearch(); }
 
-        static bool Matches(string text) => text != null && text.IndexOf(SearchQuery, System.StringComparison.OrdinalIgnoreCase) >= 0;
+        // Pinyin too: "tie" finds 铁, "tdj" finds 天顶剑, and a Chinese query still matches the name literally.
+        static bool Matches(string text) => text != null && UI.PinyinSearch.Matches(text, SearchQuery);
 
         /// <summary>An enemy the search finds: a seen one by its name, a defeated one by a drop the book shows (not a locked one).</summary>
         static bool MatchesSearch(string rec)
@@ -857,7 +858,7 @@ namespace TerraKnight.Items
             Rim(box, bookTyping ? Gold : BookRim, 1.5f * ui);
             var text = new Rect(box.x + 10f * ui, box.y, box.width - 40f * ui, box.height);
             if (bookSearch.Length == 0 && bookComposing.Length == 0 && !bookTyping)
-                BookOutlined(text, Lang.T("搜索怪物或掉落物"), bookSmall, new Color(0.6f, 0.65f, 0.8f));
+                BookOutlined(text, Lang.T("搜索怪物或掉落物（支持拼音）"), bookSmall, new Color(0.6f, 0.65f, 0.8f));
             else
             {
                 string caret = bookTyping && (int)(Time.unscaledTime * 2f) % 2 == 0 ? "|" : "";

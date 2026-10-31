@@ -42,6 +42,11 @@
     <EmbeddedResource Include="Resources\*.wav" LogicalName="TerraKnight.%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <!-- 拼音检索表（tools/gen_pinyin_data.py 生成：拼音 → 汉字，gzip，约 10 KB） -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\pinyin.dat" LogicalName="TerraKnight.pinyin.dat" />
+  </ItemGroup>
+
   <!-- 编译后直接放进游戏的 BepInEx 插件目录 -->
   <Target Name="InstallPlugin" AfterTargets="Build" Condition="Exists('$(BepInExDir)') and '$(SkipPluginInstall)' != 'true'">
     <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" />

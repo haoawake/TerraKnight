@@ -170,6 +170,8 @@ namespace TerraKnight
                 "开启后，进游戏时给每个脚本的每帧方法加计时（启动会慢几秒、运行稍慢）；每 5 秒里出现掉帧，就把最耗时的方法、敌人和刚体数量写进 BepInEx/LogOutput.log。排查卡顿用，平时关着。\nWhen on, every script's per-frame methods are timed (a few seconds more to start, a little slower to run); each 5 s with slow frames writes the costliest methods and the counts of enemies and bodies to BepInEx/LogOutput.log. For finding a slow room; keep it off otherwise.");
             if (lagSuite || frameProfiler.Value) DevFrameProfiler.Install(harmony, everyMethod: mod.AutoTest != null && suite == "buildlag");
             PerfProbe.Detailed = frameProfiler.Value && !lagSuite;
+            // 10 KB gzipped, read once here so the first search does not pay for it.
+            UI.PinyinSearch.Preload();
             Log.LogInfo($"{ModName} {Version} 已加载，泰拉瑞亚素材：{TerrariaAssets.ImagesDir}");
         }
     }
