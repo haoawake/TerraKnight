@@ -76,7 +76,7 @@ namespace TerraKnight.Player
                 UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), UI.CombatText.PlayerHurt);
                 DevChaosHurts++;
                 if (stats.IsDead) hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1);
-                else mod.PlaySound("Player_Hit_" + Random.Range(0, 3));
+                else mod.PlaySound(Appearance.HurtVoice(Appearance.Current));
             }
             PlayerBuffs.Add(ChaosState, 360);
             return true;

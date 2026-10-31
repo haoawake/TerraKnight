@@ -131,6 +131,10 @@ namespace TerraKnight.Items
             float facing = Facing(hero);
             var rb = hero.GetComponent<Rigidbody2D>();
             if (rb == null) return;
+            // No other leap until this one has come down (SlamLand gives the weapon back after its recovery): a right click let
+            // go again cut the leap's own swing and leapt anew, jump after plunge after jump (the user's 10-31 "火山这把剑右键左键
+            // 疯狂取消后摇，导致可以无限跳劈"). The time here only guards a blow that never comes.
+            readyAt[def.Type] = Time.time + 3f;
             if (hero.cState.onGround)
             {
                 rb.linearVelocity = new Vector2(facing * 2.5f * Player.TerraMovement.PxT, (5f + 2f * c) * Player.TerraMovement.PxT);
@@ -176,6 +180,7 @@ namespace TerraKnight.Items
         {
             var mod = TerraMod.Instance;
             var type = def.Type;
+            readyAt[type] = Time.time + ArtRecovery;
             var feet = BladeArts.Feet(hero);
             float x = feet.x + facing * 1.2f;
             float ground = Ground(new Vector2(x, feet.y + 1f), 3f);

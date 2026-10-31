@@ -24,11 +24,41 @@ namespace TerraKnight.Items
             return copyDefinitions[original.Type] = copy;
         }
 
-        // Called before bag-space checks and before the optional auto-sell bag.
+        static HashSet<ItemType> ingredients;
+
+        /// <summary>
+        /// A piece a recipe asks for (the Robe for the gem robes, the Whoopie Cushion for the Fart in a Jar, the Flame Waker
+        /// Boots for the Hellfire Treads): the Wardrobe lists it but leaves the piece itself in the bag, for the recipe. Taken
+        /// in, only its copies came out, which no recipe takes (the user's 10-31 "法袍，屁垫好像都不参与合成了").
+        /// </summary>
+        internal static bool Ingredient(ItemType type)
+        {
+            if (ingredients == null)
+            {
+                var set = new HashSet<ItemType>();
+                foreach (var r in Recipes.All)
+                    if (!r.IsBought)
+                        foreach (var (t, _) in r.Ingredients) set.Add(t);
+                ingredients = set;
+            }
+            return ingredients.Contains(type);
+        }
+
+        // Called before bag-space checks and before the optional auto-sell bag. False: the stack stays where it is.
         internal static bool Collect(Inventory inventory, ItemStack stack)
         {
             if (inventory == null || stack.IsEmpty || stack.WardrobeCopy || !Clothing(stack.Type)) return false;
             bool first = inventory.WardrobeItems.Add(stack.Type);
+            if (Ingredient(stack.Type))
+            {
+                if (first)
+                {
+                    inventory.RecordCollection(stack.Type);
+                    if (ReferenceEquals(inventory, TerraMod.Instance?.Inventory))
+                        Net.NetChat.Add(Lang.F("已收纳时装：{0}", stack.Def.Name), new UnityEngine.Color(1f, 0.94f, 0.08f));
+                }
+                return false;
+            }
             inventory.RecordCollection(stack.Type);
             int duplicates = stack.Count - (first ? 1 : 0);
             if (duplicates > 0)
@@ -59,7 +89,8 @@ namespace TerraKnight.Items
                 {
                     var s = slots[i];
                     if (s.IsEmpty || !Clothing(s.Type) || s.WardrobeCopy) continue;
-                    Collect(inventory, s);
+                    // A recipe's piece is listed and stays.
+                    if (!Collect(inventory, s)) continue;
                     slots[i] = worn ? Copy(inventory, s.Type) : default;
                     if (worn) slots[i].Favorite = s.Favorite;
                 }

@@ -328,7 +328,7 @@ namespace TerraKnight.Items
         }
 
         /// <summary>Enemies seen so far (some may be gone; check <see cref="Info.Hm"/>).</summary>
-        public static IEnumerable<Info> All => known.Values;
+        public static Dictionary<int, Info>.ValueCollection All => known.Values;
 
         /// <summary>Bosses beaten by their own FSM (the False Knight's fall) whose health manager still holds life: shown and counted as dead.</summary>
         static readonly HashSet<int> defeated = new HashSet<int>();

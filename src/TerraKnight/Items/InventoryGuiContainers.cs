@@ -117,7 +117,7 @@ namespace TerraKnight.Items
                     DevFavorited++;
                     Sound("Menu_Tick");
                 }
-                else Notice(Lang.T(kind == Containers.BoxKind ? "增益药水攒到 20 瓶才能收藏" : "旗帜带在身上就生效，不用收藏"));
+                else Notice(Lang.T(kind != Containers.BoxKind ? "旗帜带在身上就生效，不用收藏" : Containers.IsFood(slot.Def) ? "食物不用收藏：同种食物合计满 20 份就常驻增益" : "增益药水攒到 20 瓶才能收藏"));
                 return true;
             }
             if (!inv.Mouse.IsEmpty && Chests.OpenRefuses(inv.Mouse))

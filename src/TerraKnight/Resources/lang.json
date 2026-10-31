@@ -11452,5 +11452,61 @@
  },
  "重复时装已出售：{0}": {
   "en-US": "Duplicate vanity sold: {0}"
+ },
+ "同种食物合计 {0}/{1} 份：背包、储蓄罐与药水箱里合计满 {1} 份，常驻其增益": {
+  "en-US": "{0}/{1} of this food: with {1} in the bag, Piggy Bank and Potion Box together, its buff stays on",
+  "zh-Hant": "同種食物合計 {0}/{1} 份：背包、儲蓄罐與藥水箱裡合計滿 {1} 份，常駐其增益",
+  "ja-JP": "同じ食べ物 {0}/{1} 個：持ち物・ブタの貯金箱・ポーションボックス合わせて {1} 個で、その効果がずっと続く",
+  "ko-KR": "같은 음식 {0}/{1}개: 가방, 돼지 저금통, 물약 상자를 합쳐 {1}개가 되면 그 효과가 계속 유지됨",
+  "de-DE": "{0}/{1} dieser Speise: mit {1} in Inventar, Sparschwein und Trankkiste zusammen bleibt ihr Bonus aktiv",
+  "fr-FR": "{0}/{1} de cet aliment : à {1} entre l'inventaire, la tirelire et la boîte à potions, son bonus reste actif",
+  "es-ES": "{0}/{1} de esta comida: con {1} entre el inventario, la hucha y la caja de pociones, su mejora se mantiene",
+  "it-IT": "{0}/{1} di questo cibo: con {1} tra inventario, salvadanaio e cassetta delle pozioni, il suo effetto resta attivo",
+  "pt-BR": "{0}/{1} desta comida: com {1} somando inventário, cofrinho e caixa de poções, o bônus fica ativo",
+  "ru-RU": "{0}/{1} этой еды: при {1} в сумме в инвентаре, копилке и ящике для зелий её бонус действует постоянно"
+ },
+ "食物不用收藏：同种食物合计满 20 份就常驻增益": {
+  "en-US": "Food needs no favorite: 20 of one kind in total keeps its buff on",
+  "zh-Hant": "食物不用收藏：同種食物合計滿 20 份就常駐增益",
+  "ja-JP": "食べ物はお気に入り不要：同じ食べ物が合計20個でその効果がずっと続く",
+  "ko-KR": "음식은 즐겨찾기가 필요 없음: 같은 음식이 합쳐 20개면 효과가 계속 유지됨",
+  "de-DE": "Speisen muss man nicht favorisieren: 20 einer Sorte insgesamt halten ihren Bonus aktiv",
+  "fr-FR": "La nourriture n'a pas besoin d'être en favori : 20 du même aliment au total gardent son bonus actif",
+  "es-ES": "La comida no necesita favorito: 20 del mismo tipo en total mantienen su mejora",
+  "it-IT": "Il cibo non va nei preferiti: 20 dello stesso tipo in totale tengono attivo il suo effetto",
+  "pt-BR": "Comida não precisa de favorito: 20 do mesmo tipo no total mantêm o bônus ativo",
+  "ru-RU": "Еду не нужно добавлять в избранное: 20 одного вида в сумме держат её бонус постоянно"
+ },
+ "需要梦之钉才能入梦挑战（在安息之地获得）": {
+  "en-US": "Needs the Dream Nail to enter the dream (found in the Resting Grounds)",
+  "zh-Hant": "需要夢之釘才能入夢挑戰（在安息之地獲得）"
+ },
+ "需要先击败粪虫防御者，再在他的坟前入梦": {
+  "en-US": "Defeat the Dung Defender first, then enter the dream at his grave",
+  "zh-Hant": "需要先擊敗糞蟲防禦者，再在他的墳前入夢"
+ },
+ "需要爱之钥才能打开爱之塔": {
+  "en-US": "Needs the Love Key to open the Tower of Love",
+  "zh-Hant": "需要愛之鑰才能打開愛之塔"
+ },
+ "需要先用梦之钉点亮嚎叫悬崖的梦魇之灯，格林剧团才会来到德特茅斯": {
+  "en-US": "Light the Nightmare Lantern on the Howling Cliffs with the Dream Nail first; then the Grimm Troupe comes to Dirtmouth",
+  "zh-Hant": "需要先用夢之釘點亮嚎叫懸崖的夢魘之燈，格林劇團才會來到德特茅斯"
+ },
+ "需要先击败格林团长，并让格林之子收齐火焰": {
+  "en-US": "Defeat Troupe Master Grimm first, and let the Grimmchild gather its flames",
+  "zh-Hant": "需要先擊敗格林團長，並讓格林之子收齊火焰"
+ },
+ "需要先让三位守梦者长眠，黑卵神殿才会打开": {
+  "en-US": "Put the three Dreamers to rest first; then the Temple of the Black Egg opens",
+  "zh-Hant": "需要先讓三位守夢者長眠，黑卵神殿才會打開"
+ },
+ "需要虚空之心和梦之钉，才能在空洞骑士的梦里见到辐光": {
+  "en-US": "Needs the Void Heart and the Dream Nail to meet the Radiance in the Hollow Knight's dream",
+  "zh-Hant": "需要虛空之心和夢之釘，才能在空洞騎士的夢裡見到輻光"
+ },
+ "需要神明调谐器（在垃圾坑深处的寻神者那里获得）": {
+  "en-US": "Needs the Godtuner (from the Godseeker deep in the Junk Pit)",
+  "zh-Hant": "需要神明調諧器（在垃圾坑深處的尋神者那裡獲得）"
  }
 }

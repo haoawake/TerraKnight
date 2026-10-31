@@ -88,7 +88,7 @@ namespace TerraKnight.Net
             var rp = NetSession.Player(victim);
             if (rp == null || !rp.Visible) return;
             // The number over them is their own hurt's, sent from their game (Net.NetFx).
-            if (attacker == NetSession.MySlot) TerraMod.Instance?.PlaySound("Player_Hit_" + Random.Range(0, 3), 0.6f);
+            if (attacker == NetSession.MySlot) TerraMod.Instance?.PlaySound(TerraKnight.Player.Appearance.HurtVoice(rp.Appearance), 0.6f);
         }
 
         /// <summary>The DeathTextGeneric lines Terraria picks one of (Language.RandomFromCategory).</summary>

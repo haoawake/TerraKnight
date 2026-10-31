@@ -218,8 +218,11 @@ namespace TerraKnight.Items
             if (s == null || !BossArena.Has(s.Key)) return Text("这个召唤物没有战斗入口", "No battle entrance for this seal");
             if (pending || BossArena.Visiting) return Text("已有首领挑战正在进行", "A boss challenge is already in progress");
             if (!GameHooks.PlayerHasControl() || gm == null || hero == null) return Text("现在无法召唤首领", "You cannot summon a boss now");
-            if (Shop.UnlockedStage() < s.Stage) return Text("当前探索进度不足", "Explore further before using this seal");
-            if (Bestiary.KillsOf(s.Key) <= 0) return Text("请先在旅途中击败该首领一次", "Defeat this boss in your journey first");
+            // A boss beaten once is there to fight again, as the seal says, at any stage: the Troupe Master Grimm, beaten long
+            // before his seal's stage 5, was refused for the exploring left (the user's 10-31 "格林团长击杀后重刷描述探索进度不够").
+            if (Bestiary.KillsOf(s.Key) <= 0)
+                return Shop.UnlockedStage() < s.Stage ? Text("当前探索进度不足", "Explore further before using this seal")
+                    : Text("请先在旅途中击败该首领一次", "Defeat this boss in your journey first");
             if (s.Dream && (PlayerData.instance == null || !PlayerData.instance.hasDreamNail)) return Text("需要梦之钉", "Requires the Dream Nail");
             // Anywhere in the world; not from inside a dream or Godhome, whose own ending decides where the player goes.
             if (gm.sceneName.StartsWith("GG_") || gm.sceneName.StartsWith("Dream_")) return Text("梦境和神居里不能使用", "Cannot be used in a dream or Godhome");

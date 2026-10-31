@@ -142,7 +142,7 @@ namespace TerraKnight.UI
                 catch (InvalidOperationException) { }
         }
 
-        float nextRepeat = -1f;
+        float nextRepeat = -1f, keyPressedAt = -10f;
         int guiBacks;
 
         /// <summary>
@@ -169,15 +169,21 @@ namespace TerraKnight.UI
             bool held = kb != null && kb.backspaceKey.isPressed;
             float now = Time.unscaledTime;
             int n = 0;
-            if (kb != null && kb.backspaceKey.wasPressedThisFrame) { n = 1; nextRepeat = now + 0.45f; }
+            if (kb != null && kb.backspaceKey.wasPressedThisFrame) { n = 1; nextRepeat = now + 0.45f; keyPressedAt = now; }
             else if (held && nextRepeat >= 0f && now >= nextRepeat) { n = 1; nextRepeat = now + 0.05f; }
             if (!held && n == 0)
             {
                 nextRepeat = -1f;
-                n = guiBacks;
-                if (n == 0 && legacyAvailable)
-                    try { if (Input.GetKeyDown(KeyCode.Backspace)) n = 1; }
-                    catch (InvalidOperationException) { legacyAvailable = false; }
+                // The window's message (and the old input's key) for a press the Input System saw comes in after it (this
+                // frame's GUI, after the frame's tick): a key let go by the next frame took a second character off with it
+                // (the user's 10-31 "搜索…按删除键会触发两次"). They count only when the Input System saw no press just now.
+                if (now - keyPressedAt > 0.5f)
+                {
+                    n = guiBacks;
+                    if (n == 0 && legacyAvailable)
+                        try { if (Input.GetKeyDown(KeyCode.Backspace)) n = 1; }
+                        catch (InvalidOperationException) { legacyAvailable = false; }
+                }
             }
             guiBacks = 0;
             return n;

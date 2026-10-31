@@ -50,6 +50,7 @@ namespace TerraKnight.Items
             new Recipe(ItemType.DemonBow, 1, "砧", 0, (ItemType.DemoniteBar, 8)), // Recipe.cs:10582-10586
             new Recipe(ItemType.MoltenFury, 1, "砧", 0, (ItemType.HellstoneBar, 15)), // Recipe.cs:11210-11214
             new Recipe(ItemType.PhoenixBlaster, 1, "砧", 0, (ItemType.HellstoneBar, 10), (ItemType.Handgun, 1)), // Recipe.cs:11230-11235
+            new Recipe(ItemType.Snowball, 15, "徒手", 0, (ItemType.SnowBlock, 1)), // Recipe.cs:2063-2065
             new Recipe(ItemType.FlamingArrow, 10, "徒手", 0, (ItemType.WoodenArrow, 10), (ItemType.Torch, 1)), // Recipe.cs:2084-2089
             new Recipe(ItemType.JestersArrow, 10, "徒手", 0, (ItemType.WoodenArrow, 10), (ItemType.FallenStar, 1)), // Recipe.cs:2096-2101
             new Recipe(ItemType.MeteorShot, 70, "砧", 0, (ItemType.MusketBall, 70), (ItemType.MeteoriteBar, 1)), // Recipe.cs:2180-2186

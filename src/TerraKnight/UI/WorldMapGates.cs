@@ -69,11 +69,15 @@ namespace TerraKnight.UI
             (g.At.x + (g.Side == 'r' ? -1f : g.Side == 'l' ? 1f : 0f)) * C,
             (g.At.y + (g.Side == 't' ? -1f : g.Side == 'b' ? 1f : 0f)) * C));
 
-        /// <summary>The gate leads somewhere the map can show and its two sides don't meet there (or are on different layers).</summary>
+        /// <summary>
+        /// The gate leads somewhere the map can show and its two sides don't meet there (or are on different layers). Not
+        /// between two scenes of one place, laid on each other (the Collector's tower in the Tower of Love: WorldMapLayout).
+        /// </summary>
         static bool NeedsMarker(Gate g)
         {
             if (g.Side == 'd' || string.IsNullOrEmpty(g.To) || !layout.TryGetValue(g.Scene, out var at)) return false;
             if (!layout.TryGetValue(g.To, out var there) || g.Partner == null) return true;
+            if (at == there && StretchOf(g.Scene) == StretchOf(g.To)) return false;
             if (GateDeep(g) != (g.Partner != null ? GateDeep(g.Partner) : IsDeep(g.To))) return true;
             var a = OnMap(g.Scene, at, g.Fit);
             var b = OnMap(g.To, there, g.Partner.Fit);

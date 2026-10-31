@@ -58,7 +58,9 @@ namespace TerraKnight.UI
                     if (d < 45f && Time.time - info.LastHit < 10f && (struck == null || info.LastHit > struck.LastHit)) struck = info;
                     continue;
                 }
-                if (life >= max && !Always) continue;
+                // Unhurt: only with every bar shown, and then not over the rooms' harmless things with no journal record of
+                // their own (Waterways_08's 85 fluke babies in the walls).
+                if (life >= max && (!Always || (!info.Harmful && info.Record == null))) continue;
                 var bounds = Bounds(hm);
                 // Out of sight (its collider and art switched off while it burrows or flies off): where it was last seen.
                 if (bounds.size == Vector3.zero) { if (!lastBounds.TryGetValue(hm, out bounds)) continue; }
@@ -94,9 +96,12 @@ namespace TerraKnight.UI
 
         static readonly System.Collections.Generic.Dictionary<HealthManager, Bounds> lastBounds = new System.Collections.Generic.Dictionary<HealthManager, Bounds>();
 
+        static readonly System.Collections.Generic.List<Renderer> renderers = new System.Collections.Generic.List<Renderer>();
+
         static bool Visible(HealthManager hm)
         {
-            foreach (var r in hm.GetComponentsInChildren<Renderer>())
+            hm.GetComponentsInChildren(false, renderers);
+            foreach (var r in renderers)
                 if (r.enabled && r.isVisible) return true;
             return false;
         }
@@ -130,6 +135,8 @@ namespace TerraKnight.UI
             if (left.z < 0f) return;
             float px = (right.x - left.x) / 36f; // screen pixels per bar pixel
             float x0 = left.x, y0 = Screen.height - left.y, h = hb1.height * px;
+            // Off the screen: no draw calls (the seamless world keeps the rooms around loaded, their enemies with them).
+            if (right.x < 0f || x0 > Screen.width || y0 + h < 0f || y0 > Screen.height) return;
             var prev = GUI.color;
             GUI.color = color;
             if (w < 34)

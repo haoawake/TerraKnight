@@ -335,10 +335,10 @@ namespace TerraKnight
             // --- The Potion Box.
             bool kinds = Containers.IsPotion(ItemDb.Get(ItemType.IronskinPotion)) && Containers.IsPotion(ItemDb.Get(ItemType.GreaterHealingPotion))
                 && Containers.IsPotion(ItemDb.Get(ItemType.FlaskofFire)) && Containers.IsPotion(ItemDb.Get(ItemType.RecallPotion))
-                && !Containers.IsPotion(ItemDb.Get(ItemType.Mushroom)) && !Containers.IsPotion(ItemDb.Get(ItemType.Ale)) && !Containers.IsPotion(ItemDb.Get(ItemType.Sake))
-                && !Containers.IsPotion(ItemDb.Get(ItemType.CookedFish)) && !Containers.IsPotion(ItemDb.Get(ItemType.Wood))
+                && !Containers.IsPotion(ItemDb.Get(ItemType.Mushroom)) && Containers.IsPotion(ItemDb.Get(ItemType.Ale)) && Containers.IsPotion(ItemDb.Get(ItemType.Sake))
+                && Containers.IsPotion(ItemDb.Get(ItemType.CookedFish)) && Containers.IsPotion(ItemDb.Get(ItemType.GoldenDelight)) && !Containers.IsPotion(ItemDb.Get(ItemType.Wood))
                 && Containers.IsBuffPotion(ItemDb.Get(ItemType.IronskinPotion)) && !Containers.IsBuffPotion(ItemDb.Get(ItemType.GreaterHealingPotion))
-                && !Containers.IsBuffPotion(ItemDb.Get(ItemType.BottledHoney));
+                && !Containers.IsBuffPotion(ItemDb.Get(ItemType.BottledHoney)) && Containers.IsBuffPotion(ItemDb.Get(ItemType.Ale)) && !Containers.IsBuffPotion(ItemDb.Get(ItemType.GoldenDelight));
             int potions = 0, buffPotions = 0;
             foreach (ItemType t in System.Enum.GetValues(typeof(ItemType)))
             {
@@ -346,7 +346,7 @@ namespace TerraKnight
                 if (Containers.IsPotion(d)) potions++;
                 if (Containers.IsBuffPotion(d)) buffPotions++;
             }
-            BannerCheck("药水箱只认药水（不收食物、蘑菇、麦芽酒），增益药水不含治疗类", kinds && potions <= Inventory.BoxPages * Inventory.ContainerPageSlots,
+            BannerCheck("药水箱收药水、食物和酒（不收蘑菇、木材），增益药水不含治疗类和食物", kinds && potions <= Inventory.BoxPages * Inventory.ContainerPageSlots,
                 $"药水 {potions} 种（箱子 {Inventory.BoxPages * Inventory.ContainerPageSlots} 格），其中增益药水 {buffPotions} 种");
             const int Ironskin = 5, Swiftness = 3, Lucky = 257, Fire = 74, Ichor = 76;
             foreach (int bf in new[] { Ironskin, Swiftness, Lucky, Fire, Ichor }) Player.PlayerBuffs.Remove(bf);

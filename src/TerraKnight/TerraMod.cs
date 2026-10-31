@@ -40,6 +40,8 @@ namespace TerraKnight
         /// <summary>Which way the player looks: towards the cursor while using an item.</summary>
         public float UseDirection { get; private set; } = 1f;
         public bool IsUsingItem => swingItem != null;
+        /// <summary>Seconds left of the swing under way (0 with none).</summary>
+        public float SwingLeft => swingItem != null ? Mathf.Max(0f, swingDuration - swingTime) : 0f;
 
         /// <summary>Dev: whether the Terraria player is drawn now, and where.</summary>
         public string DevPlayerDrawn => playerSprite == null ? "-" : $"{(playerSprite.gameObject.activeSelf ? "显示" : "隐藏")} {playerSprite.transform.position:F1}";
@@ -2980,6 +2982,7 @@ namespace TerraKnight
                 if (!playerSprite.SpecialPoseActive) playerSprite.MountAppearance(Mounts.Current, facing, poseVel, grounded, equips);
             }
             if(Mounts.Riding) Mounts.Draw(Mounts.Current.Native,mountFeet,poseVel,grounded,facing,opacity);
+            var lookWing = LookWing();
             NetPose = new Net.PoseRecord
             {
                 Mount = Mounts.Current!=null ? Mounts.Current.Native : -1,
@@ -2988,16 +2991,16 @@ namespace TerraKnight
                 ItemScale = poseScale, Opacity = opacity,
                 Item = shown == null ? ItemType.None : hold.Idle ? heldDef.Type : swingItem != null ? swingItem.Type : ItemType.None,
                 BodyOverride = bodyOverride, LegOverride = Mounts.Current?.Skates==true?playerSprite.LegFrameNow:poseLeg, Shadows = TerraMovement.ShadowCount,
-                Wing = !Mounts.OwnMovement && TerraMovement.Wing != null ? TerraMovement.Wing.Slot : 0, WingFrame = TerraWings.Frame,
+                Wing = !Mounts.OwnMovement && lookWing != null ? lookWing.Slot : 0, WingFrame = TerraWings.Frame,
                 Equips = equips, Hold = hold, Box = col.bounds,
             };
             // DrawPlayer_09_Wings: drawn behind the player through the effect batch (their frames, glowmasks and copies differ by slot).
-            if (!playerSprite.SpecialPoseActive && !Mounts.OwnMovement && playerSprite.gameObject.activeInHierarchy && TerraMovement.Wing != null && Effects.FxBatch.Instance != null)
+            if (!playerSprite.SpecialPoseActive && !Mounts.OwnMovement && playerSprite.gameObject.activeInHierarchy && lookWing != null && Effects.FxBatch.Instance != null)
             {
                 // Turned over by the Gravity Globe the wings hang upside down with the player.
                 var centrePx = Effects.TerraParticles.ToPx(playerSprite.transform.position);
                 if (GravityGlobe.Flipped) Effects.FxBatch.Instance.MirrorAboutY = centrePx.y;
-                TerraWings.Draw(Effects.FxBatch.Instance, TerraMovement.Wing, centrePx,
+                TerraWings.Draw(Effects.FxBatch.Instance, lookWing, centrePx,
                     facing < 0f ? -1 : 1, opacity, !grounded && !GrapplingHook.IsLatched);
                 Effects.FxBatch.Instance.MirrorAboutY = null;
             }
@@ -3013,6 +3016,23 @@ namespace TerraKnight
 
         /// <summary>The head, body and legs drawn (a social piece, else the one in effect).</summary>
         static readonly ItemStack[] lookArmor = new ItemStack[Items.Inventory.ArmorSlots];
+
+        /// <summary>
+        /// The wings drawn: a pair in the social column over the pair worn, the last one there first (Player.UpdateVisibleAccessories:
+        /// the social slots' wingSlot after the worn ones'; the user's 10-31 "翅膀的外观按照时装优先"), shown with none worn to
+        /// fly on too. The flight is the worn pair's (TerraMovement.Wing); none for the merfolk.
+        /// </summary>
+        WingDef LookWing()
+        {
+            if (Equipment.MerfolkNow) return null;
+            int slot = 0;
+            for (int k = 0; k < Items.Inventory.OpenAccessories && k < Inventory.VanityAccessories.Length; k++)
+            {
+                var a = Inventory.VanityAccessories[k];
+                if (!a.IsEmpty && a.Def.Wing > 0) slot = a.Def.Wing;
+            }
+            return slot > 0 ? TerraWings.Get(slot) ?? TerraMovement.Wing : TerraMovement.Wing;
+        }
 
         /// <summary>
         /// The armor sets' look (SetArmorEffectVisuals, Pl:37285-37456): the set's copies, Holy Protection, the Spectre
@@ -3117,7 +3137,7 @@ namespace TerraKnight
                     CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), CombatText.PlayerHurt);
                     TerraHurt.LastDamage = damage;
                     Plugin.Log.LogInfo(DevLastFall = $"[摔落] {scene} 摔下 {tiles} 格（安全 {safe} 格）：伤害 {damage}，剩 {Stats.Life}{(Stats.IsDead ? "，摔死了" : "")}");
-                    if (!Stats.IsDead) PlaySound(Equipment.WerewolfNow ? "NPC_Hit_6" : "Player_Hit_" + Random.Range(0, 3));
+                    if (!Stats.IsDead) PlaySound(Equipment.WerewolfNow ? "NPC_Hit_6" : Player.Appearance.HurtVoice(Player.Appearance.Current));
                     // Out of life: let the game kill the hero through its normal damage path.
                     if (Stats.IsDead) hero.TakeDamage(hero.gameObject, GlobalEnums.CollisionSide.bottom, 1, 1);
                 }

@@ -252,6 +252,9 @@ namespace TerraKnight.Items
                 // The Potion Box: how near a buff potion is to being kept for good.
                 if (Chests.PotionBoxOpen && Containers.IsBuffPotion(st.Def))
                     hoveredExtra = st.Favorite ? Lang.T("已收藏：这种增益永久生效，Alt+左键取消收藏即失效") : Lang.F("已攒 {0}/{1} 瓶：满 {1} 瓶后 Alt+左键收藏，这种增益永久生效", Mathf.Min(st.Count, Containers.FavoriteAt), Containers.FavoriteAt);
+                // Its food: how near its kind's total is to its fed state kept on.
+                else if (Chests.PotionBoxOpen && Containers.IsFood(st.Def))
+                    hoveredExtra = Lang.F("同种食物合计 {0}/{1} 份：背包、储蓄罐与药水箱里合计满 {1} 份，常驻其增益", Mathf.Min(Containers.FoodTotal(inv, st.Type), Containers.FavoriteAt), Containers.FavoriteAt);
             }
             // The buttons, one under another beside the slots; the hovered one bigger and gold.
             int over = -1;

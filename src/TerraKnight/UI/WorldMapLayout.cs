@@ -101,7 +101,7 @@ namespace TerraKnight.UI
             ["Ruins2_01"] = new Vector2Int(1778, -1315), ["Ruins2_01_b"] = new Vector2Int(1776, -1318), ["Ruins2_03"] = new Vector2Int(1764, -1100), ["Ruins2_03b"] = new Vector2Int(1778, -1131),
             ["Ruins2_04"] = new Vector2Int(1953, -1339), ["Ruins2_05"] = new Vector2Int(2311, -1214), ["Ruins2_06"] = new Vector2Int(2273, -1336), ["Ruins2_07"] = new Vector2Int(2411, -1339),
             ["Ruins2_08"] = new Vector2Int(2411, -1271), ["Ruins2_09"] = new Vector2Int(2317, -1028), ["Ruins2_10"] = new Vector2Int(2318, -675), ["Ruins2_10b"] = new Vector2Int(2251, -1112),
-            ["Ruins2_11"] = new Vector2Int(2717, -1546), ["Ruins2_11_b"] = new Vector2Int(2457, -1289), ["Ruins2_Watcher_Room"] = new Vector2Int(1762, -852), ["Ruins_Bathhouse"] = new Vector2Int(2091, -982),
+            ["Ruins2_11"] = new Vector2Int(2457, -1289), ["Ruins2_11_b"] = new Vector2Int(2457, -1289), ["Ruins2_Watcher_Room"] = new Vector2Int(1762, -852), ["Ruins_Bathhouse"] = new Vector2Int(2091, -982),
             ["Ruins_Elevator"] = new Vector2Int(2005, -1431), ["Ruins_House_01"] = new Vector2Int(2165, -1314), ["Ruins_House_02"] = new Vector2Int(2062, -1281), ["Ruins_House_03"] = new Vector2Int(2064, -1401),
             ["Town"] = new Vector2Int(384, 9), ["Tutorial_01"] = new Vector2Int(0, 0), ["Waterways_01"] = new Vector2Int(1377, -1411), ["Waterways_02"] = new Vector2Int(1344, -1508),
             ["Waterways_03"] = new Vector2Int(1575, -1336), ["Waterways_04"] = new Vector2Int(1071, -1411), ["Waterways_04b"] = new Vector2Int(806, -1411), ["Waterways_05"] = new Vector2Int(1683, -1411),
@@ -216,12 +216,13 @@ namespace TerraKnight.UI
             ["Ruins2_01_b"] = new Vector2(1.151f, 0.999f), ["Ruins2_03b"] = new Vector2(0.994f, 1.002f), ["Ruins2_04"] = new Vector2(1.070f, 1.047f),
             ["Ruins2_05"] = new Vector2(1.078f, 1.106f), ["Ruins2_06"] = new Vector2(1.250f, 1.250f), ["Ruins2_07"] = new Vector2(0.895f, 1.250f),
             ["Ruins2_08"] = new Vector2(1.002f, 0.998f), ["Ruins2_09"] = new Vector2(1.001f, 0.995f), ["Ruins2_10"] = new Vector2(0.750f, 1.000f),
-            ["Ruins2_10b"] = new Vector2(0.995f, 1.053f), ["Ruins2_11_b"] = new Vector2(1.250f, 1.047f), ["Ruins_Bathhouse"] = new Vector2(0.999f, 1.000f),
-            ["Town"] = new Vector2(1.034f, 1.250f), ["Waterways_01"] = new Vector2(0.942f, 1.026f), ["Waterways_02"] = new Vector2(1.032f, 1.083f),
-            ["Waterways_03"] = new Vector2(1.000f, 0.996f), ["Waterways_04"] = new Vector2(1.007f, 0.750f), ["Waterways_04b"] = new Vector2(1.020f, 0.752f),
-            ["Waterways_05"] = new Vector2(0.883f, 1.116f), ["Waterways_06"] = new Vector2(1.028f, 1.042f), ["Waterways_07"] = new Vector2(0.999f, 0.918f),
-            ["Waterways_08"] = new Vector2(1.000f, 1.005f), ["Waterways_09"] = new Vector2(1.052f, 0.999f), ["Waterways_12"] = new Vector2(1.000f, 0.998f),
-            ["Waterways_13"] = new Vector2(1.000f, 0.920f), ["Waterways_14"] = new Vector2(0.990f, 0.998f), ["Waterways_15"] = new Vector2(1.000f, 1.005f),
+            ["Ruins2_10b"] = new Vector2(0.995f, 1.053f), ["Ruins2_11"] = new Vector2(1.250f, 1.047f), ["Ruins2_11_b"] = new Vector2(1.250f, 1.047f),
+            ["Ruins_Bathhouse"] = new Vector2(0.999f, 1.000f), ["Town"] = new Vector2(1.034f, 1.250f), ["Waterways_01"] = new Vector2(0.942f, 1.026f),
+            ["Waterways_02"] = new Vector2(1.032f, 1.083f), ["Waterways_03"] = new Vector2(1.000f, 0.996f), ["Waterways_04"] = new Vector2(1.007f, 0.750f),
+            ["Waterways_04b"] = new Vector2(1.020f, 0.752f), ["Waterways_05"] = new Vector2(0.883f, 1.116f), ["Waterways_06"] = new Vector2(1.028f, 1.042f),
+            ["Waterways_07"] = new Vector2(0.999f, 0.918f), ["Waterways_08"] = new Vector2(1.000f, 1.005f), ["Waterways_09"] = new Vector2(1.052f, 0.999f),
+            ["Waterways_12"] = new Vector2(1.000f, 0.998f), ["Waterways_13"] = new Vector2(1.000f, 0.920f), ["Waterways_14"] = new Vector2(0.990f, 0.998f),
+            ["Waterways_15"] = new Vector2(1.000f, 1.005f),
         };
     }
 }

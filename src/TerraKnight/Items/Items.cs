@@ -583,6 +583,8 @@ namespace TerraKnight.Items
         Clentaminator,
         // The Guide's recipe list carried (Items/GuideAdvice.cs, the user's 10-29).
         GuideAdvice,
+        // Terraria's Snow Block (Items/ItemsSnow.cs, the user's 10-31): the Snowballs' material.
+        SnowBlock,
 
     }
 
@@ -1913,6 +1915,7 @@ namespace TerraKnight.Items
             AddAbilityAccessories(list);
             AddSoulWaveWeapons(list);
             AddAltarItems(list);
+            AddSnow(list);
             AddHowlWeapons(list);
             AddShadeWeapons(list);
             AddAbyssWeapons(list);
@@ -1965,7 +1968,7 @@ namespace TerraKnight.Items
             for (int i = 0; i < arr.Length; i++)
                 if (arr[i] == null) arr[i] = new ItemDef { Type = (ItemType)i, Name = ((ItemType)i).ToString(), Texture = "Item_1", Placeholder = true };
             // Stage, source and value (gen.py). The geo price follows the value: a geo per silver.
-            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Batch1021Sources()), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(AbilityAccessorySources(), System.Linq.Enumerable.Concat(SoulWaveSources(), System.Linq.Enumerable.Concat(AltarSources(), System.Linq.Enumerable.Concat(HowlSources(), System.Linq.Enumerable.Concat(ShadeSources(), AbyssSources()))))), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(VanitySources(), System.Linq.Enumerable.Concat(RegionVanitySources(), BossPetSources()))), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
+            foreach (var (t, stage, source, value) in System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Batch1017Sources(), Batch1021Sources()), Sources()), OreSources()), MoneySources()), ChainSources()), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(InfoSources(), System.Linq.Enumerable.Concat(Station2Sources(), System.Linq.Enumerable.Concat(TombstoneSources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(AbilityAccessorySources(), System.Linq.Enumerable.Concat(SoulWaveSources(), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(AltarSources(), SnowSources()), System.Linq.Enumerable.Concat(HowlSources(), System.Linq.Enumerable.Concat(ShadeSources(), AbyssSources()))))), CarriedFurnitureSources())))), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(Armor2Sources(), System.Linq.Enumerable.Concat(VanitySources(), System.Linq.Enumerable.Concat(RegionVanitySources(), BossPetSources()))), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(HeartSources(), UltimatePotionSources()), System.Linq.Enumerable.Concat(Relics.Enabled ? RelicSources() : System.Linq.Enumerable.Empty<(ItemType, int, ItemSource, int)>(), TreasureBags.Sources())), System.Linq.Enumerable.Concat(System.Linq.Enumerable.Concat(FishingSources(), FoodSources()), PetSources()))))))
             {
                 var d = arr[(int)t];
                 d.Stage = stage;
@@ -2822,7 +2825,7 @@ namespace TerraKnight.Items
         /// <summary>Room for this many more of an item: the bag, and the ammo slots as far as they take it.</summary>
         public int Room(ItemType type)
         {
-            if (Wardrobe.Clothing(type)) return int.MaxValue;
+            if (Wardrobe.Clothing(type) && !Wardrobe.Ingredient(type)) return int.MaxValue;
             var def = ItemDb.Get(type);
             int room = 0;
             for (int i = 0; i < Total; i++)

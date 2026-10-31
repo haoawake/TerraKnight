@@ -786,7 +786,8 @@ namespace TerraKnight.Items
         /// <summary>Dev: start or end typing into the search, as a click on the box and Enter do.</summary>
         public static void DevBookType(bool on) { if (on) StartBookSearch(); else EndBookSearch(); }
 
-        static bool Matches(string text) => text != null && text.IndexOf(SearchQuery, System.StringComparison.OrdinalIgnoreCase) >= 0;
+        /// <summary>The text has what is searched for in it, or spells it in pinyin (in full, by first letters, or mixed: UI.Pinyin).</summary>
+        static bool Matches(string text) => text != null && (text.IndexOf(SearchQuery, System.StringComparison.OrdinalIgnoreCase) >= 0 || UI.Pinyin.Matches(text, SearchQuery));
 
         /// <summary>An enemy the search finds: a seen one by its name, a defeated one by a drop the book shows (not a locked one).</summary>
         static bool MatchesSearch(string rec)

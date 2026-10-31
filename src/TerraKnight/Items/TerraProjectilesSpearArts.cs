@@ -418,6 +418,18 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A right-click art's spear out now: its way from level for the player's arm (degrees, + up, his facing's).</summary>
+        /// <summary>A right-click art still under way: a lance's charge, a staff's technique, a spear art's spear out.</summary>
+        internal bool ArtGoing
+        {
+            get
+            {
+                if (lanceDash != null) return true;
+                foreach (var a in staffArts.Values) if (a.Skill) return true;
+                foreach (var p in live) if (!p.Dead && p.SpearArt != null && p.SpearArt.Skill) return true;
+                return false;
+            }
+        }
+
         public bool SkillSpearAngle(float facing, out float deg)
         {
             deg = 0f;

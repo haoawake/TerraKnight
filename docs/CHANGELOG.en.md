@@ -1,5 +1,34 @@
 # Changelog
 
+## 5.4.0 — Pinyin search, Snow Blocks and a wiser compass
+
+### New
+
+- The Bestiary's search takes pinyin: a name's syllables in full, their first letters, or both mixed find enemies and drops.
+- Snow Block: dropped by Crystal Peak's enemies; it can be placed, and one makes 15 Snowballs by hand.
+- The Potion Box holds food and drink too: twenty of one food in the bag, the Piggy Bank and the Potion Box together keep its buff on; 20 Ale or Sake favourited keep Tipsy on.
+
+### Improvements
+
+- The Wayward Compass points only to boss fights that can be begun now: a dream needs the Dream Nail, the Collector the Love Key, Grimm the Troupe arrived; when none can be begun yet, the card on the map says what is missing.
+- Every charged right-click art, once loosed, can't be charged again until its move is over, then waits 0.5 seconds.
+- The Magic Missile, Flamelash and Rainbow Rod steer at most 10 at once, each for at most 10 seconds; the others fly at the nearest enemy.
+- Wings in the vanity slots are the ones shown; flight follows the worn pair.
+- A female look cries out in a female voice when hurt.
+- Mushrooms can be had earlier.
+
+### Fixes
+
+- With "always show health bars" on, harmless critters show a bar only once hurt, and bars off the screen aren't drawn: the Waterways' rooms full of them keep their frame rate.
+- One Backspace in a search box deletes one character.
+- Lemm's line on Hallownest Seals reads "真实身份" in Chinese.
+- Vanity used in recipes (the Robe, the Whoopie Cushion, Flame Waker Boots) stays in the bag when picked up, and recipes use it.
+- On Hollow Knight's map the bench pylons of the Colosseum, the Teacher's Archives, Mato's hut and the Shrine of Believers are drawn in the room with their door and can be clicked; of overlapping pylon icons, the highlighted one is the one clicked.
+- A boss's summoning item works at any stage once that boss has been beaten (Troupe Master Grimm, for one).
+- On Terraria's map the Collector's tower is drawn where the Tower of Love is.
+- The new AI's flyers (Kingdom's Edge's Booflies, for one) carried behind a wall roam where they are, instead of turning to and fro against it.
+- On Hollow Knight's map the compass's way starts at the player's head.
+
 ## 5.3.0 — Hollow Knight's map, the Wardrobe and faster pylons
 
 ### New

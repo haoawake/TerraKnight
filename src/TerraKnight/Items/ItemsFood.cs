@@ -44,7 +44,7 @@ namespace TerraKnight.Items
             }
             foreach (var d in list)
                 if (Player.PotionBuffs.FoodRank(d.BuffType) > 0)
-                    d.Tooltip += "\n同种食物在背包与储蓄罐合计满20份，常驻其原有增益；多种达标食物只取最高档";
+                    d.Tooltip += "\n同种食物在背包、储蓄罐与药水箱合计满20份，常驻其原有增益；多种达标食物只取最高档";
         }
 
         static void Feed(ItemDef d, int buff, int ticks, bool drink)

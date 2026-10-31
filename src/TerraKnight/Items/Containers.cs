@@ -34,7 +34,7 @@ namespace TerraKnight.Items
 
     /// <summary>
     /// Two carried storages after the Void Bag's pattern (Player.GetItem's void bag, bank4): the Banner Case holds banners
-    /// (Banners) and the Potion Box potions, each its own slots, opened where the player is by using the item or a right
+    /// (Banners) and the Potion Box potions and food (<see cref="IsPotion"/>), each its own slots, opened where the player is by using the item or a right
     /// click on it in the bag (the chest panel, a page of 40 at a time). Carried, a banner or a potion picked up goes into
     /// it first; the Banner Case's banners work as the bag's do; the Potion Box's potions serve Quick Heal, Quick Mana and
     /// Quick Buff after the bag's, as the Void Bag's do (Player.QuickHeal_GetItemToUse Pl:5549-5555, QuickMana_GetItemToUse
@@ -91,20 +91,27 @@ namespace TerraKnight.Items
         static int TerrariaId(ItemDef d) => d.Texture != null && d.Texture.StartsWith("Item_") && int.TryParse(d.Texture.Substring(5), out int id) ? id : 0;
 
         /// <summary>
-        /// A potion: drunk and used up for life, mana or a buff (not food, not a fed state), or one of the teleporting potions.
-        /// The Mushroom (a crafting material first) and what is taken on touch (hearts, stars) are not.
+        /// What the Potion Box takes: a potion, drunk and used up for life, mana or a buff, or one of the teleporting potions;
+        /// and the food of a fed state with the drinks of Tipsy, the Ale and the Sake (the user's 10-31 "酒和[酒足饭饱]不能跟
+        /// 药水那样永续"). The box's food counts with the bag's and the Piggy Bank's toward its tier kept on
+        /// (<see cref="HeldFoodBuff"/>), the drinks' Tipsy is kept as a potion's buff. The Mushroom (a crafting material first),
+        /// other food and what is taken on touch (hearts, stars) are not.
         /// </summary>
         public static bool IsPotion(ItemDef d)
         {
             if (d == null || !d.Consumable || d.MaxStack <= 1 || d.IsWeapon || d.LifeCrystal || d.ManaCrystal || d.Boost != PermanentBoost.None || d.PetBuff > 0) return false;
             if (d.Type == ItemType.Heart || d.Type == ItemType.Star || d.Type == ItemType.Mushroom) return false;
-            if (food.Contains(TerrariaId(d)) || d.BuffType == Player.PotionBuffs.WellFed || d.BuffType == Player.PotionBuffs.PlentySatisfied || d.BuffType == Player.PotionBuffs.ExquisitelyStuffed) return false;
+            bool drink = d.BuffType == Player.PotionBuffs.Tipsy;
+            if (food.Contains(TerrariaId(d)) && !drink && !IsFood(d)) return false;
             return d.HealLife > 0 || d.HealMana > 0 || d.BuffType > 0 || d.Type == ItemType.RecallPotion || d.Type == ItemType.TeleportationPotion
                 || d.Type == ItemType.WormholePotion || d.Type == ItemType.PotionOfReturn;
         }
 
-        /// <summary>A buff potion (a flask too): its buff and nothing else, no healing or mana, and no debuff.</summary>
-        public static bool IsBuffPotion(ItemDef d) => IsPotion(d) && d.BuffType > 0 && d.HealLife <= 0 && d.HealMana <= 0 && !Player.PlayerBuffs.IsDebuff(d.BuffType);
+        /// <summary>Food of a fed state (Well Fed, Plenty Satisfied, Exquisitely Stuffed).</summary>
+        public static bool IsFood(ItemDef d) => d != null && Player.PotionBuffs.FoodRank(d.BuffType) > 0;
+
+        /// <summary>A buff potion (a flask too): its buff and nothing else, no healing or mana, and no debuff; not food.</summary>
+        public static bool IsBuffPotion(ItemDef d) => IsPotion(d) && !IsFood(d) && d.BuffType > 0 && d.HealLife <= 0 && d.HealMana <= 0 && !Player.PlayerBuffs.IsDebuff(d.BuffType);
 
         /// <summary>What a container takes: the Banner Case banners, the Potion Box potions.</summary>
         public static bool Fits(int kind, ItemDef d) => d != null && (kind == CaseKind ? Banners.Is(d.Type) : kind == BoxKind ? IsPotion(d) : kind == SellKind && Listable(ItemStack.Of(d.Type), out _));
@@ -311,11 +318,18 @@ namespace TerraKnight.Items
         public static bool Holds(int buff) => held.ContainsKey(buff);
         public static int HeldCount => held.Count;
 
-        /// <summary>The highest original food tier whose own type totals twenty in the bag and Piggy Bank.</summary>
+        static readonly Dictionary<ItemType, int> foodCounts = new Dictionary<ItemType, int>();
+
+        /// <summary>
+        /// The highest original food tier whose own type totals twenty in the bag, the Piggy Bank and the Potion Box (carried
+        /// or in the Piggy Bank, as its potions).
+        /// </summary>
         internal static int HeldFoodBuff(Inventory inv)
         {
             if (inv == null) return 0;
-            var counts = new Dictionary<ItemType, int>();
+            // Kept from frame to frame: every frame's new one was garbage the game collects only in a stall.
+            var counts = foodCounts;
+            counts.Clear();
             void Count(ItemStack[] slots) {
                 foreach (var stack in slots) {
                     if (stack.IsEmpty || Player.PotionBuffs.FoodRank(stack.Def.BuffType) == 0) continue;
@@ -324,6 +338,7 @@ namespace TerraKnight.Items
                 }
             }
             Count(inv.Slots); Count(inv.Bank);
+            if (InEffect(inv, ItemType.PotionBox)) foreach (var page in inv.PotionBox) Count(page);
             int best = 0;
             foreach (var pair in counts)
                 if (pair.Value >= FavoriteAt) {
@@ -331,6 +346,16 @@ namespace TerraKnight.Items
                     if (Player.PotionBuffs.FoodRank(buff) > Player.PotionBuffs.FoodRank(best)) best = buff;
                 }
             return best;
+        }
+
+        /// <summary>A food's count toward its fed state kept on: the bag's, the Piggy Bank's and the Potion Box's in effect.</summary>
+        public static int FoodTotal(Inventory inv, ItemType type)
+        {
+            if (inv == null) return 0;
+            int n = 0;
+            foreach (var s in inv.Slots) if (!s.IsEmpty && s.Type == type) n += s.Count;
+            foreach (var s in inv.Bank) if (!s.IsEmpty && s.Type == type) n += s.Count;
+            return InEffect(inv, ItemType.PotionBox) ? n + CountIn(inv, BoxKind, type) : n;
         }
 
         /// <summary>

@@ -173,6 +173,30 @@ namespace TerraKnight.Items
         static readonly Dictionary<ItemType, float> readyAt = new Dictionary<ItemType, float>();
         static bool Ready(ItemDef d) => d == null || !readyAt.TryGetValue(d.Type, out float t) || Time.time >= t;
 
+        /// <summary>The weapon's art not ready before then (a later time already set stays).</summary>
+        static void Hold(ItemType type, float until)
+        {
+            if (!readyAt.TryGetValue(type, out float t) || t < until) readyAt[type] = until;
+        }
+
+        /// <summary>
+        /// A charged art's recovery: after its swing, run, leap or charge is through, this long before the weapon's next charge
+        /// can start. A right click let go again cut the art's own swing and loosed it anew, art after art (the user's 10-31
+        /// "火山这把剑右键左键疯狂取消后摇", then "第七条扩大吧" for every charged art).
+        /// </summary>
+        const float ArtRecovery = 0.5f;
+
+        /// <summary>The charged art's weapon whose recovery waits for the art to end (a run, a lance's or a staff's charge, a spear out).</summary>
+        static ItemType recovering;
+
+        /// <summary>A charged art just let go: its weapon held off through the art's swing and its recovery.</summary>
+        static void Recover(ItemDef def)
+        {
+            var mod = TerraMod.Instance;
+            Hold(def.Type, Time.time + (mod != null ? mod.SwingLeft : 0f) + ArtRecovery);
+            recovering = def.Type;
+        }
+
         public static int DevDraws, DevDrawHits, DevThrows, DevRecalls, DevSaberHits, DevUses;
         /// <summary>Dev: the arts used, by name, the last one.</summary>
         public static Skill DevLast;
@@ -201,9 +225,15 @@ namespace TerraKnight.Items
             var kind = skill == Skill.Kind ? KindArtOf(def) : null;
             bool charged = kind != null ? kind.Charged : Charged(skill);
             bool control = GameHooks.PlayerHasControl() && !hero.cState.dead;
+            if (recovering != ItemType.None)
+            {
+                if (strike != null || TerraProjectiles.Instance != null && TerraProjectiles.Instance.ArtGoing) Hold(recovering, Time.time + ArtRecovery);
+                else recovering = ItemType.None;
+            }
             if (charged && control && strike == null)
             {
-                if (!Charging && pressed)
+                // A charged art that keeps the weapon busy (the greatswords' leap, until it has come down) starts no other.
+                if (!Charging && pressed && Ready(def))
                 {
                     // The right button first: a swing of the left's under way gives way to the charge.
                     if (usingItem) TerraMod.Instance?.CutSwing();
@@ -227,7 +257,11 @@ namespace TerraKnight.Items
                     float c = Charge;
                     bool go = ChargeHeld >= ChargeMin;
                     StopCharge();
-                    if (go) Release(hero, def, chargeSkill, c);
+                    if (go)
+                    {
+                        Release(hero, def, chargeSkill, c);
+                        Recover(def);
+                    }
                 }
             }
             else if (Charging) StopCharge();

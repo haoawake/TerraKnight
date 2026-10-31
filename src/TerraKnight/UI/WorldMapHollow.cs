@@ -90,9 +90,63 @@ namespace TerraKnight.UI
             return true;
         }
 
-        /// <summary>A point of the compass's way on Hollow Knight's map, by its scene; null where that map has no room for it.</summary>
-        static Vector2? WayOn(WayPoint p) =>
-            p.Scene != null && layout.TryGetValue(p.Scene, out var at) ? elsewhere(p.Scene, InScene(p.Scene, at, p.Cell) * C) : null;
+        static readonly System.Collections.Generic.Dictionary<string, (string Scene, Vector2 Local)> doorOut =
+            new System.Collections.Generic.Dictionary<string, (string, Vector2)>();
+
+        /// <summary>
+        /// A room behind a door that Hollow Knight's map draws no room for (the Colosseum, the Teacher's Archives, a nailmaster's
+        /// hut, the Shrine of Believers): its gates followed out, three rooms deep at most (the Colosseum's arena, its hall,
+        /// Kingdom's Edge), to the first scene that map has a room for (hasRoom), and where the door is in that scene (its
+        /// units). False: none near (Godhome, the White Palace, the dreams). Kept per scene: that map's rooms are fixed.
+        /// </summary>
+        internal static bool DoorOut(string scene, Func<string, bool> hasRoom, out string doorScene, out Vector2 doorLocal)
+        {
+            if (scene == null) { doorScene = null; doorLocal = default; return false; }
+            if (!doorOut.TryGetValue(scene, out var found)) doorOut[scene] = found = FindDoorOut(scene, hasRoom);
+            doorScene = found.Scene;
+            doorLocal = found.Local;
+            return doorScene != null;
+        }
+
+        static (string, Vector2) FindDoorOut(string scene, Func<string, bool> hasRoom)
+        {
+            var seen = new System.Collections.Generic.HashSet<string> { scene };
+            var frontier = new System.Collections.Generic.List<string> { scene };
+            for (int depth = 0; depth < 3 && frontier.Count > 0; depth++)
+            {
+                var next = new System.Collections.Generic.List<string>();
+                foreach (var s in frontier)
+                {
+                    if (!Gates.TryGetValue(s, out var list)) continue;
+                    foreach (var g in list)
+                    {
+                        if (string.IsNullOrEmpty(g.To) || !seen.Add(g.To)) continue;
+                        if (hasRoom(g.To))
+                        {
+                            // The door's own place there; one the table lacks: the middle of that scene.
+                            if (g.Partner != null) return (g.To, (Vector2)g.Partner.At * C);
+                            return SceneSize(g.To, out var size) ? (g.To, size / 2f) : (null, default);
+                        }
+                        next.Add(g.To);
+                    }
+                }
+                frontier = next;
+            }
+            return (null, default);
+        }
+
+        /// <summary>
+        /// A point of the compass's way on Hollow Knight's map, by its scene (its own units: the room being played's cells are
+        /// counted from its terrain's place, as HeadCell counts them); null where that map has no room for it.
+        /// </summary>
+        static Vector2? WayOn(WayPoint p)
+        {
+            if (p.Scene == null || !layout.TryGetValue(p.Scene, out var at)) return null;
+            var cells = InScene(p.Scene, at, p.Cell);
+            var live = World.TerraWorld.Live;
+            if (live != null && live.SceneName == p.Scene) cells += (Vector2)live.CellOffset;
+            return elsewhere(p.Scene, cells * C);
+        }
 
         /// <summary>
         /// The compass's way on Hollow Knight's map: its dots flowing on to the fight, a door's dot where the way goes on in a room

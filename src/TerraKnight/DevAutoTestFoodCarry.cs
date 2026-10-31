@@ -57,6 +57,12 @@ namespace TerraKnight
             inv.Bank[0] = ItemStack.Of(ItemType.CookedFish, 1);
             yield return new WaitForSeconds(.3f);
             Check("same-type-split-bag19-piggy1", Tier() == 1 && inv.Slots[0].Count == 19 && inv.Bank[0].Count == 1);
+            Clear(); inv.Slots[0] = ItemStack.Of(ItemType.PotionBox, 1); inv.PotionBox[0][0] = ItemStack.Of(ItemType.GoldenDelight, 19); inv.Bank[0] = ItemStack.Of(ItemType.GoldenDelight, 1);
+            yield return new WaitForSeconds(.3f);
+            Check("box19-plus-piggy1-held", Tier() == 3 && PlayerBuffs.NoTime(207) && Containers.FoodTotal(inv, ItemType.GoldenDelight) == 20);
+            inv.Slots[0] = default;
+            yield return new WaitForSeconds(.4f);
+            Check("box-not-carried-stops", Tier() == 0);
             Clear(); inv.Slots[0] = ItemStack.Of(ItemType.CookedFish, 20); inv.Bank[0] = ItemStack.Of(ItemType.SeafoodDinner, 20);
             yield return new WaitForSeconds(.3f);
             Check("best-of-two-qualified-types", Tier() == 2 && Containers.HeldFoodBuff(inv) == 206 && PotionBuffs.Bonuses().Defense == 3);

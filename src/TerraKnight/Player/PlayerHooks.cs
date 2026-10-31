@@ -370,9 +370,9 @@ namespace TerraKnight.Player
                 return;
             }
             if (hero != null) UI.CombatText.Show(hero.transform.position + Vector3.up * 0.9f, damage.ToString(), UI.CombatText.PlayerHurt);
-            // Player.PlayHurtSound, the default (male) voice: one of three.
+            // Player.PlayHurtSound: the character's voice, a man's or a woman's (Appearance.HurtVoice).
             // The werewolf yelps as a wolf does (NPC_Hit_6, Pl:38977-38981).
-            if (!mod.Stats.IsDead) mod.PlaySound(Items.Equipment.WerewolfNow ? "NPC_Hit_6" : "Player_Hit_" + Random.Range(0, 3));
+            if (!mod.Stats.IsDead) mod.PlaySound(Items.Equipment.WerewolfNow ? "NPC_Hit_6" : Appearance.HurtVoice(Appearance.Current));
             amount = mod.Stats.IsDead ? pd.health + pd.healthBlue + 10 : 0;
         }
 

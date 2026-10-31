@@ -258,14 +258,27 @@ namespace TerraKnight.UI
             if (!Open) TryOpen();
         }
 
-        /// <summary>Where a pylon goes on the map: its scene's room, stretched like the player's head.</summary>
+        /// <summary>
+        /// Where a pylon goes on the map: its scene's room, stretched like the player's head; one in a room behind a door that the
+        /// map draws none for, at that door (Place). Four bench pylons were nowhere on it, so none to click (the user's 10-31
+        /// "空洞骑士原版地图有一些晶塔点不到传送": the Colosseum's, the Archives', Mato's hut's, the Shrine of Believers').
+        /// </summary>
         static bool PylonPosition(World.Pylons.Pylon p, out Vector2 at)
         {
             at = default;
-            if (!rooms.TryGetValue(p.Scene, out var room) || p.SceneSize.x <= 0f || p.SceneSize.y <= 0f) return false;
-            at = OnRoom(room, p.Scene, p.Local + new Vector2(0.75f, 1f), p.SceneSize);
+            var local = p.Local + new Vector2(0.75f, 1f);
+            if (!rooms.TryGetValue(p.Scene, out var room))
+            {
+                var door = Place(p.Scene, local);
+                at = door ?? default;
+                return door.HasValue;
+            }
+            if (p.SceneSize.x <= 0f || p.SceneSize.y <= 0f) return false;
+            at = OnRoom(room, p.Scene, local, p.SceneSize);
             return true;
         }
+
+        static readonly System.Func<string, bool> hasRoom = s => rooms.ContainsKey(s);
 
         /// <summary>
         /// Where a point of a scene (in its own coordinates) goes on its room: as GameMap's compass
@@ -285,12 +298,18 @@ namespace TerraKnight.UI
 
         /// <summary>
         /// Where a point of a scene (its own units) goes on this map, as the compass puts the player: on its room over the scene's
-        /// size (loaded, or as Terraria's map or the world atlas has it); null for a scene the map has no room for (Godhome, the
-        /// White Palace, the rooms behind doors).
+        /// size (loaded, or as Terraria's map or the world atlas has it). A room behind a door that the map has none for: at its
+        /// door (WorldMap.DoorOut). Null for a scene with neither (Godhome, the White Palace).
         /// </summary>
         static Vector2? Place(string scene, Vector2 local)
         {
-            if (scene == null || !rooms.TryGetValue(scene, out var room)) return null;
+            if (scene == null) return null;
+            if (!rooms.TryGetValue(scene, out var room))
+            {
+                if (rooms.Count == 0 || !WorldMap.DoorOut(scene, hasRoom, out var door, out var doorLocal) || !rooms.TryGetValue(door, out room)) return null;
+                scene = door;
+                local = doorLocal;
+            }
             var region = World.TerrainSystem.Find(scene);
             Vector2 size;
             if (region != null) size = new Vector2(region.Grid.Width, region.Grid.Height) * World.CellGrid.CellSize;
@@ -299,15 +318,19 @@ namespace TerraKnight.UI
             return OnRoom(room, scene, local, size);
         }
 
-        /// <summary>The pylon icon under the mouse (screen position, y down), if any.</summary>
+        /// <summary>
+        /// The pylon icon under the mouse (screen position, y down), if any: of icons overlapping there, the one drawn last, on
+        /// top (DrawView's hovered one, whose name the label shows). The first found took the click to the one under it.
+        /// </summary>
         static World.Pylons.Pylon PylonAt(Vector2 guiMouse)
         {
+            World.Pylons.Pylon top = null;
             foreach (var p in World.Pylons.Unlocked)
             {
                 if (!PylonPosition(p, out var at)) continue;
-                if (PylonIconRect(ToScreen(at)).Contains(guiMouse)) return p;
+                if (PylonIconRect(ToScreen(at)).Contains(guiMouse)) top = p;
             }
-            return null;
+            return top;
         }
 
         internal static Rect PylonIconRect(Vector2 center)

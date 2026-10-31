@@ -56,6 +56,7 @@ namespace TerraKnight.World
             new Entry(125, ItemType.TitaniumOre, 223),
             new Entry(126, ItemType.ChlorophyteOre, 211),
             new Entry(127, ItemType.LunarOre, 408),
+            new Entry(128, ItemType.SnowBlock, 147),
         };
         public static bool Contains(CellKind kind) => (int)kind >= 88 && (int)kind < 88 + All.Length;
         public static int Tile(CellKind kind) => Contains(kind) ? All[(int)kind - 88].Tile : -1;

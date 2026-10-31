@@ -49,6 +49,19 @@ namespace TerraKnight.Items
             ["PalaceFly"] = new[] { (ItemType.ShadowJoustingLance, .04f, 5) },
         };
 
+        /// <summary>
+        /// Materials Terraria's world gives by the stack, a roll of their own with a count: the Snow Block (the Snowballs'
+        /// material, the user's 10-31) from Crystal Peak's cold.
+        /// </summary>
+        static readonly Dictionary<string, (ItemType Type, float Chance, int Stage, int Min, int Max)[]> stacks = new Dictionary<string, (ItemType, float, int, int, int)[]>
+        {
+            ["CrystalFlyer"] = new[] { (ItemType.SnowBlock, 1f / 3f, 0, 3, 6) },
+            ["CrystalCrawler"] = new[] { (ItemType.SnowBlock, 1f / 3f, 0, 3, 6) },
+            ["MinesCrawler"] = new[] { (ItemType.SnowBlock, 1f / 4f, 0, 2, 4) },
+            ["ZombieMiner"] = new[] { (ItemType.SnowBlock, 1f / 3f, 0, 3, 6) },
+            ["BeamMiner"] = new[] { (ItemType.SnowBlock, 1f / 3f, 0, 3, 6) },
+        };
+
         static readonly Dictionary<(IReadOnlyList<EnemyDrops.Drop>, string, int), IReadOnlyList<EnemyDrops.Drop>> merged =
             new Dictionary<(IReadOnlyList<EnemyDrops.Drop>, string, int), IReadOnlyList<EnemyDrops.Drop>>();
 
@@ -86,15 +99,22 @@ namespace TerraKnight.Items
 
         static IReadOnlyList<EnemyDrops.Drop> WithEssentials(string record, int stage, IReadOnlyList<EnemyDrops.Drop> drops)
         {
-            if (record == null || !extra.TryGetValue(record, out var rows)) return drops;
+            if (record == null) return drops;
+            bool single = extra.TryGetValue(record, out var rows), stacked = stacks.TryGetValue(record, out var stackRows);
+            if (!single && !stacked) return drops;
             // World bosses already carry their own-stage essentials in ProgressionLoot.
             // Raising this stage again would bypass Godhome's player-stage gate.
             var key = (drops, record, stage);
             if (merged.TryGetValue(key, out var done)) return done;
             var list = new List<EnemyDrops.Drop>(drops);
-            foreach (var (type, chance, from) in rows)
-                if (stage >= from && ItemDb.Get(type).Stage <= stage && VanillaBossProgression.Allowed(type) && !list.Exists(d => d.Type == type))
-                    list.Add(new EnemyDrops.Drop { Type = type, Num = Mathf.RoundToInt(chance * 100000), Den = 100000, Min = 1, Max = 1, Group = 0, LockStage = 0 });
+            if (single)
+                foreach (var (type, chance, from) in rows)
+                    if (stage >= from && ItemDb.Get(type).Stage <= stage && VanillaBossProgression.Allowed(type) && !list.Exists(d => d.Type == type))
+                        list.Add(new EnemyDrops.Drop { Type = type, Num = Mathf.RoundToInt(chance * 100000), Den = 100000, Min = 1, Max = 1, Group = 0, LockStage = 0 });
+            if (stacked)
+                foreach (var (type, chance, from, min, max) in stackRows)
+                    if (stage >= from && ItemDb.Get(type).Stage <= stage && VanillaBossProgression.Allowed(type) && !list.Exists(d => d.Type == type))
+                        list.Add(new EnemyDrops.Drop { Type = type, Num = Mathf.RoundToInt(chance * 100000), Den = 100000, Min = min, Max = max, Group = 0, LockStage = 0 });
             if (merged.Count > 4000) merged.Clear();
             IReadOnlyList<EnemyDrops.Drop> result = list.Count == drops.Count ? drops : list.ToArray();
             merged[key] = result;

@@ -41,9 +41,18 @@ namespace TerraKnight.UI
             return language == LanguageCode.ZH || language == LanguageCode.ZH_TW ? row.Zh : row.En;
         }
 
+        /// <summary>Slips in the game's own Chinese text, put right wherever it is shown (Relic Seeker Lemm on a Hallownest Seal).</summary>
+        static readonly (string Wrong, string Right)[] zhTypos = { ("真是身份", "真实身份") };
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Language), nameof(Language.Get), new[] { typeof(string), typeof(string) })]
-        static void Get(string key, string sheetTitle, ref string __result) =>
-            __result = Resolve(key, sheetTitle, Language.CurrentLanguage(), __result);
+        static void Get(string key, string sheetTitle, ref string __result)
+        {
+            var language = Language.CurrentLanguage();
+            __result = Resolve(key, sheetTitle, language, __result);
+            if (language != LanguageCode.ZH || __result == null) return;
+            foreach (var (wrong, right) in zhTypos)
+                if (__result.IndexOf(wrong, StringComparison.Ordinal) >= 0) __result = __result.Replace(wrong, right);
+        }
     }
 }

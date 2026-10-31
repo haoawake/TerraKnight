@@ -78,6 +78,12 @@ namespace TerraKnight.Player
         [Newtonsoft.Json.JsonIgnore]
         public bool Male => IsMale(Variant);
 
+        /// <summary>
+        /// Player.PlayHurtSound's voice, one of three: Player_Hit (voiceVariant 1) for a man, Female_Hit (2) for a woman, the
+        /// body's voice as Terraria gives a save that has none (Pl:56394). No look: Terraria's default man.
+        /// </summary>
+        public static string HurtVoice(Appearance look) => (look == null || look.Male ? "Player_Hit_" : "Female_Hit_") + Random.Range(0, 3);
+
         // ------------------------------------------------------------------ Terraria's ranges
 
         /// <summary>Player_Hair_1 .. Player_Hair_228 (Player.hair 0-227).</summary>

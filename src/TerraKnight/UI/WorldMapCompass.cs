@@ -282,6 +282,8 @@ namespace TerraKnight.UI
             compassCost = best;
             compassHint = null;
             if (pick == ItemType.RelicGreyPrince) GreyPrinceDestination(out compassHint);
+            // Pointed to though it can't be begun yet (nothing else can): what it needs first.
+            if (pick.HasValue && !BossGuide.Ready(pick.Value, out string need)) compassHint = compassHint != null ? need + "\n" + compassHint : need;
             if (pick == compassFight && room == compassRoom) return;
             compassFight = pick;
             compassRoom = room;

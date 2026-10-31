@@ -1880,6 +1880,7 @@ namespace TerraKnight.EnemyAi
                 if (f == null) continue;
                 f.ManualUpdate = false;
                 EnemyAi.Paused.Remove(f);
+                Rehome(f);
             }
             paused.Clear();
             // A motion script (its home read at its start: a Duranda's Tween) starts over here; a control re-enters the
@@ -1908,6 +1909,45 @@ namespace TerraKnight.EnemyAi
         }
 
         static readonly System.Reflection.MethodInfo crawlerStart = AccessTools.Method(typeof(Crawler), "Start");
+
+        /// <summary>Each idle roam's home, taken entering its state (IdleBuzz, IdleBuzzV2, IdleBuzzV3: startX, startY).</summary>
+        static readonly Dictionary<System.Type, (System.Reflection.FieldInfo X, System.Reflection.FieldInfo Y)> buzzHomes = new Dictionary<System.Type, (System.Reflection.FieldInfo, System.Reflection.FieldInfo)>
+        {
+            [typeof(HutongGames.PlayMaker.Actions.IdleBuzz)] = (AccessTools.Field(typeof(HutongGames.PlayMaker.Actions.IdleBuzz), "startX"), AccessTools.Field(typeof(HutongGames.PlayMaker.Actions.IdleBuzz), "startY")),
+            [typeof(HutongGames.PlayMaker.Actions.IdleBuzzV2)] = (AccessTools.Field(typeof(HutongGames.PlayMaker.Actions.IdleBuzzV2), "startX"), AccessTools.Field(typeof(HutongGames.PlayMaker.Actions.IdleBuzzV2), "startY")),
+            [typeof(HutongGames.PlayMaker.Actions.IdleBuzzV3)] = (AccessTools.Field(typeof(HutongGames.PlayMaker.Actions.IdleBuzzV3), "startX"), AccessTools.Field(typeof(HutongGames.PlayMaker.Actions.IdleBuzzV3), "startY")),
+        };
+
+        /// <summary>Dev: idle roams given a new home behind a wall from the old.</summary>
+        public static int DevRehomed;
+
+        /// <summary>
+        /// A flyer's idle roam given back keeps the home it took entering its state, and flies straight for it: carried off by
+        /// a move with a wall between, it pressed at the wall for good, turning to and fro (FaceDirection takes a stopped
+        /// speed for "left"; a player's 10-31 "王国边缘的肥波有时候被打会卡住自转"). Its home is where the move left it
+        /// then (its script's own start variable too, for its next roam); with nothing between, it goes back as before.
+        /// </summary>
+        void Rehome(Fsm f)
+        {
+            var st = f.ActiveState;
+            if (st == null || body == null) return;
+            foreach (var a in st.Actions)
+            {
+                if (a == null || !buzzHomes.TryGetValue(a.GetType(), out var home) || home.X == null || home.Y == null) continue;
+                Vector2 here = transform.position;
+                var was = new Vector2((float)home.X.GetValue(a), (float)home.Y.GetValue(a));
+                var way = was - here;
+                if (way.magnitude < 0.5f) continue;
+                var b = body.bounds;
+                var hit = Physics2D.BoxCast(b.center, b.size * 0.8f, 0f, way.normalized, way.magnitude, Hostiles.TerrainMask);
+                if (hit.collider == null || hit.collider.isTrigger) continue;
+                home.X.SetValue(a, here.x);
+                home.Y.SetValue(a, here.y);
+                var manual = a is HutongGames.PlayMaker.Actions.IdleBuzzV3 v3 ? v3.manualStartPos : a is HutongGames.PlayMaker.Actions.IdleBuzzV2 v2 ? v2.manualStartPos : null;
+                if (manual != null && !manual.IsNone) manual.Value = new Vector3(here.x, here.y, manual.Value.z);
+                DevRehomed++;
+            }
+        }
 
         readonly List<Fsm> tweened = new List<Fsm>();
 

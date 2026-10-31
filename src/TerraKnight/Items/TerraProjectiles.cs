@@ -638,7 +638,11 @@ namespace TerraKnight.Items
             p.OldVel = velocity;
             // A spear lives the use's itemAnimation; a magic missile starts on the player's channel.
             if (spec.Ai == Ai.Spear) p.Ai1 = useTicks > 0 ? useTicks : 22;
-            if (spec.Ai == Ai.Missile) p.Channel = true;
+            if (spec.Ai == Ai.Missile)
+            {
+                p.Channel = true;
+                LetGoOldestMissiles();
+            }
             live.Add(p);
             if (spec.Ai == Ai.GemBolt) Sound("Item_205");
             if (kind == ProjKind.Bomb || kind == ProjKind.Dynamite) StartFuse(p);
@@ -2930,6 +2934,27 @@ namespace TerraKnight.Items
         /// flies straight on at 32 px for at most 300 more updates. The Flamelash, once it has hit,
         /// burns darker and looks for another.
         /// </summary>
+        /// <summary>
+        /// Missiles held on the cursor at once at most, and how long one stays held (ticks): the button held and the staff used
+        /// again and again (auto reuse), each new one joined the others there without end (the user's 10-31 "魔法飞弹等武器蓄力能够
+        /// 无限叠加，应该加一个超时上限，最高叠个十次就差不多了"). One past either is let go, off at the nearest enemy.
+        /// </summary>
+        const int MissilesHeldMost = 10, MissileHeldTicks = 600;
+
+        /// <summary>A new missile about to be held: the oldest still held let go, so that it makes at most <see cref="MissilesHeldMost"/>.</summary>
+        void LetGoOldestMissiles()
+        {
+            int held = 0;
+            foreach (var q in live) if (!q.Dead && q.Channel && !q.Free && q.Spec.Ai == Ai.Missile) held++;
+            for (int i = 0; i < live.Count && held >= MissilesHeldMost; i++)
+            {
+                var q = live[i];
+                if (q.Dead || !q.Channel || q.Free || q.Spec.Ai != Ai.Missile) continue;
+                q.Channel = false;
+                held--;
+            }
+        }
+
         void StepMissile(Proj p, HeroController hero)
         {
             bool lash = p.Kind == ProjKind.Flamelash;
@@ -2949,7 +2974,7 @@ namespace TerraKnight.Items
             Vector2 ownerCentre = hero != null ? (Vector2)hero.GetComponent<BoxCollider2D>().bounds.center : p.Pos;
             if (!p.Free)
             {
-                bool held = p.Channel && mod != null && mod.UseHeld && mod.Inventory.Current.Def.Shoot == p.Kind;
+                bool held = p.Channel && p.Ticks < MissileHeldTicks && mod != null && mod.UseHeld && mod.Inventory.Current.Def.Shoot == p.Kind;
                 if (!held)
                 {
                     p.Free = true;
