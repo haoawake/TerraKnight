@@ -103,7 +103,7 @@ namespace TerraKnight.Items
         static readonly AccessTools.FieldRef<HeroController, GameObject> shadowParticles = AccessTools.FieldRefAccess<HeroController, GameObject>("shadowdashParticlesPrefab");
         static readonly AccessTools.FieldRef<HeroController, GameObject> shadowRing = AccessTools.FieldRefAccess<HeroController, GameObject>("shadowRingPrefab");
 
-        /// <summary>The Knight's own shadow dash as it starts (HeroController.HeroDash): its black burst ahead, its ring, its trail of smoke.</summary>
+        /// <summary>The Knight's own shadow dash as it starts (HeroController.HeroDash): its black burst behind, its ring, its trail of smoke.</summary>
         static void KnightShadowFx(HeroController hero, float dir, Vector2 aim)
         {
             try
@@ -112,12 +112,14 @@ namespace TerraKnight.Items
                 var burst = shadowBurst(hero);
                 if (burst != null)
                 {
-                    // Turned the way the dash goes (Dashmaster's any way; level otherwise).
+                    // Where the dash sets off from, turned along its way (Dashmaster's any way; level otherwise): HeroDash puts
+                    // it 5.21 behind the Knight, scaled -1.92 for a dash to the right (his localScale.x is +1 facing left).
                     if (aim.sqrMagnitude < 0.01f) aim = new Vector2(dir, 0f);
-                    var off = aim.normalized * 5.21f;
+                    var off = -aim.normalized * 5.21f;
                     var b = burst.Spawn(new Vector3(at.x + off.x, at.y - 0.58f + off.y, at.z + 0.00101f));
                     Effects.NativeWeaponEffects.Track(b);
-                    b.transform.localScale = new Vector3(1.919591f * dir, b.transform.localScale.y, b.transform.localScale.z);
+                    DevBurst = b;
+                    b.transform.localScale = new Vector3(-1.919591f * dir, b.transform.localScale.y, b.transform.localScale.z);
                     float deg = dir > 0f ? Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg : Mathf.Atan2(-aim.y, -aim.x) * Mathf.Rad2Deg;
                     b.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Abs(aim.y) < 0.08f ? 0f : deg);
                 }
@@ -130,6 +132,9 @@ namespace TerraKnight.Items
             }
             catch (System.Exception e) { Plugin.Log.LogWarning("[暗影冲刺] 原版特效：" + e.Message); }
         }
+
+        /// <summary>Dev: the last shadow dash's burst.</summary>
+        internal static GameObject DevBurst;
 
         static void KnightShadowFxEnd(HeroController hero)
         {

@@ -1667,6 +1667,16 @@ namespace TerraKnight
                 yield return BossGuardTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "fix1031b")
+            {
+                yield return Fix1031bTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "moonwalk")
+            {
+                yield return MoonwalkTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "ggfkprobe")
             {
                 yield return GgFkProbe();

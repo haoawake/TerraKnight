@@ -34,6 +34,7 @@ namespace TerraKnight
                     case "-tk-savedir": SaveDir = args[i + 1]; break;
                     case "-tk-suite": Suite = args[i + 1]; break;
                     case "-tk-slot": Slot = int.TryParse(args[i + 1], out int s) ? s : 0; break;
+                    case "-tk-mute": Muted = args[i + 1] == "1"; break;
                 }
             }
             if (Name == null)
@@ -57,9 +58,18 @@ namespace TerraKnight
             }
             if (Slot < 1 || Slot > 4) Slot = 1;
             BepInEx.Logging.Logger.Listeners.Add(new FileListener(Path.Combine(Paths.BepInExRootPath, "TerraKnight", "dev", Name + ".log")));
-            Plugin.Log.LogInfo($"[副本] 测试副本 {Name}：存档在 {SaveDir}，测试 {Suite}，存档位 {Slot}");
+            Plugin.Log.LogInfo($"[副本] 测试副本 {Name}：存档在 {SaveDir}，测试 {Suite}，存档位 {Slot}{(Muted ? "，静音" : "")}");
             Redirect(global::Platform.Current as DesktopPlatform);
+            if (Muted)
+            {
+                // Silent all through (the user's "声音关着测"): the listener's volume, set again at every scene load.
+                AudioListener.volume = 0f;
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) => AudioListener.volume = 0f;
+            }
         }
+
+        /// <summary>A copy started with "-tk-mute 1": nothing is heard from it.</summary>
+        public static bool Muted { get; private set; }
 
         static readonly AccessTools.FieldRef<DesktopPlatform, string> saveDirPath = AccessTools.FieldRefAccess<DesktopPlatform, string>("saveDirPath");
 

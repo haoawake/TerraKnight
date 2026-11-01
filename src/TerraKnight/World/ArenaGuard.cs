@@ -52,8 +52,46 @@ namespace TerraKnight.World
                 float x = f.transform.position.x;
                 float bottom = b.size.y > 0.5f ? b.min.y : f.transform.position.y - 3f;
                 float top = b.size.y > 0.5f ? b.max.y : f.transform.position.y + 3f;
+                // An open gate stands raised over its doorway: the doorway it shuts goes down to the floor under it. Taken
+                // from the raised picture alone, a way from outside under it crossed no gate, and a blow from beyond an open
+                // gate woke the boss, the gate coming down with the Knight outside (the user's 10-31).
+                if (!DevRaisedGates && (col == null || !col.enabled)) bottom = Mathf.Min(bottom, DoorwayFloor(x, bottom + 0.5f));
                 gates.Add(new Gate { Scene = Room(f.gameObject.scene.name), X = x, Bottom = bottom, Top = top });
             }
+        }
+
+        /// <summary>
+        /// The floor of a doorway under a raised gate: down from its foot, past the roof it may be raised into, through
+        /// the opening to the first solid (the room's grid or its own colliders) within 30; +∞ where none is found.
+        /// </summary>
+        static float DoorwayFloor(float x, float from)
+        {
+            bool opening = false;
+            for (float y = from; y > from - 30f; y -= 0.25f)
+            {
+                var p = new Vector2(x, y);
+                var hit = Physics2D.OverlapPoint(p, 1 << 8);
+                bool solid = TerraWorld.IsSolidAt(p) || hit != null && !hit.isTrigger;
+                if (!solid) opening = true;
+                else if (opening) return y + 0.25f;
+            }
+            return float.PositiveInfinity;
+        }
+
+        /// <summary>Dev (suite fix1031b): an open gate's doorway taken from its raised picture alone, as before 10-31.</summary>
+        internal static bool DevRaisedGates;
+
+        /// <summary>Dev (suite fix1031b): a gate within 0.3 of the Knight not between him and the boss, as before 10-31.</summary>
+        internal static bool DevOldDoorway;
+
+        /// <summary>Dev: the loaded rooms' battle gates now (taken again at once).</summary>
+        internal static List<(string Scene, float X, float Bottom, float Top)> DevGates()
+        {
+            gatesForScenes = -1;
+            Refresh();
+            var list = new List<(string, float, float, float)>();
+            foreach (var g in gates) list.Add((g.Scene, g.X, g.Bottom, g.Top));
+            return list;
         }
 
         static string Room(string scene) => scene != null && scene.EndsWith("_boss") ? scene.Substring(0, scene.Length - 5) : scene;
@@ -101,11 +139,14 @@ namespace TerraKnight.World
                 else gateRight = true;
             }
             if (gateLeft && gateRight) return false;
-            float lo = Mathf.Min(a.x, b.x), hi = Mathf.Max(a.x, b.x);
+            // A gate right by the boss (within 0.3) is no gate between them; one right by the Knight is: standing under an open
+            // gate on its outer half, the gate coming down at the blow put him out (the user's 10-31 "被锁在外面").
+            float heroSide = DevOldDoorway ? 0.3f : 0f;
+            float lo = Mathf.Min(a.x, b.x) + (a.x < b.x ? heroSide : 0.3f), hi = Mathf.Max(a.x, b.x) - (a.x < b.x ? 0.3f : heroSide);
             foreach (var g in gates)
             {
                 if (g.Scene != room) continue;
-                if (g.X <= lo + 0.3f || g.X >= hi - 0.3f) continue;
+                if (g.X <= lo || g.X >= hi) continue;
                 // Across the gate's doorway: the way from the Knight to it passes its height.
                 float y = Mathf.Lerp(a.y, b.y, Mathf.InverseLerp(a.x, b.x, g.X));
                 if (y < g.Bottom - 1.5f || y > g.Top + 1.5f) continue;

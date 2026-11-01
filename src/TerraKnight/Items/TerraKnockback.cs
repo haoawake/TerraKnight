@@ -312,6 +312,36 @@ namespace TerraKnight.Items
 
         public bool Active => active;
 
+        HealthManager hm;
+        tk2dSpriteAnimator held;
+
+        /// <summary>
+        /// Its picture stopped on the frame it was struck in while the push carries it: a walk or a lunge played on as it slid
+        /// back, and it walked backwards (the user's 10-31 "倒着走…卡着后退"). A clip its own machine starts meanwhile shows its
+        /// first frame and runs on once the push is over. An animator paused by its own game isn't taken.
+        /// </summary>
+        void Hold()
+        {
+            if (held != null || DevNoHold) return;
+            var a = GetComponent<tk2dSpriteAnimator>();
+            if (a == null || a.Paused) return;
+            a.Pause();
+            held = a;
+        }
+
+        void Release()
+        {
+            // Turned to stone or frozen meanwhile (MageMech): its hold lets the picture go on when it lets go.
+            if (held != null && held.Paused && !MageMech.IsHeld(hm)) held.Resume();
+            held = null;
+        }
+
+        /// <summary>Dev (suite moonwalk): pictures run on under a push, as before 10-31.</summary>
+        internal static bool DevNoHold;
+
+        /// <summary>Its picture held by a push now.</summary>
+        public bool Holding => held != null;
+
         // Native FSMs can enter a stationary state while our launch owns the body. Keep
         // that new instruction for handoff instead of reviving an obsolete jump velocity.
         internal void RememberNativeVelocity(Vector2 velocity, bool x, bool y)
@@ -385,6 +415,8 @@ namespace TerraKnight.Items
             flying = fly;
             grounded = false;
             active = true;
+            hm = GetComponent<HealthManager>();
+            Hold();
             first = true;
             age = 0f;
             DevPeak = DevBack = 0f;
@@ -408,6 +440,13 @@ namespace TerraKnight.Items
             if (body == null || col == null)
             {
                 active = false;
+                Release();
+                return;
+            }
+            // Killed under the push: its death plays as the game has it.
+            if (hm != null && hm.isDead)
+            {
+                Finish(!flying);
                 return;
             }
             // Its own machine took its body out of the world (a Moss Charger digging in): the game moves it from here.
@@ -481,11 +520,13 @@ namespace TerraKnight.Items
                 body.collisionDetectionMode = detection;
             }
             active = false;
+            Release();
         }
 
         void Finish(bool walker)
         {
             active = false;
+            Release();
             if (body == null) return;
             body.gravityScale = gravity;
             body.collisionDetectionMode = detection;
@@ -657,6 +698,8 @@ namespace TerraKnight.Items
 
         public bool Active => active;
 
+        tk2dSpriteAnimator held;
+
         public void Begin(Collider2D col, int cardinal, float distance)
         {
             sweep = new Sweep(col, cardinal, 3);
@@ -665,7 +708,23 @@ namespace TerraKnight.Items
             time = 0f;
             duration = Mathf.Clamp(0.1f + distance * 0.08f, 0.12f, 0.35f);
             active = true;
+            // Its picture held while it slides, as a launch holds it (KnockFlight.Hold).
+            var a = GetComponent<tk2dSpriteAnimator>();
+            if (held == null && !KnockFlight.DevNoHold && a != null && !a.Paused)
+            {
+                a.Pause();
+                held = a;
+            }
         }
+
+        void Stop()
+        {
+            active = false;
+            if (held != null && held.Paused && !MageMech.IsHeld(GetComponent<HealthManager>())) held.Resume();
+            held = null;
+        }
+
+        void OnDisable() => Stop();
 
         void FixedUpdate()
         {
@@ -679,9 +738,9 @@ namespace TerraKnight.Items
                 bool blocked = sweep.Check(transform.position, step, 1 << World.ChunkColliders.TerrainLayer, out float clipped);
                 if (clipped > Mathf.Epsilon) transform.Translate(sweep.Direction * clipped, Space.World);
                 done = target;
-                if (blocked) active = false;
+                if (blocked) Stop();
             }
-            if (k >= 1f) active = false;
+            if (k >= 1f) Stop();
         }
     }
 }

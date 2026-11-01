@@ -338,11 +338,13 @@ namespace TerraKnight.Player
                     Latch(hero, k, CellGrid.CellCenter(x, y), TerraWorld.Get(x, y), new Vector2Int(x, y));
                     return true;
                 }
-            // Solid scenery the grid doesn't hold (moving platforms, lifts, doors): hold where it touched, and go where it goes
-            // (FollowAnchors). Not an enemy's own solid part: a hook holds blocks, never NPCs.
-            foreach (var col in Physics2D.OverlapBoxAll(k.Pos, new Vector2(half * 2f, half * 2f), 0f, 1 << ChunkColliders.TerrainLayer))
+            // Solid scenery the grid doesn't hold (moving platforms, lifts, doors, a roof off the terrain layer that stops the
+            // Knight): hold where it touched, and go where it goes (FollowAnchors). Not an enemy's own solid part: a hook holds
+            // blocks, never NPCs.
+            foreach (var col in Physics2D.OverlapBoxAll(k.Pos, new Vector2(half * 2f, half * 2f), 0f, SolidMask(hero)))
             {
-                if (col.isTrigger || col.GetComponentInParent<TerraOwned>() != null || col.GetComponentInParent<HealthManager>() != null) continue;
+                if (col.isTrigger || col.GetComponentInParent<TerraOwned>() != null || col.GetComponentInParent<HealthManager>() != null
+                    || col.GetComponentInParent<HeroController>() != null) continue;
                 k.IsCell = false;
                 k.Col = col;
                 k.Anchor = col.transform;
@@ -395,6 +397,7 @@ namespace TerraKnight.Player
             var from = (Vector2)col.bounds.center;
             var size = (Vector2)col.bounds.size * 0.98f;
             var pos = from;
+            teleportMask = SolidMask(hero);
             if (DevWholeCast)
             {
                 // Dev: the old single cast, for the suite's before-and-after.
@@ -426,6 +429,21 @@ namespace TerraKnight.Player
 
         static readonly RaycastHit2D[] castHits = new RaycastHit2D[16];
 
+        /// <summary>
+        /// What stops the Knight's body: the terrain layer and every layer his own collides with, scenery the grid doesn't hold
+        /// among them (the user's 10-31: the Queen Slime's hook went up through the roof of Grimm's tent, and took him into
+        /// the room over it).
+        /// </summary>
+        static int SolidMask(HeroController hero) =>
+            (1 << ChunkColliders.TerrainLayer) | (hero != null && !DevTerrainOnly ? Physics2D.GetLayerCollisionMask(hero.gameObject.layer) : 0);
+
+        /// <summary>A collider that stops the Knight's body: solid, not a one-way platform, not his own, not an enemy's.</summary>
+        static bool Stops(Collider2D c) => c != null && !c.isTrigger && !c.usedByEffector &&
+            c.GetComponentInParent<HeroController>() == null && c.GetComponentInParent<HealthManager>() == null;
+
+        /// <summary>The teleport's SolidMask, taken as it starts.</summary>
+        static int teleportMask = 1 << ChunkColliders.TerrainLayer;
+
         /// <summary>Collision.TileCollision for a box: across, then up or down, each as far as the solid terrain lets it.</summary>
         static Vector2 Slide(Vector2 pos, Vector2 size, Vector2 step)
         {
@@ -436,16 +454,16 @@ namespace TerraKnight.Player
             return new Vector2(sx * dx, sy * dy);
         }
 
-        /// <summary>How far the box goes that way, up to the distance: the solid terrain stops it; platforms and the game's one-way ground (effectors) don't.</summary>
+        /// <summary>How far the box goes that way, up to the distance: what stops the Knight stops it; platforms and the game's one-way ground (effectors) don't.</summary>
         static float Free(Vector2 pos, Vector2 size, Vector2 dir, float dist)
         {
             if (dist <= 0f) return 0f;
-            int n = Physics2D.BoxCastNonAlloc(pos, size, 0f, dir, castHits, dist, 1 << ChunkColliders.TerrainLayer);
+            var filter = new ContactFilter2D { useTriggers = false, useLayerMask = true, layerMask = teleportMask };
+            int n = Physics2D.BoxCast(pos, size, 0f, dir, filter, castHits, dist);
             float free = dist;
             for (int i = 0; i < n; i++)
             {
-                var c = castHits[i].collider;
-                if (c == null || c.isTrigger || c.usedByEffector) continue;
+                if (!Stops(castHits[i].collider)) continue;
                 free = Mathf.Min(free, Mathf.Max(0f, castHits[i].distance - 0.01f));
             }
             return free;
@@ -707,6 +725,17 @@ namespace TerraKnight.Player
         }
         public int DevOut => hooks.Count;
         public int DevHolding => hooks.FindAll(h => h.State == State.Latched).Count;
+        /// <summary>Dev: what the holding hook holds (a cell, or a collider's name and layer).</summary>
+        public string DevLatchedOn
+        {
+            get
+            {
+                var k = hooks.Find(h => h.State == State.Latched);
+                return k == null ? "-" : k.IsCell ? $"格 {k.Cell}" : k.Col != null ? $"{k.Col.name}（层 {k.Col.gameObject.layer}）" : "?";
+            }
+        }
+        /// <summary>Dev (suite fix1031b): hooks and the teleport against the terrain layer only, as before 10-31.</summary>
+        internal static bool DevTerrainOnly;
         public static int DevThrown, DevLatches, DevTeleports, DevCarriedOff;
         public void DevRelease(HeroController hero) => hooks.Clear();
         /// <summary>Player.RemoveAllGrapplingHooks (a pat, a teleport).</summary>

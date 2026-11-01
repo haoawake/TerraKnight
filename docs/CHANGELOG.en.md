@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.4.1 — Fixes
+
+### Fixes
+
+- Under a boss arena's open battle gate, blows don't reach the boss: no boss wakes with the Knight shut outside its gates.
+- The new weapons' right-click arts strike only what they touch; a Phaseblade thrown to hang in the air cuts only the enemies it meets.
+- The Shade Cloak's black burst appears where the dash sets off, behind the Knight, turned as in Hollow Knight.
+- Hooks hold onto the roof of the Grimm Troupe's tent; the Hook of Dissonance thrown upward stops under it.
+- An enemy knocked back holds the pose it was struck in while it is pushed, a stagger.
+
 ## 5.4.0 — Pinyin search, Snow Blocks and a wiser compass
 
 ### New

@@ -576,10 +576,16 @@ namespace TerraKnight.Items
         /// <summary>An enemy (or the Target Dummy) a collider belongs to, alive; null for anything else.</summary>
         static HealthManager Enemy(Collider2D col)
         {
-            var hm = col != null ? col.GetComponentInParent<HealthManager>() : null;
+            // Only what a swing can strike (MeleeHits.HitMask): an enemy's sight and alert ranges, wide triggers under it, put
+            // every enemy in a room whose range took in a hanging phase blade under its cuts at once (the user's 10-31).
+            if (col == null || !DevAnyLayer && (MeleeHits.HitMask & (1 << col.gameObject.layer)) == 0) return null;
+            var hm = col.GetComponentInParent<HealthManager>();
             if (hm == null || hm.isDead || hm.hp <= 0) return null;
             return UI.EnemyHover.RecordOf(hm) != null || World.TargetDummy.Is(hm) ? hm : null;
         }
+
+        /// <summary>Dev (suite fix1031b): an art's enemies found on any layer, as before 10-31.</summary>
+        internal static bool DevAnyLayer;
 
         // ------------------------------------------------------------------ what is thrown (the phase blades, Lucy, the sickles)
 
