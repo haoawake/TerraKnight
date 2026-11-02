@@ -154,7 +154,7 @@ namespace TerraKnight.Items
 
         // ------------------------------------------------------------------ slowed and frozen
 
-        sealed class Slowed { public float Until, Factor; public tk2dSprite Sprite; public Color Was; public bool Tinted; public Hold Held; }
+        sealed class Slowed { public float Until, Factor; public tk2dSprite Sprite; public Color Was; public bool Tinted, Free; public Hold Held; }
         static readonly Dictionary<HealthManager, Slowed> slowed = new Dictionary<HealthManager, Slowed>();
 
         /// <summary>
@@ -190,13 +190,17 @@ namespace TerraKnight.Items
         /// An enemy slowed for a while: its body's speed held to `factor` of what its script gives it each frame; to a tenth
         /// or less, held still (Hold). Tinted when nearly stopped: ice-blue, or `look` (stone grey). A longer or stronger one
         /// replaces a weaker.
+        /// A boss or an elite counts as slowed (a frozen one shatters) but its body is left alone: cut each frame, a speed its
+        /// machine gives once (Hornet's air dash, a Mantis Lord's plunge) died away, and a weightless one hung in that move for
+        /// good, after the slow too (the user's 11-01 "泡泡枪会把所有敌人的状态机卡住，包括boss").
         /// </summary>
         public static void Slow(HealthManager hm, float factor, float seconds, Color? look = null)
         {
             if (hm == null || hm.isDead) return;
-            // Bosses and elites aren't held still: slowed a fifth at most.
+            bool free = !DevSlowBosses && EnemyStats.Unstoppable(EnemyStats.Of(hm));
             if (EnemyStats.Unstoppable(EnemyStats.Of(hm))) factor = Mathf.Max(factor, 0.8f);
             if (!slowed.TryGetValue(hm, out var s)) slowed[hm] = s = new Slowed { Factor = 1f };
+            s.Free = free;
             s.Factor = Mathf.Min(s.Factor, factor);
             s.Until = Mathf.Max(s.Until, Time.time + seconds);
             if (s.Factor <= 0.3f && !s.Tinted)
@@ -210,6 +214,9 @@ namespace TerraKnight.Items
         }
 
         public static bool IsSlowed(HealthManager hm) => hm != null && slowed.TryGetValue(hm, out var s) && s.Until > Time.time;
+
+        /// <summary>Dev (suite bubble, part "slow"): bosses' and elites' bodies slowed (a fifth) as before 11-01.</summary>
+        internal static bool DevSlowBosses;
 
         /// <summary>Dev: whether an enemy is held still now.</summary>
         public static bool IsHeld(HealthManager hm) => hm != null && slowed.TryGetValue(hm, out var s) && s.Held != null;
@@ -305,6 +312,7 @@ namespace TerraKnight.Items
                     if (rb != null) rb.linearVelocity = Vector2.zero;
                     continue;
                 }
+                if (s.Free) continue;
                 if (rb != null && rb.bodyType == RigidbodyType2D.Dynamic) rb.linearVelocity *= Mathf.Pow(s.Factor, Time.deltaTime * 60f);
                 else if (rb != null && rb.bodyType == RigidbodyType2D.Kinematic) rb.linearVelocity *= s.Factor;
             }

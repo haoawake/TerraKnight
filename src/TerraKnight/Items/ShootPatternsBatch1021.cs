@@ -17,7 +17,7 @@ namespace TerraKnight.Items
         /// <summary>
         /// Pl:47877-47909, 54148: one or two blood arrows (three one time in three) from 600-750 px over a point near the
         /// cursor, 0-60 px behind the player's facing and drawn a tenth of the way back to them, aimed down at the cursor,
-        /// a little astray, slowed to 55-79% across.
+        /// a little astray, slowed to 55-79% across; through every block down to the cursor's height.
         /// </summary>
         static void BloodRainBow(in Shot s)
         {
@@ -37,7 +37,7 @@ namespace TerraKnight.Items
                 var v = to.normalized * s.Speed + new Vector2(Next(-20, 21) * 0.03f, Next(-40, 41) * 0.03f);
                 v.x *= Next(55, 80) * 0.01f;
                 x += Next(-50, 51);
-                One(s, ProjKind.BloodRainArrow, s.From + new Vector2(x, -y) * Px, new Vector2(v.x, -v.y), s.Damage, s.Knockback);
+                FromSky(s, ProjKind.BloodRainArrow, s.From + new Vector2(x, -y) * Px, new Vector2(v.x, -v.y), s.Damage, s.Knockback);
             }
         }
     }

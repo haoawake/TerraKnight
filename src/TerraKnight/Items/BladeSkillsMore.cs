@@ -309,10 +309,7 @@ namespace TerraKnight.Items
                 {
                     var at = target + new Vector2(Random.Range(-2.5f, 2.5f), Random.Range(-0.5f, 0.5f));
                     var from = new Vector2(at.x + Random.Range(-3f, 3f), top);
-                    var back = (from - at).normalized;
-                    var floor = at;
-                    for (int g = 0; g < 60 && floor.y < from.y && World.TerraWorld.IsSolidAt(floor); g++) floor += back * 16f * Effects.TerraParticles.Px;
-                    TerraProjectiles.Instance?.ShootStar(from, (at - from).normalized * 25f, dmg, crit, floor.y);
+                    TerraProjectiles.Instance?.ShootStar(from, (at - from).normalized * 25f, dmg, crit, TerraProjectiles.SkyFloor(from, at));
                 });
             TerraMod.Instance?.PlaySound("Item_9", 0.7f);
         }

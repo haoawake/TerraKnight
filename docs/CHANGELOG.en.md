@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.4.2 — Sky shots reach the cursor, fixes
+
+### Improvements
+
+- What the Daedalus Stormbow, the Blood Rain Bow, Star Wrath, the Meteor Staff and the Blizzard Staff bring down from the sky comes through the roof and the rock above, meeting blocks only from the cursor's height down; so do the extra shots the new weapons drop from above on a hit.
+
+### Fixes
+
+- The Bubble Gun's bubbles lift only common enemies; bosses and elites wrapped in one go on as ever. A bubble that bursts leaves its enemy free of bubbles for 1.5 s.
+- Magic weapons' slows don't hold bosses and elites: their moves follow on as ever, and frozen ones still shatter.
+- An enemy's debuffs (poison, fire and the rest) end when it dies; Grimmkin and others with a death of their own die as ever while burning.
+
 ## 5.4.1 — Fixes
 
 ### Fixes

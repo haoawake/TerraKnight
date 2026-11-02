@@ -13,7 +13,7 @@ namespace TerraKnight
     {
         public const string Guid = "com.haoawake.terraknight";
         public const string ModName = "TerraKnight";
-        public const string Version = "5.4.1";
+        public const string Version = "5.4.2";
 
         internal static ManualLogSource Log;
 

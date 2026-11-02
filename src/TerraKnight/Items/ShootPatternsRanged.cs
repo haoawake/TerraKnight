@@ -107,7 +107,7 @@ namespace TerraKnight.Items
         /// Pl:47835: three arrows (one less, one time in three, for the holy, unholy, jester's and
         /// hellfire arrows; else one more, one time in three) from 600 px over the player and 150
         /// apart, between the cursor and the player, down at the cursor and never upward, each a
-        /// little off and up to half again as fast across.
+        /// little off and up to half again as fast across; through every block down to the cursor's height.
         /// </summary>
         static void Stormbow(in Shot s)
         {
@@ -128,7 +128,7 @@ namespace TerraKnight.Items
                 var v = to.normalized * s.Speed + Jitter(40, 0.03f);
                 v.x *= Next(75, 150) * 0.01f;
                 x += Next(-50, 51);
-                One(s, s.Kind, s.From + new Vector2(x, -y) * Px, new Vector2(v.x, -v.y), s.Damage, s.Knockback);
+                FromSky(s, s.Kind, s.From + new Vector2(x, -y) * Px, new Vector2(v.x, -v.y), s.Damage, s.Knockback);
             }
         }
 

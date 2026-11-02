@@ -55,10 +55,11 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A Blizzard Staff icicle (world position, px per update y up), one of five shapes.</summary>
-        public void ShootIcicle(Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int shape)
+        public void ShootIcicle(Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int shape, float skyTo = float.NaN)
         {
             var p = Spawn(ProjKind.Icicle, from, velocity, damage, knockback, crit);
             if (p == null) return;
+            p.SkyTo = skyTo;
             p.Ai1 = shape;
             p.Frame = shape;
         }

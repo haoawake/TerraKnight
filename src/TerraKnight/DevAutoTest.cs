@@ -1677,6 +1677,26 @@ namespace TerraKnight
                 yield return MoonwalkTest();
                 Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
             }
+            if (suite == "bubble")
+            {
+                yield return BubbleTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "hornet2")
+            {
+                yield return Hornet2Test();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "dotdeath")
+            {
+                yield return DotDeathTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
+            if (suite == "skyroof")
+            {
+                yield return SkyRoofTest();
+                Plugin.Log.LogInfo("[AutoTest] 完成"); Finish(); yield break;
+            }
             if (suite == "ggfkprobe")
             {
                 yield return GgFkProbe();

@@ -55,7 +55,7 @@ namespace TerraKnight.Items
         /// <summary>NPC.AddBuff: only lengthens what is left. Not on a boss out of reach (ArenaGuard: the Knight outside its arena) or asleep.</summary>
         public static void Add(HealthManager hm, int buff, int ticks)
         {
-            if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || ticks <= 0) return;
+            if (hm == null || Down(hm) || !hm.gameObject.activeInHierarchy || ticks <= 0) return;
             if (OutOfReach(hm))
             {
                 DevRefused++;
@@ -111,7 +111,7 @@ namespace TerraKnight.Items
                 var hm = s.Hm;
                 // A pooled enemy is no longer the live target that received these debuffs.
                 // Never keep damaging or emitting particles from an inactive pool entry.
-                if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy || s.Buffs.Count == 0)
+                if (hm == null || Down(hm) || !hm.gameObject.activeInHierarchy || s.Buffs.Count == 0)
                 {
                     gone.Add(kv.Key);
                     continue;
@@ -191,7 +191,7 @@ namespace TerraKnight.Items
                 {
                     s.RegenCount += 120 * n;
                     Damage(hm, n);
-                    if (hm.isDead) break;
+                    if (Down(hm)) break;
                 }
             }
             foreach (int k in gone) states.Remove(k);
@@ -204,6 +204,17 @@ namespace TerraKnight.Items
         /// </summary>
         static bool OutOfReach(HealthManager hm) => World.ArenaGuard.OffMap(hm) || World.ArenaGuard.Outside(hm) || BossWake.Asleep(hm);
 
+        /// <summary>
+        /// Dead: also at no life with its own death still playing. An enemy with a death of its own (HealthManager.hasSpecialDeath:
+        /// the Grimmkin) is never marked dead by Die, only sent ZERO HP; burning on, each payout's killing blow (it goes through
+        /// the dying enemy's invincibility) sent it again and began its death over, so it lived till its fire went out (the
+        /// user's 11-01).
+        /// </summary>
+        static bool Down(HealthManager hm) => hm.isDead || hm.hp <= 0 && !DevKeepOnDeath;
+
+        /// <summary>Dev (suite dotdeath): debuffs left on a dying enemy and burning it at no life, as before 11-01.</summary>
+        internal static bool DevKeepOnDeath;
+
         public static int DevRefused, DevHeldOff;
 
         static bool Flamable(int b) => b == OnFire || b == Hellfire || b == CursedInferno || b == Frostburn || b == Frostbite || b == Shadowflame;
@@ -211,7 +222,7 @@ namespace TerraKnight.Items
         /// <summary>NPC.GetHurtByDebuff: off its Terraria life (so its own health), the kill through the game's own hit.</summary>
         static void Damage(HealthManager hm, int amount)
         {
-            if (hm == null || hm.isDead || !hm.gameObject.activeInHierarchy) return;
+            if (hm == null || Down(hm) || !hm.gameObject.activeInHierarchy) return;
             // Out of reach, or invincible all round (burrowed, shut in): nothing off it, and never a waking blow (BossWake.Hit below
             // only holds an awake boss's intro off).
             if (OutOfReach(hm) || EnemyStats.Untouchable(hm))
@@ -404,12 +415,29 @@ namespace TerraKnight.Items
         [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
         static void BeforeDie(HealthManager __instance)
         {
+            DevDieCalls++;
             if (!__instance.isDead && Has(__instance, Daybroken)) DaybreakDeath(__instance);
             if (__instance.isDead || !Has(__instance, Midas)) return;
             float k = 1f + Random.Range(30, 51) * 0.01f;
             smallGeo(__instance) = Mathf.RoundToInt(smallGeo(__instance) * k);
             mediumGeo(__instance) = Mathf.RoundToInt(mediumGeo(__instance) * k);
             largeGeo(__instance) = Mathf.RoundToInt(largeGeo(__instance) * k);
+        }
+
+        public static int DevClearedOnDeath, DevDieCalls;
+
+        /// <summary>
+        /// Its debuffs end with it (NPC.checkDead: a dead NPC's buffs go with it), also a death of its own that leaves it
+        /// unmarked (the Grimmkin). Emptied, not taken out: Die can come from Tick's own payout, inside its walk of the states.
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Die))]
+        static void AfterDie(HealthManager __instance)
+        {
+            if (DevKeepOnDeath || __instance == null || !states.TryGetValue(__instance.GetInstanceID(), out var s) || s.Buffs.Count == 0) return;
+            s.Buffs.Clear();
+            s.RegenCount = 0;
+            DevClearedOnDeath++;
         }
 
         static readonly List<Collider2D> spread = new List<Collider2D>();

@@ -773,7 +773,8 @@ namespace TerraKnight.Items
 
         static void ApplyNetHitNow(HealthManager hm, int dealtHk, float direction, AttackTypes type, float push, int terra, bool crit, bool bigHit, bool dot, Vector2 from)
         {
-            if (hm == null || hm.isDead || BossWake.Hit(hm) != BossWake.Result.Normal || (dot && BossWake.DreamWindow(hm))) return;
+            // A teammate's debuff payout on one at no life dying its own death (the Grimmkin: EnemyDebuffs.Down) would begin it again.
+            if (hm == null || hm.isDead || dot && hm.hp <= 0 && !EnemyDebuffs.DevKeepOnDeath || BossWake.Hit(hm) != BossWake.Result.Normal || (dot && BossWake.DreamWindow(hm))) return;
             var info = EnemyStats.Of(hm);
             // A Terraria hit: its damage made the enemy's health here, the remainder carried as for a hit of this game's.
             if (!dot && terra > 0)

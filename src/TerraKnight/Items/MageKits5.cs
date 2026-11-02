@@ -209,8 +209,8 @@ namespace TerraKnight.Items
                 });
 
             // ---- Bubble Gun: bubbles wrap enemies.
-            MageLefts.Custom(ItemType.BubbleGun, "泡泡把打中的敌人包住 1 秒（小敌人被托起浮在泡泡里），泡泡破时受伤（0.4 倍）；一个敌人同时只被一个泡泡包住",
-                "a bubble wraps what it strikes for a second (small enemies float up in it); when it pops, the enemy is hurt (0.4×); one bubble on an enemy at a time",
+            MageLefts.Custom(ItemType.BubbleGun, "泡泡把打中的敌人包住 1 秒（小敌人被托起浮在泡泡里，首领和精英不受影响），泡泡破时受伤（0.4 倍）；一个敌人同时只被一个泡泡包住，泡泡破后 1.5 秒内不再被包住",
+                "a bubble wraps what it strikes for a second (small enemies float up in it; bosses and elites carry on); when it pops, the enemy is hurt (0.4×); one bubble on an enemy at a time, and none for 1.5 s after one pops",
                 (s, r, run) =>
                 {
                     var def = s.Def;
@@ -1222,14 +1222,36 @@ namespace TerraKnight.Items
             }
         }
 
-        /// <summary>A bubble wrapped round an enemy: it floats (not bosses or elites), then pops.</summary>
+        /// <summary>Dev (suite bubble): bubbles as before 11-01, slowing bosses and elites and wrapping again the moment one pops.</summary>
+        internal static bool DevOldBubble;
+
+        /// <summary>Dev: whether a bubble is wrapped round an enemy now.</summary>
+        internal static bool DevBubbled(HealthManager hm) => Bubbled.Has(hm);
+
+        /// <summary>
+        /// A bubble wrapped round an enemy: a small one floats in it, a boss or an elite only wears it; then it pops. Slowed every
+        /// frame while wrapped, a boss's own dashes and leaps died away (it stood in a move that never got where it was going), and
+        /// with the gun's stream a new bubble took each enemy the moment the last popped: none of them moved again while it was
+        /// fired (the user's 11-01 "泡泡枪会把所有敌人的状态机卡住，包括boss"). An enemy a bubble left goes free a while (Rest)
+        /// before the gun's bubbles take it again; the Bubble Sea's wraps all within it whatever.
+        /// </summary>
         sealed class Bubbled : MageThing
         {
+            const float Rest = 1.5f;
+            static readonly Dictionary<HealthManager, float> freeUntil = new Dictionary<HealthManager, float>();
+            static readonly List<HealthManager> stale = new List<HealthManager>();
             HealthManager on;
             float k, size = 1f;
+            bool floats;
+            public static bool Has(HealthManager hm)
+            {
+                foreach (var t in MageMech.Things("bubbled")) if (t is Bubbled b && b.on == hm) return true;
+                return false;
+            }
             public static void On(ItemDef def, HealthManager hm, float seconds, float k, bool renew)
             {
                 if (hm == null || hm.isDead) return;
+                if (!renew && !DevOldBubble && freeUntil.TryGetValue(hm, out float until) && Time.time < until) return;
                 int ticks = Mathf.RoundToInt(seconds * 60f);
                 foreach (var t in MageMech.Things("bubbled"))
                     if (t is Bubbled b && b.on == hm)
@@ -1241,19 +1263,30 @@ namespace TerraKnight.Items
                     }
                 var col = hm.GetComponent<Collider2D>();
                 float s = col != null ? Mathf.Max(col.bounds.size.x, col.bounds.size.y) : 1f;
-                MageMech.Add(new Bubbled { Def = def, on = hm, k = k, size = s, Life = ticks, Pos = Centre(hm), Key = "bubbled" }, 24);
+                bool floats = DevOldBubble || !EnemyStats.Unstoppable(EnemyStats.Of(hm));
+                MageMech.Add(new Bubbled { Def = def, on = hm, k = k, size = s, floats = floats, Life = ticks, Pos = Centre(hm), Key = "bubbled" }, 24);
             }
             public override void Tick()
             {
                 if (on == null || on.isDead) { Done = true; return; }
                 Pos = Centre(on);
-                MageMech.Pull(on, Pos + Vector2.up, 1.2f);
-                MageMech.Slow(on, 0.3f, 0.1f);
+                if (floats)
+                {
+                    MageMech.Pull(on, Pos + Vector2.up, 1.2f);
+                    MageMech.Slow(on, 0.3f, 0.1f);
+                }
                 if (Age % 8 == 0) MageMech.Dust(Pos + Random.insideUnitCircle * size * 0.5f, 33, Vector2.up * 0.8f, 0.9f);
             }
             public override void End()
             {
                 if (on == null || on.isDead) return;
+                if (freeUntil.Count > 64)
+                {
+                    stale.Clear();
+                    foreach (var kv in freeUntil) if (kv.Key == null || Time.time >= kv.Value) stale.Add(kv.Key);
+                    foreach (var hm in stale) freeUntil.Remove(hm);
+                }
+                freeUntil[on] = Time.time + Rest;
                 MageMech.Strike(Def, on, MageMech.DamageOf(Def, k));
                 Burst(Pos, 33, 14, 3f, 1.3f);
                 Sound("Item_54", 0.35f, 1.2f);

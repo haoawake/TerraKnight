@@ -260,6 +260,8 @@ namespace TerraKnight.Items
             public Vector2? ShownAt;
             /// <summary>Whether it meets blocks now (the hallow star only from the impact's height down).</summary>
             public bool Collide, Stopped;
+            /// <summary>A shot from the sky (<see cref="SkyFloor"/>): through every block until it is down at this height (world y).</summary>
+            public float SkyTo = float.NaN;
             public float LaunchSpeed;
             public Vector2 StartPos, StartVel;
             public float Travel;
@@ -504,11 +506,33 @@ namespace TerraKnight.Items
         /// bonuses. extraUpdates adds updates per tick (the Magic Quiver's arrows); useTicks is the
         /// weapon's use time, for the Ruby Staff's second bolt halfway through it.
         /// </summary>
-        public void Shoot(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int extraUpdates = 0, int useTicks = 0, bool melee = false)
+        public void Shoot(ProjKind kind, Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int extraUpdates = 0, int useTicks = 0, bool melee = false,
+            float skyTo = float.NaN)
         {
             var p = Spawn(kind, from, velocity, damage, knockback, crit, extraUpdates, useTicks);
-            if (p != null) p.Melee = melee;
+            if (p == null) return;
+            p.Melee = melee;
+            p.SkyTo = skyTo;
         }
+
+        /// <summary>
+        /// Where a shot from the sky at a point (the cursor) starts meeting blocks: the point's height, or, with the point in
+        /// rock, the first open spot back up its line from it. The rooms of Hallownest have a roof over nearly every place:
+        /// what the Daedalus Stormbow, the Blood Rain Bow, Star Wrath and the falling staffs bring down comes through it and
+        /// the rock above, all the way down to the cursor (the user's 11-01 "别被天花板挡住"), as Starfury's star always did.
+        /// </summary>
+        internal static float SkyFloor(Vector2 from, Vector2 to)
+        {
+            var back = (from - to).sqrMagnitude > 1e-6f ? (from - to).normalized : Vector2.up;
+            var floor = to;
+            for (int g = 0; g < 60 && floor.y < from.y && TerraWorld.IsSolidAt(floor); g++) floor += back * 16f * Px;
+            return floor.y;
+        }
+
+        public static int DevSkyThrough;
+
+        /// <summary>Dev (suite skyroof): shots from the sky meeting blocks from where they start, Star Wrath's floor 200 px over the player, as before 11-01.</summary>
+        internal static bool DevSkyOld;
 
         /// <summary>Projectile.GemStaffFeatures (1.4.5, ai[0]): what a gem staff's bolt does, by its gem and the robe worn.</summary>
         [System.Flags]
@@ -1229,6 +1253,16 @@ namespace TerraKnight.Items
             Vector2 half = TileBox(p) * 0.5f * Px;
             Vector2 total = p.Vel * Px;
             bool collide = p.Collide && !p.Stopped && !(s.Ai == Ai.Boomerang && p.Returning);
+            // From the sky: through everything down to the cursor's height, then as ever.
+            if (!float.IsNaN(p.SkyTo) && !DevSkyOld)
+            {
+                if (p.Pos.y > p.SkyTo)
+                {
+                    if (collide && Blocked(p.Pos, half, false, p)) DevSkyThrough++;
+                    collide = false;
+                }
+                else p.SkyTo = float.NaN;
+            }
             if (!collide)
             {
                 p.Pos += total;

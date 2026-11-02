@@ -229,7 +229,7 @@ namespace TerraKnight.Items
         /// <summary>
         /// Pl:48087: two icicles from 600 and 700 px over the player, halfway between the cursor and
         /// the player and up to 200 px either way, down at the cursor (never upward), up to 0.8 px
-        /// off on each axis; one of five shapes.
+        /// off on each axis; one of five shapes; through every block down to the cursor's height.
         /// </summary>
         static void BlizzardStaff(in Shot s)
         {
@@ -246,7 +246,8 @@ namespace TerraKnight.Items
                 if (to.y < 0f) to.y = -to.y;
                 if (to.y < 20f) to.y = 20f;
                 var v = to.normalized * s.Speed + Jitter(40, 0.02f);
-                pr.ShootIcicle(s.From + new Vector2(x, -y) * Px, new Vector2(v.x, -v.y), s.Damage, s.Knockback, s.Crit, Next(0, 5));
+                var from = s.From + new Vector2(x, -y) * Px;
+                pr.ShootIcicle(from, new Vector2(v.x, -v.y), s.Damage, s.Knockback, s.Crit, Next(0, 5), TerraProjectiles.SkyFloor(from, s.Mouse));
             }
         }
 
@@ -315,7 +316,7 @@ namespace TerraKnight.Items
         /// <summary>
         /// Pl:48119: one meteor (any of the three) from 600 px over the player, halfway between the
         /// cursor and the player and up to 200 px either way, down at the cursor (never upward) at
-        /// three quarters of the speed; its size 0.5 to 0.8.
+        /// three quarters of the speed; its size 0.5 to 0.8; through every block down to the cursor's height.
         /// </summary>
         static void MeteorStaff(in Shot s)
         {
@@ -333,7 +334,8 @@ namespace TerraKnight.Items
             v *= 0.75f;
             var pr = TerraProjectiles.Instance;
             if (pr == null) return;
-            pr.ShootMeteor(s.From + new Vector2(x, -y) * Px, new Vector2(v.x, -v.y), s.Damage, s.Knockback, s.Crit, Next(0, 3), 0.5f + Random.value * 0.3f);
+            var from = s.From + new Vector2(x, -y) * Px;
+            pr.ShootMeteor(from, new Vector2(v.x, -v.y), s.Damage, s.Knockback, s.Crit, Next(0, 3), 0.5f + Random.value * 0.3f, TerraProjectiles.SkyFloor(from, s.Mouse));
         }
     }
 }

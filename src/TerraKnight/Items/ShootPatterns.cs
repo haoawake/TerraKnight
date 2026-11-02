@@ -46,10 +46,14 @@ namespace TerraKnight.Items
         }
 
         /// <summary>One projectile, the way Fire would shoot it.</summary>
-        static void One(in Shot s, ProjKind kind, Vector2 from, Vector2 vel, int damage, float knockback)
+        static void One(in Shot s, ProjKind kind, Vector2 from, Vector2 vel, int damage, float knockback, float skyTo = float.NaN)
         {
-            TerraProjectiles.Instance?.Shoot(kind, from, vel, damage, knockback, s.Crit, s.Extra, s.UseTicks, s.Melee);
+            TerraProjectiles.Instance?.Shoot(kind, from, vel, damage, knockback, s.Crit, s.Extra, s.UseTicks, s.Melee, skyTo);
         }
+
+        /// <summary>A shot from the sky at the cursor: through every block down to its height (TerraProjectiles.SkyFloor).</summary>
+        static void FromSky(in Shot s, ProjKind kind, Vector2 from, Vector2 vel, int damage, float knockback) =>
+            One(s, kind, from, vel, damage, knockback, TerraProjectiles.SkyFloor(from, s.Mouse));
 
         /// <summary>Main.rand.Next(a, b): an integer in [a, b).</summary>
         static int Next(int a, int b) => Random.Range(a, b);

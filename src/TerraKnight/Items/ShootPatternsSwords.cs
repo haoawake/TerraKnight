@@ -14,17 +14,17 @@ namespace TerraKnight.Items
         /// <summary>
         /// Player.cs:48186: three stars from 600, 700 and 800 px over the player, up to 400 px behind
         /// it, down at the cursor (never upward, at least 20 px down for each of its length), a
-        /// little apart in fall; each passes through blocks until below the cursor, which counts as
-        /// no lower than 200 px over the player.
+        /// little apart in fall; each passes through blocks until below the cursor (Terraria's floor 200 px over the player
+        /// left out: a roof lower than that stopped them, TerraProjectiles.SkyFloor).
         /// </summary>
         static void StarWrath(in Shot s)
         {
             const float Px = TerraParticles.Px;
             float dir = s.Mouse.x < s.From.x ? -1f : 1f;
-            float floor = Mathf.Max(s.Mouse.y, s.From.y + 200f * Px);
             for (int k = 0; k < 3; k++)
             {
                 var from = s.From + new Vector2(-Next(0, 401) * dir, 600f + 100f * k) * Px;
+                float floor = TerraProjectiles.DevSkyOld ? Mathf.Max(s.Mouse.y, s.From.y + 200f * Px) : TerraProjectiles.SkyFloor(from, s.Mouse);
                 // In Terraria's px, y down.
                 var v = new Vector2(s.Mouse.x - from.x, from.y - s.Mouse.y) / Px;
                 if (v.y < 0f) v.y = -v.y;

@@ -1736,10 +1736,7 @@ namespace TerraKnight
             var b = hero.GetComponent<BoxCollider2D>().bounds;
             float side = mouse.x < b.min.x ? 1f : mouse.x <= b.max.x && Random.Range(0, 2) == 0 ? 1f : -1f;
             var from = new Vector2(mouse.x + 10f * Effects.TerraParticles.Px + Random.Range(0, 201) * Effects.TerraParticles.Px * side, b.center.y + 600f * Effects.TerraParticles.Px);
-            var back = (from - mouse).normalized;
-            var floor = mouse;
-            for (int g = 0; g < 60 && floor.y < from.y && TerraWorld.IsSolidAt(floor); g++) floor += back * 16f * Effects.TerraParticles.Px;
-            TerraProjectiles.Instance?.ShootStar(from, (mouse - from).normalized * speed, (int)(damage * 1.5f), crit, floor.y);
+            TerraProjectiles.Instance?.ShootStar(from, (mouse - from).normalized * speed, (int)(damage * 1.5f), crit, TerraProjectiles.SkyFloor(from, mouse));
         }
 
         /// <summary>EmitMaxManaEffect: the MaxMana ding and five sparkles over the player.</summary>

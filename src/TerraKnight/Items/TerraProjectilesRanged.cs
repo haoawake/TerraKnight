@@ -329,6 +329,7 @@ namespace TerraKnight.Items
             for (int k = 0; k < sp.Count; k++)
             {
                 var from = at;
+                var spot = target;
                 Vector2 vel;
                 switch (sp.Way)
                 {
@@ -343,7 +344,7 @@ namespace TerraKnight.Items
                         vel = Rotate(Vector2.up, sp.Count == 1 ? 0f : Mathf.Lerp(-35f, 35f, k / (sp.Count - 1f))) * speed;
                         break;
                     default:
-                        var spot = target + new Vector2(Random.Range(-2.5f, 2.5f) * Block, 0f);
+                        spot = target + new Vector2(Random.Range(-2.5f, 2.5f) * Block, 0f);
                         from = spot + new Vector2(Random.Range(-1.5f, 1.5f) * Block, 14f * Block);
                         vel = (spot - from).normalized * Mathf.Max(speed, 10f);
                         break;
@@ -355,6 +356,8 @@ namespace TerraKnight.Items
                 // Nothing that comes off lingers past 10 s; a hallowed star meets the ground from the spot's height down.
                 if (q.TimeLeft > 600) q.TimeLeft = 600;
                 if (kind == ProjKind.HallowStar) q.Ai1 = target.y + 0.5f;
+                // Falling from 14 blocks up: through a roof lower than that, down to the spot's height.
+                else if (sp.Way == SpawnWay.Fall) q.SkyTo = SkyFloor(from, spot);
                 DevRangedSpawned++;
             }
             SpawnRanged = saveRanged;

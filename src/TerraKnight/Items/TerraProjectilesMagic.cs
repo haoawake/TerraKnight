@@ -84,10 +84,11 @@ namespace TerraKnight.Items
         }
 
         /// <summary>A Meteor Staff meteor (world position, px per update y up): which of the three sprites, and its size.</summary>
-        public void ShootMeteor(Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int variant, float scale)
+        public void ShootMeteor(Vector2 from, Vector2 velocity, int damage, float knockback, float crit, int variant, float scale, float skyTo = float.NaN)
         {
             var p = Spawn(ProjKind.Meteor, from, velocity, damage, knockback, crit);
             if (p == null) return;
+            p.SkyTo = skyTo;
             p.LocalAi1 = variant;
             p.Ai1 = scale;
             p.Scale = scale;
