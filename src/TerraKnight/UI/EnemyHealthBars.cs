@@ -38,11 +38,16 @@ namespace TerraKnight.UI
             Vector2 heroPos = hero.transform.position;
             EnemyStats.Info boss = null, struck = null;
             float bossDist = float.MaxValue;
+            // The level's scale, the difficulty and the player's progress are the same for every enemy in the room:
+            // ask for them once a frame, not twice per enemy per frame (Life/LifeMax -> Info.Scale ->
+            // Areas.LifeScale -> Shop.UnlockedStage: 8 ms a frame in a room of a hundred, whose bars were all hidden).
+            int stage = Shop.UnlockedStage();
             foreach (var info in EnemyStats.All)
             {
                 var hm = info.Hm;
-                if (hm == null || hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy || EnemyStats.Defeated(hm)) continue;
-                int life = EnemyStats.Life(hm, info), max = EnemyStats.LifeMax(info);
+                if (hm == null) continue;
+                if (hm.isDead || hm.hp <= 0 || !hm.gameObject.activeInHierarchy || EnemyStats.Defeated(hm)) continue;
+                info.Cached(stage, out int life, out int max);
                 if (info.Boss)
                 {
                     float d = Vector2.Distance(hm.transform.position, heroPos);
